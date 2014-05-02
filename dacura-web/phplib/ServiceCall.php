@@ -58,6 +58,17 @@ class ServiceCall{
 		return $this->servicename;
 	}
 
+	function getArg($n=0){
+		return isset($this->args[$n]) ? $this->args[$n] : false;
+	}
+	
+	function getCollectionID(){
+		return $this->collection_id;
+	}
+
+	function getDatasetID(){
+		return $this->dataset_id;
+	}
 	
 	function setProvenance($x){
 		$this->provenance = $x;

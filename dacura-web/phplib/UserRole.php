@@ -14,6 +14,11 @@ class UserRole {
 		$this->role = $role;
 		$this->level = $level;
 	}
+
+	function isAdmin(){
+		return ($this->role == "admin");
+	}
+	
 	
 	function isGod(){
 		return ($this->collection_id == 0 && $this->dataset_id == 0 && $this->role == "god"); 

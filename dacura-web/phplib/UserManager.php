@@ -16,7 +16,7 @@ class UserManager {
 	
 	function saveUser($u){
 		if($this->sysman->saveUser($u)){
-			return true;
+			return $u;
 		}
 		$this->errmsg = $this->sysman->errmsg;
 		return false;
@@ -53,6 +53,17 @@ class UserManager {
 		}
 		else {
 			return $this->loadUser($n);
+		}
+	}
+
+	function getUsers(){
+		$u = $this->sysman->loadUsers();
+		if($u){
+			return $u;
+		}
+		else {
+			$this->errmsg = $this->sysman->errmsg;
+			return false;
 		}
 	}
 	
@@ -100,7 +111,7 @@ class UserManager {
 		if(!$du){
 			return false;
 		}
-		$du->updateStatus("deleted");
+		$du->setStatus("deleted");
 		$du->recordAction("system", "deleted");
 		return $this->saveUser($du);
 	}

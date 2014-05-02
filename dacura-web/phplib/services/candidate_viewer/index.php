@@ -15,7 +15,7 @@ if(!$servman->isLoggedIn()){
 	$servman->renderServiceScreen("core", "denied", array("message" => "You must be logged in to see this page"));	
 }
 else {
-	$service->handleServiceCall();	
+	$service->handlePageLoad();	
 }
 ?>
 <script>

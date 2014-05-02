@@ -11,6 +11,9 @@ class DacuraService{
 	var $servicecall;
 	var $collection_id;
 	var $dataset_id;
+	var $collection_context;
+	var $dataset_context;
+	var $default_screen = "view";
 
 	var $html_screens = array();
 
@@ -22,8 +25,15 @@ class DacuraService{
 		return $this->mydir."index.php";
 	}
 	
+	function getCollectionID(){
+		return ($this->collection_id == "0" ? "" : $this->collection_id);
+	}
 
-
+	function getDatasetID(){
+		return ($this->dataset_id == "0" ? "" : $this->dataset_id);
+	}
+	
+	
 	/*
 	 * to provide url services to html files...
 	*/
@@ -105,20 +115,37 @@ class DacuraService{
 		return file_exists($this->mydir."screens/$screen.php");
 	}
 
-	function renderScreen($screen, $params, $isservice = false){
+	function renderScreen($screen, $params, $other_service = false){
 		global $dacura_settings;
 		$service =& $this;
-		if($isservice){
-			include_once($this->settings['path_to_services'].$isservice."/screens/$screen.php");
+		if($other_service){
+			$f = $this->settings['path_to_services'].$other_service."/screens/$screen.php";
+			if(file_exists($f)){				
+				include_once($f);
+			}
+			else {
+				return $this->renderScreen("error", array("title" => "Navigation Error", "message" => "No '$screen' page found in $other_service service"), "core");
+			}
 		}
 		else {
-			include_once($this->mydir."screens/$screen.php");
+			$f = $this->mydir."screens/$screen.php";
+			if(file_exists($f)){
+				include_once($f);
+			}
+			else {
+				return $this->renderScreen("error", array("title" => "Navigation Error", "message" => "No '$screen' page found"), "core");
+			}
 		}
 	}
 
-	function handleServiceCall($sc = false){
+	function handlePageLoad($sc = false){
 		if(!$sc) $sc = $this->servicecall;
-		$screen = array_shift($sc->args);
+		if(count($sc->args) > 0){
+			$screen = array_shift($sc->args);
+		}
+		else {
+			$screen = $this->default_screen;
+		}
 		$params = array();
 		for($i = 0; $i < count($sc->args); $i+=2){
 			$params[$sc->args[$i]] = (isset($sc->args[$i + 1]) ? $sc->args[$i + 1] : "");

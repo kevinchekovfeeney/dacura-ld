@@ -1,5 +1,5 @@
 <?php
-
+include_once('Collection.php');
 
 class SystemManager {
 	
@@ -33,18 +33,37 @@ class SystemManager {
 
 	function loadUser($id){
 		try {
-			$stmt = $this->link->prepare("SELECT name, email, status FROM users where id=?");
+			$stmt = $this->link->prepare("SELECT name, email, status, profile FROM users where id=?");
 			$stmt->execute(array($id));
 			$row = $stmt->fetch();
 			if(!$row){
 				$this->errmsg = "User with id $id does not exist in this system";
 				return false;
 			}
-			$du = new DacuraUser($id, $row['email'], $row['name'], $row['status']);
+			$du = new DacuraUser($id, $row['email'], $row['name'], $row['status'], json_decode($row['profile']));
 			$roles = $this->loadUserRoles($id);
 			$du->roles = $roles;
 			return $du;
 	
+		}
+		catch(PDOException $e){
+			$this->errmsg = "error loading user $id " . $e->getMessage();
+			return false;
+		}
+	}
+	
+	function loadUsers(){
+		$users = array();
+		try {
+			$stmt = $this->link->prepare("SELECT id FROM users");
+			$stmt->execute(array());
+			while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
+				$u = $this->loadUser($row['id']);
+				if($u){
+					$users[$row['id']] = $u;
+				}
+			}
+			return $users;	
 		}
 		catch(PDOException $e){
 			$this->errmsg = "error loading user $id " . $e->getMessage();
@@ -72,8 +91,8 @@ class SystemManager {
 	
 	function saveUser($u){
 		try {
-			$stmt = $this->link->prepare("UPDATE users set name=?, email=?, status=? where id=?");
-			$stmt->execute(array($u->name, $u->email, $u->status, $u->id));
+			$stmt = $this->link->prepare("UPDATE users set name=?, email=?, status=?, profile=? where id=?");
+			$stmt->execute(array($u->name, $u->email, $u->status, json_encode($u->profile), $u->id));
 			return true;
 						
 		}
@@ -102,14 +121,14 @@ class SystemManager {
 	
 	function loadUserByEmail($email){
 		try {
-			$stmt = $this->link->prepare("SELECT id, name, status FROM users where email=?");
+			$stmt = $this->link->prepare("SELECT id, name, status, profile FROM users where email=?");
 			$stmt->execute(array($email));
 			$row = $stmt->fetch();
 			if(!$row || !$row['id']){
 				$this->errmsg = "User with email $email does not exist in this system";
 				return false;
 			}
-			$du = new DacuraUser($row['id'], $email, $row['name'], $row['status']);
+			$du = new DacuraUser($row['id'], $email, $row['name'], $row['status'], json_decode($row['profile']));
 			return $du;
 				
 		}
@@ -119,17 +138,17 @@ class SystemManager {
 		}
 	}
 	
-	function addUser($email, $name, $p, $status){
+	function addUser($email, $name, $p, $status, $prof = "{}"){
 		if($email && $this->hasUser($email)){
 			$this->errmsg = "User with email $email already exists";
 			return false;
 		}
 		else {
 			try {
-				$stmt = $this->link->prepare("INSERT INTO users VALUES(0, ?, ?, PASSWORD(?), ?)");
-				$res = $stmt->execute(array($email, $name, $p, $status));
+				$stmt = $this->link->prepare("INSERT INTO users VALUES(0, ?, ?, PASSWORD(?), ?, ?)");
+				$res = $stmt->execute(array($email, $name, $p, $status, $prof));
 				$id = $this->link->lastInsertId();
-				$du = new DacuraUser($id, $email, $name, $p, $status);
+				$du = new DacuraUser($id, $email, $name, $status, json_decode($prof));
 				return $du;
 			}
 			catch(PDOException $e){
@@ -233,6 +252,10 @@ class SystemManager {
 		}
 	}
 	
+	/*
+	 * Collection / Dataset Config related functions
+	 */
+	
 	function hasCollection($id){
 		try {
 			$stmt = $this->link->prepare("SELECT * FROM collections where collection_id=?");
@@ -248,9 +271,9 @@ class SystemManager {
 		}
 	}
 	
-	function getCollection($id){
+	function getCollection($id, $load_ds = true){
 		try {
-			$stmt = $this->link->prepare("SELECT collection_id, collection_name, contents FROM collections where collection_id=?");
+			$stmt = $this->link->prepare("SELECT collection_id, collection_name, status, contents FROM collections where collection_id=?");
 			$stmt->execute(array($id));
 			if($stmt->rowCount()) {
 				$row = $stmt->fetch();
@@ -258,7 +281,17 @@ class SystemManager {
 					$this->errmsg = "Error in collection data $id";
 					return false;
 				}
-				return json_decode($row[contents]);
+				$x = new Collection($row['collection_id'], $row['collection_name'], json_decode($row['contents']), $row['status']);
+				if($load_ds){
+					$ds = $this->getCollectionDatasets($id);
+					if($ds !== false){
+						$x->setDatasets($ds);
+					}
+					else {
+						return false;
+					}
+				}
+				return $x;
 			}
 			$this->errmsg = "No such collection $id";
 			return false;
@@ -269,13 +302,72 @@ class SystemManager {
 		}
 	}
 	
+	function getCollectionList($load_ds = true){
+		try {
+			$cols = array();
+			$stmt = $this->link->prepare("SELECT collection_id, collection_name, status, contents FROM collections");
+			$stmt->execute(array());
+			if($stmt->rowCount()) {
+				while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
+					if(!$row || !$row['collection_id']){
+						$this->errmsg = "Error in collection data $id";
+						return false;
+					}
+					$x = new Collection($row['collection_id'], $row['collection_name'], json_decode($row['contents']), $row['status']);
+					if($load_ds){
+						$ds = $this->getCollectionDatasets($row['collection_id']);
+						if($ds !== false){
+							$x->setDatasets($ds);
+						}
+						else {
+							return false;
+						}
+					}
+					$cols[$row['collection_id']] = $x;
+					//array("name" => $row['collection_name'], "config" => json_decode($row['contents']));					
+				}
+				return $cols;
+			}
+			$this->errmsg = "Failed to retrieve collectiong listing";
+			return false;
+		}
+		catch(PDOException $e){
+			$this->errmsg = "error retrieving collection $id" . $e->getMessage();
+			return false;
+		}
+	}
+	
+	
+	function getCollectionDatasets($cid){
+		try {
+			$stmt = $this->link->prepare("SELECT dataset_id, dataset_name, collection_id, status, contents FROM datasets where collection_id=?");
+			$stmt->execute(array($cid));
+			if($stmt->rowCount()) {
+				$dss = array();
+				while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
+					if(!$row || !$row['collection_id']){
+						$this->errmsg = "Error in collection $id dataset";
+						return false;
+					}
+					$dss[$row['dataset_id']] = new Dataset($row['dataset_id'],  $row['dataset_name'], json_decode($row['contents']), $row['status'], $row['collection_id']);
+				}
+				return $dss;
+			}
+			else return array();
+		}
+		catch(PDOException $e){
+			$this->errmsg = "error fetching datasets for collection $cid" . $e->getMessage();
+			return false;
+		}
+	}
+	
 	function updateCollection($id, $new_title, $new_obj) {
 		if(!$this->hasCollection($id)){
 			$this->errmsg = "Collection with ID $id does not exist";
 			return false;
 		}
 		try {
-			$stmt = $this->link->prepare("UPDATE collections SET collection_title = ?, contents = ? WHERE collection_id=?");
+			$stmt = $this->link->prepare("UPDATE collections SET collection_name = ?, contents = ? WHERE collection_id=?");
 			$res = $stmt->execute(array($new_title, json_encode($new_obj), $id));
 			return true;
 		}
@@ -283,39 +375,6 @@ class SystemManager {
 			$this->errmsg = "error retrieving $email " . $e->getMessage();
 			return false;
 		}
-	}
-	
-	function deleteCollection($id) {
-		if(!$this->hasCollection($id)){
-			$this->errmsg = "Collection with ID $id does not exist";
-			return false;
-		}
-		try {
-			$stmt = $this->link->prepare("UPDATE collections SET status = 'deleted' WHERE collection_id=?");
-			$res = $stmt->execute(array($id));
-			return true;
-		}
-		catch(PDOException $e){
-			$this->errmsg = "error deleting collection $id" . $e->getMessage();
-			return false;
-		}
-	}
-	
-
-	function createNewCollection($id, $obj){
-		if($this->hasCollection($id)){
-			$this->errmsg = "Collection with ID $id already exists";
-			return false;			
-		}
-		try {
-			$stmt = $this->link->prepare("INSERT INTO collections VALUES(?, 'title', ?, 'active')");
-			$res = $stmt->execute(array($id, json_encode($obj)));
-			return $obj;	
-		}
-		catch(PDOException $e){
-			$this->errmsg = "error retrieving $email " . $e->getMessage();
-			return false;
-		}		
 	}
 	
 
@@ -336,7 +395,7 @@ class SystemManager {
 
 	function getDataset($id){
 		try {
-			$stmt = $this->link->prepare("SELECT dataset_id, dataset_name, collection_id, contents FROM collections where dataset_id=?");
+			$stmt = $this->link->prepare("SELECT dataset_id, dataset_name, collection_id, status, contents FROM datasets where dataset_id=?");
 			$stmt->execute(array($id));
 			if($stmt->rowCount()) {
 				$row = $stmt->fetch();
@@ -344,7 +403,7 @@ class SystemManager {
 					$this->errmsg = "Error in dataset data $id";
 					return false;
 				}
-				return json_decode($row[contents]);
+				return new Dataset($row['dataset_id'], $row['dataset_name'], json_decode($row['contents']), $row['status'], $row['collection_id']);
 			}
 			$this->errmsg = "No such dataset $id";
 			return false;
@@ -361,7 +420,7 @@ class SystemManager {
 			return false;
 		}
 		try {
-			$stmt = $this->link->prepare("UPDATE datasets SET dataset_title = ?, contents = ? WHERE dataset_id=?");
+			$stmt = $this->link->prepare("UPDATE datasets SET dataset_name = ?, contents = ? WHERE dataset_id=?");
 			$res = $stmt->execute(array($new_title, json_encode($new_obj), $id));
 			return true;
 		}
@@ -371,38 +430,6 @@ class SystemManager {
 		}
 	}
 	
-	function deleteDataset($id) {
-		if(!$this->hasDataset($id)){
-			$this->errmsg = "Dataset with ID $id does not exist";
-			return false;
-		}
-		try {
-			$stmt = $this->link->prepare("UPDATE datasets SET status = 'deleted' WHERE dataset_id=?");
-			$res = $stmt->execute(array($id));
-			return true;
-		}
-		catch(PDOException $e){
-			$this->errmsg = "error deleting dataset $id" . $e->getMessage();
-			return false;
-		}
-	}
-	
-	
-	function createNewDataset($id, $cid, $obj){
-		if($this->hasDataset($id)){
-			$this->errmsg = "Dataset with ID $id already exists";
-			return false;
-		}
-		try {
-			$stmt = $this->link->prepare("INSERT INTO datasets VALUES(?, 'title', ?, ?, 'active')");
-			$res = $stmt->execute(array($id, $cid, json_encode($obj)));
-			return $obj;
-		}
-		catch(PDOException $e){
-			$this->errmsg = "Failed to create dataset $id" . $e->getMessage();
-			return false;
-		}
-	}
 	
 	
 	/**

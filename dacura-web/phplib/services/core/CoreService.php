@@ -2,6 +2,6 @@
 
 class CoreService extends DacuraService {
 /*	
-	function handleServiceCall($sc=false){
+	function handlePageLoad($sc=false){
 	}*/
 }

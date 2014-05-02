@@ -1,6 +1,6 @@
 <?php
 include_once("phplib/snippets/header.php");
-$service->handleServiceCall();
+$service->handlePageLoad();
 include_once("phplib/snippets/footer.php");?>
 </body>
 </html>

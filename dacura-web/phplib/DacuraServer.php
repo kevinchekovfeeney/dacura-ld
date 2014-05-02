@@ -1,4 +1,11 @@
 <?php
+
+/*
+ * The Core Dacura Server
+ * It only includes functionality that is needed in multiple places
+ * For service specific functionality, extend the class in the server...
+ */
+
 //require_once("EventRecord.php");
 //require_once("Widgetizer.php");
 require_once("UserManager.php");
@@ -8,7 +15,7 @@ require_once("utilities.php");
 
 class DacuraServer {
 	var $settings;
-	var $sm;	//session manager
+	var $sm;	//user/session manager
 	var $cm;	//candidate manager
 	var $sysman; //storage manager
 	//var $appman; //mini-application manager
@@ -20,14 +27,12 @@ class DacuraServer {
 	function __construct($dacura_settings){
 		$this->settings = $dacura_settings;
 		try {
-			//$this->cm = new CandidateManager($this->settings['db_host'], $this->settings['db_user'], $this->settings['db_pass'], $this->settings['db_name']);
 			$this->sysman = new SystemManager($this->settings['db_host'], $this->settings['db_user'], $this->settings['db_pass'], $this->settings['db_name']);
 		}
 		catch (PDOException $e) {
 			return $this->failure_result('Connection failed: ' . $e->getMessage(), 500);
 		}
 		$this->sm = new UserManager($this->sysman, $this->settings);
-		//$this->appman = new ApplicationManager($this->sysman, $this->settings);
 	}
 	
 	function failure_result($msg, $code = 500){
@@ -36,6 +41,45 @@ class DacuraServer {
 		return false;
 	}
 	
+	/* 
+	 * Config related functions
+	 */
+	function getDataset($id){
+		$obj = $this->sysman->getDataset($id);
+		return $obj;
+	}
+	
+	function updateDataset($id, $ctit, $obj){
+		$u = $this->getUser(0);
+		if(!$u)	return $this->failure_result("Denied! Need logged in user", 401);
+		if($this->sysman->updateDataset($id, $ctit, $obj)){
+			return $obj;
+		}
+		return false;
+	}
+	
+	function updateCollection($id, $ctit, $obj){
+		$u = $this->getUser(0);
+		if(!$u)	return $this->failure_result("Denied! Need logged in user", 401);
+		if($this->sysman->updateCollection($id, $ctit, $obj)){
+			return $obj;
+		}
+		return false;
+	}
+	
+	function getCollection($id){
+		$obj = $this->sysman->getCollection($id);
+		return $obj;
+	}
+	
+	function getCollectionList(){
+		$obj = $this->sysman->getCollectionList();
+		return $obj;
+	}
+	
+	/*
+	 * User related functions
+	 */
 	
 	function isLoggedIn(){
 		return $this->sm->isLoggedIn();
@@ -60,8 +104,13 @@ class DacuraServer {
 		}
 	}
 	
+	function updateUser($u){
+		return $this->sm->saveUser($u);
+	}
+	
 	function getusers(){
-		return $this->sm->getUsers();
+		$u =  $this->sm->getUsers();
+		return ($u) ? $u : $this->failure_result("Failed to retrieve user list: ".$this->sm->errmsg, 404);
 	}
 	
 	

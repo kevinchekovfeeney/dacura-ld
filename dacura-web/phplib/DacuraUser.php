@@ -8,16 +8,18 @@ class DacuraUser {
 	var $email;
 	var $name;
 	var $status;
+	var $profile;
 	var $session_dump;	//directory where my sessions live.
 	//var $chunks = array();
 	var $sessions = array();
 	var $roles = array();
 
-	function __construct($id, $e, $n, $status){
+	function __construct($id, $e, $n, $status, $prof = ""){
 		$this->id = $id;
 		$this->email = $e;
 		$this->name = $n;
 		$this->status = $status;
+		$this->profile = $prof;
 	}
 	
 	/*
@@ -43,6 +45,20 @@ class DacuraUser {
 		}
 		return false;
 	}
+	
+	function isCollectionAdmin($cid){
+		foreach($this->roles as $r){
+			if($r->isGod()) return true;
+			if($r->isAdmin() && $r->collection_id == $cid && ($r->dataset_id == "" or $r->dataset_id == "0")){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	function addRole($r){
+		$this->roles[] = $r;
+	}
 
 	function rolesSpanCollections(){
 		if(count($this->roles) <= 1) return false;
@@ -60,12 +76,6 @@ class DacuraUser {
 		return $r1->collection_id;
 	}
 
-	function isCollectionAdmin($cid){
-		foreach($this->roles as $r){
-			if($r->collection_id == $cid && $r->role == "admin" && $r->dataset_id == 0) return true;
-		}
-		return false;
-	}
 	
 	function rolesSpanDatasets($cid){
 		if(count($this->roles) <= 1) return false;

@@ -4,7 +4,7 @@ include_once("LoginDacuraServer.php");
 
 class LoginService extends DacuraService {
 	
-	function handleServiceCall($sc){
+	function handlePageLoad($sc){
 		$lds = new LoginDacuraServer($this->settings);
 		$dcuser = $lds->getUser(0);
 		if($dcuser){
@@ -12,6 +12,7 @@ class LoginService extends DacuraService {
 			$this->renderScreen("logout", $params);
 		}
 		else{
+			$sc->screen = $sc->getArg(0);
 			if($sc->screen == "" or $sc->screen == 'login'){
 				$params = array("active_function" => "login");
 				$this->renderScreen("login", $params);

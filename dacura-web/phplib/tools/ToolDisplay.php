@@ -21,6 +21,10 @@ class ToolDisplay extends genericToolDisplay {
 	function getDetailsChunk(){
 		$vals = $this->wizer->sparql->getSchemaValues($this->wizer->schema_graph_name, $this->wizer->ns->getnsuri("pv")."Category");
 		$nvals = array("" => "Event Type");
+		if(!$vals){
+			$html = "<div class='dc-widget-line'>No category data from SPARQL</div>";
+			return $html;
+		}
 		foreach($vals as $i => $v){
 			$nvals[$v] = $v;
 		}
@@ -213,6 +217,11 @@ class ToolDisplay extends genericToolDisplay {
 	function getMotivationChunk(){
 		$id = "event-motivation";
 		$vals = $this->wizer->sparql->getSchemaValues($this->wizer->schema_graph_name, $this->wizer->ns->getnsuri("pv")."Motivation");
+		if(!$vals){
+			$html = "<div class='dc-widget-line'>No Motivation data from SPARQL</div>";
+			return $html;
+		}
+		
 		$str = "<div id='$id'>";
 		asort($vals);
 		$defaults = array("economic", "land", "labor", "political", "race", "religion", "unknown");

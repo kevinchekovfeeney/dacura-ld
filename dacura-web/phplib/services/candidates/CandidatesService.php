@@ -6,7 +6,7 @@ include_once("phplib/services/browse/BrowseDacuraServer.php");
 
 class CandidatesService extends DacuraService {
 	
-	function handleServiceCall(){
+	function handlePageLoad(){
 		$bds = new CandidatesDacuraServer($this->settings);
 		echo "<div id='fullscreen-container'>";
 		echo "<div id='fullscreen-menu'>";
@@ -16,7 +16,7 @@ class CandidatesService extends DacuraService {
 		echo "<div id='fullscreen-content'>";
 		if(count($this->servicecall->args) == 0){
 			$this->servicecall->args[] = "home";
-			parent::handleServiceCall();
+			parent::handlePageLoad();
 		}
 		else {
 			$record_id = $this->servicecall->args[0];

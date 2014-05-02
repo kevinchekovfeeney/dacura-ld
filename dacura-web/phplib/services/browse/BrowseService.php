@@ -9,14 +9,14 @@ class BrowseService extends DacuraService {
 	
 	
 	
-	function handleServiceCall($sc = false){
+	function handlePageLoad($sc = false){
 		if($sc === false) $sc = $this->servicecall;
 		$bds = new BrowseDacuraServer($this->settings);
 		
 		$params = array('collection' => $this->collection_id, "dataset" => $this->dataset_id);
 				
 		//$sc->screen = "browse";
-		//parent::handleServiceCall($sc);
+		//parent::handlePageLoad($sc);
 		?>
 		<div id='dashboard-container'>
 		<?php $this->renderScreen("menu", $bds->getMenuPanelParams($params))?>

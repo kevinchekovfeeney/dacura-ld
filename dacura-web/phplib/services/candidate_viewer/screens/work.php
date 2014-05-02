@@ -5,7 +5,7 @@
 	<div id="dc-work">
 		<div id="work-topbar">
 			<div id="work-controls">
-				<div class='work-control-question'>Does this page contain a report of a fatal political violence event?</div>
+				<div class='work-control-question'>Does this page contain a report of a fatal political violence event in the UK or Ireland?</div>
 				<div id="candidate-controls">
 					<input type='submit' id='candidate-accept' value="Yes"> 
 					<input type='submit' id='candidate-reject' value="No">

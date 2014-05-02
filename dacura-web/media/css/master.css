@@ -213,6 +213,70 @@ div.dacura-button-title{
 	width: 100%;
 }
 
+.pctitle {
+	width: 100%;
+	background: #321;
+	color: white;
+	padding: 8px 8px;
+	margin: -8px -8px 12px -8px;
+	font-weight: bold;
+	border-radius: 3px 3px 0px 0px;
+	
+}
+
+.pcsection {
+	clear: both;
+	margin-top: 10px;
+}
+
+.pcsectionhead {
+	width: 100%;
+	background: #963;
+	color: #fff;
+	padding: 4px 0;
+	margin-bottom: 10px;
+}
+
+
+.pcdatatables {
+	padding: 6px 0 34px 0;
+}
+
+.pcbuttons {
+	padding: 12px 6px;
+	margin-top: 10px;
+	margin-bottom: 0px;
+	border-top: 1px #ddd groove;
+	text-align: right;
+}
+
+#collectionconfig {
+	border: 2px solid #963;
+	margin-top: -10px;
+	padding-bottom: 6px;
+}
+
+#collection_table{
+}
+
+#collection_table th {
+	width: 100px;
+	color: #321;
+	text-align: right;
+}
+
+#collection_table td {
+	text-align: left;
+}
+
+#dataset_table td input, 
+#collection_table td input {
+	min-width: 500px;
+	font-size: 1.1em;
+	font-weight: normal;
+	color: #884;
+}
+
 .dacura-widget {
 	border: 1px solid #ddd;
 	padding: 12px;	
@@ -283,7 +347,7 @@ div.dacura-button-title{
 .button2 {
 	border-radius: 5px;
  	display: inline-block;
- 	padding: 10px 35px;
+ 	padding: 10px 25px;
  	border: 2px solid black;
  	background: rgba(155, 155, 155, .4);
  	color: black;
@@ -307,6 +371,7 @@ div.dacura-button-title{
 
 .button2:hover {
   	background: rgba(255, 255, 255, .9);
+  	cursor: pointer;
 }
 
 .disabled:hover {
@@ -333,6 +398,8 @@ div.dacura-button-title{
 
 .button:hover {
   	background: rgba(255, 255, 255, .4);
+	cursor: pointer;
+  	
 }
 
 #content-container {

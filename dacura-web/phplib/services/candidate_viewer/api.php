@@ -70,6 +70,11 @@ function end_session(){
 
 function get_widget(){
 	global $dacura_settings;
+	//these need to be removed from here altogether and put into a widget building module
+	$dacura_settings['id_prefix'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence/uspv/";
+	$dacura_settings['schema_graph'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence";
+	$dacura_settings['base_class'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence#Report";
+	$dacura_settings['data_graph'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence/uspv";
 	$ds = new Candidate_viewerDacuraAjaxServer($dacura_settings);
 	$wzer = new Widgetizer($dacura_settings['schema_graph'], $dacura_settings['sparql_source']);
 	//$wdetails = array("width" => 450, "title" => "Political Violence Event Report");

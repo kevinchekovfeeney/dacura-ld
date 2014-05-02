@@ -2,7 +2,7 @@
 //include_once("phplib/DacuraServer.php");
 //include_once("phplib/settings.php");
 require_once("phplib/http_response_code.php");
-require_once("phplib/epiphany/src/Epi.php");
+require_once("phplib/libs/epiphany/src/Epi.php");
 include_once("phplib/settings.php");
 
 include_once("phplib/ServiceManager.php");

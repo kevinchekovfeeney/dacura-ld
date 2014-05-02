@@ -3,10 +3,7 @@ include_once("phplib/snippets/header.php");
 include_once("phplib/snippets/topbar.php");
 ?>
 <script>
-<?php include_once("dacura.dataset.js");?>
-dacura.dataset.mode = "local";
 </script>
-
 <div id="pagecontent-container">
 <?php 
 /**
@@ -18,7 +15,7 @@ if(!$servman->isLoggedIn()){
 	$servman->renderServiceScreen("core", "denied", array("message" => "You must be logged in to see this page"));	
 }
 else {
-	$service->handleServiceCall($service_call);
+	$service->handlePageLoad($service_call);
 }
 ?>
 </div>

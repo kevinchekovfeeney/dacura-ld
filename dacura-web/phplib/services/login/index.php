@@ -15,7 +15,7 @@ dacura.login.mode = "local";
  * $service_call
  * $service
  */
-$service->handleServiceCall($service_call);
+$service->handlePageLoad($service_call);
 
 ?>
 </div>
