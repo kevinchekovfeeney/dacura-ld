@@ -54,7 +54,36 @@ class DacuraService{
 			return $this->settings['install_url'].$api_bit.$col_bit.$ds_bit.$servicen.$args_ext;
 		}
 	}
+	
+	function get_service_breadcrumbs(){
+		$url = $this->settings['install_url'];
+		$path = array();
+		$path[] = array("url" => $this->settings['install_url']."0/0/".$this->servicename, "title" => "All Collections");
+		if($this->getCollectionID()){
+			$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/0/".$this->servicename, "title" => $this->getCollectionID());
+			if($this->getDatasetID()){
+				$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/". $this->getDatasetID()."/".$this->servicename, "title" => $this->getDatasetID());
+			}
+		}
+		return $path;
+	}
 
+	function getBreadCrumbsHTML(){
+		$paths = $this->get_service_breadcrumbs();
+		$html = "<ul class='service-breadcrumbs'>";
+		foreach($paths as $i => $path){
+			$n = count($path) - $i;
+			if($i == 0){
+				$html .= "<li class='first'><a href='".$path['url']."' style='z-index:$n;'><span></span>".$path['title']."</a></li>";
+			}
+			else {
+				$html .= "<li><a href='".$path['url']."' style='z-index:$n;'>".$path['title']."</a></li>";
+			}
+		}
+		$html .= "</ul>";
+		return $html;		
+	}
+	
 	//url associated with a file in a particular collection or dataset (http)
 	function get_cds_url($fname, $col_id = false, $ds_id = false){
 		$col_bit = ($col_id ? $col_id : $this->collection_id)."/";

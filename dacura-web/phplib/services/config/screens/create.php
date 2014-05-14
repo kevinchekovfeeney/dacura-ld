@@ -51,33 +51,7 @@
 		margin-right: 0px;
 	}
 	
-	table.dc-wizard {
-		border-top: 1px solid #888;
-		border-collapse: collapse;
-	}
-	
-	table.dc-wizard th {
-		padding: 10px 4px 2px 4px;
-		font-size: 0.85em;
-		width: 150px;
-		vertical-align: top;
-		text-align: right;
-		padding-right: 6px;
-		border-right: 1px solid #888;
-}
-	
-	table.dc-wizard td {
-		padding: 4px 4px 0px 6px;
-		text-align: left;
-	}
-	
-	table.dc-wizard td.input-help {
-		padding-top: 0px;
-		text-align: left;
-		font-size: 0.8em;
-		padding-bottom: 10px;
-	}
-	
+
 	input#dacura-collection-title {
 		width: 380px;
 	}

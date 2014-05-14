@@ -33,3 +33,7 @@ dacura.system.pageURL = function(c, d, s){
 	var url = "<?=$service->settings['install_url']?>";
 	return url + this.getcds(c, d, s);
 };
+
+dacura.system.switchContext = function(c, d){
+	window.location.href = this.pageURL(c, d, this.pagecontext.service);
+}

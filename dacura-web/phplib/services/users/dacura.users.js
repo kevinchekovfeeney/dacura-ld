@@ -93,9 +93,9 @@ dacura.users.api.createrole = function (uid, xhr){
 	return xhr;
 }
 
-dacura.users.api.getRoleOptions = function(uid, type){
+dacura.users.api.getRoleOptions = function(uid){
 	xhr = {};
-	xhr.url = dacura.users.apiurl + "/" + uid + "/roleoptions/" + type;
+	xhr.url = dacura.users.apiurl + "/" + uid + "/roleoptions";
 	return xhr;
 }
 

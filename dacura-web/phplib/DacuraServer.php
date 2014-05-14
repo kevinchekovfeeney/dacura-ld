@@ -113,7 +113,49 @@ class DacuraServer {
 		return ($u) ? $u : $this->failure_result("Failed to retrieve user list: ".$this->sm->errmsg, 404);
 	}
 	
-	
+	/*
+	 * Returns a data structure describing the collection / dataset context available to the user 
+	 * given his or her roles. 
+	 */
+	function getUserAvailableContexts($role=false, $authority_based = false){
+		$u = $this->getUser(0);
+		$cols = $this->getCollectionList();
+		$choices = array();
+		if($authority_based){
+			if($u->isGod()){
+				$choices["0"] = array("title" => "All collections", "datasets" => array("0" => "All Datasets"));
+			}	
+		}
+		else {
+			if($u->rolesSpanCollections($role)){
+				$choices["0"] = array("title" => "All collections", "datasets" => array("0" => "All Datasets"));
+			}
+		}
+		foreach($cols as $colid => $col){
+			if($col->status == "deleted"){
+				
+			}
+			elseif($u->hasCollectionRole($colid, $role)){
+				$choices[$colid] = array("title" => $col->name, "datasets" => array("0" => "All Datasets"));
+				foreach($col->datasets as $datid => $ds){
+					$choices[$colid]["datasets"][$datid] = $ds->name;
+				}
+			}
+			else {
+				$datasets = array();
+				foreach($col->datasets as $datid => $ds){
+					if($ds->status != "deleted" && $u->hasDatasetRole($datid, $role)){
+						$datasets[$datid] = $ds->name;
+					}
+				}
+				if(!$authority_based && count($datasets) > 0){
+					if(count($datasets) > 1) $datasets["0"] = "All datasets";
+					$choices[$colid] = array("title" => $col->name, "datasets" => $datasets);
+				}
+			}
+		}
+		return $choices;
+	}
 	
 	function getUserHomeContext($u){
 		$appcontext = new ApplicationContext();

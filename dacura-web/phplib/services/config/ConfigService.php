@@ -9,7 +9,7 @@ class ConfigService extends DacuraService {
 		if(count($this->servicecall->args)> 0) {
 			$screen = array_shift($this->servicecall->args);
 			if($screen == 'create'){
-				$this->renderScreen("create", array("id" => $c_id));						
+				$this->renderScreen("create", array());						
 			}
 			elseif($screen == "" or $screen == "view"){
 				$this->renderScreen("view", array());

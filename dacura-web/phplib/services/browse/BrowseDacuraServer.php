@@ -1,5 +1,4 @@
 <?php
-include_once("phplib/DacuraServer.php");
 
 class BrowseDacuraServer extends DacuraServer {
 	

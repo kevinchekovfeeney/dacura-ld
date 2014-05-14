@@ -47,25 +47,81 @@ class DacuraUser {
 	}
 	
 	function isCollectionAdmin($cid){
+		return $this->hasCollectionRole($cid, "admin");
+	}
+	
+	function hasCollectionRole($cid, $role = false){
 		foreach($this->roles as $r){
 			if($r->isGod()) return true;
-			if($r->isAdmin() && $r->collection_id == $cid && ($r->dataset_id == "" or $r->dataset_id == "0")){
+			if((!$role or $r->role == $role) && $r->collection_id == $cid && ($r->dataset_id == "" or $r->dataset_id == "0")){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function isDatasetAdmin($did){
+		return $this->hasDatasetRole($did, "admin");
+	}
+
+	function hasDatasetRole($did, $role=false){
+		foreach($this->roles as $r){
+			if((!$role or $r->role == $role) && $r->dataset_id == $did){
 				return true;
 			}
 		}
 		return false;
 	}
 	
+	
+	
+	function getAdministeredCollections(){
+		$cids = array();
+		foreach($this->roles as $r){
+			if($r->isAdmin() && $r->collection_id != "" && $r->collection_id != "0" && ($r->dataset_id == "" or $r->dataset_id == "0")){
+				if(!in_array($r->collection_id, $cids)) $cids[] = $r->collection_id;
+			}
+		}
+		return $cids;
+	}
+
+	function getCollectionsWithRole(){
+		$cids = array();
+		foreach($this->roles as $r){
+			if($r->collection_id != "" && $r->collection_id != "0" && ($r->dataset_id == "" or $r->dataset_id == "0")){
+				if(!in_array($r->collection_id, $cids)) $cids[] = $r->collection_id;
+			}
+		}
+		return $cids;
+	}
+	
+	function getAdministeredDatasets($cid = false){
+		return $this->getDatasetsWithRole($cid, "admin");
+	}
+	
+	function getDatasetsWithRole($cid, $role=false){
+		$dids = array();
+		foreach($this->roles as $r){
+			if((!$role or $r->role == $role) && ($r->dataset_id != "" && $r->dataset_id != "0") && (!$cid or $cid == $r->collection_id)){
+				if(!in_array($r->dataset_id, $dids)) $dids[] = $r->dataset_id;
+			}
+		}
+		return $dids;
+	}
+	
+	
+	
 	function addRole($r){
 		$this->roles[] = $r;
 	}
 
-	function rolesSpanCollections(){
+	function rolesSpanCollections($role = false){
+		if($this->isGod()) return true;
 		if(count($this->roles) <= 1) return false;
 		$r1 = $this->roles[0];
 		$r1c = $r1->collection_id;
 		foreach($this->roles as $r){
-			if($r->collection_id != $r1c) return true;
+			if($r->collection_id != $r1c && (!$role or $role == $r->role)) return true;
 		}
 		return false;
 	}

@@ -277,6 +277,101 @@ div.dacura-button-title{
 	color: #884;
 }
 
+tr.userhover {
+	border: 1px solid white;
+}
+
+.userhover th, 
+.userhover td {
+	background: rgba(185, 185, 255, 0.9) !important;
+	cursor: pointer;
+	color: #210;
+	border: 0;
+}
+
+ul.service-breadcrumbs {margin-left: -35px; margin-top: -12px}
+.service-breadcrumbs { display: block;}  
+.service-breadcrumbs li {  display: inline; }  
+.service-breadcrumbs li.first { margin-left: -10px; padding-left: 0px;}  
+.service-breadcrumbs li a,  
+.service-breadcrumbs li a:link,  
+.service-breadcrumbs li a:visited {  
+    color: #666;  
+    display: block;  
+    float: left;  
+    font-size: 12px;  
+    margin-left: -13px;  
+    padding: 7px 17px 11px 25px;  
+    position: relative;  
+    text-decoration: none;  
+}  
+.service-breadcrumbs li a {  
+    background-image: url('../images/bg-crumbs.png');  
+    background-repeat: no-repeat;  
+    background-position: 100% 0;  
+    position: relative;  
+}  
+.service-breadcrumbs li a:hover {  
+    color: #333;  
+    background-position: 100% -48px;  
+    cursor: pointer;  
+}  
+.service-breadcrumbs li a:active {  
+    color: #333;  
+    background-position: 100% -96px;  
+}  
+.service-breadcrumbs li.first a span {  
+    height: 29px;  
+    width: 3px;  
+    border-left: 1px solid #d9d9d9;  
+    position: absolute;  
+    top: 0px;  
+    left: 0px;  
+} 
+
+.pccon {
+	float: right;
+}
+
+#userview {
+	clear: both;
+	width: 100%;
+	margin-top: 8px;
+}
+
+#userview table.dc-wizard{
+	width: 100%;
+}
+
+table.dc-wizard {
+	border-top: 1px solid #888;
+	border-collapse: collapse;
+}
+
+table.dc-wizard th {
+	padding: 10px 4px 2px 4px;
+	font-size: 0.85em;
+	width: 150px;
+	vertical-align: top;
+	text-align: right;
+	padding-right: 6px;
+	border-right: 1px solid #888;
+}
+	
+table.dc-wizard td {
+	padding: 4px 4px 0px 6px;
+	text-align: left;
+}
+
+table.dc-wizard td.input-help {
+	padding-top: 0px;
+	text-align: left;
+	font-size: 0.8em;
+	padding-bottom: 10px;
+}
+	
+
+
 .dacura-widget {
 	border: 1px solid #ddd;
 	padding: 12px;	

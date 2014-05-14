@@ -1,5 +1,4 @@
 <?php
-include_once("phplib/DacuraServer.php");
 include_once("ConfigSystemManager.php");
 
 class ConfigDacuraServer extends DacuraServer {

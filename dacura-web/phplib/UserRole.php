@@ -15,6 +15,15 @@ class UserRole {
 		$this->level = $level;
 	}
 
+	function collectionID(){
+		return ($this->collection_id == "0" ? "" : $this->collection_id);
+	}
+	
+	function datasetID(){
+		return ($this->dataset_id == "0" ? "" : $this->dataset_id);
+	}
+	
+	
 	function isAdmin(){
 		return ($this->role == "admin");
 	}

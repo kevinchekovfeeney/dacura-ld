@@ -1,8 +1,16 @@
+<?php $hsds = new DacuraServer($service->settings);
+$choices = $hsds->getUserAvailableContexts("admin", true);?>
 <style>
 .dch { display: none;}
 </style>
 <div id="pagecontent">
 	<div class="pctitle dch"></div>
+	<div class="pcbreadcrumbs dch">
+		<div class="pccon">
+		<?php $service->renderScreen("available_context", array("type" => "admin"), "core");?>
+		</div>
+	<?php $arg = isset($params['userid']) ? $params['userid'] : false; echo $service->getBreadCrumbsHTML($arg);?>
+	</div>
 	<div class="pcbusy"></div>
 	<div class="dch" id="userslisting">
 		<div class="pcsection pcdatatables">
@@ -26,7 +34,7 @@
 		</div>
 	</div>
 	<div class="dch" id="userview">
-		<table id="user_table">
+		<table class="dc-wizard" id="user_table">
 			<thead>
 			</thead>
 			<tbody>
@@ -38,6 +46,9 @@
 				</tr>
 				<tr>
 					<th>Status</th><td id='userstatus'><input type='text' id='userstatusip' value=""></td>
+				</tr>
+				<tr>
+					<th>Password</th><td id='userpassword'><input type='password' id='userpasswordip' value=""></td>
 				</tr>
 			</tbody>
 		</table>
@@ -75,7 +86,6 @@
 		</div>			
 	</div>
 	<div class="dch" id="roleview">
-
 		<table id="role_table">
 			<thead>
 				<tr> 
@@ -84,7 +94,49 @@
 			</thead>
 			<tbody>	
 			<tr>
-				<td id='rolecollection' class='ccol'><select id='rolecollectionip'></select></td>
+				<td id='rolecollection' class='ccol'>
+					<select class='dccontextchanger' id='dcrolecscope'>
+					<?php 
+					foreach($choices as $i => $choice){
+						echo "<option value='$i'"; 
+						echo ">".$choice['title']."</option>";
+					}
+					?>
+					</select>
+				</td>
+				<td id='roledataset' class="cds">
+					<select id='dcroledscope'></select></td>
+					<?php 
+					foreach($choices as $i => $choice){
+						?>
+						<select class='dch dccontextchanger dcdatasetselect' id='dcdatasetcontext_<?=$i?>'>
+						<?php 
+							foreach($choice['datasets'] as $j => $t){
+								echo "<option value='$j'";
+								if($j == $service->getDatasetID() or ($j == "0" && !$service->getDatasetID())) echo " selected";
+								echo ">$t</option>";
+							}
+						?>
+						</select>
+					<?php }?>
+<input id='dcchangecontext' type='submit' value="go">	
+<script>
+
+	var updateDS = function(){
+		$('.dcdatasetselect').hide();
+		$('#dcdatasetcontext_' + $('#dccollectioncontext').val()).show();
+	};
+	
+	$('#dccollectioncontext').change(updateDS);
+	$('#dcchangecontext').click(function(){
+		dacura.system.switchContext($('#dccollectioncontext').val(), $('#dcdatasetcontext_' + $('#dccollectioncontext').val()).val());
+	});
+	
+	updateDS();
+	
+
+</script>
+				<select id='rolecollectionip'></select></td>
 				<td id='roledataset' class="cds"><select id='roledatasetip'></select></td>
 				<td id='rolename' class="cr"><select id='rolenameip' value="">
 				<option value="admin">admin</option>
@@ -124,6 +176,7 @@ dacura.users.updateUser = function(){
 	ds.name = $('#usernameip').val();
 	ds.email= $('#useremailip').val();
 	ds.status = $('#userstatusip').val();
+	ds.password = $('#userpasswordip').val();
 	ds.profile = JSON.stringify(dacura.users.jsoneditor.getJSON());
 	var ajs = dacura.users.api.update(dacura.users.currentuser);
 	ajs.data = ds;
@@ -150,6 +203,7 @@ dacura.users.createUser = function(){
 	ds.name = $('#usernameip').val();
 	ds.email= $('#useremailip').val();
 	ds.status = $('#userstatusip').val();
+	ds.password = $('#userpasswordip').val();
 	ds.profile = JSON.stringify(dacura.users.jsoneditor.getJSON());
 	var ajs = dacura.users.api.create();
 	ajs.data = ds;
@@ -163,7 +217,8 @@ dacura.users.createUser = function(){
 	$.ajax(ajs)
 	.done(function(data, textStatus, jqXHR) {
 		u = JSON.parse(data);
-		self.showuser(u.id);
+		window.location.href = dacura.system.pageURL() + "/" + u.id;
+		//self.showuser(u.id);
 	})
 	.fail(function (jqXHR, textStatus){
 		dacura.toolbox.writeErrorMessage('#collectionhelp', "Error: " + jqXHR.responseText );
@@ -184,8 +239,8 @@ dacura.users.deleteUser = function(){
 	};
 	$.ajax(ajs)
 	.done(function(data, textStatus, jqXHR) {
-		alert(data);
-		self.listusers();
+		//self.listusers();
+		window.location.href = dacura.system.pageURL();
 	})
 	.fail(function (jqXHR, textStatus){
 		dacura.toolbox.writeErrorMessage('#collectionhelp', "Error: " + jqXHR.responseText );
@@ -278,6 +333,7 @@ dacura.users.listusers = function(){
 dacura.users.drawUserView = function(data){
 	//alert(JSON.stringify(data));
 	$('.pctitle').html("User "+data.id + " [" + data.status + "]").show();
+	$('.pcbreadcrumbs').show();
 	$('#usernameip').val(data.name);
 	$('#useremailip').val(data.email);
 	$('#userstatusip').val(data.status);
@@ -356,7 +412,7 @@ dacura.users.createRole = function(){
 dacura.users.showNewRole = function(){
 	dacura.users.clearscreens();
 	$('.pctitle').html("Create New Role for user ID " + dacura.users.currentuser).show();
-	var ajs = dacura.users.api.getRoleOptions(dacura.users.currentuser, "0");
+	var ajs = dacura.users.api.getRoleOptions(dacura.users.currentuser);
 	var self=this;
 	ajs.beforeSend = function(){
 		dacura.toolbox.writeBusyMessage('.pcbusy', "Fetching Role options" + dacura.users.currentuser);
@@ -369,7 +425,7 @@ dacura.users.showNewRole = function(){
 		var colls = JSON.parse(data);
 		$('#rolecollectionip').html("");
 		$.each(colls, function(i, obj) {
-			$('#rolecollectionip').append("<option value='"+ i + "'>" + obj.name + "</option>");
+			$('#rolecollectionip').append("<option value='"+ i + "'>" + obj.title + "</option>");
 		});
 		$('#rolecollectionip').change(function(){
 			self.updateDatasetRoleOptions();
@@ -413,7 +469,9 @@ dacura.users.updateDatasetRoleOptions = function(){
 }
 
 dacura.users.drawListTable = function(data){
+	
 	$('.pctitle').html("List of users").show();
+	$('.pcbreadcrumbs').show();
 	if(typeof data == "undefined"){
 		$('#users_table').hide(); 
 		dacura.toolbox.writeErrorMessage('.pcbusy', "No Users Found");		
@@ -427,13 +485,17 @@ dacura.users.drawListTable = function(data){
 			}
 			var roles = obj.roles.length;
 			if(obj.status != "deleted"){
-				url='javascript:alert("hello world")';
-				$('#users_table tbody').append("<tr id='user" + i + "'><td><a href='" + url + "'>" + i + "</a></td><td>" + obj.name 
+				//url='javascript:alert("hello world")';
+				$('#users_table tbody').append("<tr id='user" + obj.id + "'><td>" + obj.id + "</td><td>" + obj.name 
 						+ "</td><td>" + obj.email + "</td><td>" + obj.status + "</td><td>" + roles + 
 						 "</td><td>" + profile + "</td></tr>");
-				$('#user'+i).click( function (event){
-					dacura.users.showuser(this.id.substr(4));
-			        //alert(this.id);
+				$('#user'+obj.id).hover(function(){
+					$(this).addClass('userhover');
+				}, function() {
+				    $(this).removeClass('userhover');
+				});
+				$('#user'+obj.id).click( function (event){
+					window.location.href = dacura.system.pageURL() + "/" + this.id.substr(4);
 			    }); 
 			}
 		});

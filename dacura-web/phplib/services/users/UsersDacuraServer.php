@@ -1,5 +1,4 @@
 <?php
-include_once("phplib/DacuraServer.php");
 include_once("UsersSystemManager.php");
 
 class UsersDacuraServer extends DacuraServer {
@@ -15,17 +14,80 @@ class UsersDacuraServer extends DacuraServer {
 		$this->sm = new UserManager($this->sysman, $this->settings);
 	}
 	
-	function getUsersInContext($cid, $did){
-		return $this->getusers();
-	}
+
 	
-	function getUserRoleOptionsInContext($uid, $t, $cid, $did){
-		if($t == "0" or !$t or $t == 'collection'){
-			return $this->getRoleCollectionOptions($uid);
+	function getUsersInContext($cid, $did){
+		//first figure out which cids to use for the given active user...
+		$u = $this->getUser(0);
+		$cids = array();
+		$dids = array();
+		
+		if(!$cid && !$did){
+			//we are in top level context....
+			//1. get all collections where u has admin rights
+			//2. get all datasets where u has admin rights...
+			//all users with roles in either 1) or 2) are returned....
+			if($u->isGod()){
+				return $this->getusers();
+			}
+			else {
+				$cids = $u->getAdministeredCollections();
+				$dids = $u->getAdministeredDatasets();
+				if(count($cids) == 0 && count($dids) == 0){
+					//false
+				}
+				$uids  = $this->sysman->getUsersInContext($cids, $dids);
+			}
+		}
+		elseif(!$did){
+			//we are in a collection level context
+			//if u has admin rights...
+			if($u->isGod() || $u->isCollectionAdmin($cid)){
+				$uids  = $this->sysman->getUsersInContext(array($cid), array());
+			}
+			else {
+				$dids = $u->getAdministeredDatasets($cid);
+				if(count($dids) == 0){
+					//false;
+				}
+				$uids  = $this->sysman->getUsersInContext(array(), $dids);
+			}
 		}
 		else {
-			return $this->getRoleDatasetOptions($t, $uid);
+			if($u->isGod() or $u->isCollectionAdmin($cid) or $u->isDatasetAdmin($did)){
+				$uids =  $this->sysman->getUsersInContext(array(), array($did));
+			}
+			else {
+				return false;//error
+			}
+			//we are in a dataset level context			
 		}
+		$users = array();
+		foreach($uids as $id){
+			$users[] = $this->getUser($id);
+		}
+		return $users;
+	}
+	
+	function getRoleContextOptions($uid, $cid, $did){
+		$choices = $this->getUserAvailableContexts("admin", true);
+		if($cid && $did){
+			if(isset($choices[$cid]) && isset($choices[$cid]['datasets'][$did])){
+				$choices = array($cid => array("title" => $choices[$cid], "datasets" => array($did => $choices[$cid]['datasets'][$did])));
+			}
+			else {
+				return $this->failure_result("User $u->id does not possess permission to create roles for $uid in [$cid / $did] context", 401);
+			} 
+		}
+		elseif($cid){
+			if(isset($choices[$cid])){
+				$choices = array($cid => $choices[$cid]);
+			}
+			else {
+				return $this->failure_result("User $u->id does not possess permission to create roles for $uid in [$cid] context", 401);
+			}
+		}
+		return $choices;
 	}
 	
 	function getRoleCollectionOptions($uid){

@@ -3,6 +3,7 @@
 //Job is to load service descriptions  
 require_once("ServiceCall.php");
 require_once("DacuraService.php");
+require_once("DacuraServer.php");
 
 
 class ServiceManager {
