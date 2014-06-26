@@ -1,5 +1,4 @@
 <?php
-// fake comment
 getRoute()->get('/', 'generalStats');
 getRoute()->get('/(\w+)', 'userStats');
 getRoute()->get('/(\w+)/(\w+)', 'datedGeneralStats');
