@@ -1,0 +1,1 @@
+dacura_widget.loadToolFromContext();
