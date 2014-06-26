@@ -38,3 +38,11 @@ dacura.statistics.api.generalUserDatedStats = function (startdate, enddate, user
 	return xhr;
 }
 
+dacura.statistics.api.detailedUserSession = function (userid, sessionStartTime, xhr){
+	if(typeof xhr == "undefined"){
+		xhr = {};
+		xhr.data ={};
+	}
+	xhr.url = dacura.statistics.apiurl + "/sessions/" + userid + "/" + sessionStartTime;
+	return xhr;
+}

@@ -8,16 +8,103 @@ getRoute()->get('/(\w+)/(\w+)/(\w+)', 'datedUserStats');
 
 include_once("StatisticsDacuraServer.php");
 
+/*
+ * This will fetch all actions performed in a session given its start time timestamp and its user id 
+ */
 function detailedUserSession($userid, $sessionStartTime) {
-	// find and retrieve (if exists) this $userid session log
+	global $service;
+	$dwas = new StatisticsDacuraAjaxServer($service->settings);
+	$userobj = $dwas->getUser($userid);
 	
-	// go through the user log to find the session where the action start == $sessionStartTime
+	//find the directory where that user's sessions are
+	$url = $service->settings['dacura_sessions'] . $userid . "/candidate_viewer.session";
+	$tempLog; // store all actions for desired session the way they were in the JSON
+	if (file_exists($url)) {
+		$file_handle = @fopen($url, "r");
+		if ($file_handle) {
+			while (($json = fgets($file_handle)) != false) {
+				$tempLog = json_decode($json, true);
+				if(key_exists($sessionStartTime, $tempLog)){ 
+					if($tempLog[$sessionStartTime]['action'] == 'start')
+						break; // session's been found and stored, leave loop
+				}
+			}
+		}
+		fclose($file_handle);	
+	}
 	
-	// retrieve all the session information and encode it in a friendly json
+	// Session stats
+	$sessionTotalTime = 0;
+	$sessionStart;
+	$sessionEnd = 0;
+	$isPaused = false;
+	$lastTimestamp = 0;
+	$sessionAccepts = 0;
+	$sessionRejects = 0;
+	$sessionSkips = 0;
 	
-	// use the /localhost/dacura/api for testing!
+	foreach ($tempLog as $timestamp => $action_array) {
+		switch($action_array["action"]) {
+			case "start":
+				$sessionStart = $timestamp; 
+				$lastTimestamp = $timestamp;
+				break;
+			case "end":
+				if ($isPaused) $sessionEnd = $lastTimestamp;
+				else $sessionEnd = $timestamp;
+				break;
+			case "pause":
+				$isPaused = true;
+				$lastTimestamp = $timestamp;
+				break;
+			case "unpause":
+				// paused time is not added to total session time
+				$isPaused = false;
+				$sessionTotalTime -= ($timestamp - $lastTimestamp);
+				$lastTimestamp = $timestamp;
+				break;
+			case "abort":
+				$sessionEnd = $lastTimestamp;
+				break;
+			case "accept":
+				$sessionAccepts++;
+				$lastTimestamp = $timestamp;
+				break;
+			case "reject":
+				$sessionRejects++;
+				$lastTimestamp = $timestamp;
+				break;
+			case "skip":
+				$sessionSkips++;
+				$lastTimestamp = $timestamp;
+				break;
+		}
+	}
+	$sessionTotalTime += ($sessionEnd - $sessionStart);
 	
-	// some initial timestamps for your testing: 74/1403191785, 75/1402580250, 49/1401304039, 71/1402580879
+	$sessionInfo = array(); // makes all session timestamps and elapsed times more human readable for the HTML
+	$tempTimestamp = $sessionStart;
+	foreach($tempLog as $k=>$v){
+		$sessionInfo[gmdate("d/M/Y H:i:s", $k)] = $tempLog[$k];	
+		$sessionInfo[gmdate("d/M/Y H:i:s", $k)]["elapsedTime"] = gmdate("i:s", ($k - $tempTimestamp));
+		$tempTimestamp = $k;
+	}
+	
+	$detailedSession = array();
+	$detailedSession["timestamp"] = gmdate("d/M/Y H:i:s", $sessionStart);
+	$detailedSession["user"] = $userid;
+	$detailedSession["userName"] = $userobj->getRealName();
+	$detailedSession["duration"] = timeFormat($sessionTotalTime);
+	$detailedSession["accepts"] = $sessionAccepts;
+	$detailedSession["rejects"] = $sessionRejects;
+	$detailedSession["skips"] = $sessionSkips;
+	$detailedSession["log"] = $sessionInfo;
+	
+	// our testing: 74/1403191785, 75/1402580250, 49/1401304039, 71/1402580879}
+	if($detailedSession){
+		echo json_encode($detailedSession);
+	}
+	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
 }
 
 function timeFormat($unix_timestamp) {

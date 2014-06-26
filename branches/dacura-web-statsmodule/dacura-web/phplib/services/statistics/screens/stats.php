@@ -58,11 +58,59 @@ dacura.statistics.clearscreens = function() {
 }
 
 dacura.statistics.showSessionLog = function(userId, startTimeStamp) {
-	// clear screen
-	// prepare ajax call
-	// do ajax call
-	// receive the return
-	// process the json and show info on the screen (html)
+	dacura.statistics.clearscreens();
+
+	var ajs = dacura.statistics.api.detailedUserSession(userId, startTimeStamp); 
+	var self=this;
+	ajs.beforeSend = function(){
+		dacura.toolbox.writeBusyMessage('.pcbusy', "Retrieving Session Log");
+	};
+	ajs.complete = function(){
+		dacura.toolbox.clearBusyMessage('.pcbusy');
+	};
+
+	$.ajax(ajs)
+	.done(function(data, textStatus, jqXHR) {
+		if(data.length > 0 ){
+			var obj = JSON.parse(data);
+			$('.pctitle').html("User: " + userId + " (" + obj.userName + ") / Session: " + obj.timestamp ).show();
+			dacura.statistics.prepareLogHtml(obj);
+		}
+		else {
+			dacura.toolbox.writeErrorMessage('#userhelp', "Error: no data returned from api call");
+		}   
+		$('#generalstats').show();  //rename or create new html element
+	})
+	.fail(function (jqXHR, textStatus){
+		dacura.toolbox.writeErrorMessage('#userhelp', "Error: " + jqXHR.responseText );
+	});
+}
+
+dacura.statistics.prepareLogHtml = function(obj) {
+	var html = "";
+	html += "<style>table.table1, th, td{border-collapse:collapse;border:1px solid black;}th, td{padding:15px;}</style>";
+	html += "<div><table class=\"table1\" id=\"sessions_table\"><thead><tr><th>Date and time</th><th>User</th><th>Duration</th><th>Processed</th><th>Accepted</th><th>Rejected</th><th>Skipped</th></tr></thead>";
+	html += "<tbody><tr><td>" + obj.timestamp + "</td><td>" + obj.user + " (" + obj.userName + ")</td><td>" + obj.duration + "</td>";
+	html += "<td>" + (obj.accepts + obj.rejects + obj.skips) + "</td><td>" + obj.accepts + "</td><td>" + obj.rejects + "</td>";
+	html += "<td>" + obj.skips + "</td></tr></tbody></table></div><br><br>";
+
+	//var sessionTable = $('#sessions_table').dataTable();
+	
+	html += "<div align=\"left\"><b>Detailed session log:</b></div><br><br>";
+	html += "<style>table.table2, table.table2 th, table.table2 td{border-collapse:collapse;border:0px solid black; border-spacing:2px; padding:5px 35px;}</style>";
+	html += "<div><table class=\"table2\"><thead><tr><th>Date and time</th><th>Action</th><th>Action duration</th><th>Candidate ID</th></tr></thead><tbody>";
+	$.each(obj.log, function (i, item) {
+		html += "<tr><td>" + i + "</td>";
+		html += "<td>" + item['action'] + "</td>";
+		html += "<td>" + item['elapsedTime'] + "</td>";
+		if(item['id'])
+			html += "<td>" + item['id'] + "</td></tr>";
+		else
+			html += "<td></td>";	
+	});	
+	html += "</tbody></table></div>";
+	
+	$('#generalstats').html(html);
 }
 
 
@@ -445,7 +493,7 @@ $(function() {
 	});
 	
 	dacura.statistics.generalStatistics(0);
-	// dacura.statistics.showSessionLog = function(74, 1403191785); // to test session log viewer
+	//dacura.statistics.showSessionLog(74, 1403191785); // to test session log viewer
 });
 </script>
 
