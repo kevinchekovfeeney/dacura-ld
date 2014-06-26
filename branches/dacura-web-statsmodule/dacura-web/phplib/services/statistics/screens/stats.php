@@ -276,7 +276,7 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 	html += "<th>Timestamp</th><th>User</th><th>Duration</th><th>Processed</th><th>Accepted</th><th>Rejected</th><th>Skipped</th><th></th><th></th>";
 	html += "</tr></thead><tbody>";
 	$.each(obj.user_sessions, function (i, item) {
-		html += "<tr><td>" + item['timestamp'] + "</td>";
+		html += "<tr id='session" + item['unix_timestamp'] + item['user'] + "'><td>" + item['timestamp'] + "</td>";
 		html += "<td>" + item['user'] + " (" + item['user_name'] + ")</td>";
 		html += "<td>" + item['duration'] + "</td>";
 		html += "<td>" + item['processed'] + "</td>";
@@ -298,7 +298,7 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 		html +=	"<th>Session Mean Time</th><th></th><th>Processed</th><th>Skipped</th>";
 		html += "</tr></thead><tbody>";
 		$.each(obj.user_rankings, function (i, item) {
-			html += "<tr><td>" + item['user'] + " (" + item['user_name'] + ")</td>";
+			html += "<tr id='user" + item['user'] +"'><td>" + item['user'] + " (" + item['user_name'] + ")</td>";
 			html += "<td>" + item['onlinetime'] + "</td>";
 			html += "<td>" + item['onlinetime_unix'] + "</td>";
 			html += "<td>" + item['mean_processing_time'] + "</td>";
@@ -311,8 +311,37 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 		});
 		html += "</tbody></table></div><br><br><br>";
 	}
+
 	
 	$('#generalstats').html(html);
+	
+	$.each(obj.user_sessions, function (i, item) {
+		$('#session' + item['unix_timestamp'] + item['user']).hover(function(){
+			$(this).addClass('userhover');
+		}, function() {
+		    $(this).removeClass('userhover');
+		});
+		$('#session' + item['unix_timestamp'] + item['user']).click( function (event){
+			window.location.href = dacura.system.pageURL() + "/sessions/" + item['user'] + "/" + item['unix_timestamp'];
+	    });
+	});
+	
+	$.each(obj.user_rankings, function (i, item) {
+		$('#user' + item['user']).hover(function(){
+			$(this).addClass('userhover');
+		}, function() {
+		    $(this).removeClass('userhover');
+		});
+		$('#user' + item['user']).click( function (event){
+			window.location.href = dacura.system.pageURL() + "/" + item['user'];
+	    });
+	});
+
+	
+
+
+
+	
 	var sessionTable = $('#sessions_table').dataTable({
 		"aoColumns": [
 	                  { "iDataSort": 7 },
