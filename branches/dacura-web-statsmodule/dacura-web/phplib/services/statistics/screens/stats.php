@@ -23,7 +23,13 @@
 			$d_id = $service->getDatasetID();
 			$users = $dwas->getUsersInContext($c_id, $d_id);
 			foreach($users as $key => $value) {
-				echo "<option value = '$key'>'$key' (";
+				echo "<option value = '$key'";
+				if(isset($params['userid'])) {
+					if ($params['userid'] == $key) {
+						echo " selected=\"selected\"";
+					}
+				}
+				echo ">'$key' (";
 				echo $users[$key]->getRealName();
 				echo ")</option>";
 			}?>
@@ -174,7 +180,7 @@ dacura.statistics.generalDatedStatistics = function(startDateString, endDateStri
 				var obj = JSON.parse(data);
 
 				if (userId != "0") {
-					$('.pctitle').html("User " + userId + " General Statistics - " + startDateString + " to " + endDateString).show();
+					$('.pctitle').html("User " + userId + " Statistics - " + startDateString + " to " + endDateString).show();
 				}
 				else {
 					$('.pctitle').html("General System Statistics - " + startDateString + " to " + endDateString).show();
@@ -187,11 +193,11 @@ dacura.statistics.generalDatedStatistics = function(startDateString, endDateStri
 				}
 				else {
 					if (userId != "0") {
-						console.log("call true");
+						//console.log("call true");
 						dacura.statistics.prepareGeneralHtml(obj, true, true);
 					}
 					else {
-						console.log("call false");
+						//console.log("call false");
 						dacura.statistics.prepareGeneralHtml(obj, true, false);
 					}
 				}
@@ -207,7 +213,7 @@ dacura.statistics.generalDatedStatistics = function(startDateString, endDateStri
 		}
 	);
 		
-	$('#generalstats').html(html);
+	//$('#generalstats').html(html);
 	$('#generalstats').show();
 
 }
@@ -272,9 +278,9 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 	
 	html += "<div class=\"pcsectionhead\">Candidates Processing</div>";
 	html += "<div align=\"center\"><table border=\"0\" width=80% align=\"center\" cellpadding=\"5\">";
-	console.log(!isDated);
-	console.log(!isUser);
-	console.log((!isDated || !isUser))
+	//console.log(!isDated);
+	//console.log(!isUser);
+	//console.log((!isDated || !isUser))
 	if (!isDated && !isUser) {
 		html += "<tr bgcolor=\"#e2e4ff\"><td>Total number of candidates</td><td align=\"right\">" + obj.total_number_of_candidates + "</td></tr>";
 	}
@@ -360,7 +366,6 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 		html += "</tbody></table></div><br><br><br>";
 	}
 
-	
 	$('#generalstats').html(html);
 	
 	$.each(obj.user_sessions, function (i, item) {
@@ -370,7 +375,7 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 		    $(this).removeClass('userhover');
 		});
 		$('#session' + item['unix_timestamp'] + item['user']).click( function (event){
-			window.location.href = dacura.system.pageURL() + "/sessions/" + item['user'] + "/" + item['unix_timestamp'];
+			window.location.href = dacura.system.pageURL() + "/" + item['user'] + "/session/" + item['unix_timestamp'];
 	    });
 	});
 	
@@ -384,11 +389,6 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 			window.location.href = dacura.system.pageURL() + "/" + item['user'];
 	    });
 	});
-
-	
-
-
-
 	
 	var sessionTable = $('#sessions_table').dataTable({
 		"aoColumns": [
@@ -404,7 +404,6 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 		]
 	});
 	sessionTable.fnSort( [ [0,'desc'] ] );
-	
 	
 	if (!isUser) {
 		var rankTable = $('#rank_table').dataTable({
@@ -491,9 +490,29 @@ $(function() {
 		format:'d.m.Y H:i',
 		lang:'en'
 	});
-	
-	dacura.statistics.generalStatistics(0);
-	//dacura.statistics.showSessionLog(74, 1403191785); // to test session log viewer
+
+	<?php
+	if(isset($params['sessionid'])) {
+		// start session log
+		echo "dacura.statistics.showSessionLog(" . $params['userid'] . ", " . $params['sessionid'] . ");";
+	}
+	else if (isset($params['userid'])) {
+		if (isset($params['startdate'])) {
+			// start user dated
+			echo "dacura.statistics.generalDatedStatistics(\"" . $params['startdate'] . "\", \"" . $params['enddate'] . "\", " . $params['userid'] . ");";
+		}
+		else {
+			// start user undated
+			echo "dacura.statistics.generalStatistics(" . $params['userid'] . ");";
+		}	
+	}
+	else if (isset($params['startdate'])) {
+		// start general dated
+		echo "dacura.statistics.generalDatedStatistics(\"" . $params['startdate'] . "\", \"" . $params['enddate'] . "\", 0);";
+	}
+	else {
+		echo "dacura.statistics.generalStatistics(0);";
+	}?>
 });
 </script>
 
