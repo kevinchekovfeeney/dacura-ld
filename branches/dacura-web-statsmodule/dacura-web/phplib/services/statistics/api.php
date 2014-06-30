@@ -522,7 +522,9 @@ function calcGeneralStats($isDated, $specificUser, $startDate, $endDate) {
 	if (!$isDated && !$specificUser) {
 		$estimated_work_to_be_done = $total_number_of_unprocessed_candidates * $mean_candidate_processing_time;
 		$mean_work_per_day_last_week = $total_online_time_last_week / 5; // excluding weekends, so 5 days
-		$estimated_completion_date = time() + (($estimated_work_to_be_done / $total_online_time_last_week) * 604800);
+		if ($total_online_time_last_week) {
+			$estimated_completion_date = time() + (($estimated_work_to_be_done / $total_online_time_last_week) * 604800);
+		}
 	}
 	
 	// construct and return the object
@@ -619,7 +621,7 @@ function calcGeneralStats($isDated, $specificUser, $startDate, $endDate) {
 	$results_array["estimated_work_to_be_done"] = timeFormat($estimated_work_to_be_done);
 	
 	//print "\$estimated_completion_date: " . gmdate("d/M/Y", $estimated_completion_date) . "<br>";
-	$results_array["estimated_completion_date"] = gmdate("d/M/Y", $estimated_completion_date);
+	$results_array["estimated_completion_date"] = ($estimated_completion_date > 0) ? gmdate("d/M/Y", $estimated_completion_date) : "No work done in the last week!";
 	
 	$results_array["user_sessions"] = $user_sessions_organized;
 	$results_array["user_rankings"] = $user_rankings;

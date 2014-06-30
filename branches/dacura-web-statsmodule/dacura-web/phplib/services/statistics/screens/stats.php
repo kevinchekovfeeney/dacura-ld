@@ -14,8 +14,20 @@
 	
 	<div class="filter">
 		Filter - 
-		Date/Time Start: <input id="date_timepicker_start" type="text">
-		End: <input id="date_timepicker_end" type="text">
+		Date/Time Start: <input id="date_timepicker_start" type="text"
+		<?php 
+			if(isset($params['startdate'])) {
+				echo "value=\"" . $params['startdate'] . "\"";
+			}
+		?>
+		>
+		End: <input id="date_timepicker_end" type="text"
+		<?php 
+			if(isset($params['enddate'])) {
+				echo "value=\"" . $params['enddate'] . "\"";
+			}
+		?>
+		>
 		User: <select id="user_picker"><option value="0">All users</option>
 		<?php 
 			$dwas = new StatisticsDacuraAjaxServer($service->settings);
@@ -29,7 +41,7 @@
 						echo " selected=\"selected\"";
 					}
 				}
-				echo ">'$key' (";
+				echo ">$key (";
 				echo $users[$key]->getRealName();
 				echo ")</option>";
 			}?>
@@ -136,7 +148,7 @@ dacura.statistics.filteredStats = function(startDateString, endDateString, userI
 }
 
 dacura.statistics.generalDatedStatistics = function(startDateString, endDateString, userId) {
-
+		
 	var dateTimeArrayStart = startDateString.split(" ");
 	var dateTimeArrayEnd = endDateString.split(" ");
 
@@ -155,14 +167,19 @@ dacura.statistics.generalDatedStatistics = function(startDateString, endDateStri
 		$('.filter-error').html("ERROR: the initial date is bigger than the final date!").show();
 		return;
 	}
+	else {
+		$('.filter-error').html("");
+	}
 	//console.log(startDate);
 	//console.log(endDate);
 	dacura.statistics.clearscreens();
 
 	if (userId != "0") {
+		history.pushState({"fnct":"generalUserDatedStatistics", "start":startDateString, "end":endDateString, "user":userId}, "", dacura.system.pageURL() + "/" + userId + "/" + startDate + "/" + endDate);
 		var ajs = dacura.statistics.api.generalUserDatedStats(startDate, endDate, userId);
 	}
 	else {
+		history.pushState({"fnct":"generalDatedStatistics", "start":startDateString, "end":endDateString, "user":"0"}, "", dacura.system.pageURL() + "/" + startDate + "/" + endDate);
 		var ajs = dacura.statistics.api.generalDatedStats(startDate, endDate);
 	}
 
@@ -375,7 +392,8 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 		    $(this).removeClass('userhover');
 		});
 		$('#session' + item['unix_timestamp'] + item['user']).click( function (event){
-			window.location.href = dacura.system.pageURL() + "/" + item['user'] + "/session/" + item['unix_timestamp'];
+			//window.location.href = dacura.system.pageURL() + "/" + item['user'] + "/session/" + item['unix_timestamp'];
+			dacura.statistics.showSessionLog(item['user'], item['unix_timestamp']);
 	    });
 	});
 	
@@ -386,7 +404,8 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 		    $(this).removeClass('userhover');
 		});
 		$('#user' + item['user']).click( function (event){
-			window.location.href = dacura.system.pageURL() + "/" + item['user'];
+			//window.location.href = dacura.system.pageURL() + "/" + item['user'];
+			dacura.statistics.generalStatistics(item['user']);
 	    });
 	});
 	
@@ -427,12 +446,15 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 
 dacura.statistics.generalStatistics = function(userId) {
 	dacura.statistics.clearscreens();
+	$('.filter-error').html("");
 
 	if (userId != "0") {
 		//console.log(userId);
+		history.pushState({"fnct":"generalUserStats", "user":userId}, "", dacura.system.pageURL() + "/" + userId);
 		var ajs = dacura.statistics.api.generalUserStats(userId);
 	}
 	else {
+		history.pushState({"fnct":"generalStats"}, "", dacura.system.pageURL());
 		var ajs = dacura.statistics.api.generalStats();
 	}
 	
@@ -479,8 +501,38 @@ dacura.statistics.generalStatistics = function(userId) {
 		});
 }
 
-$(function() {
+window.onpopstate = function(e) {
+	console.log(e.state);
+	switch (e.state.fnct) {
+		case "generalUserDatedStatistics":
+			$('input[id=date_timepicker_start]').val(e.state.start);
+			$('input[id=date_timepicker_end]').val(e.state.end);
+			$("select option:contains(" + e.state.user + ")").prop('selected', 'selected');
+			dacura.statistics.generalDatedStatistics(e.state.start, e.state.end, e.state.user);
+			break;
+		case "generalDatedStatistics":
+			$('input[id=date_timepicker_start]').val(e.state.start);
+			$('input[id=date_timepicker_end]').val(e.state.end);
+			$("select option:contains('All users')").prop('selected', 'selected');
+			dacura.statistics.generalDatedStatistics(e.state.start, e.state.end, 0);
+			break;
+		case "generalUserStats":
+			$('input[id=date_timepicker_start]').val("");
+			$('input[id=date_timepicker_end]').val("");
+			$("select option:contains(" + e.state.user + ")").prop('selected', 'selected');
+			dacura.statistics.generalStatistics(e.state.user);
+			break;
+		case "generalStats":
+			$('input[id=date_timepicker_start]').val("");
+			$('input[id=date_timepicker_end]').val("");
+			$("select option:contains('All users')").prop('selected', 'selected');
+			dacura.statistics.generalStatistics(0);
+			break;
+	}
+};
 
+$(function() {
+		
 	$('#date_timepicker_start').datetimepicker({
 		format:'d.m.Y H:i',
 		lang:'en'
@@ -513,6 +565,8 @@ $(function() {
 	else {
 		echo "dacura.statistics.generalStatistics(0);";
 	}?>
+
+	
 });
 </script>
 
