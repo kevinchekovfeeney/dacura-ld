@@ -7,8 +7,11 @@ getRoute()->get('/(\w+)/(\w+)/(\w+)', 'datedUserStats');
 
 include_once("StatisticsDacuraServer.php");
 
-/*
- * This will fetch all actions performed in a session given its start time timestamp and its user id 
+/**
+ * Fetch all actions performed in a session given its start time timestamp and its user id
+ * @author: Andre Stern
+ * @param: integer $userid, integer $sessionStartTime 
+ * @return: encoded JSON with all the session details
  */
 function detailedUserSession($userid, $sessionStartTime) {
 	global $service;
@@ -99,16 +102,21 @@ function detailedUserSession($userid, $sessionStartTime) {
 	$detailedSession["skips"] = $sessionSkips;
 	$detailedSession["log"] = $sessionInfo;
 	
-	// our testing: 74/1403191785, 75/1402580250, 49/1401304039, 71/1402580879}
 	if($detailedSession){
 		echo json_encode($detailedSession);
 	}
 	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
 }
 
-function timeFormat($unix_timestamp) {
+/**
+ * Converts a time span in seconds to human readable format
+ * @author: Max Brunner
+ * @param: integer $timespam
+ * @return: String with formatted time span
+ */
+function timeFormat($timespan) {
 	$result = "";
-	$rest = $unix_timestamp;
+	$rest = $timespan;
 	
 	if ($rest > 86400) {
 		$days = (int) ($rest / 86400);
@@ -135,39 +143,60 @@ function timeFormat($unix_timestamp) {
 	return $result;
 }
 
+/**
+ * Calls the calcGeneralStats with the correct params for dated statistics
+ * @author: Max Brunner
+ * @param: unixTimeStamp $startDate, unixTimeStamp $endDate
+ */
 function datedGeneralStats($startDate, $endDate) {
-	//print "Start date: " . $startDate . "<br>";
-	//print "End date: " . $endDate . "<br>";
 	calcGeneralStats(true, false, $startDate, $endDate);
 }
 
+/**
+ * Calls the calcGeneralStats with the correct params for general statistics
+ * @author: Max Brunner
+ */
 function generalStats() {
 	calcGeneralStats(false, false, 0, 0);
 }
 
+/**
+ * Calls the calcGeneralStats with the correct params for user statistics
+ * @author: Max Brunner
+ * @param: Integer $id (the desired user $id)
+ */
 function userStats($id) {
 	calcGeneralStats(false, $id, 0, 0);
 }
 
+/**
+ * Calls the calcGeneralStats with the correct params for dated user statistics
+ * @author: Max Brunner
+ * @param: unixTimeStamp $startDate, unixTimeStamp $endDate, Integer $id (the desired user $id)
+ */
 function datedUserStats($startDate, $endDate, $id) {
-	//print "Start date: " . $startDate . "<br>";
-	//print "End date: " . $endDate . "<br>";
 	calcGeneralStats(true, $id, $startDate,$endDate);
 }
 
-// returns a collection of users objects within this context
+/**
+ * Returns a collection of users objects within this context
+ * @author: Max Brunner
+ */
 function getUsersArray() {
 	global $service;
 	$dwas = new StatisticsDacuraAjaxServer($service->settings);
 	$c_id = $service->getCollectionID();
 	$d_id = $service->getDatasetID();
 	$users = $dwas->getUsersInContext($c_id, $d_id);
-	//print_r($users);
 	return $users;
 }
 
-// returns an array of user sessions for each specified user
-// array structure is session_array[userid][session_sequencial_number]
+/**
+ * Returns an array of user sessions for each specified user
+ * @author: Max Brunner
+ * @param: Array $user_ids that contains the user's keys
+ * @return: Array $session_array with the following structure: session_array[userid][session_sequencial_number]
+ */
 function getUserSessionsArray($users_ids) {
 	global $service;
 	$session_array = array();
@@ -175,10 +204,7 @@ function getUserSessionsArray($users_ids) {
 	foreach($users_ids as $value) {
 		$url = $service->settings['dacura_sessions'] . $value . "/candidate_viewer.session";
 	
-		if (file_exists($url)) {
-			//print_r($url);
-			//print "<br>";
-				
+		if (file_exists($url)) {			
 			$file_handle = @fopen($url, "r");
 			if ($file_handle) {
 				$i = 0;
@@ -191,21 +217,21 @@ function getUserSessionsArray($users_ids) {
 				}
 				fclose($file_handle);
 			}
-			// the code below does not sucessfully deal with several lines
-			//$json = file_get_contents($url);
-			//print_r($json);
-			//print_r(json_last_error());
-			//print "<br>"; print "<br>";
 		}
 	}
 	return $session_array;
 }
 
+/**
+ * Calcs the general stats for several kinds of date and user combinations
+ * @param: Boolean $isDated, Integer $specificUser, UnixTimeStamp $startDate, UnixTimeStamp $endDate
+ * @return: encoded JSON with all the statistics
+ */
 function calcGeneralStats($isDated, $specificUser, $startDate, $endDate) {
 	global $service;
 	$dwas = new StatisticsDacuraAjaxServer($service->settings);
 	
-	// retrieving the necessary info
+	// retrieving the necessary info from other functions
 	$users = getUsersArray();
 	
 	if($specificUser) {
@@ -219,7 +245,6 @@ function calcGeneralStats($isDated, $specificUser, $startDate, $endDate) {
 	}
 	
 	// use the array to make calculations and put the calcs into another object
-	
 	$hasData = false;
 	$user_sessions_organized = array();
 	$user_rankings = array();
@@ -373,6 +398,7 @@ function calcGeneralStats($isDated, $specificUser, $startDate, $endDate) {
 		}
 		
 		if ($user_number_of_sessions > 0) {
+			// fill the ranking array
 			$actual_user_number = count($active_users) - 1;
 			$user_processed = $user_accepts + $user_rejects;
 			$user_rankings[$actual_user_number]['user'] = $user_id;
@@ -405,18 +431,6 @@ function calcGeneralStats($isDated, $specificUser, $startDate, $endDate) {
 		return;
 	}
 	
-	
-	/* // sorting the array, not necessary with datables plugin!
-	$session_timestamps = array();
-	foreach ($user_sessions_organized as $key => $row)
-	{
-		$session_timestamps[$key] = $row['unix_timestamp'];
-	}
-	array_multisort($session_timestamps, SORT_DESC, $user_sessions_organized);
-	*/
-	
-	//print_r($user_sessions_organized);
-	
 	// count the total number of users
 	$number_of_active_users = count($active_users);
 	
@@ -442,83 +456,75 @@ function calcGeneralStats($isDated, $specificUser, $startDate, $endDate) {
 		}
 	}
 	
+	// Averages calc
 	$number_of_inactive_users_period = count($period_inactive_users);
-	
 	$average_session_time = (int)($total_online_time / $number_of_sessions);
 	$number_of_processed = $number_of_accepts + $number_of_rejects;
 	$average_processed_per_session = $number_of_processed / $number_of_sessions;
 	$average_accepted_per_session = $number_of_accepts / $number_of_sessions;
 	$average_skipped_per_session = $number_of_skips / $number_of_sessions;
 	$average_rejected_per_session = $number_of_rejects / $number_of_sessions;
+	if ($number_of_processed > 0) {
+		$mean_candidate_processing_time = (int)($total_online_time / $number_of_processed);
+		$mean_candidate_processing_per_hour = 3600 / $mean_candidate_processing_time;
+	}
+	else {
+		$mean_candidate_processing_time = 0;
+		$mean_candidate_processing_per_hour = 0;
+	}
 	
-	$mean_candidate_processing_time = (int)($total_online_time / $number_of_processed);
-	$mean_candidate_processing_per_hour = 3600 / $mean_candidate_processing_time;
 	
 	// Searching for real candidate numbers on SQL
-	
 	if ($specificUser) {
 		if($isDated) {
+			// searching candidates for dated user stats
 			$sql_results = $dwas->getUserCandidatesSQLDated($startDate, $endDate, $specificUser, $users[$specificUser]->getRealName());
-			//print_r($sql_results);
-		
 			$number_of_accepts_sql = $sql_results[0][0];
 			$number_of_rejects_sql = $sql_results[0][1];
 			$number_of_skips_sql = $sql_results[0][2];
 			$number_of_processed_sql = $number_of_accepts_sql + $number_of_rejects_sql;
-		
 			$total_number_of_candidates = 0;
 		}
 		else {
+			// searching candidates for non-dated user stats
 			$sql_results = $dwas->getUserCandidatesSQL($specificUser);
-			//print_r($sql_results);
-		
 			$number_of_accepts_sql = $sql_results[0][0];
 			$number_of_rejects_sql = $sql_results[0][1];
 			$number_of_skips_sql = $sql_results[0][2];
 			$number_of_processed_sql = $number_of_accepts_sql + $number_of_rejects_sql;
-		
 			$sql_results_total = $dwas->getTotalCandidatesNumber();
 			$total_number_of_candidates = $sql_results_total[0][0];
 		}
 	}
 	else {
 		if($isDated) {
+			// searching candidates for dated general stats
 			$sql_results = $dwas->getCandidatesSQLDated($startDate, $endDate);
-			//print_r($sql_results);
-		
 			$number_of_accepts_sql = $sql_results[0][0];
 			$number_of_rejects_sql = $sql_results[0][1];
 			$number_of_skips_sql = $sql_results[0][2];
 			$number_of_processed_sql = $number_of_accepts_sql + $number_of_rejects_sql;
-		
 			$total_number_of_candidates = 0;
 		}
 		else {
-			$sql_results = $dwas->getCandidatesSQL();
-			//print_r($sql_results);
-		
+			// searching candidates for non-dated general stats
+			$sql_results = $dwas->getCandidatesSQL();	
 			$number_of_accepts_sql = $sql_results[0][0];
 			$number_of_rejects_sql = $sql_results[0][1];
 			$number_of_skips_sql = $sql_results[0][2];
-			$number_of_processed_sql = $number_of_accepts_sql + $number_of_rejects_sql;
-		
+			$number_of_processed_sql = $number_of_accepts_sql + $number_of_rejects_sql;	
 			$sql_results_total = $dwas->getTotalCandidatesNumber();
 			$total_number_of_candidates = $sql_results_total[0][0];
 		}
 	}
 	
-	
-	
-	//print_r($total_number_of_candidates);
-	
+	// SQL totals
 	$total_number_of_unprocessed_candidates = $total_number_of_candidates - $number_of_processed_sql;
 	
 	// time estimations (only for non dated!)
-	
 	$estimated_work_to_be_done = 0;
 	$mean_work_per_day_last_week = 0;
 	$estimated_completion_date = 0;
-	
 	if (!$isDated && !$specificUser) {
 		$estimated_work_to_be_done = $total_number_of_unprocessed_candidates * $mean_candidate_processing_time;
 		$mean_work_per_day_last_week = $total_online_time_last_week / 5; // excluding weekends, so 5 days
@@ -528,111 +534,43 @@ function calcGeneralStats($isDated, $specificUser, $startDate, $endDate) {
 	}
 	
 	// construct and return the object
-	
 	$results_array = array();
-	
 	$results_array["hasData"] = $hasData;
-	//print "<br><br>";
-	//print "\$last_user: " . print_r($last_user) . "<br>";
 	$results_array["last_user"] = $last_user;
-	
-	//print "\$last_user_timestamp: " . gmdate("d/M/Y H:i:s", $last_user_timestamp) . "<br>";
 	$results_array["last_user_timestamp"] = gmdate("d/M/Y H:i:s", $last_user_timestamp);
-	
-	//print "\$number_of_sessions: " . $number_of_sessions . "<br>";
 	$results_array["number_of_sessions"] = $number_of_sessions;
-	
-	//print "\$total_online_time: " . $total_online_time . "<br>";
 	$results_array["total_online_time"] = timeFormat($total_online_time);
-	
-	//print "\$number_of_active_users: " . $number_of_active_users . "<br>";
 	$results_array["number_of_active_users"] = $number_of_active_users;
-	
-	//print "\$active_users: "; print_r($active_users); print "<br>";
 	$results_array["active_users"] = $active_users;
-	
-	//print "\$number_of_active_users_last_week: " . $number_of_active_users_last_week . "<br>";
 	$results_array["number_of_active_users_last_week"] = $number_of_active_users_last_week;
-	
-	//print "\$last_week_users: "; print_r($last_week_users); print "<br>";
 	$results_array["last_week_users"] = $last_week_users;
-	
-	//print "\$number_of_inactive_users_period: " . $number_of_inactive_users_period . "<br>";
 	$results_array["number_of_inactive_users_period"] = $number_of_inactive_users_period;
-	
-	//print "\$last_week_inactive_users: "; print_r($last_week_inactive_users); print "<br>";
 	$results_array["period_inactive_users"] = $period_inactive_users;
-	
-	//print "\$total_number_of_candidates: " . $total_number_of_candidates . "<br>";
 	$results_array["total_number_of_candidates"] = $total_number_of_candidates;
-	
-	//print "\$number_of_processed: " . $number_of_processed . "<br>";
 	$results_array["number_of_processed"] = $number_of_processed;
-	
-	//print "\$number_of_processed_sql: " . $number_of_processed_sql . "<br>";
 	$results_array["number_of_processed_sql"] = $number_of_processed_sql;
-	
-	//print "\$number_of_accepts: " . $number_of_accepts . "<br>";
 	$results_array["number_of_accepts"] = $number_of_accepts;
-	
-	//print "\$number_of_accepts_sql: " . $number_of_accepts_sql . "<br>";
 	$results_array["number_of_accepts_sql"] = $number_of_accepts_sql;
-	
-	//print "\$number_of_rejects: " . $number_of_rejects . "<br>";
 	$results_array["number_of_rejects"] = $number_of_rejects;
-	
-	//print "\$number_of_rejects_sql: " . $number_of_rejects_sql . "<br>";
 	$results_array["number_of_rejects_sql"] = $number_of_rejects_sql;
-	
-	//print "\$number_of_skips: " . $number_of_skips . "<br>";
 	$results_array["number_of_skips"] = $number_of_skips;
-	
-	//print "\$number_of_skips_sql: " . $number_of_skips_sql . "<br>";
 	$results_array["number_of_skips_sql"] = $number_of_skips_sql;
-	
-	//print "\$total_number_of_unprocessed_candidates: " . $total_number_of_unprocessed_candidates . "<br>";
 	$results_array["total_number_of_unprocessed_candidates"] = $total_number_of_unprocessed_candidates;
-	
-	//print "\$average_session_time: " . number_format(($average_session_time / 60), 2) . " minutes<br>";
 	$results_array["average_session_time"] = timeFormat($average_session_time);
-	
-	//print "\$average_processed_per_session: " . number_format($average_processed_per_session, 2) . "<br>";
 	$results_array["average_processed_per_session"] = number_format($average_processed_per_session, 2);
-	
-	//print "\$average_accepted_per_session: " . number_format($average_accepted_per_session, 2) . "<br>";
 	$results_array["average_accepted_per_session"] = number_format($average_accepted_per_session, 2);
-	
-	//print "\$average_skipped_per_session: " . number_format($average_skipped_per_session, 2) . "<br>";
 	$results_array["average_skipped_per_session"] = number_format($average_skipped_per_session, 2);
-	
-	//print "\$average_rejected_per_session: " . number_format($average_rejected_per_session, 2) . "<br>";
 	$results_array["average_rejected_per_session"] = number_format($average_rejected_per_session, 2);
-	
-	//print "\$mean_candidate_processing_time: " . number_format($mean_candidate_processing_time, 2) . " seconds<br>";
 	$results_array["mean_candidate_processing_time"] = timeFormat($mean_candidate_processing_time);
-	
-	//print "\$mean_candidate_processing_per_hour: " . number_format($mean_candidate_processing_per_hour, 2) . "<br>";
 	$results_array["mean_candidate_processing_per_hour"] = number_format($mean_candidate_processing_per_hour, 2);
-	
-	//print "\$mean_work_hours_per_day_last_week: " . number_format(($mean_work_hours_per_day_last_week / 3600), 2) . " hours<br>";
 	$results_array["mean_work_per_day_last_week"] = timeFormat($mean_work_per_day_last_week);
-	
-	//print "\$estimated_work_to_be_done: " . number_format(($estimated_work_to_be_done / 3600), 2) . " hours<br>";
 	$results_array["estimated_work_to_be_done"] = timeFormat($estimated_work_to_be_done);
-	
-	//print "\$estimated_completion_date: " . gmdate("d/M/Y", $estimated_completion_date) . "<br>";
 	$results_array["estimated_completion_date"] = ($estimated_completion_date > 0) ? gmdate("d/M/Y", $estimated_completion_date) : "No work done in the last week!";
-	
 	$results_array["user_sessions"] = $user_sessions_organized;
 	$results_array["user_rankings"] = $user_rankings;
 	
 	if($results_array){
 		echo json_encode($results_array);
-		//print_r(json_last_error());
-		//echo $collobj;
 	}
 	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
 }
-
-
-
