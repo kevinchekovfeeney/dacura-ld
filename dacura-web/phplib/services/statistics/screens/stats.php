@@ -75,6 +75,8 @@ dacura.statistics.clearscreens = function() {
 dacura.statistics.showSessionLog = function(userId, startTimeStamp) {
 	dacura.statistics.clearscreens();
 
+	history.pushState({"fnct":"sessionLog", "start":startTimeStamp, "user":userId}, "", dacura.system.pageURL() + "/" + userId + "/session/" + startTimeStamp);
+
 	var ajs = dacura.statistics.api.detailedUserSession(userId, startTimeStamp); 
 	var self=this;
 	ajs.beforeSend = function(){
@@ -108,30 +110,45 @@ dacura.statistics.showSessionLog = function(userId, startTimeStamp) {
  * obj is the parsed JSON received via AJAX call
  */
 dacura.statistics.prepareLogHtml = function(obj) {
-	var html = "";
-	html += "<style>table.table1, th, td{border-collapse:collapse;border:1px solid black;}th, td{padding:15px;}</style>";
-	html += "<div><table class=\"table1\" id=\"sessions_table\"><thead><tr><th>Date and time</th><th>User</th><th>Duration</th><th>Processed</th><th>Accepted</th><th>Rejected</th><th>Skipped</th></tr></thead>";
-	html += "<tbody><tr><td>" + obj.timestamp + "</td><td>" + obj.user + " (" + obj.userName + ")</td><td>" + obj.duration + "</td>";
-	html += "<td>" + (obj.accepts + obj.rejects + obj.skips) + "</td><td>" + obj.accepts + "</td><td>" + obj.rejects + "</td>";
-	html += "<td>" + obj.skips + "</td></tr></tbody></table></div><br><br>";
+	 var html = "";
+		html += "<div><table id=\"sessions_table\"><thead><tr><th>Date and time</th><th>User</th><th>Duration</th><th>Processed</th><th>Accepted</th><th>Rejected</th><th>Skipped</th></tr></thead>";
+		html += "<tbody><tr><td>" + obj.timestamp + "</td><td>" + obj.user + " (" + obj.userName + ")</td><td>" + obj.duration + "</td>";
+		html += "<td>" + (obj.accepts + obj.rejects + obj.skips) + "</td><td>" + obj.accepts + "</td><td>" + obj.rejects + "</td>";
+		html += "<td>" + obj.skips + "</td></tr></tbody></table></div><br>";
 
-	//var sessionTable = $('#sessions_table').dataTable();
-	
-	html += "<div align=\"left\"><b>Detailed session log:</b></div><br><br>";
-	html += "<style>table.table2, table.table2 th, table.table2 td{border-collapse:collapse;border:0px solid black; border-spacing:2px; padding:5px 35px;}</style>";
-	html += "<div><table class=\"table2\"><thead><tr><th>Date and time</th><th>Action</th><th>Action duration</th><th>Candidate ID</th></tr></thead><tbody>";
-	$.each(obj.log, function (i, item) {
-		html += "<tr><td>" + i + "</td>";
-		html += "<td>" + item['action'] + "</td>";
-		html += "<td>" + item['elapsedTime'] + "</td>";
-		if(item['id'])
-			html += "<td>" + item['id'] + "</td></tr>";
-		else
-			html += "<td></td>";	
-	});	
-	html += "</tbody></table></div>";
-	
-	$('#generalstats').html(html);
+		html += "<div class=\"pcsectionhead\">Detailed Session Log<br></div>";
+
+		html += "<div><table id =\"detailed_log\"><thead><tr><th>Date and time</th><th>Action</th><th>Action duration</th><th>Candidate ID</th></tr></thead><tbody>";
+		$.each(obj.log, function (i, item) {
+			html += "<tr><td>" + i + "</td>";
+			html += "<td>" + item['action'] + "</td>";
+			html += "<td>" + item['elapsedTime'] + "</td>";
+			if(item['id'])
+				html += "<td>" + item['id'] + "</td></tr>";
+			else
+				html += "<td></td>";	
+		});	
+		html += "<br></tbody></table></div><br>";
+
+
+		$('#generalstats').html(html);
+		
+		var sessionTable = $('#sessions_table').dataTable({
+			"bSort": false,
+			"bPaginate": false,
+			"bFilter": false,
+			"bInfo": false
+			
+		});
+		sessionTable.fnSort( [ [0,'desc'] ] );
+
+		var detailedLog = $('#detailed_log').dataTable({
+			"bSort": false,
+			"bPaginate": false,
+			"bFilter": false,
+			"bInfo": false
+			});
+		detailedLog.fnSort( [ [0,'asc'] ] );
 }
 
 /**
@@ -318,96 +335,99 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 
 	// General Information Section
 	html += "<div class=\"pcsectionhead\">General Information</div>";
-	html += "<div align=\"center\"><table border=\"0\" width=80% align=\"center\" cellpadding=\"5\">";
-
+	html += "<div style=\"margin: auto; width: 80%;\"><table id=\"generalinfo_table\">";
+	html += "<thead><tr><th></th><th></th></tr></thead><tbody>"
 	if(!isUser) {
-		html += "<tr bgcolor=\"#e2e4ff\"><td>Last user logged in</td>";
+		html += "<tr><td align=\"left\">Last user logged in</td>";
 		$.each(obj.last_user, function (i, item) {
 			html += "<td align=\"right\">" + i + " (" + item + ")</td></tr>";
 		});
-		html += "<tr bgcolor=\"white\"><td>Last user logged in timestamp</td><td align=\"right\">" + obj.last_user_timestamp + "</td></tr>";
+		html += "<tr><td align=\"left\">Last user logged in timestamp</td><td align=\"right\">" + obj.last_user_timestamp + "</td></tr>";
 	}
 	else {
-		html += "<tr bgcolor=\"white\"><td>User last timestamp</td><td align=\"right\">" + obj.last_user_timestamp + "</td></tr>";
+		html += "<tr><td align=\"left\">User last timestamp</td><td align=\"right\">" + obj.last_user_timestamp + "</td></tr>";
 	}
 	
-	html += "<tr bgcolor=\"#e2e4ff\"><td>Total number of sessions</td><td align=\"right\">" + obj.number_of_sessions + "</td></tr>";
-	html += "<tr bgcolor=\"white\"><td>Total online time</td><td align=\"right\">" + obj.total_online_time + "</td></tr>";
+	html += "<tr><td align=\"left\">Total number of sessions</td><td align=\"right\">" + obj.number_of_sessions + "</td></tr>";
+	html += "<tr><td align=\"left\">Total online time</td><td align=\"right\">" + obj.total_online_time + "</td></tr>";
 
 	if (!isUser) {
-		html += "<tr bgcolor=\"#e2e4ff\"><td>Number of active users</td><td align=\"right\">" + obj.number_of_active_users + "</td></tr>";
+		html += "<tr><td align=\"left\">Number of active users</td><td align=\"right\">" + obj.number_of_active_users + "</td></tr>";
 
-		html += "<tr bgcolor=\"white\"><td>Active users</td><td align=\"right\">";
+		html += "<tr><td align=\"left\">Active users</td><td align=\"right\">";
 		$.each(obj.active_users, function (i, item) {
 			html += i + " (" + item + ")<br>";
 		});
 		html += "</td></tr>";
 
 		if (!isDated) {
-			html += "<tr bgcolor=\"#e2e4ff\"><td>Number of active users last week</td><td align=\"right\">" + obj.number_of_active_users_last_week + "</td></tr>";
-			html += "<tr bgcolor=\"white\"><td>Active users last week</td><td align=\"right\">";
+			html += "<tr><td align=\"left\">Number of active users last week</td><td align=\"right\">" + obj.number_of_active_users_last_week + "</td></tr>";
+			html += "<tr><td align=\"left\">Active users last week</td><td align=\"right\">";
 			$.each(obj.last_week_users, function (i, item) {
 				html += i + " (" + item + ")<br>";
 			});
 			html += "</td></tr>";
-			html += "<tr bgcolor=\"#e2e4ff\"><td>Number of inactive users last week</td><td align=\"right\">" + obj.number_of_inactive_users_period + "</td></tr>";
-			html += "<tr bgcolor=\"white\"><td>Inactive users last week</td><td align=\"right\">";
+			html += "<tr><td align=\"left\">Number of inactive users last week</td><td align=\"right\">" + obj.number_of_inactive_users_period + "</td></tr>";
+			html += "<tr><td align=\"left\">Inactive users last week</td><td align=\"right\">";
 			$.each(obj.period_inactive_users, function (i, item) {
 				html += i + " (" + item + ")<br>";
 			});
 		}
 		else {
-			html += "<tr bgcolor=\"#e2e4ff\"><td>Number of inactive users on the period</td><td align=\"right\">" + obj.number_of_inactive_users_period + "</td></tr>";
-			html += "<tr bgcolor=\"white\"><td>Inactive users on the period</td><td align=\"right\">";
+			html += "<tr><td align=\"left\">Number of inactive users on the period</td><td align=\"right\">" + obj.number_of_inactive_users_period + "</td></tr>";
+			html += "<tr><td align=\"left\">Inactive users on the period</td><td align=\"right\">";
 			$.each(obj.period_inactive_users, function (i, item) {
 				html += i + " (" + item + ")<br>";
 			});
-			html += "</table></div><br><br>";
+			//html += "</table></div><br><br>";
 		}
 	}
 	html += "</table></div><br><br>";
 	
 	// Candidates Processing Section
 	html += "<div class=\"pcsectionhead\">Candidates Processing</div>";
-	html += "<div align=\"center\"><table border=\"0\" width=80% align=\"center\" cellpadding=\"5\">";
+	html += "<div style=\"margin: auto; width: 80%;\"><table id=\"processing_table\">";
+	html += "<thead><tr><th></th><th></th></tr></thead><tbody>"
 	if (!isDated && !isUser) {
-		html += "<tr bgcolor=\"#e2e4ff\"><td>Total number of candidates</td><td align=\"right\">" + obj.total_number_of_candidates + "</td></tr>";
+		html += "<tr><td align=\"left\">Total number of candidates</td><td align=\"right\">" + obj.total_number_of_candidates + "</td></tr>";
 	}
-	html += "<tr bgcolor=\"white\"><td>Processed candidates (Log)</td><td align=\"right\">" + obj.number_of_processed + "</td></tr>";
-	html += "<tr bgcolor=\"#e2e4ff\"><td>Processed candidates (SQL)</td><td align=\"right\">" + obj.number_of_processed_sql + "</td></tr>";
-	html += "<tr bgcolor=\"white\"><td>Accepted candidates (Log)</td><td align=\"right\">" + obj.number_of_accepts + "</td></tr>";
-	html += "<tr bgcolor=\"#e2e4ff\"><td>Accepted candidates (SQL)</td><td align=\"right\">" + obj.number_of_accepts_sql + "</td></tr>";
-	html += "<tr bgcolor=\"white\"><td>Rejected candidates (Log)</td><td align=\"right\">" + obj.number_of_rejects + "</td></tr>";
-	html += "<tr bgcolor=\"#e2e4ff\"><td>Rejected candidates (SQL)</td><td align=\"right\">" + obj.number_of_rejects_sql + "</td></tr>";
-	html += "<tr bgcolor=\"white\"><td>Skipped candidates (Log)</td><td align=\"right\">" + obj.number_of_skips + "</td></tr>";
-	html += "<tr bgcolor=\"#e2e4ff\"><td>Skipped candidates (SQL)</td><td align=\"right\">" + obj.number_of_skips_sql + "</td></tr>";
+	html += "<tr><td align=\"left\">Processed candidates (Log)</td><td align=\"right\">" + obj.number_of_processed + "</td></tr>";
+	html += "<tr><td align=\"left\">Processed candidates (SQL)</td><td align=\"right\">" + obj.number_of_processed_sql + "</td></tr>";
+	html += "<tr><td align=\"left\">Accepted candidates (Log)</td><td align=\"right\">" + obj.number_of_accepts + "</td></tr>";
+	html += "<tr><td align=\"left\">Accepted candidates (SQL)</td><td align=\"right\">" + obj.number_of_accepts_sql + "</td></tr>";
+	html += "<tr><td align=\"left\">Rejected candidates (Log)</td><td align=\"right\">" + obj.number_of_rejects + "</td></tr>";
+	html += "<tr><td align=\"left\">Rejected candidates (SQL)</td><td align=\"right\">" + obj.number_of_rejects_sql + "</td></tr>";
+	html += "<tr><td align=\"left\">Skipped candidates (Log)</td><td align=\"right\">" + obj.number_of_skips + "</td></tr>";
+	html += "<tr><td align=\"left\">Skipped candidates (SQL)</td><td align=\"right\">" + obj.number_of_skips_sql + "</td></tr>";
 	if (!isDated && !isUser) {
-		html += "<tr bgcolor=\"white\"><td>Total number of unprocessed candidates</td><td align=\"right\">" + obj.total_number_of_unprocessed_candidates + "</td></tr>";
+		html += "<tr><td align=\"left\">Total number of unprocessed candidates</td><td align=\"right\">" + obj.total_number_of_unprocessed_candidates + "</td></tr>";
 	}
-	html += "</table></div><br><br>";
+	html += "</tbody></table></div><br><br>";
 
 	// Processing Averages Section
 	html += "<div class=\"pcsectionhead\">Processing Averages</div>";
-	html += "<div align=\"center\"><table border=\"0\" width=80% align=\"center\" cellpadding=\"5\">";
-	html += "<tr bgcolor=\"#e2e4ff\"><td>Average Session Time</td><td align=\"right\">" + obj.average_session_time + "</td></tr>";
-	html += "<tr bgcolor=\"white\"><td>Average candidates processed per session</td><td align=\"right\">" + obj.average_processed_per_session + "</td></tr>";
-	html += "<tr bgcolor=\"#e2e4ff\"><td>Average candidates accepted per session</td><td align=\"right\">" + obj.average_accepted_per_session + "</td></tr>";
-	html += "<tr bgcolor=\"white\"><td>Average candidates skipped per session</td><td align=\"right\">" + obj.average_skipped_per_session + "</td></tr>";
-	html += "<tr bgcolor=\"#e2e4ff\"><td>Average candidates rejected per session</td><td align=\"right\">" + obj.average_rejected_per_session + "</td></tr>";
-	html += "<tr bgcolor=\"white\"><td>Average candidate processing time</td><td align=\"right\">" + obj.mean_candidate_processing_time + "</td></tr>";
-	html += "<tr bgcolor=\"#e2e4ff\"><td>Average candidates processed per hour</td><td align=\"right\">" + obj.mean_candidate_processing_per_hour + "</td></tr>";
+	html += "<div style=\"margin: auto; width: 80%;\"><table id=\"averages_table\">";
+	html += "<thead><tr><th></th><th></th></tr></thead><tbody>"
+	html += "<tr><td align=\"left\">Average Session Time</td><td align=\"right\">" + obj.average_session_time + "</td></tr>";
+	html += "<tr><td align=\"left\">Average candidates processed per session</td><td align=\"right\">" + obj.average_processed_per_session + "</td></tr>";
+	html += "<tr><td align=\"left\">Average candidates accepted per session</td><td align=\"right\">" + obj.average_accepted_per_session + "</td></tr>";
+	html += "<tr><td align=\"left\">Average candidates skipped per session</td><td align=\"right\">" + obj.average_skipped_per_session + "</td></tr>";
+	html += "<tr><td align=\"left\">Average candidates rejected per session</td><td align=\"right\">" + obj.average_rejected_per_session + "</td></tr>";
+	html += "<tr><td align=\"left\">Average candidate processing time</td><td align=\"right\">" + obj.mean_candidate_processing_time + "</td></tr>";
+	html += "<tr><td align=\"left\">Average candidates processed per hour</td><td align=\"right\">" + obj.mean_candidate_processing_per_hour + "</td></tr>";
 	if (!isDated && !isUser) {
-		html += "<tr bgcolor=\"white\"><td>Session time per day on last week (ignoring weekends)</td><td align=\"right\">" + obj.mean_work_per_day_last_week + "</td></tr>";
+		html += "<tr><td align=\"left\">Session time per day on last week (ignoring weekends)</td><td align=\"right\">" + obj.mean_work_per_day_last_week + "</td></tr>";
 	}
-	html += "</table></div><br><br>";
+	html += "</tbody></table></div><br><br>";
 
 	// Estimations Section
 	if (!isDated && !isUser) {
 		html += "<div class=\"pcsectionhead\">Estimations</div>";
-		html += "<div align=\"center\"><table border=\"0\" width=80% align=\"center\" cellpadding=\"5\">";
-		html += "<tr bgcolor=\"#e2e4ff\"><td>Estimated session time to complete unprocessed candidates</td><td align=\"right\">" + obj.estimated_work_to_be_done + "</td></tr>";
-		html += "<tr bgcolor=\"white\"><td>Estimated completion date (based on the last 7 days)</td><td align=\"right\">" + obj.estimated_completion_date + "</td></tr>";
-		html += "</table></div><br><br>";
+		html += "<div style=\"margin: auto; width: 80%;\"><table id=\"estimations_table\">";
+		html += "<thead><tr><th></th><th></th></tr></thead><tbody>"
+		html += "<tr><td align=\"left\">Estimated session time to complete unprocessed candidates</td><td align=\"right\">" + obj.estimated_work_to_be_done + "</td></tr>";
+		html += "<tr><td align=\"left\">Estimated completion date (based on the last 7 days)</td><td align=\"right\">" + obj.estimated_completion_date + "</td></tr>";
+		html += "</tbody></table></div><br><br>";
 	}
 	
 	// User Sessions
@@ -478,8 +498,43 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 			dacura.statistics.generalStatistics(item['user']);
 	    });
 	});
-
+	
 	// Enabling datatables plugin for both tables, with legacy options
+	
+	var generalInfoTable = $('#generalinfo_table').dataTable({
+		"bSort": false,
+		"bPaginate": false,
+		"bFilter": false,
+		"bInfo": false
+	});
+	$('#generalinfo_table > thead').hide();
+	
+	var processingTable = $('#processing_table').dataTable({
+		"bSort": false,
+		"bPaginate": false,
+		"bFilter": false,
+		"bInfo": false
+	});
+	$('#processing_table > thead').hide();
+	
+	var averagesTable = $('#averages_table').dataTable({
+		"bSort": false,
+		"bPaginate": false,
+		"bFilter": false,
+		"bInfo": false
+	});
+	$('#averages_table > thead').hide();
+	
+	if (!isDated && !isUser) {
+		var estimationsTable = $('#estimations_table').dataTable({
+			"bSort": false,
+			"bPaginate": false,
+			"bFilter": false,
+			"bInfo": false
+		});
+		$('#estimations_table > thead').hide();
+	}
+	
 	var sessionTable = $('#sessions_table').dataTable({
 		"aoColumns": [
 	                  { "iDataSort": 7 },
@@ -546,6 +601,9 @@ window.onpopstate = function(e) {
 			$("select option:contains('All users')").prop('selected', 'selected');
 			dacura.statistics.generalStatistics(0);
 			break;
+		case "sessionLog":
+			dacura.statistics.showSessionLog(e.state.user, e.state.start);
+			break;
 	}
 };
 
@@ -586,4 +644,3 @@ $(function() {
 	}?>
 });
 </script>
-
