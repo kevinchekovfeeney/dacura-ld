@@ -60,6 +60,8 @@
 
 <script>
 
+var isPopState = false;
+
 dacura.statistics.clearscreens = function() {
 	$('#generalstats').hide();
 	$('.pctitle').html("").hide();
@@ -203,11 +205,21 @@ dacura.statistics.generalDatedStatistics = function(startDateString, endDateStri
 	dacura.statistics.clearscreens();
 
 	if (userId != "0") {
-		history.pushState({"fnct":"generalUserDatedStatistics", "start":startDateString, "end":endDateString, "user":userId}, "", dacura.system.pageURL() + "/" + userId + "/" + startDate + "/" + endDate);
+		if(isPopState) {
+			isPopState = false;
+		}
+		else {
+			history.pushState({"fnct":"generalUserDatedStatistics", "start":startDateString, "end":endDateString, "user":userId}, "", dacura.system.pageURL() + "/" + userId + "/" + startDate + "/" + endDate);
+		}
 		var ajs = dacura.statistics.api.generalUserDatedStats(startDate, endDate, userId);
 	}
 	else {
-		history.pushState({"fnct":"generalDatedStatistics", "start":startDateString, "end":endDateString, "user":"0"}, "", dacura.system.pageURL() + "/" + startDate + "/" + endDate);
+		if(isPopState) {
+			isPopState = false;
+		}
+		else {
+			history.pushState({"fnct":"generalDatedStatistics", "start":startDateString, "end":endDateString, "user":"0"}, "", dacura.system.pageURL() + "/" + startDate + "/" + endDate);
+		}
 		var ajs = dacura.statistics.api.generalDatedStats(startDate, endDate);
 	}
 
@@ -272,11 +284,21 @@ dacura.statistics.generalStatistics = function(userId) {
 	$('.filter-error').html("");
 
 	if (userId != "0") {
-		history.pushState({"fnct":"generalUserStats", "user":userId}, "", dacura.system.pageURL() + "/" + userId);
+		if(isPopState) {
+			isPopState = false;
+		}
+		else {
+			history.pushState({"fnct":"generalUserStats", "user":userId}, "", dacura.system.pageURL() + "/" + userId);
+		}
 		var ajs = dacura.statistics.api.generalUserStats(userId);
 	}
 	else {
-		history.pushState({"fnct":"generalStats"}, "", dacura.system.pageURL());
+		if(isPopState) {
+			isPopState = false;
+		}
+		else {
+			history.pushState({"fnct":"generalStats"}, "", dacura.system.pageURL());
+		}
 		var ajs = dacura.statistics.api.generalStats();
 	}
 	
@@ -581,27 +603,32 @@ window.onpopstate = function(e) {
 			$('input[id=date_timepicker_start]').val(e.state.start);
 			$('input[id=date_timepicker_end]').val(e.state.end);
 			$("select option:contains(" + e.state.user + ")").prop('selected', 'selected');
+			isPopState = true;
 			dacura.statistics.generalDatedStatistics(e.state.start, e.state.end, e.state.user);
 			break;
 		case "generalDatedStatistics":
 			$('input[id=date_timepicker_start]').val(e.state.start);
 			$('input[id=date_timepicker_end]').val(e.state.end);
 			$("select option:contains('All users')").prop('selected', 'selected');
+			isPopState = true;
 			dacura.statistics.generalDatedStatistics(e.state.start, e.state.end, 0);
 			break;
 		case "generalUserStats":
 			$('input[id=date_timepicker_start]').val("");
 			$('input[id=date_timepicker_end]').val("");
 			$("select option:contains(" + e.state.user + ")").prop('selected', 'selected');
+			isPopState = true;
 			dacura.statistics.generalStatistics(e.state.user);
 			break;
 		case "generalStats":
 			$('input[id=date_timepicker_start]').val("");
 			$('input[id=date_timepicker_end]').val("");
 			$("select option:contains('All users')").prop('selected', 'selected');
+			isPopState = true;
 			dacura.statistics.generalStatistics(0);
 			break;
 		case "sessionLog":
+			isPopState = true;
 			dacura.statistics.showSessionLog(e.state.user, e.state.start);
 			break;
 	}
