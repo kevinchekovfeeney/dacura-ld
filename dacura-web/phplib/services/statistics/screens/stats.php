@@ -63,6 +63,7 @@
 var isPopState = false;
 
 dacura.statistics.clearscreens = function() {
+	window.scrollTo(0,0);
 	$('#generalstats').hide();
 	$('.pctitle').html("").hide();
 	$('.filter').hide();
@@ -98,7 +99,11 @@ dacura.statistics.showSessionLog = function(userId, startTimeStamp) {
 		if(data.length > 0 ){
 			var obj = JSON.parse(data);
 			$('.pctitle').html("User: " + userId + " (" + obj.userName + ") / Session: " + obj.timestamp ).show();
-			dacura.statistics.prepareLogHtml(obj);
+			if (obj.hasData == false ) {
+				$('#generalstats').html("There is no log available for that user/session...");
+			}
+			else dacura.statistics.prepareLogHtml(obj);
+			
 		}
 		else {
 			dacura.toolbox.writeErrorMessage('#userhelp', "Error: no data returned from api call");
@@ -109,6 +114,8 @@ dacura.statistics.showSessionLog = function(userId, startTimeStamp) {
 		dacura.toolbox.writeErrorMessage('#userhelp', "Error: " + jqXHR.responseText );
 	});
 }
+
+
 
 /**
  * Prepare the html div of the page for Session Logs, to be used after AJAX call

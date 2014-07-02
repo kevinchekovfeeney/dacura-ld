@@ -21,19 +21,32 @@ function detailedUserSession($userid, $sessionStartTime) {
 	//find the directory where that user's sessions are
 	$url = $service->settings['dacura_sessions'] . $userid . "/candidate_viewer.session";
 	$tempLog; // store all actions for desired session the way they were in the JSON
+	$validUser = false;
+	$validFile = false;
 	if (file_exists($url)) {
+		$validUser = true;
 		$file_handle = @fopen($url, "r");
 		if ($file_handle) {
 			while (($json = fgets($file_handle)) != false) {
 				$tempLog = json_decode($json, true);
 				if(key_exists($sessionStartTime, $tempLog)){ 
-					if($tempLog[$sessionStartTime]['action'] == 'start')
+					if($tempLog[$sessionStartTime]['action'] == 'start'){
+						$validFile = true;
 						break; // session's been found and stored, leave loop
+					}
 				}
 			}
 		}
 		fclose($file_handle);	
 	}
+	
+	$detailedSession = array();
+	if($validFile == false || $validUser == false){
+		$detailedSession["hasData"] = false;
+		echo json_encode($detailedSession);
+		return;
+	}
+	else $detailedSession["hasData"] = true;
 	
 	// Session stats
 	$sessionTotalTime = 0;
@@ -92,7 +105,7 @@ function detailedUserSession($userid, $sessionStartTime) {
 		$tempTimestamp = $k;
 	}
 	
-	$detailedSession = array();
+	
 	$detailedSession["timestamp"] = gmdate("d/M/Y H:i:s", $sessionStart);
 	$detailedSession["user"] = $userid;
 	$detailedSession["userName"] = $userobj->getRealName();
