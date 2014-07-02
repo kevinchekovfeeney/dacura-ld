@@ -77,7 +77,12 @@ dacura.statistics.clearscreens = function() {
 dacura.statistics.showSessionLog = function(userId, startTimeStamp) {
 	dacura.statistics.clearscreens();
 
-	history.pushState({"fnct":"sessionLog", "start":startTimeStamp, "user":userId}, "", dacura.system.pageURL() + "/" + userId + "/session/" + startTimeStamp);
+	if(isPopState) {
+		isPopState = false;
+	}
+	else {
+		history.pushState({"fnct":"sessionLog", "start":startTimeStamp, "user":userId}, "", dacura.system.pageURL() + "/" + userId + "/session/" + startTimeStamp);
+	}
 
 	var ajs = dacura.statistics.api.detailedUserSession(userId, startTimeStamp); 
 	var self=this;
