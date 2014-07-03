@@ -16,8 +16,7 @@ include_once("StatisticsDacuraServer.php");
 function detailedUserSession($userid, $sessionStartTime) {
 	global $service;
 	$dwas = new StatisticsDacuraAjaxServer($service->settings);
-	$userobj = $dwas->getUser($userid);
-	
+		
 	//find the directory where that user's sessions are
 	$url = $service->settings['dacura_sessions'] . $userid . "/candidate_viewer.session";
 	$tempLog; // store all actions for desired session the way they were in the JSON
@@ -41,12 +40,13 @@ function detailedUserSession($userid, $sessionStartTime) {
 	}
 	
 	$detailedSession = array();
-	if($validFile == false || $validUser == false){
+	if($validFile == false){
 		$detailedSession["hasData"] = false;
 		echo json_encode($detailedSession);
 		return;
 	}
 	else $detailedSession["hasData"] = true;
+	$userobj = $dwas->getUser($userid);
 	
 	// Session stats
 	$sessionTotalTime = 0;
