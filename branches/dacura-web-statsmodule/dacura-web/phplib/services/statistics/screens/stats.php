@@ -48,7 +48,7 @@
 		<div class="filter-error"></div>
 		<br>
 	</div>
-	<div id="generalstats">Nothing loaded...</div>
+	<div id="generalstats"></div>
 </div>
 
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery.dataTables.css")?>" />
@@ -158,7 +158,6 @@ dacura.statistics.prepareLogHtml = function(obj) {
 
 		var detailedLog = $('#detailed_log').dataTable({
 			"bSort": false,
-			"bPaginate": false,
 			"bFilter": false,
 			"bInfo": false
 			});
