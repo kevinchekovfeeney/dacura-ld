@@ -1,0 +1,83 @@
+.span7{
+	min-width:890px;
+}#usamap{
+	margin-left:1em;
+}#years, #filter, #mode{
+	width:200px;
+	padding:10px;
+	border:1px solid rgb(102, 136, 170);
+	border-radius: 0.5em 0.5em 0.5em 0.5em;
+	-webkit-box-shadow: 4px 4px 3px rgb(102, 136, 170);
+	-moz-box-shadow:4px 4px 3px rgb(102, 136, 170);
+	box-shadow:4px 4px 3px rgb(102, 136, 170);
+	margin-top:1em;
+}#years form{
+	width:190px;
+	display:block;
+}#key, #filter, #description{
+	width:100%;
+}
+#description{
+	width:200px;
+	height:60px;
+	border-bottom: 1px solid rgb(102, 136, 170);
+	background-color:rgb(102, 136, 170);
+	padding: 10px;
+	border-radius: 0.5em 0.5em 0.5em 0.5em;
+	color:white;
+	-webkit-box-shadow: 4px 4px 3px rgb(102, 136, 170);
+	-moz-box-shadow:4px 4px 3px rgb(102, 136, 170);
+	box-shadow:4px 4px 3px rgb(102, 136, 170);
+	margin-bottom:2em;
+	margin-top:3em;
+}#key{
+	width:200px;
+	padding: 10px;
+	border:1px solid rgb(102, 136, 170);
+	border-radius: 0.5em 0.5em 0.5em 0.5em;
+	-webkit-box-shadow: 4px 4px 3px rgb(102, 136, 170);
+	-moz-box-shadow:4px 4px 3px rgb(102, 136, 170);
+	box-shadow:4px 4px 3px rgb(102, 136, 170);
+}#keytitle{
+	text-align:center;
+	padding-right:25px;
+}.keybox{
+	width:20px;
+}#usamap{
+	margin-top:1em;
+}
+#filter {
+	width: 200px;
+	position: absolute;
+	float: left;
+	margin-top: 2%;
+	margin-left: 240px;
+}#mode{
+	margin-bottom: 5%;
+	padding-bottom: 0;
+	text-align: center;
+}#manualMode {
+	padding-right:25px;
+}#manualMode, #timelapseMode {
+	font-size: 16px;
+}#manualMode:hover, #timelapseMode:hover {
+	text-decoration: underline;
+	cursor: pointer;
+}#years_lapse {
+	font-size: 32px;
+	font-weight: bold;
+}#playBt, #rangedisplay {
+	margin-top: 5%;
+	width: 100%;
+}#rangedisplay {
+	background-color: white;
+}
+#yearsIndicator {
+	text-align: right;
+	font-size: 48px;
+	font-weight: bold;
+	margin-top: -4%;
+	margin-bottom: 3%;
+}#content {
+	text-align: center;
+}

@@ -1,0 +1,244 @@
+body{
+   
+}
+/*Copied by the Ohran's design, although I had to add a position absolute because
+jquery put me the new layer or inside of wrapper or if it was outside was in the bottom*/
+img#head {
+    width: 100%;
+    position:absolute;
+    top:0px;
+    left:0px;
+}
+#head {
+    border-bottom: 5px solid rgb(102, 136, 170);
+    min-height: 300px;
+}
+img {
+    height: auto;
+    max-width: 100%;
+    vertical-align: middle;
+}
+/*made by Rosa
+ new layer made with jquery, I added the position
+ abosutle and the padding was moved from the rec.css to the layer which wrapp the lode Sheet
+ later I added a top of 400px because the layer of the head-photo, jquery put it at the bottom of the sheet
+*/
+
+/*1. Make the gap between the image and the heading smaller*/
+#wrapper3{
+    position:absolute;
+    top:350px;
+  // padding: 2em 1em 2em 70px;
+
+}
+
+
+
+/*Copied of the Odhran's design, although I had to add a position absolute because
+jquery put me the new layer or inside of wrapper or if it was outside was in the bottom*/
+
+.row-fluid:before, .row-fluid:after {
+    content: "";
+    display: table;
+    line-height: 0;
+}
+.row-fluid:after {
+    clear: both;
+}
+.row-fluid:before, .row-fluid:after {
+    content: "";
+    display: table;
+    line-height: 0;
+}
+
+
+.top {
+    left: 0;
+    position: absolute;
+    top: 0;
+}
+
+
+
+.row-fluid {
+    margin-top: 2em;
+}
+.row-fluid {
+    width: 100%;
+}
+
+
+.row-fluid .offset2:first-child {
+    margin-left: 17.0213%;
+}
+.top .span6 {
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 0.5em 0.5em 0.5em 0.5em;
+    padding: 0 1em;
+}
+
+
+/*ask Ohran why this is not working here and it is working in the id="wrapper" at the end of the sheet*/
+.row-fluid .span6 {
+    width: 48.9362%;
+}
+
+
+.row-fluid [class*="span"] {
+    -moz-box-sizing: border-box;
+    display: block;
+    float: left;
+    min-height: 30px;
+}
+
+.breadcrumb {
+    background: none repeat scroll 0 0 transparent;
+    margin: 0.2em 0.2em 0;
+    padding: 0;
+}
+.breadcrumb {
+    border-radius: 4px 4px 4px 4px;
+    list-style: none outside none;
+}
+
+.breadcrumb > li {
+    display: inline-block;
+    text-shadow: 0 1px 0 rgb(255, 255, 255);
+}
+li {
+    line-height: 20px;
+}
+
+a {
+    color: rgb(0, 136, 204);
+    text-decoration: none;
+}
+
+
+.breadcrumb li .divider {
+    color: rgb(102, 102, 102);
+}
+.breadcrumb > li > .divider {
+    padding: 0 5px;
+}
+
+
+.breadcrumb .active {
+    color: rgb(102, 102, 102);
+}
+.breadcrumb > li {
+    display: inline-block;
+    text-shadow: 0 1px 0 rgb(255, 255, 255);
+}
+li {
+    line-height: 20px;
+}
+/*mirar si hay m'as h1 en la hoja*/
+
+#mytitle {
+    margin-top: 0;
+    font-size: 38.5px;
+    line-height: 40px;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-weight: bold;
+    text-rendering: optimizelegibility;
+    color: rgb(51, 51, 51);
+    background: none;
+   
+}
+
+
+/*footer design*/
+.footer {
+    background-color: rgb(102, 136, 170);
+    bottom: 0;
+    color: rgb(255, 255, 255);
+    padding-top: 0.1em;
+    position: fixed;
+}
+
+
+.row-fluid .offset2:first-child {
+    margin-left: 17.0213%;
+}
+.row-fluid .span8 {
+    width: 65.9574%;
+}
+
+
+.footer p {
+    line-height: 1em;
+    margin: 0.2em 0;
+   
+}
+
+small {
+    font-size: 85%;
+     font-family: sans-serif;
+}
+
+
+/*giving margin to the container*/
+
+
+.content {
+    margin-bottom: 5em;
+}
+
+
+
+#wrapper{
+/*width: 48.9362%;*/
+   padding: 2em 10em 2em 70px;
+     margin-left: 0;
+}
+/*Logo on the right*/
+/*
+#wrapper {
+  background-image: url(http://lode.sourceforge.net/img/LODELogo.png);
+    
+}*/
+
+
+
+.row-fluid .offset1 {
+    margin-left: 10.6383%;
+}
+.row-fluid .span3 {
+    width: 23.4043%;
+}
+.row-fluid [class*="span"] {
+    -moz-box-sizing: border-box;
+    display: block;
+    float: left;
+    min-height: 30px;
+}
+
+a {
+    color: rgb(0, 136, 204);
+    text-decoration: none;
+}
+
+.span3 img {
+    clear: both;
+    display: block;
+    margin-bottom: 2em;
+    width: 170px;
+}
+.img-rounded {
+    border-radius: 6px 6px 6px 6px;
+}
+img {
+    border: 0 none;
+    height: auto;
+    max-width: 100%;
+    vertical-align: middle;
+}
+
+.logolode{
+    max-width:70px !important;
+    }
+    /*2. Make the small text at the bottom visible (bigger margin at the bottom)*/
+    .endnote{
+        margin-bottom: 5em;
+    }
