@@ -1,3 +1,6 @@
+<style>
+.filter { display: none;}
+</style>
 <div id="pagecontent">
 	<div class="pctitle"></div>
 	<div class="pcbreadcrumbs dch">
@@ -63,10 +66,10 @@
 var isPopState = false;
 
 dacura.statistics.clearscreens = function() {
-	window.scrollTo(0,0);
 	$('#generalstats').hide();
 	$('.pctitle').html("").hide();
 	$('.filter').hide();
+	window.scrollTo(0,0);
 }
 
 /**
@@ -213,6 +216,7 @@ dacura.statistics.generalDatedStatistics = function(startDateString, endDateStri
 	else {
 		$('.filter-error').html("");
 	}
+
 	dacura.statistics.clearscreens();
 
 	if (userId != "0") {
@@ -278,10 +282,6 @@ dacura.statistics.generalDatedStatistics = function(startDateString, endDateStri
 			dacura.toolbox.writeErrorMessage('#userhelp', "Error: " + jqXHR.responseText );
 		}
 	);
-		
-	//$('#generalstats').html(html);
-	$('#generalstats').show();
-
 }
 
 /**
