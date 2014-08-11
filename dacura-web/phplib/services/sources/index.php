@@ -2,8 +2,7 @@
 include_once("phplib/snippets/header.php");
 include_once("phplib/snippets/topbar.php");
 ?>
-<script>
-</script>
+
 <div id="pagecontent-container">
 <?php 
 /**
