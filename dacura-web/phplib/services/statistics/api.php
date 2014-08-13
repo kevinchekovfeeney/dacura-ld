@@ -576,7 +576,7 @@ function calcGeneralStats($isDated, $specificUser, $startDate, $endDate) {
 	$results_array["average_rejected_per_session"] = number_format($average_rejected_per_session, 2);
 	$results_array["mean_candidate_processing_time"] = timeFormat($mean_candidate_processing_time);
 	$results_array["mean_candidate_processing_per_hour"] = number_format($mean_candidate_processing_per_hour, 2);
-	$results_array["mean_work_per_day_last_week"] = timeFormat($mean_work_per_day_last_week);
+	$results_array["mean_work_per_day_last_week"] = ($mean_work_per_day_last_week > 0) ? timeFormat($mean_work_per_day_last_week) : "No work done in the last week!";
 	$results_array["estimated_work_to_be_done"] = timeFormat($estimated_work_to_be_done);
 	$results_array["estimated_completion_date"] = ($estimated_completion_date > 0) ? gmdate("d/M/Y", $estimated_completion_date) : "No work done in the last week!";
 	$results_array["user_sessions"] = $user_sessions_organized;
