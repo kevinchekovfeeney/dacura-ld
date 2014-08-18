@@ -515,7 +515,6 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 		    $(this).removeClass('userhover');
 		});
 		$('#session' + item['unix_timestamp'] + item['user']).click( function (event){
-			//window.location.href = dacura.system.pageURL() + "/" + item['user'] + "/session/" + item['unix_timestamp'];
 			dacura.statistics.showSessionLog(item['user'], item['unix_timestamp']);
 	    });
 	});
@@ -527,7 +526,7 @@ dacura.statistics.prepareGeneralHtml = function(obj, isDated, isUser) {
 		    $(this).removeClass('userhover');
 		});
 		$('#user' + item['user']).click( function (event){
-			//window.location.href = dacura.system.pageURL() + "/" + item['user'];
+			$("select option:contains(" + item['user'] + ")").prop('selected', 'selected');
 			dacura.statistics.generalStatistics(item['user']);
 	    });
 	});
