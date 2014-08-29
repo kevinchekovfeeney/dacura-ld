@@ -95,8 +95,6 @@
 		  map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
 		  kmlLayer = new google.maps.KmlLayer({
-			//url: 'http://dacura.cs.tcd.ie/mapview/kml_loader2.php?mode=year&year=2010&start=2010&end=2010&markers=true&category=all&s='+Math.random(),
-			//url: 'http://dacura.cs.tcd.ie/mapview/kml_loader.php?mode=year&year=2010&markers=true&category=all',
 			url: 'http://dacura.cs.tcd.ie/mapview/kml_loader3.php?mode=year&year=2010&start=2010&end=2010&markers=true&category=all&mot0=all&motn=1',
 			preserveViewport:true
 		  });
@@ -178,9 +176,6 @@
 
 			
 			kmlLayer = new google.maps.KmlLayer({
-				//url: 'http://dacura.cs.tcd.ie/mapview/kml_loader3.php?mode='+mode+'&year='+year+'$start='+start+'&end='+end+'&markers='+markers+'&category='+category+'&motn=0&mot0=all',
-				//url: 'http://dacura.cs.tcd.ie/mapview/kml_loader.php?mode='+mode+'&year='+year+'&markers=true&category=all',
-				//url: 'http://maxbrunner.com.br/andre/kml_loader3.php?mode='+mode+'&year='+year+'&start='+start+'&end='+end+'&markers='+markers+'&category='+category+'&motn='+motivations.length+'&mot0='+motivations[0],
 				url: myurl,
 				preserveViewport: !autoZoom
 			});
