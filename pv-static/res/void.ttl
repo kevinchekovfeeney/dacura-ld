@@ -1,0 +1,169 @@
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix pav: <http://purl.org/pav/2.0/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix void: <http://rdfs.org/ns/void#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix pv: <http://dacura.cs.tcd.ie/data/politicalviolence#> .
+@prefix : <#> .
+
+:Peter_Turchin a foaf:person ;
+     rdfs:label "Peter Turchin" ;
+     foaf:homepage <http://cliodynamics.info> .
+
+:Paul_A_Gilje a foaf:person ;
+     rdfs:label "Paul A. Gilje" ;
+     foaf:homepage <http://faculty-staff.ou.edu/G/Paul.A.Gilje-1/> .
+
+:Pieter_Francois a foaf:person ;
+     rdfs:label "Pieter Francois" ;
+     foaf:homepage <http://dev.icea.ox.ac.uk/about-us/people/dr-pieter-francois/> .
+
+:Dacura a foaf:organization ;
+     rdfs:label "Dacura" .
+
+## your VoID description
+<> rdf:type void:DatasetDescription ;
+     dcterms:title "VoID Description for US Political Violence Dataset"^^xsd:string ;
+     dcterms:description """The VoID description for the US Political Violence Dataset."""^^xsd:string ;
+     pav:createdBy :Dacura ;
+     pav:createdOn "2014-02-26"^^xsd:date ;
+     foaf:primaryTopic <http://dacura.cs.tcd.ie/data/politicalviolence/uspv/> .
+
+## your dataset description
+<http://dacura.cs.tcd.ie/data/politicalviolence/uspv/> rdf:type void:Dataset ;
+     foaf:homepage <http://dacura.cs.tcd.ie/pv/#us> ;
+     foaf:page <http://dacura.cs.tcd.ie/pv/> ;
+     foaf:page <http://cliodynamics.info> ;
+     dcterms:title "US Political Violence Dataset"^^xsd:string ;
+     dcterms:description """Records of political violence events in the United States between 1780 and 2010."""^^xsd:string ;
+     dcterms:creator :Peter_Turchin ;
+     dcterms:contributor :Paul_A_Gilje ;
+     #CHECK THIS
+     dcterms:contributor :Pieter_Francois ;
+     dcterms:publisher :Dacura ;
+     dcterms:source [rdfs:label "Compiled from various sources by Professor Peter Turchin" ;] ;
+     dcterms:created "2012-07-25"^^xsd:date ;
+     dcterms:issued "2013-06-17"^^xsd:date ;
+     dcterms:modified "2014-03-03"^^xsd:date ;
+     pav:license <http://www.opendatacommons.org/licenses/odbl/> ;
+     wv:norms <http://www.opendatacommons.org/norms/odc-by-sa/> ;
+     void:uriSpace "http://dacura.cs.tcd.ie/data/politicalviolence/uspv/"^^xsd:string ;
+     void:sparqlEndpoint <http://dacura.cs.tcd.ie/sparql> ;
+     void:dataDump <http://dacura.cs.tcd.ie/data/politicalviolence/uspv.ttl> ;
+     # SUBJECTS
+     dcterms:subject <http://dbpedia.org/resource/Political_violence> ;
+     dcterms:subject <http://dbpedia.org/resource/Rebellion> ;
+     void:feature <http://www.w3.org/ns/formats/Turtle> ;
+     void:feature <http://www.w3.org/ns/formats/RDF_XML> ;
+     void:exampleResource <http://dacura.cs.tcd.ie/data/politicalviolence/uspv/E1046> ;
+     # VOCABULARIES
+     void:vocabulary <http://dacura.cs.tcd.ie/data/politicalviolence> ;
+     void:vocabulary <http://www.w3.org/2006/time> ;
+     void:vocabulary <http://www.w3.org/1999/02/22-rdf-syntax-ns> ;
+     # CLASSES
+     void:classPartition [
+          void:class <http://dacura.cs.tcd.ie/data/politicalviolence#FatalitiesRange> ;
+          void:entities 1 ;] ;
+     void:classPartition [
+          void:class <http://dacura.cs.tcd.ie/data/politicalviolence#Report> ;
+          void:entities 230 ;] ;
+     void:classPartition [
+          void:class <http://dacura.cs.tcd.ie/data/politicalviolence#PoliticalViolenceEvent> ;
+          void:entities 1600 ;] ;
+     void:classPartition [
+          void:class <http://dacura.cs.tcd.ie/data/politicalviolence#FatalitiesValue> ;
+          void:entities 1900 ;] ;
+     void:classPartition [
+          void:class <http://dacura.cs.tcd.ie/data/politicalviolence#Location> ;
+          void:entities 1900 ;] ;
+     void:classPartition [
+          void:class <http://dacura.cs.tcd.ie/data/politicalviolence#Source> ;
+          void:entities 1900 ;] ;
+     void:classPartition [
+          void:class <http://www.w3.org/2006/time#Interval> ;
+          void:entities 1900 ;] ;
+     # PROPERTIES
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#maximumFatalities> ;
+          void:triples 1 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#minimumFatalities> ;
+          void:triples 1 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#dbpediaSource> ;
+          void:triples 740 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#dbpediaLocation> ;
+          void:triples 1400 ;];
+     void:propertyPartition [
+          void:property <http://www.w3.org/2006/time#month> ;
+          void:triples 1700 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#fatalitiesValue> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#unstructuredFatalities> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#fatalities> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#atTime> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#category> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#description> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#location> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#source> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#unstructuredLocation> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#unstructuredSource> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://www.w3.org/2006/time#hasDateTimeDescription> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://www.w3.org/2006/time#unitType> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://www.w3.org/2006/time#year> ;
+          void:triples 1900 ;];
+     void:propertyPartition [
+          void:property <http://dacura.cs.tcd.ie/data/politicalviolence#motivation> ;
+          void:triples 2000 ;];
+     void:propertyPartition [
+          void:property <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ;
+          void:triples 9200 ;];
+     # STATISTICS
+     void:triples 39000 ;
+     void:entities 9200 ;
+     void:classes 10 ;
+     void:properties 20 ;
+     void:distinctSubjects 11000 ;
+     void:distinctObjects 9300 .
+
+
+:DBpediaPlaces a void:Linkset ;
+     void:subjectsTarget <http://dacura.cs.tcd.ie/data/politicalviolence/uspv/> ;
+     void:objectsTarget <http://dbpedia.org> ;
+     void:linkPredicate pv:dbpediaSource ;
+     void:triples 1400 .
+
+:DBpediaSources a void:Linkset ;
+     void:subjectsTarget <http://dacura.cs.tcd.ie/data/politicalviolence/uspv/> ;
+     void:objectsTarget <http://dbpedia.org> ;
+     void:linkPredicate pv:dbpediaLocation ;
+     void:triples 700 .
+
