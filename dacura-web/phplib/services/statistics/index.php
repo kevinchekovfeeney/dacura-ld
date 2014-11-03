@@ -3,6 +3,7 @@ include_once("phplib/snippets/header.php");
 include_once("phplib/snippets/topbar.php");
 ?>
 <script>
+<?php include_once("dacura.statistics.js");?>
 </script>
 <div id="pagecontent-container">
 <?php 

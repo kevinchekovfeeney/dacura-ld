@@ -29,6 +29,9 @@ class DacuraUser {
 		return $this->email;
 	}
 	
+	function getRealName() {
+		return $this->name;
+	}
 	function setSessionDirectory($dir){
 		$this->session_dump = $dir."/";
 		if (!file_exists($dir)) {

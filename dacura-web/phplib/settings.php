@@ -18,15 +18,14 @@ $dacura_settings['sparql_source'] = "http://tcdfame.cs.tcd.ie:3030/politicalviol
 //$dacura_settings['data_graph'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence/uspv";
 
 //Storage for session information
-$dacura_settings['candidate_store'] = 'C:\\Temp\\dacura\\candidates\\'; 
-$dacura_settings['dacura_sessions'] = 'C:\\Temp\dacura\\sessions\\'; 
+$dacura_settings['candidate_store'] = 'C:\\xampp\\htdocs\\dacura\\candidate_store\\';
+$dacura_settings['dacura_sessions'] = 'dacura_sessions/'; 
 
 //DB credentials
 $dacura_settings['db_host'] = 'localhost';
 $dacura_settings['db_name'] = 'dacura';
-$dacura_settings['db_user'] = 'root';
-$dacura_settings['db_pass'] = 'badman';
-
+$dacura_settings['db_user'] = 'dacura';
+$dacura_settings['db_pass'] = 'dacura';
 //Miscellaneous...
 $dacura_settings['candidate_images'] = "http://tcdfame.cs.tcd.ie/dacura/web/candidate_images/";
 //$dacura_settings['http_proxy'] = "http://proxy.cs.tcd.ie:8080";
