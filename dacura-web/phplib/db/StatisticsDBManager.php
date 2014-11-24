@@ -1,12 +1,12 @@
 <?php
 
-include_once("phplib/SystemManager.php");
+include_once("DBManager.php");
 
 /*
  * Here goes the db access functions that are only used by this service
  */
 
-class StatisticsSystemManager extends SystemManager {
+class StatisticsDBManager extends DBManager {
 	
 	function getCandidateStatsSql() {
 		try {

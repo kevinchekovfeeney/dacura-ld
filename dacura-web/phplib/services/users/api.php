@@ -14,7 +14,7 @@ include_once("UsersDacuraServer.php");
 
 function view($id){
 	global $service;
-	$dwas = new UsersDacuraAjaxServer($service->settings);
+	$dwas = new UsersDacuraAjaxServer($service);
 	$collobj = $dwas->getUser($id);
 	if($collobj){
 		$cid = $service->getCollectionID();
@@ -94,14 +94,14 @@ function createrole($uid){
 
 function update($id){
 	global $service;
-	$dwas = new UsersDacuraAjaxServer($service->settings);
+	$dwas = new UsersDacuraAjaxServer($service);
 	if(!isset($_POST['email']) || !isset($_POST['name']) || !isset($_POST['profile']) || !isset($_POST['status'])){
 		return $dwas->write_error("Missing required field for update user $id", 400);
 	}
 	$user_obj = new DacuraUser($id, $_POST['email'], $_POST['name'], $_POST['status'], json_decode($_POST['profile']));
 	if(isset($_POST['password']) && $_POST['password']){
-		if(!$dwas->sysman->updatePassword($id, $_POST['password'])){
-			return $dwas->write_error("Failed to update password for user $id: ".$dwas->sysman->errmsg, 400);
+		if(!$dwas->dbman->updatePassword($id, $_POST['password'])){
+			return $dwas->write_error("Failed to update password for user $id: ".$dwas->dbman->errmsg, 400);
 		}
 	}
 	$uobj = $dwas->updateUser($user_obj);
@@ -113,7 +113,7 @@ function update($id){
 
 function delete($id){
 	global $service;
-	$dwas = new UsersDacuraAjaxServer($service->settings);
+	$dwas = new UsersDacuraAjaxServer($service);
 	$uobj = $dwas->deleteUser($id);
 	if($uobj){
 		echo json_encode($uobj);
@@ -123,7 +123,7 @@ function delete($id){
 
 function deleterole($uid, $rid){
 	global $service;
-	$dwas = new UsersDacuraAjaxServer($service->settings);
+	$dwas = new UsersDacuraAjaxServer($service);
 	$uobj = $dwas->deleteUserRole($uid, $rid);
 	if($uobj){
 		echo json_encode($uobj);

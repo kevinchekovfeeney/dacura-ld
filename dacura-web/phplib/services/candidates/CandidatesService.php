@@ -7,7 +7,7 @@ include_once("phplib/services/browse/BrowseDacuraServer.php");
 class CandidatesService extends DacuraService {
 	
 	function handlePageLoad(){
-		$bds = new CandidatesDacuraServer($this->settings);
+		$bds = new CandidatesDacuraServer($this);
 		echo "<div id='fullscreen-container'>";
 		echo "<div id='fullscreen-menu'>";
 		echo "</div>";

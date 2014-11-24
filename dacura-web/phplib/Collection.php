@@ -1,5 +1,16 @@
 <?php
 
+/*
+ * Class representing a collection of datasets in the Dacura System
+ * Collections are the highest level division of dacura context. 
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 20/11/2014
+ * Licence: GPL v2
+ */
+
+
 class Collection {
 	var $id;
 	var $name;
@@ -23,19 +34,3 @@ class Collection {
 	}
 }
 
-class Dataset {
-	var $id;
-	var $name;
-	var $config;
-	var $collection_id;
-	var $status;
-	
-	function __construct($i, $n, $c, $st, $ci){
-		$this->id = $i;
-		$this->name = $n;
-		$this->config = $c;
-		$this->status = $st;
-		$this->collection_id = $ci;
-	}
-	
-}

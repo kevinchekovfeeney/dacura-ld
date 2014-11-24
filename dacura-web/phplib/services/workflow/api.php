@@ -10,7 +10,7 @@ include_once("WorkflowDacuraServer.php");
 
 function view($id){
 	global $service;
-	$dwas = new WorkflowDacuraAjaxServer($service->settings);
+	$dwas = new WorkflowDacuraAjaxServer($service);
 	$collobj = $dwas->getWorkflow($id);
 	if($collobj){
 		echo json_encode($collobj);	
@@ -20,7 +20,7 @@ function view($id){
 
 function listing(){
 	global $service;
-	$dwas = new WorkflowDacuraAjaxServer($service->settings);
+	$dwas = new WorkflowDacuraAjaxServer($service);
 	$c_id = $service->getCollectionID();
 	$d_id = $service->getDatasetID();
 	$collobj = $dwas->getWorkflowInContext($c_id, $d_id);
@@ -32,7 +32,7 @@ function listing(){
 
 function create(){
 	global $service;
-	$dwas = new WorkflowDacuraAjaxServer($service->settings);
+	$dwas = new WorkflowDacuraAjaxServer($service);
 	$uobj = $dwas->addWorkflow();
 	if($uobj){
 		echo json_encode($uobj);

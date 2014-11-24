@@ -1,5 +1,18 @@
 <?php
 
+/*
+ * Class representing an invocation of a service
+ * This is extended by actual service classes
+ * The base class contains common functionality for producing service paths and urls for the current context
+ *
+ * Also where the access control will be inserted...
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 20/11/2014
+ * Licence: GPL v2
+ */
+
 class DacuraService{
 	var $settings;
 	var $errcode;
@@ -94,7 +107,7 @@ class DacuraService{
 	//url associated with a file in the local service (http)
 	function get_service_file_url($fname, $servicen = false){
 		$servicen = ($servicen ? $servicen : $this->servicename);
-		return $this->settings['services_url'].$servicen."files/".$fname;	
+		return $this->settings['services_url'].$servicen."/files/".$fname;	
 	}
 	
 	function url($type, $name, $c = false, $d = false){
@@ -145,7 +158,6 @@ class DacuraService{
 	}
 
 	function renderScreen($screen, $params, $other_service = false){
-		global $dacura_settings;
 		$service =& $this;
 		if($other_service){
 			$f = $this->settings['path_to_services'].$other_service."/screens/$screen.php";

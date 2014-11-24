@@ -16,6 +16,7 @@
 dacura.system.mode = "local";
 </script>
 <script src="<?=$service->settings['files_url']?>js/jquery-ui-1.10.2.custom.min.js"></script>
+<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->settings['files_url']?>css/jquery-ui-1.10.2.custom.min.css"" />
 <!--[if IE]>
 <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
 <![endif]-->

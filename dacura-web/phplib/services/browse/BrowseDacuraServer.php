@@ -27,9 +27,9 @@ class BrowseDacuraServer extends DacuraServer {
 			return false;			
 		}
 		if($params['collection']){
-			return $this->sysman->getDatasetsWithManagementRoles($params['collection']);			
+			return $this->dbman->getDatasetsWithManagementRoles($params['collection']);			
 		}
-		else return $this->sysman->getCollectionsWithManagementRoles();
+		else return $this->dbman->getCollectionsWithManagementRoles();
 	}
 	
 	

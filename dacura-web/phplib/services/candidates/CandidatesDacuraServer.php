@@ -1,19 +1,10 @@
 <?php
 include_once("phplib/DacuraServer.php");
-include_once("CandidatesSystemManager.php");
+include_once("phplib/db/CandidatesDBManager.php");
 
 class CandidatesDacuraServer extends DacuraServer {
 
-	function __construct($dacura_settings){
-		$this->settings = $dacura_settings;
-		try {
-			$this->sysman = new CandidatesSystemManager($this->settings['db_host'], $this->settings['db_user'], $this->settings['db_pass'], $this->settings['db_name']);
-		}
-		catch (PDOException $e) {
-			return $this->failure_result('Connection failed: ' . $e->getMessage(), 500);
-		}
-		$this->sm = new UserManager($this->sysman, $this->settings);
-	}
+	var $dbclass = "CandidatesDBManager";
 	
 	function getDataTablesOutput(){
 		$startRec = intval($_GET['iDisplayStart']);
@@ -38,7 +29,7 @@ class CandidatesDacuraServer extends DacuraServer {
 		//first get the count of all records
 		$sel = "SELECT count(*) as count from create_candidates";
 		$ps = array();
-		$res = $this->sysman->doSelect($sel, $ps);
+		$res = $this->dbman->doSelect($sel, $ps);
 		return $res[0]['count'];
 	}
 	
@@ -46,7 +37,7 @@ class CandidatesDacuraServer extends DacuraServer {
 		//first get the count of all records
 		$sel = "SELECT count(*) as count from candidate_state where candid=?";
 		$ps = array($id);
-		$res = $this->sysman->doSelect($sel, $ps);
+		$res = $this->dbman->doSelect($sel, $ps);
 		return $res[0]['count'];
 	}
 	
@@ -76,9 +67,9 @@ class CandidatesDacuraServer extends DacuraServer {
 		global $service;
 		$sel = "SELECT stateid as sid, userid, processid, decision, stime, decision as action FROM candidate_state WHERE candid=2 LIMIT $start, $num";
 		$ps = array();//$start, $num);
-		$res = $this->sysman->doSelect($sel, $ps);
+		$res = $this->dbman->doSelect($sel, $ps);
 		/*foreach($res as $i => $r){
-		$r2 = $this->sysman->doSelect("SELECT count(stateid) as count FROM candidate_state where candid=".$r['candid'], $ps);
+		$r2 = $this->dbman->doSelect("SELECT count(stateid) as count FROM candidate_state where candid=".$r['candid'], $ps);
 				$res[$i]['actions'] = $r2[0]['count'];
 			$href = $service->get_service_url("candidates", array($r['candid']));
 						foreach($r as $j => $k){
@@ -97,9 +88,9 @@ class CandidatesDacuraServer extends DacuraServer {
 		$sel = "SELECT candidateid as candid, createtime as submitted, sourceid as source, sourcedate as sourcedate, 
 				clientid as client, sourcepermid as permid, sourceid as status, target as cached FROM create_candidates LIMIT $start, $num";
 		$ps = array();
-		$res = $this->sysman->doSelect($sel, $ps);
+		$res = $this->dbman->doSelect($sel, $ps);
 		foreach($res as $i => $r){
-			$r2 = $this->sysman->doSelect("SELECT count(stateid) as count FROM candidate_state where candid=".$r['candid'], $ps);
+			$r2 = $this->dbman->doSelect("SELECT count(stateid) as count FROM candidate_state where candid=".$r['candid'], $ps);
 			$res[$i]['actions'] = $r2[0]['count'];
 			$href = $service->get_service_url("candidates", array($r['candid']));
 			foreach($r as $j => $k){
@@ -116,10 +107,10 @@ class CandidatesDacuraServer extends DacuraServer {
 		$sel = "SELECT candidateid as candid, createtime as submitted, sourceid as source, sourcedate as sourcedate,
 		clientid as client, sourcepermid as permid, sourceid as status, target as target, cacheable as cached, contents as contents FROM create_candidates WHERE candidateid=?";
 		$ps = array($id);
-		$res = $this->sysman->doSelect($sel, $ps);
+		$res = $this->dbman->doSelect($sel, $ps);
 		if(isset($res[0])) return $res[0];
 		return array("x");
-		//$this->errmsg = $this->sysman->errmsg;
+		//$this->errmsg = $this->dbman->errmsg;
 		//return false;
 	}
 	

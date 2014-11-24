@@ -10,8 +10,8 @@ include_once("LoginDacuraServer.php");
 
 
 function login(){
-	global $dacura_settings;
-	$dwas = new LoginDacuraAjaxServer($dacura_settings);
+	global $service;
+	$dwas = new LoginDacuraAjaxServer($service);
 	if(isset($_POST['login-email']) && isset($_POST['login-password'])){
 		$u = $dwas->login($_POST['login-email'], $_POST['login-password']);
 		if($u) echo "OK";
@@ -22,8 +22,8 @@ function login(){
 }
 
 function register(){
-	global $dacura_settings;
-	$dwas = new LoginDacuraAjaxServer($dacura_settings);
+	global $service;
+	$dwas = new LoginDacuraAjaxServer($service);
 	if(isset($_POST['login-email']) && isset($_POST['login-password'])){
 		$u = $dwas->register($_POST['login-email'], $_POST['login-password']);
 		if($u) echo $u;
@@ -35,8 +35,8 @@ function register(){
 }
 
 function lost(){
-	global $dacura_settings;
-	$dwas = new LoginDacuraServer($dacura_settings);
+	global $service;
+	$dwas = new LoginDacuraServer($service);
 	if(isset($_POST['login-email'])){
 		$u = $dwas->lostpassword($_POST['login-email']);
 		if($u) echo $u;
@@ -48,8 +48,8 @@ function lost(){
 }
 
 function resetpassword(){
-	global $dacura_settings;
-	$dwas = new LoginDacuraAjaxServer($dacura_settings);
+	global $service;
+	$dwas = new LoginDacuraAjaxServer($service);
 	if(isset($_POST['userid']) &&  isset($_POST['login-password'])){
 		$u = $dwas->resetpassword($_POST['userid'], $_POST['login-password']);
 		if($u) echo $u;
@@ -60,8 +60,8 @@ function resetpassword(){
 	}
 }
 function logout(){
-	global $dacura_settings;
-	$dwas = new LoginDacuraAjaxServer($dacura_settings);
+	global $service;
+	$dwas = new LoginDacuraAjaxServer($service);
 	$x = $dwas->sm->getUser();
 	echo $dwas->logout();
 }

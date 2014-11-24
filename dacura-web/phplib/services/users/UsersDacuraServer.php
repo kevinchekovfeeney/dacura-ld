@@ -1,20 +1,9 @@
 <?php
-include_once("UsersSystemManager.php");
+include_once("phplib/db/UsersDBManager.php");
 
 class UsersDacuraServer extends DacuraServer {
 	
-	function __construct($dacura_settings){
-		$this->settings = $dacura_settings;
-		try {
-			$this->sysman = new UsersSystemManager($this->settings['db_host'], $this->settings['db_user'], $this->settings['db_pass'], $this->settings['db_name']);
-		}
-		catch (PDOException $e) {
-			return $this->failure_result('Connection failed: ' . $e->getMessage(), 500);
-		}
-		$this->sm = new UserManager($this->sysman, $this->settings);
-	}
-	
-
+	var $dbclass = "UsersDBManager";
 	
 	function getUsersInContext($cid, $did){
 		//first figure out which cids to use for the given active user...
@@ -36,26 +25,26 @@ class UsersDacuraServer extends DacuraServer {
 				if(count($cids) == 0 && count($dids) == 0){
 					//false
 				}
-				$uids  = $this->sysman->getUsersInContext($cids, $dids);
+				$uids  = $this->dbman->getUsersInContext($cids, $dids);
 			}
 		}
 		elseif(!$did){
 			//we are in a collection level context
 			//if u has admin rights...
 			if($u->isGod() || $u->isCollectionAdmin($cid)){
-				$uids  = $this->sysman->getUsersInContext(array($cid), array());
+				$uids  = $this->dbman->getUsersInContext(array($cid), array());
 			}
 			else {
 				$dids = $u->getAdministeredDatasets($cid);
 				if(count($dids) == 0){
 					//false;
 				}
-				$uids  = $this->sysman->getUsersInContext(array(), $dids);
+				$uids  = $this->dbman->getUsersInContext(array(), $dids);
 			}
 		}
 		else {
 			if($u->isGod() or $u->isCollectionAdmin($cid) or $u->isDatasetAdmin($did)){
-				$uids =  $this->sysman->getUsersInContext(array(), array($did));
+				$uids =  $this->dbman->getUsersInContext(array(), array($did));
 			}
 			else {
 				return false;//error
@@ -112,7 +101,7 @@ class UsersDacuraServer extends DacuraServer {
 		$admin = $this->getUser(0);
 		$dss = array();
 		if($admin->isCollectionAdmin($cid)){
-			$dss = $this->sysman->getCollectionDatasets($cid);
+			$dss = $this->dbman->getCollectionDatasets($cid);
 			$dss[0] = array("id" => "0", "name" => "All datasets");
 		}
 		else {
@@ -210,7 +199,7 @@ class UsersDacuraServer extends DacuraServer {
 		foreach($u->roles as $i => $role){
 			if($role->id == $rid){
 				unset($u->roles[$i]);
-				if(!$this->sysman->updateUserRoles($u)){
+				if(!$this->dbman->updateUserRoles($u)){
 					return $this->failure_result("Failed to delete $rid role for $uid", 500);
 				}
 				return $role;
@@ -223,7 +212,7 @@ class UsersDacuraServer extends DacuraServer {
 		$u = $this->getUser($uid);
 		$u->addRole(new UserRole(0, $cid, $did, $role, $level));
 		//$u->roles[] = new UserRole(0, $id, 0, 'admin', 99);
-		if(!$this->sysman->updateUserRoles($u)){
+		if(!$this->dbman->updateUserRoles($u)){
 			return $this->failure_result("Failed to create new roles for $id collection", 500);
 		}
 		return $u;

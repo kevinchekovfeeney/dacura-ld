@@ -1,15 +1,24 @@
 <?php 
 /* 
- * Traffic controller page where all requests are routed
+ * Traffic controller page where all browser page requests are routed
+ * 
+ * This page orchestrates some security checks, then creates the service and server objects to handle the call based on the context
+ * 
  * The general pattern of context is
- * /[application]|collection_id/dataset_id|[application]/[application]/application/parameters/etc
+ * /collection_id/dataset_id/service/service_parameters/etc
+ * 
+ * Based on the service identified in the context, this file loads (with include) the service/index.php file which draws the page
+ * 
+ * Created By: Chekov
+ * Contributors: 
+ * Creation Date: 20/11/2014
+ * Licence: GPL v2
  */
 
 include_once("phplib/settings.php");
 include_once("phplib/ServiceManager.php");
 include_once("phplib/DacuraUser.php");
 session_start();
-
 
 
 

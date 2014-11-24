@@ -1,6 +1,20 @@
 <?php
 
-class CandidateManager {
+/*
+ * Manages the state of candidates in the DB.
+ *
+ * Created By: Chekov
+ * Creation Date: 20/11/2014
+ * Contributors:
+ * Modified:
+ * Licence: GPL v2
+ */
+
+include_once("DBManager.php");
+include_once("phplib/Candidate.php");
+
+
+class CandidatesDBManager extends DBManager {
 	var $link;
 	var $errmsg;
 	
@@ -88,103 +102,34 @@ class CandidateManager {
 		return ($totes > $row['countid']);
 	}
 	
-	function assignNextCandidate($uid, $cid){
-		if($this->catch_multiples($uid, $cid)){
-			$stmt = $this->link->prepare("SELECT id FROM candidates where chunk=? AND id NOT IN (select candid FROM candidate_state) LIMIT 1");
-			$stmt->execute(array($cid));//half an hour cutoff..
-			$row = $stmt->fetch();
-			if($row){
-				$candid = $row['id'];
-			}
-			else {
-				$stmt = $this->link->prepare("SELECT candid FROM candidate_state, candidates where id=candid AND chunk=? AND candid NOT IN (select candid FROM candidate_state WHERE (decision = 'accept' or decision = 'reject' or decision = 'skip') and userid=? group by candid) LIMIT 1");
-				//$stmt = $this->link->prepare("SELECT candid FROM candidate_state, candidates WHERE chunk=? AND candid NOT IN (select candid FROM candidate_state WHERE (decision = 'accept' or decision = 'reject' or decision = 'skip') and userid=? group by candid) LIMIT 1");
-				$stmt->execute(array($cid, $uid));//half an hour cutoff..					
-				$row = $stmt->fetch();
-				if($row){
-					$candid = $row['candid'];
-					//echo "$cid is the year, $uid is the person, $candid is the candidate";		
-				}
-				else {
-					$stmt = $this->link->prepare("SELECT candid FROM candidate_state, candidates where id=candid AND chunk=? AND decision = 'skip' AND userid=? AND candid NOT IN (select candid FROM candidate_state WHERE (decision = 'accept' or decision = 'reject') and userid=? group by candid) group by candid order by max(stime) asc");	
-					//$stmt = $this->link->prepare("SELECT candid FROM candidate_state, candidates where decision = 'skip' AND userid=? AND chunk=? AND candid NOT IN (select candid FROM candidate_state WHERE (decision = 'accept' or decision = 'reject') and userid=? group by candid) group by candid order by max(stime) asc");
-					$stmt->execute(array($cid, $uid, $uid));//half an hour cutoff..					
-					$row = $stmt->fetch();
-					if($row){
-						$candid = $row['candid'];
-						//echo "$cid is the year 2, $uid is the person, $candid is the candidate";		
-					}
-					else {
-						$candid = 0;
-					}		
-				}
-			}
+	function assignNextCandidate($uid){
+		$stmt = $this->link->prepare("SELECT candidateid, sourcechunkid FROM create_candidates AS r1 JOIN
+       		(SELECT (RAND() *
+            	       (SELECT MAX(candidateid)
+                        FROM create_candidates)) AS id)
+        				AS r2
+ 				WHERE r1.candidateid >= r2.id AND r1.candidateid NOT IN (select candid FROM candidate_state)
+ 				ORDER BY r1.candidateid ASC
+ 				LIMIT 1");
+		$stmt->execute();
+		$row = $stmt->fetch();
+		if($row){
+			$cid = $row['candidateid'];
+			$chunk = $row['sourcechunkid'];
+			$stmt = $this->link->prepare("INSERT INTO candidate_state(candid, candchunk, decision, stime, updatecode, userid) VALUES(?, ?, ?, ?, ?, ?)");
+			$stmt->execute(array($cid, $chunk, 'assign', time(), "", $uid));			
+			return $cid;
 		}
-		else {
-			//first see if there are any non-processed ones which were already assigned to me...
-			$stmt = $this->link->prepare(
-					"SELECT candid FROM candidate_state where ".
-					"candchunk=? AND decision='assign' AND userid=? AND candid ".
-					"NOT IN (select candid FROM candidate_state where decision='accept' OR decision='reject' group by candid)".
-					" AND stateid IN (select max(stateid) FROM candidate_state group by candid)"
-			);
-			$stmt->execute(array($cid, $uid));//half an hour cutoff..
-			$row = $stmt->fetch();
-			if($row){
-				$candid = $row['candid'];
-			}
-			else {		
-				$cutoff = time() - (30 * 60);
-				//next try to see if there are any 'old' assignments that can be trumped...
-				$sql = "SELECT candid FROM candidate_state where candchunk=? AND decision='assign' AND candid ".
-					"NOT IN (select candid FROM candidate_state where decision='accept' OR decision='reject' group by candid)".
-						"AND stateid IN (select max(stateid) FROM candidate_state group by candid) AND stime < $cutoff";
-				$stmt = $this->link->prepare($sql);
-				$stmt->execute(array($cid));//half an hour cutoff..
-				$row = $stmt->fetch();
-				if($row){
-					$candid = $row['candid'];
-					//print_r($row);
-				}
-				else {
-					//then try for skips (by others first).  
-					$sql = "SELECT candid FROM candidate_state where candchunk=? AND userid!=? AND decision='skip' AND candid ".
-					"NOT IN (select candid FROM candidate_state where decision='accept' OR decision='reject' group by candid) ". 
-						"AND stateid IN (select max(stateid) FROM candidate_state group by candid)";
-					$stmt = $this->link->prepare($sql);
-					$stmt->execute(array($cid, $uid));
-					$row = $stmt->fetch();
-					if($row){
-						$candid = $row['candid'];
-					}
-					else {
-					//then try for skips (by me).  
-						$sql = "SELECT candid FROM candidate_state where candchunk=? AND userid=? AND decision='skip' AND candid ".
-						"NOT IN (select candid FROM candidate_state where decision='accept' OR decision='reject' group by candid) ". 
-						"AND stateid IN (select max(stateid) FROM candidate_state group by candid)";
-						$stmt = $this->link->prepare($sql);
-						$stmt->execute(array($cid, $uid));
-						$row = $stmt->fetch();
-						if($row){
-							$candid = $row['candid'];						
-						}
-					}
-				}
-			}
-		}
-		if($candid){
-			$stmt = $this->link->prepare("INSERT INTO candidate_state(candchunk, candid, decision, stime, updatecode, userid) VALUES(?, ?, ?, ?, ?, ?)");
-			$stmt->execute(array($cid, $candid, 'assign', time(), "", $uid));
-		}		
-		return $candid;
+		$this->errmsg = "No candidates remaining";
+		return false;
 	}
 	
 	function loadCandidate($id, $load_history = true){
-		$stmt = $this->link->prepare("SELECT id, chunk, contents FROM candidates where id=?");
+		$stmt = $this->link->prepare("SELECT candidateid, sourcechunkid, sourcepermid, contents FROM create_candidates where candidateid=?");
 		$stmt->execute(array($id));
 		$row = $stmt->fetch();
 		if($row){
-			$cand = new Candidate($id,$row['chunk']);
+			$cand = new Candidate($id,$row['sourcechunkid'], $row['sourcepermid']);
 			$cand->setContents(json_decode($row['contents'], true));
 			if($load_history){
 				$stmt = $this->link->query('SELECT stateid, candchunk, candid, userid, decision, stime, updatecode FROM candidate_state order by stateid');
@@ -203,6 +148,10 @@ class CandidateManager {
 		}
 		return false;
 	}
+	
+	
+	
+	
 	
 	function catch_multiples($u, $c){
 		return true;
@@ -312,9 +261,9 @@ class CandidateManager {
 		}
 	}
 	
-	function process_candidate($id, $yr, $uid, $decision, $contents){
-		$stmt = $this->link->prepare("INSERT INTO candidate_state(candchunk, candid, decision, stime, updatecode, userid) VALUES(?, ?, ?, ?, ?, ?)");
-		$stmt->execute(array($yr, $id, $decision, time(), $contents, $uid));
+	function process_candidate($id, $uid, $decision, $contents){
+		$stmt = $this->link->prepare("INSERT INTO candidate_state(candchunk, candid, decision, stime, updatecode, userid) VALUES('X', ?, ?, ?, ?, ?)");
+		$stmt->execute(array($id, $decision, time(), $contents, $uid));
 		return true;
 	}
 	
@@ -464,47 +413,5 @@ class CandidateManager {
 	}
 }
 
-class Candidate {
-	var $id;
-	var $chunkid;
-	var $history = array();
-	var $contents;
-	
-	function __construct($id, $chunkid){
-		$this->id = $id;
-		$this->chunkid = $chunkid;
-	}
-	
-	function setContents($co){
-		$this->contents = $co;
-	}
-	
-	function addHistoryEvent($h){
-		$this->history[] = $h;
-	}
-		
-	function setHistory($h){
-		$this->history = $history;
-	}
-}
 
-class CandidateAction {
-	var $id;
-	var $candid;
-	var $chunkid;
-	var $acttime;
-	var $userid;
-	var $decision;
-	var $update;
-	
-	function __construct($i, $can, $chu, $t, $u, $d, $upd){
-		$this->id = $i;
-		$this->candid = $can;
-		$this->chunkid = $chu;
-		$this->acttime = $t;
-		$this->userid = $u;
-		$this->decision = $d;
-		$this->update = $upd;
-	}
-}
 

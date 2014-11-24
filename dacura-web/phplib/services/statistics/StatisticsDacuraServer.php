@@ -1,17 +1,9 @@
 <?php
-include_once("StatisticsSystemManager.php");
+include_once("phplib/db/StatisticsDBManager.php");
 
 class StatisticsDacuraServer extends DacuraServer {
-	function __construct($dacura_settings){
-		$this->settings = $dacura_settings;
-		try {
-			$this->sysman = new StatisticsSystemManager($this->settings['db_host'], $this->settings['db_user'], $this->settings['db_pass'], $this->settings['db_name']);
-		}
-		catch (PDOException $e) {
-			return $this->failure_result('Connection failed: ' . $e->getMessage(), 500);
-		}
-		$this->sm = new UserManager($this->sysman, $this->settings);
-	}
+	
+	var $dbclass = "StatisticsDBManager";
 
 	function getUsersInContext($cid, $did){
 		//first figure out which cids to use for the given active user...
@@ -33,26 +25,26 @@ class StatisticsDacuraServer extends DacuraServer {
 				if(count($cids) == 0 && count($dids) == 0){
 					//false
 				}
-				$uids  = $this->sysman->getUsersInContext($cids, $dids);
+				$uids  = $this->dbman->getUsersInContext($cids, $dids);
 			}
 		}
 		elseif(!$did){
 			//we are in a collection level context
 			//if u has admin rights...
 			if($u->isGod() || $u->isCollectionAdmin($cid)){
-				$uids  = $this->sysman->getUsersInContext(array($cid), array());
+				$uids  = $this->dbman->getUsersInContext(array($cid), array());
 			}
 			else {
 				$dids = $u->getAdministeredDatasets($cid);
 				if(count($dids) == 0){
 					//false;
 				}
-				$uids  = $this->sysman->getUsersInContext(array(), $dids);
+				$uids  = $this->dbman->getUsersInContext(array(), $dids);
 			}
 		}
 		else {
 			if($u->isGod() or $u->isCollectionAdmin($cid) or $u->isDatasetAdmin($did)){
-				$uids =  $this->sysman->getUsersInContext(array(), array($did));
+				$uids =  $this->dbman->getUsersInContext(array(), array($did));
 			}
 			else {
 				return false;//error
@@ -67,27 +59,27 @@ class StatisticsDacuraServer extends DacuraServer {
 	}
 	
 	function getCandidatesSQL () {
-		$result = $this->sysman->getCandidateStatsSql();
+		$result = $this->dbman->getCandidateStatsSql();
 		return $result;
 	}
 	
 	function getUserCandidatesSQL ($id) {
-		$result = $this->sysman->getUserCandidateStatsSql($id);
+		$result = $this->dbman->getUserCandidateStatsSql($id);
 		return $result;
 	}
 	
 	function getTotalCandidatesNumber () {
-		$result = $this->sysman->getTotalCandidatesSql();
+		$result = $this->dbman->getTotalCandidatesSql();
 		return $result;
 	}
 	
 	function getCandidatesSQLDated ($startDate, $endDate) {
-		$result = $this->sysman->getCandidateStatsSqlDated($startDate, $endDate);
+		$result = $this->dbman->getCandidateStatsSqlDated($startDate, $endDate);
 		return $result;
 	}
 	
 	function getUserCandidatesSQLDated ($startDate, $endDate, $id, $username) {
-		$result = $this->sysman->getUserCandidateStatsSqlDated($startDate, $endDate, $id, $username);
+		$result = $this->dbman->getUserCandidateStatsSqlDated($startDate, $endDate, $id, $username);
 		return $result;
 	}
 	

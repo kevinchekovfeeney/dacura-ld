@@ -1,53 +1,53 @@
-dacura.users = {}
-dacura.users.apiurl = dacura.system.apiURL();
+dacura.scraper = {}
+dacura.scraper.apiurl = dacura.system.apiURL();
 
-dacura.users.api = {};
-dacura.users.api.create = function (xhr){
+dacura.scraper.api = {};
+dacura.scraper.api.create = function (xhr){
 	if(typeof xhr == "undefined"){
 		xhr = {};
 		xhr.data ={};
 	}
-	xhr.url = dacura.users.apiurl;
+	xhr.url = dacura.scraper.apiurl;
 	xhr.type = "POST";
 	return xhr;
 }
 
-dacura.users.api.del = function (id, xhr){
+dacura.scraper.api.del = function (id, xhr){
 	if(typeof xhr == "undefined"){
 		xhr = {};
 		xhr.data ={};
 	}
-	xhr.url = dacura.users.apiurl + "/" + id;
+	xhr.url = dacura.scraper.apiurl + "/" + id;
 	xhr.type = "DELETE";
 	return xhr;
 }
 
-dacura.users.api.view = function (id, xhr){
+dacura.scraper.api.view = function (id, xhr){
 	if(typeof xhr == "undefined"){
 		xhr = {};
 		xhr.data ={};
 	}
-	xhr.url = dacura.users.apiurl + "/" + id;
+	xhr.url = dacura.scraper.apiurl + "/" + id;
 	return xhr;
 	}
 
-dacura.users.api.listing = function (xhr){
+dacura.scraper.api.listing = function (xhr){
 	if(typeof xhr == "undefined"){
 		xhr = {};
 		xhr.data ={};
 	}
-	xhr.url = dacura.users.apiurl;
+	xhr.url = dacura.scraper.apiurl;
 	return xhr;
 
 }
 
 
-dacura.users.api.update = function (id, xhr){
+dacura.scraper.api.update = function (id, xhr){
 	if(typeof xhr == "undefined"){
 		xhr = {};
 		xhr.data ={};
 	}
-	xhr.url = dacura.users.apiurl + "/" +  id;
+	xhr.url = dacura.scraper.apiurl + "/" +  id;
 	xhr.type = "POST";
 	return xhr;
 }

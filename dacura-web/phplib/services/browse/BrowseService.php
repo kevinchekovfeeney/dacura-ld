@@ -11,7 +11,7 @@ class BrowseService extends DacuraService {
 	
 	function handlePageLoad($sc = false){
 		if($sc === false) $sc = $this->servicecall;
-		$bds = new BrowseDacuraServer($this->settings);
+		$bds = new BrowseDacuraServer($this);
 		
 		$params = array('collection' => $this->collection_id, "dataset" => $this->dataset_id);
 				

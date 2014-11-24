@@ -6,7 +6,7 @@ getRoute()->get('/available_context/(\w+)', 'contexts');
 
 function contexts($type = false){
 	global $service;
-	$hsds = new DacuraServer($service->settings);
+	$hsds = new DacuraServer($service);
 	$choices = $hsds->getUserAvailableContexts($type);
 	if($choices){
 		echo json_encode($choices);

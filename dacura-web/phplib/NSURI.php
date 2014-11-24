@@ -1,5 +1,17 @@
 <?php
 
+/*
+ * Class which just provides some namespaces and abreviations.
+ *
+ * Created By: Chekov
+ * Creation Date: 20/11/2014
+ * Contributors:
+ * Modified:
+ * Licence: GPL v2
+ */
+
+
+
 class NSURI {
 	var $ns = array(
 			"rdf" => "http://www.w3.org/1999/02/22-rdf-syntax-ns#",

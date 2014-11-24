@@ -8,7 +8,7 @@ include_once("ConfigDacuraServer.php");
 
 function view(){
 	global $service;
-	$dwas = new ConfigDacuraAjaxServer($service->settings);
+	$dwas = new ConfigDacuraAjaxServer($service);
 	$c_id = $service->getCollectionID();
 	$d_id = $service->getDatasetID();
 	if(!$c_id) {
@@ -31,7 +31,7 @@ function update(){
 	global $service;
 	$c_id = $service->getCollectionID();
 	$d_id = $service->getDatasetID();
-	$dwas = new ConfigDacuraAjaxServer($service->settings);
+	$dwas = new ConfigDacuraAjaxServer($service);
 	//if no cid is specified it is a request to create a new collection 
 	if(!$c_id){
 		$collection_obj = json_decode($_POST['payload'], true);
@@ -95,7 +95,7 @@ function delete(){
 	global $service;
 	$c_id = $service->getCollectionID();
 	$d_id = $service->getDatasetID();	
-	$dwas = new ConfigDacuraAjaxServer($service->settings);
+	$dwas = new ConfigDacuraAjaxServer($service);
 	if($d_id){
 		$collobj = $dwas->deleteDataset($d_id);
 	}

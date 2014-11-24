@@ -1,7 +1,18 @@
 <?php
-include_once('Collection.php');
+/*
+ * Class responsible for common interactions with the Dacura SQL database. 
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 20/11/2014
+ * Licence: GPL v2
+ */
 
-class SystemManager {
+
+include_once('phplib/Collection.php');
+include_once('phplib/Dataset.php');
+
+class DBManager {
 	
 	var $link;
 	var $errmsg;

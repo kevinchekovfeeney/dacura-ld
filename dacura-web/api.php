@@ -1,6 +1,23 @@
 <?php
-//include_once("phplib/DacuraServer.php");
-//include_once("phplib/settings.php");
+
+/*
+ * Traffic controller page where all api requests are routed
+ *
+ * This page orchestrates some security checks and sets up routing to the correct service 
+ *
+ * The general pattern of context is
+ * /collection_id/dataset_id/service/service_parameters/etc
+ *
+ * Based on the service identified in the context, this file loads (with include) the service/api.php 
+ * file which creates the server object to handle the request
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 20/11/2014
+ * Licence: GPL v2
+ */
+
+
 require_once("phplib/http_response_code.php");
 require_once("phplib/libs/epiphany/src/Epi.php");
 include_once("phplib/settings.php");

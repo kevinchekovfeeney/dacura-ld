@@ -1,47 +1,39 @@
 <?php
 include_once("phplib/DacuraServer.php");
-include_once("phplib/services/candidates/CandidatesSystemManager.php");
+include_once("phplib/db/CandidatesDBManager.php");
 
 class Candidate_viewerDacuraServer extends DacuraServer {
 
-	function __construct($dacura_settings){
-		$this->settings = $dacura_settings;
-		try {
-			$this->sysman = new CandidatesSystemManager($this->settings['db_host'], $this->settings['db_user'], $this->settings['db_pass'], $this->settings['db_name']);
-		}
-		catch (PDOException $e) {
-			return $this->failure_result('Connection failed: ' . $e->getMessage(), 500);
-		}
-		$this->sm = new UserManager($this->sysman, $this->settings);
-	}
+	var $dbclass = "CandidatesDBManager";
+	
 
 
 	//session management
 	function startSession(){
-		$u = $this->sm->getUser();
+		$u = $this->userman->getUser();
 		if($u){
 			if($u->createSession("candidate_viewer")){
 				return $u->getSessionDetails("candidate_viewer");
 			}
 			else {
-				$this->write_error("Failed to start work session. " . $u->errmsg , 400);				
+				return $this->failure_result("Failed to start work session. " . $u->errmsg , 400);				
 			}
 		}
 		else {
-			$this->write_error("Failed to start work session. " . $this->sm->errmsg, 400);				
+			return $this->failure_result("Failed to start work session. " . $this->userman->errmsg, 400);				
 		}
 		return false;
 	}
 	
 	function pauseSession(){
-		$u = $this->sm->getUser();
+		$u = $this->userman->getUser();
 		$sess =& $u->sessions["candidate_viewer"];
 		$sess->pause();
 		return $u->getSessionDetails("candidate_viewer");
 	}
 	
 	function resumeSession(){
-		$u = $this->sm->getUser();
+		$u = $this->userman->getUser();
 		$sess =& $u->sessions["candidate_viewer"];
 		$sess->unpause();
 		return $u->getSessionDetails("candidate_viewer");
@@ -49,7 +41,7 @@ class Candidate_viewerDacuraServer extends DacuraServer {
 	
 
 	function endSession(){
-		$u = $this->sm->getUser();
+		$u = $this->userman->getUser();
 		$x = $u->getSessionDetails("candidate_viewer");
 		$u->endSession("candidate_viewer");
 		return $x;
@@ -57,49 +49,49 @@ class Candidate_viewerDacuraServer extends DacuraServer {
 	
 	
 	function continueSession(){
-		$u = $this->sm->getUser();
+		$u = $this->userman->getUser();
 		return $u->getSessionDetails("candidate_viewer");
 	}
 	
 
 	function candidateDecision($id, $dec, $upd){
-		$u = $this->sm->getUser();
+		$u = $this->userman->getUser();
 		$ev = array("action" => $dec, "id" => $id);
 		$u->setSessionEvent("candidate_viewer", $ev);
 		$u->unsetCurrentCandidate("candidate_viewer");
-		return $this->sysman->process_candidate($id, $u->id, $dec, $upd);
+		return $this->dbman->process_candidate($id, $u->id, $dec, $upd);
 	}
 	
 	function getNextCandidate(){
-		$u = $this->sm->getUser();
+		$u = $this->userman->getUser();
 		$sess = $u->sessions['candidate_viewer'];
 		$cid = $sess->getOpenAssignedCandidate();
 		if(!$cid){
 			//echo $current_chunk . " is the year";
-			$cid = $this->sysman->assignNextCandidate($u->id);
+			$cid = $this->dbman->assignNextCandidate($u->id);
 			if($cid){
 				$sess->assignCandidate($cid);
 				$u->sessions['candidate_viewer'] = $sess;
-				$cand = $this->sysman->loadCandidate($cid, false);
+				$cand = $this->dbman->loadCandidate($cid, false);
 				if(!$cand){
-					$this->errmsg = $this->sysman->errmsg;
+					$this->errmsg = $this->dbman->errmsg;
 					return false;
 				}
 			}
 			else {
-				$this->errmsg = $this->sysman->errmsg;
+				$this->errmsg = $this->dbman->errmsg;
 				return false;
 			}
 		}
 		else {
-			$cand = $this->sysman->loadCandidate($cid, false);
+			$cand = $this->dbman->loadCandidate($cid, false);
 		}
 		if($cand){
 			$x = $this->loadCandidateImages($cand);
 			if($x) $cand->image = $x;
 			return $cand;
 		}
-		$this->errmsg = $this->sm->errmsg;
+		$this->errmsg = $this->userman->errmsg;
 		return false;
 	}
 	
@@ -132,8 +124,8 @@ class Candidate_viewerDacuraServer extends DacuraServer {
 	
 
 	function getTool(){
-		if($this->sm->isLoggedIn()){
-			$u = $this->sm->getUser();
+		if($this->userman->isLoggedIn()){
+			$u = $this->userman->getUser();
 			$tool_id = $u->session->getCurrentLocalToolID();
 		}
 		if(!$tool_id) $tool_id = 'candidates';

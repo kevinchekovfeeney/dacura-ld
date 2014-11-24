@@ -1,4 +1,16 @@
 <?php
+/*
+ * Class Representing an RDF property with a label.
+ *
+ * Created By: Chekov
+ * Creation Date: 20/11/2014
+ * Contributors:
+ * Modified:
+ * Licence: GPL v2
+ */
+
+
+
 class RDFProperty {
 	var $url;
 	var $domain;

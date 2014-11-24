@@ -1,33 +1,42 @@
 <?php
 
+/*
+ * Class providing access to information about users of the Dacura System
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 20/11/2014
+ * Licence: GPL v2
+ */
+
+
 require_once("DacuraUser.php");
-require_once("SystemManager.php");
 
 class UserManager {
 	
 	var $user_dir;
-	var $sysman;
+	var $dbman;
 	var $errmsg = "";
 	
-	function __construct($sysman, $settings){
+	function __construct($dbman, $settings){
 		$this->user_dir = $settings['dacura_sessions'];
-		$this->sysman = $sysman;
+		$this->dbman = $dbman;
 	}
 	
 	function saveUser($u){
-		if($this->sysman->saveUser($u)){
+		if($this->dbman->saveUser($u)){
 			return $u;
 		}
-		$this->errmsg = $this->sysman->errmsg;
+		$this->errmsg = $this->dbman->errmsg;
 		return false;
 	}
 	
 	function updateUserRoles(&$u){
-		if($this->sysman->updateUserRoles($u)){
+		if($this->dbman->updateUserRoles($u)){
 			//$_SESSION['dacurauser'] =& $u;
 			return true;
 		}
-		$this->errmsg = $this->sysman->errmsg;
+		$this->errmsg = $this->dbman->errmsg;
 		return false;
 	}
 
@@ -57,36 +66,36 @@ class UserManager {
 	}
 
 	function getUsers(){
-		$u = $this->sysman->loadUsers();
+		$u = $this->dbman->loadUsers();
 		if($u){
 			return $u;
 		}
 		else {
-			$this->errmsg = $this->sysman->errmsg;
+			$this->errmsg = $this->dbman->errmsg;
 			return false;
 		}
 	}
 	
 	function loadUser($id){
-		$u = $this->sysman->loadUser($id);
+		$u = $this->dbman->loadUser($id);
 		if($u){
 			$u->setSessionDirectory($this->user_dir.$u->id);
 			return $u;
 		}
 		else {
-			$this->errmsg = $this->sysman->errmsg;
+			$this->errmsg = $this->dbman->errmsg;
 			return false;		
 		}
 	}
 
 	function loadUserByEmail($email){
-		$u = $this->sysman->loadUserByEmail($email);
+		$u = $this->dbman->loadUserByEmail($email);
 		if($u){
 			$u->setSessionDirectory($this->user_dir.$u->id);
 			return $u;
 		}
 		else {
-			$this->errmsg = $this->sysman->errmsg;
+			$this->errmsg = $this->dbman->errmsg;
 			return false;
 		}
 	}
@@ -97,12 +106,12 @@ class UserManager {
 			$this->errmsg = "Attempt to add user with no email and password";
 			return false;
 		}
-		$nu = $this->sysman->addUser($email, $n, $p, $status);
+		$nu = $this->dbman->addUser($email, $n, $p, $status);
 		if($nu){
 			$nu->setSessionDirectory($this->user_dir.$nu->id);
 			return $nu;
 		}
-		$this->errmsg = $this->sysman->errmsg;
+		$this->errmsg = $this->dbman->errmsg;
 		return false;
 	}
 	
@@ -122,7 +131,7 @@ class UserManager {
 			return false;
 		}
 		else {
-			$u = $this->sysman->testLogin($email, $p);
+			$u = $this->dbman->testLogin($email, $p);
 			if($u){
 				$u->setSessionDirectory($this->user_dir.$u->id);
 				$_SESSION['dacurauser']=& $u;
@@ -130,7 +139,7 @@ class UserManager {
 				return $u;
 			}
 			else {
-				$this->errmsg = $this->sysman->errmsg;
+				$this->errmsg = $this->dbman->errmsg;
 				return false;
 			}
 		}
@@ -155,19 +164,19 @@ class UserManager {
 		$eu = $this->loadUserbyEmail($email);
 		if($eu){
 			if($eu->status == "unconfirmed"){
-				$code = $this->sysman->getUserConfirmCode($eu->id, "register");
+				$code = $this->dbman->getUserConfirmCode($eu->id, "register");
 				if($code){
 					$eu->recordAction("register", "reregister", true);
 					return $code;
 				}
 				else {
-					$code = $this->sysman->generateUserConfirmCode($eu->id, "register");
+					$code = $this->dbman->generateUserConfirmCode($eu->id, "register");
 					if($code){
 						$eu->recordAction("register", "regenerate_confirm", true);
 						return $code;
 					}
 					else {
-						$this->errmsg = $this->sysman->errmsg;
+						$this->errmsg = $this->dbman->errmsg;
 						return false;
 					}
 				}
@@ -180,13 +189,13 @@ class UserManager {
 		else {
 			$nu = $this->addUser($email, "", $p, "unconfirmed");
 			if($nu){
-				$code = $this->sysman->generateUserConfirmCode($nu->id, "register");
+				$code = $this->dbman->generateUserConfirmCode($nu->id, "register");
 				if($code){
 					$nu->recordAction("register", "register", true);
 					return $code;
 				}
 				else {
-					$this->errmsg = $this->sysman->errmsg;
+					$this->errmsg = $this->dbman->errmsg;
 					return false;
 				}
 			}
@@ -195,12 +204,12 @@ class UserManager {
 	}
 	
 	function confirmRegistration($code){
-		$uid = $this->sysman->getConfirmCodeUid($code, "register");
+		$uid = $this->dbman->getConfirmCodeUid($code, "register");
 		if(!$uid){
-			$this->errmsg = $this->sysman->errmsg;
+			$this->errmsg = $this->dbman->errmsg;
 			return false;
 		}
-		//$this->sysman->updateUserState($uid, "new");
+		//$this->dbman->updateUserState($uid, "new");
 		$du = $this->loadUser($uid);
 		if(!$du){
 			return false;				
@@ -219,9 +228,9 @@ class UserManager {
 	}
 	
 	function confirmLostPassword($code){
-		$uid = $this->sysman->getConfirmCodeUid($code, "lost");
+		$uid = $this->dbman->getConfirmCodeUid($code, "lost");
 		if(!$uid){
-			$this->errmsg = $this->sysman->errmsg;
+			$this->errmsg = $this->dbman->errmsg;
 			return false;
 		}
 		$du = $this->loadUser($uid);	
@@ -258,16 +267,16 @@ class UserManager {
 			return false;
 		}
 		$u->recordAction("register", "lost_password", true);
-		$code = $this->sysman->generateUserConfirmCode($u->id, "lost", true);
+		$code = $this->dbman->generateUserConfirmCode($u->id, "lost", true);
 		if($code) return $code;
-		$this->errmsg = $this->sysman->errmsg;
+		$this->errmsg = $this->dbman->errmsg;
 		return false;
 	}
 	
 	function resetPassword($uid, $p){
-		$code = $this->sysman->getUserConfirmCode($uid, "lost");
+		$code = $this->dbman->getUserConfirmCode($uid, "lost");
 		if($code){
-			if($this->sysman->updatePassword($uid, $p, true)){
+			if($this->dbman->updatePassword($uid, $p, true)){
 				$u = $this->loadUser($uid);
 				if(!$u){
 					return false;
@@ -275,7 +284,7 @@ class UserManager {
 				$u->recordAction("register", "updated_password", true);
 				return true;
 			}
-			$this->errmsg = $this->sysman->errmsg;
+			$this->errmsg = $this->dbman->errmsg;
 			return false;
 		}
 		$this->errmsg = "No confirm code found for password reset";

@@ -1,4 +1,15 @@
 <?php
+/*
+ * Array definining the configuration of this Dacura Server Instance.  
+ * This is the one and only place where you need to make configuration changes to install the server in a new place
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 20/11/2014
+ * Licence: GPL v2
+ */
+
+
 $dacura_settings = array();
 $dacura_settings['install_url'] = "http://localhost/dacura/";
 
@@ -11,15 +22,17 @@ $dacura_settings['path_to_services'] = "phplib/services/";
 $dacura_settings['services_url'] = $dacura_settings['install_url'].$dacura_settings['path_to_services'];
 
 //SPARQL Endpoints
-$dacura_settings['sparql_source'] = "http://tcdfame.cs.tcd.ie:3030/politicalviolence/query";
+$dacura_settings['sparql_source'] = "http://tcdfame.cs.tcd.ie/sparql/politicalviolence/query";
 //$dacura_settings['id_prefix'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence/uspv/";
 //$dacura_settings['schema_graph'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence";
 //$dacura_settings['base_class'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence#Report";
 //$dacura_settings['data_graph'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence/uspv";
 
-//Storage for session information
+//Storage for session information, etc
 $dacura_settings['candidate_store'] = 'C:\\xampp\\htdocs\\dacura\\candidate_store\\';
-$dacura_settings['dacura_sessions'] = 'dacura_sessions/'; 
+$dacura_settings['dacura_sessions'] = 'C:\\Temp\\dacura\\sessions\\'; 
+$dacura_settings['dacura_logbase'] = 'C:\\Temp\\dacura\\logs\\';
+
 
 //DB credentials
 $dacura_settings['db_host'] = 'localhost';

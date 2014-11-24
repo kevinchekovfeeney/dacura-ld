@@ -1,4 +1,15 @@
 <?php
+/*
+ * generates correct text and codes for http responses
+ *
+ * Created By: Chekov
+ * Creation Date: 20/11/2014
+ * Contributors:
+ * Modified:
+ * Licence: GPL v2
+ */
+
+
 if (!function_exists('http_response_code')) {
 	function http_response_code($code = NULL) {
 

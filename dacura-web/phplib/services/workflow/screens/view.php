@@ -1,4 +1,4 @@
-<?php $hsds = new DacuraServer($service->settings);
+<?php $hsds = new DacuraServer($service);
 $choices = $hsds->getUserAvailableContexts("admin", true);
 ?>
 <style>

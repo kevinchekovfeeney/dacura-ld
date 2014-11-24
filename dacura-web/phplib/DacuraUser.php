@@ -1,5 +1,16 @@
 <?php
 
+/*
+ * Class representing user of the Dacura System
+ * Object includes user roles and sessions
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 20/11/2014
+ * Licence: GPL v2
+ */
+
+
 require_once("DacuraSession.php");
 require_once("UserRole.php");
 
@@ -10,7 +21,6 @@ class DacuraUser {
 	var $status;
 	var $profile;
 	var $session_dump;	//directory where my sessions live.
-	//var $chunks = array();
 	var $sessions = array();
 	var $roles = array();
 
@@ -32,6 +42,7 @@ class DacuraUser {
 	function getRealName() {
 		return $this->name;
 	}
+	
 	function setSessionDirectory($dir){
 		$this->session_dump = $dir."/";
 		if (!file_exists($dir)) {

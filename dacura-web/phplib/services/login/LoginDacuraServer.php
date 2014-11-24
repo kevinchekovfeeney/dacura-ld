@@ -4,13 +4,13 @@ include_once("phplib/DacuraServer.php");
 class LoginDacuraServer extends DacuraServer {
 	
 	function login($u, $p){
-		$u = $this->sm->login($u, $p);
-		return ($u) ? $u : $this->failure_result($this->sm->errmsg, 401);
+		$u = $this->userman->login($u, $p);
+		return ($u) ? $u : $this->failure_result($this->userman->errmsg, 401);
 	}
 	
 	
 	function register($u, $p){
-		$code = $this->sm->register($u, $p);
+		$code = $this->userman->register($u, $p);
 		if($code){
 			$address =  $this->settings['install_url']."login/register/".$code;
 			$name = $u;
@@ -26,7 +26,7 @@ class LoginDacuraServer extends DacuraServer {
 			return $htmloutput;
 		}
 		else {
-			return $this->failure_result($this->sm->errmsg, 401);
+			return $this->failure_result($this->userman->errmsg, 401);
 		}
 	}
 	
@@ -34,7 +34,7 @@ class LoginDacuraServer extends DacuraServer {
 	 * Password Reseting
 	*/
 	function lostpassword($u){
-		$code = $this->sm->requestResetPassword($u);
+		$code = $this->userman->requestResetPassword($u);
 		if($code){
 			$address =  $this->settings['install_url']."login/lost/".$code;
 			$name = $u;
@@ -49,22 +49,22 @@ class LoginDacuraServer extends DacuraServer {
 			return $htmloutput;
 		}
 		else {
-			return $this->failure_result("Failed to generate new password: " . $this->sm->errmsg, 401);
+			return $this->failure_result("Failed to generate new password: " . $this->userman->errmsg, 401);
 		}
 	}
 	
 	function resetpassword($uid, $p){
-		if($this->sm->resetPassword($uid, $p)){
+		if($this->userman->resetPassword($uid, $p)){
 			return "Your password has been successfully reset";
 		}
 		else {
-			return $this->failure_result("Failed to reset password: " . $this->sm->errmsg, 401);
+			return $this->failure_result("Failed to reset password: " . $this->userman->errmsg, 401);
 		}
 	}
 	
 	function logout(){
-		if($this->sm->isLoggedIn()){
-			$this->sm->logout();
+		if($this->userman->isLoggedIn()){
+			$this->userman->logout();
 			return true;
 		}
 		else {

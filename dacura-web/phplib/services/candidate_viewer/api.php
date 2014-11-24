@@ -35,14 +35,14 @@ elseif($action=='candidate_decision'){
 }*/
 
 function start_session(){
-	global $dacura_settings;
-	$ds = new Candidate_viewerDacuraAjaxServer($dacura_settings);
+	global $service;
+	$ds = new Candidate_viewerDacuraAjaxServer($service);
 	echo json_encode($ds->startSession());	
 }
 
 function manage_session(){
-	global $dacura_settings;
-	$ds = new Candidate_viewerDacuraAjaxServer($dacura_settings);
+	global $service;
+	$ds = new Candidate_viewerDacuraAjaxServer($service);
 	$act = isset($_POST['action']) ? $_POST['action'] : false;
 	if($act == 'pause'){
 		$x = $ds->pauseSession();		
@@ -63,29 +63,29 @@ function manage_session(){
 }
 
 function end_session(){
-	global $dacura_settings;
-	$ds = new Candidate_viewerDacuraAjaxServer($dacura_settings);
+	global $service;
+	$ds = new Candidate_viewerDacuraAjaxServer($service);
 	echo json_encode($ds->endSession());
 }
 
 function get_widget(){
-	global $dacura_settings;
+	global $service;
 	//these need to be removed from here altogether and put into a widget building module
-	$dacura_settings['id_prefix'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence/uspv/";
-	$dacura_settings['schema_graph'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence";
-	$dacura_settings['base_class'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence#Report";
-	$dacura_settings['data_graph'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence/uspv";
-	$ds = new Candidate_viewerDacuraAjaxServer($dacura_settings);
-	$wzer = new Widgetizer($dacura_settings['schema_graph'], $dacura_settings['sparql_source']);
+	$service->settings['id_prefix'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence/uspv/";
+	$service->settings['schema_graph'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence";
+	$service->settings['base_class'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence#Report";
+	$service->settings['data_graph'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence/uspv";
+	$ds = new Candidate_viewerDacuraAjaxServer($service);
+	$wzer = new Widgetizer($service->settings['schema_graph'], $service->settings['sparql_source']);
 	//$wdetails = array("width" => 450, "title" => "Political Violence Event Report");
 	//$wzer->setWidgetDetails($wdetails);
-	$widget_html = $wzer->getToolHTML($dacura_settings['tool_id'], $dacura_settings['base_class']);
+	$widget_html = $wzer->getToolHTML($service->settings['tool_id'], $service->settings['base_class']);
 	echo $widget_html;
 }
 
 function get_next_candidate(){
-	global $dacura_settings;
-	$ds = new Candidate_viewerDacuraAjaxServer($dacura_settings);
+	global $service;
+	$ds = new Candidate_viewerDacuraAjaxServer($service);
 	$cand = $ds->getNextCandidate();
 	if($cand){
 		echo json_encode($cand);
@@ -95,8 +95,8 @@ function get_next_candidate(){
 }
 
 function candidate_decision(){
-	global $dacura_settings;
-	$ds = new Candidate_viewerDacuraAjaxServer($dacura_settings);
+	global $service;
+	$ds = new Candidate_viewerDacuraAjaxServer($service);
 	$id = $_POST['id'];
 	$payload = isset($_POST['dcpayload']) ? $_POST['dcpayload'] : "";
 	$decision = $_POST['decision'];

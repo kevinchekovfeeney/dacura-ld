@@ -1,4 +1,14 @@
 <?php
+/*
+ * Class which loads the appropriate service object to handle the call when a new request is first received - both by api and index
+ * 
+ * Also where the access control will be inserted...
+ * 
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 20/11/2014
+ * Licence: GPL v2
+ */
 
 //Job is to load service descriptions  
 require_once("ServiceCall.php");

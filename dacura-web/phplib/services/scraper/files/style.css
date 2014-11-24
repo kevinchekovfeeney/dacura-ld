@@ -1,0 +1,93 @@
+body{
+	font-family: "Open Sans", sans-serif;
+	background: #da3;
+}
+
+p{
+	font-size: 14pt;
+}
+
+#get-polities, #get-data, #nga-display, #polity-display, #info, #functionality, #modal, #modal-dim{
+	display: none;
+}
+
+#main, #functionality, #info{
+	margin: 0 auto;
+	padding: 1em;
+	width: 960px;
+	background: #fff;
+	border-radius: 5px;
+}
+
+#main{
+	text-align: center;
+	margin-bottom: 1em;
+}
+
+.clear{
+	clear: both;
+}
+
+.ngas{
+	font-size: 10pt;
+}
+
+th{
+	text-align: left;
+	background: #fcefa1;
+}
+
+tr:nth-child(even){
+	background: #ccc;
+}
+
+#modal-dim{
+	width:100%;
+	height:100%;
+	background:rgba(127,127,127,0.5);
+	position:absolute;
+	left:0;
+	top:0;
+	z-index: 1000;
+}
+
+#modal{
+	width:25em;
+	height:7em;
+	margin:10em auto;
+	background:#fff;
+	position:absolute;
+	left:0;
+	right:0;
+	top:0;
+	bottom:0;
+	margin:auto;
+	border:1px solid #000;
+	border-radius:1em;
+	padding:1em;
+	z-index: 1001;
+}
+
+#modal div{
+	width: 14em;
+	margin: 0 auto;
+}
+
+#modal button{
+	width: 5em;
+	margin: 0;
+}
+
+#contents{
+	text-align: center;
+}
+
+h3 span{
+	float: right;
+	display: block;
+	font-weight: lighter;
+}
+
+h3 span input{
+	margin-left: 0.5em;
+}

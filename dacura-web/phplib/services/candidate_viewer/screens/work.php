@@ -1,4 +1,4 @@
-<?php $file_base = $dacura_settings['files_url'];
+<?php $file_base = $service->settings['files_url'];
 ?>
 <div id='dc-work-page'>
 

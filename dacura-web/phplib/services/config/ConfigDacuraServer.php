@@ -1,26 +1,17 @@
 <?php
-include_once("ConfigSystemManager.php");
+include_once("phplib/db/ConfigDBManager.php");
 
 class ConfigDacuraServer extends DacuraServer {
 	
-	function __construct($dacura_settings){
-		$this->settings = $dacura_settings;
-		try {
-			$this->sysman = new ConfigSystemManager($this->settings['db_host'], $this->settings['db_user'], $this->settings['db_pass'], $this->settings['db_name']);
-		}
-		catch (PDOException $e) {
-			return $this->failure_result('Connection failed: ' . $e->getMessage(), 500);
-		}
-		$this->sm = new UserManager($this->sysman, $this->settings);
-	}
-	
+	var $dbclass = "ConfigDBManager";
+		
 	function createNewCollection($id, $title, $obj){
 		$u = $this->getUser(0);
 		if(!$u)	return $this->failure_result("Denied! Need logged in user", 401);				
-		if($this->sysman->createNewCollection($id, $title, $obj)){
+		if($this->dbman->createNewCollection($id, $title, $obj)){
 			$u->addRole(new UserRole(0, $id, 0, 'admin', 99));
 			//$u->roles[] = new UserRole(0, $id, 0, 'admin', 99);
-			if(!$this->sysman->updateUserRoles($u)){
+			if(!$this->dbman->updateUserRoles($u)){
 				return $this->failure_result("Failed to create new roles for $id collection", 500);
 			}
 			if(mkdir($this->settings['path_to_collections'].$id)){
@@ -31,14 +22,14 @@ class ConfigDacuraServer extends DacuraServer {
 			}
 		}
 		else {
-			return $this->failure_result($this->sysman->errmsg, 400);
+			return $this->failure_result($this->dbman->errmsg, 400);
 		}
 	}
 		
 	function deleteCollection($id){
 		$u = $this->getUser(0);
 		if(!$u)	return $this->failure_result("Denied! Need logged in user", 401);
-		if($this->sysman->deleteCollection($id, true)){
+		if($this->dbman->deleteCollection($id, true)){
 			return true;
 		}
 	}
@@ -46,7 +37,7 @@ class ConfigDacuraServer extends DacuraServer {
 	function deleteDataset($id){
 		$u = $this->getUser(0);
 		if(!$u)	return $this->failure_result("Denied! Need logged in user", 401);
-		if($this->sysman->deleteDataset($id, true)){
+		if($this->dbman->deleteDataset($id, true)){
 			return true;
 		}
 	}
@@ -54,9 +45,9 @@ class ConfigDacuraServer extends DacuraServer {
 	function createNewDataset($id, $cid, $ctit, $obj){
 		$u = $this->getUser(0);
 		if(!$u)	return $this->failure_result("Denied! Need logged in user", 401);
-		if($this->sysman->createNewDataset($id, $cid, $ctit, $obj)){
+		if($this->dbman->createNewDataset($id, $cid, $ctit, $obj)){
 			$u->roles[] = new UserRole(0, $cid, $id, 'admin', 99);
-			if(!$this->sysman->updateUserRoles($u)){
+			if(!$this->dbman->updateUserRoles($u)){
 				return $this->failure_result("Failed to create new roles for $id dataset", 500);
 			}
 			if(mkdir($this->settings['path_to_collections'].$cid."/".$id)){
@@ -67,7 +58,7 @@ class ConfigDacuraServer extends DacuraServer {
 			}
 		}
 		else {
-			return $this->failure_result($this->sysman->errmsg, 400);
+			return $this->failure_result($this->dbman->errmsg, 400);
 		}
 	}
 

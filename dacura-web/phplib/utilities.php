@@ -1,4 +1,15 @@
 <?php
+/*
+ * A place to put random utility functions that you might want to use again
+ *
+ * Created By: Chekov
+ * Creation Date: 20/11/2014
+ * Contributors:
+ * Modified: 
+ * Licence: GPL v2
+ */
+
+
 function opr($s){
 	echo "<PRE>";
 	print_r($s);

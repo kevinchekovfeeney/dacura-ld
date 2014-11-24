@@ -1,6 +1,6 @@
 <?php
 include_once("phplib/DacuraServer.php");
-include_once("UsersSystemManager.php");
+//include_once("UsersSystemManager.php");
 
 class SourcesDacuraServer extends DacuraServer {
 	function getSourcesList($cid, $dsid){

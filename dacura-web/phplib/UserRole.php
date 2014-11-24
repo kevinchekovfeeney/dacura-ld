@@ -1,4 +1,13 @@
 <?php
+/*
+ * Class representing a role of a user of the Dacura System
+ * Roles are given scope by collection and dataset id and level - will be extended for sub data-set access control. 
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 20/11/2014
+ * Licence: GPL v2
+ */
 
 class UserRole {
 	var $id;

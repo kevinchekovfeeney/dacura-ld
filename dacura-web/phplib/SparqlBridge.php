@@ -1,4 +1,15 @@
 <?php
+/*
+ * Class which is repsonsible for talking SPARQL to the triple store.
+ *
+ * Created By: Chekov
+ * Creation Date: 20/11/2014
+ * Contributors:
+ * Modified: 
+ * Licence: GPL v2
+ */
+
+
 /**
  * Extract the data structure from the RDFS
  * 
@@ -7,7 +18,7 @@
  * 2. The class hierarchy (if any in which the entity exists)
  */
 
-require_once( "sparqllib.php" );
+require_once( "libs/sparqllib.php" );
 require_once( "RDFProperty.php" );
 require_once( "NSURI.php" );
 

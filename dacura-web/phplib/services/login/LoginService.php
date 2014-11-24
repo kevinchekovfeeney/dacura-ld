@@ -5,7 +5,11 @@ include_once("LoginDacuraServer.php");
 class LoginService extends DacuraService {
 	
 	function handlePageLoad($sc){
-		$lds = new LoginDacuraServer($this->settings);
+		$lds = new LoginDacuraServer($this);
+		if(!$lds->sm){
+			$this->renderScreen("error", array("title" => "Error in Server Creation", "message" => $lds->errmsg));
+			return false;	
+		}
 		$dcuser = $lds->getUser(0);
 		if($dcuser){
 			$params = array("username" => $dcuser->name);

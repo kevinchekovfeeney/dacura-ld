@@ -9,7 +9,7 @@
 include_once("phplib/DacuraServer.php");
 include_once("phplib/settings.php");
 
-$ds = new DacuraServer($dacura_settings);
+$ds = new DacuraServer($service);
 
 $install_base = $ds->settings['install_url'];
 $path = (isset($_GET['path']) && $_GET['path']) ? explode("/", $_GET['path']) : array();

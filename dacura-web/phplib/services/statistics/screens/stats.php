@@ -31,7 +31,7 @@
 		>
 		User: <select id="user_picker"><option value="0">All users</option>
 		<?php 
-			$dwas = new StatisticsDacuraAjaxServer($service->settings);
+			$dwas = new StatisticsDacuraAjaxServer($service);
 			$c_id = $service->getCollectionID();
 			$d_id = $service->getDatasetID();
 			$users = $dwas->getUsersInContext($c_id, $d_id);

@@ -15,7 +15,7 @@ include_once("StatisticsDacuraServer.php");
  */
 function detailedUserSession($userid, $sessionStartTime) {
 	global $service;
-	$dwas = new StatisticsDacuraAjaxServer($service->settings);
+	$dwas = new StatisticsDacuraAjaxServer($service);
 		
 	//find the directory where that user's sessions are
 	$url = $service->settings['dacura_sessions'] . $userid . "/candidate_viewer.session";
@@ -197,7 +197,7 @@ function datedUserStats($startDate, $endDate, $id) {
  */
 function getUsersArray() {
 	global $service;
-	$dwas = new StatisticsDacuraAjaxServer($service->settings);
+	$dwas = new StatisticsDacuraAjaxServer($service);
 	$c_id = $service->getCollectionID();
 	$d_id = $service->getDatasetID();
 	$users = $dwas->getUsersInContext($c_id, $d_id);
@@ -242,7 +242,7 @@ function getUserSessionsArray($users_ids) {
  */
 function calcGeneralStats($isDated, $specificUser, $startDate, $endDate) {
 	global $service;
-	$dwas = new StatisticsDacuraAjaxServer($service->settings);
+	$dwas = new StatisticsDacuraAjaxServer($service);
 	
 	// retrieving the necessary info from other functions
 	$users = getUsersArray();

@@ -1,4 +1,16 @@
 <?php
+/*
+ * Class which parses the URL input and turns it into a structured service call
+ * It does not validate the call by checking the ids, just parses it
+ *
+ * Also where the access control will be inserted...
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 20/11/2014
+ * Licence: GPL v2
+ */
+
 
 class ServiceCall{
 	var $collection_id;
@@ -13,8 +25,6 @@ class ServiceCall{
 
 	function set_report_error($title, $message){
 		$this->args = array("error", "title", $title, "message", $message);
-		//$this->args["title"] = $title;
-		//$this->args["message"] = $message;
 		$this->servicename = "core";
 		
 	}
