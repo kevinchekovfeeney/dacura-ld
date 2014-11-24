@@ -6,7 +6,7 @@
 		<tr><td colspan="2" id="resetbox-status" class="dacura-status"></td></tr>
 	</table>
 	<div class="dacura-widget-buttons">
-		<a class="button cancel-button" href="<?=$dacura_settings['install_url']?>">Cancel</a>
+		<a class="button cancel-button" href="<?=$service->settings['install_url']?>">Cancel</a>
 		<a class="button reset-button" id='dacura-reset-password-button' href="javascript:dacura.login.resetpassword()">Reset Password</a>
 		<a class="button login-button" id='dacura-login-button' href="<?=$service->get_service_url("login")?>">Login</a>
 	</div>

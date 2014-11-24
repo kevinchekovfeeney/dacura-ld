@@ -62,7 +62,7 @@ function resetpassword(){
 function logout(){
 	global $service;
 	$dwas = new LoginDacuraAjaxServer($service);
-	$x = $dwas->sm->getUser();
+	$x = $dwas->getUser();
 	echo $dwas->logout();
 }
 
