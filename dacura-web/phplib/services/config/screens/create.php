@@ -196,9 +196,9 @@ function id_is_acceptable(jqid){
 
 var getAfterCreateLink = function(id){
 <?php if($service->getCollectionID()){?>
-	return dacura.toolbox.getServiceURL("<?=$service->settings['install_url']?>", "html", "<?=$service->getCollectionID()?>", id, "config", "");
+	return dacura.toolbox.getServiceURL("<?=$service->settings['install_url']?>", "", "<?=$service->getCollectionID()?>", id, "config", "");
 <?php } else {?>
-	return dacura.toolbox.getServiceURL("<?=$service->settings['install_url']?>", "html", id, "0", "config", "");
+	return dacura.toolbox.getServiceURL("<?=$service->settings['install_url']?>", "", id, "0", "config", "");
 <?php }?>
 };
 

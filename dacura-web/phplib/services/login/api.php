@@ -1,5 +1,5 @@
 <?php
-getRoute()->get("/hello", "hello");
+getRoute()->get("/", "hello");
 getRoute()->post('/', 'login');
 getRoute()->post('/register', 'register');
 getRoute()->post('/lost', 'lost');
@@ -8,6 +8,10 @@ getRoute()->delete('/', 'logout');
 
 include_once("LoginDacuraServer.php");
 
+
+function hello(){
+	echo "Hello world";
+}
 
 function login(){
 	global $service;

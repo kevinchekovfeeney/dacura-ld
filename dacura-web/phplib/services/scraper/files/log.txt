@@ -1,0 +1,9 @@
+2014-11-25 16:50:55,712 127.0.0.1 SCRAPER  Scraper request
+2014-11-25 16:50:55,712 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Naqada IIIA-B, Dynasty 0 (3300–3100 BCE)
+2014-11-25 16:50:55,759 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Badarian (4400-3800 BCE)
+2014-11-25 16:50:55,768 127.0.0.1 SCRAPER  Polity scraped: Italy, Papal State (1193-1377 CE)
+2014-11-25 16:50:55,782 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Naqada IIIC, Dynasty I (3100–2900 BCE)
+2014-11-25 16:50:55,803 127.0.0.1 SCRAPER  4 polities grabbed
+2014-11-25 16:58:32,397 127.0.0.1 SCRAPER  Scraper request
+2014-11-25 16:58:32,397 127.0.0.1 SCRAPER  Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-25 16:58:32,415 127.0.0.1 SCRAPER  1 polities grabbed

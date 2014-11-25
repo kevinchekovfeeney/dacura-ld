@@ -103,19 +103,22 @@ DirectoryIndex index.php index.html index.htm
   # uncomment the following line:
   # RewriteBase /
 
-  # Pass all requests not referring directly to files in the filesystem to
-  # index.php. Clean URLs are handled in drupal_environment_initialize().
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteCond %{REQUEST_URI} !=/favicon.ico
-  RewriteCond %{REQUEST_URI} !=/dacura/api.php?path=.*
-  RewriteRule ^(.*)api/(.*)$ /dacura/api.php?path=$2 [QSA,L]
+  # Pass all requests not referring directly to files in the filesystem to index.php and api.php
 
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !=/favicon.ico
-  RewriteCond %{REQUEST_URI} !=/dacura/index.php?path=.*
-  RewriteRule ^(.*)$ /dacura/index.php?path=$1 [QSA,L]
+  RewriteRule ^(.*)rest/(.*)$ /admin/api.php?path=$2 [QSA,L]
+
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} !=/favicon.ico
+  RewriteCond %{REQUEST_URI} !=/admin/index.php?path=.*
+  RewriteRule ^(.*)$ /admin/index.php?path=$1 [QSA,L]
+
+
+
+
 
 
   # Rules to correctly serve gzip compressed CSS and JS files.

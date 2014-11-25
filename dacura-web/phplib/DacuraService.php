@@ -61,7 +61,7 @@ class DacuraService{
 			return $this->settings['install_url']."login".$args_ext;
 		}
 		else {
-			$api_bit = ($interface == "api" ? "api/" : "");
+			$api_bit = ($interface == $this->settings['apistr'] ? $this->settings['apistr']."/" : "");
 			$col_bit = ($col_id ? $col_id : $this->collection_id)."/";
 			$ds_bit = ($ds_id ? $ds_id : $this->dataset_id)."/";
 			return $this->settings['install_url'].$api_bit.$col_bit.$ds_bit.$servicen.$args_ext;
@@ -122,7 +122,7 @@ class DacuraService{
 	
 
 	function my_url($interface = "html"){
-		$api_bit = ($interface == "api" ? "api/" : "");
+		$api_bit = ($interface == $this->settings['apistr'] ? $this->settings['apistr']."/" : "");
 		return $this->settings['install_url'].$api_bit.$this->collection_id."/".$this->dataset_id."/".$this->servicename;
 	}
 	
