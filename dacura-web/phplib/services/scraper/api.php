@@ -70,6 +70,13 @@ function dump(){
 
 function getGrabScript(){
 	global $service;
+	$f = $service->settings['files_url']."js/jquery-ui-1.10.2.custom.min.js";
+	if(file_exists($f)){
+		include($f);
+	}
+	else {
+		echo "<h1>error $f does not exist</h1>";
+	}
 	$f = $service->mydir."screens/grab.js";
 	if(file_exists($f)){
 		include_once($f);
