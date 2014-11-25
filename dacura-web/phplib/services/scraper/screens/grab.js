@@ -149,7 +149,7 @@ $('#ca-grab').click(function(){
 	}
 	xhr = {};
 	xhr.data = {data: JSON.stringify(y)};
-	xhr.url = "<?=$service->my_url("api")?>/parse";
+	xhr.url = "<?=$service->my_url("rest")?>/parse";
 	xhr.type = "POST";
 	$.ajax(xhr)
 	.done(function(response, textStatus, jqXHR) {
