@@ -74,9 +74,6 @@ function getGrabScript(){
 	if(file_exists($f)){
 		include($f);
 	}
-		else {
-		echo "<h1>error $f does not exist</h1>";
-	}
 	$f = $service->mydir."screens/grab.js";
 	if(file_exists($f)){
 		include_once($f);
