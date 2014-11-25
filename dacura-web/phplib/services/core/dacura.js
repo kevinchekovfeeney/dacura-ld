@@ -49,7 +49,7 @@ dacura.toolbox.showSuccessPage = function(jqueryid, msg){
 
 dacura.toolbox.getServiceURL = function(base, api, cid, did, sname, args){
 	url = base;
-	if(api == "api") url += "api/";
+	if(api != "") url += api + "/";
 	url += cid + "/" + did + "/" + sname;
 	if(args.length > 0) url += "/args";
 	return url;

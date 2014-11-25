@@ -6,7 +6,7 @@ class LoginService extends DacuraService {
 	
 	function handlePageLoad($sc){
 		$lds = new LoginDacuraServer($this);
-		if(!$lds->sm){
+		if(!$lds->userman){
 			$this->renderScreen("error", array("title" => "Error in Server Creation", "message" => $lds->errmsg));
 			return false;	
 		}
@@ -27,9 +27,9 @@ class LoginService extends DacuraService {
 			}
 			elseif($sc->screen == 'register'){
 				$code = $sc->args[0];
-				$user = $lds->sm->confirmRegistration($code);
+				$user = $lds->userman->confirmRegistration($code);
 				if(!$user){
-					$this->renderScreen("error", array("title" => "Error in registration confirmation", "message" => $lds->sm->errmsg));
+					$this->renderScreen("error", array("title" => "Error in registration confirmation", "message" => $lds->userman->errmsg));
 				}
 				else {
 					$this->renderScreen("register_success", array("message" => "Good to have you on board ".$user->email));
@@ -38,9 +38,9 @@ class LoginService extends DacuraService {
 			}
 			elseif($sc->screen == 'lost'){
 				$code = $sc->args[0];
-				$user = $lds->sm->confirmLostPassword($code);
+				$user = $lds->userman->confirmLostPassword($code);
 				if(!$user){
-					$this->renderScreen("error", array("title" => "Error in password reset attempt", "message" => $lds->sm->errmsg));
+					$this->renderScreen("error", array("title" => "Error in password reset attempt", "message" => $lds->userman->errmsg));
 				}
 				else {
 					$this->renderScreen("lost", array("greeting"=>"<strong>Hi $user->email</strong><br>", "userid" => $user->id));

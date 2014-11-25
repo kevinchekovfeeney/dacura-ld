@@ -12,7 +12,7 @@
 		</td></tr>
 		<tr><td colspan="2" id="loginbox-status" class="dacura-status"></td></tr>
 	</table>
-	<a class="button" href="<?=$dacura_settings['install_url']?>">Cancel</a>
+	<a class="button" href="<?=$service->settings['install_url']?>">Cancel</a>
 	<a class="button login-button login" id='dacura-login-button' href="javascript:dacura.login.login()">Log in</a>
 	<a class="button login-button register" id='dacura-register-button' href="javascript:dacura.login.register()">Register</a>
 	<a class="button login-button lost" id='dacura-lost-button' href="javascript:dacura.login.lost()">Reset password</a>
@@ -151,7 +151,7 @@ dacura.login.login = function(){
 	$.ajax(ajs)
 		.done(function(data, textStatus, jqXHR) {
 	     	if(self.mode == 'local'){
-	     		window.location.replace("<?=$dacura_settings['install_url']?>");
+	     		window.location.replace("<?=$service->settings['install_url']?>");
 			}    
 		})
 		.fail(function (jqXHR, textStatus){
