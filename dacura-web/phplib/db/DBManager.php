@@ -51,6 +51,7 @@ class DBManager {
 				$this->errmsg = "User with id $id does not exist in this system";
 				return false;
 			}
+			echo $row['profile'] . "is the profile";
 			$du = new DacuraUser($id, $row['email'], $row['name'], $row['status'], json_decode($row['profile'], true));
 			$roles = $this->loadUserRoles($id);
 			$du->roles = $roles;
