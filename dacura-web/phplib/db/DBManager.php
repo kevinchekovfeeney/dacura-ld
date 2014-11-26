@@ -156,7 +156,6 @@ class DBManager {
 		}
 		else {
 			try {
-
 				$stmt = $this->link->prepare("INSERT INTO users VALUES(0, ?, ?, PASSWORD(?), ?, ?)");
 				$res = $stmt->execute(array($email, $name, $p, $status, $prof));
 				$id = $this->link->lastInsertId();
