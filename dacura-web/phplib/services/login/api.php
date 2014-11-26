@@ -20,9 +20,9 @@ function login(){
 		$u = $dwas->login($_POST['login-email'], $_POST['login-password']);
 		if($u) {
 			if(isset($u->profile['dacurahome']) && $u->profile['dacurahome']){
-				return $u->profile['dacurahome'];				
+				echo $u->profile['dacurahome'];				
 			}
-			return "";
+			echo "";
 		}
 	}
 	else {
