@@ -112,9 +112,14 @@ class ServiceManager {
 	
 	function hasPermissions($sc){
 		//pull the user object out of the session....
-		
-		$this->errmsg = "Not today bozo....";
-		return false;
+		if($sc->servicename == 'scraper'){
+			$u = $this->getUser();
+			if(!$u->hasCollectionRole("seshat", "admin")){
+				$this->errmsg = "This is a restricted function. You do not have permission to access this page. Please contact the administrator to get permission to view this function";
+				return false;
+			}
+		}
+		return true;
 	}
 	
 }
