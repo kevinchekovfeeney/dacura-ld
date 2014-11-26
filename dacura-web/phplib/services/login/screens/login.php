@@ -155,7 +155,7 @@ dacura.login.login = function(){
 					window.location.replace(data);
 				}
 				else {
-		     		//window.location.replace("<?=$service->settings['install_url']?>");
+		     		window.location.replace("<?=$service->settings['install_url']?>");
 				}
 			}    
 		})

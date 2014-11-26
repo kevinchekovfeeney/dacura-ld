@@ -51,12 +51,12 @@ class DBManager {
 				$this->errmsg = "User with id $id does not exist in this system";
 				return false;
 			}
-			echo $row['profile'] . "is the profile";
 			$prof = json_decode($row['profile'], true);
 			if($prof === NULL){
-				echo "Failed to json decode ".$row['profile'];
+				$this->errmsg = "Failed to parse profile JSON of user $id";
+				return false;
 			}
-			$du = new DacuraUser($id, $row['email'], $row['name'], $row['status'], json_decode($row['profile'], true));
+			$du = new DacuraUser($id, $row['email'], $row['name'], $row['status'], $prof);
 			$roles = $this->loadUserRoles($id);
 			$du->roles = $roles;
 			return $du;
