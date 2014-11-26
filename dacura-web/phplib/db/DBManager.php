@@ -240,7 +240,7 @@ class DBManager {
 	
 	function testLogin($email, $pword){
 		try {
-			$stmt = $this->link->prepare("SELECT id, name, status FROM users where email=? AND password=PASSWORD(?)");
+			$stmt = $this->link->prepare("SELECT id, name, status, profile FROM users where email=? AND password=PASSWORD(?)");
 			$stmt->execute(array($email, $pword));
 			$row = $stmt->fetch();
 			if(!$row || !$row['id']){
@@ -251,7 +251,7 @@ class DBManager {
 				$this->errmsg = "User $email has been registered but has not yet confirmed their email address.";
 				return false;
 			}
-			$du = new DacuraUser($row['id'], $email, $row['name'], $row['status']);
+			$du = new DacuraUser($row['id'], $email, $row['name'], $row['status'], json_decode($row['profile'], true));
 			$roles = $this->loadUserRoles($row['id']);
 			$du->roles = $roles;				
 			return $du;
