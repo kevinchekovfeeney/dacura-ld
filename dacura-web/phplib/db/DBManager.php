@@ -52,6 +52,10 @@ class DBManager {
 				return false;
 			}
 			echo $row['profile'] . "is the profile";
+			$prof = json_decode($row['profile'], true);
+			if($prof === NULL){
+				echo "Failed to json decode ".$row['profile'];
+			}
 			$du = new DacuraUser($id, $row['email'], $row['name'], $row['status'], json_decode($row['profile'], true));
 			$roles = $this->loadUserRoles($id);
 			$du->roles = $roles;
