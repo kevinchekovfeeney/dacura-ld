@@ -18,7 +18,12 @@ function login(){
 	$dwas = new LoginDacuraAjaxServer($service);
 	if(isset($_POST['login-email']) && isset($_POST['login-password'])){
 		$u = $dwas->login($_POST['login-email'], $_POST['login-password']);
-		if($u) echo "OK";
+		if($u) {
+			if(isset($u->profile['dacurahome']) && $u->profile['dacurahome']){
+				return $u->profile['dacurahome'];				
+			}
+			return "";
+		}
 	}
 	else {
 		$dwas->write_error("Missing required login fields.", 400);
