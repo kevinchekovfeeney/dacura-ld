@@ -21,12 +21,12 @@ class LoginService extends DacuraService {
 				$params = array("active_function" => "login");
 				$this->renderScreen("login", $params);
 			}
-			elseif(($sc->screen == "register" or $sc->screen == 'lost') && count($sc->args) == 0 || !$sc->args[0]){
+			elseif(($sc->screen == "register" or $sc->screen == 'lost') && count($sc->args) == 1 || !$sc->args[1]){
 				$params = array("active_function" => $sc->screen);
 				$this->renderScreen("login", $params);				
 			}
 			elseif($sc->screen == 'register'){
-				$code = $sc->args[0];
+				$code = $sc->args[1];
 				$user = $lds->userman->confirmRegistration($code);
 				if(!$user){
 					$this->renderScreen("error", array("title" => "Error in registration confirmation", "message" => $lds->userman->errmsg));
@@ -37,7 +37,7 @@ class LoginService extends DacuraService {
 				
 			}
 			elseif($sc->screen == 'lost'){
-				$code = $sc->args[0];
+				$code = $sc->args[1];
 				$user = $lds->userman->confirmLostPassword($code);
 				if(!$user){
 					$this->renderScreen("error", array("title" => "Error in password reset attempt", "message" => $lds->userman->errmsg));
