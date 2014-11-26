@@ -214,6 +214,9 @@ class UserManager {
 		}
 		//$this->dbman->updateUserState($uid, "new");
 		$du = $this->loadUser($uid);
+		echo json_encode($du);
+		return false;
+		
 		if(!$du){
 			return false;				
 		}
