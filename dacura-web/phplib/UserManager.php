@@ -108,7 +108,7 @@ class UserManager {
 			$this->errmsg = "Attempt to add user with no email and password";
 			return false;
 		}
-		$prof = "{'dacurahome' : '".$service->settings['install_url']."seshat/0/welcome'}";
+		$prof = "{'dacurahome' : '".$this->service->settings['install_url']."seshat/0/welcome'}";
 		$nu = $this->dbman->addUser($email, $n, $p, $status, $prof);
 		if($nu){
 			$nu->setSessionDirectory($this->user_dir.$nu->id);
