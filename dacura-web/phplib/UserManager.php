@@ -15,11 +15,13 @@ require_once("DacuraUser.php");
 class UserManager {
 	
 	var $user_dir;
+	var $service
 	var $dbman;
 	var $errmsg = "";
 	
-	function __construct($dbman, $settings){
-		$this->user_dir = $settings['dacura_sessions'];
+	function __construct($dbman, $service){
+		$this->service = $service;
+		$this->user_dir = $service->settings['dacura_sessions'];
 		$this->dbman = $dbman;
 	}
 	
@@ -106,7 +108,8 @@ class UserManager {
 			$this->errmsg = "Attempt to add user with no email and password";
 			return false;
 		}
-		$nu = $this->dbman->addUser($email, $n, $p, $status);
+		$p = "{'dacurahome' : ".$service->settings['install_url']."seshat/0/welcome'}";
+		$nu = $this->dbman->addUser($email, $n, $p, $status, $p);
 		if($nu){
 			$nu->setSessionDirectory($this->user_dir.$nu->id);
 			return $nu;

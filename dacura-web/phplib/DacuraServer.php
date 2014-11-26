@@ -35,7 +35,7 @@ class DacuraServer {
 		catch (PDOException $e) {
 			return $this->failure_result('Connection failed: ' . $e->getMessage(), 500);
 		}
-		$this->userman = new UserManager($this->dbman, $this->settings);
+		$this->userman = new UserManager($this->dbman, $service);
 	}
 	
 	function failure_result($msg, $code = 500){
