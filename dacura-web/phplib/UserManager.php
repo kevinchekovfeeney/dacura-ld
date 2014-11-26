@@ -19,7 +19,7 @@ class UserManager {
 	var $dbman;
 	var $errmsg = "";
 	
-	function __construct($dbman, $service){
+	function __construct($dbman, &$service){
 		$this->service = $service;
 		$this->user_dir = $service->settings['dacura_sessions'];
 		$this->dbman = $dbman;
