@@ -22,7 +22,7 @@ function login(){
 			if(isset($u->profile['dacurahome']) && $u->profile['dacurahome']){
 				echo $u->profile['dacurahome'];				
 			}
-			echo "";
+			echo json_encode($u);
 		}
 	}
 	else {
