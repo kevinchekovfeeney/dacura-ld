@@ -80,9 +80,6 @@ class UserManager {
 	
 	function loadUser($id){
 		$u = $this->dbman->loadUser($id);
-		echo json_encode($u);
-		return false;
-		
 		if($u){
 			$u->setSessionDirectory($this->user_dir.$u->id);
 			return $u;
