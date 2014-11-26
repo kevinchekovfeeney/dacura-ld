@@ -51,7 +51,7 @@ class DBManager {
 				$this->errmsg = "User with id $id does not exist in this system";
 				return false;
 			}
-			$du = new DacuraUser($id, $row['email'], $row['name'], $row['status'], json_decode($row['profile']));
+			$du = new DacuraUser($id, $row['email'], $row['name'], $row['status'], json_decode($row['profile'], true));
 			$roles = $this->loadUserRoles($id);
 			$du->roles = $roles;
 			return $du;
@@ -139,7 +139,7 @@ class DBManager {
 				$this->errmsg = "User with email $email does not exist in this system";
 				return false;
 			}
-			$du = new DacuraUser($row['id'], $email, $row['name'], $row['status'], json_decode($row['profile']));
+			$du = new DacuraUser($row['id'], $email, $row['name'], $row['status'], json_decode($row['profile'], true));
 			return $du;
 				
 		}
@@ -159,7 +159,7 @@ class DBManager {
 				$stmt = $this->link->prepare("INSERT INTO users VALUES(0, ?, ?, PASSWORD(?), ?, ?)");
 				$res = $stmt->execute(array($email, $name, $p, $status, $prof));
 				$id = $this->link->lastInsertId();
-				$du = new DacuraUser($id, $email, $name, $status, json_decode($prof));
+				$du = new DacuraUser($id, $email, $name, $status, json_decode($prof, true));
 				return $du;
 			}
 			catch(PDOException $e){
