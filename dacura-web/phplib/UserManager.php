@@ -15,7 +15,7 @@ require_once("DacuraUser.php");
 class UserManager {
 	
 	var $user_dir;
-	var $service
+	var $service;
 	var $dbman;
 	var $errmsg = "";
 	
