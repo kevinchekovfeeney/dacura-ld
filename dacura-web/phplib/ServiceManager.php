@@ -114,7 +114,7 @@ class ServiceManager {
 		//pull the user object out of the session....
 		
 		$this->errmsg = "Not today bozo....";
-		return true;
+		return false;
 	}
 	
 }
