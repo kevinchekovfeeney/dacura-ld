@@ -1,12 +1,110 @@
-2014-11-25 16:50:55,712 127.0.0.1 SCRAPER  Scraper request
-2014-11-25 16:50:55,712 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Naqada IIIA-B, Dynasty 0 (3300–3100 BCE)
-2014-11-25 16:50:55,759 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Badarian (4400-3800 BCE)
-2014-11-25 16:50:55,768 127.0.0.1 SCRAPER  Polity scraped: Italy, Papal State (1193-1377 CE)
-2014-11-25 16:50:55,782 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Naqada IIIC, Dynasty I (3100–2900 BCE)
-2014-11-25 16:50:55,803 127.0.0.1 SCRAPER  4 polities grabbed
-2014-11-25 16:58:32,397 127.0.0.1 SCRAPER  Scraper request
-2014-11-25 16:58:32,397 127.0.0.1 SCRAPER  Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
-2014-11-25 16:58:32,415 127.0.0.1 SCRAPER  1 polities grabbed
-2014-11-25 17:38:04,336 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
-2014-11-25 17:38:04,336 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
-2014-11-25 17:38:04,354 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 13:48:51,101 127.0.0.1 Gavin    Checking Upper Egypt
+2014-11-26 13:48:51,102 127.0.0.1 Gavin    Polity scraped: Upper Egypt
+2014-11-26 13:48:51,102 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 13:48:56,857 127.0.0.1 Gavin    Checking Upper Egypt
+2014-11-26 13:48:56,857 127.0.0.1 Gavin    Polity scraped: Upper Egypt
+2014-11-26 13:48:56,857 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 13:51:21,788 127.0.0.1 Gavin    Checking Upper Egypt
+2014-11-26 13:51:21,788 127.0.0.1 Gavin    Polity scraped: Upper Egypt
+2014-11-26 13:51:21,789 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 13:59:25,322 127.0.0.1 Gavin    Checking Upper Egypt
+2014-11-26 13:59:25,323 127.0.0.1 Gavin    Polity scraped: Upper Egypt
+2014-11-26 13:59:25,323 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 13:59:36,904 127.0.0.1 Gavin    Checking Upper Egypt
+2014-11-26 13:59:36,904 127.0.0.1 Gavin    Polity scraped: Upper Egypt
+2014-11-26 13:59:36,905 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 14:01:16,161 127.0.0.1 Gavin    Checking Upper Egypt
+2014-11-26 14:01:16,162 127.0.0.1 Gavin    Polity scraped: Upper Egypt
+2014-11-26 14:01:16,162 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 14:01:53,764 127.0.0.1 Gavin    Checking Upper Egypt
+2014-11-26 14:01:53,764 127.0.0.1 Gavin    Polity scraped: Upper Egypt
+2014-11-26 14:01:53,764 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 14:02:19,205 127.0.0.1 Gavin    Checking Upper Egypt
+2014-11-26 14:02:19,205 127.0.0.1 Gavin    Polity scraped: Upper Egypt
+2014-11-26 14:02:19,205 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 14:03:42,849 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 14:03:42,850 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 14:03:42,870 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 14:05:04,864 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 14:05:04,864 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 14:05:04,882 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 14:06:59,506 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 14:06:59,506 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 14:06:59,525 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 15:50:16,825 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 15:50:16,826 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 15:50:16,844 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 15:50:34,158 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 15:50:34,158 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 15:50:34,177 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 15:51:01,911 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 15:51:01,911 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 15:51:01,930 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 15:51:39,958 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 15:51:39,959 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 15:51:39,978 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:15:38,318 127.0.0.1 SCRAPER  Scraper request
+2014-11-26 16:15:38,319 127.0.0.1 SCRAPER  Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:15:38,333 127.0.0.1 SCRAPER  Polity scraped: France, French Kingdom, Late Capetian (1150-1328 CE)
+2014-11-26 16:15:38,356 127.0.0.1 SCRAPER  2 polities grabbed
+2014-11-26 16:17:05,796 127.0.0.1 SCRAPER  Scraper request
+2014-11-26 16:17:05,796 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Badarian (4400-3800 BCE)
+2014-11-26 16:17:05,806 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Naqada, IA-IIB (3800–3550 BCE)
+2014-11-26 16:17:05,823 127.0.0.1 SCRAPER  Polity scraped: France, Late La Tene Gaul (200-50 BCE)
+2014-11-26 16:17:05,836 127.0.0.1 SCRAPER  Polity scraped: Italy, Roman Empire-Dominate (284-474 CE)
+2014-11-26 16:17:05,848 127.0.0.1 SCRAPER  Polity scraped: France, Carolingian Empire, Late Phase (840-987 CE)
+2014-11-26 16:17:05,857 127.0.0.1 SCRAPER  Polity scraped: France, Proto-French Kingdom (987-1150 CE)
+2014-11-26 16:17:05,870 127.0.0.1 SCRAPER  Polity scraped: France, French Kingdom, Early Valois (1328-1450 CE)
+2014-11-26 16:17:05,886 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Naqada, IIC-D (3550–3300 BCE)
+2014-11-26 16:17:05,930 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Naqada IIIC, Dynasty I (3100–2900 BCE)
+2014-11-26 16:17:05,938 127.0.0.1 SCRAPER  Polity scraped: France, Early La Tene Gaul (450-300 BCE)
+2014-11-26 16:17:05,948 127.0.0.1 SCRAPER  Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:17:05,991 127.0.0.1 SCRAPER  11 polities grabbed
+2014-11-26 16:27:17,563 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:27:17,564 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:27:17,583 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:27:41,625 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:27:41,625 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:27:41,644 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:27:56,720 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:27:56,720 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:27:56,739 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:29:51,068 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:29:51,068 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:29:51,087 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:30:02,829 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:30:02,830 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:30:02,848 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:30:18,243 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:30:18,243 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:30:18,262 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:31:34,015 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:31:34,016 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:31:34,034 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:34:18,787 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:34:18,788 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:34:18,806 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:35:17,156 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:35:17,156 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:35:17,175 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:35:28,324 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:35:28,325 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:35:28,343 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:35:43,800 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:35:43,801 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:35:43,819 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:36:30,650 127.0.0.1 Gavin    Checking Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:36:30,650 127.0.0.1 Gavin    Polity scraped: Iran, Achaemenid Empire (559–330 BCE)
+2014-11-26 16:36:30,670 127.0.0.1 Gavin    1 polities grabbed
+2014-11-26 16:38:58,828 127.0.0.1 SCRAPER  Scraper request
+2014-11-26 16:38:58,828 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Badarian (4400-3800 BCE)
+2014-11-26 16:38:58,838 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Naqada IIIA-B, Dynasty 0 (3300–3100 BCE)
+2014-11-26 16:38:58,881 127.0.0.1 SCRAPER  Polity scraped: France, Middle La Tene Gaul (300-200 BCE)
+2014-11-26 16:38:58,896 127.0.0.1 SCRAPER  Polity scraped: France, Late La Tene Gaul (200-50 BCE)
+2014-11-26 16:38:58,907 127.0.0.1 SCRAPER  Polity scraped: Italy, Late Roman Republic (133-31 BCE)
+2014-11-26 16:38:58,925 127.0.0.1 SCRAPER  Polity scraped: Italy, Roman Empire-Principate (31 BCE - 284 CE)
+2014-11-26 16:38:58,941 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Naqada, IIC-D (3550–3300 BCE)
+2014-11-26 16:38:58,985 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Naqada IIIC, Dynasty I (3100–2900 BCE)
+2014-11-26 16:38:58,991 127.0.0.1 SCRAPER  Polity scraped: Upper Egypt, Naqada, IA-IIB (3800–3550 BCE)
+2014-11-26 16:38:59,009 127.0.0.1 SCRAPER  Polity scraped: France, Early La Tene Gaul (450-300 BCE)
+2014-11-26 16:38:59,047 127.0.0.1 SCRAPER  10 polities grabbed

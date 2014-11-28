@@ -31,13 +31,13 @@ $dacura_settings['sparql_source'] = "http://tcdfame.cs.tcd.ie/sparql/politicalvi
 //$dacura_settings['data_graph'] = "http://tcdfame.cs.tcd.ie/data/politicalviolence/uspv";
 
 //Storage for session information, etc
-//$dacura_settings['candidate_store'] = '/storage/ukipv/candidate_images';
-//$dacura_settings['dacura_sessions'] = '/var/dacura/sessions/'; 
-//$dacura_settings['dacura_logbase'] = '/var/dacura/logs/';
+$dacura_settings['candidate_store'] = '/storage/ukipv/candidate_images';
+$dacura_settings['dacura_sessions'] = '/var/dacura/sessions/'; 
+$dacura_settings['dacura_logbase'] = '/var/dacura/logs/';
 //Storage for session information, etc
-$dacura_settings['candidate_store'] = 'C:\\xampp\\htdocs\\dacura\\candidate_store\\';
-$dacura_settings['dacura_sessions'] = 'C:\\Temp\\dacura\\sessions\\';
-$dacura_settings['dacura_logbase'] = 'C:\\Temp\\dacura\\logs\\';
+//$dacura_settings['candidate_store'] = 'C:\\xampp\\htdocs\\dacura\\candidate_store\\';
+//$dacura_settings['dacura_sessions'] = 'C:\\Temp\\dacura\\sessions\\';
+//$dacura_settings['dacura_logbase'] = 'C:\\Temp\\dacura\\logs\\';
 
 
 //DB credentials

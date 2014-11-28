@@ -23,10 +23,12 @@ var dacura = {
 
 dacura.grabber.insertModal = function (){
 	var modal = "<div id='modal-dim'></div><div id='modal'>";
-	modal += "<p id='modal-text'>Scanning...</p>";
+	modal += "<div id='modal-header'><b>Seshat Validation Tool</b></div>"
+	modal += "<p id='modal-text'>Analysing variables on page...</p>";
 	modal += "<button id='modal-close'>Close</button>";
 	modal += "</div>";
 	$("body").append(modal);
+	$("#modal-close").button();
 	$("#modal-close").click(function(){
 		$("body").css("overflow", "auto");
 		$("#modal-dim").hide();
@@ -87,7 +89,7 @@ dacura.grabber.display = function (json){
 		node = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0);
 		if(json[i]["error"] === true){
 			node.style.color = "red";
-			node.classList.add("mistake");
+			node.classList.add("errorText");
 			content = this.makeContent(json[i]["errorMessage"]);
 			$(node).append(content);
 			bad += 1;
@@ -95,6 +97,7 @@ dacura.grabber.display = function (json){
 			$(node).prepend("<a id='" + errorName + "'></a><img src='<?=$service->get_service_file_url("error.png")?>' alt='error' class='error'>");
 		}else if(json[i]["error"] === false){
 			node.style.color = "green";
+			node.classList.add("correctText");
 			$(node).prepend("<img src='<?=$service->get_service_file_url("correct.png")?>' alt='correct' class='correct'>");
 			good += 1;
 		}else{
@@ -109,11 +112,20 @@ dacura.grabber.makeContent = function (contents){
 	return x;
 };
 
+//is there a handler for inserting css?
+style=document.createElement("link");
+style.setAttribute("rel", "stylesheet");
+style.setAttribute("type", "text/css");
+style.setAttribute("href", "http://localhost/dacura/dacura/seshat/jquery-ui/jquery-ui.css");
+document.head.appendChild(style);
+
 var css = ".pop{border:1px #f00 solid;background:#fbc;padding:3px;visibility:hidden;position:absolute;left:1.6em;margin:1.6em 0;color:#000;}"
-	+ ".mistake:hover span{visibility:visible;}"
+	+ ".errorText:hover span{visibility:visible;}"
 	+ "#modal-dim{width:100%;height:100%;background:rgba(127,127,127,0.5);position:absolute;left:0;top:0;display:block;}"
-	+ "#modal{width:25em;height:10em;background:#fff;position:absolute;left:0;"
+	+ "#modal{width:25em;height:15em;background:#fff;position:absolute;left:0;"
 		+ "right:0;top:0;bottom:0;margin:auto;border:1px solid #000;border-radius:1em;padding:1em;}"
+	+ "#modal-header{background:#da3;margin:-1em;padding:1em;border-radius:1em 1em 0 0;margin-bottom:1em;}"
+	+ "#modal-clear{margin-bottom: 0.2em;"
 var style = document.createElement("style");
 style.type = 'text/css';
 if (style.styleSheet){
@@ -128,6 +140,8 @@ if($("#ca-grab").length){
 	$("<li id='ca-grab'><span><a>Validate</a></span></li>").insertBefore("#ca-view");
 };
 $('#ca-grab').click(function(){
+	$("#modal-close").show();
+	$("#modal-clear").hide();
 	var errorNumber = 0;
 	$('#ca-grab').hide();
 	$("body").css("overflow", "hidden");
@@ -141,6 +155,7 @@ $('#ca-grab').click(function(){
 	x = {"nga": nga, "polity": polity, "user": user};
 	y = [{"metadata": x, "data": dacura.grabber.grab(document)}];
 	if($("#modal").length){
+		$("#modal-close").html('<span class="ui-button-text">Close</span>');
 		$("#modal-dim").show();
 		$("#modal-text").html("Analysing variables on page...");
 		$("#modal").show();
@@ -153,14 +168,22 @@ $('#ca-grab').click(function(){
 	xhr.type = "POST";
 	$.ajax(xhr)
 	.done(function(response, textStatus, jqXHR) {
+		$("#modal-close").html('<span class="ui-button-text">View results</span>');
 		errorNumber = 0;
 		if($("#modal-results").length){
 			$("#modal-results").show();
 		}else{
-			$("#modal").append("<button id='modal-results'>View results</button>");
+			$("#modal").append("<button id='modal-results'>View next error</button>");
+			$("#modal-results").button();
 		}
 		$("#modal-results").click(function(){
-			errorNumber = 0;
+			$("#modal-close").html('<span class="ui-button-text">Close</span>');
+			$("#modal-close").hide();
+			errorNumber = 1;
+			var anchor = "#error1";
+			$('html, body').animate({
+				scrollTop: $(anchor).offset().top
+			}, 1000);
 			$("body").css("overflow", "auto");
 			$("#modal-dim").hide();
 			$("#modal-results").hide();
@@ -170,10 +193,36 @@ $('#ca-grab').click(function(){
 			$("#modal").css("left", "auto");
 			$("#modal").css("bottom", "auto");
 			$("#modal").css("margin", "none");
+			if($("#modal-clear").length){
+				$("#modal-clear").show();
+			}else{
+				$("#modal").append("<button id='modal-clear'>Clear results</button><br>");
+				$("#modal-clear").button();
+				$("#modal-clear").click(function(){
+					$("body").css("overflow", "auto");
+					$("#modal-dim").hide();
+					$("#modal-results").hide();
+					$("#modal").hide();
+					$("#modal-next").hide();
+					$("#modal-prev").hide();
+					$('#ca-grab').show()
+					$("#modal").css("position", "absolute");
+					$("#modal").css("top", "0");
+					$("#modal").css("right", "0");
+					$("#modal").css("left", "0");
+					$("#modal").css("bottom", "0");
+					$("#modal").css("margin", "auto");
+					$(".error").hide();
+					$(".correct").hide();
+					$(".errorText").css("color", "black");
+					$(".correctText").css("color", "black");
+				});
+			}
 			if($("#modal-next").length){
 				$("#modal-next").show();
 			}else{
 				$("#modal").append("<button id='modal-next'>Next error</button>");
+				$("#modal-next").button();
 				$("#modal-next").click(function(){
 					errorNumber = errorNumber + 1;
 					if(errorNumber > errorLength){
@@ -189,6 +238,7 @@ $('#ca-grab').click(function(){
 				$("#modal-prev").show();
 			}else{
 				$("#modal").append("<button id='modal-prev'>Previous error</button>");
+				$("#modal-prev").button();
 				$("#modal-prev").click(function(){
 					errorNumber = errorNumber - 1;
 					if(errorNumber < 1){
@@ -203,7 +253,7 @@ $('#ca-grab').click(function(){
 		});
 		y = JSON.parse(response);
 		x = dacura.grabber.display(y[0]["data"]);
-		$("#modal-text").html("Analysis completed successfully.<br>Results:<br>" + x[2] + " results<br>" + x[0] + " correct<br>" + x[1] + " syntax errors");
+		$("#modal-text").html("Analysis completed successfully.<br>" + x[2] + " variables detected<br>" + x[0] + " correct<br>" + x[1] + " syntax errors");
 		var errorLength = x[1];
 
 	})
