@@ -85,16 +85,16 @@ img { border: 0;}
 
 
 #dashboard-tasks h4{
-	text-align: left;
-	padding: 0;
-	margin: 0;
+        text-align: left;
+        padding: 0;
+        margin: 0;
 }
 
 .dacura-welcome {
-	text-align: left;
-	border-bottom: 1px solid #333;
-	padding-bottom: 3px;
-	margin-bottom: 10px;
+        text-align: left;
+        border-bottom: 1px solid #333;
+        padding-bottom: 3px;
+        margin-bottom: 10px;
 }
 
 
