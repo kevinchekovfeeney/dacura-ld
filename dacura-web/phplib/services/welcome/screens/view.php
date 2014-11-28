@@ -5,7 +5,7 @@
 	<div id='dashboard-content'>
 		<div id='dashboard-tasks'>
 			<div class="dacura-dashboard-panel-container">
-				tools
+				Available Dacura tools
 				<div class="dacura-dashboard-panel" id="management-panel">
 					<a href='<?=$service->get_service_url("scraper")?>'>
 						<div class='dacura-dashboard-button' id='dacura-users-button' title="Export Data">
@@ -16,6 +16,9 @@
 				</div>
 			</div>
 			<hr style='clear: both'>
+			<div class="dacura-welcome">
+			This page is ....
+			</div>
 		</div>
 	</div>
 </div>
