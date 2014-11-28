@@ -3,7 +3,10 @@
 class WelcomeService extends DacuraService {
 
 	function handlePageLoad($sc=false){
-		$this->renderScreen("view", array());
+		$ds = new DacuraServer($this);
+		$u = $bds->userman->getUser();
+		$params['user'] = $u->email;
+		$this->renderScreen("view", $params);
 		
 	}
 }
