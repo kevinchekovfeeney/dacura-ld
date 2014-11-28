@@ -5,7 +5,7 @@
         </div>
         <div id='dashboard-content'>
                                         <div class="dacura-welcome">
-                                        Logged in as <?= $user->email ?>
+                                        Logged in as <?= $params['user'] ?>
 
                                         <p>This is the home page for the Seshat project on the Dacura Platform. As more tools are developed, they will appear on this screen.
                                         Please note that this page, and all of the seshat data, is private and access is limited to Seshat administrators.

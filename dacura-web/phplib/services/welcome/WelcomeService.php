@@ -7,6 +7,5 @@ class WelcomeService extends DacuraService {
 		$u = $ds->userman->getUser();
 		$params['user'] = $u->email;
 		$this->renderScreen("view", $params);
-		
 	}
 }
