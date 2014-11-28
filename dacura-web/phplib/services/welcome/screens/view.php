@@ -5,9 +5,10 @@
 	<div id='dashboard-content'>
 		<div id='dashboard-tasks'>
 			<div class="dacura-dashboard-panel-container">
+				tools
 				<div class="dacura-dashboard-panel" id="management-panel">
 					<a href='<?=$service->get_service_url("scraper")?>'>
-						<div class='dacura-dashboard-button' id='dacura-users-button' title="user management">
+						<div class='dacura-dashboard-button' id='dacura-users-button' title="Export Data">
 							<img class='dacura-button-img' src="<?=$service->url("image", "seshat-squatting.gif")?>">
 							<div class="dacura-button-title">Export Seshat Data</div>
 						</div>
