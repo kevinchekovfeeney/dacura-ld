@@ -14,10 +14,10 @@
 						</div>
 					</a>				
 				</div>
-			</div>
-			<hr style='clear: both'>
-			<div class="dacura-welcome">
-			This page is ....
+				<hr style='clear: both'>
+				<div class="dacura-welcome">
+				This page is ....
+				</div>
 			</div>
 		</div>
 	</div>

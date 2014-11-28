@@ -84,6 +84,14 @@ img { border: 0;}
 }
 
 
+dacura-dashboard-panel-container {
+	text-align: left;
+}
+
+dacura-welcome {
+	text-align: left;
+}
+
 
 #dashboard-menu {
 	float: left;
