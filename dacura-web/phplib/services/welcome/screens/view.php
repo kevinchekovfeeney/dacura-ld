@@ -15,7 +15,8 @@
 					</a>
 					<hr style='clear: both'>
 					<div class="dacura-welcome">
-					This page is ....
+					This is the home page for the Seshat project on the Dacura Platform. As more tools are developed, they will appear on the screen above.  
+					Please note that this page, and all of the seshat data, is private and access is limited to Seshat administrators. In order to use the tools above, you need to have a Seshat Administrator Role.  
 					</div>				
 				</div>
 				
