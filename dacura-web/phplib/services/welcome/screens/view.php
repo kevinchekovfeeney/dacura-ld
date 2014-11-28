@@ -12,12 +12,13 @@
 							<img class='dacura-button-img' src="<?=$service->url("image", "seshat-squatting.gif")?>">
 							<div class="dacura-button-title">Export Seshat Data</div>
 						</div>
-					</a>				
+					</a>
+					<hr style='clear: both'>
+					<div class="dacura-welcome">
+					This page is ....
+					</div>				
 				</div>
-				<hr style='clear: both'>
-				<div class="dacura-welcome">
-				This page is ....
-				</div>
+				
 			</div>
 		</div>
 	</div>
