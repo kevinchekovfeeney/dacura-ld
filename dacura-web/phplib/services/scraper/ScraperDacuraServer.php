@@ -226,7 +226,20 @@ class ScraperDacuraServer extends DacuraServer {
 								$item->polity = $polityOut;
 								$errorArray[] = $item;
 							}
-							$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t".json_encode($item->value[1])."\t".$item->errorMessage."\n";
+							if($item->error === True){
+								$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t\t".$item->value[1][0]."\t".$item->errorMessage."\n";
+							}else{
+								// $output = $output."\t".$item->value[1][0]."\t".json_encode($item->value[1][1])."\n";
+								$parsedValues = $this->formatValue($item->value[1][1], $item->value[1][0]);
+								for($j = 0;$j < count($parsedValues);$j++){
+									if(gettype($parsedValues[$j]) == "array"){
+										$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t".$parsedValues[$j][0]."\t".$parsedValues[$j][1]."\t".$item->errorMessage."\n";
+									}else{
+										$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t\t".$parsedValues[$j]."\t".$item->errorMessage."\n";
+									}
+								}
+							}
+							//$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t".$item->value[1][1]."\t".$item->errorMessage."\n";
 							$ngaReport[$ngaOut]["parseCount"] += 1;
 							if($item->error === True){
 								$ngaReport[$ngaOut]["failureCount"] += 1;
@@ -253,6 +266,24 @@ class ScraperDacuraServer extends DacuraServer {
 		$report["contents"] = $ngaReport;
 		$report["errors"] = $errorArray;
 		return $report;
+	}
+	
+	function formatValue($value, $factString){
+		$returnValue = array();
+		// print_r
+		foreach($value[1] as $fact){
+			if($fact[0] == "fact" or $fact[0] == "factstatement"){
+				if($fact[3][0] == "keyvalue"){
+					$a = $fact[3][3][0];
+					$b = $fact[3][3][1];
+					$returnValue[][0] = substr($factString, $a[1], ($a[2]-$a[1]));
+					$returnValue[][0] = substr($factString, $b[1], ($b[2]-$b[1]));
+				}else{
+					$returnValue[] = substr($factString, $fact[1], ($fact[2]-$fact[1]));
+				}
+			}
+		}
+		return $returnValue;
 	}
 	
 	//set_time_limit(1200);
