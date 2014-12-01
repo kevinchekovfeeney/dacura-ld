@@ -110,10 +110,9 @@ class ServiceManager {
 		return true;
 	}
 	
-	function hasPermissions($sc){
-		return true;
+	function hasPermissions($sc, $is_api = false){
 		//pull the user object out of the session....
-		if($sc->servicename == 'scraper'){
+		if(!$is_api && $sc->servicename == 'scraper'){
 			$u = $this->getUser();
 			if(!$u->hasCollectionRole("seshat", "admin")){
 				$this->errmsg = "This is a restricted function. You do not have permission to access this page. Please contact the administrator to get permission to view this function";
