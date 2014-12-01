@@ -190,7 +190,7 @@ class ScraperDacuraServer extends DacuraServer {
 		$ngaReport = array();
 		$ngaList = array();
 		$all = false;
-		$output = "NGA\tPolity\tName\tValue\tError\n";
+		$output = "NGA\tPolity\tName\tKey\tValue\tError\n";
 		$errors = "<html><head><title>Seshat Error Report</title></head><body><table>";
 		$errorArray = array();
 		$report = array();
