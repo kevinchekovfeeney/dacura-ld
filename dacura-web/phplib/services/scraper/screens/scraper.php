@@ -86,30 +86,39 @@
 		}
 
 		function formatReport(report){
-			string = "<table><tr><td>NGA</td><td>Polities</td><td>Variables</td><td>Non-Zero</td><td>Parsed</td><td>Parse Success</td><td>Parse Failure</td></tr>"
+			string = "<h4>Results Summary</h4>";
+			string += "<table class='scraper-report'><tr><th>NGA</th><th>Polities</th><th>Variables</th><th>Non-Zero</th><th>Simple</th><th>Complex</th><th>Parse Success</th><th>Parse Failure</th></tr>"
 			for(each in report["contents"]){
 				nga = report["contents"][each]
 				string += "<tr><td>" + nga["nga"] + "</td>";
 				string += "<td>" + nga["polityCount"] + "</td>";
 				string += "<td>" + nga["totalCount"] + "</td>";
 				string += "<td>" + nga["nonZeroCount"] + "</td>";
+				string += "<td>" + (nga["nonZeroCount"] - nga["parseCount"]) + "</td>";
 				string += "<td>" + nga["parseCount"] + "</td>";
 				string += "<td>" + nga["successCount"] + "</td>";
 				string += "<td>" + nga["failureCount"] + "</td>";
 				string += "</tr>";
 			}
 			string += "</table>";
+			string += "<p><a href='" + report['fileurl'] + "'><b>Download the results</b></a></p>";
 			return string;
 		}
 
 		function formatErrors(report){
-			string = "<table><tr><td>Polity</td><td>Variable</td><td>Error</td></tr>";
-			for(var i = 0;i < report["errors"].length; i++){
-				var x = report["errors"][i];
-				string += "<tr><td><a href='" + x["url"] + "'>" + x["polity"] + "</a></td>";
-				string += "<td>" + x["value"][0] + "</td>" + "<td>" + x["errorMessage"] + "</td></tr>"
+			if(report["errors"].length > 1){
+				string = "<h4>Errors encountered in data</h4>";
+				string += "<table class='scraper-report'><tr><th>Polity</th><th>Variable</th><th>Error</th></tr>";
+				for(var i = 0;i < report["errors"].length; i++){
+					var x = report["errors"][i];
+					string += "<tr><td><a href='" + x["url"] + "'>" + x["polity"] + "</a></td>";
+					string += "<td>" + x["value"][0] + "</td>" + "<td>" + x["errorMessage"] + "</td></tr>"
+				}
+				string += "</table>";
 			}
-			string += "</table>";
+			else {
+				string = "<h4>No errors encountered in data</h4>";
+			}
 			return string;
 		}
 
@@ -312,7 +321,7 @@
 								}
 								report = formatReport(b);
 								errors = formatErrors(b);
-								report += "<br>" + errors;
+								report += "<hr>" + errors;
 								$("#info").html(report).show()
 								$("#get-polities").hide()
 								$("#polity-display").hide();

@@ -246,7 +246,9 @@ class ScraperDacuraServer extends DacuraServer {
 		$errors = $errors."</table></body></html>";
 		$fileName = $this->log("dump", $output);
 		$errorFile = $this->log("dumperrors", $errors);
+		$fileurl = $this->getURLofLogfile($fileName);
 		$report["filename"] = $fileName;
+		$report["fileurl"] = $fileurl;
 		$report["errorfile"] = $errorFile;
 		$report["contents"] = $ngaReport;
 		$report["errors"] = $errorArray;

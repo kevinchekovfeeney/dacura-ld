@@ -39,7 +39,7 @@ function roleoptions($uid){
 	//role
 	//depending on both context and uid...
 	global $service;
-	$dwas = new UsersDacuraAjaxServer($service->settings);
+	$dwas = new UsersDacuraAjaxServer($service);
 	$c_id = $service->getCollectionID();
 	$d_id = $service->getDatasetID();
 	$collobj = $dwas->getRoleContextOptions($uid, $c_id, $d_id);
@@ -51,7 +51,7 @@ function roleoptions($uid){
 
 function viewrole($uid, $rid){
 	global $service;
-	$dwas = new UsersDacuraAjaxServer($service->settings);
+	$dwas = new UsersDacuraAjaxServer($service);
 	$x = $dwas->getUserRole($uid, $rid);
 	if($x){
 		echo json_encode($x);
@@ -61,7 +61,7 @@ function viewrole($uid, $rid){
 
 function listing(){
 	global $service;
-	$dwas = new UsersDacuraAjaxServer($service->settings);
+	$dwas = new UsersDacuraAjaxServer($service);
 	$c_id = $service->getCollectionID();
 	$d_id = $service->getDatasetID();
 	$collobj = $dwas->getUsersInContext($c_id, $d_id);
@@ -73,8 +73,8 @@ function listing(){
 
 function create(){
 	global $service;
-	$dwas = new UsersDacuraAjaxServer($service->settings);
-	$uobj = $dwas->sm->addUser($_POST['email'], $_POST['name'],  $_POST["password"], $_POST['status'], $_POST['profile']);
+	$dwas = new UsersDacuraAjaxServer($service);
+	$uobj = $dwas->userman->addUser($_POST['email'], $_POST['name'],  $_POST["password"], $_POST['status'], $_POST['profile']);
 	if($uobj){
 		echo json_encode($uobj);
 	}
@@ -83,7 +83,7 @@ function create(){
 
 function createrole($uid){
 	global $service;
-	$dwas = new UsersDacuraAjaxServer($service->settings);
+	$dwas = new UsersDacuraAjaxServer($service);
 	$role_obj = json_decode($_POST['payload'], true);
 	$uobj = $dwas->createUserRole($uid, $role_obj["collection"], $role_obj["dataset"], $role_obj["role"], $role_obj["level"]);
 	if($uobj){

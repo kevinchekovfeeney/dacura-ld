@@ -42,14 +42,22 @@ if($servman->serviceCallIsValid($service_call)){
 			include_once($service_include_path);
 		}
 		else {
-			$servman->renderServiceScreen("core", "error", array('message' => $servman->errmsg), $service_call);				
+			include_once("phplib/snippets/header.php");
+			$servman->renderServiceScreen("core", "error", array('message' => $servman->errmsg), $service_call);
+			include_once("phplib/snippets/footer.php");
 		}		
 	}
 	else {
+		$service = $servman->loadService($service_call);
+		include_once("phplib/snippets/header.php");
 		$servman->renderServiceScreen("core", "denied", array('message' => $servman->errmsg), $service_call);
+		include_once("phplib/snippets/footer.php");
 	}
 }
 else {
+	$service = $servman->loadService($service_call);
+	include_once("phplib/snippets/header.php");
 	$servman->renderServiceScreen("core", "error", array("title" => "The page does not exist", 'message' => $servman->errmsg), $service_call);
+	include_once("phplib/snippets/footer.php");
 }
 ?>

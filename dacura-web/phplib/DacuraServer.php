@@ -69,6 +69,12 @@ class DacuraServer {
 		//finally dataset dependant logging ?
 	}
 	
+	function getURLofLogfile($fpath){
+		$f_ext = substr($fpath, strlen($this->settings['dacura_logbase']));
+		$url = $this->settings['log_url'].$f_ext;
+		return $url; 
+	}
+	
 	/* 
 	 * Config related functions
 	 */

@@ -352,15 +352,29 @@ ul.service-breadcrumbs {margin-left: -35px; margin-top: -12px}
 	margin-top: 8px;
 }
 
+table.scraper-report,
 #userview table.dc-wizard{
 	width: 100%;
 }
+
+
+
+table.scraper-report {
+	border-top: 1px solid #888;
+	border-collapse: collapse;
+	border-bottom: 1px solid #888;
+	margin-bottom: 10px;
+}
+
 
 table.dc-wizard {
 	border-top: 1px solid #888;
 	border-collapse: collapse;
 }
 
+
+
+table.scraper-report th,
 table.dc-wizard th {
 	padding: 10px 4px 2px 4px;
 	font-size: 0.85em;
@@ -371,6 +385,12 @@ table.dc-wizard th {
 	border-right: 1px solid #888;
 }
 	
+table.scraper-report td {
+	padding: 4px 4px 4px 6px;
+	text-align: right;
+	border-right: 1px solid white;
+}
+
 table.dc-wizard td {
 	padding: 4px 4px 0px 6px;
 	text-align: left;

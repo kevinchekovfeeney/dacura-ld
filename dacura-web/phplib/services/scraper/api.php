@@ -62,7 +62,6 @@ function dump(){
 	$sdas = new ScraperDacuraAjaxServer($service);
 	$data = json_decode($_POST["data"]);
 	$x = $sdas->getDump($data);
-	//$x = $sdas->getDump($_POST["data"]);
 	if($x){
 		echo json_encode($x);
 	}
