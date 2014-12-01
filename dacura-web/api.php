@@ -43,7 +43,7 @@ else {
 	$service = $servman->loadService($service_call);
 	$api_path = $dacura_settings['path_to_services'].$service_call->name()."/api.php";
 	if(file_exists($api_path)){
-		if($servman->hasPermissions($service_call)){
+		if($servman->hasPermissions($service_call, true)){
 			//set up routing for the EPI router to use...
 			$rt = (count($service_call->args) > 0) ? "/".implode("/", $service_call->args) : "/";
 			$_GET['__route__'] = $rt;
