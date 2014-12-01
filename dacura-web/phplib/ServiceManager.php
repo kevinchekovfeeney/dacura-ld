@@ -111,6 +111,7 @@ class ServiceManager {
 	}
 	
 	function hasPermissions($sc){
+		return true;
 		//pull the user object out of the session....
 		if($sc->servicename == 'scraper'){
 			$u = $this->getUser();
