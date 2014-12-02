@@ -302,8 +302,7 @@
 								}
 							);
 					}
-					$.when.apply($, requests).done(function(){
-						alert ("fail");
+					$.when.apply($, requests).complete(function(){
 						if(polityData.length > 0){
 							updateModal("Scraping complete. Parsing...")
 							var ajs = dacura.scraper.api.parsePage();
