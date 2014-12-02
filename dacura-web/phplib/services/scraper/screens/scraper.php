@@ -278,7 +278,7 @@
 					polityCount = $('input.polityValid:checked').length;
 					showModal("Getting polity data (" + politiesObtainedCount + "/" + polityCount + ") ...");
 					var polities = $('input.polityValid:checked');
-					requests = [];
+					//requests = [];
 					for(var i = 0; i < polities.length; i++){
 						polityURL = polities[i].id;
 						element = $(polities).get(i);
@@ -291,50 +291,55 @@
 								updateModal("Getting polity data (" + politiesObtainedCount + "/" + polityCount + ") ...");
 								try{
 									a = JSON.parse(response);
-								}catch(e){
+									polityData[polityData.length] = a;
+								}
+								catch(e){
 									console.log(response);
 								}
-								polityData[polityData.length] = a;
 							})
 							.fail(function (jqXHR, textStatus){
 									updateModal("Getting Polity Data failed. Error: " + jqXHR.responseText);
 								}
 							);
 					}
-
-					$.when.apply($, requests).done(function(){
-						updateModal("Scraping complete. Parsing...")
-						var ajs = dacura.scraper.api.parsePage();
-						ajs.data.data = JSON.stringify(polityData);
-						$.ajax(ajs)
-						.done(function(response, textStatus, jqXHR) {	
-							updateModal("Parsing complete! Generating dumps...");
-							var ajx = dacura.scraper.api.dump();
-							ajx.data.data = response;
-							$.ajax(ajx)
-							.done(function(r2, textStatus, jqXHR) {	
-								updateModal("Polity data generated.");
-								try{
-									b = JSON.parse(r2);
-								}catch(e){
-									console.log(r2);
-								}
-								report = formatReport(b);
-								errors = formatErrors(b);
-								report += "<hr>" + errors;
-								$("#info").html(report).show()
-								$("#get-polities").hide()
-								$("#polity-display").hide();
-								$("#get-data").hide();
-								$("#functionality").hide();
-								hideModal();
-							})
-							.fail(function (jqXHR, textStatus){
-									updateModal("Parsing failed. Error: " +  + jqXHR.responseText);							
-								}
-							);
-						});	
-					});			
+					if(polityData.length > 0){
+						$.when.apply($, requests).done(function(){
+							updateModal("Scraping complete. Parsing...")
+							var ajs = dacura.scraper.api.parsePage();
+							ajs.data.data = JSON.stringify(polityData);
+							$.ajax(ajs)
+							.done(function(response, textStatus, jqXHR) {	
+								updateModal("Parsing complete! Generating dumps...");
+								var ajx = dacura.scraper.api.dump();
+								ajx.data.data = response;
+								$.ajax(ajx)
+								.done(function(r2, textStatus, jqXHR) {	
+									updateModal("Polity data generated.");
+									try{
+										b = JSON.parse(r2);
+									}catch(e){
+										console.log(r2);
+									}
+									report = formatReport(b);
+									errors = formatErrors(b);
+									report += "<hr>" + errors;
+									$("#info").html(report).show()
+									$("#get-polities").hide()
+									$("#polity-display").hide();
+									$("#get-data").hide();
+									$("#functionality").hide();
+									hideModal();
+								})
+								.fail(function (jqXHR, textStatus){
+										updateModal("Parsing failed. Error: " +  + jqXHR.responseText);							
+									}
+								);
+							});	
+						});
+					}
+					else {
+						updateModal("No polities were retrieved - no data!");							
+					}			
 				}
 			});
 		});
