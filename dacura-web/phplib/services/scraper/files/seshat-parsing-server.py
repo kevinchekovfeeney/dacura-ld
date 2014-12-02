@@ -68,7 +68,7 @@ returnValues = True
 returnOnlyErrors = False
 returnOnlyParsed = False
 FORMAT = '%(asctime)-15s %(ip)s %(user)-8s %(message)s'
-logging.basicConfig(filename='log.txt', format=FORMAT, level=logging.DEBUG)
+logging.basicConfig(filename='parserlog.txt', format=FORMAT, level=logging.DEBUG)
 
 @route('/parser', method='POST')
 def index():
