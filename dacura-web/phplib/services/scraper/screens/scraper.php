@@ -303,6 +303,7 @@
 							);
 					}
 					$.when.apply($, requests).done(function(){
+						alert ("fail");
 						if(polityData.length > 0){
 							updateModal("Scraping complete. Parsing...")
 							var ajs = dacura.scraper.api.parsePage();
