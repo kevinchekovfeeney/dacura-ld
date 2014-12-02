@@ -302,8 +302,8 @@
 								}
 							);
 					}
-					if(polityData.length > 0){
-						$.when.apply($, requests).done(function(){
+					$.when.apply($, requests).done(function(){
+						if(polityData.length > 0){
 							updateModal("Scraping complete. Parsing...")
 							var ajs = dacura.scraper.api.parsePage();
 							ajs.data.data = JSON.stringify(polityData);
@@ -335,11 +335,11 @@
 									}
 								);
 							});	
-						});
-					}
-					else {
-						updateModal("No polities were retrieved - no data!");							
-					}			
+						}
+						else {
+							updateModal("No polities were retrieved - no data!");							
+						}	
+					});
 				}
 			});
 		});
