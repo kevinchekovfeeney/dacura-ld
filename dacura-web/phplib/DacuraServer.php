@@ -258,4 +258,15 @@ class DacuraServer {
 		return false;
 	}
 	
+	function start_comet_output(){
+		header("Cache-Control: no-cache, must-revalidate");
+		header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+		flush();
+	}
+	
+	function write_comet_update($ting){
+		echo json_encode($ting);
+		flush();
+	}
+	
 }
