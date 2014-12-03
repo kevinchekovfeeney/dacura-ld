@@ -233,7 +233,7 @@ class ScraperDacuraServer extends DacuraServer {
 								$parsedValues = $this->formatValue($item->value[1][1], $item->value[1][0]);
 								for($j = 0;$j < count($parsedValues);$j++){
 									if(gettype($parsedValues[$j]) == "array"){
-										$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t".$parsedValues[$j][0]."\t".$parsedValues[$j][1]."\t".$item->errorMessage."\n";
+										$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t".trim($parsedValues[$j][0])."\t".trim($parsedValues[$j][1])."\t".$item->errorMessage."\n";
 									}else{
 										$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t\t".$parsedValues[$j]."\t".$item->errorMessage."\n";
 									}

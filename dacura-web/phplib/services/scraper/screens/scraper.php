@@ -163,7 +163,9 @@
 						x = JSON.parse(response);
 						addition = "<div class='ngaList'><h3>NGAs<span>Select All<input type='checkbox' class='selectAll'></span></h3><div class='ngas'><table>";
 						for(var i=0;i<x.length;i++){
-							addition += "<tr><td>" + x[i] + "</td><td><input type='checkbox' class='ngaValid' id='" + x[i] + "'></td></tr>";
+							if(include(x[i]) && x[i] != name){
+								addition += "<tr><td>" + x[i] + "</td><td><input type='checkbox' class='ngaValid' id='" + x[i] + "'></td></tr>";
+							}
 						}
 						addition += "</table></div></div>";
 						hideModal();
