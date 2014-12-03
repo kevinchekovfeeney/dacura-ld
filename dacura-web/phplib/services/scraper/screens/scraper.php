@@ -23,6 +23,49 @@
 		<div id="info"></div>
 		<script>
 
+		//from http://stackoverflow.com/questions/5518181/jquery-deferreds-when-and-the-fail-callback-arguments
+		$.whenAll = function( firstParam ) {
+		    var args = arguments,
+		        sliceDeferred = [].slice,
+		        i = 0,
+		        length = args.length,
+		        count = length,
+		        rejected,
+		        deferred = length <= 1 && firstParam && jQuery.isFunction( firstParam.promise )
+		            ? firstParam
+		            : jQuery.Deferred();
+		    
+		    function resolveFunc( i, reject ) {
+		        return function( value ) {
+		            rejected |= reject;
+		            args[ i ] = arguments.length > 1 ? sliceDeferred.call( arguments, 0 ) : value;
+		            if ( !( --count ) ) {
+		                // Strange bug in FF4:
+		                // Values changed onto the arguments object sometimes end up as undefined values
+		                // outside the $.when method. Cloning the object into a fresh array solves the issue
+		                var fn = rejected ? deferred.rejectWith : deferred.resolveWith;
+		                fn.call(deferred, deferred, sliceDeferred.call( args, 0 ));
+		            }
+		        };
+		    }
+		    
+		    if ( length > 1 ) {
+		        for( ; i < length; i++ ) {
+		            if ( args[ i ] && jQuery.isFunction( args[ i ].promise ) ) {
+		                args[ i ].promise().then( resolveFunc(i), resolveFunc(i, true) );
+		            } else {
+		                --count;
+		            }
+		        }
+		        if ( !count ) {
+		            deferred.resolveWith( deferred, args );
+		        }
+		    } else if ( deferred !== firstParam ) {
+		        deferred.resolveWith( deferred, length ? [ firstParam ] : [] );
+		    }
+		    return deferred.promise();
+		};
+
 		function include(url){
 			//change to case statement
 			if(includeAll){
@@ -122,6 +165,19 @@
 			return string;
 		}
 
+		function formatFailures(failures){
+			string = "";
+			if(failures.length > 0){
+				string = "<h4>The following pages could not be scraped:</h4>";
+				string += "<table class='scraper-report'><tr><th>Page</th><th>Failure Type</th></tr>";
+				for(var i = 0;i < failures.length; i++){
+					string += "<tr><td>" + failures[i][0] + "</td><td>" + failures[i][1] + ": " + failures[i][2] + "</td></tr>";
+				}
+				string += "</table>";
+			}
+			return string;
+		}
+
 		var ngaData = [];
 		var requests = [];
 		var polityData = [];
@@ -129,6 +185,7 @@
 		var politiesObtainedCount = 0;
 		var includeAll = false;
 
+		console.log(name);
 		$('document').ready(function(){
 			$("#reset").hide();
 			$("button").button();
@@ -163,8 +220,10 @@
 						x = JSON.parse(response);
 						addition = "<div class='ngaList'><h3>NGAs<span>Select All<input type='checkbox' class='selectAll'></span></h3><div class='ngas'><table>";
 						for(var i=0;i<x.length;i++){
-							if(include(x[i]) && x[i] != name){
+							if(include(x[i])){
 								addition += "<tr><td>" + x[i] + "</td><td><input type='checkbox' class='ngaValid' id='" + x[i] + "'></td></tr>";
+							}else if(x[i] == name){
+								console.log(x[i]);
 							}
 						}
 						addition += "</table></div></div>";
@@ -280,7 +339,8 @@
 					polityCount = $('input.polityValid:checked').length;
 					showModal("Getting polity data (" + politiesObtainedCount + "/" + polityCount + ") ...");
 					var polities = $('input.polityValid:checked');
-					//requests = [];
+					requests = [];
+					failures = [];
 					for(var i = 0; i < polities.length; i++){
 						polityURL = polities[i].id;
 						element = $(polities).get(i);
@@ -300,13 +360,18 @@
 								}
 							})
 							.fail(function (jqXHR, textStatus){
+									failures[failures.length] = [jqXHR.responseText, jqXHR.status, jqXHR.statusText];
 									updateModal("Getting Polity Data failed. Error: " + jqXHR.responseText);
 								}
 							);
 					}
-					$.when.apply($, requests).done(function(){
+					$.whenAll.apply($, requests).always(function(){
 						if(polityData.length > 0){
-							updateModal("Scraping complete. Parsing...")
+							failText = "";
+							if(failures.length > 0){
+								failText = failures.length + " polities could not be scraped.<br>";
+							}
+							updateModal(failText + "Scraping complete. Parsing...")
 							var ajs = dacura.scraper.api.parsePage();
 							ajs.data.data = JSON.stringify(polityData);
 							$.ajax(ajs)
@@ -322,9 +387,10 @@
 									}catch(e){
 										console.log(r2);
 									}
+									fails = formatFailures(failures);
 									report = formatReport(b);
 									errors = formatErrors(b);
-									report += "<hr>" + errors;
+									report += fails + "<hr>" + errors;
 									$("#info").html(report).show()
 									$("#get-polities").hide()
 									$("#polity-display").hide();
@@ -333,7 +399,14 @@
 									hideModal();
 								})
 								.fail(function (jqXHR, textStatus){
-										updateModal("Parsing failed. Error: " +  + jqXHR.responseText);							
+										//updateModal("Parsing failed. Error: " +  + jqXHR.responseText);
+										fails = formatFailures(failures);
+										$("#info").html(fails).show()
+										$("#get-polities").hide()
+										$("#polity-display").hide();
+										$("#get-data").hide();
+										$("#functionality").hide();
+										hideModal();							
 									}
 								);
 							});	
