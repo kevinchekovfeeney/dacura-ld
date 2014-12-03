@@ -253,6 +253,7 @@ class ScraperDacuraServer extends DacuraServer {
 				}
 			}else{
 				//do nothing
+				
 			}
 			$output = $output."\n";
 		}
