@@ -181,12 +181,11 @@ class DacuraService{
 
 	function handlePageLoad($sc = false){
 		if(!$sc) $sc = $this->servicecall;
+		$screen = "";
 		if(count($sc->args) > 0){
 			$screen = array_shift($sc->args);
 		}
-		else {
-			$screen = $this->default_screen;
-		}
+		$screen = $screen ? $screen : $this->default_screen;
 		$params = array();
 		for($i = 0; $i < count($sc->args); $i+=2){
 			$params[$sc->args[$i]] = (isset($sc->args[$i + 1]) ? $sc->args[$i + 1] : "");

@@ -50,7 +50,12 @@ else {
 			Epi::init('route');
 			Epi::setSetting('exceptions', true);
 			include_once($api_path);
-			getRoute()->run();
+			try {
+				getRoute()->run();
+			}
+			catch(Exception $e){
+				write_error("Unknown API: ".$e->getMessage(), 400);
+			}
 		}
 		else {
 			write_error("Access Denied [".$service_call->name()."] ".$servman->errmsg, 400);				

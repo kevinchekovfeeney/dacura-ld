@@ -261,12 +261,19 @@ class DacuraServer {
 	function start_comet_output(){
 		header("Cache-Control: no-cache, must-revalidate");
 		header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+		ob_flush();
 		flush();
 	}
 	
-	function write_comet_update($ting){
-		echo json_encode($ting);
+	function write_comet_update($type, $ting){
+		echo '{ message_type: "comet_update", status: "'.$type.'" payload: '.json_encode($ting)."}\n";
+		//echo str_pad('',4096)."\n";
+		ob_flush();
 		flush();
+	}
+	
+	function end_comet_output(){
+		ob_end_flush();
 	}
 	
 }

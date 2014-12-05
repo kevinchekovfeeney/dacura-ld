@@ -12,15 +12,21 @@
 <script src="<?=$service->settings['services_url']?>core/dacura.js"></script>
 <script>
 <?php include_once($service->settings['path_to_services']."core/dacura.system.js");?>
-
 dacura.system.mode = "local";
 </script>
-<script src="<?=$service->settings['files_url']?>js/jquery-ui-1.10.2.custom.min.js"></script>
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->settings['files_url']?>css/jquery-ui-1.10.2.custom.min.css"" />
+<script src="<?=$service->settings['files_url']?>js/jquery-ui-1.11.2.custom/jquery-ui.min.js"></script>
+<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->settings['files_url']?>js/jquery-ui-1.11.2.custom/jquery-ui.min.css" />
 <!--[if IE]>
 <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
 <![endif]-->
+<script>
+$( document ).ready(function() {
+	//$('#dacura-modal').dialog( {modal: true, autoOpen: false});
+});
+</script>
 </head>
 <body>
+<!-- The standard modal dialogue for communicating important messages to the user -->
+<div id="dacura-modal" style="display: none">This should be invisible</div>
 <div id="content-container">
 

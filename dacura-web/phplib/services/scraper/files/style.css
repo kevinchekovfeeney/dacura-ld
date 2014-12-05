@@ -1,22 +1,84 @@
-body{
-	font-family: "Open Sans", sans-serif;
-	background: #da3;
+.seshat-detail {
+	font-size: 0.85em;
+}
+.seshat-error {
+	color: #ff8888;
 }
 
-p{
-	font-size: 14pt;
-}
 
-#get-polities, #get-data, #nga-display, #polity-display, #info, #functionality, #modal, #modal-dim{
+.scraper-screen {
 	display: none;
 }
 
-#main, #functionality, #info{
-	margin: 0 auto;
-	padding: 1em;
-	width: 960px;
-	background: #fff;
-	border-radius: 5px;
+div#scraper-info {
+	padding: 10px 20px 10px 20px;
+	font-size: 1.1em;
+}
+
+div.tool-content {
+	background-color: #f3f1d7;
+	border: 1px solid #666;
+	margin: 10px 20px;
+}
+
+div#polity-display {
+	padding: 10px;
+}
+
+div.tool-buttons {
+	padding-top: 20px;
+	padding-bottom: 20px;
+	padding-right: 10px;
+	padding-left: 10px;
+}
+
+.tool-header {
+	border-bottom: 1px #888 solid;
+	margin-bottom: 10px;
+	text-align: left;
+	padding: 10px;
+	background-color: #ccc;
+}
+
+.tool-header span.tool-title {
+	font-size: 20px; 
+	font-weight: bold;
+	padding-right: 20px; 
+}
+
+.tool-header span.tool-description {
+	float: right;
+}
+
+.polity-intro {
+	font-size: 1.2em;
+	margin-bottom: 12px;
+}
+
+.polity-intro span {
+	float: right;
+	font-weight: bold;
+	margin-right; 12px;
+}
+
+
+table.seshat-list {
+	width: 100%;
+	text-align: left;
+}
+
+table.seshat-list td {
+	padding: 6px;
+}
+
+table.seshat-list th {
+	padding: 12px;
+	background-color: #f4f4ef;
+	border-bottom: 1px solid #888;
+	text-align: left;
+} 
+
+div.ngaList {
 }
 
 #main{
@@ -28,19 +90,36 @@ p{
 	clear: both;
 }
 
-.ngas{
+div.ngas{
 	font-size: 10pt;
 }
 
 th{
-	text-align: left;
 	background: #fcefa1;
 }
 
-tr:nth-child(even){
-	background: #ccc;
+.nga-list th {
+	text-align: center;
 }
 
+tr:nth-child(even){
+	background: #ddd;
+}
+
+.forward-button {
+	float: right;	
+	margin-right: 20px;
+}
+
+.back-button {
+	float: left;
+	margin-left: 20px;
+}
+
+#scraper-info {
+	padding-top: 10px;
+	
+}
 #modal-dim{
 	width:100%;
 	height:100%;

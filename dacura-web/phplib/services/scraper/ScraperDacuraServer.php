@@ -127,7 +127,7 @@ class ScraperDacuraServer extends DacuraServer {
 		curl_setopt($this->ch, CURLOPT_URL, $this->mainPage);
 		$content = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-			return $this->failure_result("Failed to retrieve login page $this->mainPage. ", curl_getinfo($this->ch, CURLINFO_HTTP_CODE));
+			return $this->failure_result("Failed to retrieve nga list page $this->mainPage. ", curl_getinfo($this->ch, CURLINFO_HTTP_CODE));
 		}
 		$dom = new DOMDocument;
 		$dom->loadXML($content);
@@ -420,7 +420,7 @@ class ScraperDacuraServer extends DacuraServer {
 		curl_setopt($this->ch, CURLOPT_POSTFIELDS, 'wpName='.$this->username.'&wpPassword='.$this->password.'&wpLoginAttempt=Log+in&wpLoginToken='.$loginToken);
 		$store = curl_exec($this->ch);
 		$http_status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
-		if($http_status > 400){
+		if($http_status >= 400){
 			return $this->failure_result("Failed to login to wiki", 400);
 		}
 		return true;

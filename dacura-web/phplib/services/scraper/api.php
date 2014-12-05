@@ -6,6 +6,7 @@ getRoute()->post('/', 'getpolitydata');
 getRoute()->post('/parse', 'parsePage');
 getRoute()->post('/dump', 'dump');
 getRoute()->get('/grabscript', 'getGrabScript');
+getRoute()->get('/comet', 'testComet');
 
 
 include_once("ScraperDacuraServer.php");
@@ -78,3 +79,16 @@ function getGrabScript(){
 		include_once($f);
 	}
 }
+
+function testComet(){
+	global $service;
+	$sdas = new ScraperDacuraAjaxServer($service);
+	$sdas->start_comet_output();
+	$i = 100;
+	while($i-- > 0){
+		$sdas->write_comet_update("success", "$i is the loop<br>");
+		usleep(200000);
+	}
+	$sdas->end_comet_output();
+}
+

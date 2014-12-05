@@ -7,6 +7,82 @@ dacura = {
 
 dacura.toolbox = {};
 
+
+/*
+ * Function for calling slow ajax functions which print status updates before returning a result 
+ * ajs: the ajax setting object that will be sent
+ * oncomplete: the function that will be executed on completion
+ * onmessage: the function that will be executed on receipt of a message
+ * onerror: the function that will be called on 
+ */
+dacura.toolbox.modalSlowAjax = function(url, initmsg){
+	dacura.toolbox.showModal(title, initmsg, "info");
+	var onc = function(res){
+		alert(res + " is the result");
+	}
+	var onm = function(msgs){
+		for(var i = 0; i < msgs.length; i++){
+			dacura.toolbox.updateModal(msgs[i]);
+			usleep(100000);
+		}
+	}
+	this.slowAjax(url, "GET", onc, onm);
+}
+
+dacura.toolbox.updateModal = function(msg, msgclass){
+	if(!$('#dacura-modal').dialog( "isOpen" )){
+		$('#dacura-modal').dialog( "open");
+	}
+	$('#dacura-modal').html(msg);
+} 
+
+dacura.toolbox.showModal = function(msg, msgclass){
+		$('#dacura-modal').dialog({
+			 dialogClass: "modal-message",
+			 modal: true
+	    } ).html(msg);		
+}
+
+dacura.toolbox.removeModal = function(){
+	if($('#dacura-modal').dialog( "isOpen" )){
+		$('#dacura-modal').dialog("close").html("This should be invisible");
+	}
+}
+
+
+dacura.toolbox.slowAjax = function (url, method, oncomplete, onmessage, onerror){
+    var msgcounter = 0;
+	var xhr = $.ajaxSettings.xhr();
+	xhr.multipart = true; 
+	xhr.open(method, url, true); 
+	//xhr._cachedOnreadystatechange = xhr.onreadystatechange;
+	xhr.onreadystatechange = function() {
+		//xhr._cachedOnreadystatechange();
+		if (xhr.readyState === 3) {
+			//parse 
+			//var newmsgs = dacura.toolbox.getNewResultMsgs(msgcounter, xhr.responseText);
+			  var msgs = xhr.responseText.split("}\n{");
+			  msgs.splice(0, msgcounter);
+			  var len=msgs.length;
+			  if(!(len == 1 && msgcounter == 0))
+		      {
+				  for(var i=0; i<len; i++) {
+					  if(i == 0 && msgcounter == 0) msgs[i] = msgs[i] + "}";
+					  else if(i == len-1) msgs[i] = '{' + msgs[i];
+					  else msgs[i] = '{' + msgs[i] + '}';
+				  }
+		      }
+			  onmessage(msgs);
+		      msgcounter += msgs.length;
+		}
+		else if(xhr.readyState === 4){
+			var msgs = xhr.responseText.split("}\n{");
+			oncomplete(msgs[msgs.length-1]);  
+		}
+	};
+	xhr.send(null);
+};
+
 dacura.toolbox.writeErrorMessage = function(jqueryid, msg){
 	$(jqueryid).html("<div class='dacura-error'>" + msg + "</div>");
 	$(jqueryid).show();

@@ -1,28 +1,53 @@
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->get_service_file_url('style.css')?>" />
+   <div class="tool-header">
+   	<span class="tool-title">Seshat Scraper</span>
+	<span class="tool-description">This tool extracts structured data from the Seshat wiki.</span>
+   </div>
+   <div id="scraper-info"></div>
+   <div class="scraper-screen" id="scraper-screen-1">
+      <div class="tool-buttons">
+   		<button class="dacura-button get-ngas" id="get-ngas">1. Choose NGAs to Export &gt;&gt;</button>
+   	   </div>
+   </div>
+   <div class="scraper-screen" id="scraper-screen-2">
+   		<div id="nga-display" class="tool-content"></div>
+   		<div class="tool-buttons">
+	   	<button class="dacura-button back-button get-ngas" id="get-ngas2">Refresh NGA List</button>
+	   	<button class="dacura-button forward-button" id="get-polities">2. Choose Polities to Export &gt;&gt;</button>
+	   	</div>
+   </div>
+   <div class="scraper-screen" id="scraper-screen-3">
+   		<div id="polity-display" class="tool-content">
+   		</div>
+   		<div class="tool-buttons">
+   			<button class="dacura-button back-button" id="back-ngas">&lt;&lt; Return to NGA List</button>
+			<button class="dacura-button forward-button" id="get-data">3. Export Data &gt;&gt;</button>
+	   </div>
+   </div>
+   <div class="scraper-screen" id="scraper-screen-4">
+   		<div id="results-display" class="tool-content">
+   		</div>
+		<div class="tool-buttons">
+			<button class="dacura-button back-button" id="back-ngas">&lt;&lt; Change Policy List</button>		
+		</div>	
+   </div>
+   <div style="clear: both; height: '10px'">&nbsp;</div>
+	<div id="functionality">
+	</div>
+	<script>
 
-<div id="modal-dim"></div>
-		<div id="modal">
-			<p id="contents"></p>
-			<div>
-				<button id="cancel">Cancel</button>
-			</div>
-		</div>
-		<div id="main">
-			<h1>Seshat Scraper</h1>
-			<p>This tool extracts structured data from the Seshat wiki.</p>
-			<button id="reset">Reset</button>
-			<button id="get-ngas">Choose NGAs to Export</button>
-		</div>
-		<div id="functionality">
-			<div id="nga-display"></div>
-			<button id="get-polities">Choose Polities to Export</button>
-			<div id="polity-display"></div>
-			<button id="get-data">Export Data</button>
-			<div class="clear"></div>
-		</div>
-		<div id="info"></div>
-		<script>
+		function resetScraperScreen(n){
+			$('#scraper-screen-'+n +' div.tool-content').html("");
+		}
 
+		function hideScraperScreen(n){
+			$('#scraper-screen-'+n).hide();	
+		}
+		
+		function showScraperScreen(n){
+			$('#scraper-screen-'+n).show();
+		}
+	
 		function include(url){
 			//change to case statement
 			if(includeAll){
@@ -35,7 +60,11 @@
 				return false;
 			}else if(url.indexOf("Special") > -1){
 				return false;
+			}else if(url.indexOf("Conflicts:") > -1){
+				return false;
 			}else if(url.indexOf("Main_Page") > -1){
+				return false;
+			}else if(url.indexOf("File:") > -1){
 				return false;
 			}else if(url.indexOf("Memento") > -1){
 				return false;
@@ -62,29 +91,47 @@
 		}
 
 		function showModal(contents){
-			$("#modal #contents").html(contents);
-			$("#modal-dim").show();
-			$("#modal").show();
-			$("body").css("overflow", "none");
+			dacura.toolbox.showModal(contents);
+			//$("#modal #contents").html(contents);
+			//$("#modal-dim").show();
+			//$("#modal").show();
+			//$("body").css("overflow", "none");
 		}
 
 		function hideModal(){
-			$("#modal-dim").hide();
-			$("#modal").hide();
-			$("body").css("overflow", "auto");
+			//dacura.toolbox.removeModal();
 		}
 
 		function updateModal(contents){
-			$("#modal #contents").html(contents);
+			dacura.toolbox.showModal(contents);
 		}
 
 		function tidyNGAString(contents){
 			contents = contents.replace('http://seshat.info/', '');
-			contents = contents.replace('_', ' ');
+			var pattern = "_";
+		    re = new RegExp(pattern, "g");
+			contents = contents.replace(re, ' ');
 			contents = contents.replace('Select All', '');
 			return contents;
 		}
 
+		function parsePolityString(str){
+			p_details = {
+				url: str,
+				shorturl: str.substr(0,50),
+				polityname: "", 
+				period: ""	
+			};
+			str = str.replace('http://seshat.info/', '');
+			re = new RegExp("_", "g");
+			str = str.replace(re, ' ');
+			re = new RegExp("^([^\(\)]*)([^\)]*)");
+			res =  re.exec(str);
+			p_details.polityname = res[1]; 
+			p_details.period = res[2].substr(1);
+			return p_details;
+		}
+		
 		function formatReport(report){
 			string = "<h4>Results Summary</h4>";
 			string += "<table class='scraper-report'><tr><th>NGA</th><th>Polities</th><th>Variables</th><th>Non-Zero</th><th>Simple</th><th>Complex</th><th>Parse Success</th><th>Parse Failure</th></tr>"
@@ -129,9 +176,25 @@
 		var politiesObtainedCount = 0;
 		var includeAll = false;
 
+		var ngaStatus = {
+			loaded: 0,
+			failed: 0,
+			message: ""
+		};
+		var polityStatus = {
+			loaded: 0,
+			failed: 0,
+			message: ""
+		};
+		var reportStatus = {
+			loaded: 0,
+			failed: 0,
+			message: ""
+		};
+
 		$('document').ready(function(){
-			$("#reset").hide();
 			$("button").button();
+			showScraperScreen(1);
 			$("#cancel").click(function(){
 				//ngaRequest.abort();
 				for(var i = 0;i<requests.length;i++){
@@ -139,147 +202,238 @@
 				}
 				requests = [];
 			});
-			$("#reset").click(function(){
-				$("#functionality").hide();
-				$("#nga-display").hide();
-				$("#get-polities").hide();
-				$("#polity-display").hide();
-				$("#get-data").hide();
-				$("#get-polities").hide()
-				$("#get-ngas").show();
+
+			$("#back-ngas").click(function(){
+				hideScraperScreen(3);
+				showScraperScreen(2);
+				resetScraperScreen(3);
+				$('#scraper-info').html(ngaStatus.message);
 			});
-			$("#get-ngas").click(function(){
+
+			$(".get-ngas").click(function(){
+				ngaStatus.loaded = 0;
+				ngaStatus.failed = 0;
+				ngaStatus.message = "";
+				
 				var ajs = dacura.scraper.api.getngalist();
 				var self=this;
 				ajs.beforeSend = function(){
-					showModal("Getting NGA list...");
-					//dacura.toolbox.writeBusyMessage('.dacura-wizard-help', "Checking credentials...");
+					dacura.toolbox.showModal("<p>Retrieving NGA list from Seshat Wiki</p><div class='indeterminate-progress'></div>");
+					$('.indeterminate-progress').progressbar({
+						value: false
+					});
 				};
 				ajs.complete = function(){
-					hideModal();
+					dacura.toolbox.removeModal();
 				};
 				$.ajax(ajs)
 					.done(function(response, textStatus, jqXHR) {				
-						x = JSON.parse(response);
-						addition = "<div class='ngaList'><h3>NGAs<span>Select All<input type='checkbox' class='selectAll'></span></h3><div class='ngas'><table>";
-						for(var i=0;i<x.length;i++){
-							if(include(x[i]) && x[i] != name){
-								addition += "<tr><td>" + x[i] + "</td><td><input type='checkbox' class='ngaValid' id='" + x[i] + "'></td></tr>";
+						try {
+							x = JSON.parse(response);
+							addition = "<div class='ngaList'><table class='nga-list seshat-list'><tr><th>NGA</th><th>URL</th><th><input type='checkbox' class='selectAll'>&nbsp;&nbsp;Select All</span></th></tr>";
+							for(var i=0;i<x.length;i++){
+								if(include(x[i]) ){
+									ngaStatus.loaded++; 
+									addition += "<tr><td>" + tidyNGAString(x[i]) + "</td><td><a href='" + x[i] + "'>" + x[i] + "</a></td><td><input type='checkbox' class='ngaValid' id='" + x[i] + "'></td></tr>";
+								}
 							}
+							ngaStatus.message = ngaStatus.loaded + " NGAs identified. please select the NGAs for which you wish to export data from the list below";
+							addition += "</table></div></div>";
+							hideScraperScreen(1);
+							showScraperScreen(2);
+							$('#scraper-info').html(ngaStatus.message);
+							$("#nga-display").html(addition).show();
+							$(".ngaList h3 span").click(function(ev) {
+								ev.stopPropagation();
+							});
+							$(".selectAll").click(function(){
+								if ($(this).is(':checked')) {
+									$(this).closest("div.ngaList").find(":checkbox").prop('checked',true);
+								}else{
+									$(this).closest("div.ngaList").find(":checkbox").prop('checked',false);
+								}
+							});
 						}
-						addition += "</table></div></div>";
-						hideModal();
-						$("#nga-display").html(addition);
-						$(".ngaList").accordion({
-							collapsible: true,
-							heightStyle: "content"
-						});
-						$(".ngaList h3 span").click(function(ev) {
-							ev.stopPropagation();
-						});
-						$("#functionality").show();
-						$("#nga-display").show();
-						$("#get-polities").show();
-						$("#get-ngas").hide();
-						$(".selectAll").click(function(){
-							if ($(this).is(':checked')) {
-								$(this).closest("div.ngaList").find(":checkbox").prop('checked',true);
-							}else{
-								$(this).closest("div.ngaList").find(":checkbox").prop('checked',false);
-							}
-						});
-						
+						catch(e) 
+						{
+							$('#scraper-info').html("Error - Could not interpret the server response - please try again later");
+						}
 					})
 					.fail(function (jqXHR, textStatus){
-						showModal("Scan failed. Error: " + jqXHR.responseText);
+						$('#scraper-info').html("<strong>Retrieval of NGA List failed</strong><br>" + jqXHR.responseText);
 					}
 				);		
 			});
 
 			$("#get-polities").click(function(){
-				polityTestArray = [];
+				var polityList = {}; //maps polities to NGAs
+				polityStatus.loaded = 0;
+				polityStatus.failed = 0;
+				polityStatus.message = "";
+				
 				if($('input:checked').length==0){
-					alert("nothing selected");
+					alert("nothing selected - you must select at least one policy to export!");
 				}else{
 					ngaCount = $('input.ngaValid:checked').length;
-					showModal("Getting polity lists (" + NGAsObtainedCount + "/" + ngaCount + ") ...");
+					var nganm = ""; if(ngaCount == 1) { nganm = "NGA"; } else { nganm = "NGAs";}
+					dacura.toolbox.showModal("<p class='polity-head'>Getting polity lists for " + ngaCount + " " + nganm + "</p><p class='polity-got'></p><p class='polity-next'></p><div class='determinate-progress'></div>");
+					$('.determinate-progress').progressbar({
+						value: false
+					});
 					var checkedNGAs = $('input.ngaValid:checked').map(function(){return this.id;});
 					var ngas = []
 					for(var i=0;i<checkedNGAs.length;i++){
 						ngas[ngas.length] = checkedNGAs[i];
 					}
-					divs = "<button id='selectEvery'>Select all polities</button><div id='accordion'>";
-					requests = [];
+					var requests = [];
+					var NGAerrorCount = 0;
+					NGAsObtainedCount = 0;
+					divs = "<div class='polity-intro'>Select the polities to export from the list below <span class='select-all-polities'>Select all polities <input type='checkbox' id='everypolity'></span></div><div id='accordion'>";
 					for(var i = 0; i < ngas.length; i++){
-						var ajs = dacura.scraper.api.getpolities(ngas[i]);
-						var self=this;
+						var nga = ngas[i];
+						var ajs = dacura.scraper.api.getpolities(nga);
+						ajs.nga = ajs.data.nga;
+						var numComplete = 0;
 						requests[requests.length] = $.ajax(ajs)
 							.done(function(response, textStatus, jqXHR) {				
-								NGAsObtainedCount++;
-								updateModal("Getting polity lists (" + NGAsObtainedCount + "/" + ngaCount + ") ...");
-								a = JSON.parse(response);
-								x = a["polities"];
-								name = a["payload"][0]["metadata"]["url"];
-								addition = "<h3>" + name + "<span>Select All<input type='checkbox' class='selectAll'></span></h3><div class='ngas'><table>";
-								for(var i=0;i<x.length;i++){
-									if(include(x[i]) && x[i] != name){
-										addition += "<tr><td>" + decodeURI(x[i]) + "</td><td><input class='polityValid' type='checkbox' id='" + x[i] + "'></td></tr>";
-										if(polityTestArray[x[i]]){
-											polityTestArray[x[i]].push(name);
-										}else{
-											polityTestArray[x[i]] = [];
-											polityTestArray[x[i]].push(name);
+								var myOrder = ++numComplete;
+								try {
+									a = JSON.parse(response);
+									x = a["polities"];
+									name = a["payload"][0]["metadata"]["url"];
+									var polities = [];
+									//remove extraneous polities
+									for(var i=0;i<x.length;i++){
+										if(include(x[i]) && x[i] != name && x[i].trim() != ""){
+											var pol = decodeURI(x[i]);
+											if(polities.indexOf(pol) == -1){
+											    polities.push(pol);
+											}
 										}
+									}	
+									if(polities.length == 0){
+										$('.polity-got').html("<p class='seshat-error'>" + tidyNGAString(this.nga) + " did not contain any polities - ignored (" +  myOrder + "/" + ngaCount + ")</p>");
+										$('.determinate-progress').progressbar({
+											value: (myOrder / ngaCount) * 100
+										});
+										polityStatus.message += "<span class='seshat-detail seshat-error'>Empty NGA: " + tidyNGAString(this.nga) + " does not contain any polities" + "</span><br>";
+										NGAerrorCount++;
+									}
+									else {
+										$('.polity-got').html("Successfully retrieved polity list for " + tidyNGAString(name) + " (" + myOrder + "/" + ngaCount + ")");
+										$('.determinate-progress').progressbar({
+											value: (myOrder / ngaCount) * 100
+										});
+										addition = "<h3>" + tidyNGAString(name) + " (" + polities.length + ") <span>Select all <input type='checkbox' class='selectAll'></span></h3><div class='ngas'>";
+										addition += "<table class='polity-list seshat-list'><tr><th>Polity</th><th>Period</th><th>URL</th><th></th></tr>";
+										for(var i=0;i<polities.length;i++){
+											var pdet = parsePolityString(polities[i]);
+											addition += "<tr><td>" + pdet.polityname + "</td><td>"+pdet.period+"</td><td>";
+											if(pdet.url.length > 50) {
+												addition += "<a href='" + pdet.url + "' title='" + pdet.url + "'>" + pdet.url.substr(0,50) + "...</a>";
+											
+											}
+											else {
+												addition += "<a href='" + pdet.url + "' title='" + pdet.url + "'>" + pdet.url + "...</a>";
+											} 
+											addition += "</a></td><td><input class='polityValid' type='checkbox' id='" + polities[i] + "'></td></tr>";
+											if(typeof polityList[polities[i]] !== "undefined"){
+												polityList[polities[i]].push(name);
+											}else{
+												polityList[polities[i]] = [];
+												polityList[polities[i]].push(name);
+											}
+										}
+										addition += "</table></div>";
+										divs += addition;
+										NGAsObtainedCount++;
 									}
 								}
-								addition += "</table></div>";
-								divs += addition;
+								catch (e) {
+									$('.polity-got').html("<p class='seshat-error'>Failed to get polity list for " + tidyNGAString(this.nga) + e + " (" + myOrder + "/" + ngaCount + ")</p>");
+									NGAerrorCount++;
+									$('.determinate-progress').progressbar({
+										value: (myOrder / ngaCount) * 100
+									});
+									polityStatus.message += "<span class='seshat-detail seshat-error'>Parse error - Server response could not be interpreted for " + tidyNGAString(this.nga)  + "</span><br>";
+								}
 							})
 							.fail(function (jqXHR, textStatus){
-								updateModal("Scan failed. Error: " + jqXHR.responseText);
+								var myOrder = ++numComplete;
+								$('.polity-got').html("<p class='seshat-error'>Failed to get polity list for " + tidyNGAString(this.nga) + " (" +  myOrder + "/" + ngaCount + ")</p>");
+								$('.determinate-progress').progressbar({
+									value: (myOrder / ngaCount) * 100
+								});
+								NGAerrorCount++;
+								polityStatus.message += "<span class='seshat-detail seshat-error'>Network error (" + jqXHR.status + "). Failed to load " + tidyNGAString(this.nga) + "</span><br>";
 							}								
 					    );
 					}
-
-					$.when.apply($, requests).done(function(){
-						divs += "</div>";
-						$("#polity-display").html(divs);
-						$(function(){
-							$("#accordion").accordion({
-								collapsible: true,
-								heightStyle: "content"
-							});
-							$("#accordion h3 span").click(function(ev){
-								ev.stopPropagation();
-							});
-							$(".selectAll").click(function(){
-								if ($(this).is(':checked')) {
-									$(this).closest("h3").next().find(":checkbox").prop('checked',true);
-								}else{
-									$(this).closest("h3").next().find(":checkbox").prop('checked',false);
-								}
-							});
-							$("#selectEvery").button().click(function(){
-								$(":checkbox").prop('checked',true);
-							});
-						});
-						$('#nga-display').hide();
-						$("#polity-display").show();
-						$("#get-data").show();
-						$("#get-polities").hide()
-						hideModal();
-					});
+					var checkForCompletion = function(){
+						if((NGAsObtainedCount + NGAerrorCount) < ngaCount){
+							setTimeout(checkForCompletion, 200);
+						}
+						else {
+							if(NGAsObtainedCount == 0){
+								$('#scraper-info').append("<br><span class='seshat-error'><strong>Failed to load any polities</strong></span><br>" + polityStatus.message);
+								dacura.toolbox.removeModal();								
+							}
+							else {		
+								polityStatus.failed = NGAerrorCount;
+								polityStatus.loaded = NGAsObtainedCount;
+								var nganm = ""; if(NGAsObtainedCount== 1) { nganm = "NGA"; } else { nganm = "NGAs";}
+								var fnm = ""; if(NGAerrorCount== 1) { fnm = "failure"; } else { fnm = "failures";}
+								polityStatus.message = "Retrieved polity lists for " + NGAsObtainedCount + " " + nganm + " (" + NGAerrorCount + " " + fnm + ") " + (Object.keys(polityList).length + 1) + " polities in total.<br>" + polityStatus.message;
+								$('#scraper-info').html(polityStatus.message);
+								dacura.toolbox.removeModal();
+								hideScraperScreen(2);
+								showScraperScreen(3);
+								divs += "</div>";
+								$("#polity-display").html(divs).show();
+								$(function(){
+									$("#accordion").accordion({
+										collapsible: true,
+										heightStyle: "content"
+									});
+									$("#accordion h3 span").click(function(ev){
+										ev.stopPropagation();
+									});
+									$(".selectAll").click(function(){
+										if ($(this).is(':checked')) {
+											$(this).closest("h3").next().find(":checkbox").prop('checked',true);
+										}else{
+											$(this).closest("h3").next().find(":checkbox").prop('checked',false);
+										}
+									});
+									$("#everypolity").click(function(){
+										if ($(this).is(':checked')) {
+											$(":checkbox").prop('checked',true);
+										}
+										else {
+											$(":checkbox").prop('checked',false);
+										}
+									});
+								});
+							}
+						}
+					};
+					checkForCompletion();
 				}
 			});
 
+
+			
 			$('#get-data').click(function(){
 				if($('input:checked').length==0){
-					//temp - replace with nicer
-					alert("nothing selected");
+					alert("nothing selected - you must select at least one policy to export!");
 				}else{
-					polityCount = $('input.polityValid:checked').length;
-					showModal("Getting polity data (" + politiesObtainedCount + "/" + polityCount + ") ...");
+					//we need to go from the checkboxs to a list of polities...
+					var polityList = {}; //maps polities to NGAs
+					//polityCount = $('input.polityValid:checked').length;
+					//showModal("Getting polity data (" + politiesObtainedCount + "/" + polityCount + ") ...");
 					var polities = $('input.polityValid:checked');
+					for(var i = 0; i < polities.length; i++){
+					}
 					//requests = [];
 					for(var i = 0; i < polities.length; i++){
 						polityURL = polities[i].id;
@@ -326,7 +480,7 @@
 									errors = formatErrors(b);
 									report += "<hr>" + errors;
 									$("#info").html(report).show()
-									$("#get-polities").hide()
+									//$("#get-polities").hide()
 									$("#polity-display").hide();
 									$("#get-data").hide();
 									$("#functionality").hide();

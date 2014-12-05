@@ -22,12 +22,12 @@ dacura.system.getcds = function(c, d, s){
 		s = this.pagecontext.service;
 	}
 	return c + "/" + d + "/" + s;	
-}
+};
 
 dacura.system.apiURL = function(c, d, s){
 	var url = "<?=$service->settings['ajaxurl']?>";
 	return url + this.getcds(c, d, s);
-}
+};
 
 dacura.system.pageURL = function(c, d, s){
 	var url = "<?=$service->settings['install_url']?>";
@@ -36,4 +36,4 @@ dacura.system.pageURL = function(c, d, s){
 
 dacura.system.switchContext = function(c, d){
 	window.location.href = this.pageURL(c, d, this.pagecontext.service);
-}
+};
