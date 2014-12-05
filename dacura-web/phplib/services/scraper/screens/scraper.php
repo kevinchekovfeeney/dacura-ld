@@ -169,6 +169,19 @@
 			return string;
 		}
 
+		function formatFailures(failures){
+			string = "";
+			if(failures.length > 0){
+				string = "<h4>The following pages could not be scraped:</h4>";
+				string += "<table class='scraper-report'><tr><th>Page</th><th>Failure Type</th></tr>";
+				for(var i = 0;i < failures.length; i++){
+					string += "<tr><td>" + failures[i][0] + "</td><td>" + failures[i][1] + ": " + failures[i][2] + "</td></tr>";
+				}
+				string += "</table>";
+			}
+			return string;
+		}
+
 		var ngaData = [];
 		var requests = [];
 		var polityData = [];
@@ -427,14 +440,26 @@
 				if($('input:checked').length==0){
 					alert("nothing selected - you must select at least one policy to export!");
 				}else{
-					//we need to go from the checkboxs to a list of polities...
-					var polityList = {}; //maps polities to NGAs
-					//polityCount = $('input.polityValid:checked').length;
-					//showModal("Getting polity data (" + politiesObtainedCount + "/" + polityCount + ") ...");
+					
+					//first transform checkboxs to a list of polities (edit out duplicates, etc)
 					var polities = $('input.polityValid:checked');
+					var polityList = {}; //maps polities to NGAs
 					for(var i = 0; i < polities.length; i++){
+						polityURL = polities[i].id;
+						element = $(polities).get(i);
+						polityNGAString = $(element).parents("div").prev("h3").text();
+						polityNGA = polityNGAString.substr(0, polityNGAString.indexOf("("));
+						if(typeof polityList[polityNGA] !== "undefined"){
+							polityList[polityNGA].push(name);
+						}else{
+							polityList[polityNGA] = [];
+							polityList[polityNGA].push(polityURL);
+						}
 					}
-					//requests = [];
+					alert(JSON.stringify(polityList));
+					exit();
+					requests = [];
+					failures = [];
 					for(var i = 0; i < polities.length; i++){
 						polityURL = polities[i].id;
 						element = $(polities).get(i);
@@ -454,13 +479,18 @@
 								}
 							})
 							.fail(function (jqXHR, textStatus){
+									failures[failures.length] = [jqXHR.responseText, jqXHR.status, jqXHR.statusText];
 									updateModal("Getting Polity Data failed. Error: " + jqXHR.responseText);
 								}
 							);
 					}
-					$.when.apply($, requests).done(function(){
+					$.whenAll.apply($, requests).always(function(){
 						if(polityData.length > 0){
-							updateModal("Scraping complete. Parsing...")
+							failText = "";
+							if(failures.length > 0){
+								failText = failures.length + " polities could not be scraped.<br>";
+							}
+							updateModal(failText + "Scraping complete. Parsing...")
 							var ajs = dacura.scraper.api.parsePage();
 							ajs.data.data = JSON.stringify(polityData);
 							$.ajax(ajs)
@@ -476,9 +506,10 @@
 									}catch(e){
 										console.log(r2);
 									}
+									fails = formatFailures(failures);
 									report = formatReport(b);
 									errors = formatErrors(b);
-									report += "<hr>" + errors;
+									report += fails + "<hr>" + errors;
 									$("#info").html(report).show()
 									//$("#get-polities").hide()
 									$("#polity-display").hide();
@@ -487,7 +518,14 @@
 									hideModal();
 								})
 								.fail(function (jqXHR, textStatus){
-										updateModal("Parsing failed. Error: " +  + jqXHR.responseText);							
+										//updateModal("Parsing failed. Error: " +  + jqXHR.responseText);
+										fails = formatFailures(failures);
+										$("#info").html(fails).show()
+										$("#get-polities").hide()
+										$("#polity-display").hide();
+										$("#get-data").hide();
+										$("#functionality").hide();
+										hideModal();							
 									}
 								);
 							});	

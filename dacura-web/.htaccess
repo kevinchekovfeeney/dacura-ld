@@ -108,13 +108,13 @@ DirectoryIndex index.php index.html index.htm
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !=/favicon.ico
-  RewriteRule ^(.*)rest/(.*)$ /admin/api.php?path=$2 [QSA,L]
+  RewriteRule ^(.*)rest/(.*)$ /dacura/api.php?path=$2 [QSA,L]
 
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !=/favicon.ico
-  RewriteCond %{REQUEST_URI} !=/admin/index.php?path=.*
-  RewriteRule ^(.*)$ /admin/index.php?path=$1 [QSA,L]
+  RewriteCond %{REQUEST_URI} !=/dcura/index.php?path=.*
+  RewriteRule ^(.*)$ /dacura/index.php?path=$1 [QSA,L]
 
 
 
