@@ -12,7 +12,7 @@ class LoginDacuraServer extends DacuraServer {
 	function register($u, $p){
 		$code = $this->userman->register($u, $p);
 		if($code){
-			$address =  $this->settings['install_url']."login/register/".$code;
+			$address =  $this->settings['install_url']."system/login/register/code/".$code;
 			$name = $u;
 			ob_start();
 			include_once("screens/register_email.php");
@@ -36,7 +36,7 @@ class LoginDacuraServer extends DacuraServer {
 	function lostpassword($u){
 		$code = $this->userman->requestResetPassword($u);
 		if($code){
-			$address =  $this->settings['install_url']."login/lost/".$code;
+			$address =  $this->settings['install_url']."system/login/lost/code/".$code;
 			$name = $u;
 			ob_start();
 			include_once("screens/lost_password.php");

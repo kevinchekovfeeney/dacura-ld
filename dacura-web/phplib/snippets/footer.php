@@ -1,5 +1,5 @@
 <?php
-$install_base = $dacura_settings['install_url'];
+$install_base = $service->settings['install_url'];
 ?>
 </div>
 <footer>

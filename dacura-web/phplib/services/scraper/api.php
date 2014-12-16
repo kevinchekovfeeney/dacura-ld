@@ -6,7 +6,7 @@ getRoute()->post('/', 'getpolitydata');
 getRoute()->post('/parse', 'parsePage');
 getRoute()->post('/dump', 'dump');
 getRoute()->get('/grabscript', 'getGrabScript');
-getRoute()->get('/comet', 'testComet');
+getRoute()->get('/facts', 'getFactsFromPage');
 
 
 include_once("ScraperDacuraServer.php");
@@ -32,6 +32,20 @@ function getpolities(){
 			echo json_encode($x);
 		}
 	}
+}
+
+function getFactsFromPage(){
+	global $service;
+	$url = "http://seshat.info/Code_book";//$_POST['url'];
+	$sdas = new ScraperDacuraAjaxServer($service);
+	if($sdas->init()){
+		$x = $sdas->getFactsFromPage($url);
+		if($x){
+			//header('Content-Type: text/html; charset=utf-8');
+			opr($x);
+			//echo json_encode($x);
+		}
+	}	
 }
 
 function getPolityData(){
@@ -61,7 +75,7 @@ function parsePage(){
 function dump(){
 	global $service;
 	$sdas = new ScraperDacuraAjaxServer($service);
-	$data = json_decode($_POST["data"]);
+	$data = json_decode($_POST["polities"]);
 	$x = $sdas->getDump($data);
 	if($x){
 		echo json_encode($x);

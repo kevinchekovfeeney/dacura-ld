@@ -34,9 +34,9 @@ dacura.login.logout = function(){
 	};
 	$.ajax(ajs)
 		.done(function(data, textStatus, jqXHR) {
-	     	if(self.mode == 'local'){
+	     	//if(self.mode == 'local'){
 	     		window.location.replace("<?=$service->get_service_url("login")?>");
-			}    
+			//}    
 		})
 		.fail(function (jqXHR, textStatus){
 			dacura.toolbox.writeErrorMessage('#logoutbox-status', "Error: " + jqXHR.responseText );

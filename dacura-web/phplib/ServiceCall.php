@@ -3,8 +3,6 @@
  * Class which parses the URL input and turns it into a structured service call
  * It does not validate the call by checking the ids, just parses it
  *
- * Also where the access control will be inserted...
- *
  * Created By: Chekov
  * Contributors:
  * Creation Date: 20/11/2014
@@ -16,31 +14,36 @@ class ServiceCall{
 	var $collection_id;
 	var $dataset_id;
 	var $servicename;
-	var $args;
+	var $args = array();
 	var $provenance;
 	var $rawpath;
 
 	var $errcode = 0;
 	var $errmsg = "";
 
+	//changes the call to be a call to the error screen of the core service
+	//used when the call can't be parsed....
 	function set_report_error($title, $message){
 		$this->args = array("error", "title", $title, "message", $message);
 		$this->servicename = "core";
-		
 	}
 
 	//pattern of input is...
-	//collection_id//dataset_id//service//screen//args...
+	//collection_id/dataset_id/service/screen/args...
+	//          or
+	//system/service/screen/args -> for services accessed via no dataset / collection id
 	function parseURLInput(){
 		$this->rawpath = isset($_GET['path']) ? $_GET['path'] : "";
 		$path = (isset($_GET['path']) && $_GET['path']) ? explode("/", $_GET['path']) : array();
+		($path[count($path) -1] == "") &&  array_pop($path);
 		if(count($path) == 0){	//omit collection & dataset
 			$this->collection_id = "0";
 			$this->dataset_id = "0";
 			$this->servicename = "";
 			$this->args = array();
 		}
-		elseif($path[0] == 'login'){
+		elseif($path[0] == 'system' or $path[0] == 'login'){
+			if($path[0] == 'system') array_shift($path);
 			$this->collection_id = "0";
 			$this->dataset_id = "0";
 			$this->servicename = array_shift($path);

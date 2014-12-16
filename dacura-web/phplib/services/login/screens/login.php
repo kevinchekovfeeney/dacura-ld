@@ -150,14 +150,14 @@ dacura.login.login = function(){
 	};
 	$.ajax(ajs)
 		.done(function(data, textStatus, jqXHR) {
-	     	if(self.mode == 'local'){
+	     	//if(self.mode == 'local'){
 				if(data != ""){
 					window.location.replace(data);
 				}
 				else {
 		     		window.location.replace("<?=$service->settings['install_url']?>");
 				}
-			}    
+			//}    
 		})
 		.fail(function (jqXHR, textStatus){
 			dacura.toolbox.writeErrorMessage('#loginbox-status', "Error: " + jqXHR.responseText );

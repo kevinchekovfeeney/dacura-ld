@@ -11,7 +11,7 @@ dacura.login.mode = "local";
 <div id='maincontrol'>
 <?php 
 /**
- * $servman = new ServiceManager($dacura_settings);
+ * $servman = new ServiceLoader($dacura_settings);
  * $service_call
  * $service
  */

@@ -15,8 +15,8 @@ dacura.toolbox = {};
  * onmessage: the function that will be executed on receipt of a message
  * onerror: the function that will be called on 
  */
-dacura.toolbox.modalSlowAjax = function(url, initmsg){
-	dacura.toolbox.showModal(title, initmsg, "info");
+dacura.toolbox.modalSlowAjax = function(url, method, args, initmsg){
+	dacura.toolbox.showModal(initmsg, "info");
 	var onc = function(res){
 		alert(res + " is the result");
 	}
@@ -26,7 +26,7 @@ dacura.toolbox.modalSlowAjax = function(url, initmsg){
 			usleep(100000);
 		}
 	}
-	this.slowAjax(url, "GET", onc, onm);
+	this.slowAjax(url, method, args, onc, onm);
 }
 
 dacura.toolbox.updateModal = function(msg, msgclass){
@@ -50,11 +50,22 @@ dacura.toolbox.removeModal = function(){
 }
 
 
-dacura.toolbox.slowAjax = function (url, method, oncomplete, onmessage, onerror){
+dacura.toolbox.slowAjax = function (url, method, args, oncomplete, onmessage, onerror){
     var msgcounter = 0;
-	var xhr = $.ajaxSettings.xhr();
+    var xhr = $.ajaxSettings.xhr();
+    if(method == "POST"){
+    	args = $.param( args);
+    	//xhr.setRequestHeader("Content-length", params.length);
+    	/*var out = new Array();
+
+    	for (key in args) {
+    	    out.push(key + '=' + encodeURIComponent(args[key]));
+    	}
+    	args = out.join('&');*/
+    }
 	xhr.multipart = true; 
 	xhr.open(method, url, true); 
+	xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 	//xhr._cachedOnreadystatechange = xhr.onreadystatechange;
 	xhr.onreadystatechange = function() {
 		//xhr._cachedOnreadystatechange();
@@ -80,7 +91,7 @@ dacura.toolbox.slowAjax = function (url, method, oncomplete, onmessage, onerror)
 			oncomplete(msgs[msgs.length-1]);  
 		}
 	};
-	xhr.send(null);
+	xhr.send(args);
 };
 
 dacura.toolbox.writeErrorMessage = function(jqueryid, msg){

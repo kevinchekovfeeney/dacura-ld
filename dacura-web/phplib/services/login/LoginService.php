@@ -3,8 +3,19 @@
 include_once("LoginDacuraServer.php");
 
 class LoginService extends DacuraService {
+
+	function renderFullPageHeader(){
+		parent::renderFullPageHeader();
+		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.login.js");
+		echo "<div id='maincontrol'>";
+	}
 	
-	function handlePageLoad($sc){
+	function renderFullPageFooter(){
+		echo "</div>";
+		parent::renderFullPageHeader();
+	}
+	
+	function handlePageLoad(){
 		$lds = new LoginDacuraServer($this);
 		if(!$lds->userman){
 			$this->renderScreen("error", array("title" => "Error in Server Creation", "message" => $lds->errmsg));
@@ -16,17 +27,16 @@ class LoginService extends DacuraService {
 			$this->renderScreen("logout", $params);
 		}
 		else{
-			$sc->screen = $sc->getArg(0);
-			if($sc->screen == "" or $sc->screen == 'login'){
+			if($this->screen == "" or $this->screen == 'login'){
 				$params = array("active_function" => "login");
 				$this->renderScreen("login", $params);
 			}
-			elseif(($sc->screen == "register" or $sc->screen == 'lost') && count($sc->args) == 1 || !$sc->args[1]){
-				$params = array("active_function" => $sc->screen);
+			elseif(($this->screen == "register" or $this->screen == 'lost') && (!isset($this->args["code"]))){
+				$params = array("active_function" => $this->screen);
 				$this->renderScreen("login", $params);				
 			}
-			elseif($sc->screen == 'register'){
-				$code = $sc->args[1];
+			elseif($this->screen == 'register'){
+				$code = $this->args["code"];
 				$user = $lds->userman->confirmRegistration($code);
 				if(!$user){
 					$this->renderScreen("error", array("title" => "Error in registration confirmation", "message" => $lds->userman->errmsg));
@@ -36,8 +46,8 @@ class LoginService extends DacuraService {
 				}
 				
 			}
-			elseif($sc->screen == 'lost'){
-				$code = $sc->args[1];
+			elseif($this->screen == 'lost'){
+				$code = $this->args["code"];
 				$user = $lds->userman->confirmLostPassword($code);
 				if(!$user){
 					$this->renderScreen("error", array("title" => "Error in password reset attempt", "message" => $lds->userman->errmsg));

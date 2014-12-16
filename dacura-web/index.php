@@ -10,54 +10,35 @@
  * Based on the service identified in the context, this file loads (with include) the service/index.php file which draws the page
  * 
  * Created By: Chekov
- * Contributors: 
  * Creation Date: 20/11/2014
+ * Contributors: Chekov 15/12/2014
+ * Modified On:
  * Licence: GPL v2
  */
 
 include_once("phplib/settings.php");
-include_once("phplib/ServiceManager.php");
+include_once("phplib/ServiceLoader.php");
 include_once("phplib/DacuraUser.php");
 session_start();
 
 
 
-$servman = new ServiceManager($dacura_settings);
-$service_call = $servman->parseServiceCall();
-$service_call->setProvenance("html");
-if($service_call->inHomeContext()){
-	if($servman->isLoggedIn()){
-		$service_call->servicename = "browse";
-	} 
-	else {
-		$service_call->servicename = "core";
-		$service_call->args[] = "welcome";
-	}
+$servman = new ServiceLoader($dacura_settings);
+$service = $servman->loadServiceFromURL();
+if($service && $service->hasPermission()){
+	$service->renderFullPage(); 	
 }
-if($servman->serviceCallIsValid($service_call)){
-	if($servman->hasPermissions($service_call)){
-		$service = $servman->loadService($service_call);
-		if($service){
-			$service_include_path = $service->getIndexPath($service_call);
-			include_once($service_include_path);
-		}
-		else {
-			include_once("phplib/snippets/header.php");
-			$servman->renderServiceScreen("core", "error", array('message' => $servman->errmsg), $service_call);
-			include_once("phplib/snippets/footer.php");
-		}		
-	}
-	else {
-		$service = $servman->loadService($service_call);
-		include_once("phplib/snippets/header.php");
-		$servman->renderServiceScreen("core", "denied", array('message' => $servman->errmsg), $service_call);
-		include_once("phplib/snippets/footer.php");
-	}
+elseif(!$service) {
+	$servman->renderFullServicePage("core", array(
+			"screen" => "error", 
+			'title' => "Error loading service", 
+			'message' => $servman->errmsg));
 }
 else {
-	$service = $servman->loadService($service_call);
-	include_once("phplib/snippets/header.php");
-	$servman->renderServiceScreen("core", "error", array("title" => "The page does not exist", 'message' => $servman->errmsg), $service_call);
-	include_once("phplib/snippets/footer.php");
+	$servman->renderFullServicePage("core", array(
+			"screen" => "denied", 
+			'title' => "Permission Denied", 
+			'message' => $service->errmsg ), 
+		$service);
 }
 ?>

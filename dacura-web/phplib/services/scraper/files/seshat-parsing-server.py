@@ -27,6 +27,10 @@ def splitCheck(fact):
 		return True
 	return False
 
+def parseValue(factval):
+	success, resultTrees, nextCharacter = parser.parse(factval)
+	return success, "This fact was parsed.", resultTrees
+
 def parseCheck(fact):
 	factArray = fact.split(u"\u2663")
 	if len(factArray) != 2:
@@ -109,7 +113,7 @@ def index():
 				except TypeError:
 					logging.debug("TypeError" + str(item), extra=data)
 		except KeyError:
-			loging.debug("KeyError" + str(item), extra=data)
+			logging.debug("KeyError" + str(item), extra=data)
 	a = json.dumps(y)
 	response.headers['Access-Control-Allow-Origin'] = '*'
 	logging.info(str(len(y)) + " polities grabbed", extra=data)

@@ -1,18 +1,19 @@
 <?php
 
 /*
- * Class representing a collection of datasets in the Dacura System
- * Collections are the highest level division of dacura context.
+ * The service for scraping datasets from the seshat wiki
  *
  * Created By: Odhran
  * Creation Date: 20/11/2014
  * Contributors: Chekov
- * Modifications: 20/11/2014
+ * Modifications: 20/11/2014 - 07/12/2014
  * Licence: GPL v2
  */
 
 
-include_once("phplib/DacuraServer.php");
+require_once("phplib/DacuraServer.php");
+require_once('files/seshat-parser.php');
+require_once('files/seshat-parser-helper.php');
 
 //need to do logging, cookiejar, etc.
 
@@ -24,12 +25,36 @@ class ScraperDacuraServer extends DacuraServer {
 	var $username = 'gavin';
 	var $password = 'cheguevara';
 	var $loginUrl = 'http://seshat.info/w/index.php?title=Special:UserLogin&action=submitlogin';
-	var $pageURL = 'http://seshat.info/Zimbabwe_Plateau';
+	//var $pageURL = 'http://seshat.info/Zimbabwe_Plateau';
 	var $mainPage = 'http://seshat.info/Main_Page';
-	var $dlparent = '/ancestor::dl/preceding-sibling::h3[1]/span[@class!="editsection"]/text()';
-	var $h3parent = '/../preceding-sibling::h3[1]/span[@class!="editsection"]/text()';
-	var $h2parent = '/../preceding-sibling::h2[1]/span[@class!="editsection"]/text()';
-	var $multiCodes = array(
+	//var $dlparent = '/ancestor::dl/preceding-sibling::h3[1]/span[@class!="editsection"]/text()';
+	//var $h3parent = '/../preceding-sibling::h3[1]/span[@class!="editsection"]/text()';
+	///var $h2parent = '/../preceding-sibling::h2[1]/span[@class!="editsection"]/text()';
+	var $sectionsWithImplicitSubsections = array(
+			"Polity variables" => array("Scope of the central government", "Taxation", "Type of taxes", "Taxes are imposed on"), 
+			"Agriculture" => array("Shifting cultivation", "Agricultural technology", "Cultivators / Agri-businesses", "Soil preparation", "Carbohydrate source #1", "Carbohydrate source #2"
+		));
+	var $subsectionsWithImplicitSubsections = array(
+			"Specialized Buildings: polity owned" => array("The most impressive/costly building(s)"), 
+			"Information" => array("Measurement System", "Writing System", "Kinds of Written Documents"), 
+			"Other" => array("Money", "Postal System"), 
+			"Military Technologies" => array("Projectiles", "Handheld weapons", "Animals used in warfare", "Armor", "Naval technology", "Fortifications", "Other technologies"), 
+			"Largest scale collective ritual of the official cult" => array("Dysphoric elements", "Euphoric elements", "Cohesion", "Costs of participation"),
+			"Most widespread collective ritual of the official cult" => array("Dysphoric elements", "Euphoric elements", "Cohesion", "Costs of participation"),
+			"Most frequent collective ritual of the official cult" => array("Dysphoric elements", "Euphoric elements", "Cohesion", "Costs of participation"),
+			"Most euphoric collective ritual of the official cult" => array("Dysphoric elements", "Euphoric elements", "Cohesion", "Costs of participation"),
+			"Most dysphoric collective ritual" => array("Dysphoric elements", "Euphoric elements", "Cohesion", "Costs of participation"),
+			"Production" => array("Agriculture intensity", "Food storage"), 
+			"Technology" => array("Metallurgy"),
+			"Specialized buildings that are not polity-owned" => array("The most impressive/costly building(s)"),
+			"Trade" => array("Main imports", "Main exports", "Land transport"),
+			"Structural Inequality" => array("Legal distinctions between"),
+			"Kinship" => array("Marriage customs"),
+			"Punishment" => array("Execution can be imposed by", "Exile can be imposed by", "Corporal punishment can be imposed by", "Ostracism can by imposed by", "Seizure of property can by imposed by", "Supernatural sanctions can be imposed by"),
+			"Other" => array("Consumption")				
+	);
+
+	var $multiCodes = array(			//an array of variables that can have multi-codes associated with them
 			"human sacrifice of an out-group member", 
 			"typical size of participating group", 
 			"willingness to die for each other", 
@@ -123,6 +148,10 @@ class ScraperDacuraServer extends DacuraServer {
 		return $this->login();		
 	}
 	
+	/*
+	 * Fetches the list of NGAs from the Seshat Main page (the World-30 sample table)
+	 * Returns an array of URLs
+	 */
 	function getNGAList(){
 		curl_setopt($this->ch, CURLOPT_URL, $this->mainPage);
 		$content = curl_exec($this->ch);
@@ -142,33 +171,172 @@ class ScraperDacuraServer extends DacuraServer {
 		return $ngaURLs;
 	}
 	
-	function getPolities($nga){
-		$polities = array();
-		$ngaArray = array();
-		curl_setopt($this->ch, CURLOPT_URL, $nga);
+	
+	/*
+	 * Fetches a list of polities from a Seshat NGA page
+	 * Takes the URL of the page
+	 * Returns an array of URLs
+	 */
+	function getPolities($pageURL){
+		curl_setopt($this->ch, CURLOPT_URL, $pageURL);
 		$content = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-			return $this->failure_result("Failed to retrieve nga page $nga.", curl_getinfo($this->ch, CURLINFO_HTTP_CODE));
+			return $this->failure_result("Failed to retrieve $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE));
 		}
 		$dom = new DOMDocument;
-		$dom->loadXML($content);
-		$xpath = new DOMXPath($dom);
-		$temp = $this->pageGrab($nga, 'nga');
-		if($temp){
-			$ngaArray[] = $temp;
-			$links = $xpath->query('//a/@href');
-			foreach($links as $link){
-				$x = $link->value;
-				$url = 'http://seshat.info'.$x;
-				$polities[] = $url;
-			}
-			return array("polities" => $polities, "payload" => $ngaArray);
+		if(!$dom->loadXML($content)){
+			return $this->failure_result("$pageURL did not parse correctly", 503);
 		}
+		$xpath = new DOMXPath($dom);
+		$links = $xpath->query('//a/@href');
+		foreach($links as $link){
+			$x = $link->value;
+			$url = 'http://seshat.info'.$x;
+			$polities[] = $url;
+		}
+		return $polities;
+	}
+
+	
+	/*
+	 * Creates an array of name => value for variables found in the text
+	 * If there are repeated keys, it appends _n to the duplicates to retain the values.
+	 */
+	function parseFactsFromString($str){
+		$pattern = '/\x{2660}([^\x{2660}\x{2665}]*)\x{2663}([^\x{2660}]*)\x{2665}/u';
+		$matches = array();
+		$factoids = array();
+		if(preg_match_all($pattern, $str, $matches)){
+			for($i = 0; $i< count($matches[0]); $i++){
+				if(isset($factoids[trim($matches[1][$i])])){
+					$n = 1;
+					while(isset($factoids[trim($matches[1][$i])."_$n"])){
+						$n++;
+					}
+					$nv = $this->processFactValue(trim($matches[2][$i]));
+					$factoids[trim($matches[1][$i])."_$n"] = $nv;
+				}
+				else {
+					$factoids[trim($matches[1][$i])] = $this->processFactValue(trim($matches[2][$i]));
+				}
+			}
+		}
+		return $factoids;	
 	}
 	
-	function getData($nga, $polity){
-		return $this->pageGrab($polity, 'polity', $nga);
+	function processFactValue($val){
+		$val = strip_tags($val);
+		$val = trim(html_entity_decode($val));
+		if(strpbrk($val, ":;[{")){
+			$p = new seshatParsing($val);
+			$parsedFact = $p->match_factcontainer();
+			if($parsedFact){
+				if($parsedFact['text'] == $val){
+					$expandedFact = formatFact($parsedFact);
+					$returnValue = ["value" => $expandedFact, "type" => "complex", "error" => false, "message" => "", "format" => True];
+				}
+				else {
+					$returnValue = ["value" => $val, "type" => "complex", "error" => True, "message" => "The parser could not complete parse this fact - it has a formatting error", "format" => false];	
+				}
+			}
+			else {
+				$returnValue = ["value" => $val, "type" => "complex", "error" => True, "message" => "The parser could not parse this fact - it is not correctly formatted", "format" => False];
+			}
+		}
+		else {
+			$returnValue = ["value" => $val, "type" => "simple", "error" => false, "message" => "", "format" => False];
+		}
+		return $returnValue;
 	}
+	
+	
+	
+	
+	function getDump($data){
+		$polities_retrieved = array();
+		$polity_errors = array();
+		foreach($data as $nga => $polities){
+			foreach($polities as $p){
+				if(!isset($polities_retrieved[$p])){
+					$pfacts = $this->getFactsFromPage($p);
+					if($pfacts){
+						if($pfacts["total_variables"] > 0){
+							$polities_retrieved[$p] = $pfacts;
+						}
+					}
+				}
+			}
+		}
+		echo json_encode($polities_retrieved);
+	}
+	
+	/*
+	 * Takes a seshat page and extracts all of the facts 
+	 * Takes the URL of the page
+	 * Returns an associative array of variable_name -> value (unparsed string)
+	 */
+	function getFactsFromPage($pageURL){
+		curl_setopt($this->ch, CURLOPT_URL, $pageURL);
+		$content = curl_exec($this->ch);
+		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+			return $this->failure_result("Failed to retrieve $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE));
+		}
+		/*
+		 * strip out the non-content
+		 */
+		if(strpos($content, "<div class=\"printfooter\">") && strpos($content, "<h1><span class=\"editsection\">")){
+				$content = substr($content, strpos($content, "<h1><span class=\"editsection\">"), strpos($content, "<div class=\"printfooter\">") - strpos($content, "<h1><span class=\"editsection\">"));
+		}
+		/*
+		 * Divide into main sections....
+		 */
+		$fact_list = array( "title" => "", "variables" => array(), "sections" => array(), "total_variables" => 0);
+		$sections = explode("<h2>", $content);
+		$i = 0;
+		foreach($sections as $sect){
+			//the first section can contain section level variables...
+			if(++$i == 1){
+				$fact_list['variables'] = $this->parseFactsFromString($sect);
+				$fact_list["total_variables"] +=  count($fact_list['variables']);
+			}
+			else {
+				$sec_bits = explode("</span></h2>", $sect);
+				if(count($sec_bits) == 2){
+					$sec_title = substr($sec_bits[0], strrpos($sec_bits[0], ">")+1);
+					$sec_content = $sec_bits[1];
+					$subsects = explode("<h3>", $sec_content);
+					$j = 0;
+					foreach($subsects as $subsect){
+						if(++$j == 1){
+							$factList["sections"][$sec_title]['variables'] = $this->parseFactsFromString($subsect);						
+							$fact_list["total_variables"] +=  count($factList["sections"][$sec_title]['variables']);
+								
+						}
+						else {
+							$subsec_bits = explode("</span></h3>", $subsect);
+							if(count($subsec_bits) == 2){
+								$subsec_title = substr($subsec_bits[0], strrpos($subsec_bits[0], ">") + 1);
+								$subsec_content = $subsec_bits[1];
+								$factList["sections"][$sec_title]["sections"][$subsec_title] = array(
+										"title" => $subsec_title, "variables" => $this->parseFactsFromString($subsec_content), "sections" => array(), "content" => "");
+								$fact_list["total_variables"] +=  count($factList["sections"][$sec_title]['variables']);
+							}
+							else {
+								$factList["sections"][$sec_title]['variables'] = $this->parseFactsFromString($subsect);
+								$fact_list["total_variables"] +=  count($factList["sections"][$sec_title]['variables']);
+							}								
+						}
+					}
+				}
+				else {
+					$fact_list['variables'] = $this->parseFactsFromString($sect);						
+					$fact_list["total_variables"] +=  count($fact_list['variables']);
+				}
+			}
+		}
+		return $factList;
+	}
+	
 	
 	function parsePage($data){
 		$this->ch = curl_init();
@@ -185,8 +353,10 @@ class ScraperDacuraServer extends DacuraServer {
 		return $content;
 	}
 	
-	function getDump($data){
-		//opr($data);
+	/*
+	 * Data is an array of {nga_name => [polityurl1, polityurl2, ...]} 
+	 */
+/*	function getDump($data){
 		$ngaReport = array();
 		$ngaList = array();
 		$all = false;
@@ -268,7 +438,7 @@ class ScraperDacuraServer extends DacuraServer {
 		$report["errors"] = $errorArray;
 		return $report;
 	}
-	
+	*/
 	function formatValue($value, $factString){
 		$returnValue = array();
 		// print_r
@@ -297,54 +467,7 @@ class ScraperDacuraServer extends DacuraServer {
 		return $title;
 	}
 	
-	function pageGrab($pageURL, $type, $nga = ""){
-		curl_setopt($this->ch, CURLOPT_URL, $pageURL);
-		$content = curl_exec($this->ch);
-		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-			return $this->failure_result("Failed to retrieve $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE));
-		}
-		$dom = new DOMDocument;
-		$dom->loadXML($content);
-		$xpath = new DOMXPath($dom);
-	
-		//determine type and links etc
-		if($type == 'nga'){
-			$ngaName = $this->URLtoTitle($pageURL);
-			$link = $pageURL;
-			$polityName = '';
-		}elseif($type = 'polity'){
-			$ngaName = $this->URLtoTitle($nga);
-			$link = $pageURL;
-			$polityName = $this->URLtoTitle($pageURL);
-		}
-	
-		$headers = $xpath->query('//h1//text()[normalize-space()]');
-		$polityName = $headers->item(0)->wholeText;
-		$facts = $xpath->query('//*[text()[contains(., "♠")]]');
-		$factObject = array();
-		$factObject["metadata"]["nga"] = $ngaName;
-		$factObject["metadata"]["polity"] = $polityName;
-		$factObject["metadata"]["url"] = $pageURL;
-		$factObject["metadata"]["user"] = "x_scraper_user_id";
-	
-		if ($facts->length == 0){
-			$factObject["data"] = array();
-		}
-		else {
-			foreach($facts as $factNode) {
-				$fact = $factNode->ownerDocument->saveXML($factNode);
-				$parsedFact = $fact;
-				if($this->multicodesPresent($parsedFact) && $parsedFact[1] !== 'ERROR IN SOURCE'){
-					$parsedFact = $this->multicodeHandling($parsedFact, $factNode, $xpath);
-					$fact = '♠ '.$parsedFact[0].' ♣ '.$parsedFact[1].' ♥';
-				}
-				if ($parsedFact[1] != ''){
-					$factObject["data"][]["contents"] = $parsedFact;
-				}
-			}
-		}
-		return $factObject;
-	}
+
 	
 	function contains($string, $search){
 		return strpos($string, $search) !== false;

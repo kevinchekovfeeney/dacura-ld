@@ -45,14 +45,9 @@ dacura.scraper.api.parsePage = function(data, xhr){
 }
 
 
-dacura.scraper.api.dump = function (xhr){
-	if(typeof xhr == "undefined"){
-		xhr = {};
-		xhr.data ={};
-	}
-	xhr.url = dacura.scraper.apiurl + "/dump";
-	xhr.type = "POST";
-	return xhr;
+dacura.scraper.dump = function (args, oncomp, onmessage, onerror){
+	//dacura.toolbox.slowAjax(dacura.scraper.apiurl + "/dump", "POST", args, oncomp, onmessage, onerror);
+	dacura.toolbox.modalSlowAjax(dacura.scraper.apiurl + "/dump", "POST", args, "Fetching polity data");
 }
 
 

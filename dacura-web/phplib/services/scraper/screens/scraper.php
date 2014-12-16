@@ -28,7 +28,7 @@
    		<div id="results-display" class="tool-content">
    		</div>
 		<div class="tool-buttons">
-			<button class="dacura-button back-button" id="back-ngas">&lt;&lt; Change Policy List</button>		
+			<button class="dacura-button back-button" id="back-polities">&lt;&lt; Change Polity List</button>		
 		</div>	
    </div>
    <div style="clear: both; height: '10px'">&nbsp;</div>
@@ -90,21 +90,6 @@
 			return true;
 		}
 
-		function showModal(contents){
-			dacura.toolbox.showModal(contents);
-			//$("#modal #contents").html(contents);
-			//$("#modal-dim").show();
-			//$("#modal").show();
-			//$("body").css("overflow", "none");
-		}
-
-		function hideModal(){
-			//dacura.toolbox.removeModal();
-		}
-
-		function updateModal(contents){
-			dacura.toolbox.showModal(contents);
-		}
 
 		function tidyNGAString(contents){
 			contents = contents.replace('http://seshat.info/', '');
@@ -309,15 +294,15 @@
 						var numComplete = 0;
 						requests[requests.length] = $.ajax(ajs)
 							.done(function(response, textStatus, jqXHR) {				
+								var name = tidyNGAString(this.nga);
 								var myOrder = ++numComplete;
 								try {
-									a = JSON.parse(response);
-									x = a["polities"];
-									name = a["payload"][0]["metadata"]["url"];
+									x = JSON.parse(response);
+									//x = a["polities"];
 									var polities = [];
 									//remove extraneous polities
 									for(var i=0;i<x.length;i++){
-										if(include(x[i]) && x[i] != name && x[i].trim() != ""){
+										if(include(x[i]) && x[i] != this.nga && x[i].trim() != ""){
 											var pol = decodeURI(x[i]);
 											if(polities.indexOf(pol) == -1){
 											    polities.push(pol);
@@ -325,36 +310,35 @@
 										}
 									}	
 									if(polities.length == 0){
-										$('.polity-got').html("<p class='seshat-error'>" + tidyNGAString(this.nga) + " did not contain any polities - ignored (" +  myOrder + "/" + ngaCount + ")</p>");
+										$('.polity-got').html("<p class='seshat-error'>" + name + " did not contain any polities - ignored (" +  myOrder + "/" + ngaCount + ")</p>");
 										$('.determinate-progress').progressbar({
 											value: (myOrder / ngaCount) * 100
 										});
-										polityStatus.message += "<span class='seshat-detail seshat-error'>Empty NGA: " + tidyNGAString(this.nga) + " does not contain any polities" + "</span><br>";
+										polityStatus.message += "<span class='seshat-detail seshat-error'>Empty NGA: " + name + " does not contain any polities" + "</span><br>";
 										NGAerrorCount++;
 									}
 									else {
-										$('.polity-got').html("Successfully retrieved polity list for " + tidyNGAString(name) + " (" + myOrder + "/" + ngaCount + ")");
+										$('.polity-got').html("Successfully retrieved polity list for " + name + " (" + myOrder + "/" + ngaCount + ")");
 										$('.determinate-progress').progressbar({
 											value: (myOrder / ngaCount) * 100
 										});
-										addition = "<h3>" + tidyNGAString(name) + " (" + polities.length + ") <span>Select all <input type='checkbox' class='selectAll'></span></h3><div class='ngas'>";
+										addition = "<h3>" + name + " (" + polities.length + ") <span>Select all <input type='checkbox' class='selectAll'></span></h3><div class='ngas'>";
 										addition += "<table class='polity-list seshat-list'><tr><th>Polity</th><th>Period</th><th>URL</th><th></th></tr>";
 										for(var i=0;i<polities.length;i++){
 											var pdet = parsePolityString(polities[i]);
 											addition += "<tr><td>" + pdet.polityname + "</td><td>"+pdet.period+"</td><td>";
 											if(pdet.url.length > 50) {
 												addition += "<a href='" + pdet.url + "' title='" + pdet.url + "'>" + pdet.url.substr(0,50) + "...</a>";
-											
 											}
 											else {
 												addition += "<a href='" + pdet.url + "' title='" + pdet.url + "'>" + pdet.url + "...</a>";
 											} 
 											addition += "</a></td><td><input class='polityValid' type='checkbox' id='" + polities[i] + "'></td></tr>";
 											if(typeof polityList[polities[i]] !== "undefined"){
-												polityList[polities[i]].push(name);
+												polityList[polities[i]].push(this.nga);
 											}else{
 												polityList[polities[i]] = [];
-												polityList[polities[i]].push(name);
+												polityList[polities[i]].push(this.nga);
 											}
 										}
 										addition += "</table></div>";
@@ -363,12 +347,12 @@
 									}
 								}
 								catch (e) {
-									$('.polity-got').html("<p class='seshat-error'>Failed to get polity list for " + tidyNGAString(this.nga) + e + " (" + myOrder + "/" + ngaCount + ")</p>");
+									$('.polity-got').html("<p class='seshat-error'>Failed to get polity list for " + name + " " + e + " (" + myOrder + "/" + ngaCount + ")</p>");
 									NGAerrorCount++;
 									$('.determinate-progress').progressbar({
 										value: (myOrder / ngaCount) * 100
 									});
-									polityStatus.message += "<span class='seshat-detail seshat-error'>Parse error - Server response could not be interpreted for " + tidyNGAString(this.nga)  + "</span><br>";
+									polityStatus.message += "<span class='seshat-detail seshat-error'>Parse error - Server response could not be interpreted for " + name  + "</span><br>";
 								}
 							})
 							.fail(function (jqXHR, textStatus){
@@ -396,7 +380,7 @@
 								polityStatus.loaded = NGAsObtainedCount;
 								var nganm = ""; if(NGAsObtainedCount== 1) { nganm = "NGA"; } else { nganm = "NGAs";}
 								var fnm = ""; if(NGAerrorCount== 1) { fnm = "failure"; } else { fnm = "failures";}
-								polityStatus.message = "Retrieved polity lists for " + NGAsObtainedCount + " " + nganm + " (" + NGAerrorCount + " " + fnm + ") " + (Object.keys(polityList).length + 1) + " polities in total.<br>" + polityStatus.message;
+								polityStatus.message = "Retrieved polity lists for " + NGAsObtainedCount + " " + nganm + " (" + NGAerrorCount + " " + fnm + ") " + (Object.keys(polityList).length) + " polities in total.<br>" + polityStatus.message;
 								$('#scraper-info').html(polityStatus.message);
 								dacura.toolbox.removeModal();
 								hideScraperScreen(2);
@@ -441,7 +425,6 @@
 					alert("nothing selected - you must select at least one policy to export!");
 				}else{
 					
-					//first transform checkboxs to a list of polities (edit out duplicates, etc)
 					var polities = $('input.polityValid:checked');
 					var polityList = {}; //maps polities to NGAs
 					for(var i = 0; i < polities.length; i++){
@@ -456,7 +439,8 @@
 							polityList[polityNGA].push(polityURL);
 						}
 					}
-					alert(JSON.stringify(polityList));
+					dacura.scraper.dump({"polities" : JSON.stringify(polityList)}); 
+					//alert(JSON.stringify(polityList));
 					exit();
 					requests = [];
 					failures = [];

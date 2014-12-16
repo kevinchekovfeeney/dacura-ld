@@ -1,3 +1,7 @@
+dacura.login = {}
+dacura.login.apiurl = "<?=$service->settings['ajaxurl']?>system/login/";
+
+
 
 dacura.login.isvalidu = function(u){
 	if(u.length < 3){

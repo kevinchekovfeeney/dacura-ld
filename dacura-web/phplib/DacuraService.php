@@ -14,20 +14,24 @@
  */
 
 class DacuraService{
-	var $settings;
-	var $errcode;
-	var $errmsg;
-	var $connection_type;
-	var $servicename = "abstract_base_class";
+	var $settings;  // the server wide settings that the service has been invoked in.
 	var $mydir;
-	var $myname;
-	var $servicecall;
+	var $servicename = "abstract_base_class";
+	//var $servicecall;
+	//Variables representing the context in which the service is invoked
 	var $collection_id;
 	var $dataset_id;
-	var $collection_context;
-	var $dataset_context;
+	var $args;	//associative array of the arguments that have been passed
+	var $screen = ""; //special value passed to indicate the screen in html mode....
+	var $connection_type; //html / api -> what mode has the service been invoked in..
+
 	var $default_screen = "view";
 
+	//Normal way of signalling errors
+	var $errcode;
+	var $errmsg;
+	
+	
 	var $html_screens = array();
 
 	function __construct($settings){
@@ -46,13 +50,17 @@ class DacuraService{
 		return ($this->dataset_id == "0" ? "" : $this->dataset_id);
 	}
 	
+	function name(){
+		return $this->servicename;
+	}
+	
 	
 	/*
 	 * to provide url services to html files...
 	*/
 	
 /*
- * Service calls are more complex as they include the collection/dataset id and may include parameters and may come through multiple interfaces
+ * Service calls include the collection/dataset id and may include parameters and may come through multiple interfaces
  */
 	function get_service_url($servicen = false, $args = array(), $interface="html", $col_id = false, $ds_id = false){
 		$args_ext = (count($args) > 0) ? "/".implode("/", $args) : "";
@@ -144,13 +152,34 @@ class DacuraService{
 	}
 	
 	
+	/*
+	 * Loads the service context from the service call object passed in
+	 */
 	function load($sc){
 		$this->servicename = $sc->servicename;
-		$this->servicecall = $sc;
+		//$this->servicecall = $sc;
 		$this->collection_id = $sc->collection_id;
 		$this->dataset_id = $sc->dataset_id;
 		$this->connection_type = $sc->provenance;
+		if($sc->provenance == "html"){ //if it is html, all the arguments are in the URL
+			if(count($sc->args) > 0){
+				$this->screen = array_shift($sc->args);
+				$this->args = array();
+				for($i = 0; $i < count($sc->args); $i+=2){
+					$this->args[$sc->args[$i]] = (isset($sc->args[$i + 1]) ? $sc->args[$i + 1] : "");
+				}
+				$this->args['screen'] = $this->screen;
+				//$this->args = 
+			}
+			else {
+				$this->screen = $this->default_screen;
+			}
+		}
+		else {
+			$this->args = $sc->args;
+		}
 		$this->mydir = $this->settings['path_to_services'].$this->servicename."/";
+		
 	}
 
 	function hasScreen($screen){
@@ -178,18 +207,41 @@ class DacuraService{
 			}
 		}
 	}
-
-	function handlePageLoad($sc = false){
-		if(!$sc) $sc = $this->servicecall;
-		$screen = "";
-		if(count($sc->args) > 0){
-			$screen = array_shift($sc->args);
-		}
-		$screen = $screen ? $screen : $this->default_screen;
-		$params = array();
-		for($i = 0; $i < count($sc->args); $i+=2){
-			$params[$sc->args[$i]] = (isset($sc->args[$i + 1]) ? $sc->args[$i + 1] : "");
-		}
-		$this->renderScreen($screen, $params);
+	
+	function writeIncludedInterpolatedScripts($path){
+		$service = &$this;
+		echo "<script>"; 
+		include_once($path);
+		echo "</script>";
 	}
+	
+	
+	function renderFullPageHeader(){
+		$service = &$this;
+		include_once("phplib/snippets/header.php");
+		include_once("phplib/snippets/topbar.php");		
+	}
+	
+	function renderFullPageFooter(){
+		$service = &$this;
+		include_once("phplib/snippets/footer.php");
+	}
+	
+	function hasPermission(){
+		return true;
+		//need an algorithmic way of seeing if the user has the required roles	
+	}
+	
+	
+	
+	function renderFullPage(){
+		$this->renderFullPageHeader();
+		$this->handlePageLoad();
+		$this->renderFullPageFooter();	
+	}
+
+	function handlePageLoad(){
+		$this->renderScreen($this->screen, $this->args);
+	}
+	
 }
