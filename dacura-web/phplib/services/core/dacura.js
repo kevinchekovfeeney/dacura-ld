@@ -23,7 +23,6 @@ dacura.toolbox.modalSlowAjax = function(url, method, args, initmsg){
 	var onm = function(msgs){
 		for(var i = 0; i < msgs.length; i++){
 			dacura.toolbox.updateModal(msgs[i]);
-			usleep(100000);
 		}
 	}
 	this.slowAjax(url, method, args, onc, onm);

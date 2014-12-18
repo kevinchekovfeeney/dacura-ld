@@ -439,85 +439,19 @@
 							polityList[polityNGA].push(polityURL);
 						}
 					}
-					dacura.scraper.dump({"polities" : JSON.stringify(polityList)}); 
-					//alert(JSON.stringify(polityList));
-					exit();
-					requests = [];
-					failures = [];
-					for(var i = 0; i < polities.length; i++){
-						polityURL = polities[i].id;
-						element = $(polities).get(i);
-						polityNGAString = $(element).parents("div").prev("h3").text();
-						polityNGA = tidyNGAString(polityNGAString);
-						var ajs = dacura.scraper.api.getPolityData(polityNGA, polityURL);
- 					    requests[requests.length] = $.ajax(ajs)
-							.done(function(response, textStatus, jqXHR) {	
-								politiesObtainedCount++;
-								updateModal("Getting polity data (" + politiesObtainedCount + "/" + polityCount + ") ...");
-								try{
-									a = JSON.parse(response);
-									polityData[polityData.length] = a;
-								}
-								catch(e){
-									console.log(response);
-								}
-							})
-							.fail(function (jqXHR, textStatus){
-									failures[failures.length] = [jqXHR.responseText, jqXHR.status, jqXHR.statusText];
-									updateModal("Getting Polity Data failed. Error: " + jqXHR.responseText);
-								}
-							);
-					}
-					$.whenAll.apply($, requests).always(function(){
-						if(polityData.length > 0){
-							failText = "";
-							if(failures.length > 0){
-								failText = failures.length + " polities could not be scraped.<br>";
-							}
-							updateModal(failText + "Scraping complete. Parsing...")
-							var ajs = dacura.scraper.api.parsePage();
-							ajs.data.data = JSON.stringify(polityData);
-							$.ajax(ajs)
-							.done(function(response, textStatus, jqXHR) {	
-								updateModal("Parsing complete! Generating dumps...");
-								var ajx = dacura.scraper.api.dump();
-								ajx.data.data = response;
-								$.ajax(ajx)
-								.done(function(r2, textStatus, jqXHR) {	
-									updateModal("Polity data generated.");
-									try{
-										b = JSON.parse(r2);
-									}catch(e){
-										console.log(r2);
-									}
-									fails = formatFailures(failures);
-									report = formatReport(b);
-									errors = formatErrors(b);
-									report += fails + "<hr>" + errors;
-									$("#info").html(report).show()
-									//$("#get-polities").hide()
-									$("#polity-display").hide();
-									$("#get-data").hide();
-									$("#functionality").hide();
-									hideModal();
-								})
-								.fail(function (jqXHR, textStatus){
-										//updateModal("Parsing failed. Error: " +  + jqXHR.responseText);
-										fails = formatFailures(failures);
-										$("#info").html(fails).show()
-										$("#get-polities").hide()
-										$("#polity-display").hide();
-										$("#get-data").hide();
-										$("#functionality").hide();
-										hideModal();							
-									}
-								);
-							});	
+					var onm = function(msgs){
+						for(var i = 0; i < msgs.length; i++){
+							dacura.toolbox.updateModal(msgs[i]);
 						}
-						else {
-							updateModal("No polities were retrieved - no data!");							
-						}	
-					});
+					}
+					var onc = function(res) {
+						hideScraperScreen(3);
+						showScraperScreen(4);
+						$('#results-display').html(res).show();
+					}
+					dacura.scraper.dump({"polities" : JSON.stringify(polityList)}, onc, onm); 
+					
+					//alert(JSON.stringify(polityList));
 				}
 			});
 		});
