@@ -10,7 +10,7 @@
  */
 
 
-class ServiceCall{
+class ServiceCall extends DacuraObject {
 	var $collection_id;
 	var $dataset_id;
 	var $servicename;
@@ -18,8 +18,6 @@ class ServiceCall{
 	var $provenance;
 	var $rawpath;
 
-	var $errcode = 0;
-	var $errmsg = "";
 
 	//changes the call to be a call to the error screen of the core service
 	//used when the call can't be parsed....
@@ -35,7 +33,7 @@ class ServiceCall{
 	function parseURLInput(){
 		$this->rawpath = isset($_GET['path']) ? $_GET['path'] : "";
 		$path = (isset($_GET['path']) && $_GET['path']) ? explode("/", $_GET['path']) : array();
-		($path[count($path) -1] == "") &&  array_pop($path);
+		(count($path) > 0 && $path[count($path) -1] == "") &&  array_pop($path);
 		if(count($path) == 0){	//omit collection & dataset
 			$this->collection_id = "0";
 			$this->dataset_id = "0";

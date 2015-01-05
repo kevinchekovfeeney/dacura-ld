@@ -12,19 +12,19 @@
  * Licence: GPL v2
  */
 
+require_once("DacuraObject.php");
 require_once("db/DBManager.php");
 require_once("UserManager.php");
 require_once("utilities.php");
+require_once("LogManager.php");
 
-class DacuraServer {
+class DacuraServer extends DacuraObject {
 	var $settings;
 	var $userman;	//user & session manager
-	var $dbman; //storage manager
 	var $ucontext; //user context
-	var $dbclass = "DBManager";
-	
-	var $errmsg;
-	var $errcode;
+	var $dbclass = "DBManager";//the class of the associated dbmanager
+	var $dbman; //storage manager
+	var $logman; //log manager, responsible for logging, caching, dumping data
 	
 	function __construct($service){
 		$this->settings = $service->settings;
@@ -36,44 +36,11 @@ class DacuraServer {
 			return $this->failure_result('Connection failed: ' . $e->getMessage(), 500);
 		}
 		$this->userman = new UserManager($this->dbman, $service);
+		$this->logman = new LogManager($service);
 	}
 	
-	function failure_result($msg, $code = 500){
-		$this->errmsg = $msg;
-		$this->errcode = $code;
-		return false;
-	}
+
 	
-	
-	/*
-	 * Logging function
-	 */
-	function log($type, $data){
-		if($type == "server" || $type == "error"){
-			$fpath = $this->settings['dacura_logbase']."server.log";
-			return (file_put_contents($fpath, $data, FILE_APPEND)) ? $fpath : false;
-		}
-		else if($type == "dump" || $type == "dumperrors"){
-			$fpath = $this->settings['dacura_logbase'];
-			if($this->ucontext->getCollectionID()) $fpath .= $this->ucontext->getCollectionID()."/";
-			if($this->ucontext->getDatasetID()) $fpath .= $this->ucontext->getDatasetID()."/";
-			$errorFile = 'logs\errors-'.date("dmY").'T'.date("His").'Z.html';
-			$fpath .= ($type == "dump") ? 'polityParse-'.date("dmY").'T'.date("His").'Z.tsv' : 'errors-'.date("dmY").'T'.date("His").'Z.html';
-			return (file_put_contents($fpath, $data)) ? $fpath : false;
-		}
-		else if($type == "service"){
-			$fpath = $this->settings['dacura_logbase']."services/".$this->ucontext->servicename.".log";
-			return (file_put_contents($fpath, $data, FILE_APPEND)) ? $fpath : false;
-		}
-		//here we have collection dependant logging
-		//finally dataset dependant logging ?
-	}
-	
-	function getURLofLogfile($fpath){
-		$f_ext = substr($fpath, strlen($this->settings['dacura_logbase']));
-		$url = $this->settings['log_url'].$f_ext;
-		return $url; 
-	}
 	
 	/* 
 	 * Config related functions
@@ -266,13 +233,14 @@ class DacuraServer {
 	}
 	
 	function write_comet_update($type, $ting){
-		echo '{ message_type: "comet_update", status: "'.$type.'" payload: '.json_encode($ting)."}\n";
+		echo '{ "message_type": "comet_update", "status": "'.$type.'", "payload": '.json_encode($ting)."}\n";
 		//echo str_pad('',4096)."\n";
 		ob_flush();
 		flush();
 	}
 	
-	function end_comet_output(){
+	function end_comet_output($rtype, $result){
+		echo '{ "message_type": "comet_result", "status": "'.$rtype.'", "payload": '.json_encode($result)."}\n";
 		ob_end_flush();
 	}
 	

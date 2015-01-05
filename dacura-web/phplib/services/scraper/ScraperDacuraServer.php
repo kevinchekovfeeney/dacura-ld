@@ -23,6 +23,7 @@ class ScraperDacuraServer extends DacuraServer {
 	
 	var $ch; //curl handle
 	var $cookiejar = "C:\\Temp\\dacura\\cookiejar.txt";
+	var $use_cache = true;
 	var $parser_service_url = 'http://localhost:1234/parser';
 	var $username = 'gavin';
 	var $password = 'cheguevara';
@@ -66,6 +67,10 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Returns an array of URLs
 	 */
 	function getNGAList(){
+		if($this->use_cache){
+			$x = $this->logman->decache("scraper", $this->mainPage);
+			if($x) return $x;
+		}
 		curl_setopt($this->ch, CURLOPT_URL, $this->mainPage);
 		$content = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
@@ -81,6 +86,9 @@ class ScraperDacuraServer extends DacuraServer {
 			$url = 'http://seshat.info'.$x;
 			$ngaURLs[] = $url;
 		}
+		if($this->use_cache){
+			$this->logman->cache("scraper", $this->mainPage, $ngaURLs);				
+		}
 		return $ngaURLs;
 	}
 	
@@ -91,6 +99,10 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Returns an array of URLs
 	 */
 	function getPolities($pageURL){
+		if($this->use_cache){
+			$x = $this->logman->decache("scraper", $pageURL);
+			if($x) return $x;
+		}
 		curl_setopt($this->ch, CURLOPT_URL, $pageURL);
 		$content = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
@@ -107,6 +119,9 @@ class ScraperDacuraServer extends DacuraServer {
 			$url = 'http://seshat.info'.$x;
 			$polities[] = $url;
 		}
+		if($this->use_cache){
+			$this->logman->cache("scraper", $pageURL, $polities);				
+		}
 		return $polities;
 	}
 	
@@ -117,38 +132,144 @@ class ScraperDacuraServer extends DacuraServer {
 	 */
 	function getDump($data){
 		$polities_retrieved = array();
-		$polity_errors = array();
+		$summaries = array();
+		$headers = array("NGA", "Polity", "Area", "Section", "Variable", "Value From", "Value To",
+				"Date From", "Date To", "Fact Type", "Value Note", "Date Note", "Comment");
+		$error_headers = array("NGA", "Polity", "Area", "Section", "Variable", "Value", "Error");
+		$stats = array( "ngas" => 0, "polities" => 0, "errors" => 0, "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0);
+		$polity_failures = array();
 		$rows = array();
+		$this->start_comet_output();
+		$error_op = $this->logman->startServiceDump("scraper", "Errors", "html", true, true);
+		$this->logman->dumpData($error_op, "<table><tr><th>".implode("</th><th>", $error_headers)."</th></tr>");
+		$html_op = $this->logman->startServiceDump("scraper", "Export", "html", true, true);
+		$this->logman->dumpData($html_op, "<table><tr><th>".implode("</th><th>", $headers)."</th></tr>");
+		$tsv_op = $this->logman->startServiceDump("scraper", "Export", "tsv", true, true);
+		$this->logman->dumpData($tsv_op, implode("\t", $headers)."\n");
 		foreach($data as $nga => $polities){
+			$stats['ngas']++;
+			$summary = array("nga" => $nga, "polities" => count($polities), "failures" => 0, 
+					"total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0, "errors" => 0);
 			foreach($polities as $p){
+				if(!$p) continue;
 				if(!isset($polities_retrieved[$p])){
 					$pfacts = $this->getFactsFromURL($p);
 					if($pfacts){
-						//if($pfacts["total_variables"] > 0){
-							$polities_retrieved[$p] = $pfacts;
-						//}
+						$polities_retrieved[$p] = $pfacts;
+						//op errors
+						foreach($pfacts['errors'] as $e){
+							$this->logman->dumpData($error_op, "<tr><td>".implode("</td><td>", $e)."</td></tr>");								
+						}
+						$stats['polities']++;
+						$this->incorporateStats($stats, $pfacts);
+						$msg = "Parsed ".$this->formatNGAName($p)." : ".$this->statsToString($pfacts, $stats);
+						$this->write_comet_update("success", $msg);
+					}
+					else {
+						//add to failures
+						$polity_failures[] = array($nga, $p, $this->errmsg, $this->errcode);
 					}
 				}
-				$rows = array_merge($rows, $this->factListToRows($nga, $p, $polities_retrieved[$p]));
+				else {
+					$pfacts = $polities_retrieved[$p];
+				}
+				$this->incorporateStats($summary, $pfacts);
+				$rows = $this->factListToRows($this->formatNGAName($nga), $this->formatNGAName($p), $polities_retrieved[$p]);
+				foreach($rows as $row){
+					$this->logman->dumpData($html_op, "<tr><td>".implode("</td><td>", $row)."</td></tr>");				
+					$this->logman->dumpData($tsv_op, implode("\t", $row)."\n");			
+				}
 			}
+			$summaries[] = $summary;
 		}
-		$headers = array("NGA", "Polity", "Area", "Section", "Variable", "Value From", "Value To",
-				"Date From", "Date To", "Fact Type", "Value Note", "Date Note", "Comment");
-		echo "<table><tr><th>".implode("</th><th>", $headers)."</th></tr>";
-		foreach($rows as $row){
-			echo "<tr><td>".implode("</td><td>", $row)."</td></tr>";				
-		}
-		echo "</table>";
+		$this->logman->dumpData($html_op, "</table>");				
+		$this->logman->dumpData($error_op, "</table>");				
+		$this->logman->endServiceDump($error_op);
+		$this->logman->endServiceDump($html_op);
+		$this->logman->endServiceDump($tsv_op);
+		//start op buffering
+		ob_start();
+		$this->ucontext->renderScreen("results", array("stats" => $stats, "failures" => $polity_failures, "summary" => $summaries,
+				"files" => array("errors" => $this->ucontext->my_url()."/view/".$error_op->filename("rest"), "html" => $this->ucontext->my_url("rest")."/view/".$html_op->filename(), "tsv" => $this->ucontext->my_url("rest")."/view/".$tsv_op->filename())));
+		$page = ob_get_contents();
+		ob_end_clean();
+		$this->end_comet_output("success", $page);
+		return true;
 	}
 	
+	function formatNGAName($url){
+		$bits = explode("/", $url);
+		$x = $bits[count($bits) - 1];
+		return str_replace("_", " ", $x);
+	}
+	
+	function getReport($repname){
+		$fpath = $this->ucontext->settings['collections_base'];
+		if($this->ucontext->getCollectionID()) $fpath .= $this->ucontext->getCollectionID()."/";
+		$fpath .= $this->ucontext->settings['dump_directory'];
+		$fname = $fpath . $repname;
+		$fsize = filesize($fname);
+		$path_parts = pathinfo($fname);
+		$ext = strtolower($path_parts["extension"]);
+		if ($fd = fopen ($fname, "r")) {
+			switch ($ext) {
+				case "tsv" : 
+					header("Content-type: text/tab-separated-values");
+					header("Content-Disposition: attachment; filename=\"".$path_parts["basename"]."\""); // use 'attachment' to force a file download
+					header("Content-length: $fsize");
+					header("Cache-control: private"); //use this to open files directly
+					break;
+				case "html" :
+					echo '<div class="overlay overlay-contentpush">';
+					break;
+				default;
+				    header("Content-type: application/octet-stream");
+					header("Content-Disposition: filename=\"".$path_parts["basename"]."\"");
+					break;
+			}
+			while(!feof($fd)) {
+				$buffer = fread($fd, 2048);
+				echo $buffer;
+			}
+			fclose ($fd);
+		}
+	}
+	
+	function statsToString($fact_list, $second_fl = false){
+		$html = "<table class='scraper-report'><tr><th>Vars</th><th>Errors</th><th>Empty</th><th>Data</th></tr>";
+		$html .= "<tr><td>". $fact_list['total_variables']."</td><td>".count($fact_list['errors'])."</td><td>".$fact_list['empty'];
+		$html .= "</td><td>".$fact_list['lines']."</td></tr>";
+		if($second_fl){
+			$html .= "<tr><td>". $second_fl['total_variables']."</td><td>".$second_fl['errors']."</td><td>".$second_fl['empty'];
+			$html .= "</td><td>".$second_fl['lines']."</td></tr>";
+		}
+		$html .= "</table>";
+		return $html;
+	}
+	
+	function incorporateStats(&$stats, $nfacts){
+		$stats['total_variables'] += $nfacts['total_variables'];
+		$stats['empty'] += $nfacts['empty'];
+		$stats['complex'] += $nfacts['complex'];
+		$stats['lines'] += $nfacts['lines'];
+		$stats['errors'] += count($nfacts['errors']);
+	}
 	
 	function getFactsFromURL($pageURL){
+		if($this->use_cache){
+			$x = $this->logman->decache("scraper", $pageURL);
+			if($x) return $x;
+		}
 		curl_setopt($this->ch, CURLOPT_URL, $pageURL);
 		$content = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
 			return $this->failure_result("Failed to retrieve $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE));
 		}
-		return $this->getFactsFromPage($content);
+		$facts = $this->getFactsFromPage($content);
+		if($facts && $this->use_cache){
+			$this->logman->cache("scraper", $pageURL, $facts);
+		}
+		return $facts;
 	}
 	
 	/*
@@ -203,7 +324,6 @@ class ScraperDacuraServer extends DacuraServer {
 					}
 					$this->updateFactStats($fact_list, $sec_fact_list);
 					$fact_list["sections"][$sec_title] = $sec_fact_list;
-					
 				}
 				else {  //do our best...
 					$sfl = $this->parseFactsFromString($sect);
@@ -365,6 +485,9 @@ class ScraperDacuraServer extends DacuraServer {
 		foreach($factoids as $i => $factoid){
 			$factoids[$i]['fact_type'] = "complex";
 			$factoids[$i]["date_type"] = $datebit['type'];
+			if(isset($factoids[$i]['comment']) && $factoids[$i]['comment'] && isset($datebit['comment'])  && $datebit['comment']){
+				$factoids[$i]['comment'] .= " - ";
+			}
 			$factoids[$i]["comment"] .= (isset($datebit['comment']) ? $datebit['comment'] : "");
 			if($datebit["type"] == "range"){
 				$factoids[$i]["date_to"] = $datebit['to'];
@@ -419,52 +542,191 @@ class ScraperDacuraServer extends DacuraServer {
 			$to = $fact['value'][1];
 			$from = $this->processDateValue($from);
 			$to = $this->processDateValue($to);
-			if($to['type'] == 'disputed' && $from['type'] == 'disputed' ){
-				$date_comment = "Both from and to dates are disputed";
+			if(!$to or !$from){
+				$datevals = array("type" => "error", "value" => "", "comment" => "failed to read range: ".$fact['value'][0]." " . $fact['value'][1]);	
 			}
-			elseif($from['type'] == 'disputed'){
-				$date_comment = "The from date is disputed";
+			else {
+				//opr($to);
+				$datevals = $this->processDateRange($from, $to);
 			}
-			elseif($to['type'] == 'disputed'){
-				$date_comment = "The to date is disputed";
-			}
-			if($from['type'] == "uncertain" && $to['type'] == 'uncertain'){
-				$date_comment = "Both from and to dates are uncertain";
-			}
-			elseif($from['type'] == 'uncertain'){
-				$str = "The from date is uncertain";
-				$date_comment .= (strlen($date_comment) == 0) ? $str : " - " . $str;
-			}
-			elseif($to['type'] == 'uncertain'){
-				$str = "The to date is uncertain";
-				$date_comment .= (strlen($date_comment) == 0) ? $str : " - " . $str;
-			}
-			$datevals = array("from" => $from['value'], "to" => $to['value'], "type" => "range", "comment" => $date_comment);
 		}
 		elseif($fact['name'] == "singledate"){
-			//singledate: value:uncertaindate | value:disagreedate | value:simpledate
 			if($fact['value']['name'] == "simpledate"){
 				$datevals = array("type" => "simple", "value" => $fact['value']['text'], "comment" => "");
 			}
 			elseif($fact['value']['name'] == "disagreedate"){
-				$datevals = $this->consolidateDates($fact['value']['value']);
-				//$datevals = array("type" => "disputed", "value" => "xxx", "comment" => "Date is disputed");
+				$date_ranges = array();
+				$date_units = array();
+				foreach($fact['value']['value'] as $frag){
+					if($frag['value']['name'] == "simpledaterange"){
+						$date_ranges[] = $this->getDateRangeBounds($frag['value']['value'][0]['text'], $frag['value']['value'][1]['text']);
+					}
+					elseif($frag['value']['name'] == "simpledate"){
+						$date_units[] = $frag['value']['text'];
+					}
+				}
+				if(count($date_ranges) >= count($date_units)){
+					$datevals = $this->consolidateDateRanges($date_ranges, $date_units);						
+				}
+				else {
+					$datevals = $this->consolidateDates($fact['value']['value'], "disputed");						
+				}
 			}
 			elseif($fact['value']['name'] == "uncertaindate"){
 				//just make a range from the first to the last..
-				$dstr = $fact['value']['value'][0]['text']."-";
-				$dstr .= $fact['value']['value'][count($fact['value']['value'])-1]['text'];
-				$datevals = array("type" => "uncertain", "value" => $dstr, "comment" => "Date is uncertain");
+				$datevals = $this->consolidateDates($fact['value']['value'], "uncertain");
 			}
 		}
 		return $datevals;
 	}
 	
-	function strToYear($str){
+	function consolidateDateRanges($ranges, $units){
+		$from = array("type" => "", "value" => "", "comment" => "");
+		$to = array("type" => "", "value" => "", "comment" => "");
+		foreach($units as $unit){
+			if($from['type'] == ""){
+				$from['type'] = "simple";
+				$from['value'] = $unit;
+			}
+			else {
+				if($this->strToYear($from['value']) != $this->strToYear($unit)) $from['type'] = "disputed";
+				if($this->strToYear($from['value']) > $this->strToYear($unit)){
+					$from['value'] = $unit;
+				}
+			}	
+			if($to['type'] == ""){
+				$to['type'] = "simple";
+				$to['value'] = $unit;
+			}
+			else {
+				if($this->strToYear($to['value']) != $this->strToYear($unit)) $to['type'] = "disputed";
+				if($this->strToYear($to['value']) < $this->strToYear($unit)){
+					$to['value'] = $unit;
+				}
+			}				
+		}
+		foreach($ranges as $range){
+			if($from['type'] == ""){
+				$from['type'] = "simple";
+				$from['value'] = $range[0];
+			}
+			else {
+				if($this->strToYear($from['value']) != $this->strToYear($range[0])) $from['type'] = "disputed";
+				if($this->strToYear($from['value']) > $this->strToYear($range[0])){
+					$from['value'] = $range[0];
+				}
+			}	
+			if($to['type'] == ""){
+				$to['type'] = "simple";
+				$to['value'] = $range[1];
+			}
+			else {
+				if($this->strToYear($to['value']) != $this->strToYear($range[1])) $to['type'] = "disputed";
+				if($this->strToYear($to['value']) < $this->strToYear($range[1])){
+					$to['value'] = $range[1];
+				}
+			}				
+		}
+		$date_comment = "";
+		if($from['type'] == "disputed"){
+			$date_comment = "The from date is disputed";
+		}		
+		if($to['type'] == "disputed"){
+			if($date_comment) $date_comment .= " - ";
+			$date_comment .= "The to date is disputed";
+		}		
+		$datevals = array("from" => $from['value'], "to" => $to['value'], "type" => "range", "comment" => $date_comment);
+		return $datevals;
+	}
+	
+	function processDateRange($from, $to){
+		$date_comment = "";
+		if($to['type'] == 'disputed' && $from['type'] == 'disputed' ){
+			$date_comment = "Both from and to dates are disputed";
+		}
+		elseif($from['type'] == 'disputed'){
+			$date_comment = "The from date is disputed";
+		}
+		elseif($to['type'] == 'disputed'){
+			$date_comment = "The to date is disputed";
+		}
+		if($from['type'] == "uncertain" && $to['type'] == 'uncertain'){
+			$date_comment = "Both from and to dates are uncertain";
+		}
+		elseif($from['type'] == 'uncertain'){
+			$str = "The from date is uncertain";
+			$date_comment .= (strlen($date_comment) == 0) ? $str : " - " . $str;
+		}
+		elseif($to['type'] == 'uncertain'){
+			$str = "The to date is uncertain";
+			$date_comment .= (strlen($date_comment) == 0) ? $str : " - " . $str;
+		}
+		//make sure that we have no unsuffixed values
+		if($from['type'] == "simple" ){
+			//opr($from);
+			if(!$this->containsYearSuffix($from['value'])){
+				$sf = $this->getFirstYearSuffix($to['value']);
+				if($sf){
+					$from['value'].= $sf;
+				}
+			}
+		}
+		if($to['type'] == "simple" ){
+			if(!$this->containsYearSuffix($to['value'])){
+				$sf = $this->getLastYearSuffix($from['value']);
+				if($sf){
+					$to['value'].= $sf;
+				}
+			}
+		}
+		if($this->strToYear($from['value']) > $this->strToYear($to['value'])){
+			$datevals = array("from" => $to['value'], "to" => $from['value'], "type" => "range", "comment" => $date_comment);				
+		}
+		else {
+			$datevals = array("from" => $from['value'], "to" => $to['value'], "type" => "range", "comment" => $date_comment);
+		}
+		return $datevals;
+	}
+	
+	function containsYearSuffix($str){
 		$pattern = "/(\d{1,4})\s*(ce|bce|bc)?/i";
 		$matches = array();
 		if(preg_match($pattern, $str, $matches)){
-			if(isset($matches[2]) && (strcasecmp("bc", $matches[2]) || strcasecmp("bce", $matches[2]))){
+			return (isset($matches[2]) && $matches[2]);
+		}
+		return false;
+	}
+	
+	function getFirstYearSuffix($str){
+		$pattern = "/(ce|bce|bc)/i";
+		$matches = array();
+		if(preg_match($pattern, $str, $matches)){
+			if(isset($matches[1]) && $matches[1]){
+				if($matches[1] == "bc") $matches[1] = "BCE";
+				return $matches[1];
+			}
+		}
+		return false;
+		
+	}
+	
+	function getLastYearSuffix($str){
+		$pattern = "/.*(ce|bce|bc)/i";
+		$matches = array();
+		if(preg_match($pattern, $str, $matches)){
+			if(isset($matches[1]) && $matches[1]){
+				if($matches[1] == "bc") $matches[1] = "BCE";
+				return $matches[1];
+			}
+		}
+		return false;
+	}
+	
+	function strToYear($str){
+		$pattern = "/(\d{1,5})\s*(ce|bce|bc)?/i";
+		$matches = array();
+		if(preg_match($pattern, $str, $matches)){
+			if(isset($matches[2]) && (stristr($matches[2], "bc") || stristr($matches[2], "bce"))){
 				return (0 - $matches[1]);
 			}
 			else return $matches[1];
@@ -472,25 +734,21 @@ class ScraperDacuraServer extends DacuraServer {
 		return false;
 	}
 	
-	function consolidateDates($fragments){
+	/*
+	 * In either a disputed or an uncertain date - if they are all ranges, make it a range...
+	 */
+	function consolidateDates($fragments, $type){
 		$earliest = false;
 		$latest = false;
 		foreach($fragments as $frag){
-			if($frag['value']['name'] == "simpledate"){
+			$x = false;
+			if($type == "disputed" && $frag['value']['name'] == "simpledate"){
 				$x = $this->strToYear($frag['value']['text']);
-				if($x !== false){
-					if(($earliest === false) && ($latest === false)){
-						$earliest = $x;
-						$latest = $x;
-					}
-					else {
-						$earliest = ($earliest < $x) ? $earliest : $x;
-						$latest = ($latest > $x) ? $latest : $x;
-					}
-				}
 			}
-			elseif($frag['value']['name'] == "simpledaterange"){
-				$x = $this->strToYear($frag['value']['value'][0]['text']);
+			elseif(isset($frag['name']) && $frag['name'] == "simpledate") {
+				$x = $this->strToYear($frag['text']);
+			}
+			if($x !== false){
 				if(($earliest === false) && ($latest === false)){
 					$earliest = $x;
 					$latest = $x;
@@ -499,18 +757,49 @@ class ScraperDacuraServer extends DacuraServer {
 					$earliest = ($earliest < $x) ? $earliest : $x;
 					$latest = ($latest > $x) ? $latest : $x;
 				}
-				$x = $this->strToYear($frag['value']['value'][1]['text']);
-				$earliest = ($earliest < $x) ? $earliest : $x;
-				$latest = ($latest > $x) ? $latest : $x;
+			}
+			else {
+				$bounds = false;
+				if($type == "disputed" && $frag['value']['name'] == "simpledaterange"){
+					$bounds = $this->getDateRangeBounds($frag['value']['value'][0]['text'], $frag['value']['value'][1]['text']);
+				}
+				elseif(isset($frag['name'] ) && $frag['name'] == "simpledaterange") {
+					$bounds = $this->getDateRangeBounds($frag['value'][0]['text'], $frag['value'][1]['text']);
+				}
+				if($bounds){
+					if(($earliest === false) && ($latest === false)){
+						$earliest = $this->strToYear($bounds[0]);
+						$latest = $this->strToYear($bounds[1]);
+					}
+					else {
+						$earliest = ($earliest < $this->strToYear($bounds[0])) ? $earliest : $this->strToYear($bounds[0]);
+						$latest = ($latest > $this->strToYear($bounds[1])) ? $latest : $this->strToYear($bounds[1]);
+					}		
+				}
+				else {
+					opr($frag);
+					return false;	
+				}
 			}
 		}
 		if(($earliest === false) || ($latest === false)){
 			return false;
 		}
-		$date_val = ($earliest < 0) ? (0-$earliest) . "BCE" : $earliest . "CE" ; 
-		$date_val .= " - ";
-		$date_val .= ($latest < 0) ? (0-$latest) . "BCE" : $latest. "CE"; 
-		return array("type" => "disputed", "value" => $date_val, "comment" => "Date is disputed");
+		$str = "";
+		if($earliest < 0){
+			$str = (0 - $earliest) . "BCE - ";
+		}
+		else {
+			$str = $earliest ."CE - ";
+		}
+		if($latest < 0){
+			$str .= (0 - $latest) . "BCE";
+		}
+		else {
+			$str .= $latest."CE";
+		}
+		$date_val = "$earliest - $latest";
+		return array("type" => $type, "value" => $str, "comment" => "Date is $type");
 	}
 	
 	
@@ -653,12 +942,13 @@ class ScraperDacuraServer extends DacuraServer {
 			"[1,500,000 - 2,000,000]: 100bce",
 			"absent: 500bc-{150bc;90bc}; present: {150bc;90bc}-1ce",
 			"absent: 500bc-150bc; [absent; present]:150bc-90bc; present: 90bc-1ce",
-			"absent: [600bce;500bc]-{150bc;90bc;40bc}; [present;big;small]: {150bc;90bc}-{1;67ce}", 
+			"absent: [600bce;500bc]-{150bc;90ce;40bc}; [present;big;small]: {150bc;90bc}-{1;67ce}", 
 			"{[180,000-270,000]; 604,000}: 423 CE",
 			"present: {1380-1450 CE; 1430-1450 CE; 1350-1450 CE}",
-			"absent: {380-450 CE; 1450 CE; 150 CE}"
+			"absent: {380-450 CE; 1450 CE; 150-50 CE}"
 		);
 		foreach($teststrings as $t){
+			echo "<h3>$t</h3>";
 			opr($this->parseVariableValue($t));			
 		}
 	}		
@@ -677,94 +967,6 @@ class ScraperDacuraServer extends DacuraServer {
 		}
 		return $content;
 	}
-	
-	/*
-	 * Data is an array of {nga_name => [polityurl1, polityurl2, ...]} 
-	 */
-/*	function getDump($data){
-		$ngaReport = array();
-		$ngaList = array();
-		$all = false;
-		$output = "NGA\tPolity\tName\tKey\tValue\tError\n";
-		$errors = "<html><head><title>Seshat Error Report</title></head><body><table>";
-		$errorArray = array();
-		$report = array();
-		$report['entries'] = 0;
-		for($i = 0; $i < count($data); $i++){
-			$report['entries']++;
-			$x = $data[$i];
-			$ngaOut = $x->metadata->nga;
-			if(!in_array($ngaOut, $ngaList)){
-				$ngaList[] = $ngaOut;
-				$ngaReport[$ngaOut] = array();
-				$ngaReport[$ngaOut]["nga"] = $ngaOut;
-				$ngaReport[$ngaOut]["polityCount"] = 0;
-				$ngaReport[$ngaOut]["totalCount"] = 0;
-				$ngaReport[$ngaOut]["nonZeroCount"] = 0;
-				$ngaReport[$ngaOut]["parseCount"] = 0;
-				$ngaReport[$ngaOut]["successCount"] = 0;
-				$ngaReport[$ngaOut]["failureCount"] = 0;
-			}
-			$ngaReport[$ngaOut]["polityCount"] += 1;
-			$polityOut = $x->metadata->polity;
-			$polityURL = $x->metadata->url;
-			$output = $output.$ngaOut."\t".$polityOut."\n";
-			if(isset($x->data)){
-				foreach($x->data as $item){
-					$ngaReport[$ngaOut]["totalCount"] += 1;
-					if($all === true or $item->value[1] != ""){
-						$ngaReport[$ngaOut]["nonZeroCount"] += 1;
-						if(gettype($item->value[1]) == "array"){
-							if($item->error === True){
-								$errors = $errors."<tr><td><a href='".$polityURL."'>".$polityOut."</a></td><td>".$item->value[0]."</td><td>".$item->errorMessage."</td></tr>";
-								$item->url = $polityURL;
-								$item->polity = $polityOut;
-								$errorArray[] = $item;
-							}
-							if($item->error === True){
-								$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t\t".$item->value[1][0]."\t".$item->errorMessage."\n";
-							}else{
-								// $output = $output."\t".$item->value[1][0]."\t".json_encode($item->value[1][1])."\n";
-								$parsedValues = $this->formatValue($item->value[1][1], $item->value[1][0]);
-								for($j = 0;$j < count($parsedValues);$j++){
-									if(gettype($parsedValues[$j]) == "array"){
-										$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t".trim($parsedValues[$j][0])."\t".trim($parsedValues[$j][1])."\t".$item->errorMessage."\n";
-									}else{
-										$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t\t".$parsedValues[$j]."\t".$item->errorMessage."\n";
-									}
-								}
-							}
-							//$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t".$item->value[1][1]."\t".$item->errorMessage."\n";
-							$ngaReport[$ngaOut]["parseCount"] += 1;
-							if($item->error === True){
-								$ngaReport[$ngaOut]["failureCount"] += 1;
-							}else{
-								$ngaReport[$ngaOut]["successCount"] += 1;
-							}
-						}else{
-							$output = $output.$ngaOut."\t".$polityOut."\t".$item->value[0]."\t".$item->value[1]."\t".$item->errorMessage."\n";
-						}
-					}
-				}
-			}else{
-				//do nothing
-				
-			}
-			$output = $output."\n";
-		}
-		$errors = $errors."</table></body></html>";
-		$fileName = $this->log("dump", $output);
-		$errorFile = $this->log("dumperrors", $errors);
-		$fileurl = $this->getURLofLogfile($fileName);
-		$report["filename"] = $fileName;
-		$report["fileurl"] = $fileurl;
-		$report["errorfile"] = $errorFile;
-		$report["contents"] = $ngaReport;
-		$report["errors"] = $errorArray;
-		return $report;
-	}
-	*/
-
 	
 	
 	function login(){
@@ -809,7 +1011,7 @@ class ScraperDacuraServer extends DacuraServer {
 }
 
 class ScraperDacuraAjaxServer extends ScraperDacuraServer {
-	function failure_result($msg, $code){
-		return $this->write_error($msg, $code);
-	}
+	//function failure_result($msg, $code){
+	//	return $this->write_error($msg, $code);
+	//}
 }

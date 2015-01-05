@@ -11,7 +11,7 @@
  */
 
 
-class Dataset {
+class Dataset extends DacuraObject {
 	var $id;
 	var $name;
 	var $config;

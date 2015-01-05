@@ -21,6 +21,7 @@
 require_once("phplib/http_response_code.php");
 require_once("phplib/libs/epiphany/src/Epi.php");
 include_once("phplib/settings.php");
+include_once("phplib/DacuraObject.php");
 include_once("phplib/ServiceLoader.php");
 include_once("phplib/DacuraUser.php");
 

@@ -11,7 +11,7 @@
  */
 
 
-class DacuraSession {
+class DacuraSession extends DacuraObject {
 
 	var $session_id;
 	var $state_vars;

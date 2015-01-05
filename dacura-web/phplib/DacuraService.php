@@ -13,7 +13,7 @@
  * Licence: GPL v2
  */
 
-class DacuraService{
+class DacuraService extends DacuraObject {
 	var $settings;  // the server wide settings that the service has been invoked in.
 	var $mydir;
 	var $servicename = "abstract_base_class";
@@ -27,9 +27,6 @@ class DacuraService{
 
 	var $default_screen = "view";
 
-	//Normal way of signalling errors
-	var $errcode;
-	var $errmsg;
 	
 	
 	var $html_screens = array();

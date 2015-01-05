@@ -8,6 +8,7 @@ getRoute()->post('/dump', 'dump');
 getRoute()->get('/grabscript', 'getGrabScript');
 getRoute()->get('/facts', 'getFactsFromPage');
 getRoute()->get('/p', 'testParser');
+getRoute()->get('/view/(.+)', 'viewReport');
 
 
 include_once("ScraperDacuraServer.php");
@@ -37,9 +38,9 @@ function getpolities(){
 
 function getFactsFromPage(){
 	global $service;
-	$url = "http://seshat.info/Code_book";//$_POST['url'];
-	//$url = "http://seshat.info/Anatolia,_Byzantine_Empire_%28395-632_CE%29";
-	$url = "http://seshat.info/Parsing_test_cases";
+	//$url = "http://seshat.info/Code_book";//$_POST['url'];
+	$url = "http://seshat.info/Anatolia,_Byzantine_Empire_%28395-632_CE%29";
+	//$url = "http://seshat.info/Parsing_test_cases";
 	$sdas = new ScraperDacuraAjaxServer($service);
 	if($sdas->init()){
 		$x = $sdas->getFactsFromURL($url);
@@ -53,6 +54,15 @@ function getFactsFromPage(){
 	}	
 }
 
+function dump(){
+	global $service;
+	set_time_limit(0);
+	$sdas = new ScraperDacuraAjaxServer($service);
+	$data = json_decode($_POST["polities"]);
+	if($sdas->init()){
+		$sdas->getDump($data);
+	}
+}
 
 function testParser(){
 	global $service;
@@ -85,16 +95,12 @@ function parsePage(){
 	}
 }
 
-function dump(){
+
+function viewReport($rep){
 	global $service;
+	set_time_limit(0);
 	$sdas = new ScraperDacuraAjaxServer($service);
-	$data = json_decode($_POST["polities"]);
-	if($sdas->init()){
-		$x = $sdas->getDump($data);
-	}
-	//if($x){
-	//	echo json_encode($x);
-	//}
+	$sdas->getReport($rep);
 }
 
 function getGrabScript(){

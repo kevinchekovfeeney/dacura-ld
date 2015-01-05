@@ -17,6 +17,7 @@
  */
 
 include_once("phplib/settings.php");
+include_once("phplib/DacuraObject.php");
 include_once("phplib/ServiceLoader.php");
 include_once("phplib/DacuraUser.php");
 session_start();

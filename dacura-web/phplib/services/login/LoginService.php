@@ -27,7 +27,7 @@ class LoginService extends DacuraService {
 			$this->renderScreen("logout", $params);
 		}
 		else{
-			if($this->screen == "" or $this->screen == 'login'){
+			if($this->screen == "view" or $this->screen == "" or $this->screen == 'login'){
 				$params = array("active_function" => "login");
 				$this->renderScreen("login", $params);
 			}
@@ -57,7 +57,7 @@ class LoginService extends DacuraService {
 				}			
 			}
 			else {
-				$this->renderScreen("error", array("title" => "Unknown Screen", "message" => "The login service does not have a $sc->screen page"));
+				$this->renderScreen("error", array("title" => "Unknown Screen", "message" => "The login service does not have a $this->screen page"));
 			}
 		}
 	}

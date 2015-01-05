@@ -9,7 +9,7 @@
  * Licence: GPL v2
  */
 
-class UserRole {
+class UserRole extends DacuraObject {
 	var $id;
 	var $collection_id;
 	var $dataset_id;

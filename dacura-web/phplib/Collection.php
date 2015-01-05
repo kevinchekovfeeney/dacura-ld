@@ -11,7 +11,7 @@
  */
 
 
-class Collection {
+class Collection extends DacuraObject {
 	var $id;
 	var $name;
 	var $config;

@@ -184,7 +184,7 @@
 			failed: 0,
 			message: ""
 		};
-		var reportStatus = {
+		var dataStatus = {
 			loaded: 0,
 			failed: 0,
 			message: ""
@@ -208,6 +208,14 @@
 				$('#scraper-info').html(ngaStatus.message);
 			});
 
+			
+			$("#back-polities").click(function(){
+				hideScraperScreen(4);
+				showScraperScreen(3);
+				resetScraperScreen(4);
+				$('#scraper-info').html(polityStatus.message);
+			});
+			
 			$(".get-ngas").click(function(){
 				ngaStatus.loaded = 0;
 				ngaStatus.failed = 0;
@@ -323,7 +331,7 @@
 											value: (myOrder / ngaCount) * 100
 										});
 										addition = "<h3>" + name + " (" + polities.length + ") <span>Select all <input type='checkbox' class='selectAll'></span></h3><div class='ngas'>";
-										addition += "<table class='polity-list seshat-list'><tr><th>Polity</th><th>Period</th><th>URL</th><th></th></tr>";
+										addition += "<table class='polity-list seshat-list' title='" + this.nga +"'><tr><th>Polity</th><th>Period</th><th>URL</th><th></th></tr>";
 										for(var i=0;i<polities.length;i++){
 											var pdet = parsePolityString(polities[i]);
 											addition += "<tr><td>" + pdet.polityname + "</td><td>"+pdet.period+"</td><td>";
@@ -333,7 +341,7 @@
 											else {
 												addition += "<a href='" + pdet.url + "' title='" + pdet.url + "'>" + pdet.url + "...</a>";
 											} 
-											addition += "</a></td><td><input class='polityValid' type='checkbox' id='" + polities[i] + "'></td></tr>";
+											addition += "</a></td><td><input class='polityValid' type='checkbox' title='" + polities[i] + "'></td></tr>";
 											if(typeof polityList[polities[i]] !== "undefined"){
 												polityList[polities[i]].push(this.nga);
 											}else{
@@ -418,40 +426,76 @@
 				}
 			});
 
-
 			
 			$('#get-data').click(function(){
+				dataStatus.loaded = 0;
+				dataStatus.failed = 0;
+				dataStatus.message = "";
+				
 				if($('input:checked').length==0){
 					alert("nothing selected - you must select at least one policy to export!");
 				}else{
-					
-					var polities = $('input.polityValid:checked');
+					var polities = [];
+					var ngas = [];
+					$('input.polityValid:checked').each(function (i) {
+						polityURL = $( this ).attr("title");
+						polityNGA = $( this ).parents("table").attr("title");
+						if(polities.indexOf(polityURL) == -1){
+							polities.push(polityURL);
+						}
+						if(ngas.indexOf(polityNGA) == -1){
+							ngas.push(polityNGA);
+						}
+					});
 					var polityList = {}; //maps polities to NGAs
-					for(var i = 0; i < polities.length; i++){
-						polityURL = polities[i].id;
-						element = $(polities).get(i);
-						polityNGAString = $(element).parents("div").prev("h3").text();
-						polityNGA = polityNGAString.substr(0, polityNGAString.indexOf("("));
+					$('input.polityValid:checked').each(function (i) {
+						polityURL = $( this ).attr("title");
+						polityNGA = $( this ).parents("table").attr("title");
 						if(typeof polityList[polityNGA] !== "undefined"){
-							polityList[polityNGA].push(name);
+							polityList[polityNGA].push(polityURL);
 						}else{
 							polityList[polityNGA] = [];
 							polityList[polityNGA].push(polityURL);
 						}
-					}
+					});
 					var onm = function(msgs){
 						for(var i = 0; i < msgs.length; i++){
-							dacura.toolbox.updateModal(msgs[i]);
+							try {
+								var res = JSON.parse(msgs[i]);
+								if(res && res.message_type == "comet_update"){
+									dataStatus.loaded++;
+									$('p.data-got').html(res.payload);
+									$('.determinate-progress').progressbar({
+										value: (dataStatus.loaded / polities.length) * 100
+									});
+																					
+								}
+							}
+							catch(e) 
+							{							
+								$('.data-got').html("<p class='seshat-error'>Failed to parse message from server: " + e.message + "</p>");
+							}
 						}
 					}
 					var onc = function(res) {
 						hideScraperScreen(3);
 						showScraperScreen(4);
-						$('#results-display').html(res).show();
+						try {
+							var pl = JSON.parse(res);
+							$('#results-display').html(pl.payload).show();
+						}
+						catch(e){
+							$('#scraper-info').html("Failed to export data dump");
+						}						
+						dacura.toolbox.removeModal();
 					}
+					dataStatus.message = "Retrieving data for " + polities.length + " polities in " + ngas.length + " NGAs";
+					$('#scraper-info').html(dataStatus.message);
+					dacura.toolbox.showModal("<p class='polity-head'>Retrieving variables from Seshat Wiki</p><p class='data-got'></p><div class='determinate-progress'></div>");
+					$('.determinate-progress').progressbar({
+						value: false
+					});
 					dacura.scraper.dump({"polities" : JSON.stringify(polityList)}, onc, onm); 
-					
-					//alert(JSON.stringify(polityList));
 				}
 			});
 		});

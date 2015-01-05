@@ -11,7 +11,7 @@
  */
 
 
-class CandidateAction {
+class CandidateAction extends DacuraObject {
 	var $id;
 	var $candid;
 	var $chunkid;

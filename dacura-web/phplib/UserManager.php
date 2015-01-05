@@ -12,12 +12,11 @@
 
 require_once("DacuraUser.php");
 
-class UserManager {
+class UserManager extends DacuraObject {
 	
 	var $user_dir;
 	var $service;
 	var $dbman;
-	var $errmsg = "";
 	
 	function __construct($dbman, &$service){
 		$this->service = $service;

@@ -15,11 +15,9 @@ require_once("DacuraService.php");
 require_once("DacuraServer.php");
 
 
-class ServiceLoader {
+class ServiceLoader extends DacuraObject {
 
 	var $settings;
-	var $errmsg;
-	var $errcode;
 	
 	function __construct($settings){
 		$this->settings = $settings;
@@ -39,6 +37,9 @@ class ServiceLoader {
 			else {
 				$sc->set_report_error("Whoops!", "You have arrived at a non-existant page. The service in URL $sc->rawpath does not exist");
 			}
+		}
+		else {
+			$sc->servicename = "login";
 		}
 		return $sc;
 	}

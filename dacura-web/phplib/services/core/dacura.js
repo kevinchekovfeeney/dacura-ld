@@ -64,6 +64,7 @@ dacura.toolbox.slowAjax = function (url, method, args, oncomplete, onmessage, on
     }
 	xhr.multipart = true; 
 	xhr.open(method, url, true); 
+	var msgcounter = 0;
 	xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 	//xhr._cachedOnreadystatechange = xhr.onreadystatechange;
 	xhr.onreadystatechange = function() {
@@ -87,7 +88,7 @@ dacura.toolbox.slowAjax = function (url, method, args, oncomplete, onmessage, on
 		}
 		else if(xhr.readyState === 4){
 			var msgs = xhr.responseText.split("}\n{");
-			oncomplete(msgs[msgs.length-1]);  
+			oncomplete("{" + msgs[msgs.length-1]);  
 		}
 	};
 	xhr.send(args);

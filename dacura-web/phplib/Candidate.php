@@ -12,7 +12,7 @@
 
 include_once("CandidateAction.php");
 
-class Candidate {
+class Candidate extends DacuraObject {
 	var $id;
 	var $chunkid;
 	var $permid;

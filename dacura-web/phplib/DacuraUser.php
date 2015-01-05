@@ -14,7 +14,7 @@
 require_once("DacuraSession.php");
 require_once("UserRole.php");
 
-class DacuraUser {
+class DacuraUser extends DacuraObject {
 	var $id;
 	var $email;
 	var $name;
