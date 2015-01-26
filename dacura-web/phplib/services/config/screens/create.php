@@ -198,7 +198,7 @@ var getAfterCreateLink = function(id){
 <?php if($service->getCollectionID()){?>
 	return dacura.toolbox.getServiceURL("<?=$service->settings['install_url']?>", "", "<?=$service->getCollectionID()?>", id, "config", "");
 <?php } else {?>
-	return dacura.toolbox.getServiceURL("<?=$service->settings['install_url']?>", "", id, "0", "config", "");
+	return dacura.toolbox.getServiceURL("<?=$service->settings['install_url']?>", "", id, "all", "config", "");
 <?php }?>
 };
 

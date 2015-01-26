@@ -24,56 +24,33 @@ class UserManager extends DacuraObject {
 		$this->dbman = $dbman;
 	}
 	
-	function saveUser($u){
-		if($this->dbman->saveUser($u)){
-			return $u;
-		}
-		$this->errmsg = $this->dbman->errmsg;
-		return false;
-	}
-	
-	function updateUserRoles(&$u){
-		if($this->dbman->updateUserRoles($u)){
-			//$_SESSION['dacurauser'] =& $u;
-			return true;
-		}
-		$this->errmsg = $this->dbman->errmsg;
-		return false;
-	}
-
-	function refreshCurrentUser(){
-		$x = isset($_SESSION['dacurauser']) ? $_SESSION['dacurauser']->id : false;
-		if($x){
-			$u = $this->loadUser($x);
-			if($u) {
-				$_SESSION['dacurauser'] =& $u;
-				return $u;
-			}
-			return false;
-		}
-		$this->errmsg = "Failed to load existing user from session!";
-		return false;
-	}
-	
+	/*
+	 * Methods for retrieving user information
+	 */
 	function getUser($n = 0){
 		if($n === 0) {
-			if (isset($_SESSION['dacurauser'])) $u =& $_SESSION['dacurauser'];
-			else $u = 0;
+			if (isset($_SESSION['dacurauser'])) {
+				$u =& $_SESSION['dacurauser'];
+				return $u;
+			}
+			else {
+				return $this->failure_result("not logged in", 401);
+			}
 			return $u;
 		}
 		else {
 			return $this->loadUser($n);
 		}
 	}
-
+	
 	function getUsers(){
 		$u = $this->dbman->loadUsers();
 		if($u){
+			$this->logEvent("debug", 200, "returning list of users: " .json_encode($u, true));
 			return $u;
 		}
 		else {
-			$this->errmsg = $this->dbman->errmsg;
-			return false;
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 		}
 	}
 	
@@ -84,11 +61,10 @@ class UserManager extends DacuraObject {
 			return $u;
 		}
 		else {
-			$this->errmsg = $this->dbman->errmsg;
-			return false;		
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 		}
 	}
-
+	
 	function loadUserByEmail($email){
 		$u = $this->dbman->loadUserByEmail($email);
 		if($u){
@@ -96,16 +72,31 @@ class UserManager extends DacuraObject {
 			return $u;
 		}
 		else {
-			$this->errmsg = $this->dbman->errmsg;
-			return false;
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 		}
 	}
 	
+	/*
+	 * Methods for storing / updating user information
+	 */
+	function saveUser($u){
+		if($this->dbman->saveUser($u)){
+			return $u;
+		}
+		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+	}
+	
+	function updateUserRoles(&$u){
+		if($this->dbman->updateUserRoles($u)){
+			$_SESSION['dacurauser'] =& $u;
+			return true;
+		}
+		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+	}
 	
 	function addUser($email, $n, $p, $status, $prof = false){
 		if(!$email or !$p){
-			$this->errmsg = "Attempt to add user with no email and password";
-			return false;
+			return $this->failure_result("Attempt to add user with no email and password", 400);
 		}
 		!$prof && $prof = '{"dacurahome" : "'.$this->service->settings['install_url'].'seshat/0/welcome"}';
 		$nu = $this->dbman->addUser($email, $n, $p, $status, $prof);
@@ -113,8 +104,7 @@ class UserManager extends DacuraObject {
 			$nu->setSessionDirectory($this->user_dir.$nu->id);
 			return $nu;
 		}
-		$this->errmsg = $this->dbman->errmsg;
-		return false;
+		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 	}
 	
 	function deleteUser($id){
@@ -127,10 +117,13 @@ class UserManager extends DacuraObject {
 		return $this->saveUser($du);
 	}
 	
+	/*
+	 * Login / registration / lost password functions
+	 */	
+	
 	function login($email, $p){
 		if($this->isLoggedIn()){
-		 	$this->errmsg = "User is already logged in";
-			return false;
+			return $this->failure_result("user is already logged in - cannot log in again ", 401);
 		}
 		else {
 			$u = $this->dbman->testLogin($email, $p);
@@ -141,11 +134,9 @@ class UserManager extends DacuraObject {
 				return $u;
 			}
 			else {
-				$this->errmsg = $this->dbman->errmsg;
-				return false;
+				return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 			}
 		}
-		return false;
 	}
 	
 	function isLoggedIn(){
@@ -178,14 +169,12 @@ class UserManager extends DacuraObject {
 						return $code;
 					}
 					else {
-						$this->errmsg = $this->dbman->errmsg;
-						return false;
+						return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 					}
 				}
 			}
 			else {
-				$this->errmsg = "User with email $email already exists on the system (status: $eu->status)";
-				return false;
+				return $this->failure_result("User with email $email already exists on the system (status: $eu->status) - cannot register", 401);
 			}
 		}
 		else {
@@ -197,8 +186,7 @@ class UserManager extends DacuraObject {
 					return $code;
 				}
 				else {
-					$this->errmsg = $this->dbman->errmsg;
-					return false;
+					return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);				
 				}
 			}
 		}
@@ -208,8 +196,7 @@ class UserManager extends DacuraObject {
 	function confirmRegistration($code){
 		$uid = $this->dbman->getConfirmCodeUid($code, "register");
 		if(!$uid){
-			$this->errmsg = $this->dbman->errmsg;
-			return false;
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 		}
 		//$this->dbman->updateUserState($uid, "new");
 		$du = $this->loadUser($uid);
@@ -218,63 +205,29 @@ class UserManager extends DacuraObject {
 			return false;				
 		}
 		if($du->status != "unconfirmed"){
-			$this->errmsg = "This confirmation code is no longer valid";
-			return false;				
+			return $this->failure_result("This confirmation code is no longer valid", 401);
 		}
 		$du->setStatus("new");
 		$du->recordAction("register", "confirm_register", true);
 		if($this->saveUser($du)){
 			return $du;	
 		}
-		$this->errmsg = "Failed to save user $du->email";
 		return false;		
 	}
-	
-	function confirmLostPassword($code){
-		$uid = $this->dbman->getConfirmCodeUid($code, "lost");
-		if(!$uid){
-			$this->errmsg = $this->dbman->errmsg;
-			return false;
+
+
+	function updatePassword($uid, $p){
+		if($this->dbman->updatePassword($uid, $p)){
+			$u = $this->loadUser($uid);
+			if(!$u){
+				return false;
+			}
+			$u->recordAction("users", "updated_password", true);
+			return true;
 		}
-		$du = $this->loadUser($uid);	
-		if(!$du){
-			return false;
-		}
-		if($du->status == "unconfirmed" or $du->status == "suspended" or $du->status == "deleted"){
-			$this->errmsg = "This confirmation code is no longer valid - $du->email is no longer active";
-			return false;
-		}
-		$du->recordAction("register", "confirm_lost", true);
-		return $du;
+		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 	}
 	
-	
-	function requestResetPassword($email){
-		$u = $this->loadUserByEmail($email);
-		if(!$u){
-			return false;
-		}
-		if($u->status == "unconfirmed"){
-			$u->recordAction("register", "lost_password_failed", true);
-			$this->errmsg = "You must confirm your account before you can reset the password.";
-			return false;
-		}
-		elseif($u->status == "suspended"){
-			$u->recordAction("register", "lost_password_failed", true);
-			$this->errmsg = "The account $u has been suspended, you cannot reset the password while suspended.";
-			return false;
-		}
-		elseif($u->status == "deleted"){
-			$u->recordAction("register", "lost_password_failed", true);
-			$this->errmsg = "The account $u has been deleted, you cannot reset the password of a deleted account.";
-			return false;
-		}
-		$u->recordAction("register", "lost_password", true);
-		$code = $this->dbman->generateUserConfirmCode($u->id, "lost", true);
-		if($code) return $code;
-		$this->errmsg = $this->dbman->errmsg;
-		return false;
-	}
 	
 	function resetPassword($uid, $p){
 		$code = $this->dbman->getUserConfirmCode($uid, "lost");
@@ -287,19 +240,232 @@ class UserManager extends DacuraObject {
 				$u->recordAction("register", "updated_password", true);
 				return true;
 			}
-			$this->errmsg = $this->dbman->errmsg;
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+		}
+		return $this->failure_result("No confirm code found for password reset", 401);
+	}
+	
+	function confirmLostPassword($code){
+		$uid = $this->dbman->getConfirmCodeUid($code, "lost");
+		if(!$uid){
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+		}
+		$du = $this->loadUser($uid);	
+		if(!$du){
 			return false;
 		}
-		$this->errmsg = "No confirm code found for password reset";
-		return false;		
+		if($du->status == "unconfirmed" or $du->status == "suspended" or $du->status == "deleted"){
+			return $this->failure_result("This confirmation code is no longer valid $du->email is no longer active", 401);
+		}
+		$du->recordAction("register", "confirm_lost", true);
+		return $du;
+	}
+	
+	function requestResetPassword($email){
+		$u = $this->loadUserByEmail($email);
+		if(!$u){
+			return false;
+		}
+		if($u->status == "unconfirmed"){
+			$u->recordAction("register", "lost_password_failed", true);
+			return $this->failure_result("You must confirm your account before you can reset the password.", 401);
+		}
+		elseif($u->status == "suspended"){
+			$u->recordAction("register", "lost_password_failed", true);
+			return $this->failure_result("The account $u has been suspended, you cannot reset the password while suspended.", 401);
+		}
+		elseif($u->status == "deleted"){
+			$u->recordAction("register", "lost_password_failed", true);
+			return $this->failure_result("The account $u has been deleted, you cannot reset the password of a deleted account.", 401);
+		}
+		$u->recordAction("register", "lost_password", true);
+		$code = $this->dbman->generateUserConfirmCode($u->id, "lost", true);
+		if($code) return $code;
+		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+	}
+	
+	/*
+	 * Methods for updating current logged in user
+	 */
+	
+	function refreshCurrentUser(){
+		$x = isset($_SESSION['dacurauser']) ? $_SESSION['dacurauser']->id : false;
+		if($x){
+			$u = $this->loadUser($x);
+			if($u) {
+				$_SESSION['dacurauser'] =& $u;
+				return $u;
+			}
+			return false;
+		}
+		return $this->failure_result("Failed to load existing user from session!", 500);
+	}
+	
+	function switchToUser($id){
+		if($this->isLoggedIn()){
+			$this->logout();
+		}
+		$u = $this->loadUser($id);
+		if($u) {
+			$_SESSION['dacurauser'] =& $u;
+			return $u;
+		}
+		return false;
+	}
+	
+	/*
+	 * Methods for dealing with roles
+	 */
+	
+	/*
+	 * return role object with id $rid for user $uid
+	 */
+	function getUserRole($uid, $rid){
+		$u = $this->getUser($uid);
+		foreach($u->roles as $role){
+			if($role->id == $rid){
+				return $role;
+			}
+		}
+		return $this->failure_result('User $uid Role $rid did not exist' . $e->getMessage(), 500);
+	}
+	
+	function deleteUserRole($uid, $rid){
+		$u = $this->getUser($uid);
+		if(!$u){
+			return $this->failure_result("Could not delete role $rid for user $uid." . " " . $this->errmsg, $this->errcode);				
+		}
+		foreach($u->roles as $i => $role){
+			if($role->id == $rid){
+				if(!$this->dbman->deleteRole($rid)){
+					return $this->failure_result("Failed to delete $rid role for $uid", 500);
+				}
+				unset($u->roles[$i]);
+				return $u;
+			}
+		}
+		return $this->failure_result('User $uid Role $rid did not exist', 500);
+	}
+	
+	function createUserRole($uid, $cid, $did, $role, $level){
+		$u = $this->getUser($uid);
+		if($u){
+			$u->addRole(new UserRole(0, $cid, $did, $role, $level));
+			//$u->roles[] = new UserRole(0, $id, 0, 'admin', 99);
+			if(!$this->dbman->updateUserRoles($u)){
+				return $this->failure_result("Failed to create new roles for $id collection", 500);
+			}
+			return $u;
+		}
+		return $this->failure_result("Could not create role for user $uid." . " " . $this->errmsg, $this->errcode);
+	}
+	
+	function getAvailableRoles($uid, $cid, $did){
+		return array("admin", "architect", "harvester", "expert", "user");
+	}
+	
+	/*
+	 * Intersection between cid/did context and users...
+	 */
+	/*
+	 * returns an array of userids that appear (i.e. have a role) in the given context
+	 */
+	function getUsersInContext($cid, $did){
+		//first figure out which cids to use for the given active user...
+		$cids = array();
+		$dids = array();
+		if($cid == "all"){
+			//we are in top level context - all users are returned....
+			return $this->getUsers();
+		}
+		elseif($did == "all"){
+			//we are in a collection level context
+			$uids  = $this->dbman->getUsersInContext(array($cid), array());
+		}
+		else {
+			$uids  = $this->dbman->getUsersInContext(array(), array($did));
+		}
+		if(!$uids){
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+		}
+		$this->logEvent("debug", 200, "returning list of users: " .json_encode($uids, true));
+		$users = array();
+		foreach($uids as $id){
+			$u = $this->getUser($id);
+			if(!$u){
+				$this->logEvent("warning", $this->errcode, $this->errmsg);
+			}
+			else {
+				$users[] = $u;				
+			}
+		}
+		return $users;
+	}
+	
+	/*
+	 * Returns a user object pruned so that it only has roles within the given context...
+	 */
+	function getUserPrunedForContext($uid, $cid, $did){
+		$u = $this->getUser($uid);
+		if(!$u){
+			return $this->failure_result("User $uid does not exist", 404);
+		}
+		$covering_role = new UserRole(0, $cid, $did, "admin", "");
+		foreach($u->roles as $i => $r){
+			if(!$covering_role->coversRole($r) || ($cid !="all" && $r->collection_id == "all") ||
+					($did != "all" && $r->dataset_id == "all")){
+				unset($u->roles[$i]);
+			}
+		}
+		$this->loadUserHistory($u);
+		unset($u->session_dump);
+		//unset($u->sessions);
+		return $u;
+	}
+	
+	function loadUserHistory(&$u){
+		if ($handle = opendir($u->session_dump)) {
+			/* This is the correct way to loop over the directory. */
+			while (false !== ($entry = readdir($handle))) {
+				$ext = substr($entry, strrpos($entry, '.') +1);
+				if ($ext == "session"){
+					$sess_id = substr($entry, 0, strrpos($entry, '.'));
+					$fhandle = fopen($u->session_dump.$entry, "r");
+					if ($fhandle) {
+						while (($line = fgets($fhandle)) !== false) {
+							$ds = new DacuraSession($sess_id);
+							if($ds->loadFromJSON($line)){
+								$one_history = $ds->summary();
+								$one_history['service'] = $sess_id;
+								$one_history['events'] = $ds->events;
+								$u->history[] = $one_history;
+							}
+							else {
+								$this->logEvent("notice", 500, "Failed to parse session dump [$line]");
+							}
+						}	
+						fclose($fhandle);
+					} 
+					else {
+						$this->logEvent("notice", 500, "Failed to open file $entry in $this->session_dump");
+					}
+				}
+				else {
+					if($entry != "." && $entry != ".."){
+						$this->logEvent("notice", 500, "Non session file $entry in session directory ($ext)");
+					}
+				}
+			}
+			closedir($handle);
+		}
+		else {
+			return $this->failure_result("Failed to open user session directory $u->session_dump", 500, "warning");
+		}
+	}
+	
+	function logEvent($level, $code, $msg){
+		$this->service->logger->logEvent($level, $code, $msg);
 	}
 
-	
-	
-	function getErrorMessage(){
-		return $this->errmsg;
-	}
-
-	
 }
 

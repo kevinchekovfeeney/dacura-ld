@@ -102,9 +102,9 @@ dacura.config.deleteDataset = function(){
 
 var getAfterDeleteLink = function(){
 	<?php if($service->getDatasetID()){?>
-		return dacura.toolbox.getServiceURL("<?=$service->settings['install_url']?>", "", "<?=$service->getCollectionID()?>", "0", "config", "");
+		return dacura.toolbox.getServiceURL("<?=$service->settings['install_url']?>", "", "<?=$service->getCollectionID()?>", "all", "config", "");
 	<?php } else {?>
-		return dacura.toolbox.getServiceURL("<?=$service->settings['install_url']?>", "", "0", "0", "config", "");
+		return dacura.toolbox.getServiceURL("<?=$service->settings['install_url']?>", "", "all", "all", "config", "");
 	<?php }?>
 };
 

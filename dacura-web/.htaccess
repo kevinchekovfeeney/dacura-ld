@@ -104,16 +104,20 @@ DirectoryIndex index.php index.html index.htm
   # RewriteBase /
 
   # Pass all requests not referring directly to files in the filesystem to index.php and api.php
+  #RewriteRule ^(.*)phplib/(.*)$ /dacura/index.php?path= [QSA,L]
 
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !=/favicon.ico
   RewriteRule ^(.*)rest/(.*)$ /dacura/api.php?path=$2 [QSA,L]
+  
+
+ 
 
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !=/favicon.ico
-  RewriteCond %{REQUEST_URI} !=/dcura/index.php?path=.*
+  RewriteCond %{REQUEST_URI} !=/dacura/index.php?path=.*
   RewriteRule ^(.*)$ /dacura/index.php?path=$1 [QSA,L]
 
 

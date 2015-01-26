@@ -25,11 +25,44 @@ class UserRole extends DacuraObject {
 	}
 
 	function collectionID(){
-		return ($this->collection_id == "0" ? "" : $this->collection_id);
+		return $this->collection_id;
+	}
+	
+	function roleCompare($r1, $r2){
+		if($r1 == $r2) return 0;
+		elseif($r1 == "god") return 1;
+		elseif($r1 == "admin" && $r2 != "god") return 1;
+		else return -1;
+	}
+	
+	/*
+	 * Returns true if this role covers the passed requirements
+	 */
+	function covers($r, $cid, $did){
+		if($this->roleCompare($this->role, $r) < 0){
+			return false;
+		}
+		if(($this->collection_id == "all")){
+			return true;
+		}
+		elseif($this->collection_id != $cid && $cid != "all"){
+			return false;
+		}
+		elseif($this->dataset_id == "all"){
+			return true;
+		}
+		elseif($this->dataset_id == $did or $did == "all"){
+			return true;
+		}
+		return false;
+	}
+	
+	function coversRole($r2){
+		return $this->covers($r2->role, $r2->collection_id, $r2->dataset_id);		
 	}
 	
 	function datasetID(){
-		return ($this->dataset_id == "0" ? "" : $this->dataset_id);
+		return $this->dataset_id;
 	}
 	
 	

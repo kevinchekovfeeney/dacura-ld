@@ -6,13 +6,12 @@ class BrowseService extends DacuraService {
 	
 	var $collection_context;
 	var $dataset_context;
+	var $public_screens = array();
+	var $protected_screens = array("view" => array("user", "all", "all"));
 	
 	
 	
-	function handlePageLoad($sc = false){
-		if($sc === false) $sc = $this->servicecall;
-		$bds = new BrowseDacuraServer($this);
-		
+	function handlePageLoad($bds){
 		$params = array('collection' => $this->collection_id, "dataset" => $this->dataset_id);
 				
 		//$sc->screen = "browse";

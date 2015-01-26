@@ -1,132 +1,198 @@
 <?php
-//getRoute()->post('/', 'create');
-getRoute()->get('/', 'listing');
-getRoute()->get('/(\w+)/roleoptions', 'roleoptions');
-getRoute()->get('/(\w+)', 'view');
-getRoute()->post('/', 'create');
-getRoute()->post('/(\w+)', 'update');
-getRoute()->delete('/(\w+)', 'delete');
-getRoute()->get('/(\w+)/role/(\w+)', 'viewrole');
-getRoute()->post('/(\w+)/role', 'createrole');
-getRoute()->delete('/(\w+)/role/(\w+)', 'deleterole');
+/*
+ * API for users service - viewing and updating user details
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 12/01/2015
+ * Licence: GPL v2
+ */
 
-include_once("UsersDacuraServer.php");
+/*
+ * Tricky question: who has authority over users and what....
+ * God -> can do everything....
+ * Collection admin -> can do everything related to admin-ed collections
+ * 					-> controls everything to do 
+ * User -> 
+ */
 
-function view($id){
-	global $service;
-	$dwas = new UsersDacuraAjaxServer($service);
-	$collobj = $dwas->getUser($id);
-	if($collobj){
-		$cid = $service->getCollectionID();
-		$did = $service->getDatasetID();
-		foreach($collobj->roles as $i => $r){
-			if($cid && $r->collectionID() && ($r->collectionID() != $cid)){
-				unset($collobj->roles[$i]);
-			}
-			elseif($did && $r->datasetID() && ($r->datasetID() != $did)){
-				unset($collobj->roles[$i]);
-			}
+getRoute()->get('/', 'listUsers');
+getRoute()->get('/(\w+)', 'viewUser');
+getRoute()->post('/', 'createUser');
+getRoute()->post('/(\w+)', 'updateUser');
+getRoute()->post('/(\w+)/password', 'updateUserPassword');
+getRoute()->delete('/(\w+)', 'deleteUser');
+getRoute()->get('/load/(\w+)', 'switchUser'); //must be turned off - only for testing 
+getRoute()->get('/(\w+)/role/(\w+)', 'viewRole');
+getRoute()->post('/(\w+)/role', 'createRole');
+getRoute()->delete('/(\w+)/role/(\w+)', 'deleteRole');
+
+/*
+ * Changes the current user to the user with id $id 
+ * Just for testing different users - not for production!!!
+ */
+function switchUser($id){
+	global $dacura_server;
+	$dacura_server->write_json_result($dacura_server->userman->switchToUser($id), "Switched to user $id");
+}
+
+function listUsers(){
+	global $dacura_server;
+	$dacura_server->init("listusers");
+	if($dacura_server->userHasRole("admin", false, "all")){
+		$collobj = $dacura_server->getUsersInContext();
+		if($collobj){
+			echo "poo";
+			$dacura_server->write_json_result($collobj, "Retrieved user listing for ".$dacura_server->contextStr());
 		}
-		echo json_encode($collobj);	
 	}
-	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
+	else $dacura_server->write_http_error();
 }
 
-function roleoptions($uid){
-	//need to return what options are avaiable in: 
-	//collection_id
-	//dataset_id (connected to above)
-	//role
-	//depending on both context and uid...
-	global $service;
-	$dwas = new UsersDacuraAjaxServer($service);
-	$c_id = $service->getCollectionID();
-	$d_id = $service->getDatasetID();
-	$collobj = $dwas->getRoleContextOptions($uid, $c_id, $d_id);
-	if($collobj){
-		echo json_encode($collobj);
+function viewUser($id){
+	global $dacura_server;
+	$dacura_server->init("getuser", $id);
+	if($dacura_server->userHasRole("admin", false, "all")){
+		$object_user = $dacura_server->getUserPrunedForContext($id);
+		if($object_user){
+			return $dacura_server->write_json_result($object_user, "Viewing user $id");
+		}
+		else {
+			$dacura_server->write_http_error();
+		}
 	}
-	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
+	else {
+		$dacura_server->write_http_error();		
+	}
 }
 
-function viewrole($uid, $rid){
-	global $service;
-	$dwas = new UsersDacuraAjaxServer($service);
-	$x = $dwas->getUserRole($uid, $rid);
-	if($x){
-		echo json_encode($x);
+function deleteUser($id){
+	global $dacura_server;
+	$dacura_server->init("deleteuser", $id);
+	$u = $dacura_server->getUser();
+	if($dacura_server->userHasRole("admin", false, "all") || $u->id == $id){
+		if($dacura_server->deleteUser($id)){
+			$dacura_server->write_json_result(true, "User $id has been deleted");
+		}
+		else {
+			$dacura_server->write_http_error();
+		}
 	}
-	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
+	else {
+		$dacura_server->write_http_error();		
+	}
 }
 
-function listing(){
-	global $service;
-	$dwas = new UsersDacuraAjaxServer($service);
-	$c_id = $service->getCollectionID();
-	$d_id = $service->getDatasetID();
-	$collobj = $dwas->getUsersInContext($c_id, $d_id);
-	if($collobj){
-		echo json_encode($collobj);
+function createUser(){
+	global $dacura_server;
+	$dacura_server->init("createuser");
+	if(!$dacura_server->userHasRole("admin", false, "all")){
+		return $dacura_server->write_http_error();
 	}
-	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
-}
-
-function create(){
-	global $service;
-	$dwas = new UsersDacuraAjaxServer($service);
-	$uobj = $dwas->userman->addUser($_POST['email'], $_POST['name'],  $_POST["password"], $_POST['status'], $_POST['profile']);
+	if(!isset($_POST['email']) or !$_POST['email'] or !isset($_POST['password']) or !$_POST['password']){
+		return $this->write_http_error(400, "Missing parameters: new users must have password and email");
+	}
+	$init_params = array("email" => $_POST['email'], "password" => $_POST['password']);
+	if(isset($_POST['name'])) $init_params['name'] = $_POST['name'];
+	if(isset($_POST['status'])) $init_params['status'] = $_POST['status'];
+	if(isset($_POST['profile'])){
+		$x = json_decode($_POST['profile']);
+		if($x) $init_params['profile'] = $x;
+	}
+	if(isset($_POST['roles'])){
+		$x = json_decode($_POST['roles']);
+		if($x) $init_params['roles'] = $x;
+	}
+	$uobj = $dacura_server->addUser($init_params);
 	if($uobj){
-		echo json_encode($uobj);
+		return $dacura_server->write_json_result($uobj, "User $uobj->id has been created");
 	}
-	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
+	return $dacura_server->write_http_error();
 }
 
-function createrole($uid){
-	global $service;
-	$dwas = new UsersDacuraAjaxServer($service);
+function updateUser($id){
+	global $dacura_server;
+	$dacura_server->init("updateuser", $id);
+	if(!$dacura_server->userHasRole("admin", false, "all")){
+		return $dacura_server->write_http_error();
+	}
+	$object = $dacura_server->getUser($id);
+	$changes = array();
+	if(isset($_POST['email'])) $object->email = $_POST['email'];
+	if(isset($_POST['name'])) $object->name = $_POST['name'];
+	if(isset($_POST['status'])) $object->status = $_POST['status'];
+	if(isset($_POST['profile'])) $object->profile = json_decode($_POST['profile'], true);
+	if($dacura_server->canUpdateUserB($object)){
+		if($dacura_server->updateUser($object)){
+			$dacura_server->write_json_result($object, "User $id has been updated");
+		}
+		else {
+			$dacura_server->write_http_error();
+		}
+	}
+	else {
+		$dacura_server->write_http_error();		
+	}
+}
+
+function updateUserPassword($id){
+	global $dacura_server;
+	$dacura_server->init("updatepassword", $id);
+	if(!isset($_POST['password']) || !$_POST['password']){
+		return 	$dacura_server->write_http_error();
+	}
+	$uobj = $dacura_server->getUser($id);
+	if($dacura_server->canUpdateUserB($uobj)){
+		if($dacura_server->userman->updatePassword($id, $_POST['password'])){
+			return $dacura_server->write_json_result("OK", "User $id password updated");				
+		}
+		else {
+			return $dacura_server->write_http_error($dacura_server->userman->errmsg, $dacura_server->userman->errcode);	
+		}	
+	}	
+	return $dacura_server->write_http_error();
+}
+
+
+function deleteRole($uid, $rid){
+	global $dacura_server;
+	$dacura_server->init("deleterole", "$rid");
+	$uobj = $dacura_server->getUser($uid);
+	if(!$uobj){
+		return $dacura_server->write_http_error();
+	}
+	$role = $uobj->getRole($rid);
+	if(!$role){
+		return $dacura_server->write_http_error();		
+	}
+	
+	if(!$dacura_server->userHasRole("admin", $role->collection_id, $role->dataset_id)){
+		return $dacura_server->write_http_error();
+	}
+	$uobj = $dacura_server->userman->deleteUserRole($uid, $rid);
+	if($uobj){
+		return $dacura_server->write_json_result($uobj, "Role $rid has been removed from user $uid");
+	}
+	return $dacura_server->write_http_error();		
+}
+
+function createRole($uid){
+	global $dacura_server;
+	$dacura_server->init("createrole", $uid);
 	$role_obj = json_decode($_POST['payload'], true);
-	$uobj = $dwas->createUserRole($uid, $role_obj["collection"], $role_obj["dataset"], $role_obj["role"], $role_obj["level"]);
-	if($uobj){
-		echo json_encode($uobj);
-	}
-	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
-}
-
-function update($id){
-	global $service;
-	$dwas = new UsersDacuraAjaxServer($service);
-	if(!isset($_POST['email']) || !isset($_POST['name']) || !isset($_POST['profile']) || !isset($_POST['status'])){
-		return $dwas->write_error("Missing required field for update user $id", 400);
-	}
-	$user_obj = new DacuraUser($id, $_POST['email'], $_POST['name'], $_POST['status'], json_decode($_POST['profile']));
-	if(isset($_POST['password']) && $_POST['password']){
-		if(!$dwas->dbman->updatePassword($id, $_POST['password'])){
-			return $dwas->write_error("Failed to update password for user $id: ".$dwas->dbman->errmsg, 400);
+	if($role_obj){
+		if(!$dacura_server->userHasRole("admin", $role_obj["collection"], $role_obj["dataset"])){
+			return $dacura_server->write_http_error();
 		}
-	}
-	$uobj = $dwas->updateUser($user_obj);
-	if($uobj){
-		echo json_encode($uobj);
-	}
-}
+		
+		$uobj = $dacura_server->userman->createUserRole($uid, $role_obj["collection"], $role_obj["dataset"], $role_obj["role"], $role_obj["level"]);
+		if($uobj){
+			return $dacura_server->write_json_result($uobj, "Role has been added to user $uid");
+		}
+		else {
+			return $dacura_server->write_http_error($dacura_server->userman->errmsg, $dacura_server->userman->errcode);
+		}
+	}	
+	return $dacura_server->write_http_error();
+}	
 
-
-function delete($id){
-	global $service;
-	$dwas = new UsersDacuraAjaxServer($service);
-	$uobj = $dwas->deleteUser($id);
-	if($uobj){
-		echo json_encode($uobj);
-	}
-	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
-}
-
-function deleterole($uid, $rid){
-	global $service;
-	$dwas = new UsersDacuraAjaxServer($service);
-	$uobj = $dwas->deleteUserRole($uid, $rid);
-	if($uobj){
-		echo json_encode($uobj);
-	}
-	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
-}

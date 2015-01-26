@@ -43,7 +43,7 @@ class StatisticsDacuraServer extends DacuraServer {
 			}
 		}
 		else {
-			if($u->isGod() or $u->isCollectionAdmin($cid) or $u->isDatasetAdmin($did)){
+			if($u->isGod() or $u->isCollectionAdmin($cid) or $u->isDatasetAdmin($cid, $did)){
 				$uids =  $this->dbman->getUsersInContext(array(), array($did));
 			}
 			else {

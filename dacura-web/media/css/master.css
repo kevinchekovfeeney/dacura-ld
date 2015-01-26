@@ -59,6 +59,13 @@ ul {
   padding-top: 6px;
 }
 
+#dacura-header div.topbar-context {
+  z-index: 10;
+  float: right;
+  margin-right: 8px; 
+  padding-top: 6px;
+}
+
 img { border: 0;}
 
 #maincontrol {
@@ -210,6 +217,15 @@ div.dacura-button-title{
 	border-radius: 3px;
 	padding: 10px;
 }
+
+#pagecontent-nopad {
+	margin: 50px auto 25px auto;
+	width: 800px;
+	background: rgba(255, 255, 255, .9);
+	border-radius: 3px;
+	padding: 0px;
+}
+
 
 #pagecontent h1 {
 	margin-top: 0px;
@@ -455,14 +471,16 @@ table.dc-wizard td.input-help {
 }
 
 .dacura-success{
-	border: 1px solid #ddd;
-	text-align: center;
 	background: rgba(155, 255, 155, .4);
-	padding: 2px;
-	border-radius: 3px;
+	padding: 4px 20px;
 }
 
-
+.dacura-user-message-box {
+	display: inline-block;
+	margin: 2px;
+	font-size: 0.9em;	
+	border-radius: 4px;
+}
 
 #aboutcontent h1{
 	color: yellow;
@@ -741,4 +759,31 @@ footer a {
   footer, #content-container:after {
     height: 408px;
   }
+}
+
+.tab-top-message-holder {
+	min-height: 24px;
+	margin-bottom: 8px;
+	text-align: center;
+}
+
+#busy-overlay {
+	background: rgba(255, 255, 255, .8);
+}
+
+
+.bcstatus{
+	height: 20px;
+} 
+.tabbusy {
+	border: 2px solid blue;	
+}
+
+.dacura-busy-small {
+	height: 50px;
+	width: 100%;
+	background: url("../images/ajax-loader.gif") center 8px no-repeat;
+	z-index: 9999999999;
+	
+	
 }

@@ -1,12 +1,12 @@
 <?php
 
-include_once("DBManager.php");
+include_once("UsersDBManager.php");
 
 /*
  * Here goes the db access functions that are only used by this service
  */
 
-class ConfigDBManager extends DBManager {
+class ConfigDBManager extends UsersDBManager {
 	function deleteCollection($id) {
 		if(!$this->hasCollection($id)){
 			$this->errmsg = "Collection with ID $id does not exist";

@@ -1,8 +1,19 @@
+/*
+ * Javascript client code for login service
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 12/01/2015
+ * Licence: GPL v2
+ */
+
 dacura.login = {}
-dacura.login.apiurl = "<?=$service->settings['ajaxurl']?>system/login/";
+dacura.login.apiurl = dacura.system.apiURL();
 
 
-
+/*
+ * Some helper functions
+ */
 dacura.login.isvalidu = function(u){
 	if(u.length < 3){
 		dacura.toolbox.writeErrorMessage('#loginbox-status', "Invalid email address entered");
@@ -31,7 +42,9 @@ dacura.login.isvalidp = function(p){
 };
 
 
-
+/*
+ * Api access
+ */
 dacura.login.api = {};
 dacura.login.api.login = function (xhr){
 	if(typeof xhr == "undefined"){
@@ -58,7 +71,7 @@ dacura.login.api.register = function (xhr){
 		xhr = {};
 		xhr.data ={};
 	}
-	xhr.url = dacura.login.apiurl + "register";
+	xhr.url = dacura.login.apiurl + "/register";
 	xhr.type = "POST";
 	return xhr;
 }
@@ -68,7 +81,7 @@ dacura.login.api.lost = function (xhr){
 		xhr = {};
 		xhr.data ={};
 	}
-	xhr.url = dacura.login.apiurl + "lost";
+	xhr.url = dacura.login.apiurl + "/lost";
 	xhr.type = "POST";
 	return xhr;
 }
@@ -78,7 +91,7 @@ dacura.login.api.reset = function (xhr){
 		xhr = {};
 		xhr.data ={};
 	}
-	xhr.url = dacura.login.apiurl + "reset";
+	xhr.url = dacura.login.apiurl + "/reset";
 	xhr.type = "POST";
 	return xhr;
 }

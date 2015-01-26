@@ -126,9 +126,6 @@ dacura.login.enablelost = function(){
 	});
 }
 
-
-
-
 dacura.login.login = function(){
 	$('#loginbox-status').empty().hide();
 	var uname = $('#dacura-login-email').val();
@@ -150,14 +147,18 @@ dacura.login.login = function(){
 	};
 	$.ajax(ajs)
 		.done(function(data, textStatus, jqXHR) {
-	     	//if(self.mode == 'local'){
-				if(data != ""){
-					window.location.replace(data);
+			try {
+				url = JSON.parse(data);
+				if(url != ""){
+					window.location.replace(url);
 				}
 				else {
 		     		window.location.replace("<?=$service->settings['install_url']?>");
 				}
-			//}    
+			}
+			catch(e){
+				dacura.toolbox.writeErrorMessage('#loginbox-status', "Error: " + e.message);
+			}
 		})
 		.fail(function (jqXHR, textStatus){
 			dacura.toolbox.writeErrorMessage('#loginbox-status', "Error: " + jqXHR.responseText );
@@ -177,7 +178,7 @@ dacura.login.register = function(){
 		dacura.toolbox.writeErrorMessage('#loginbox-status', "Error: passwords do not match");	
 		return;
 	}
-	var ajs = dacura.login.api.register();//getAjaxSettings('register');
+	var ajs = dacura.login.api.register();
 	ajs.data['login-email'] = uname;
 	ajs.data['login-password'] = pass;
 
@@ -192,7 +193,13 @@ dacura.login.register = function(){
 	$.ajax(ajs)
 		.done(function(data, textStatus, jqXHR) {
 			$('#maincontrol').empty();
-			dacura.toolbox.showSuccessPage('#maincontrol', jqXHR.responseText);
+			try {
+				var msg = JSON.parse(jqXHR.responseText);
+				dacura.toolbox.showSuccessPage('#maincontrol', msg);
+			}
+			catch(e){
+				dacura.toolbox.writeErrorMessage('#loginbox-status', "Error: " + e.message );
+			}			
 		})
 		.fail(function (jqXHR, textStatus){
 			dacura.toolbox.writeErrorMessage('#loginbox-status', "Error: " + jqXHR.responseText );
@@ -219,7 +226,13 @@ dacura.login.lost = function(){
 	$.ajax(ajs)
 		.done(function(data, textStatus, jqXHR) {
 			$('#maincontrol').empty("fade");
-			dacura.toolbox.showSuccessPage('#maincontrol', jqXHR.responseText);
+			try {
+				var msg = JSON.parse(jqXHR.responseText);
+				dacura.toolbox.showSuccessPage('#maincontrol', msg);
+			}
+			catch(e){
+				dacura.toolbox.writeErrorMessage('#loginbox-status', "Error: " + e.message );
+			}
 		})
 		.fail(function (jqXHR, textStatus){
 			dacura.toolbox.writeErrorMessage('#loginbox-status', "Error: " + jqXHR.responseText );

@@ -1,3 +1,14 @@
+/*
+ * Javascript client code for use by services
+ * File is interpolated so it can pick up system configuration values.
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 12/01/2015
+ * Licence: GPL v2
+ */
+
+
 dacura.system = {};
 dacura.system.pagecontext = {
 		"collection_id": "<?=$service->getCollectionID()?>", 
@@ -10,13 +21,13 @@ dacura.system.getcds = function(c, d, s){
 		c = this.pagecontext.collection_id;
 	}
 	if(c == ""){
-		c = "0";
+		c = "all";
 	}
 	if(typeof d == "undefined"){
 		d = this.pagecontext.dataset_id;
 	}
 	if(d == ""){
-		d = "0";
+		d = "all";
 	}
 	if(typeof s == "undefined"){
 		s = this.pagecontext.service;

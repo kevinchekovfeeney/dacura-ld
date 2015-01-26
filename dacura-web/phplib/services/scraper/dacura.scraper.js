@@ -1,3 +1,12 @@
+/*
+ * Javascript client code for scraper
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 12/01/2015
+ * Licence: GPL v2
+ */
+
 dacura.scraper = {}
 dacura.scraper.apiurl = dacura.system.apiURL();
 
@@ -44,6 +53,9 @@ dacura.scraper.api.parsePage = function(data, xhr){
 	return xhr;
 }
 
+dacura.scraper.abortdump = function(){
+	dacura.toolbox.abortSlowAjax();
+}
 
 dacura.scraper.dump = function (args, oncomp, onmessage, onerror){
 	//dacura.toolbox.slowAjax(dacura.scraper.apiurl + "/dump", "POST", args, oncomp, onmessage, onerror);

@@ -1,14 +1,36 @@
 <?php
+/*
+ * Login service - supports lost password and registration interface too
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 12/01/2015
+ * Licence: GPL v2
+ */
+
+
+
 include_once("phplib/DacuraServer.php");
 
 class LoginDacuraServer extends DacuraServer {
 	
+	/**
+	 * Login function
+	 * @param string $u username
+	 * @param string $p password
+	 * @return boolean - login successful
+	 */
 	function login($u, $p){
 		$u = $this->userman->login($u, $p);
 		return ($u) ? $u : $this->failure_result($this->userman->errmsg, 401);
 	}
 	
-	
+	/**
+	 * Registration function
+	 * @param string $u username
+	 * @param string $p password
+	 * @return boolean - login successful
+	 */
 	function register($u, $p){
 		$code = $this->userman->register($u, $p);
 		if($code){
@@ -22,11 +44,11 @@ class LoginDacuraServer extends DacuraServer {
 			include_once("screens/register_underway.php");
 			$htmloutput = ob_get_contents();
 			ob_end_clean();
-			sendemail($u, $this->settings['register_email_subject'], $output);
+			sendemail($u, $this->settings['login']['register_email_subject'], $output);
 			return $htmloutput;
 		}
 		else {
-			return $this->failure_result($this->userman->errmsg, 401);
+			return $this->failure_result($this->userman->errmsg, $this->userman->errcode);
 		}
 	}
 	
@@ -45,7 +67,7 @@ class LoginDacuraServer extends DacuraServer {
 			include_once("screens/reset_success.php");
 			$htmloutput = ob_get_contents();
 			ob_end_clean();
-			sendemail($u, $this->settings['lost_email_subject'], $output);
+			sendemail($u, $this->settings['login']['lost_email_subject'], $output);
 			return $htmloutput;
 		}
 		else {
@@ -74,8 +96,3 @@ class LoginDacuraServer extends DacuraServer {
 	
 }
 
-class LoginDacuraAjaxServer extends LoginDacuraServer {
-	function failure_result($msg, $code){
-		return $this->write_error($msg, $code);
-	}
-}

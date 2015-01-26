@@ -4,6 +4,9 @@ include_once("LoginDacuraServer.php");
 
 class LoginService extends DacuraService {
 
+	var $default_screen = "login";
+	var $public_screens = array("login", "home", "register", "lost");
+	
 	function renderFullPageHeader(){
 		parent::renderFullPageHeader();
 		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.login.js");
@@ -12,7 +15,7 @@ class LoginService extends DacuraService {
 	
 	function renderFullPageFooter(){
 		echo "</div>";
-		parent::renderFullPageHeader();
+		parent::renderFullPageFooter();
 	}
 	
 	function handlePageLoad(){
@@ -27,7 +30,7 @@ class LoginService extends DacuraService {
 			$this->renderScreen("logout", $params);
 		}
 		else{
-			if($this->screen == "view" or $this->screen == "" or $this->screen == 'login'){
+			if($this->screen == "home" or $this->screen == "" or $this->screen == 'login'){
 				$params = array("active_function" => "login");
 				$this->renderScreen("login", $params);
 			}

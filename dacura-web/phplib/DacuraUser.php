@@ -21,7 +21,8 @@ class DacuraUser extends DacuraObject {
 	var $status;
 	var $profile;
 	var $session_dump;	//directory where my sessions live.
-	var $sessions = array();
+	var $sessions = array(); //currently active sessions
+	var $history = array(); //historical sessions...
 	var $roles = array();
 
 	function __construct($id, $e, $n, $status, $prof = ""){
@@ -47,11 +48,13 @@ class DacuraUser extends DacuraObject {
 		$this->session_dump = $dir."/";
 		if (!file_exists($dir)) {
 			if(!mkdir($dir, 0777, true)){
-				return $this->return_error("User directory does not exist and could not be created", 500);
+				return $this->failure_result("User directory does not exist and could not be created", 500);
 			}
 		}
 		return true;
 	}
+	
+	
 	
 	function isGod(){
 		foreach($this->roles as $r){
@@ -66,33 +69,41 @@ class DacuraUser extends DacuraObject {
 	
 	function hasCollectionRole($cid, $role = false){
 		foreach($this->roles as $r){
-			if($r->isGod()) return true;
-			if((!$role or $r->role == $role) && $r->collection_id == $cid && ($r->dataset_id == "" or $r->dataset_id == "0")){
+			//if($r->isGod()) return true;
+			if((!$role or ($r->role == $role)) && ($r->collection_id == $cid) && ($r->dataset_id == "" or $r->dataset_id == "all")){
 				return true;
 			}
 		}
 		return false;
 	}
 
-	function isDatasetAdmin($did){
-		return $this->hasDatasetRole($did, "admin");
+	function isDatasetAdmin($cid, $did){
+		return $this->hasDatasetRole($cid, $did, "admin");
 	}
 
-	function hasDatasetRole($did, $role=false){
+	function hasDatasetRole($cid, $did, $role=false){
 		foreach($this->roles as $r){
-			if((!$role or $r->role == $role) && $r->dataset_id == $did){
+			if((!$role or $r->role == $role) && ($r->collection_id == $cid) && $r->dataset_id == $did && $r->dataset_id != "all"){
 				return true;
 			}
 		}
 		return false;
 	}
 	
+	function hasSufficientRole($minimum_role, $collection_id, $dataset_id){
+		foreach($this->roles as $r){
+			if($r->covers($minimum_role, $collection_id, $dataset_id)){
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	
 	function getAdministeredCollections(){
 		$cids = array();
 		foreach($this->roles as $r){
-			if($r->isAdmin() && $r->collection_id != "" && $r->collection_id != "0" && ($r->dataset_id == "" or $r->dataset_id == "0")){
+			if($r->isAdmin() && $r->collection_id != "" && $r->collection_id != "all" && ($r->dataset_id == "" or $r->dataset_id == "all")){
 				if(!in_array($r->collection_id, $cids)) $cids[] = $r->collection_id;
 			}
 		}
@@ -102,7 +113,7 @@ class DacuraUser extends DacuraObject {
 	function getCollectionsWithRole(){
 		$cids = array();
 		foreach($this->roles as $r){
-			if($r->collection_id != "" && $r->collection_id != "0" && ($r->dataset_id == "" or $r->dataset_id == "0")){
+			if($r->collection_id != "" && $r->collection_id != "all" && ($r->dataset_id == "" or $r->dataset_id == "all")){
 				if(!in_array($r->collection_id, $cids)) $cids[] = $r->collection_id;
 			}
 		}
@@ -116,19 +127,26 @@ class DacuraUser extends DacuraObject {
 	function getDatasetsWithRole($cid, $role=false){
 		$dids = array();
 		foreach($this->roles as $r){
-			if((!$role or $r->role == $role) && ($r->dataset_id != "" && $r->dataset_id != "0") && (!$cid or $cid == $r->collection_id)){
+			if((!$role or $r->role == $role) && ($r->dataset_id != "" && $r->dataset_id != "all") && (!$cid or $cid == $r->collection_id)){
 				if(!in_array($r->dataset_id, $dids)) $dids[] = $r->dataset_id;
 			}
 		}
 		return $dids;
 	}
 	
-	
-	
 	function addRole($r){
 		$this->roles[] = $r;
 	}
 
+	function getRole($rid){
+		foreach($this->roles as $i => $role){
+			if($role->id == $rid){
+				return $role;
+			}
+		}
+		return $this->failure_result("User $this->id does not have a role with id $rid", 404);
+	}
+	
 	function rolesSpanCollections($role = false){
 		if($this->isGod()) return true;
 		if(count($this->roles) <= 1) return false;
@@ -201,7 +219,7 @@ class DacuraUser extends DacuraObject {
 			$record = json_encode($this->sessions[$id]->events);
 			file_put_contents($this->session_dump."$id.session", $record."\n", FILE_APPEND | LOCK_EX);				
 		}
-		return $this->return_error("No session $id to pause", 404);		
+		return $this->failure_result("No session $id to pause", 404);		
 	}
 	
 	function pauseSession($id){
@@ -209,7 +227,7 @@ class DacuraUser extends DacuraObject {
 			$this->sessions[$id]->pause();
 			return true;
 		}
-		return $this->return_error("No session $id to pause", 404);
+		return $this->failure_result("No session $id to pause", 404);
 	}
 
 	function unpauseSession($id){
@@ -217,7 +235,7 @@ class DacuraUser extends DacuraObject {
 			$this->sessions[$id]->unpause();
 			return true;
 		}
-		return $this->return_error("No session $id to unpause", 404);
+		return $this->failure_result("No session $id to unpause", 404);
 	}
 	
 	function getSessionDetails($id){
@@ -229,7 +247,7 @@ class DacuraUser extends DacuraObject {
 					"rejected"=> $s->eventCount("reject"));
 			return $res;
 		}
-		return $this->return_error("session $id does not exist", 404);
+		return $this->failure_result("session $id does not exist", 404);
 	}
 	
 	
@@ -249,13 +267,6 @@ class DacuraUser extends DacuraObject {
 			$this->sessions[$id] = new DacuraSession($id);
 		}
 		$this->sessions[$id]->registerEvent($ev);
-	}
-	
-	
-	function return_error($errmsg, $errcode){
-		$this->errmsg = $errmsg;
-		$this->errcode = $errcode;
-		return false;
 	}
 	
 	function hasLiveSession($id){

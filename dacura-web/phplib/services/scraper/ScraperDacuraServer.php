@@ -12,25 +12,18 @@
 
 
 require_once("phplib/DacuraServer.php");
-require_once('files/chekovparse.php');
-
 require_once('files/seshat-parser.php');
-require_once('files/seshat-parser-helper.php');
 
 //need to do logging, cookiejar, etc.
 
 class ScraperDacuraServer extends DacuraServer {
 	
 	var $ch; //curl handle
-	var $cookiejar = "C:\\Temp\\dacura\\cookiejar.txt";
-	var $use_cache = true;
-	var $parser_service_url = 'http://localhost:1234/parser';
-	var $username = 'gavin';
-	var $password = 'cheguevara';
-	var $loginUrl = 'http://seshat.info/w/index.php?title=Special:UserLogin&action=submitlogin';
-	var $mainPage = 'http://seshat.info/Main_Page';
 
-	var $sectionsWithImplicitSubsections = array(
+	/*
+	 * These are just a note of the variables which have implicit subsections
+	 * 
+	 * var $sectionsWithImplicitSubsections = array(
 			"Polity variables" => array("Scope of the central government", "Taxation", "Type of taxes", "Taxes are imposed on"), 
 			"Agriculture" => array("Shifting cultivation", "Agricultural technology", "Cultivators / Agri-businesses", "Soil preparation", "Carbohydrate source #1", "Carbohydrate source #2"
 	));
@@ -52,13 +45,14 @@ class ScraperDacuraServer extends DacuraServer {
 			"Kinship" => array("Marriage customs"),
 			"Punishment" => array("Execution can be imposed by", "Exile can be imposed by", "Corporal punishment can be imposed by", "Ostracism can by imposed by", "Seizure of property can by imposed by", "Supernatural sanctions can be imposed by"),
 			"Other" => array("Consumption")				
-	);
+	);*/
 	
 	/*
 	 * Public Functions
 	 */
 	
-	function init(){
+	function seshatInit($action, $object=""){
+		$this->init($action, $object);
 		return $this->login();		
 	}
 	
@@ -67,14 +61,16 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Returns an array of URLs
 	 */
 	function getNGAList(){
-		if($this->use_cache){
-			$x = $this->logman->decache("scraper", $this->mainPage);
-			if($x) return $x;
+		if($this->settings['scraper']['use_cache']){
+			$x = $this->fileman->decache("scraper", $this->settings['scraper']['mainPage']);
+			if($x) {
+				return $x;
+			}
 		}
-		curl_setopt($this->ch, CURLOPT_URL, $this->mainPage);
+		curl_setopt($this->ch, CURLOPT_URL, $this->settings['scraper']['mainPage']);
 		$content = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-			return $this->failure_result("Failed to retrieve nga list page $this->mainPage. ", curl_getinfo($this->ch, CURLINFO_HTTP_CODE));
+			return $this->failure_result("Failed to retrieve nga list page ".$this->settings['scraper']['mainPage'], curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "warning");
 		}
 		$dom = new DOMDocument;
 		$dom->loadXML($content);
@@ -86,31 +82,32 @@ class ScraperDacuraServer extends DacuraServer {
 			$url = 'http://seshat.info'.$x;
 			$ngaURLs[] = $url;
 		}
-		if($this->use_cache){
-			$this->logman->cache("scraper", $this->mainPage, $ngaURLs);				
+		if($this->settings['scraper']['use_cache']){
+			$this->fileman->cache("scraper", $this->settings['scraper']['mainPage'], $ngaURLs);				
 		}
+		$this->logEvent("debug", 200, "get_ngas returned: ".count($ngaURLs)." from seshat main page");
 		return $ngaURLs;
 	}
 	
 	
 	/*
 	 * Fetches a list of polities from a Seshat NGA page
-	 * Takes the URL of the page
+	 * Takes the URL of the polity page
 	 * Returns an array of URLs
 	 */
 	function getPolities($pageURL){
-		if($this->use_cache){
-			$x = $this->logman->decache("scraper", $pageURL);
+		if($this->settings['scraper']['use_cache']){
+			$x = $this->fileman->decache("scraper", $pageURL);
 			if($x) return $x;
 		}
 		curl_setopt($this->ch, CURLOPT_URL, $pageURL);
 		$content = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-			return $this->failure_result("Failed to retrieve $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE));
+			return $this->failure_result("Failed to retrieve $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "info");
 		}
 		$dom = new DOMDocument;
 		if(!$dom->loadXML($content)){
-			return $this->failure_result("$pageURL did not parse correctly", 503);
+			return $this->failure_result("$pageURL did not parse correctly", 503, "warning");
 		}
 		$xpath = new DOMXPath($dom);
 		$links = $xpath->query('//a/@href');
@@ -119,9 +116,10 @@ class ScraperDacuraServer extends DacuraServer {
 			$url = 'http://seshat.info'.$x;
 			$polities[] = $url;
 		}
-		if($this->use_cache){
-			$this->logman->cache("scraper", $pageURL, $polities);				
+		if($this->settings['scraper']['use_cache']){
+			$this->fileman->cache("scraper", $pageURL, $polities);				
 		}
+		$this->logEvent("debug", 200, "get_polities returned: ".count($polities)." from $pageURL");
 		return $polities;
 	}
 	
@@ -135,78 +133,88 @@ class ScraperDacuraServer extends DacuraServer {
 		$summaries = array();
 		$headers = array("NGA", "Polity", "Area", "Section", "Variable", "Value From", "Value To",
 				"Date From", "Date To", "Fact Type", "Value Note", "Date Note", "Comment");
-		$error_headers = array("NGA", "Polity", "Area", "Section", "Variable", "Value", "Error");
+		$error_headers = array("NGA", "Polity", "Section", "Subsection", "Variable", "Value", "Error");
 		$stats = array( "ngas" => 0, "polities" => 0, "errors" => 0, "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0);
 		$polity_failures = array();
 		$rows = array();
 		$this->start_comet_output();
-		$error_op = $this->logman->startServiceDump("scraper", "Errors", "html", true, true);
-		$this->logman->dumpData($error_op, "<table><tr><th>".implode("</th><th>", $error_headers)."</th></tr>");
-		$html_op = $this->logman->startServiceDump("scraper", "Export", "html", true, true);
-		$this->logman->dumpData($html_op, "<table><tr><th>".implode("</th><th>", $headers)."</th></tr>");
-		$tsv_op = $this->logman->startServiceDump("scraper", "Export", "tsv", true, true);
-		$this->logman->dumpData($tsv_op, implode("\t", $headers)."\n");
+		$error_op = $this->fileman->startServiceDump("scraper", "Errors", "html", true, true);
+		$this->fileman->dumpData($error_op, "<table><tr><th>".implode("</th><th>", $error_headers)."</th></tr>");
+		$html_op = $this->fileman->startServiceDump("scraper", "Export", "html", true, true);
+		$this->fileman->dumpData($html_op, "<table><tr><th>".implode("</th><th>", $headers)."</th></tr>");
+		$tsv_op = $this->fileman->startServiceDump("scraper", "Export", "tsv", true, true);
+		$this->fileman->dumpData($tsv_op, implode("\t", $headers)."\n");
 		foreach($data as $nga => $polities){
 			$stats['ngas']++;
-			$summary = array("nga" => $nga, "polities" => count($polities), "failures" => 0, 
+			$summary = array("nga" => $this->formatNGAName($nga), "polities" => count($polities), "failures" => 0, 
 					"total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0, "errors" => 0);
 			foreach($polities as $p){
 				if(!$p) continue;
 				if(!isset($polities_retrieved[$p])){
+					$this->logEvent("debug", 200, "retrieving facts from $p");
 					$pfacts = $this->getFactsFromURL($p);
 					if($pfacts){
 						$polities_retrieved[$p] = $pfacts;
 						//op errors
 						foreach($pfacts['errors'] as $e){
-							$this->logman->dumpData($error_op, "<tr><td>".implode("</td><td>", $e)."</td></tr>");								
+							if(isset($e['variable']) && isset($e['section'])){
+								$row = "<tr><td><a href='$nga'>". $this->formatNGAName($nga)."</a></td>";
+								$row .= "<td><a href='$p'>". $this->formatNGAName($p)."</a></td>";
+								$row .= "<td><a href='$p"."#".$this->unformatSectionName($e['section'])."'>".$e['section']."</a></td>";
+								$row .= "<td><a href='$p"."#".$this->unformatSectionName($e['subsection'])."'>".$e['subsection']."</a></td>";
+								$row .= "<td>".$e['variable']."</td>";
+								$row .= "<td>".$e['value']."</td>";
+								$row .= "<td>".$e['comment']."</td></tr>";
+								$this->fileman->dumpData($error_op, $row);							
+							}	
 						}
 						$stats['polities']++;
 						$this->incorporateStats($stats, $pfacts);
-						$msg = "Parsed ".$this->formatNGAName($p)." : ".$this->statsToString($pfacts, $stats);
+						$msg = $this->formatNGAName($p).$this->statsToString($pfacts, $stats);
 						$this->write_comet_update("success", $msg);
+						$this->timeEvent("Retrieved $p", "debug");
+						$this->logEvent("info", 200, "Successfully retrieved $p : (".$pfacts['total_variables']." variables)");
 					}
 					else {
 						//add to failures
 						$polity_failures[] = array($nga, $p, $this->errmsg, $this->errcode);
+						$msg = $this->formatNGAName($p)." error: $this->errcode $this->errmsg";
+						$this->write_comet_update("error", $msg);						
 					}
 				}
 				else {
 					$pfacts = $polities_retrieved[$p];
 				}
 				$this->incorporateStats($summary, $pfacts);
-				$rows = $this->factListToRows($this->formatNGAName($nga), $this->formatNGAName($p), $polities_retrieved[$p]);
-				foreach($rows as $row){
-					$this->logman->dumpData($html_op, "<tr><td>".implode("</td><td>", $row)."</td></tr>");				
-					$this->logman->dumpData($tsv_op, implode("\t", $row)."\n");			
+				if(isset($polities_retrieved[$p])){
+					$rows = $this->factListToRows($this->formatNGAName($nga), $this->formatNGAName($p), $polities_retrieved[$p]);
+					foreach($rows as $row){
+						$this->fileman->dumpData($html_op, "<tr><td>".implode("</td><td>", $row)."</td></tr>");				
+						$this->fileman->dumpData($tsv_op, implode("\t", $row)."\n");			
+					}
 				}
 			}
 			$summaries[] = $summary;
 		}
-		$this->logman->dumpData($html_op, "</table>");				
-		$this->logman->dumpData($error_op, "</table>");				
-		$this->logman->endServiceDump($error_op);
-		$this->logman->endServiceDump($html_op);
-		$this->logman->endServiceDump($tsv_op);
+		$this->fileman->dumpData($html_op, "</table>");				
+		$this->fileman->dumpData($error_op, "</table>");				
+		$this->fileman->endServiceDump($error_op);
+		$this->fileman->endServiceDump($html_op);
+		$this->fileman->endServiceDump($tsv_op);
 		//start op buffering
 		ob_start();
 		$this->ucontext->renderScreen("results", array("stats" => $stats, "failures" => $polity_failures, "summary" => $summaries,
-				"files" => array("errors" => $this->ucontext->my_url()."/view/".$error_op->filename("rest"), "html" => $this->ucontext->my_url("rest")."/view/".$html_op->filename(), "tsv" => $this->ucontext->my_url("rest")."/view/".$tsv_op->filename())));
+				"files" => array("errors" => $this->ucontext->my_url("rest")."/view/".$error_op->filename("rest"), "html" => $this->ucontext->my_url("rest")."/view/".$html_op->filename(), "tsv" => $this->ucontext->my_url("rest")."/view/".$tsv_op->filename())));
 		$page = ob_get_contents();
 		ob_end_clean();
 		$this->end_comet_output("success", $page);
 		return true;
 	}
 	
-	function formatNGAName($url){
-		$bits = explode("/", $url);
-		$x = $bits[count($bits) - 1];
-		return str_replace("_", " ", $x);
-	}
-	
 	function getReport($repname){
 		$fpath = $this->ucontext->settings['collections_base'];
-		if($this->ucontext->getCollectionID()) $fpath .= $this->ucontext->getCollectionID()."/";
-		$fpath .= $this->ucontext->settings['dump_directory'];
+		if($this->cid()) $fpath .= $this->cid()."/";
+		$fpath .= $this->settings['dump_directory'];
 		$fname = $fpath . $repname;
 		$fsize = filesize($fname);
 		$path_parts = pathinfo($fname);
@@ -220,7 +228,7 @@ class ScraperDacuraServer extends DacuraServer {
 					header("Cache-control: private"); //use this to open files directly
 					break;
 				case "html" :
-					echo '<div class="overlay overlay-contentpush">';
+					header("Content-type: Content-Type: text/html; charset=utf-8");
 					break;
 				default;
 				    header("Content-type: application/octet-stream");
@@ -232,18 +240,32 @@ class ScraperDacuraServer extends DacuraServer {
 				echo $buffer;
 			}
 			fclose ($fd);
+			$this->logEvent("debug", 200, ($fsize % 1024) ."kb returned for report $repname");
+			return true;
+		}
+		else {
+			return $this->failure_result("Could not open requested report file $repname", 404);
 		}
 	}
+	
+	
+	
+	/*
+	 * Dump Statistics - showing how many variables have been retrieved
+	 */
 	
 	function statsToString($fact_list, $second_fl = false){
 		$html = "<table class='scraper-report'><tr><th>Vars</th><th>Errors</th><th>Empty</th><th>Data</th></tr>";
 		$html .= "<tr><td>". $fact_list['total_variables']."</td><td>".count($fact_list['errors'])."</td><td>".$fact_list['empty'];
 		$html .= "</td><td>".$fact_list['lines']."</td></tr>";
+		$html .= "</table>";
 		if($second_fl){
+			$html .= "<h4>totals</h4>";
+			$html .= "<table class='scraper-report'><tr><th>Vars</th><th>Errors</th><th>Empty</th><th>Data</th></tr>";
 			$html .= "<tr><td>". $second_fl['total_variables']."</td><td>".$second_fl['errors']."</td><td>".$second_fl['empty'];
 			$html .= "</td><td>".$second_fl['lines']."</td></tr>";
+			$html .= "</table>";
 		}
-		$html .= "</table>";
 		return $html;
 	}
 	
@@ -255,19 +277,23 @@ class ScraperDacuraServer extends DacuraServer {
 		$stats['errors'] += count($nfacts['errors']);
 	}
 	
+
+	/*
+	 * Functions for turning a seshat page into an array of facts...
+	 */
 	function getFactsFromURL($pageURL){
-		if($this->use_cache){
-			$x = $this->logman->decache("scraper", $pageURL);
+		if($this->settings['scraper']['use_cache']){
+			$x = $this->fileman->decache("scraper", $pageURL);
 			if($x) return $x;
 		}
 		curl_setopt($this->ch, CURLOPT_URL, $pageURL);
 		$content = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-			return $this->failure_result("Failed to retrieve $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE));
+			return $this->failure_result("Failed to retrieve $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "info");
 		}
 		$facts = $this->getFactsFromPage($content);
-		if($facts && $this->use_cache){
-			$this->logman->cache("scraper", $pageURL, $facts);
+		if($facts && $this->settings['scraper']['use_cache']){
+			$this->fileman->cache("scraper", $pageURL, $facts);
 		}
 		return $facts;
 	}
@@ -280,7 +306,7 @@ class ScraperDacuraServer extends DacuraServer {
 	function getFactsFromPage($content){
 		$fact_list = array( "variables" => array(), "errors" => array(), 
 				"title" => "", "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0, "sections" => array());
-		// strip out the non-content
+		// strip out the non-content to minimise collision risk
 		if(strpos($content, "<div class=\"printfooter\">") && strpos($content, "<h1><span class=\"editsection\">")){
 				$content = substr($content, strpos($content, "<h1><span class=\"editsection\">"), strpos($content, "<div class=\"printfooter\">") - strpos($content, "<h1><span class=\"editsection\">"));
 		}
@@ -303,7 +329,7 @@ class ScraperDacuraServer extends DacuraServer {
 					$j = 0;
 					foreach($subsects as $subsect){
 						if(++$j == 1){ //sub-section level variables
-							$sec_fact_list = $this->parseFactsFromString($subsect);
+							$sec_fact_list = $this->parseFactsFromString($subsect, $sec_title);
 							$sec_fact_list['sections'] = array();
 						}
 						else {
@@ -311,12 +337,12 @@ class ScraperDacuraServer extends DacuraServer {
 							if(count($subsec_bits) == 2){
 								$subsec_title = substr($subsec_bits[0], strrpos($subsec_bits[0], ">") + 1);
 								$subsec_content = $subsec_bits[1];
-								$ssfl = $this->parseFactsFromString($subsec_content);
+								$ssfl = $this->parseFactsFromString($subsec_content, $sec_title, $subsec_title);
 								$this->updateFactStats($sec_fact_list, $ssfl);
 								$sec_fact_list['sections'][$subsec_title] = $ssfl; 
 							}
 							else {
-								$ssfl = $this->parseFactsFromString($subsect);
+								$ssfl = $this->parseFactsFromString($subsect, $sec_title);
 								$this->updateFactStats($sec_fact_list, $ssfl);
 								$sec_fact_list = array_merge($sec_fact_list, $ssfl['variables']);
 							}								
@@ -348,7 +374,7 @@ class ScraperDacuraServer extends DacuraServer {
 	 * If there are repeated keys, it appends _n to the duplicates to retain the values.
 	 * Returns a FactList...
 	 */
-	function parseFactsFromString($str){
+	function parseFactsFromString($str, $section = "", $subsection = ""){
 		$pattern = '/\x{2660}([^\x{2660}\x{2665}]*)\x{2663}([^\x{2660}]*)\x{2665}/u';
 		$matches = array();
 		$factoids = array();
@@ -381,13 +407,20 @@ class ScraperDacuraServer extends DacuraServer {
 							$res['complex']++;
 						}
 						if($factoid['value_type'] == "error"){
-							$res['errors'][] = $factoid;
+							$e = $this->getEmptyError();
+							$e['value'] = $factoid['value_from'];
+							$e['variable'] = $key;
+							$e['section'] = $section;
+							$e['subsection'] = $subsection;
+							$e['comment'] = $factoid['comment'];								
+							$res['errors'][] = $e;
+							//$factoid;
 						}
 						else {
+							$factoids[$key] = $parsedVals;
 							$res['lines']++;
 						}
 					}
-					$factoids[$key] = $parsedVals;
 				}
 			}
 		}
@@ -412,6 +445,11 @@ class ScraperDacuraServer extends DacuraServer {
 		return array("date_from" => $from, "date_to" => $to, "date_type" => $dtype,
 				"value_from" => $vfrom, "value_to" => $vto, "value_type" => $vtype,
 				"fact_type" => $facttype, "comment" => $comment);
+	}
+	
+	function getEmptyError(){
+		return array("nga" => "", "polity" => "", "section" => "", "subsection" => "", "variable" => "", 
+				"value" => "", "comment" => "", "link" => "");
 	}
 	
 	/*
@@ -447,7 +485,7 @@ class ScraperDacuraServer extends DacuraServer {
 							}
 						}
 						else {
-							$factoids = array_merge($factoids, $this->processDatedFact($f['value']['value']));
+							$factoids = array_merge($factoids, $this->processDatedFact($f['value']['value'], $val));
 						}
 					}
 				}
@@ -473,15 +511,19 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Returns an array of factoids. 
 	 */
 	
-	function processDatedFact($fact){
+	function processDatedFact($fact, $orig){
 		foreach($fact as $factbit){
 			if($factbit['name'] == "undatedfact"){
 				$factoids = $this->processUndatedFact($factbit['value']);
 			}
 			elseif($factbit['name'] == "datevalue"){
 				$datebit = $this->processDateValue($factbit['value']);
+				if($datebit['type'] == "error"){
+					return array($this->createFactoid("", "", "error", $orig, "", "error", "error", "Failed to parse date value"));
+				}	
 			}
 		}
+		
 		foreach($factoids as $i => $factoid){
 			$factoids[$i]['fact_type'] = "complex";
 			$factoids[$i]["date_type"] = $datebit['type'];
@@ -537,7 +579,7 @@ class ScraperDacuraServer extends DacuraServer {
 	function processDateValue($fact){
 		$datevals = array();
 		$date_comment = "";
-		if($fact['name'] == "daterange"){
+		if($fact['name'] == "daterange" && $fact['value'][0] && $fact['value'][1]){
 			$from = $fact['value'][0];
 			$to = $fact['value'][1];
 			$from = $this->processDateValue($from);
@@ -576,6 +618,9 @@ class ScraperDacuraServer extends DacuraServer {
 				//just make a range from the first to the last..
 				$datevals = $this->consolidateDates($fact['value']['value'], "uncertain");
 			}
+		}
+		else {
+			$datevals = array("type" => "error", "value" => "", "comment" => "strange error ".$fact['value'][0]);				
 		}
 		return $datevals;
 	}
@@ -679,7 +724,10 @@ class ScraperDacuraServer extends DacuraServer {
 				}
 			}
 		}
-		if($this->strToYear($from['value']) > $this->strToYear($to['value'])){
+		if(!isset($from['value']) or !isset($to['value'])){
+			$datevals = array("type" => "error", "value" => "", "comment" => "from or to value not set");				
+		}
+		elseif($this->strToYear($from['value']) > $this->strToYear($to['value'])){
 			$datevals = array("from" => $to['value'], "to" => $from['value'], "type" => "range", "comment" => $date_comment);				
 		}
 		else {
@@ -896,39 +944,6 @@ class ScraperDacuraServer extends DacuraServer {
 		return $rows;
 	}	
 	
-	/**
- 	 * @param string $nga - the name of the NGA that the factlist belongs to
-	 * @param url $polity - the url of the polity page that the factlist belongs to
-	 * @param factlist $fl - fact list object - as returned by getFactsFromPage
-	 * @param string $type - html | tsv -> type of table to produce
-	 * @param boolean  $include_empties - include variables with empty values
-	 * @return array of rows -> each row is a factoid
-	 */
-	function factListToTable($nga, $polity, $fl, $type="html", $include_empties = false){
-		$headers = array("NGA", "Polity", "Area", "Section", "Variable", "Value From", "Value To", 
-				"Date From", "Date To", "Fact Type", "Value Note", "Date Note", "Comment");
-		if($type == "html"){
-			$op = "<table><theader><tr><th>";
-			$op .= implode("</th><th>", $headers)."</th></tr></theader>";
-		}
-		else {
-			$op = implode("\t", $headers)."\n";
-		}
-		$rows = $this->factListToRows($nga, $polity, $fl, $include_empties);
-		foreach($rows as $row){
-			if($type == "html"){
-				$op .= "<tr><td>".implode("</td><td>", $row)."</td></tr>";
-			}
-			else {
-				$op .= implode("\t", $row)."\n";
-			}	
-		}
-		if($type == "html"){
-			$op .= "</table>";
-		}
-		return $op;
-	}
-	
 	function testParser(){
 		$teststrings = array( "axy",
 			"axy; afa",
@@ -953,37 +968,29 @@ class ScraperDacuraServer extends DacuraServer {
 		}
 	}		
 	
-	function parsePage($data){
-		$this->ch = curl_init();
-		curl_setopt($this->ch, CURLOPT_URL, $this->parser_service_url);	
-		curl_setopt($this->ch, CURLOPT_POST, 1);
-		curl_setopt($this->ch, CURLOPT_POSTFIELDS, $data);
-		$content = curl_exec($this->ch);
-		if(!$content){
-			return $this->failure_result("Failed to parse page.", curl_getinfo($this->ch, CURLINFO_HTTP_CODE));
-		}
-		if(substr($content, -1) == "1"){
-			$content = substr($content, 0, -1);
-		}
-		return $content;
-	}
 	
 	
+	/*
+	 * Log into the Seshat Wiki....
+	 */
 	function login(){
 		$this->ch = curl_init();
 		//initial curl setting
-		curl_setopt($this->ch, CURLOPT_URL, $this->loginUrl);
-		curl_setopt($this->ch, CURLOPT_COOKIEJAR, $this->cookiejar);
+		curl_setopt($this->ch, CURLOPT_URL, $this->settings['scraper']['loginUrl']);
+		curl_setopt($this->ch, CURLOPT_COOKIEJAR, $this->settings['scraper']['cookiejar']);
 		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
 		if(isset ($this->settings['http_proxy']) && $this->settings['http_proxy']){
 			curl_setopt($this->ch, CURLOPT_PROXY, $this->settings['http_proxy']);
 		}
 		
+		$this->ucontext->logger->timeEvent("Start Login", "debug");
 		//get token from login page
 		$store = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$store){
-			return $this->failure_result("Failed to retrieve login page $this->loginUrl. ", curl_getinfo($this->ch, CURLINFO_HTTP_CODE));				
+			$this->ucontext->logger->timeEvent("Logging in Failed");				
+			return $this->failure_result("Failed to retrieve login page ".$this->settings['scraper']['loginUrl'], 401, "warning");				
 		}
+		$this->ucontext->logger->timeEvent("Login Page Retrieved", "debug");				
 		$loginToken = false;
 		$dom = new DOMDocument;
 		$dom->loadHTML($store);
@@ -995,23 +1002,37 @@ class ScraperDacuraServer extends DacuraServer {
 				$loginToken = $node->getAttribute('value');
 			}
 		}
+		$this->ucontext->logger->timeEvent("Login Page Parsed", "debug");		
 		if(!$loginToken){
-			return $this->failure_result("Failed to find login token on login page $this->loginUrl. ", 404);				
+			return $this->failure_result("Failed to find login token on login page ".$this->settings['scraper']['loginUrl'], 404, "error");				
 		}
 		//login
 		curl_setopt($this->ch, CURLOPT_POST, 1);
-		curl_setopt($this->ch, CURLOPT_POSTFIELDS, 'wpName='.$this->username.'&wpPassword='.$this->password.'&wpLoginAttempt=Log+in&wpLoginToken='.$loginToken);
+		curl_setopt($this->ch, CURLOPT_POSTFIELDS, 'wpName='.$this->settings['scraper']['username'].'&wpPassword='.$this->settings['scraper']['password'].'&wpLoginAttempt=Log+in&wpLoginToken='.$loginToken);
 		$store = curl_exec($this->ch);
 		$http_status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
 		if($http_status >= 400){
-			return $this->failure_result("Failed to login to wiki", 400);
+			$this->ucontext->logger->timeEvent("Login Failed");				
+			return $this->failure_result("Failed to login to wiki", 400, "warning");
 		}
+		$this->timeEvent("Login Successful", "info");				
 		return true;
 	}
+
+	/*
+	 * Functions for making url names of pages readable
+	 */
+	function formatNGAName($url){
+		$bits = explode("/", $url);
+		$x = $bits[count($bits) - 1];
+		return str_replace("_", " ", $x);
+	}
+	
+	function unformatSectionName($tit){
+		return str_replace(" ", "_", $tit);
+	}
+	
+	
+
 }
 
-class ScraperDacuraAjaxServer extends ScraperDacuraServer {
-	//function failure_result($msg, $code){
-	//	return $this->write_error($msg, $code);
-	//}
-}

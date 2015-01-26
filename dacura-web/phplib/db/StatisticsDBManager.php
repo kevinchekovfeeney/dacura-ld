@@ -1,12 +1,12 @@
 <?php
 
-include_once("DBManager.php");
+include_once("UsersDBManager.php");
 
 /*
  * Here goes the db access functions that are only used by this service
  */
 
-class StatisticsDBManager extends DBManager {
+class StatisticsDBManager extends UsersDBManager {
 	
 	function getCandidateStatsSql() {
 		try {

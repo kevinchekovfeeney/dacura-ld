@@ -22,156 +22,110 @@ class ServiceLoader extends DacuraObject {
 	function __construct($settings){
 		$this->settings = $settings;
 	}
+		
+	/*
+	 * Creates a service object from a browser page load 
+	 */
+	function loadServiceFromURL(&$logger){
+		$service_call = $this->parseServiceCall("html");
+		if($service_call){
+			return $this->loadServiceFromCall($service_call, $logger);
+		}
+		return false;
+	}
 	
+	/*
+	 * Creates a service object from an API invocation
+	 */
+	function loadServiceFromAPI(&$logger){
+		$service_call = $this->parseServiceCall("api");
+		if($service_call){
+			return $this->loadServiceFromCall($service_call, $logger);	
+		}
+		return false;
+	}
+	
+	/*
+	 * Load a service
+	 * Arguments: $sc ServiceCall object
+	 * $logger: the logger object tracking this request
+	 * Returns: service object
+	 */
+	function loadServiceFromCall($sc, &$logger = null){
+		global $dacura_settings;
+		$type = ucfirst(strtolower($sc->servicename))."Service";
+		$fname = $this->settings['path_to_services']."$sc->servicename/".ucfirst(strtolower($sc->servicename))."Service.php";
+		$sname = $this->settings['path_to_services']."$sc->servicename/".strtolower($sc->servicename)."_settings.php";
+		if(file_exists($fname)){
+			include_once($fname);
+			if(file_exists($sname)){
+				include_once($sname);
+				$this->settings[strtolower($sc->servicename)] = $settings; 	
+			}
+			$ns = new $type($this->settings);
+			$ns->load($sc, $logger);
+			return $ns;
+		}
+		else {
+			return $this->failure_result("Service $sc->servicename does not exist or could not be loaded", 404);
+		}
+	}
+	
+	/*
+	 * Used by index.php to draw access denied pages, etc from the core service
+	 */
+
+	function renderErrorPage($type, $title, $message){
+		$screens_path = $this->settings['path_to_services']."core/screens/";
+		if($type == "denied"){
+			$screens_path .= "denied.php";
+		}
+		else {
+			$screens_path .= "error.php";				
+		}
+		$params = array("title" => $title, "message" => $message);
+		$service = new DacuraService($this->settings);
+		include_once("phplib/snippets/header.php");
+		include_once("phplib/snippets/topbar.php");
+		include_once($screens_path);
+		include_once("phplib/snippets/footer.php");
+	}
 
 	/*
 	 * Creates a serviceCall object...
 	 */
-	function parseServiceCall(){
+	function parseServiceCall($provenance){
 		$sc = new ServiceCall();
 		$sc->parseURLInput();
-		if($sc->servicename){
-			if($this->serviceExists($sc->servicename)){
-				return $sc;
-			}
-			else {
-				$sc->set_report_error("Whoops!", "You have arrived at a non-existant page. The service in URL $sc->rawpath does not exist");
-			}
+		$sc->provenance = $provenance;
+		if($provenance == "html" && !$sc->servicename){
+			//the home page (for the user or for collection_id, $dataset_id...
+			$sc->servicename = "home";
+		}
+		if($this->serviceExists($sc->servicename)){
+			return $sc;
 		}
 		else {
-			$sc->servicename = "login";
+			return $this->failure_result("You have arrived at a non-existant URL. The service $sc->servicename in URL $sc->rawpath does not exist", 404);
 		}
+		$sc->provenance = $provenance;
 		return $sc;
 	}
+	
+	
 	
 	/*
 	 * Checks to ensure that there is a servicenamme included in the service call
 	 */
 	function serviceCallIsValid($sc){
 		if(!$sc->servicename){
-			$this->errmsg = "No servicename included in URL";
-			return false;
+			return $this->failure_result("No servicename included in URL", 404);
 		}
 		return true;
 	}
 	
 	function serviceExists($servicename){
 		return file_exists($this->settings['path_to_services']."$servicename/".ucfirst(strtolower($servicename))."Service.php");
-	}
-	
-	/*
-	 * Load a service
-	 * Arguments: $sc ServiceCall object
-	 * Returns: service object
-	 */
-	function loadServiceFromCall($sc){
-		$type = ucfirst(strtolower($sc->servicename))."Service";
-		$fname = $this->settings['path_to_services']."$sc->servicename/".ucfirst(strtolower($sc->servicename))."Service.php";
-		if(file_exists($fname)){
-			//print_r($sc);
-			include_once($fname);
-			$ns = new $type($this->settings);
-			$ns->load($sc);
-			//opr($sc);
-			//opr($ns);
-			return $ns;
-		}
-		else {
-			$this->errmsg = "Service $sc->servicename does not exist or could not be loaded";
-			return false;
-		}
-	}
-	
-	/*
-	 * Loads a service directly from a browser page load 
-	 */
-	function loadServiceFromURL(){
-		$service_call = $this->parseServiceCall();
-		$service_call->setProvenance("html");
-		return $this->loadServiceFromCall($service_call);
-	}
-	
-	/*
-	 * Loads a service from an API
-	 */
-	function loadServiceFromAPI(){
-		$service_call = $this->parseServiceCall();
-		$service_call->setProvenance("api");
-		return $this->loadServiceFromCall($service_call);	
-	}
-	
-	/*
-	 * Loads a service explicitly (i.e. not from the url context)
-	 * Used for loading secondary services from within primary services
-	 * $servicen: name of the service
-	 */
-	
-	function loadService($servicen, $params, $scorig = false){
-		$sc = new ServiceCall();
-		$sc->servicename = $servicen;
-		$sc->args = $params;
-		$sc->provenance = "internal";
-		if($scorig){
-			$sc->collection_id = $scorig->collection_id;
-			$sc->dataset_id= $scorig->dataset_id;
-		}
-		else {
-			$sc->collection_id = "0";
-			$sc->dataset_id = "0";
-		}
-		$service = $this->loadServiceFromCall($sc);
-		if(isset($params['screen'])){
-			$service->screen = $params['screen'];
-		}
-		return $service;
-	}
-	
-	
-	function renderFullServicePage($servicen, $params, $scorig = false){
-		$service = $this->loadService($servicen, $params, $scorig);
-		$service->renderFullPage();
-	}
-	
-	function renderServiceScreen($servicen, $screen, $params, $scorig = false){
-		$service = $this->loadExplicitService($servicen, $params, $scorig );
-		$service->renderScreen($screen, $params);
-	}
-	
-	function renderScreen($sc){
-		if(!$this->serviceExists($sc->servicename)){
-			return $sc->set_report_error("Whoops!", "You have arrived at a non-existant page. The service $sc->servicename does not exist");
-		}
-		$service = $this->loadService($sc);
-		$params = array();
-		for($i = 0; $i <= count($sc->args); $i+=2){
-			$params[$sc->args[$i]] = (isset($sc->args[$i + 1]) ? $sc->args[$i + 1] : "");
-		}
-		$service->renderScreen($sc->screen(), $params);
-	}
-	
-	/*
-	 * Below here have to go...
-	 */
-	
-	function isLoggedIn(){
-		return (isset($_SESSION['dacurauser']) && $_SESSION['dacurauser']);
-	}
-	
-	function getUser(){
-		return $_SESSION['dacurauser'];
-	}
-	
-	function hasPermissions($sc, $is_api = false){
-		return true;
-		//pull the user object out of the session....
-		if(!$is_api && $sc->servicename == 'scraper'){
-			$u = $this->getUser();
-			if(!$u->hasCollectionRole("seshat", "admin")){
-				$this->errmsg = "This is a restricted function. You do not have permission to access this page. Please contact the administrator to get permission to view this function";
-				return false;
-			}
-		}
-		return true;
 	}
 	
 }

@@ -9,7 +9,7 @@
  * Licence: GPL v2
  */
 
-class LogManager extends DacuraObject {
+class FileManager extends DacuraObject {
 	
 	var $service;
 	
@@ -17,27 +17,8 @@ class LogManager extends DacuraObject {
 		$this->service = $service;
 	}
 
-	/*
-	 * Logging function
-	 */
-	function log($type, $data){
-		if($type == "server" || $type == "error"){
-			$fpath = $this->settings['dacura_logbase']."server.log";
-			return (file_put_contents($fpath, $data, FILE_APPEND)) ? $fpath : false;
-		}
-		else if($type == "dump" || $type == "dumperrors"){
-			$fpath = $this->settings['dacura_logbase'];
-			if($this->ucontext->getCollectionID()) $fpath .= $this->ucontext->getCollectionID()."/";
-			if($this->ucontext->getDatasetID()) $fpath .= $this->ucontext->getDatasetID()."/";
-			$fpath .= ($type == "dump") ? 'polityParse-'.date("dmY").'T'.date("His").'Z.tsv' : 'errors-'.date("dmY").'T'.date("His").'Z.html';
-			return (file_put_contents($fpath, $data)) ? $fpath : false;
-		}
-		else if($type == "service"){
-			$fpath = $this->settings['dacura_logbase']."services/".$this->ucontext->servicename.".log";
-			return (file_put_contents($fpath, $data, FILE_APPEND)) ? $fpath : false;
-		}
-		//here we have collection dependant logging
-		//finally dataset dependant logging ?
+	function logEvent($a, $b, $c){
+		$this->service->logger->logEvent($a, $b, $c);
 	}
 	
 	function cache($cname, $oname, $data, $config = false){
@@ -58,6 +39,7 @@ class LogManager extends DacuraObject {
 			file_put_contents($cache_config_file, json_encode($config));
 		}
 		$full_name = $d_name."/".$oname.".cache";
+		$this->logEvent("debug", 200, "Cached $oname");
 		return (file_put_contents($full_name, json_encode($data)));
 	
 	}
@@ -72,7 +54,7 @@ class LogManager extends DacuraObject {
 	}
 	
 	function cacheIsStale($cfile, $config){
-		return false;
+		//return false;
 		if($config['type'] == "time"){
 			//check modification time of cache file
 			$cached_time = time() - filemtime($cfile);
@@ -102,6 +84,7 @@ class LogManager extends DacuraObject {
 		if(!$config) 
 			$config = $this->service->settings['default_cache_config'];
 		if(!$this->cacheIsStale($full_name, $config)){
+			$this->logEvent("debug", 200, "$oname retrieved from cache");
 			return json_decode(file_get_contents($full_name), true);
 		}
 		return $this->failure_result("Cache file for $cname / $oname is stale", 400);

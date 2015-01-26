@@ -14,6 +14,8 @@ include_once("ScraperDacuraServer.php");
 class ScraperService extends DacuraService {
 
 	var $default_screen = "scraper";
+	var $public_screens = array();
+	var $protected_screens = array("scraper" => array("admin"));
 
 	function renderFullPageHeader(){
 		parent::renderFullPageHeader();

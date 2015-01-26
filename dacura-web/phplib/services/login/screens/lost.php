@@ -11,7 +11,7 @@
 		<a class="button login-button" id='dacura-login-button' href="<?=$service->get_service_url("login")?>">Login</a>
 	</div>
 </div>
-	<style>
+<style>
 	#dacura-login-button {
 	 display: none;
 	}
@@ -57,7 +57,7 @@
 		padding-bottom: 12px;
 	}
 	
-	</style>
+</style>
 
 <script>
 dacura.login.resetpassword = function(){
@@ -88,7 +88,13 @@ dacura.login.resetpassword = function(){
      		$('#dacura-login-button').show();
      		$('.dacura-widget-intro').hide();
      		$('.cancel-button').hide();
-     		dacura.toolbox.writeSuccessMessage('#resetbox-status', jqXHR.responseText );
+			try {
+				var msg = JSON.parse(jqXHR.responseText);
+				dacura.toolbox.showSuccessPage('#maincontrol', msg);
+			}
+			catch(e){
+				dacura.toolbox.writeErrorMessage('#resetbox-status', "Error: " + e.message );
+			}
 		})
 		.fail(function (jqXHR, textStatus){
 			dacura.toolbox.writeErrorMessage('#resetbox-status', "Error: " + jqXHR.responseText );
@@ -96,13 +102,12 @@ dacura.login.resetpassword = function(){
 	);	
 };
 
-
 dacura.login.disablereset = function(){
 	$('#dacura-reset-password-button').unbind("click");
 	$('#dacura-reset-password-button').click( function(e){
 		 e.preventDefault();
 	});		
-}
+};
 
 dacura.login.enablereset = function(){
 	$('#dacura-reset-password-button').unbind("click");		
@@ -110,7 +115,6 @@ dacura.login.enablereset = function(){
 		 e.preventDefault();
 		 dacura.login.resetpassword();			
 	});
-}
-
+};
 
 </script>	

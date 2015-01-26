@@ -1,50 +1,76 @@
 <?php
 
+/*
+ * Scraper Page parser
+ *
+ * Created By: Chekov
+ * Creation Date: 20/11/2014
+ * Contributors:
+ * Licence: GPL v2
+ */
+
+
 require_once '/autoloader.php';
 use hafriedlander\Peg\Parser;
 
 /**
  * This parser parses Seshat data
- * NOTE: The disagreefactstatement definition does not work.
- * @author Odhran Gavin
+ * Needs to be run from the command line...
+ * >php cli.php seshat.peg.inc
+ * @author Chekov
  */
 class seshatParsing extends Parser\Basic {
 
 /*!* seshat
 
-factcontainer: value:factstatement | value:disagreefactstatement | value:uncertainfactstatement
+fact: (value:factfragment SPACE ";" SPACE)* value:factfragment 
 
-uncertainfactstatement: "[" ((value:fact ";" SPACE)* value:fact) "]"
+factfragment: value:datedfact | value:reversedatefact | value:undatedfact
 
-disagreefactstatement: "{" ((value:fact ";" SPACE)+ value:fact) "}"
+reversedatefact: value:datevalue SPACE ":" SPACE value:undatedfact
 
-factstatement: ((value:fact ";" SPACE)* value:fact)
+datedfact: value:undatedfact SPACE ":" SPACE value:datevalue 
 
-fact: value:basefact | value:uncertainbasefact
+datevalue: value:daterange | value:disagreedate | value:singledate
 
-uncertainbasefact: "[" (value:keyvalue | value:singleton) "]"
+daterange: value:singledate SPACE "-" SPACE value:singledate
 
-basefact: value:keyvalue | value:singleton
+singledate: value:uncertaindate | value:disagreedate | value:simpledate
 
-keyvalue: value:statement SPACE ":" SPACE value:statement
+simpledaterange: value:simpledate SPACE "-" SPACE value:simpledate
 
-singleton: value:statement
+disagreedatefragment: value:simpledaterange | value:simpledate
 
-statement: (value:disagreement|value:uncertainty|value:range|value:string SPACE)+
+disagreedate: "{" SPACE (value:disagreedatefragment SPACE ";" SPACE)+ value:disagreedatefragment SPACE "}"
 
-disagreement: "{" (value:statement ";" SPACE)+ value:statement "}"
+uncertaindate:  "[" SPACE (value:simpledate SPACE ";" SPACE)+ value:simpledate SPACE "]"
 
-uncertainty: "[" value:string SPACE (";" SPACE value:string)* "]"
+simpledate: value:year SPACE ( value:yearsuffix )?
 
-range: value:string SPACE "-" SPACE value:string
+undatedfact: value:uncertainlist | value:uncertainrange | value:disagreelist |  value:string 
+
+uncertainlist: "[" SPACE  (value:string SPACE ";" SPACE)+ value:string SPACE "]"
+
+uncertainrange: "[" SPACE  (value:nodashstring SPACE "-" SPACE)+ value:nodashstring SPACE "]"
+
+disagreelistfragment: value:uncertainrange | value:string
+
+disagreelist: "{" SPACE  (value:disagreelistfragment SPACE ";" SPACE)+ value:disagreelistfragment SPACE "}"
 
 string: word (SPACE word)*
 
+nodashstring: nodashword (SPACE nodashword)*
+
 SPACE: " "*
 
-word: (wordpart ((","|".") wordpart)+)|wordpart
+nodashword: /[^-\]\[\{\};: ]+/
 
-wordpart: /[a-zA-Z0-9()<>]+/
+word: /[^\]\[\{\};: ]+/
+
+
+year: /[0-9]{/
+
+yearsuffix: "bce" | "ce" | "bc" | "BCE" | "CE" | "BC" | "Bce" | "Ce" | "Bc"
 
 */
 

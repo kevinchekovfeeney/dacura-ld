@@ -1,4 +1,3 @@
-
 // grab and display code for the seshat wiki scraper
 // part of dacura
 // Copyright (C) 2014 Dacura Team
@@ -84,10 +83,11 @@ dacura.grabber.grab = function(page){
 dacura.grabber.display = function (json){
 	var good = 0;
 	var bad = 0;
+	var empty = 0;
 	for(var i = 0;i < json.length;i++){
 		xpath = json[i]["location"];
 		node = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0);
-		if(json[i]["error"] === true){
+		if(json[i]["state"] == "error"){
 			node.style.color = "red";
 			node.classList.add("errorText");
 			content = this.makeContent(json[i]["errorMessage"]);
@@ -95,16 +95,18 @@ dacura.grabber.display = function (json){
 			bad += 1;
 			errorName = "error" + bad;
 			$(node).prepend("<a id='" + errorName + "'></a><img src='<?=$service->get_service_file_url("error.png")?>' alt='error' class='error'>");
-		}else if(json[i]["error"] === false){
+		}else if(json[i]["state"] == "valid"){
 			node.style.color = "green";
 			node.classList.add("correctText");
 			$(node).prepend("<img src='<?=$service->get_service_file_url("correct.png")?>' alt='correct' class='correct'>");
 			good += 1;
 		}else{
+			empty++;
 			node.style.color = "blue";
-		}
+			$(node).prepend("<img src='<?=$service->get_service_file_url("empty.png")?>' alt='empty' class='empty'>");
+}
 	}
-	return [good, bad, json.length]
+	return [good, bad, empty, json.length]
 };
 
 dacura.grabber.makeContent = function (contents){
@@ -116,7 +118,7 @@ dacura.grabber.makeContent = function (contents){
 style=document.createElement("link");
 style.setAttribute("rel", "stylesheet");
 style.setAttribute("type", "text/css");
-style.setAttribute("href", "http://localhost/dacura/dacura/seshat/jquery-ui/jquery-ui.css");
+style.setAttribute("href", "<?=$service->url("css", 'jquery-ui.css')?>");
 document.head.appendChild(style);
 
 var css = ".pop{border:1px #f00 solid;background:#fbc;padding:3px;visibility:hidden;position:absolute;left:1.6em;margin:1.6em 0;color:#000;}"
@@ -139,7 +141,14 @@ if($("#ca-grab").length){
 }else{
 	$("<li id='ca-grab'><span><a>Validate</a></span></li>").insertBefore("#ca-view");
 };
+
+var grabison = false;
+
 $('#ca-grab').click(function(){
+	if(grabison){
+		return;
+	}
+	grabison = true;
 	$("#modal-close").show();
 	$("#modal-clear").hide();
 	var errorNumber = 0;
@@ -153,7 +162,7 @@ $('#ca-grab').click(function(){
 	var nga = "";
 	var polity = $.trim($("#firstHeading").text())
 	x = {"nga": nga, "polity": polity, "user": user};
-	y = [{"metadata": x, "data": dacura.grabber.grab(document)}];
+	y = {"metadata": x, "data": dacura.grabber.grab(document)};
 	if($("#modal").length){
 		$("#modal-close").html('<span class="ui-button-text">Close</span>');
 		$("#modal-dim").show();
@@ -252,12 +261,14 @@ $('#ca-grab').click(function(){
 			}
 		});
 		y = JSON.parse(response);
-		x = dacura.grabber.display(y[0]["data"]);
-		$("#modal-text").html("Analysis completed successfully.<br>" + x[2] + " variables detected<br>" + x[0] + " correct<br>" + x[1] + " syntax errors");
+		x = dacura.grabber.display(y["data"]);
+		$("#modal-text").html("Analysis completed successfully.<br>" + x[3] + " variables detected<br>" + x[0] + " correct<br>" + x[1] + " syntax errors<br>" + x[2] + " empty variables");
 		var errorLength = x[1];
+		grabison = false;
 
 	})
 	.fail(function (jqXHR, textStatus){
 		alert("Scan failed. Error: " + jqXHR.responseText);
+		grabison = false;
 	});
 });

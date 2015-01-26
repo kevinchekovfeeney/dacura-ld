@@ -1,82 +1,139 @@
 <?php
+/*
+ * Users Server - provides access to updating / editing / viewing users and roles, etc.
+ * This class is just an interface which adds context to the UserManager object included in all dacura server objects 
+ * (as user maninpulation / access is common to most services.
+ *
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 15/01/2015
+ * Licence: GPL v2
+ */
+
 include_once("phplib/db/UsersDBManager.php");
 
 class UsersDacuraServer extends DacuraServer {
 	
-	var $dbclass = "UsersDBManager";
-	
-	function getUsersInContext($cid, $did){
-		//first figure out which cids to use for the given active user...
-		$u = $this->getUser(0);
-		$cids = array();
-		$dids = array();
-		
-		if(!$cid && !$did){
-			//we are in top level context....
-			//1. get all collections where u has admin rights
-			//2. get all datasets where u has admin rights...
-			//all users with roles in either 1) or 2) are returned....
-			if($u->isGod()){
-				return $this->getusers();
-			}
-			else {
-				$cids = $u->getAdministeredCollections();
-				$dids = $u->getAdministeredDatasets();
-				if(count($cids) == 0 && count($dids) == 0){
-					//false
-				}
-				$uids  = $this->dbman->getUsersInContext($cids, $dids);
-			}
-		}
-		elseif(!$did){
-			//we are in a collection level context
-			//if u has admin rights...
-			if($u->isGod() || $u->isCollectionAdmin($cid)){
-				$uids  = $this->dbman->getUsersInContext(array($cid), array());
-			}
-			else {
-				$dids = $u->getAdministeredDatasets($cid);
-				if(count($dids) == 0){
-					//false;
-				}
-				$uids  = $this->dbman->getUsersInContext(array(), $dids);
-			}
-		}
-		else {
-			if($u->isGod() or $u->isCollectionAdmin($cid) or $u->isDatasetAdmin($did)){
-				$uids =  $this->dbman->getUsersInContext(array(), array($did));
-			}
-			else {
-				return false;//error
-			}
-			//we are in a dataset level context			
-		}
-		$users = array();
-		foreach($uids as $id){
-			$users[] = $this->getUser($id);
-		}
-		return $users;
+	function getUsersInContext(){
+		$x = $this->userman->getUsersInContext($this->cid(), $this->did());
+		if($x) return $x;
+		return $this->failure_result($this->userman->errmsg, $this->userman->errcode);
 	}
 	
-	function getRoleContextOptions($uid, $cid, $did){
-		$choices = $this->getUserAvailableContexts("admin", true);
-		if($cid && $did){
-			if(isset($choices[$cid]) && isset($choices[$cid]['datasets'][$did])){
-				$choices = array($cid => array("title" => $choices[$cid], "datasets" => array($did => $choices[$cid]['datasets'][$did])));
-			}
-			else {
-				return $this->failure_result("User $u->id does not possess permission to create roles for $uid in [$cid / $did] context", 401);
-			} 
+	function getUserPrunedForContext($uid){
+		$x = $this->userman->getUserPrunedForContext($uid, $this->cid(), $this->did());
+		if($x) return $x;
+		return $this->failure_result($this->userman->errmsg, $this->userman->errcode);
+	}
+	
+	function addUser($params){
+		if(!isset($params['name'])){
+			$email_bits = explode("@", $params['email']);
+			$params['name'] = $email_bits[0];
 		}
-		elseif($cid){
-			if(isset($choices[$cid])){
-				$choices = array($cid => $choices[$cid]);
+		if(!isset($params['status'])){
+			$params['status'] = $this->settings['users']['default_status'];
+		}
+		if(!isset($params['profile'])){
+			$params['profile'] = $this->settings['users']['default_profile'];
+		}		
+		$u = $this->userman->addUser($params['email'], $params['name'], $params['password'], $params['status'], json_encode($params['profile'], true));
+		if($u){
+			if(isset($params['roles'])){
+				foreach($roles as $role){
+					$x = $this->userman->createUserRole($u->id, $role['collection_id'], $role['dataset_id'], $role['role'], $role['level']);
+					if($x){
+						$u = $x;
+					}
+					else {
+						$this->logEvent("warning", $this->userman->errcode, $this->userman->errmsg);
+					}
+				}
+			}
+			return $u;
+		}	
+		return $this->failure_result($this->userman->errmsg, $this->userman->errcode);
+	}
+	
+	function canUpdateUserB($ub){
+		$ua = $this->getUser();
+		if(!$ua){
+			return $this->failure_result("User not logged in", 401);
+		}
+		if($ua->id == $ub->id) return true;
+		if($ua->isGod() || $ua->hasCollectionRole("all", "admin")) return true;
+		if($ua->hasCollectionRole($this->cid(), "admin") && $this->userIsOwnedByCollection($ub, $this->cid())) return true;
+		return $this->failure_result($ua->id." does not have a role that will allow updating of user $ub->id", 401);
+		//1 a is god / system admin
+		//2 a is collection x admin 
+		//	 & b is "owned by" collection x
+		//3 a is b
+	}
+	
+	function userIsOwnedByCollection($u, $cid){
+		return (isset($u->profile['owned_by_collection']) && $u->profile['owned_by_collection'] == $cid);
+	}
+	/*
+	 * Returns a datastructure representing the datasets and contexts that the user has at least the given role in  
+	 * (or any role if false) 
+	 * collection_id: {title: "title", datasets: {dataset_id => "dataset title"}}
+	 */
+	function getContextsWithUserRole($role=false){
+		$u = $this->getUser();
+		if($u->hasCollectionRole("all", $role)){
+			$choices["all"] = array("title" => "All collections", "datasets" => array("all" => "All Datasets"));				
+		}
+		$cols = $this->getCollectionList();
+		foreach($cols as $colid => $col){
+			if($col->status == "deleted"){
+	
+			}
+			elseif($u->hasCollectionRole($colid, $role)){
+				$choices[$colid] = array("title" => $col->name, "datasets" => array("all" => "All Datasets"));
+				foreach($col->datasets as $datid => $ds){
+					$choices[$colid]["datasets"][$datid] = $ds->name;
+				}
 			}
 			else {
-				return $this->failure_result("User $u->id does not possess permission to create roles for $uid in [$cid] context", 401);
+				$datasets = array();
+				foreach($col->datasets as $datid => $ds){
+					if($ds->status != "deleted" && $u->hasDatasetRole($colid, $datid, $role)){
+						$datasets[$datid] = $ds->name;
+					}
+				}
+				$choices[$colid] = array("title" => $col->name, "datasets" => $datasets);
 			}
 		}
 		return $choices;
+	}
+	
+	
+	/*
+	 * Returns an a structure representing datasets and contexts that can be given to a user in a certain context..
+	 */
+	function getRoleContextOptions($uid, $cid = false, $did = false){
+		$cid = ($cid === false) ? $this->ucontext->getCollectionID() : $cid;
+		$did = ($did === false) ? $this->ucontext->getDatasetID() : $did;
+		$choices = $this->getContextsWithUserRole("admin");
+		if($cid == "all"){
+			return $choices;
+		}
+		else {
+			if(!isset($choices[$cid])){
+				return $this->failure_result("User does not possess permission to create roles for $uid in [$cid / $did] context", 401);
+			}
+			if($did == "all"){
+				return array($cid => $choices[$cid]);
+			}
+			else {
+				if(!isset($choices[$cid]["datasets"][$did])){
+					return $this->failure_result("User does not possess permission to create roles for $uid in [$cid / $did] context", 401);
+				}
+				$choices[$cid]["datasets"] = array($did => $choices[$cid]["datasets"][$did]);
+				return array($cid => $choices[$cid]);
+			}
+		}
 	}
 	
 	function getRoleCollectionOptions($uid){
@@ -84,7 +141,7 @@ class UsersDacuraServer extends DacuraServer {
 		$colls = array();
 		if($admin->isGod()){
 			$colls = $this->getCollectionList(false);
-			$colls[0] = array("id" => "0", "name" => "All Collections");
+			$colls[0] = array("id" => "all", "name" => "All Collections");
 		}
 		else {
 			foreach($admin->roles as $role){
@@ -102,7 +159,7 @@ class UsersDacuraServer extends DacuraServer {
 		$dss = array();
 		if($admin->isCollectionAdmin($cid)){
 			$dss = $this->dbman->getCollectionDatasets($cid);
-			$dss[0] = array("id" => "0", "name" => "All datasets");
+			$dss[0] = array("id" => "all", "name" => "All datasets");
 		}
 		else {
 			foreach($admin->roles as $role){
@@ -113,115 +170,5 @@ class UsersDacuraServer extends DacuraServer {
 		}
 		return $dss;
 	}
-	/*
-	
-	function getUserAdminContext($uid, $cid, $did){
-		$admin = $this->getUser(0);
-		$cols = array();
-		if($cid){
-			$col = $this->getCollection($cid);
-			if($did){
-				if(isset($col->datasets[$did])){
-					$col->datasets = array($col->datasets[$did]);
-					$cols[$cid] = $col;
-				}	
-			}
-			else {
-				if(!$admin->isCollectionAdmin($cid)){
-					foreach($col->datasets as $dsid => $ds){
-						if(!$admin->isDatasetAdmin($dsid)){
-							unset($col->datasets[$dsid]);
-						}		
-					}
-					$cols[$cid] = $col;			
-				}
-			}
-		}
-		else {
-				$all_colls = $this->getCollectionList(false);
-				foreach($all_colls as $colid => $col){
-					if($admin->hasAdminRoleinCollection($colid)){
-						$cols[$colid] = $col;
-				}
-			}
-			else {
-				foreach($admin->roles as $role){
-					if($role->isAdmin() && !isset($cols[$role->collection_id])){
-						$cols[$role->collection_id] = $this->getCollection($role->collection_id);
-					}
-				}
-			}
-			//cols = getAllCollectionsWhereImAnAdmin();
-		}
-		if($t == "collection"){
-		
-		}
-		$options = array();
-		if(!$cid || $cid == "0"){
-			//get all of the collections that the admin has rights over. 
-			
-		}
-		else {
-			$options[$cid] = array();
-		}
-		if(!$did or $did == "0"){
-			foreach($options as $c => $val){
-				//get all the datasets that the admin has rights over
-				$options[$c][] = false;
-			}
-		}
-		else {
-			$options[$cid] = array($did => array());
-		}
-		foreach($options as $cid => $ds){
-			foreach($ds as $did => $val){
-				$options[$cid][$did] = $this->getAvailableRoles($uid, $cid, $did);
-			}
-		}
-	}*/
-	
-	function getAvailableRoles($uid, $cid, $did){
-		return array("admin", "architect", "harvester", "expert", "user");		
-	}
-	
-	function getUserRole($uid, $rid){
-		$u = $this->getUser($uid);
-		foreach($u->roles as $role){
-			if($role->id == $rid){
-				return $role;
-			}
-		}
-		return $this->failure_result('User $uid Role $rid did not exist' . $e->getMessage(), 500);
-	}
 
-	function deleteUserRole($uid, $rid){
-		$u = $this->getUser($uid);
-		foreach($u->roles as $i => $role){
-			if($role->id == $rid){
-				unset($u->roles[$i]);
-				if(!$this->dbman->updateUserRoles($u)){
-					return $this->failure_result("Failed to delete $rid role for $uid", 500);
-				}
-				return $role;
-			}
-		}
-		return $this->failure_result('User $uid Role $rid did not exist' . $e->getMessage(), 500);
-	}
-
-	function createUserRole($uid, $cid, $did, $role, $level){
-		$u = $this->getUser($uid);
-		$u->addRole(new UserRole(0, $cid, $did, $role, $level));
-		//$u->roles[] = new UserRole(0, $id, 0, 'admin', 99);
-		if(!$this->dbman->updateUserRoles($u)){
-			return $this->failure_result("Failed to create new roles for $id collection", 500);
-		}
-		return $u;
-	}
-	
-}
-
-class UsersDacuraAjaxServer extends UsersDacuraServer {
-	function failure_result($msg, $code){
-		return $this->write_error($msg, $code);
-	}
 }

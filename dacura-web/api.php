@@ -17,10 +17,13 @@
  * Licence: GPL v2
  */
 
+include_once("phplib/settings.php");
+include_once("phplib/RequestLog.php");
+//start request log at once to capture as much of the performance data as possible...
+$request_log = new RequestLog($dacura_settings, "api");
 
 require_once("phplib/http_response_code.php");
 require_once("phplib/libs/epiphany/src/Epi.php");
-include_once("phplib/settings.php");
 include_once("phplib/DacuraObject.php");
 include_once("phplib/ServiceLoader.php");
 include_once("phplib/DacuraUser.php");
@@ -33,8 +36,9 @@ function write_error($str, $code = 400){
 }
 
 $servman = new ServiceLoader($dacura_settings);
-$service = $servman->loadServiceFromAPI();
-if($service && $service->hasPermission()){
+$service = $servman->loadServiceFromAPI($request_log);
+if($service){
+	$dacura_server = $service->loadServer();
 	$api_path = $service->settings['path_to_services'].$service->name()."/api.php";
 	if(file_exists($api_path)){
 		$rt = (count($service->args) > 0) ? "/".implode("/", $service->args) : "/";
@@ -46,19 +50,21 @@ if($service && $service->hasPermission()){
 			getRoute()->run();
 		}
 		catch(Exception $e){
-			write_error("Unknown API: ".$e->getMessage(), 400);
+			$msg = "Unknown API: ".$e->getMessage();
+			$request_log->setResult(404, $msg);				
+			write_error($msg, 404);
 		}
 	}
 	else {
-		write_error("Service ".$service->name()." does not have an API", 400);
+		$msg = "Service ".$service->name()." does not have an API";
+		$request_log->setResult(404, $msg);				
+		write_error($msg, 404);
 	}
 }
-elseif($service){
-	write_error("Access Denied [".$service->name()."] ".$servman->errmsg, 400);				
-	
-}
 else {
-	write_error("Unknown Service", 400);
+	$msg = "Unknown Service: ".$servman->errmsg;
+	$request_log->setResult(404, $msg);				
+	write_error($msg, 404);
 }
 
 

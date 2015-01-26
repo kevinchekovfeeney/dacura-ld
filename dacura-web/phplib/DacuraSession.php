@@ -13,25 +13,54 @@
 
 class DacuraSession extends DacuraObject {
 
-	var $session_id;
+	var $session_id; //the service name (one session active per service)
 	var $state_vars;
 	var $state; 
 	var $session_timeout = 3600;
 	var $events;
 	var $start;
+	var $end = false;
 	var $current_candidate;
 	//var $local_session_timeout = 3600;
 
 	function __construct($session_id, $autostart = true){
-		$this->start = time();
 		$this->session_id = $session_id;
 		if($autostart){$this->start();}
+	}
+	
+	function loadFromJSON($json){
+		$jassoc = json_decode($json, true);
+		$last = 0;
+		if($jassoc){
+			foreach($jassoc as $ts => $event){
+				$this->events[$ts] = array("action" => $event['action']);
+				if($event['action'] == "start") $this->start = $ts;
+				if($event['action'] == "end") $this->end = $ts;
+				if($ts > $last) $last = $ts;
+			}
+			if(!$this->end){
+				$this->end = $ts;
+			}
+			return true;
+		}
+		else {
+			return $this->failure_result("Failed to decode session from json $json", 500);
+		}
 	}
 	
 	function start(){
 		$this->start = time();
 		$this->state = 'active';
 		$this->events[$this->start] = array("action" => 'start');		
+	}
+	
+	function summary(){
+		$a = array();
+		$a['duration'] = $this->activeDuration();
+		$a['start'] = $this->start;
+		$a['end'] = $this->end;
+		$a['event_count'] = count($this->events) - 2;
+		return $a;
 	}
 
 	function registerEvent($settings){
@@ -42,6 +71,7 @@ class DacuraSession extends DacuraObject {
 	
 	function end(){
 		$this->state = 'end';
+		$this->end = time();
 	}
 
 	function pause(){

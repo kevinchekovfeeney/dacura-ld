@@ -6,7 +6,7 @@ $choices = $hsds->getUserAvailableContexts($params['type']);
 <?php 
 foreach($choices as $i => $choice){
 	echo "<option value='$i'"; 
-	if($i == $service->getCollectionID() or ($i == "0" && !$service->getCollectionID())) echo " selected";
+	if($i == $service->getCollectionID() or ($i == "all" && !$service->getCollectionID())) echo " selected";
 	echo ">".$choice['title']."</option>";
 }
 ?>
@@ -18,7 +18,7 @@ foreach($choices as $i => $choice){
 	<?php 
 		foreach($choice['datasets'] as $j => $t){
 			echo "<option value='$j'";
-			if($j == $service->getDatasetID() or ($j == "0" && !$service->getDatasetID())) echo " selected";
+			if($j == $service->getDatasetID() or ($j == "all" && !$service->getDatasetID())) echo " selected";
 			echo ">$t</option>";
 		}
 	?>

@@ -11,7 +11,7 @@
                                         Please note that this page, and all of the seshat data, is private and access is limited to Seshat administrators.
                                         In order to use the tools above, you need to have a Seshat Administrator Role.</p>
                                         <p>In order to use the Page Validator Tool, you need to either right click this link 
-                                        <a href="javascript:(function(){s=document.createElement('script');s.src='http://dacura.scss.tcd.ie/admin/rest/seshat/0/scraper/grabscript';document.body.appendChild(s);})();">
+                                        <a href="javascript:(function(){s=document.createElement('script');s.src='<?=$params['grabscript']?>';document.body.appendChild(s);})();">
                                         Validator Bookmarklet Link</a> and select 'add bookmark" (firefox) or "add to favourites" (IE). On Firefox, you can just drag the link to your browser's bookmark bar</p>
                                         </div>
                 <div id='dashboard-tasks'>

@@ -20,7 +20,7 @@
 	<table class='scraper-report'><tr><th>NGA</th><th>Page</th><th>Failure</th></tr>
 	<?php
 	foreach($params['failures'] as $pf){
-		echo "<tr><td>" . $pf[0] . "</td><td>" . $pf[1] . "</td><td>" . $pf[2] .":".$pf[3] ."</td></tr>";
+		echo "<tr><td>" . $pf[0] . "</td><td>" . $pf[1] . "</td><td>" . $pf[3] .":".$pf[2] ."</td></tr>";
 	}
 	echo "</table>";
 }
@@ -45,14 +45,9 @@ if($params['stats']['ngas'] > 1){
 <?php } ?>
 <div class='data-buttons'>
 	<a id="gettsv" class='data-button' href="<?=$params['files']['tsv']?>">Download the results</a> |
-	<a id="gethtml" class='data-button' href="<?=$params['files']['html']?>">View the results</a> |
-	<a id="geterrs" class='data-button' href="<?=$params['files']['errors']?>">View the error report</a>
+	<a id="gethtml" class='data-button' target="_blank" href="<?=$params['files']['html']?>">View the results</a> |
+	<a id="geterrs" class='data-button' target="_blank" href="<?=$params['files']['errors']?>">View the error report</a>
 </div>
 
 <script>
-	$("#gethtml").click(function(e){
-		e.preventDefault();
-		alert($(this).attr("href"));
-	}};
-	
 </script>

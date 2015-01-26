@@ -34,9 +34,3 @@ class BrowseDacuraServer extends DacuraServer {
 	
 	
 }
-
-class BrowseDacuraAjaxServer extends BrowseDacuraServer {
-	function failure_result($msg, $code){
-		return $this->write_error($msg, $code);
-	}
-}

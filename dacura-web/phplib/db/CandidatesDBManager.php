@@ -10,13 +10,12 @@
  * Licence: GPL v2
  */
 
-include_once("DBManager.php");
+include_once("UsersDBManager.php");
 include_once("phplib/Candidate.php");
 
 
-class CandidatesDBManager extends DBManager {
+class CandidatesDBManager extends UsersDBManager {
 	var $link;
-	var $errmsg;
 	
 	function __construct($h, $u, $p, $n){
 		$dsn = "mysql:host=$h;dbname=$n;charset=utf8";
@@ -44,24 +43,28 @@ class CandidatesDBManager extends DBManager {
 			return $id;
 		}
 		catch(PDOException $e){
-			$this->errmsg = "PDO Error".$e->getMessage();
-			return false;
+			return $this->failure_result("PDO Error".$e->getMessage(), 500);
 		}
 	}
 	
 	
 	function get_uncached_candidates($yr, $fstore) {
 		$hits = array();
-		$stmt = $this->link->prepare("SELECT id FROM candidates where chunk = ?");
-		$stmt->execute(array($yr));
-		while ($row = $stmt->fetch()){
-			$id = $row['id'];
-			if(!file_exists($fstore.$yr. "/" . $id . ".jpg")){
-				$cand = $this->loadCandidate($id, false);
-				$hits[$id] = $cand;
+		try {
+			$stmt = $this->link->prepare("SELECT id FROM candidates where chunk = ?");
+			$stmt->execute(array($yr));
+			while ($row = $stmt->fetch()){
+				$id = $row['id'];
+				if(!file_exists($fstore.$yr. "/" . $id . ".jpg")){
+					$cand = $this->loadCandidate($id, false);
+					$hits[$id] = $cand;
+				}
 			}
+			return $hits;
 		}
-		return $hits;
+		catch(PDOException $e){
+			return $this->failure_result("PDO Error".$e->getMessage(), 500);
+		}
 	}
 	
 	
@@ -77,8 +80,7 @@ class CandidatesDBManager extends DBManager {
 			return false;
 		}
 		catch(PDOException $e){
-			$this->errmsg = "error retrieving $id" . $e->getMessage();
-			return false;
+			return $this->failure_result("error retrieving candidate $id ".$e->getMessage(), 500);
 		}
 	}
 	

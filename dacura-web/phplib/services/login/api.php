@@ -1,4 +1,15 @@
 <?php
+
+/*
+ * API for login service - supports lost password and registration interface too
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 12/01/2015
+ * Licence: GPL v2
+ */
+
+
 getRoute()->get("/", "hello");
 getRoute()->post('/', 'login');
 getRoute()->post('/register', 'register');
@@ -6,77 +17,97 @@ getRoute()->post('/lost', 'lost');
 getRoute()->post('/reset', 'resetpassword');
 getRoute()->delete('/', 'logout');
 
-include_once("LoginDacuraServer.php");
-
-
-function hello(){
-	echo "Hello world";
-}
 
 function login(){
-	global $service;
-	$dwas = new LoginDacuraAjaxServer($service);
+	global $dacura_server;
+	$dacura_server->init("login");
+	$u = $dacura_server->getUser(0);
+	if($u){
+		return $dacura_server->write_http_result(400, "User is logged in - cannot log in again", "notice");
+	}
 	if(isset($_POST['login-email']) && isset($_POST['login-password'])){
-		$u = $dwas->login($_POST['login-email'], $_POST['login-password']);
+		$u = $dacura_server->login($_POST['login-email'], $_POST['login-password']);
 		if($u) {
 			if(isset($u->profile['dacurahome']) && $u->profile['dacurahome']){
-				echo $u->profile['dacurahome'];				
+				$dacura_server->write_json_result($u->profile['dacurahome'], "Login Successful");			
 			}
 			else {
-				echo "";
+				$dacura_server->write_json_result($dacura_server->settings['install_url'], "Login Successful");
 			}
+		}
+		else {
+			$dacura_server->write_http_result(false, false, "notice");
 		}
 	}
 	else {
-		$dwas->write_error("Missing required login fields.", 400);
+		$dacura_server->write_http_result(400, "Missing required login fields.", "notice");
 	}
 }
 
 function register(){
-	global $service;
-	$dwas = new LoginDacuraAjaxServer($service);
+	global $dacura_server;
+	$dacura_server->init("register");
+	$u = $dacura_server->getUser(0);
+	if($u){
+		return $dacura_server->write_http_result(401, "User is logged in - cannot register", "notice");
+	}
 	if(isset($_POST['login-email']) && isset($_POST['login-password'])){
-		$u = $dwas->register($_POST['login-email'], $_POST['login-password']);
-		if($u) echo $u;
-		else $dwas->write_error($dwas->errmsg, $dwas->errcode);
+		$u = $dacura_server->register($_POST['login-email'], $_POST['login-password']);
+		if($u) $dacura_server->write_json_result($u, "Registration Successful");
+		else $dacura_server->write_http_result(false, false, "notice");
 	}
 	else {
-		$dwas->write_error("Missing required registration fields.");
+		$dacura_server->write_http_result(400, "Missing required registration fields.", "notice");
 	}
 }
 
 function lost(){
-	global $service;
-	$dwas = new LoginDacuraServer($service);
+	global $dacura_server;
+	$dacura_server->init("lost");
+	$u = $dacura_server->getUser(0);
+	if($u){
+		return $dacura_server->write_http_result(401, "User is logged in -cannot start lost password process", "notice");
+	}
 	if(isset($_POST['login-email'])){
-		$u = $dwas->lostpassword($_POST['login-email']);
-		if($u) echo $u;
-		else $dwas->write_error($dwas->errmsg, $dwas->errcode);
+		$u = $dacura_server->lostpassword($_POST['login-email']);
+		if($u) $dacura_server->write_json_result($u, "Lost Password Process Initiated");
+		else $dacura_server->write_http_result(false, false, "notice");
 	}
 	else {
-		$dwas->write_error("Missing required email fields.");
+		$dacura_server->write_http_result(400, "Missing required email fields.", "notice");
 	}
 }
+
 
 function resetpassword(){
-	global $service;
-	$dwas = new LoginDacuraAjaxServer($service);
+	global $dacura_server;
+	$dacura_server->init("resetpassword");
+	$u = $dacura_server->getUser(0);
+	if($u){
+		return $dacura_server->write_http_result(401, "User is logged in - cannot reset password", "notice");
+	}
 	if(isset($_POST['userid']) &&  isset($_POST['login-password'])){
-		$u = $dwas->resetpassword($_POST['userid'], $_POST['login-password']);
-		if($u) echo $u;
-		else $dwas->write_error($dwas->errmsg, $dwas->errcode);
+		$u = $dacura_server->resetpassword($_POST['userid'], $_POST['login-password']);
+		if($u) $dacura_server->write_json_result($u, "Password Reset Successfully");
+		else $dacura_server->write_http_result(false, false, "notice");
 	}
 	else {
-		$dwas->write_error("Missing required email fields.");
+		$dacura_server->write_http_result(400, "Missing required fields.",  "notice");
 	}
 }
+
 function logout(){
-	global $service;
-	$dwas = new LoginDacuraAjaxServer($service);
-	$x = $dwas->getUser();
-	echo $dwas->logout();
+	global $dacura_server;
+	$dacura_server->init("logout");
+	$u = $dacura_server->getUser();
+	if(!$u){
+		return $dacura_server->write_http_result(401, "User is not logged in - cannot log out", "notice");
+	}
+	$dacura_server->write_json_result($dacura_server->logout(), "Logged out successfully");
 }
 
-function migrate(){
-	echo $dwas->migrate();
+function hello(){
+	global $dacura_server;
+	$dacura_server->init("hello");
+	$dacura_server->write_json_result("Hello World", "Hello world");
 }

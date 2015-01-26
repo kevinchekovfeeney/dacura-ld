@@ -52,6 +52,16 @@ dacura.users.api.update = function (id, xhr){
 	return xhr;
 }
 
+dacura.users.api.updatepassword = function (id, xhr){
+	if(typeof xhr == "undefined"){
+		xhr = {};
+		xhr.data ={};
+	}
+	xhr.url = dacura.users.apiurl + "/" +  id + "/password";
+	xhr.type = "POST";
+	return xhr;
+}
+
 
 dacura.users.api.delrole = function (uid, rid, xhr){
 	if(typeof xhr == "undefined"){

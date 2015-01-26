@@ -1,129 +1,153 @@
 <?php
+require_once("phplib/libs/epiphany/src/Epi.php");
+
 getRoute()->get('/', 'listing');
 getRoute()->get('/nga', 'getngas');
 getRoute()->post('/polities', 'getpolities');
-getRoute()->post('/', 'getpolitydata');
-getRoute()->post('/parse', 'parsePage');
 getRoute()->post('/dump', 'dump');
-getRoute()->get('/grabscript', 'getGrabScript');
-getRoute()->get('/facts', 'getFactsFromPage');
-getRoute()->get('/p', 'testParser');
 getRoute()->get('/view/(.+)', 'viewReport');
+getRoute()->get('/grabscript', 'getGrabScript');
+getRoute()->get('/test', 'testParser');
+getRoute()->post('/parse', 'parseData');
+getRoute()->post('/', 'getpolitydata');
 
-
-include_once("ScraperDacuraServer.php");
 
 function getngas(){
-	global $service;
-	$sdas = new ScraperDacuraAjaxServer($service);
-	if($sdas->init()){
-		$x = $sdas->getNGAList();
+	global $dacura_server;
+	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("getngas")){
+		$x = $dacura_server->getNGAList();
 		if($x){
-			echo json_encode($x);
+			$dacura_server->write_json_result($x, "Returned list of ".count($x)." NGAs");
 		}
+		else {
+			$dacura_server->write_http_error();		
+		}
+	}
+	else {
+		$dacura_server->write_http_error();
 	}
 }
 
 function getpolities(){
-	global $service;
+	global $dacura_server;
 	$nga = $_POST['nga'];
-	$sdas = new ScraperDacuraAjaxServer($service);
-	if($sdas->init()){
-		$x = $sdas->getPolities($nga);
+	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("getpolities", $nga)){
+		$x = $dacura_server->getPolities($nga);
 		if($x){
-			echo json_encode($x);
+			$dacura_server->write_json_result($x, "Returned list of ".count($x)." Polities");
 		}
+	}
+	else {
+		$dacura_server->write_http_error();
 	}
 }
 
-function getFactsFromPage(){
-	global $service;
-	//$url = "http://seshat.info/Code_book";//$_POST['url'];
-	$url = "http://seshat.info/Anatolia,_Byzantine_Empire_%28395-632_CE%29";
-	//$url = "http://seshat.info/Parsing_test_cases";
-	$sdas = new ScraperDacuraAjaxServer($service);
-	if($sdas->init()){
-		$x = $sdas->getFactsFromURL($url);
-		if($x){
-			//header('Content-Type: text/html; charset=utf-8');
-			//opr($x);
-			//echo $sdas->factListToTable("fuck", "you", $x, "html");
-			//echo json_encode($x);
-			opr($x);
-		}
-	}	
+function dump(){
+	global $dacura_server;
+	set_time_limit(0);
+	$data = json_decode($_POST["polities"]);
+	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("dump")){
+		$dacura_server->getDump($data);
+		$dacura_server->ucontext->logger->setResult(200, "Created Seshat for ". count($data)." NGAs");
+	}
+	else {
+		$dacura_server->write_comet_error();
+	}
 }
 
-function dump(){
-	global $service;
+function viewReport($rep){
+	global $dacura_server;
+	$dacura_server->init("viewreport", $rep);
 	set_time_limit(0);
-	$sdas = new ScraperDacuraAjaxServer($service);
-	$data = json_decode($_POST["polities"]);
-	if($sdas->init()){
-		$sdas->getDump($data);
+	if($dacura_server->userHasRole("admin")){
+		if($dacura_server->getReport($rep)){
+			$dacura_server->ucontext->logger->setResult(200, "Returned Report $rep");
+		}
+		else {
+			$dacura_server->write_http_error();				
+		}
+	}
+	else {
+		$dacura_server->write_http_error();
+	}
+	
+}
+
+function getGrabScript(){
+	global $dacura_server, $service;
+	$dacura_server->init("grabscript");
+	ob_start();
+	if(isset($dacura_server->settings['scraper']['grabScriptFiles'])){}
+	foreach($dacura_server->settings['scraper']['grabScriptFiles'] as $f){
+		if(file_exists($f)){
+			include($f);
+		}
+		else {
+			ob_end_clean();	
+			return $dacura_server->write_http_error(500, "File $f not found");
+		}
+	}
+	$f = $dacura_server->ucontext->mydir."screens/grab.js";
+	if(file_exists($f)){
+		include_once($f);
+		$page = ob_get_contents();
+		ob_end_clean();	
+		echo $page;	
+		$dacura_server->ucontext->logger->setResult(200, "Served grab script to ".$_SERVER['REMOTE_ADDR']);
+	}
+	else {
+		ob_end_clean();	
+		$dacura_server->write_http_error(500, "grab javascript file $f not found");
 	}
 }
 
 function testParser(){
-	global $service;
-	$sdas = new ScraperDacuraAjaxServer($service);
-	opr($sdas->testParser());
+	global $dacura_server;
+	$dacura_server->init("testParser");
+	if($dacura_server->userHasRole("admin")){
+		opr($dacura_server->testParser());
+	}
+	else {
+		$dacura_server->write_http_error();
+	}	
 }
 
-
-function getPolityData(){
-	global $service;
-	$sdas = new ScraperDacuraAjaxServer($service);
-	if($sdas->init()){
-		$nga = $_POST["nga"];
-		$polity = $_POST["polity"];
-		$x = $sdas->getData($nga, $polity);
-		if($x){
-			echo json_encode($x);
+/*
+ * Needs to be re-written to take a more sensible format of input data. 
+ */
+function parseData(){
+	global $dacura_server;
+	header("Access-Control-Allow-Origin: *");
+	$dacura_server->init("parsePage");
+	if(isset($_POST["data"]) && $_POST["data"]){
+		$parsed_data = json_decode($_POST["data"], true);
+		if($parsed_data){
+			for($i = 0; $i < count($parsed_data['data']); $i++){
+				$one_result = $dacura_server->parseFactsFromString($parsed_data['data'][$i]['contents']);
+				if(count($one_result['errors']) > 0){
+					$parsed_data['data'][$i]['state'] = "error";
+					$parsed_data['data'][$i]['errorMessage'] = $one_result['errors'][0]['comment'];
+				}
+				elseif($one_result['empty'] > 0) {
+					$parsed_data['data'][$i]['state'] = "empty";						
+				}
+				elseif($one_result['lines'] > 0){
+					$parsed_data['data'][$i]['state'] = "valid";						
+				}
+				else {
+					$parsed_data['data'][$i]['state'] = "error";
+					$parsed_data['data'][$i]['errorMessage'] = "Parser failed - not empty, error or valid";
+				}
+			}
+			$dacura_server->write_json_result($parsed_data, "Returned list of ".count($parsed_data['data'])." facts");				
+		}
+		else {
+			$dacura_server->write_http_result(400, "Data in post request does not have proper json format", "notice");				
 		}
 	}
-}
-
-function parsePage(){
-	global $service;
-	header("Access-Control-Allow-Origin: *");
-	$sdas = new ScraperDacuraAjaxServer($service);
-	//$data = json_decode();
-	$x = $sdas->parsePage($_POST["data"]);
-	if($x){
-		echo $x;
+	else {
+		$dacura_server->write_http_result(400, "No data included in post request for parsing", "notice");
 	}
 }
 
-
-function viewReport($rep){
-	global $service;
-	set_time_limit(0);
-	$sdas = new ScraperDacuraAjaxServer($service);
-	$sdas->getReport($rep);
-}
-
-function getGrabScript(){
-	global $service;
-	$f = $service->settings['path_to_files']."js/jquery-ui-1.10.2.custom.min.js";
-	if(file_exists($f)){
-		include($f);
-	}
-	$f = $service->mydir."screens/grab.js";
-	if(file_exists($f)){
-		include_once($f);
-	}
-}
-
-function testComet(){
-	global $service;
-	$sdas = new ScraperDacuraAjaxServer($service);
-	$sdas->start_comet_output();
-	$i = 100;
-	while($i-- > 0){
-		$sdas->write_comet_update("success", "$i is the loop<br>");
-		usleep(200000);
-	}
-	$sdas->end_comet_output();
-}
 
