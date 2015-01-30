@@ -42,7 +42,6 @@ function listUsers(){
 	if($dacura_server->userHasRole("admin", false, "all")){
 		$collobj = $dacura_server->getUsersInContext();
 		if($collobj){
-			echo "poo";
 			$dacura_server->write_json_result($collobj, "Retrieved user listing for ".$dacura_server->contextStr());
 		}
 	}
