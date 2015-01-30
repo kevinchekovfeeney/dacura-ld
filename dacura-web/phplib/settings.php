@@ -9,24 +9,8 @@
  * Licence: GPL v2
  */
 $dacura_settings = array();
+include_once("localsettings.php");
 
-/*
- * These bits should be changed when the system is installed in a new place
- */
-
-//URL at which the dacura system is accessible
-$dacura_settings['install_url'] = "http://localhost/dacura/";
-//URL of the system's triple store...
-$dacura_settings['sparql_url'] = "http://tcdfame.cs.tcd.ie/sparql/";
-//directory under which dacura will store its data...
-$dacura_settings['storage_base'] = "C:\\Temp\\dacura\\";
-//DB credentials
-$dacura_settings['db_host'] = 'localhost';
-$dacura_settings['db_name']  = 'dacura';
-$dacura_settings['db_user'] = 'dacura';
-$dacura_settings['db_pass'] = 'dacura';
-//HTTP proxy
-$dacura_settings['http_proxy'] = "http://proxy.cs.tcd.ie:8080";
 
 
 /*
