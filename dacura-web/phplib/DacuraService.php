@@ -33,6 +33,8 @@ class DacuraService extends DacuraObject {
 	var $public_screens = array();
 	//An array of screens provided by the service that require specific dacura roles..
 	var $protected_screens = array();
+	//An array of scripts which will be interpolated in PHP
+	var $interpolated_screens = array();
 
 	function __construct($settings){
 		$this->settings = $settings;
@@ -149,6 +151,9 @@ class DacuraService extends DacuraObject {
 	function renderFullPageHeader(){
 		$service = &$this;
 		global $dacura_server;
+		foreach($this->interpolated_screens as $is){
+			$this->writeIncludedInterpolatedScripts($is);
+		}
 		include_once("phplib/snippets/header.php");
 		include_once("phplib/snippets/topbar.php");		
 	}

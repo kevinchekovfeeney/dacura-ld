@@ -1,27 +1,31 @@
 <?php
+/*
+ * Config Service - provides access to updating / editing / viewing users and roles, etc.
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 30/01/2015
+ * Licence: GPL v2
+ */
 
-include_once("configDacuraServer.php");
+include_once("ConfigDacuraServer.php");
 
 class ConfigService extends DacuraService {
+	var $protected_screens = array("list" => array("admin"), "create" => array("admin"), "view" => array("admin"));
+	var $default_screen = "list";
 	
 	
-	function handlePageLoad(){
-		if(count($this->servicecall->args)> 0) {
-			$screen = array_shift($this->servicecall->args);
-			if($screen == 'create'){
-				$this->renderScreen("create", array());						
-			}
-			elseif($screen == "" or $screen == "view"){
-				$this->renderScreen("view", array());
-			}
-			else {
-				$this->renderScreen("error", array("title" => "Unknown URL", "message" => "The $screen page does not exist in the collection service."), "core");
-			}
-		}
-		else {
-			$this->renderScreen("view", array());
-		}
-		//parent::handlePageLoad();
+	function renderFullPageHeader(){
+		parent::renderFullPageHeader();
+		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.config.js");
+		echo "<div id='pagecontent-container'>";
+		echo "<div id='pagecontent'>";
 	}
+	
+	function renderFullPageFooter(){
+		echo "</div></div>";
+		parent::renderFullPageFooter();
+	}
+	
 	
 }

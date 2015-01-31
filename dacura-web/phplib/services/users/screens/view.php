@@ -363,7 +363,7 @@ dacura.users.deleteRole = function(id){
 	$.ajax(ajs)
 	.done(function(data, textStatus, jqXHR) {
 		$('#role_' + id).remove();
-		dt.row.add(["1", "b", "c", "d"] ).draw();
+		//dt.row.add(["1", "b", "c", "d"] ).draw();
 		//dacura.users.currentroles.row.add( ["1", "b", "c", "d"] ).draw();
 	//self.showuser(dacura.users.currentuser);
 	})

@@ -1,4 +1,14 @@
 <?php
+
+/*
+ * Config Server
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 12/01/2015
+ * Licence: GPL v2
+ */
+
 include_once("phplib/db/ConfigDBManager.php");
 
 class ConfigDacuraServer extends DacuraServer {
@@ -60,12 +70,5 @@ class ConfigDacuraServer extends DacuraServer {
 		else {
 			return $this->failure_result($this->dbman->errmsg, 400);
 		}
-	}
-
-}
-
-class ConfigDacuraAjaxServer extends ConfigDacuraServer {
-	function failure_result($msg, $code){
-		return $this->write_error($msg, $code);
 	}
 }

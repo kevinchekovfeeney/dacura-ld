@@ -1,33 +1,71 @@
 <?php
+/*
+ * API for users service - viewing and updating user details
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 12/01/2015
+ * Licence: GPL v2
+ */
+
 //getRoute()->post('/', 'create');
 getRoute()->get('/', 'view');
 getRoute()->post('/', 'update');
 getRoute()->delete('/', 'delete');
 
-include_once("ConfigDacuraServer.php");
-
 function view(){
-	global $service;
-	$dwas = new ConfigDacuraAjaxServer($service);
-	$c_id = $service->getCollectionID();
-	$d_id = $service->getDatasetID();
-	if(!$c_id) {
-		$collobj = $dwas->getCollectionList();
+	global $dacura_server;
+	$dacura_server->init("viewconfig");
+	if($dacura_server->userHasRole("admin")){
+		if($dacura_server->ucontext->getCollectionID() == "all"){
+			$collobj = $dacura_server->getCollectionList();				
+		}
+		elseif($dacura_server->ucontext->getDatasetID() == "all"){
+			$collobj = $dacura_server->getCollection($dacura_server->ucontext->getCollectionID());
+		}		
+		else {
+			$collobj = $dacura_server->getDataset($dacura_server->ucontext->getDatasetID());
+		}
+		if($collobj){
+			return $dacura_server->write_json_result($collobj, "Retrieved configuration listing for ".$dacura_server->contextStr());
+		}
 	}
-	elseif(!$d_id) {
-		$collobj = $dwas->getCollection($c_id);
-	}
-	else {
-		$collobj = $dwas->getDataset($d_id);
-	}
-	if($collobj){
-		echo json_encode($collobj);	
-	}
-	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
+	$dacura_server->write_http_error();
 }
 
 
 function update(){
+	global $dacura_server;
+	$dacura_server->init("updateconfig");
+	
+	if($dacura_server->userHasRole("admin")){
+		$c_id = $dacura_server->ucontext->getCollectionID(); 
+		$d_id = $dacura_server->ucontext->getDatasetID();
+		if($c_id == "all"){
+			if(isset($_POST['payload'])&& isset($_POST['id']) && isset($_POST['title'])){
+				$collection_obj = json_decode($_POST['payload'], true);
+				$collection_id = $_POST['id'];
+				$collection_title = $collection_obj['title'];
+				if($collection_obj && $collection_id && $collection_title){
+					return $dwas->write_error("Payload in create collection message would not parse", 400);
+				}
+			}	
+			else {
+				return $this->write_http_error(400, "Missing parameters: new collections must have id, title and contents");
+			}
+		}
+		elseif($dacura_server->ucontext->getDatasetID() == "all"){
+			$collobj = $dacura_server->getCollection($dacura_server->ucontext->getCollectionID());
+		}		
+		else {
+			$collobj = $dacura_server->getDataset($dacura_server->ucontext->getDatasetID());
+		}
+		if($collobj){
+			return $dacura_server->write_json_result($collobj, "Retrieved configuration listing for ".$dacura_server->contextStr());
+		}
+	}
+	$dacura_server->write_http_error();
+}
 	global $service;
 	$c_id = $service->getCollectionID();
 	$d_id = $service->getDatasetID();
@@ -38,9 +76,6 @@ function update(){
 		if(!$collection_obj){
 			return $dwas->write_error("Payload in create collection message would not parse", 400);
 		}
-		$collection_id = $_POST['id'];
-		$collection_title = $collection_obj['title'];
-		$cobj = $dwas->createNewCollection($collection_id, $collection_title, $collection_obj);
 		if($cobj){
 			echo json_encode($cobj);
 		}	

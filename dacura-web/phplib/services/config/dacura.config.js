@@ -1,4 +1,4 @@
-dacura.config = {}
+dacura.config = {};
 dacura.config.apiurl = dacura.system.apiURL();
 
 dacura.config.api = {};
@@ -10,7 +10,7 @@ dacura.config.api.create = function (xhr){
 	xhr.url = dacura.config.apiurl;
 	xhr.type = "POST";
 	return xhr;
-}
+};
 
 dacura.config.api.del = function (xhr){
 	if(typeof xhr == "undefined"){
@@ -20,7 +20,7 @@ dacura.config.api.del = function (xhr){
 	xhr.url = dacura.config.apiurl;
 	xhr.type = "DELETE";
 	return xhr;
-}
+};
 
 dacura.config.api.view = function (id, xhr){
 	if(typeof xhr == "undefined"){
@@ -29,7 +29,7 @@ dacura.config.api.view = function (id, xhr){
 	}
 	xhr.url = dacura.config.apiurl;
 	return xhr;
-	}
+};
 
 dacura.config.api.listing = function (xhr){
 	if(typeof xhr == "undefined"){
@@ -38,9 +38,7 @@ dacura.config.api.listing = function (xhr){
 	}
 	xhr.url = dacura.config.apiurl;
 	return xhr;
-
-}
-
+};
 
 dacura.config.api.update = function (xhr){
 	if(typeof xhr == "undefined"){
@@ -50,4 +48,4 @@ dacura.config.api.update = function (xhr){
 	xhr.url = dacura.config.apiurl;
 	xhr.type = "POST";
 	return xhr;
-}
+};
