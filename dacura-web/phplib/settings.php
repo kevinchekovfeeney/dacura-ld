@@ -23,6 +23,7 @@ $dacura_settings['apistr'] = "rest";
 $dacura_settings['ajaxurl'] = $dacura_settings['install_url'] .$dacura_settings['apistr'] . "/";
 $dacura_settings['path_to_files'] = "media/";
 $dacura_settings['files_url'] = $dacura_settings['install_url'] . $dacura_settings['path_to_files'];
+$dacura_settings['path_to_collections'] = $dacura_settings['storage_base'] . "collections/";
 //$dacura_settings['collections_url'] = $dacura_settings['install_url'] . $dacura_settings['path_to_collections'];
 $dacura_settings['path_to_services'] = "phplib/services/";
 $dacura_settings['services_url'] = $dacura_settings['install_url'].$dacura_settings['path_to_services'];

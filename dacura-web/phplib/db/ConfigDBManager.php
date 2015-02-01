@@ -1,4 +1,12 @@
 <?php
+/*
+ * server for config updates and viewing configuration details
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 12/01/2015
+ * Licence: GPL v2
+ */
 
 include_once("UsersDBManager.php");
 
@@ -9,8 +17,7 @@ include_once("UsersDBManager.php");
 class ConfigDBManager extends UsersDBManager {
 	function deleteCollection($id) {
 		if(!$this->hasCollection($id)){
-			$this->errmsg = "Collection with ID $id does not exist";
-			return false;
+			return $this->failure_result("Collection with ID $id does not exist", 404);
 		}
 		try {
 			$stmt = $this->link->prepare("UPDATE collections SET status = 'deleted' WHERE collection_id=?");
@@ -18,32 +25,29 @@ class ConfigDBManager extends UsersDBManager {
 			return true;
 		}
 		catch(PDOException $e){
-			$this->errmsg = "error deleting collection $id" . $e->getMessage();
-			return false;
+			return $this->failure_result("error deleting collection $id" . $e->getMessage(), 500);
 		}
 	}
 	
 	
 	function createNewCollection($id, $title, $obj){
 		if($this->hasCollection($id)){
-			$this->errmsg = "Collection with ID $id already exists";
-			return false;
+			return $this->failure_result("Collection with ID $id already exists", 400);
 		}
 		try {
 			$stmt = $this->link->prepare("INSERT INTO collections VALUES(?, ?, ?, 'active')");
-			$res = $stmt->execute(array($id, $title, json_encode($obj)));
+			$conf = (is_array($obj) && count($obj) > 0) ? json_encode($obj) : "{}";
+			$res = $stmt->execute(array($id, $title, $conf));
 			return $obj;
 		}
 		catch(PDOException $e){
-			$this->errmsg = "error retrieving $email " . $e->getMessage();
-			return false;
+			return $this->failure_result("error retrieving $email " . $e->getMessage(), 500);
 		}
 	}
 	
 	function deleteDataset($id) {
 		if(!$this->hasDataset($id)){
-			$this->errmsg = "Dataset with ID $id does not exist";
-			return false;
+			return $this->failure_result("Dataset with ID $id does not exist", 404);
 		}
 		try {
 			$stmt = $this->link->prepare("UPDATE datasets SET status = 'deleted' WHERE dataset_id=?");
@@ -51,16 +55,14 @@ class ConfigDBManager extends UsersDBManager {
 			return true;
 		}
 		catch(PDOException $e){
-			$this->errmsg = "error deleting dataset $id" . $e->getMessage();
-			return false;
+			return $this->failure_result("error deleting dataset $id" . $e->getMessage(), 500);
 		}
 	}
 	
 	
 	function createNewDataset($id, $cid, $dtitle, $obj){
 		if($this->hasDataset($id)){
-			$this->errmsg = "Dataset with ID $id already exists";
-			return false;
+			return $this->failure_result("Dataset with ID $id already exists", 400);
 		}
 		try {
 			$stmt = $this->link->prepare("INSERT INTO datasets VALUES(?, ?, ?, ?, 'active')");
@@ -68,8 +70,7 @@ class ConfigDBManager extends UsersDBManager {
 			return $obj;
 		}
 		catch(PDOException $e){
-			$this->errmsg = "Failed to create dataset $id" . $e->getMessage();
-			return false;
+			return $this->failure_result("Failed to create dataset $id" . $e->getMessage(), 500);
 		}
 	}
 	

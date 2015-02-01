@@ -44,26 +44,11 @@ class DacuraServer extends DacuraObject {
 	 */
 	function getDataset($id){
 		$obj = $this->dbman->getDataset($id);
+		$obj->set_storage_base($this->getSystemSetting("path_to_collections", ""));
 		return $obj;
 	}
 	
-	function updateDataset($id, $ctit, $obj){
-		$u = $this->getUser(0);
-		if(!$u)	return $this->failure_result("Denied! Need logged in user", 401);
-		if($this->dbman->updateDataset($id, $ctit, $obj)){
-			return $obj;
-		}
-		return false;
-	}
-	
-	function updateCollection($id, $ctit, $obj){
-		$u = $this->getUser(0);
-		if(!$u)	return $this->failure_result("Denied! Need logged in user", 401);
-		if($this->dbman->updateCollection($id, $ctit, $obj)){
-			return $obj;
-		}
-		return false;
-	}
+
 	
 	function getCollection($id){
 		$obj = $this->dbman->getCollection($id);
@@ -286,6 +271,15 @@ class DacuraServer extends DacuraObject {
 		//echo '{ "message_type": "comet_result", "status": "'.$rtype.'", "payload": '.json_encode($result)."}\n";
 		ob_end_flush();
 	}
+	
+	function getSystemSetting($cname, $def){
+		return $this->ucontext->getSystemSetting($cname, $def);
+	}
+	
+	function getServiceSetting($cname, $def){
+		return $this->ucontext->getServiceSetting($cname, $def);		
+	}
+	
 	
 	/*
 	 * Beneath here be dragons

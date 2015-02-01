@@ -27,5 +27,22 @@ class ConfigService extends DacuraService {
 		parent::renderFullPageFooter();
 	}
 	
+	/*
+	 * if collections = all -> list collections (SYSTEM)
+	 * if datasets = all -> view collection
+	 * else => view dataset
+	 */
+	function handlePageLoad($dacura_server){
+		if($this->getCollectionID() == "all"){
+			$this->renderScreen("system", array());
+		}
+		elseif($this->getDatasetID() == "all"){
+			$this->renderScreen("collection", array("cid" => $this->getCollectionID()));
+		}
+		else {
+			$this->renderScreen("dataset", array("cid" => $this->getCollectionID(), "did" => $this->getDatasetID()));	
+		}
+	}
+	
 	
 }

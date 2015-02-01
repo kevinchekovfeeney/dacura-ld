@@ -226,7 +226,7 @@ class DacuraService extends DacuraObject {
 		return $path;
 	}
 	
-	function getBreadCrumbsHTML($x = ""){
+	function getBreadCrumbsHTML($x = "", $append = ""){
 		$paths = $this->get_service_breadcrumbs();
 		$html = "<ul class='service-breadcrumbs'>";
 		foreach($paths as $i => $path){
@@ -240,6 +240,9 @@ class DacuraService extends DacuraObject {
 		}
 		if($x){
 			$html .= "<li><a href='' style='z-index:" . ($n+1). ";'>" .$x."</a></li>";				
+		}
+		if($append){
+			$html .= "<li>$append</li>";
 		}
 		$html .= "</ul>";
 		return $html;
@@ -288,6 +291,23 @@ class DacuraService extends DacuraObject {
 			$ext_bit = $this->settings['files_url']."images/";
 		}
 		return $ext_bit.$name;
+	}
+	
+	//returns setting information
+	
+	function getSystemSetting($cname, $def){
+		if(isset($this->settings[$cname])){
+			return $this->settings[$cname];
+		}
+		return $def;
+	}
+	
+	//returns a setting for a particular service or the default if it does not exist
+	function getServiceSetting($cname, $def){
+		if(isset($this->settings[$this->servicename]) && isset($this->settings[$this->servicename][$cname])){
+			return $this->settings[$this->servicename][$cname];
+		}
+		return $def;
 	}
 	
 	

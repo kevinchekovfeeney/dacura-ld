@@ -1,30 +1,32 @@
 <?php
 /*
- * API for users service - viewing and updating user details
- *
+ * API for config service - viewing and updating configuration details
+ * The arguments are passed as context.
  * Created By: Chekov
  * Contributors:
  * Creation Date: 12/01/2015
  * Licence: GPL v2
  */
 
-//getRoute()->post('/', 'create');
 getRoute()->get('/', 'view');
+getRoute()->post('/create', 'create');
 getRoute()->post('/', 'update');
 getRoute()->delete('/', 'delete');
 
 function view(){
 	global $dacura_server;
 	$dacura_server->init("viewconfig");
+	$c_id = $dacura_server->ucontext->getCollectionID(); 
+	$d_id = $dacura_server->ucontext->getDatasetID();
 	if($dacura_server->userHasRole("admin")){
-		if($dacura_server->ucontext->getCollectionID() == "all"){
+		if($c_id == "all"){
 			$collobj = $dacura_server->getCollectionList();				
 		}
-		elseif($dacura_server->ucontext->getDatasetID() == "all"){
-			$collobj = $dacura_server->getCollection($dacura_server->ucontext->getCollectionID());
+		elseif($d_id == "all"){
+			$collobj = $dacura_server->getCollection($c_id);
 		}		
 		else {
-			$collobj = $dacura_server->getDataset($dacura_server->ucontext->getDatasetID());
+			$collobj = $dacura_server->getDatasetConfig($c_id, $d_id);
 		}
 		if($collobj){
 			return $dacura_server->write_json_result($collobj, "Retrieved configuration listing for ".$dacura_server->contextStr());
@@ -33,112 +35,94 @@ function view(){
 	$dacura_server->write_http_error();
 }
 
+function create(){
+	global $dacura_server;
+	$c_id = $dacura_server->ucontext->getCollectionID(); 
+	$d_id = $dacura_server->ucontext->getDatasetID();
+	$title = isset($_POST['title']) ? $_POST['title'] : "";
+	if($d_id == "all"){ //new collection
+		if($dacura_server->userHasRole("admin", "all")){
+			$dacura_server->init("create.collection");
+			$colobj = $dacura_server->createNewCollection($c_id, $title);
+			if($colobj){
+				return $dacura_server->write_json_result($colobj, "Created Collection $c_id ($title)");
+			}
+		}
+	}
+	else { //new dataset
+		if($dacura_server->userHasRole("admin", false, "all")){
+			$dacura_server->init("create.dataset");
+			$dobj = $dacura_server->createNewDataset($c_id, $d_id, $title);
+			if($dobj){
+				return $dacura_server->write_json_result($dobj, "Created Collection $c_id ($title)");
+			}
+		}	
+	}
+	return $dacura_server->write_http_error();
+}
 
 function update(){
 	global $dacura_server;
-	$dacura_server->init("updateconfig");
-	
+	$c_id = $dacura_server->ucontext->getCollectionID();
+	$d_id = $dacura_server->ucontext->getDatasetID();
+	$title = isset($_POST['title']) ? $_POST['title'] : "";
 	if($dacura_server->userHasRole("admin")){
-		$c_id = $dacura_server->ucontext->getCollectionID(); 
-		$d_id = $dacura_server->ucontext->getDatasetID();
-		if($c_id == "all"){
-			if(isset($_POST['payload'])&& isset($_POST['id']) && isset($_POST['title'])){
-				$collection_obj = json_decode($_POST['payload'], true);
-				$collection_id = $_POST['id'];
-				$collection_title = $collection_obj['title'];
-				if($collection_obj && $collection_id && $collection_title){
-					return $dwas->write_error("Payload in create collection message would not parse", 400);
-				}
-			}	
-			else {
-				return $this->write_http_error(400, "Missing parameters: new collections must have id, title and contents");
+		if($d_id == "all"){ //update collection
+			$payload = isset($_POST['payload']) ? json_decode($_POST['payload'], true) : "";
+			$dacura_server->init("update.collection");
+			$cobj = $dacura_server->updateCollection($c_id, $title, $payload);
+			if($cobj){
+				return $dacura_server->write_json_result($cobj, "Updated Collection $c_id ($title)");
 			}
 		}
-		elseif($dacura_server->ucontext->getDatasetID() == "all"){
-			$collobj = $dacura_server->getCollection($dacura_server->ucontext->getCollectionID());
-		}		
-		else {
-			$collobj = $dacura_server->getDataset($dacura_server->ucontext->getDatasetID());
-		}
-		if($collobj){
-			return $dacura_server->write_json_result($collobj, "Retrieved configuration listing for ".$dacura_server->contextStr());
+		else{ //update dataset
+			$update_fields = array();
+			if($title){
+				$update_fields["title"] = $title;
+			}
+			if(isset($_POST["json"])){
+				$update_fields["json"] =  json_decode($_POST['json'], true);				
+			}
+			if(isset($_POST["schema"])){
+				$update_fields["schema"] =  json_decode($_POST['schema'], true);				
+			}
+			if(isset($_POST["config"])){
+				$update_fields["config"] =  json_decode($_POST['config'], true);
+			}
+			$dacura_server->init("update.dataset", implode("|", array_keys($update_fields)));
+				
+			$dobj = $dacura_server->updateDatasetConfig($c_id, $d_id, $update_fields);
+			if($dobj){
+				return $dacura_server->write_json_result($dobj, "Updated Dataset $d_id ($title)");
+			}
 		}
 	}
 	$dacura_server->write_http_error();
-}
-	global $service;
-	$c_id = $service->getCollectionID();
-	$d_id = $service->getDatasetID();
-	$dwas = new ConfigDacuraAjaxServer($service);
-	//if no cid is specified it is a request to create a new collection 
-	if(!$c_id){
-		$collection_obj = json_decode($_POST['payload'], true);
-		if(!$collection_obj){
-			return $dwas->write_error("Payload in create collection message would not parse", 400);
-		}
-		if($cobj){
-			echo json_encode($cobj);
-		}	
-	}
-	else if(!$d_id){
-		//if no did is specified it is _either_ a request to create a new dataset or a request to update the collection 
-		//the contents of the post include an id if it is a new 
-		if(isset($_POST['id'])){
-			$dataset_obj = json_decode($_POST['payload'], true);
-			if(!$dataset_obj){
-				return $dwas->write_error("Payload in create dataset message would not parse", 400);
-			}
-			$dataset_title = $dataset_obj['title'];
-				
-			$cobj = $dwas->createNewDataset($_POST['id'], $c_id, $dataset_title, $dataset_obj);	
-			if($cobj){
-				echo json_encode($cobj);
-			}	
-		}
-		else {
-			$ctitle = $_POST['title'];
-			$collection_obj = json_decode($_POST['payload'], true);
-			if(!$collection_obj){
-				return $dwas->write_error("Payload in create dataset message would not parse", 400);
-			}
-			$collection_obj['title'] = $ctitle;
-			$collection_obj['id'] = $c_id;
-			$cobj = $dwas->updateCollection($c_id, $ctitle, $collection_obj);	
-			if($cobj){
-				echo json_encode($cobj);
-			}	
-		}
-	}
-	else {
-		//it is an update to a dataset...
-		$dtitle = $_POST['title'];
-		$dataset_obj = json_decode($_POST['payload'], true);
-		if(!$dataset_obj){
-			return $dwas->write_error("Payload in create dataset message would not parse", 400);
-		}
-		$dataset_obj['title'] = $dtitle;
-		$dataset_obj['id'] = $d_id;
-		$cobj = $dwas->updateDataset($d_id, $dtitle, $dataset_obj);	
-		if($cobj){
-			echo json_encode($cobj);
-		}	
-	}
 }
 
 
 function delete(){
-	global $service;
-	$c_id = $service->getCollectionID();
-	$d_id = $service->getDatasetID();	
-	$dwas = new ConfigDacuraAjaxServer($service);
-	if($d_id){
-		$collobj = $dwas->deleteDataset($d_id);
+	global $dacura_server;
+	$c_id = $dacura_server->ucontext->getCollectionID();
+	$d_id = $dacura_server->ucontext->getDatasetID();
+	if($d_id == "all"){ //delete collection
+		$dacura_server->init("delete.collection");
+		if($dacura_server->userHasRole("admin", "all")){
+			$collobj = $dacura_server->deleteCollection($c_id);
+			if($collobj){
+				return $dacura_server->write_json_result($collobj, "Deleted Collection $c_id");
+			}
+		}
 	}
 	else {
-		$collobj = $dwas->deleteCollection($c_id);
+		$dacura_server->init("delete.dataset");
+		if($dacura_server->userHasRole("admin", "all")){
+			$collobj = $dacura_server->deleteDataset($d_id);
+			if($collobj){
+				return $dacura_server->write_json_result($collobj, "Deleted Dataset $d_id");
+			}
+		}
 	}
-	if($collobj){
-		echo json_encode($collobj);
-	}
-	else $dwas->write_error($dwas->errmsg, $dwas->errcode);
+	$dacura_server->write_http_error();
 }
+

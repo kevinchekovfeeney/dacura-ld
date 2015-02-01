@@ -772,8 +772,9 @@ footer a {
 }
 
 
-.bcstatus{
+span.bcstatus{
 	height: 20px;
+	float: left;
 } 
 .tabbusy {
 	border: 2px solid blue;	

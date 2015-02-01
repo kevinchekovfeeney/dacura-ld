@@ -40,7 +40,47 @@ dacura.config.api.listing = function (xhr){
 	return xhr;
 };
 
-dacura.config.api.update = function (xhr){
+dacura.config.api.createCollection = function(id){
+	xhr = {};
+	xhr.data ={};
+	
+	xhr.url = dacura.system.apiURL(id, "all", "config") + "/create";
+	xhr.type = "POST";
+	return xhr;	
+}
+
+dacura.config.api.createDataset = function(cid, did){
+	xhr = {};
+	xhr.data ={};
+	xhr.url = dacura.system.apiURL(cid, did, "config") + "/create";
+	xhr.type = "POST";
+	return xhr;	
+}
+
+dacura.config.api.getCollection = function(id){
+	xhr = {};
+	xhr.data ={};
+	xhr.url = dacura.system.apiURL(id, "all", "config");
+	return xhr;	
+}
+
+dacura.config.api.updateCollection = function(id){
+	xhr = {};
+	xhr.data ={};
+	xhr.url = dacura.system.apiURL(id, "all", "config");
+	xhr.type = "POST";
+	return xhr;	
+}
+
+dacura.config.api.getDataset = function(cid, did){
+	xhr = {};
+	xhr.data ={};
+	xhr.url = dacura.system.apiURL(cid, did, "config");
+	return xhr;	
+}
+
+
+dacura.config.api.updateDataset = function (xhr){
 	if(typeof xhr == "undefined"){
 		xhr = {};
 		xhr.data ={};

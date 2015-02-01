@@ -133,7 +133,7 @@ class DBManager extends DacuraObject {
 		try {
 			$stmt = $this->link->prepare("UPDATE collections SET collection_name = ?, contents = ? WHERE collection_id=?");
 			$res = $stmt->execute(array($new_title, json_encode($new_obj), $id));
-			return true;
+			return $this->getCollection($id);
 		}
 		catch(PDOException $e){
 			return $this->failure_result("Error updating collection $id ".$e->getMessage(), 500);
@@ -164,7 +164,7 @@ class DBManager extends DacuraObject {
 				if(!$row || !$row['dataset_id']){
 					return $this->failure_result("Error retrieving dataset $id - data error", 500);
 				}
-				return new Dataset($row['dataset_id'], $row['dataset_name'], json_decode($row['contents']), $row['status'], $row['collection_id']);
+				return new Dataset($row['dataset_id'], $row['dataset_name'], json_decode($row['contents'], true), $row['status'], $row['collection_id']);
 			}
 			return $this->failure_result("Error retrieving dataset $id - no such dataset", 404);
 		}

@@ -99,8 +99,8 @@ dacura.users.listusers = function(){
 			.done(function(data, textStatus, jqXHR) {
 				if(data.length > 0 ){
 					try {
-						dacura.users.writeSuccessMessage("Got user list");
 						dacura.users.drawListTable(JSON.parse(data));
+						dacura.users.writeSuccessMessage("Got user list");
 					}
 					catch(e){
 						dacura.users.writeErrorMessage("Error: " + e.message);
@@ -157,34 +157,35 @@ dacura.users.listusers = function(){
 
 	dacura.users.drawListTable = function(data){		
 		$('.pctitle').html("List of users").show();
-		$('.pcbreadcrumbs').show();
 		if(typeof data == "undefined"){
 			$('#users_table').dataTable(); 
-			dacura.toolbox.writeErrorMessage('#ulistmsg', "No Users Found");		
+			dacura.toolbox.writeErrorMessage('.dataTables_empty', "No Users Found");		
 		}
 		else {
 			$('#users_table tbody').html("");
-			$.each(data, function(i, obj) {
+			for (var i in data) {
+				var obj = data[i];
+				<?php if(!$dacura_server->getServiceSetting('show_deleted_users', false)){
+					echo 'if(obj.status == "deleted") {continue;}';
+				}?>
 				var profile = "";
 				if(typeof obj.profile == "object"){
 					profile = JSON.stringify(obj.profile);
 				}
 				var roles = obj.roles.length;
-				if(obj.status != "deleted" || <?=$service->settings['users']['show_deleted_users']?>){
-					$('#users_table tbody').append("<tr id='user" + obj.id + "'><td>" + obj.id + "</td><td>" + obj.name 
-							+ "</td><td>" + obj.email + "</td><td>" + obj.status + "</td><td>" + roles + 
-							 "</td></tr>");
-					$('#user'+obj.id).hover(function(){
-						$(this).addClass('userhover');
-					}, function() {
-					    $(this).removeClass('userhover');
-					});
-					$('#user'+obj.id).click( function (event){
-						window.location.href = dacura.system.pageURL() + "/" + this.id.substr(4);
-				    }); 
-				}
-			});
-			$('#users_table').dataTable(<?=$dacura_server->settings['users']['users_datatable_init_string']?>);
+				$('#users_table tbody').append("<tr id='user" + obj.id + "'><td>" + obj.id + "</td><td>" + obj.name 
+						+ "</td><td>" + obj.email + "</td><td>" + obj.status + "</td><td>" + roles + 
+						 "</td></tr>");
+				$('#user'+obj.id).hover(function(){
+					$(this).addClass('userhover');
+				}, function() {
+				    $(this).removeClass('userhover');
+				});
+				$('#user'+obj.id).click( function (event){
+					window.location.href = dacura.system.pageURL() + "/" + this.id.substr(4);
+			    }); 
+			}
+			$('#users_table').dataTable(<?=$dacura_server->getServiceSetting('users_datatable_init_string', "{}");?>).show();
 		}
 	}
 		
