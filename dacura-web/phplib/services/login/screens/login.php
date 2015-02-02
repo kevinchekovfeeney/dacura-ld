@@ -24,6 +24,9 @@
 		margin: 60px auto 10px auto;
 		color: white;
 	}
+	
+	#dc-login-field {
+	}
 
 	#dacura-widget-login .dacura-widget-intro {		
 	}
