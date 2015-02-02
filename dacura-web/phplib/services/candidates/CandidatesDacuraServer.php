@@ -117,8 +117,3 @@ class CandidatesDacuraServer extends DacuraServer {
 	
 }
 
-class CandidatesDacuraAjaxServer extends CandidatesDacuraServer {
-	function failure_result($msg, $code){
-		return $this->write_error($msg, $code);
-	}
-}
