@@ -150,10 +150,10 @@ dacura.login.login = function(){
 			try {
 				url = JSON.parse(data);
 				if(url != ""){
-					window.location.replace(url);
+					//window.location.replace(url);
 				}
 				else {
-		     		window.location.replace("<?=$service->settings['install_url']?>");
+		     		//window.location.replace("<?=$service->settings['install_url']?>");
 				}
 			}
 			catch(e){
