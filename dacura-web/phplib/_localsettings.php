@@ -13,7 +13,7 @@
 //URL at which the dacura system is accessible
 $dacura_settings['install_url'] = "http://localhost/dacura/";
 //URL of the system's triple store...
-$dacura_settings['sparql_url'] = "http:/localhost/sparql/";
+$dacura_settings['sparql_url'] = "http://localhost/sparql/";
 //directory under which dacura will store its data...
 $dacura_settings['storage_base'] = "/var/dacura/";
 //DB credentials
