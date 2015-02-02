@@ -17,7 +17,7 @@ class ConfigService extends DacuraService {
 	
 	function renderFullPageHeader(){
 		parent::renderFullPageHeader();
-		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.config.js");
+		$this->writeIncludedInterpolatedScripts($this->mydir.".config.js");
 		echo "<div id='pagecontent-container'>";
 		echo "<div id='pagecontent'>";
 	}

@@ -23,3 +23,5 @@ $dacura_settings['db_user'] = 'dacura';
 $dacura_settings['db_pass'] = 'dacura';
 //HTTP proxy
 //$dacura_settings['http_proxy'] = "http://proxy.cs.tcd.ie:8080";
+//change this to something distinct if multiple dacuras are running at the same url in different sub-dirs
+$dacura_settings['dacurauser'] = 'dacurauser';

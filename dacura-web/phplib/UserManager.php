@@ -17,10 +17,12 @@ class UserManager extends DacuraObject {
 	var $user_dir;
 	var $service;
 	var $dbman;
+	var $uservar; 
 	
 	function __construct($dbman, &$service){
 		$this->service = $service;
 		$this->user_dir = $service->settings['dacura_sessions'];
+		$this->user_var = $service->settings['dacurauser'];
 		$this->dbman = $dbman;
 	}
 	
@@ -29,8 +31,8 @@ class UserManager extends DacuraObject {
 	 */
 	function getUser($n = 0){
 		if($n === 0) {
-			if (isset($_SESSION['dacurauser'])) {
-				$u =& $_SESSION['dacurauser'];
+			if (isset($_SESSION[$this->user_var])) {
+				$u =& $_SESSION[$this->user_var];
 				return $u;
 			}
 			else {
@@ -88,7 +90,7 @@ class UserManager extends DacuraObject {
 	
 	function updateUserRoles(&$u){
 		if($this->dbman->updateUserRoles($u)){
-			$_SESSION['dacurauser'] =& $u;
+			$_SESSION[$this->user_var] =& $u;
 			return true;
 		}
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
@@ -129,7 +131,7 @@ class UserManager extends DacuraObject {
 			$u = $this->dbman->testLogin($email, $p);
 			if($u){
 				$u->setSessionDirectory($this->user_dir.$u->id);
-				$_SESSION['dacurauser']=& $u;
+				$_SESSION[$this->user_var]=& $u;
 				$u->recordAction("system", "login");
 				return $u;
 			}
@@ -140,14 +142,14 @@ class UserManager extends DacuraObject {
 	}
 	
 	function isLoggedIn(){
-		return (isset($_SESSION['dacurauser']) && $_SESSION['dacurauser']);
+		return (isset($_SESSION[$this->user_var]) && $_SESSION[$this->user_var]);
 	}
 	
 	function logout(){
 		//this is where lots of the work goes vis a vis session management
 		$u = $this->getUser();
 		$u->endLiveSessions("logout");
-		unset($_SESSION['dacurauser']);
+		unset($_SESSION[$this->user_var]);
 	}
 	
 	
@@ -289,11 +291,11 @@ class UserManager extends DacuraObject {
 	 */
 	
 	function refreshCurrentUser(){
-		$x = isset($_SESSION['dacurauser']) ? $_SESSION['dacurauser']->id : false;
+		$x = isset($_SESSION[$this->user_var]) ? $_SESSION[$this->user_var]->id : false;
 		if($x){
 			$u = $this->loadUser($x);
 			if($u) {
-				$_SESSION['dacurauser'] =& $u;
+				$_SESSION[$this->user_var] =& $u;
 				return $u;
 			}
 			return false;
@@ -307,7 +309,7 @@ class UserManager extends DacuraObject {
 		}
 		$u = $this->loadUser($id);
 		if($u) {
-			$_SESSION['dacurauser'] =& $u;
+			$_SESSION[$this->user_var] =& $u;
 			return $u;
 		}
 		return false;

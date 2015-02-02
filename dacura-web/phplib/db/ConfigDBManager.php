@@ -29,7 +29,6 @@ class ConfigDBManager extends UsersDBManager {
 		}
 	}
 	
-	
 	function createNewCollection($id, $title, $obj){
 		if($this->hasCollection($id)){
 			return $this->failure_result("Collection with ID $id already exists", 400);

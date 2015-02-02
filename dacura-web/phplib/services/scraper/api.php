@@ -1,7 +1,6 @@
 <?php
 require_once("phplib/libs/epiphany/src/Epi.php");
 
-getRoute()->get('/', 'listing');
 getRoute()->get('/nga', 'getngas');
 getRoute()->post('/polities', 'getpolities');
 getRoute()->post('/dump', 'dump');
