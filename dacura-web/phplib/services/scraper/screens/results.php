@@ -2,7 +2,7 @@
 
 <div style="margin: 10px" class="results">
 <table class='scraper-report'><tr><th>NGAs</th><th>Polities</th><th>Failures</th><th>Variables</th>
-<th>Simple</th><th>Complex</th><th>Empty</th><th>Errors</th><th>Datapoints</th></tr>
+<th>Simple</th><th>Complex</th><th>Empty</th><th>Errors</th><th>Warnings</th><th>Datapoints</th></tr>
 <tr>
 <td><?=$params['stats']['ngas']?></td>
 <td><?=$params['stats']['polities']?></td>
@@ -12,6 +12,7 @@
 <td><?=$params['stats']['complex']?></td>
 <td><?=$params['stats']['empty']?></td>
 <td><?=$params['stats']['errors']?></td>
+<td><?=$params['stats']['warnings']?></td>
 <td><?=$params['stats']['lines']?></td>
 </tr></table>
 
@@ -31,14 +32,14 @@ if($params['stats']['ngas'] > 1){
 	<h4>Results Summary</h4>
 	
 	<table class='scraper-report'><tr><th>NGA</th><th>Polities</th><th>Variables</th>
-	<th>Simple</th><th>Complex</th><th>Empty</th><th>Parse Success</th><th>Parse Failure</th><th>Datapoints</th></tr>
+	<th>Simple</th><th>Complex</th><th>Empty</th><th>Errors</th><th>Warnings</th><th>Datapoints</th></tr>
 	<?php
 	
 	foreach($params['summary'] as $pf){
 		echo "<tr><td>" . $pf["nga"] . "</td><td>" . $pf["polities"] . "</td><td>".	$pf['total_variables']."</td><td>".
 		($pf['total_variables'] - ($pf['complex'] + $pf['empty'])) . "</td><td>".
-		$pf['complex']."</td><td>".$pf['empty']."</td><td>".($pf['complex'] - $pf['errors']).
-		 "</td><td>".$pf['errors']."</td><td>".$pf['lines']."</td></tr>";
+		$pf['complex']."</td><td>".$pf['empty'].
+		 "</td><td>".$pf['errors']. "</td><td>".$pf['warnings']."</td><td>".$pf['lines']."</td></tr>";
 	}
 	?> 
 	</table>

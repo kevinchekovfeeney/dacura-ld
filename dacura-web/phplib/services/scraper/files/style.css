@@ -1,6 +1,7 @@
 .seshat-detail {
 	font-size: 0.85em;
 }
+
 .seshat-error {
 	color: #ff8888;
 }
@@ -85,7 +86,6 @@ div.ngaList {
 }
 
 #main{
-	text-align: center;
 	margin-bottom: 1em;
 }
 
@@ -123,53 +123,81 @@ tr:nth-child(even){
 	padding-top: 10px;
 	
 }
-#modal-dim{
-	width:100%;
-	height:100%;
-	background:rgba(127,127,127,0.5);
-	position:absolute;
-	left:0;
-	top:0;
-	z-index: 1000;
+
+textarea#seshatvalue {
+	width: 600px;
 }
 
-#modal{
-	width:25em;
-	height:7em;
-	margin:10em auto;
-	background:#fff;
-	position:absolute;
-	left:0;
-	right:0;
-	top:0;
-	bottom:0;
-	margin:auto;
-	border:1px solid #000;
-	border-radius:1em;
-	padding:1em;
-	z-index: 1001;
+.sholder * {
+	    vertical-align: middle;
 }
 
-#modal div{
-	width: 14em;
-	margin: 0 auto;
+div#scraper-results,
+div#scraper-examples {
+	text-align: left;
 }
 
-#modal button{
-	width: 5em;
-	margin: 0;
+div#scraper-examples h3 {
+	background-color: #eee;
+	padding: 10px;
+	border-top: black solid 1pt;
+	border-left: black solid 1pt;
+	margin-top: 26px;
 }
 
-#contents{
-	text-align: center;
+div#scraper-results {
+	border: 2px solid #888;
+	margin-bottom: 10px;
 }
 
-h3 span{
-	float: right;
-	display: block;
-	font-weight: lighter;
+div#scraper-results dt, 
+div#scraper-examples dt {
+	font-style: italic;
+	font-size: "0.9em";
 }
 
-h3 span input{
-	margin-left: 0.5em;
+div#scraper-results dd,
+div#scraper-examples dd {
+	margin-bottom: 12px;
+	font-size: "0.85em";
+	
 }
+
+div#scraper-results dl,
+div#scraper-examples dl {
+	margin-left: 12px;
+}
+
+div#scraper-results dd.datapoints,
+div#scraper-examples dd.datapoints {
+	margin-left: 0;
+
+}
+
+div#scraper-results dd table,
+div#scraper-examples dd table {
+	margin-top: 12px;
+	width: 100%;
+}
+
+div#scraper-results dd table th,
+div#scraper-examples dd table th {
+	padding: 6px 2px;
+} 
+
+div#scraper-results dd table td,
+div#scraper-examples dd table td  {
+	padding: 4px 12px;
+}
+
+.formal_variable {
+	color: #f82;
+	font-weight: bold;
+}
+
+.variable_value {
+	color: #f82;
+	font-weight: bold;
+}
+
+

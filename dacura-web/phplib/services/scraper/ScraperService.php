@@ -14,7 +14,7 @@ include_once("ScraperDacuraServer.php");
 class ScraperService extends DacuraService {
 
 	var $default_screen = "scraper";
-	var $public_screens = array();
+	var $public_screens = array("test");
 	var $protected_screens = array("scraper" => array("admin"));
 
 	function renderFullPageHeader(){
@@ -22,6 +22,14 @@ class ScraperService extends DacuraService {
 		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.scraper.js");
 		echo "<div id='pagecontent-container'>";
 		echo "<div id='pagecontent'>";
+	}
+	
+	function handlePageLoad($server){
+		$params = array();
+		if($this->screen == "test"){
+			$params = array("examples" => $server->parseCanonicalExamples());
+		}
+		$this->renderScreen($this->screen, $params);
 	}
 	
 	function renderFullPageFooter(){

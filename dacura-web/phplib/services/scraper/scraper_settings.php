@@ -8,5 +8,6 @@ $settings = array(
 	"mainPage" => 'http://seshat.info/Main_Page',
 	"grabScriptFiles" => array(
 			$dacura_settings['path_to_files']."js/jquery-ui-1.10.2.custom.min.js"
-	)
+	),
+	"cache_config" => array( "type" => "time", "value" => 10000)
 );

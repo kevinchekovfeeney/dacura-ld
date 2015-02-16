@@ -44,20 +44,29 @@ class DacuraServer extends DacuraObject {
 	 */
 	function getDataset($id){
 		$obj = $this->dbman->getDataset($id);
-		$obj->set_storage_base($this->getSystemSetting("path_to_collections", ""));
+		if($obj){
+			$obj->set_storage_base($this->getSystemSetting("path_to_collections", ""));
+		}
+		else {
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+		}
 		return $obj;
 	}
 	
-
-	
 	function getCollection($id){
 		$obj = $this->dbman->getCollection($id);
-		return $obj;
+		if($obj){
+			return $obj;
+		}
+		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 	}
 	
 	function getCollectionList(){
 		$obj = $this->dbman->getCollectionList();
-		return $obj;
+		if($obj){
+			return $obj;
+		}
+		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 	}
 	
 	/*
@@ -145,6 +154,8 @@ class DacuraServer extends DacuraObject {
 		return $choices;
 	}
 	
+	
+	
 	function userHasRole($role, $cid = false, $did = false){
 		$u = $this->getUser();
 		if(!$u)	return $this->failure_result("Access Denied! User is not logged in.", 401);
@@ -156,7 +167,26 @@ class DacuraServer extends DacuraObject {
 		return $this->failure_result("User ".$u->getName()." does not have the required role $role for $cid | $did", 401);
 	}
 	
+	function contextIsValid(){
+		if($this->cid() != "all"){
+			$col = $this->getCollection($this->cid());
+			if(!$col or $col->status == "deleted"){
+				return false;
+			}
+		}
+		if($this->did() != "all"){
+			$ds = $this->getDataset($this->did());
+			if(!$ds or $ds->status == "deleted"){
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	function userHasViewPagePermission(){
+		if(!$this->contextIsValid()){
+			return $this->failure_result("Invalid context ".$this->contextStr(), 404);
+		}
 		if($this->ucontext->isPublicScreen()){
 			return true;
 		}

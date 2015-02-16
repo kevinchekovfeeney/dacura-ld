@@ -54,8 +54,6 @@ class DacuraUser extends DacuraObject {
 		return true;
 	}
 	
-	
-	
 	function isGod(){
 		foreach($this->roles as $r){
 			if($r->isGod()) return true;
@@ -68,10 +66,10 @@ class DacuraUser extends DacuraObject {
 	}
 	
 	function hasCollectionRole($cid, $role = false){
+		$role = $role ? $role : "nobody";
 		foreach($this->roles as $r){
-			//if($r->isGod()) return true;
-			if((!$role or ($r->role == $role)) && ($r->collection_id == $cid) && ($r->dataset_id == "" or $r->dataset_id == "all")){
-				return true;
+			if($r->covers($role, $cid, "all")){
+				return true;				
 			}
 		}
 		return false;
@@ -82,9 +80,10 @@ class DacuraUser extends DacuraObject {
 	}
 
 	function hasDatasetRole($cid, $did, $role=false){
+		$role = $role ? $role : "nobody";
 		foreach($this->roles as $r){
-			if((!$role or $r->role == $role) && ($r->collection_id == $cid) && $r->dataset_id == $did && $r->dataset_id != "all"){
-				return true;
+			if($r->covers($role, $cid, $did)){
+				return true;				
 			}
 		}
 		return false;

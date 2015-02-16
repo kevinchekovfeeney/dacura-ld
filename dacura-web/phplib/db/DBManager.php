@@ -54,7 +54,7 @@ class DBManager extends DacuraObject {
 				if(!$row || !$row['collection_id']){
 					return $this->failure_result("Error in collection data $id ", 500);
 				}
-				$x = new Collection($row['collection_id'], $row['collection_name'], json_decode($row['contents']), $row['status']);
+				$x = new Collection($row['collection_id'], $row['collection_name'], json_decode($row['contents'], true), $row['status']);
 				if($load_ds){
 					$ds = $this->getCollectionDatasets($id);
 					if($ds !== false){

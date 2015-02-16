@@ -1,6 +1,4 @@
-<style>
-.dch { display: none }
-</style>
+
 <script src='<?=$service->url("js", "jquery.dataTables.js")?>'></script>
 <script src='<?=$service->url("js", "dataTables.jqueryui.js")?>'></script>
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />

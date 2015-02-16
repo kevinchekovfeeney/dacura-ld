@@ -28,10 +28,15 @@ class UserRole extends DacuraObject {
 		return $this->collection_id;
 	}
 	
+	/* role hierarchy..
+	 * god > admin > [other roles] > user > nobody
+	 */
 	function roleCompare($r1, $r2){
 		if($r1 == $r2) return 0;
 		elseif($r1 == "god") return 1;
 		elseif($r1 == "admin" && $r2 != "god") return 1;
+		elseif($r2 == "nobody") return 1;
+		elseif($r2 == "user" && $r1 != "nobody") return 1;
 		else return -1;
 	}
 	
@@ -72,6 +77,6 @@ class UserRole extends DacuraObject {
 	
 	
 	function isGod(){
-		return ($this->collection_id == 0 && $this->dataset_id == 0 && $this->role == "god"); 
+		return ($this->collection_id == "all" && $this->dataset_id == "all" && $this->role == "god"); 
 	}
 }

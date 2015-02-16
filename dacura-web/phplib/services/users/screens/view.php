@@ -1,37 +1,29 @@
 <style>
 .dch { display: none;}
+.users-result-message-holder { min-height: 40px; margin-top: -16px; }
 </style>
 <div id="pagecontent-nopadding">
-	<div class="pctitle dch"></div>
+	<div class="pctitle">View User Service</div>
 	<div class="pcbreadcrumbs dch">
 		<div class="pccon">
 			<?php $service->renderScreen("available_context", array("type" => "admin"), "core");?>
 		</div>
 		<?php echo $service->getBreadCrumbsHTML($params['userid'] );?>
 	</div>
-	<br>
+	<div class="users-result-message-holder">
+		<div id="users-result-message"></div>
+	</div>
 	<div id="user-pane-holder">
-	 <ul>
-		<li><a href="#user-update">Details</a></li>
+	 <ul id="user-pane-list" class="dch">
+	 	<li><a href="#user-update">Details</a></li>
 	 	<li><a href="#user-roles">Roles</a></li>
 		<li><a href="#user-profile">Profile</a></li>
 		<li><a href="#user-password">Password</a></li>
 		<li><a href="#user-history">History</a></li>
 	</ul>
 		<div id="user-roles" class="user-pane dch pcdatatables">
-			<div id="urolesmsg"></div><div class="pcbusy resultmsg"></div>
-			<table id="roles_table">
-				<thead>
-	            <tr>
-	                <th>Collection</th>
-	                <th>Dataset</th>
-	                <th>Role</th>
-	                <th>Delete</th>
-	            </tr>
-        		</thead>
-        		<tbody>
-        		</tbody>
-  			</table>
+			<div id="urolesmsg"></div>
+			<div id="roles-table-holder"></div>
 			<div id="user-role-add" class="pcsection pcbuttons">
 				<select id="rolecollectionip"></select>
 				<select id="roledatasetip"></select>
@@ -94,19 +86,7 @@
 		</div>
 		<div id="user-history" class="user-pane dch pcdatatables">
 			<div id="uhistorymsg"></div><div class="pcbusy resultmsg"></div>
-			<table class="dc-wizard" id="session_table">
-				<thead>
-					<tr>
-						<th>Session Start</th>
-						<th>Session End</th>
-						<th>Duration</th>
-						<th>Service</th>
-						<th>Status</th>
-					</tr>
-				</thead>
-				<tbody>
-				</tbody>
-			</table>
+			<div id="history-table-holder"></div>
 		</div>
 		
 	</div>
@@ -118,14 +98,107 @@
 <script src='<?=$service->url("js", "jquery.dataTables.js")?>'></script>
 <script src='<?=$service->url("js", "jquery.json-editor.js")?>'></script>
 <script>
+dacura.users.writeBusyMessage  = function(msg) {
+	dacura.toolbox.writeBusyOverlay('#user-pane-holder', msg);
+}
 
+dacura.users.clearBusyMessage = function(){
+	dacura.toolbox.removeBusyOverlay(false, 100);
+};
+
+dacura.users.writeSuccessMessage = function(msg){
+	$('#users-result-message').html("<div id='mysux' class='dacura-user-message-box dacura-success'>"+ msg + "</div>").show();
+	var ta = setTimeout(function(){$('#mysux').fadeOut(400)}, 1000);
+	
+};
+
+dacura.users.writeErrorMessage = function(msg){
+	$('#users-result-message').html("<div class='dacura-user-message-box dacura-error'>"+ msg + "</div>").show();
+};
+					
 dacura.users.roleoptions = <?=json_encode($params['role_options'])?>;
 dacura.users.profileed = false;
-dacura.users.clearscreens = function(){
-	$('#userview').hide();
-	$('#roleview').hide();
-	$('.pctitle').html("").hide();
+
+dacura.users.showuser = function(id){
+	var ajs = dacura.users.api.view(id);
+	var self=this;
+	ajs.beforeSend = function(){
+		dacura.users.writeBusyMessage("Retrieving User Details");
+	};
+	ajs.complete = function(){
+		dacura.users.clearBusyMessage();
+	};
+	$.ajax(ajs)
+		.done(function(data, textStatus, jqXHR) {
+			if(data.length > 0 ){
+				dacura.users.currentuser = id;
+				try{
+					var user = JSON.parse(data);
+					dacura.users.writeSuccessMessage("Retrieved details for user "+ id);
+					dacura.users.drawUserView(user);
+				}
+				catch(e){
+					dacura.users.writeErrorMessage("Error: failed to parse JSON returned by api call: "+ e.message);
+				}
+			}
+			else {
+				dacura.users.writeErrorMessage("Error: no data returned from api call");
+			}   
+		})
+		.fail(function (jqXHR, textStatus){
+			dacura.users.writeErrorMessage("Error: " + jqXHR.responseText );
+		}
+	);	
 }
+
+dacura.users.drawUserView = function(data){
+	$('.pctitle').html(data.email + " (user "+data.id + " - " + data.status +")").show();
+	$('.pcbreadcrumbs').show();
+	//first get the details
+	$('#usernameip').val(data.name);
+	$('#useremailip').val(data.email);
+	$('#userstatusip').val(data.status);
+	var profile = "{}";
+	//next the profile
+	if(typeof data.profile == "object" && data.profile != null){
+		profile = JSON.stringify(data.profile);
+	}
+	$('#userconfig').html("<textarea id='userconfig_ta'>" + profile + "</textarea>");
+	JSONEditor.prototype.ADD_IMG = '<?=$service->url("image", "add.png")?>';
+    JSONEditor.prototype.DELETE_IMG = '<?=$service->url("image", "delete.png")?>';
+    var j = new JSONEditor($("#userconfig_ta"), "740", "220");
+    j.doTruncation(true);
+	j.showFunctionButtons();
+	dacura.users.jsoneditor = j;
+	//then the roles and history
+	if(typeof data.roles == "object" && data.roles != null) {
+		dacura.users.drawRoleTable(data.roles);
+	}
+	if(typeof data.history == "object" && data.history != null) {
+		dacura.users.drawHistoryTable(data.history);
+	}
+}
+
+dacura.users.drawRoleTable = function(roles){
+	$('#roles-table-holder').html('<table id="roles_table"><thead><tr><th>Collection</th><th>Dataset</th><th>Role</th><th></th></tr></thead><tbody></tbody></table>');
+	for (var i in roles) {
+		var obj = roles[i];
+		$('#roles_table tbody').append("<tr id='role_" + obj.id + "'	><td>" + obj.collection_id + "</td><td>" + obj.dataset_id + 
+			"</td><td>" + obj.role + "</td><td>" + 
+			"<a href='javascript:dacura.users.deleteRole(" + obj.id + ")'>delete</a>" + "</td></tr>");
+	}
+	$('#roles_table').dataTable(<?=$dacura_server->getServiceSetting('roles_datatable_init_string', "{}");?>).show();
+};
+
+dacura.users.drawHistoryTable = function(ses){
+	$('#history-table-holder').html('<table id="history_table"><thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Service</th></tr></thead><tbody></tbody></table>');
+	for (var i=0; i<ses.length; i++) {
+		var obj = ses[i];
+		$('#history_table tbody').append("<tr id='session_" + obj.service + "_" + obj.start + "'>" + 
+				"<td>" + obj.start + "</td><td>" + obj.end + "</td><td>" + obj.duration + "</td><td>" + obj.service + "</td></tr>");
+	}
+	$('#history_table').dataTable(<?=$dacura_server->getServiceSetting('history_datatable_init_string', "{}");?>).show();
+};
 
 dacura.users.updateUserDetails = function(){
 	var ds = {};
@@ -137,17 +210,17 @@ dacura.users.updateUserDetails = function(){
 	ajs.data = ds;
 	var self=this;
 	ajs.beforeSend = function(){
-		dacura.toolbox.writeBusyMessage('.pcbusy', "Updating User Details");
+		dacura.users.writeBusyMessage("Updating User Details");
 	};
 	ajs.complete = function(){
-		dacura.toolbox.clearBusyMessage('.pcbusy');	
+		dacura.users.clearBusyMessage();	
 	};
 	$.ajax(ajs)
 	.done(function(data, textStatus, jqXHR) {
 		try{
 			var user = JSON.parse(data);
 			dacura.users.drawUserView(user);
-			dacura.toolbox.writeSuccessMessage('#udetailsmsg', "Updated user " + dacura.users.currentuser);
+			dacura.users.writeSuccessMessage("Updated user " + dacura.users.currentuser);
 		}
 		catch(e){
 			dacura.toolbox.writeErrorMessage('#udetailsmsg', jqXHR.responseText + " " + e.message);
@@ -165,14 +238,14 @@ dacura.users.updateProfile = function(){
 	ajs.data = ds;
 	var self=this;
 	ajs.beforeSend = function(){
-		dacura.toolbox.writeBusyMessage('.pcbusy', "Updating User Details");
+		dacura.users.writeBusyMessage("Updating User Profile");
 	};
 	ajs.complete = function(){
-		dacura.toolbox.clearBusyMessage('.pcbusy');	
+		dacura.users.clearBusyMessage();	
 	};
 	$.ajax(ajs)
 	.done(function(data, textStatus, jqXHR) {
-		dacura.toolbox.writeSuccessMessage('#uprofilemsg', "Profile Updated Successfully");
+		dacura.users.writeSuccessMessage("Profile Updated Successfully");
 	})
 	.fail(function (jqXHR, textStatus){
 		dacura.toolbox.writeErrorMessage('#uprofilemsg', "Error: " + jqXHR.responseText );
@@ -194,191 +267,64 @@ dacura.users.updatePassword = function(){
 	ajs.data = ds;
 	var self=this;
 	ajs.beforeSend = function(){
-		dacura.toolbox.writeBusyMessage('.pcbusy', "Updating User Password");
+		dacura.users.writeBusyMessage("Updating User Password");
 	};
 	ajs.complete = function(){
-		dacura.toolbox.clearBusyMessage('.pcbusy');	
+		dacura.users.clearBusyMessage();	
 	};
 	$.ajax(ajs)
 	.done(function(data, textStatus, jqXHR) {
-		dacura.toolbox.writeSuccessMessage('#upasswordmsg', "Password Updated Successfully");
+		dacura.users.writeSuccessMessage("Password Updated Successfully");
 	})
 	.fail(function (jqXHR, textStatus){
 		dacura.toolbox.writeErrorMessage('#upasswordmsg', "Error: " + jqXHR.responseText );
 	});	
 };	
 
-dacura.users.createUser = function(){
-	dacura.users.clearscreens();
-	var ds = {};
-	ds.name = $('#usernameip').val();
-	ds.email= $('#useremailip').val();
-	ds.status = $('#userstatusip').val();
-	ds.password = $('#userpasswordip').val();
-	ds.profile = JSON.stringify(dacura.users.jsoneditor.getJSON());
-	var ajs = dacura.users.api.create();
-	ajs.data = ds;
-	var self=this;
-	ajs.beforeSend = function(){
-		dacura.toolbox.writeBusyMessage('.pcbusy', "Updating User Details");
-	};
-	ajs.complete = function(){
-		dacura.toolbox.clearBusyMessage('.pcbusy');	
-	};
-	$.ajax(ajs)
-	.done(function(data, textStatus, jqXHR) {
-		u = JSON.parse(data);
-		window.location.href = dacura.system.pageURL() + "/" + u.id;
-		//self.showuser(u.id);
-	})
-	.fail(function (jqXHR, textStatus){
-		dacura.toolbox.writeErrorMessage('.pcbusy', "Error: " + jqXHR.responseText );
-	});	
-}
-
 dacura.users.deleteUser = function(){
 	dacura.users.clearscreens();
 	var ajs = dacura.users.api.del(dacura.users.currentuser);
 	var self=this;
 	ajs.beforeSend = function(){
-		dacura.toolbox.writeBusyMessage('.pcbusy', "Deleting user " + dacura.users.currentuser);
+		dacura.users.writeBusyMessage("Deleting user " + dacura.users.currentuser);
 	};
 	ajs.complete = function(){
-		dacura.toolbox.clearBusyMessage('.pcbusy');	
+		dacura.users.clearBusyMessage();	
 	};
 	$.ajax(ajs)
 	.done(function(data, textStatus, jqXHR) {
-		dacura.toolbox.writeBusyMessage('.pcbusy', "User " + dacura.users.currentuser + " deleted");
+		dacura.users.writeBusyMessage("User " + dacura.users.currentuser + " deleted");
 		setTimeout(function(){window.location.href = dacura.system.pageURL()}, 1000);
 	})
 	.fail(function (jqXHR, textStatus){
-		dacura.toolbox.writeErrorMessage('.pcbusy', "Error: " + jqXHR.responseText );
+		dacura.users.writeErrorMessage("Error: " + jqXHR.responseText );
 	});	
-}
-
-dacura.users.newUser = function(){
-	dacura.users.clearscreens();
-	$('.pctitle').html("Create New User").show();
-	$('#userconfig').html("<textarea id='userconfig_ta'>{}</textarea>");
-	JSONEditor.prototype.ADD_IMG = '<?=$service->url("image", "add.png")?>';
-    JSONEditor.prototype.DELETE_IMG = '<?=$service->url("image", "delete.png")?>';
-    var j = new JSONEditor($("#userconfig_ta"), "790", "300");
-    j.doTruncation(true);
-	j.showFunctionButtons();
-	dacura.users.jsoneditor = j;
-	dacura.users.setViewtoCreate();
-	$('#userview').show();
-}
-
-dacura.users.setViewtoCreate = function(){
-	$('#updaterolesbuttons').hide();
-	$('#newrolesbuttons').hide();
-	$('#pcroles').hide();
-	$('#createuserbuttons').show();
-};
-dacura.users.setViewtoUpdate = function(){
-	$('#updaterolesbuttons').show();
-	$('#newrolesbuttons').show();
-	$('#pcroles').show();
-	$('#createuserbuttons').hide();
-	
-};
-
-dacura.users.showuser = function(id){
-	dacura.users.clearscreens();
-	var ajs = dacura.users.api.view(id);
-	var self=this;
-	ajs.beforeSend = function(){
-		dacura.toolbox.writeBusyMessage('.pcbusy', "Retrieving User Details");
-	};
-	ajs.complete = function(){
-		dacura.toolbox.clearBusyMessage('.pcbusy');
-	};
-	$.ajax(ajs)
-		.done(function(data, textStatus, jqXHR) {
-			if(data.length > 0 ){
-				dacura.users.currentuser = id;
-				try{
-					var user = JSON.parse(data);
-					dacura.users.drawUserView(user);
-				}
-				catch(e){
-					dacura.toolbox.writeErrorMessage('.pcbusy', "Error: failed to parse JSON returned by api call: "+ e.message);
-				}
-			}
-			else {
-				dacura.toolbox.writeErrorMessage('.pcbusy', "Error: no data returned from api call");
-			}   
-			dacura.users.setViewtoUpdate();  	
-			$('#userview').show();
-		})
-		.fail(function (jqXHR, textStatus){
-			dacura.toolbox.writeErrorMessage('.pcbusy', "Error: " + jqXHR.responseText );
-		}
-	);	
-}
-
-dacura.users.drawUserView = function(data){
-	$('.pctitle').html(data.email + " (user "+data.id + " - " + data.status +")").show();
-	$('#usernameip').val(data.name);
-	$('#useremailip').val(data.email);
-	$('#userstatusip').val(data.status);
-	$('.pcbreadcrumbs').show();
-	var profile = "{}";
-	if(typeof data.profile == "object" && data.profile != null){
-		profile = JSON.stringify(data.profile);
-	}
-	$('#userconfig').html("<textarea id='userconfig_ta'>" + profile + "</textarea>");
-	JSONEditor.prototype.ADD_IMG = '<?=$service->url("image", "add.png")?>';
-    JSONEditor.prototype.DELETE_IMG = '<?=$service->url("image", "delete.png")?>';
-    var j = new JSONEditor($("#userconfig_ta"), "740", "220");
-    j.doTruncation(true);
-	j.showFunctionButtons();
-	dacura.users.jsoneditor = j;
-	$.each(data.roles, function(i, obj) {
-		$('#roles_table tbody').append("<tr id='role_" + obj.id + "'	><td>" + obj.collection_id + "</td><td>" + obj.dataset_id + 
-				"</td><td>" + obj.role + "</td><td>" + 
-				"<a href='javascript:dacura.users.deleteRole(" + obj.id + ")'>delete</a>" + "</td></tr>");
-	});	
-	$('#roles_table').dataTable();//.row.add(["a", "2", "3", "4"]);;
-
-	$.each(data.history, function(i, obj) {
-		$('#session_table tbody').append("<tr id='session_" + obj.service + "_" + obj.start + "'>" + 
-				"<td>" + obj.start + "</td><td>" + obj.end + 
-				"</td><td>" + obj.duration + "</td><td>" + obj.service + "</td><td>um</td></tr>");
-	});	
-	$('#session_table').dataTable();//.row.add(["a", "2", "3", "4"]);;
-	//dacura.users.showRoles(data.roles);
 }
 
 dacura.users.deleteRole = function(id){
 	var ajs = dacura.users.api.delrole(dacura.users.currentuser, id);
 	var self=this;
 	ajs.beforeSend = function(){
-		dacura.toolbox.writeBusyMessage('.pcbusy', "Deleting role of user " + dacura.users.currentuser);
+		dacura.users.writeBusyMessage("Deleting role of user " + dacura.users.currentuser);
 	};
 	ajs.complete = function(){
-		dacura.toolbox.clearBusyMessage('.pcbusy');	
+		dacura.users.clearBusyMessage();	
 	};
 	$.ajax(ajs)
 	.done(function(data, textStatus, jqXHR) {
 		$('#role_' + id).remove();
-		//dt.row.add(["1", "b", "c", "d"] ).draw();
-		//dacura.users.currentroles.row.add( ["1", "b", "c", "d"] ).draw();
-	//self.showuser(dacura.users.currentuser);
+		self.showuser(dacura.users.currentuser);
 	})
 	.fail(function (jqXHR, textStatus){
 		dacura.toolbox.writeErrorMessage('#userhelp', "Error: " + jqXHR.responseText );
 	});	
-}
+};
 
 dacura.users.createRole = function(){
 	var cid = $('#rolecollectionip option:selected').val();
 	var did = $('#roledatasetip option:selected').val();
 	var rname = $('#rolenameip option:selected').val();
 	var lvel = "0";
-	alert(cid + " " + did + " " + rname + " " + lvel);
-	
 	var ajs = dacura.users.api.createrole(dacura.users.currentuser);
 	var payload = {
 		"collection" : cid,
@@ -389,10 +335,10 @@ dacura.users.createRole = function(){
 	ajs.data.payload = JSON.stringify(payload);
 	var self=this;
 	ajs.beforeSend = function(){
-		dacura.toolbox.writeBusyMessage('.pcbusy', "creating role for user " + dacura.users.currentuser);
+		dacura.users.writeBusyMessage("creating role for user " + dacura.users.currentuser);
 	};
 	ajs.complete = function(){
-		dacura.toolbox.clearBusyMessage('.pcbusy');	
+		dacura.users.clearBusyMessage();	
 	};
 	$.ajax(ajs)
 	.done(function(data, textStatus, jqXHR) {
@@ -401,7 +347,7 @@ dacura.users.createRole = function(){
 	.fail(function (jqXHR, textStatus){
 		dacura.toolbox.writeErrorMessage('#userhelp', "Error: " + jqXHR.responseText );
 	});	
-}
+};
 
 dacura.users.updateDatasetRoleOptions = function(isupdate){
 	var cid = $('#rolecollectionip option:selected').val();
@@ -420,6 +366,7 @@ dacura.users.updateDatasetRoleOptions = function(isupdate){
 
 $(function() {
 	$("#user-pane-holder").tabs();
+	$("#user-pane-list").show();
 	if(dacura.users.roleoptions){
 		$('#rolecollectionip').change(function(){
 			dacura.users.updateDatasetRoleOptions(true);

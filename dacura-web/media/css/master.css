@@ -1,6 +1,5 @@
 body {
   margin: 0;
-  text-align: center;
   font-family: 'Open Sans', Helvetica;
   font-weight: 300;
 }
@@ -19,6 +18,10 @@ strong  {
 ul {
   list-style: none;
   margin: 0;
+}
+
+.dch {
+	display: none;	
 }
 
 .center {
@@ -135,6 +138,11 @@ ul.dashboard-menu li {
 
 ul.dashboard-menu li.dashboard-menu-selected {
 	background-color: blue;
+}
+
+ul.dashboard-menu li a {
+	color: white;
+	text-decoration: none;
 }
 
 #dashboard-content {

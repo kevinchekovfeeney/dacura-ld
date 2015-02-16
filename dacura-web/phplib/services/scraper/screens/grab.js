@@ -74,7 +74,7 @@ dacura.grabber.grab = function(page){
 		node = factCollection.snapshotItem(i);
 		xpath = this.getXPathForElement(node, page);
 		text = node.innerHTML;
-		factParts = {"contents": text, "location": xpath};
+		factParts = {"id": (i+1) "contents": text, "location": xpath};
 		facts[facts.length] = factParts;
 	}
 	return facts;

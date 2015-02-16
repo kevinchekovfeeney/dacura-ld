@@ -29,10 +29,9 @@ class FileManager extends DacuraObject {
 		$d_name = $fpath.$cname;
 		if(!file_exists($d_name)){
 			mkdir($d_name);
-			if(!$config){
-				$config = $this->service->settings['default_cache_config'];
-			}
-			//also want to create a cache config file which details when the file is stale..
+		}
+		if(!$config){
+			$config = $this->service->settings['default_cache_config'];
 		}
 		$cache_config_file = $d_name."/".$oname.".config";
 		if(!file_exists($cache_config_file)){
@@ -53,8 +52,7 @@ class FileManager extends DacuraObject {
 		return $filename;
 	}
 	
-	function cacheIsStale($cfile, $config){
-		//return false;
+	function cacheIsStale($cfile, $config, $ch = false){
 		if($config['type'] == "time"){
 			//check modification time of cache file
 			$cached_time = time() - filemtime($cfile);
@@ -63,10 +61,25 @@ class FileManager extends DacuraObject {
 			}
 			return false;
 		}
-		return false;
+		elseif($config['type'] == "url_modified_time"){
+			$ch = ($ch) ? $ch : curl_init();
+			curl_setopt($ch, CURLOPT_URL, $config['url']);
+			// Only header
+			curl_setopt($ch, CURLOPT_NOBODY, true);
+			curl_setopt($ch, CURLOPT_HEADER, true);
+			curl_setopt($ch, CURLOPT_FILETIME, true);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			$result = curl_exec($ch);
+			// Get info
+			$info = curl_getinfo($ch);
+			$modtime = $info['filetime'];
+			if($modtime == $config['value']) return false;
+			
+		}
+		return true;
 	}
 	
-	function decache($cname, $oname){
+	function decache($cname, $oname, $ch=false){
 		$oname = $this->sanitise_file_name($oname);
 		$fpath = $this->service->settings['collections_base'];
 		if($this->service->getCollectionID()) $fpath .= $this->service->getCollectionID()."/";
@@ -83,7 +96,7 @@ class FileManager extends DacuraObject {
 		}
 		if(!$config) 
 			$config = $this->service->settings['default_cache_config'];
-		if(!$this->cacheIsStale($full_name, $config)){
+		if(!$this->cacheIsStale($full_name, $config, $ch)){
 			$this->logEvent("debug", 200, "$oname retrieved from cache");
 			return json_decode(file_get_contents($full_name), true);
 		}

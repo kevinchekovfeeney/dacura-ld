@@ -32,5 +32,14 @@ class Collection extends DacuraObject {
 	function addDataset($i, $ds){
 		$this->datasets[$i] = $ds;
 	}
+	
+	function getConfig($var){
+		if(isset($this->config[$var])) {
+			return $this->config[$var];
+		}
+		return $this->failure_result("No variable $var found in $this->id collection configuration", 404);		
+	}
 }
+
+
 

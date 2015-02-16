@@ -10,7 +10,7 @@
  */
 
 
-require_once '/autoloader.php';
+require_once 'autoloader.php';
 use hafriedlander\Peg\Parser;
 
 /**
@@ -23,13 +23,9 @@ class seshatParsing extends Parser\Basic {
 
 /*!* seshat
 
-fact: (value:factfragment SPACE ";" SPACE)* value:factfragment 
+fact: (value:datedfact SPACE ";" SPACE)* (value:datedfact | value:undatedfact)
 
-factfragment: value:datedfact | value:reversedatefact | value:undatedfact
-
-reversedatefact: value:datevalue SPACE ":" SPACE value:undatedfact
-
-datedfact: value:undatedfact SPACE ":" SPACE value:datevalue 
+datedfact: (value:undatedfact SPACE ":" SPACE value:datevalue) | (value:datevalue SPACE ":" SPACE value:undatedfact) 
 
 datevalue: value:daterange | value:disagreedate | value:singledate
 
@@ -43,7 +39,7 @@ disagreedatefragment: value:simpledaterange | value:simpledate
 
 disagreedate: "{" SPACE (value:disagreedatefragment SPACE ";" SPACE)+ value:disagreedatefragment SPACE "}"
 
-uncertaindate:  "[" SPACE (value:simpledate SPACE ";" SPACE)+ value:simpledate SPACE "]"
+uncertaindate:  "[" SPACE ((value:simpledaterange | value:simpledate) SPACE ";" SPACE)+ (value:simpledaterange | value:simpledate) SPACE "]" 
 
 simpledate: value:year SPACE ( value:yearsuffix )?
 
@@ -68,7 +64,7 @@ nodashword: /[^-\]\[\{\};: ]+/
 word: /[^\]\[\{\};: ]+/
 
 
-year: /[0-9]{/
+year: /[0-9]{1,5}/
 
 yearsuffix: "bce" | "ce" | "bc" | "BCE" | "CE" | "BC" | "Bce" | "Ce" | "Bc"
 

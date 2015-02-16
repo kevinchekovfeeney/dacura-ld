@@ -39,26 +39,33 @@ $servman = new ServiceLoader($dacura_settings);
 $service = $servman->loadServiceFromAPI($request_log);
 if($service){
 	$dacura_server = $service->loadServer();
-	$api_path = $service->settings['path_to_services'].$service->name()."/api.php";
-	if(file_exists($api_path)){
-		$rt = (count($service->args) > 0) ? "/".implode("/", $service->args) : "/";
-		$_GET['__route__'] = $rt;
-		Epi::init('route');
-		Epi::setSetting('exceptions', true);
-		include_once($api_path);
-		try {
-			getRoute()->run();
+	if($dacura_server->contextIsValid() || $service->name() == "config" && isset($service->args[0]) && $service->args[0] == "create"){
+		$api_path = $service->settings['path_to_services'].$service->name()."/api.php";
+		if(file_exists($api_path)){
+			$rt = (count($service->args) > 0) ? "/".implode("/", $service->args) : "/";
+			$_GET['__route__'] = $rt;
+			Epi::init('route');
+			Epi::setSetting('exceptions', true);
+			include_once($api_path);
+			try {
+				getRoute()->run();
+			}
+			catch(Exception $e){
+				$msg = "Unknown API: ".$e->getMessage();
+				$request_log->setResult(404, $msg);				
+				write_error($msg, 404);
+			}
 		}
-		catch(Exception $e){
-			$msg = "Unknown API: ".$e->getMessage();
+		else {
+			$msg = "Service ".$service->name()." does not have an API";
 			$request_log->setResult(404, $msg);				
 			write_error($msg, 404);
 		}
 	}
 	else {
-		$msg = "Service ".$service->name()." does not have an API";
-		$request_log->setResult(404, $msg);				
-		write_error($msg, 404);
+		$msg = "Invalid Context ".$dacura_server->contextStr();
+		$request_log->setResult($dacura_server->errcode, $dacura_server->errmsg);
+		write_error($dacura_server->errmsg, $dacura_server->errcode);
 	}
 }
 else {

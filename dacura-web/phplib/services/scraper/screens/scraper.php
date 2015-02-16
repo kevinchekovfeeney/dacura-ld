@@ -78,6 +78,10 @@
 				return false;
 			}else if(url.indexOf(".jpg") > -1){
 				return false;
+			}else if(url.indexOf(".gif") > -1){
+				return false;
+			}else if(url.indexOf(".pdf") > -1){
+				return false;
 			}else if(url.indexOf(".png") > -1){
 				return false;
 			}else if(url.indexOf("infohttp") > -1){
@@ -89,7 +93,6 @@
 			}
 			return true;
 		}
-
 
 		function tidyNGAString(contents){
 			contents = contents.replace('http://seshat.info/', '');

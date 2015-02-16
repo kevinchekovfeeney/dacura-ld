@@ -86,16 +86,15 @@ class UsersDacuraServer extends DacuraServer {
 		}
 		$cols = $this->getCollectionList();
 		foreach($cols as $colid => $col){
-			if($col->status == "deleted"){
-	
-			}
-			elseif($u->hasCollectionRole($colid, $role)){
+			if($col->status == "deleted"){ continue;}
+			if($u->hasCollectionRole($colid, $role)){
 				$choices[$colid] = array("title" => $col->name, "datasets" => array("all" => "All Datasets"));
 				foreach($col->datasets as $datid => $ds){
 					$choices[$colid]["datasets"][$datid] = $ds->name;
 				}
 			}
 			else {
+				//opr($u);
 				$datasets = array();
 				foreach($col->datasets as $datid => $ds){
 					if($ds->status != "deleted" && $u->hasDatasetRole($colid, $datid, $role)){
@@ -116,6 +115,7 @@ class UsersDacuraServer extends DacuraServer {
 		$cid = ($cid === false) ? $this->ucontext->getCollectionID() : $cid;
 		$did = ($did === false) ? $this->ucontext->getDatasetID() : $did;
 		$choices = $this->getContextsWithUserRole("admin");
+		//opr($choices);
 		if($cid == "all"){
 			return $choices;
 		}
@@ -128,7 +128,8 @@ class UsersDacuraServer extends DacuraServer {
 			}
 			else {
 				if(!isset($choices[$cid]["datasets"][$did])){
-					return $this->failure_result("User does not possess permission to create roles for $uid in [$cid / $did] context", 401);
+					return array($cid => array());
+					$this->failure_result("User does not possess permission to create roles for $uid in [$cid / $did] context", 401);
 				}
 				$choices[$cid]["datasets"] = array($did => $choices[$cid]["datasets"][$did]);
 				return array($cid => $choices[$cid]);

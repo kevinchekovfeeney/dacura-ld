@@ -12,7 +12,7 @@
 
 
 require_once("phplib/DacuraServer.php");
-require_once('files/seshat-parser.php');
+require_once('files/seshat.parser.php');
 
 //need to do logging, cookiejar, etc.
 
@@ -62,16 +62,21 @@ class ScraperDacuraServer extends DacuraServer {
 	 */
 	function getNGAList(){
 		if($this->settings['scraper']['use_cache']){
-			$x = $this->fileman->decache("scraper", $this->settings['scraper']['mainPage']);
+			$x = $this->fileman->decache("scraper", $this->settings['scraper']['mainPage'], $this->ch);
 			if($x) {
 				return $x;
 			}
 		}
 		curl_setopt($this->ch, CURLOPT_URL, $this->settings['scraper']['mainPage']);
+		//curl_setopt($this->ch, CURLOPT_HEADER, true);
+		curl_setopt($this->ch, CURLOPT_FILETIME, true);
+		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
 		$content = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
 			return $this->failure_result("Failed to retrieve nga list page ".$this->settings['scraper']['mainPage'], curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "warning");
 		}
+		$fmod = curl_getinfo($this->ch, CURLINFO_FILETIME);
+		
 		$dom = new DOMDocument;
 		$dom->loadXML($content);
 		$xpath = new DOMXPath($dom);
@@ -83,7 +88,9 @@ class ScraperDacuraServer extends DacuraServer {
 			$ngaURLs[] = $url;
 		}
 		if($this->settings['scraper']['use_cache']){
-			$this->fileman->cache("scraper", $this->settings['scraper']['mainPage'], $ngaURLs);				
+			$config = $this->settings['scraper']['cache_config'];
+			$config["url"] = $this->settings['scraper']['mainPage'];
+			$this->fileman->cache("scraper", $this->settings['scraper']['mainPage'], $ngaURLs, $config);				
 		}
 		$this->logEvent("debug", 200, "get_ngas returned: ".count($ngaURLs)." from seshat main page");
 		return $ngaURLs;
@@ -97,7 +104,7 @@ class ScraperDacuraServer extends DacuraServer {
 	 */
 	function getPolities($pageURL){
 		if($this->settings['scraper']['use_cache']){
-			$x = $this->fileman->decache("scraper", $pageURL);
+			$x = $this->fileman->decache("scraper", $pageURL, $this->ch);
 			if($x) return $x;
 		}
 		curl_setopt($this->ch, CURLOPT_URL, $pageURL);
@@ -117,7 +124,9 @@ class ScraperDacuraServer extends DacuraServer {
 			$polities[] = $url;
 		}
 		if($this->settings['scraper']['use_cache']){
-			$this->fileman->cache("scraper", $pageURL, $polities);				
+			$config = $this->settings['scraper']['cache_config'];
+			$config["url"] = $pageURL;
+			$this->fileman->cache("scraper", $pageURL, $polities, $config);				
 		}
 		$this->logEvent("debug", 200, "get_polities returned: ".count($polities)." from $pageURL");
 		return $polities;
@@ -133,8 +142,8 @@ class ScraperDacuraServer extends DacuraServer {
 		$summaries = array();
 		$headers = array("NGA", "Polity", "Area", "Section", "Variable", "Value From", "Value To",
 				"Date From", "Date To", "Fact Type", "Value Note", "Date Note", "Comment");
-		$error_headers = array("NGA", "Polity", "Section", "Subsection", "Variable", "Value", "Error");
-		$stats = array( "ngas" => 0, "polities" => 0, "errors" => 0, "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0);
+		$error_headers = array("NGA", "Polity", "Section", "Subsection", "Variable", "Type", "Value", "Error");
+		$stats = array( "ngas" => 0, "polities" => 0, "errors" => 0, "warnings" => 0, "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0);
 		$polity_failures = array();
 		$rows = array();
 		$this->start_comet_output();
@@ -158,13 +167,13 @@ class ScraperDacuraServer extends DacuraServer {
 						//op errors
 						foreach($pfacts['errors'] as $e){
 							if(isset($e['variable']) && isset($e['section'])){
-								$row = "<tr><td><a href='$nga'>". $this->formatNGAName($nga)."</a></td>";
-								$row .= "<td><a href='$p'>". $this->formatNGAName($p)."</a></td>";
-								$row .= "<td><a href='$p"."#".$this->unformatSectionName($e['section'])."'>".$e['section']."</a></td>";
-								$row .= "<td><a href='$p"."#".$this->unformatSectionName($e['subsection'])."'>".$e['subsection']."</a></td>";
-								$row .= "<td>".$e['variable']."</td>";
-								$row .= "<td>".$e['value']."</td>";
-								$row .= "<td>".$e['comment']."</td></tr>";
+								$row = $this->getErrorTableRowHTML($e, $nga, $p, "error");
+								$this->fileman->dumpData($error_op, $row);							
+							}	
+						}
+						foreach($pfacts['warnings'] as $e){
+							if(isset($e['variable']) && isset($e['section'])){
+								$row = $this->getErrorTableRowHTML($e, $nga, $p, "warning");
 								$this->fileman->dumpData($error_op, $row);							
 							}	
 						}
@@ -209,6 +218,18 @@ class ScraperDacuraServer extends DacuraServer {
 		ob_end_clean();
 		$this->end_comet_output("success", $page);
 		return true;
+	}
+	
+	function getErrorTableRowHTML($e, $nga, $p, $t){
+		$row = "<tr><td><a href='$nga'>". $this->formatNGAName($nga)."</a></td>";
+		$row .= "<td><a href='$p'>". $this->formatNGAName($p)."</a></td>";
+		$row .= "<td><a href='$p"."#".$this->unformatSectionName($e['section'])."'>".$e['section']."</a></td>";
+		$row .= "<td><a href='$p"."#".$this->unformatSectionName($e['subsection'])."'>".$e['subsection']."</a></td>";
+		$row .= "<td>".$e['variable']."</td>";
+		$row .= "<td>".$t."</td>";
+		$row .= "<td>".$e['value']."</td>";
+		$row .= "<td>".$e['comment']."</td></tr>";
+		return $row;
 	}
 	
 	function getReport($repname){
@@ -275,6 +296,7 @@ class ScraperDacuraServer extends DacuraServer {
 		$stats['complex'] += $nfacts['complex'];
 		$stats['lines'] += $nfacts['lines'];
 		$stats['errors'] += count($nfacts['errors']);
+		$stats['warnings'] += count($nfacts['warnings']);
 	}
 	
 
@@ -282,19 +304,23 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Functions for turning a seshat page into an array of facts...
 	 */
 	function getFactsFromURL($pageURL){
+		$content = false;
 		if($this->settings['scraper']['use_cache']){
-			$x = $this->fileman->decache("scraper", $pageURL);
-			if($x) return $x;
+			$content = $this->fileman->decache("scraper", $pageURL, $this->ch);
 		}
-		curl_setopt($this->ch, CURLOPT_URL, $pageURL);
-		$content = curl_exec($this->ch);
-		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-			return $this->failure_result("Failed to retrieve $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "info");
+		if(!$content){
+			curl_setopt($this->ch, CURLOPT_URL, $pageURL);
+			$content = curl_exec($this->ch);
+			if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+				return $this->failure_result("Failed to retrieve $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "info");
+			}	
+			if($content && $this->settings['scraper']['use_cache']){
+				$config = $this->settings['scraper']['cache_config'];
+				$config["url"] = $pageURL;
+				$this->fileman->cache("scraper", $pageURL, $content, $config);
+			}
 		}
 		$facts = $this->getFactsFromPage($content);
-		if($facts && $this->settings['scraper']['use_cache']){
-			$this->fileman->cache("scraper", $pageURL, $facts);
-		}
 		return $facts;
 	}
 	
@@ -304,7 +330,7 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Returns a fact list object (associative array)
 	 */
 	function getFactsFromPage($content){
-		$fact_list = array( "variables" => array(), "errors" => array(), 
+		$fact_list = array( "variables" => array(), "errors" => array(), "warnings" => array(),
 				"title" => "", "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0, "sections" => array());
 		// strip out the non-content to minimise collision risk
 		if(strpos($content, "<div class=\"printfooter\">") && strpos($content, "<h1><span class=\"editsection\">")){
@@ -367,6 +393,7 @@ class ScraperDacuraServer extends DacuraServer {
 		$myfl['complex'] += $newfl['complex'];
 		$myfl['lines'] += $newfl['lines'];
 		$myfl['errors'] = array_merge($myfl['errors'], $newfl['errors']);
+		$myfl['warnings'] = array_merge($myfl['warnings'], $newfl['warnings']);
 	}
 
 	/*
@@ -378,7 +405,7 @@ class ScraperDacuraServer extends DacuraServer {
 		$pattern = '/\x{2660}([^\x{2660}\x{2665}]*)\x{2663}([^\x{2660}]*)\x{2665}/u';
 		$matches = array();
 		$factoids = array();
-		$res = array("variables" => array(), "errors" => array(), "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0);
+		$res = array("variables" => array(), "errors" => array(), "warnings" => array(), "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0);
 		if(preg_match_all($pattern, $str, $matches)){
 			for($i = 0; $i< count($matches[0]); $i++){
 				$key = $matches[1][$i];
@@ -391,36 +418,41 @@ class ScraperDacuraServer extends DacuraServer {
 					$key = $key."_$n";
 				}
 				$res['total_variables']++;
-				if($val == ""){
+				$parsed = $this->parseVariableValue($val);
+				if($parsed['result_code'] == "complex"){
+					$res['complex']++;
+					$res['lines'] += count($parsed['datapoints']);
+					$factoids[$key] = $parsed['datapoints'];
+				}
+				elseif($parsed['result_code'] == "warning"){
+					$res['complex']++;
+					$res['lines'] += count($parsed['datapoints']);
+					$factoids[$key] = $parsed['datapoints'];
+					$e = $this->getEmptyWarning();
+					$e['value'] = $parsed['value'];
+					$e['variable'] = $key;
+					$e['section'] = $section;
+					$e['subsection'] = $subsection;
+					$e['comment'] = $parsed['result_message'];
+					$res['warnings'][] = $e;
+									}		
+				elseif($parsed['result_code'] == "empty"){
 					$factoids[$key] = "";
 					$res['empty']++;
+				}		
+				elseif($parsed['result_code'] == "error"){
+					$res['complex']++;
+					$e = $this->getEmptyError();
+					$e['value'] = $parsed['value'];
+					$e['variable'] = $key;
+					$e['section'] = $section;
+					$e['subsection'] = $subsection;
+					$e['comment'] = $parsed['result_message'];
+					$res['errors'][] = $e;
 				}
 				else {
-					$parsedVals = $this->parseVariableValue($val);
-					if(count($parsedVals) > 1){
-						$res['complex']++;
-						$res['lines'] += count($parsedVals);
-					}
-					else {
-						$factoid = $parsedVals[0];
-						if($factoid['fact_type'] == "complex"){
-							$res['complex']++;
-						}
-						if($factoid['value_type'] == "error"){
-							$e = $this->getEmptyError();
-							$e['value'] = $factoid['value_from'];
-							$e['variable'] = $key;
-							$e['section'] = $section;
-							$e['subsection'] = $subsection;
-							$e['comment'] = $factoid['comment'];								
-							$res['errors'][] = $e;
-							//$factoid;
-						}
-						else {
-							$factoids[$key] = $parsedVals;
-							$res['lines']++;
-						}
-					}
+					$res['lines']++;
+					$factoids[$key] = $parsed['datapoints'];
 				}
 			}
 		}
@@ -448,8 +480,18 @@ class ScraperDacuraServer extends DacuraServer {
 	}
 	
 	function getEmptyError(){
-		return array("nga" => "", "polity" => "", "section" => "", "subsection" => "", "variable" => "", 
+		return array("type" => "warning", "nga" => "", "polity" => "", "section" => "", "subsection" => "", "variable" => "", 
 				"value" => "", "comment" => "", "link" => "");
+	}
+	
+	function getEmptyWarning(){
+		return array("type" => "warning", "nga" => "", "polity" => "", "section" => "", "subsection" => "", "variable" => "",
+			"value" => "", "comment" => "", "link" => "");
+	}
+	
+	
+	function characteriseError($txt){
+		return "Need to write a function to give a basic attempt to characterise errors.";		
 	}
 	
 	/*
@@ -459,17 +501,32 @@ class ScraperDacuraServer extends DacuraServer {
 	/**
 	 * 
 	 * @param string $t the raw text value of the variable 
-	 * @return simple array of 'factoids' -> basic information about the fact in a table format
+	 * @return associative array: 
+	 *   "value" => initial_value_of_variable
+	 * 	 "result_code" => error | empty | simple | complex
+	 *   "result_message => "string to show to user"
+	 *   "datapoints" => simple array of 'factoids' -> basic information about the fact in a table format
 	 */
 	function parseVariableValue($t){
 		$val = strip_tags($t);
 		$val = trim(html_entity_decode($val));
+		$ret_val = array(
+			"value" => $val,
+			"result_code" => "",
+			"result_message" => "",
+			"datapoints" => array()
+		);
+		if($val == ""){
+			$ret_val["result_code"] = "empty";
+			return $ret_val;
+		}
 		$factoids = array();
 		if(strpbrk($val, ":;[{")){
-			$p = new seshat2Parsing($val);
+			$p = new seshatParsing($val);
 			$parsedFact = $p->match_fact();
 			if($parsedFact){
 				if($parsedFact['text'] == $val){
+					$ret_val["result_code"] = "complex";
 					$fragment_contents = $parsedFact['value'];
 					if(isset($fragment_contents[0])){ //array of fragments...
 						$fragments = $fragment_contents;
@@ -478,34 +535,93 @@ class ScraperDacuraServer extends DacuraServer {
 						$fragments = array($fragment_contents);
 					}
 					foreach($fragments as $f){
-						if($f['value']['name'] == "undatedfact"){
-							$mini_factoids = $this->processUndatedFact($f['value']['value']);
+						if($f['name'] == "undatedfact"){
+							$mini_factoids = $this->processUndatedFact($f['value']);
 							foreach($mini_factoids as $mf){
 								$factoids[] = $this->createFactoid("", "", "", $mf['value_from'], $mf['value_to'], $mf['value_type'], "complex", "");
 							}
 						}
 						else {
-							$factoids = array_merge($factoids, $this->processDatedFact($f['value']['value'], $val));
+							$n_factoids = $this->processDatedFact($f['value'], $val);
+							if(is_array($n_factoids)){
+								$factoids = array_merge($factoids, $n_factoids);
+							}
+							else {							
+								$ret_val["result_code"] = "error";
+								$ret_val["result_message"] = "The date value could not be parsed: " .$f['text'];
+								break;
+							}
 						}
 					}
 				}
 				else {
-					$x = "The parser managed to parse this fragment: " .$parsedFact['text'];
-					$factoids[] = $this->createFactoid("", "", "", $val, "", "error", "complex",
-							"The parser could not parse this fact [$val] - it has a formatting error. $x" );
+					$ret_val = $this->lastChanceSaloon($val);
+					if($ret_val["result_code"] == "error"){
+						$ret_val["result_message"] = " This fragment: \"" .$parsedFact['text'].
+						"\" parsed ok. The fragment following \"".substr($val, strlen($parsedFact['text']))."\" contains the error.";
+					}
+					return $ret_val;
 				}
 			}
 			else {
-				$factoids[] = $this->createFactoid("", "", "", $val, "", "error", "complex",
-						"The parser could not parse this fact [$val] - it has a formatting error");
+				return $this->lastChanceSaloon($val);
 			}
 		}
 		else {
+			$ret_val["result_code"] = "simple";
+			$ret_val["result_message"] = "Simple Value.";		
 			$factoids[] = $this->createFactoid("", "", "", $val, "", "simple", "simple", "");
 		}
-		return $factoids;
+		$ret_val['datapoints'] = $factoids;
+		return $ret_val;
 	}
 
+	/*
+	 * Last gasp attempt to allow known common slips through, while raising a warning
+	 */
+	function lastChanceSaloon($txt){
+		$ret_val = array("value" => $txt, "result_code" => "error");
+		$factoids = false;
+		//1 uncertainty list items surrounded by [] and separated by , instead of 
+		$is_bad_list = false;
+		if(strpos($txt, '[') === 0 && strpos($txt, ']') == (strlen($txt) -1)){
+			$is_bad_list = "uncertain";
+		}
+		elseif(strpos($txt, '{') === 0 && strpos($txt, '}') == (strlen($txt) -1)){
+			$is_bad_list = "disputed";
+		}
+		if($is_bad_list && strpos($txt, ",") !== false){
+			$vals = explode(",", substr($txt, 1, strlen($txt)-2));
+			foreach($vals as $val){
+				$factoids[] = $this->createFactoid("", "", "", $val, "", $is_bad_list, "complex", "warning - syntax incorrect");
+			}
+			$ret_val['result_message'] = "Using comma (,) instead of semi-colon (;) to separate list of $is_bad_list values";
+		}
+		elseif($is_bad_list && !strpbrk(substr($txt, 1, strlen($txt)-3), ":;[{,")){
+			$factoids = array($this->createFactoid("", "", "", trim(substr($txt, 1, strlen($txt)-2)), "", $is_bad_list, "simple", "warning - syntax incorrect"));				
+			$ret_val['result_message'] = "Surrounding a simple value in $is_bad_list brackets";
+		}
+		elseif(!$is_bad_list && strpos($txt, ";") !== false && !strpbrk($txt, ":[{,")){
+			$vals = explode(";", $txt);
+			$factoids = array();
+			foreach($vals as $val){
+				if($val){
+					$factoids[] = $this->createFactoid("", "", "", $val, "", "list", "complex", "warning - syntax incorrect");
+				}
+			}
+			$ret_val['result_message'] = "Using semi-colon (;) to separate a list of variable values (not in the syntax!)";
+		}
+		if($factoids){
+			$ret_val['datapoints'] = $factoids;
+			$ret_val['result_code'] = "warning";
+		}
+		else {
+			$ret_val["result_message"] = "Value $txt failed to parse. It has a formatting error. ";				
+		}
+		return $ret_val;
+	}
+	
+	
 	/*
 	 * Takes a $fact (node from parse tree) representing a dated fact
 	 * Returns an array of factoids. 
@@ -518,12 +634,11 @@ class ScraperDacuraServer extends DacuraServer {
 			}
 			elseif($factbit['name'] == "datevalue"){
 				$datebit = $this->processDateValue($factbit['value']);
-				if($datebit['type'] == "error"){
-					return array($this->createFactoid("", "", "error", $orig, "", "error", "error", "Failed to parse date value"));
+				if(!$datebit){
+					return $this->failure_result("Failed to parse date part ".$factbit['text'].$this->errmsg, $this->errcode);
 				}	
 			}
 		}
-		
 		foreach($factoids as $i => $factoid){
 			$factoids[$i]['fact_type'] = "complex";
 			$factoids[$i]["date_type"] = $datebit['type'];
@@ -585,44 +700,89 @@ class ScraperDacuraServer extends DacuraServer {
 			$from = $this->processDateValue($from);
 			$to = $this->processDateValue($to);
 			if(!$to or !$from){
-				$datevals = array("type" => "error", "value" => "", "comment" => "failed to read range: ".$fact['value'][0]." " . $fact['value'][1]);	
+				return $this->failure_result("failed to read dates in date range: ".$fact['value'][0]." " . $fact['value'].$this->errmsg, $this->errcode);
 			}
 			else {
-				//opr($to);
 				$datevals = $this->processDateRange($from, $to);
+				if(!$datevals) return false;
 			}
 		}
-		elseif($fact['name'] == "singledate"){
-			if($fact['value']['name'] == "simpledate"){
-				$datevals = array("type" => "simple", "value" => $fact['value']['text'], "comment" => "");
+		elseif($fact['name'] == "singledate" && isset($fact['value']['name']) && $fact['value']['name'] == "simpledate"){
+			$normdate = $this->normaliseSuffix($fact['value']['text']);
+			if(!$normdate){
+				return $this->failure_result("failed to read date to find suffix ".$fact['value']['text'], 500);
 			}
-			elseif($fact['value']['name'] == "disagreedate"){
-				$date_ranges = array();
-				$date_units = array();
-				foreach($fact['value']['value'] as $frag){
-					if($frag['value']['name'] == "simpledaterange"){
-						$date_ranges[] = $this->getDateRangeBounds($frag['value']['value'][0]['text'], $frag['value']['value'][1]['text']);
+			$datevals = array("type" => "simple", "value" => $normdate, "comment" => "");
+		}
+		elseif($fact['name'] == "disagreedate" || ($fact['name'] == "singledate" && $fact['value']['name'] == "disagreedate")){
+			$base = ($fact['name'] == "disagreedate")? $fact['value'] : $fact['value']['value'];
+			$date_ranges = array();
+			$date_units = array();
+			foreach($base as $frag){
+				if($frag['value']['name'] == "simpledaterange"){
+					$dr = $this->getDateRangeBounds($frag['value']['value'][0]['text'], $frag['value']['value'][1]['text']);
+					if(!$dr){
+						return false;
 					}
-					elseif($frag['value']['name'] == "simpledate"){
-						$date_units[] = $frag['value']['text'];
-					}
+					$date_ranges[] = $dr;
 				}
-				if(count($date_ranges) >= count($date_units)){
-					$datevals = $this->consolidateDateRanges($date_ranges, $date_units);						
-				}
-				else {
-					$datevals = $this->consolidateDates($fact['value']['value'], "disputed");						
+				elseif($frag['value']['name'] == "simpledate"){
+					$normdate = $this->normaliseSuffix($frag['value']['text']);
+					$date_units[] = $normdate;
 				}
 			}
-			elseif($fact['value']['name'] == "uncertaindate"){
-				//just make a range from the first to the last..
-				$datevals = $this->consolidateDates($fact['value']['value'], "uncertain");
+			if(count($date_ranges) >= count($date_units)){
+				$datevals = $this->consolidateDateRanges($date_ranges, $date_units);
+			}
+			else {
+				$datevals = $this->consolidateDates($base, "disputed");
+			}
+				
+		}
+		elseif($fact['name'] == "uncertaindate" || ($fact['name'] == "singledate" && $fact['value']['name'] == "uncertaindate")){
+			//just make a range from the first to the last..
+			$base = ($fact['name'] == "uncertaindate")? $fact['value'] : $fact['value']['value'];
+			$date_ranges = array();
+			$date_units = array();
+			foreach($base as $frag){
+				if($frag['name'] == "simpledaterange"){
+					$dr = $this->getDateRangeBounds($frag['value'][0]['text'], $frag['value'][1]['text']);
+					if(!$dr){
+						return false;
+					}
+					$date_ranges[] = $dr; 
+						
+				}
+				elseif($frag['name'] == "simpledate"){
+					$date_units[] = $frag['text'];
+				}
+			}
+			if(count($date_ranges) >= count($date_units)){
+				$datevals = $this->consolidateDateRanges($date_ranges, $date_units);
+			}
+			else {
+				$datevals = $this->consolidateDates($base, "uncertain");
 			}
 		}
 		else {
-			$datevals = array("type" => "error", "value" => "", "comment" => "strange error ".$fact['value'][0]);				
+			return $this->failure_result("strange error parsing node: ".$fact['name'], 500);
 		}
 		return $datevals;
+	}
+	
+	function normaliseSuffix($txt){
+		$pattern = "/(\d{1,5})\s*(ce|bce|bc)?/i";
+		$matches = array();
+		if(preg_match($pattern, $txt, $matches)){
+			if(isset($matches[2])){
+				if(stristr($matches[2], "bc") || stristr($matches[2], "bce")){
+					return $matches[1]."BCE";
+				}
+				else return $matches[1]."CE";
+			}
+			return $matches[1];
+		}
+		return false;
 	}
 	
 	function consolidateDateRanges($ranges, $units){
@@ -708,7 +868,6 @@ class ScraperDacuraServer extends DacuraServer {
 		}
 		//make sure that we have no unsuffixed values
 		if($from['type'] == "simple" ){
-			//opr($from);
 			if(!$this->containsYearSuffix($from['value'])){
 				$sf = $this->getFirstYearSuffix($to['value']);
 				if($sf){
@@ -725,7 +884,9 @@ class ScraperDacuraServer extends DacuraServer {
 			}
 		}
 		if(!isset($from['value']) or !isset($to['value'])){
-			$datevals = array("type" => "error", "value" => "", "comment" => "from or to value not set");				
+			$msg = "Could not detect correct values in range" . ((isset($from['value'])) ? "From: ".$from['value'] : " no from detected");
+			$msg .= ((isset($to['value'])) ? " To: ".$to['value'] : " no to detected");
+			return $this->failure_result($msg, 400);
 		}
 		elseif($this->strToYear($from['value']) > $this->strToYear($to['value'])){
 			$datevals = array("from" => $to['value'], "to" => $from['value'], "type" => "range", "comment" => $date_comment);				
@@ -737,7 +898,7 @@ class ScraperDacuraServer extends DacuraServer {
 	}
 	
 	function containsYearSuffix($str){
-		$pattern = "/(\d{1,4})\s*(ce|bce|bc)?/i";
+		$pattern = "/(\d{1,5})\s*(ce|bce|bc)?/i";
 		$matches = array();
 		if(preg_match($pattern, $str, $matches)){
 			return (isset($matches[2]) && $matches[2]);
@@ -750,8 +911,10 @@ class ScraperDacuraServer extends DacuraServer {
 		$matches = array();
 		if(preg_match($pattern, $str, $matches)){
 			if(isset($matches[1]) && $matches[1]){
-				if($matches[1] == "bc") $matches[1] = "BCE";
-				return $matches[1];
+				if(stristr($matches[1], "bc") || stristr($matches[1], "bce")){
+					return "BCE";
+				}
+				return "CE";
 			}
 		}
 		return false;
@@ -763,8 +926,10 @@ class ScraperDacuraServer extends DacuraServer {
 		$matches = array();
 		if(preg_match($pattern, $str, $matches)){
 			if(isset($matches[1]) && $matches[1]){
-				if($matches[1] == "bc") $matches[1] = "BCE";
-				return $matches[1];
+				if(stristr($matches[1], "bc") || stristr($matches[1], "bce")){
+					return "BCE";
+				}
+				return "CE";
 			}
 		}
 		return false;
@@ -825,7 +990,6 @@ class ScraperDacuraServer extends DacuraServer {
 					}		
 				}
 				else {
-					opr($frag);
 					return false;	
 				}
 			}
@@ -858,34 +1022,58 @@ class ScraperDacuraServer extends DacuraServer {
 	 */
 	function getDateRangeBounds($dr1, $dr2){
 		$bounds = array();
-		$pattern = "/(\d{1,4})\s*(ce|bce|bc)?/i";
+		$pattern = "/(\d{1,5})\s*(ce|bce|bc)?/i";
 		$matches = array();
 		$matches2 = array();
 		if(preg_match($pattern, $dr1, $matches)){
 			if(!isset($matches[2]) or !$matches[2]){
 				if(preg_match($pattern, $dr2, $matches2)){
 					if(isset($matches2[2])){
-						$dr1 .= $matches2[2];
+						if(stristr($matches2[2], "bc") || stristr($matches2[2], "bce")){
+							$dr1 .= "BCE";
+							$dr2 = $matches2[1]."BCE";
+						}
+						else {
+							$dr1 .= "CE";
+							$dr2 = $matches2[1]."CE";
+						}
 					}
 					else {
-						return false;
+						return $this->failure_result("No era suffix found on either side of date-range", 400);
 					}
 				}
 				else {
-					return false;
+					return $this->failure_result("From side of date range is not a valid date", 400);
 				}
 			}
 			else {
+				if(stristr($matches[2], "bc") || stristr($matches[2], "bce")){
+					$dr1 = ($matches[1])."BCE";
+				}
+				else {
+					$dr1 = ($matches[1])."CE";						
+				}
 				if(preg_match($pattern, $dr2, $matches2)){
-					if(!isset($matches2[2]) or !$matches2[2]){
+					if(!isset($matches2[2]) || !$matches2[2]){
+						if(stristr($matches[2], "bc") || stristr($matches[2], "bce")){
+							$dr2 .= "BCE";
+						}
+						else {
+							$dr2 .= "CE";
+						}
 						$dr2 .= $matches[2];
 					}
 					else {
-						return false;
+						if(stristr($matches2[2], "bc") || stristr($matches2[2], "bce")){
+							$dr2 = ($matches2[1])."BCE";
+						}
+						else {
+							$dr2 = ($matches2[1])."CE";
+						}
 					}
 				}
 				else {
-					return false;
+					return $this->failure_result("From side of date range is not a valid date", 400);
 				}
 			}
 		}
@@ -943,32 +1131,127 @@ class ScraperDacuraServer extends DacuraServer {
 		}
 		return $rows;
 	}	
+
 	
-	function testParser(){
-		$teststrings = array( "axy",
-			"axy; afa",
-			"[bbb; dda]",
-			"[by soldiers; by state]",
-			"[zaa-afa]",
-			"{zaa; afa}",
-			"5,300,000: 120bce",
-			"5,300,000: 220bce-7bce",
-			"5,300,000: 120bce-75bce; 6,100,000:75-30ce",
-			"[1,500,000 - 2,000,000]: 100bce",
-			"absent: 500bc-{150bc;90bc}; present: {150bc;90bc}-1ce",
-			"absent: 500bc-150bc; [absent; present]:150bc-90bc; present: 90bc-1ce",
-			"absent: [600bce;500bc]-{150bc;90ce;40bc}; [present;big;small]: {150bc;90bc}-{1;67ce}", 
-			"{[180,000-270,000]; 604,000}: 423 CE",
-			"present: {1380-1450 CE; 1430-1450 CE; 1350-1450 CE}",
-			"absent: {380-450 CE; 1450 CE; 150-50 CE}"
+	function parseCanonicalExamples(){
+		$examples = array();
+		$examples['good'] = array( 
+			"present" => array(
+					"type" => "Simple Value",
+					"interpretation" => "The variable has the value \"present\" throughout the polity's lifetime.",
+					"note" => "MUST not contain the characters \"[\", \"]\", \"{\", \"}\", \";\" or \":\"))"), 
+			"[by soldiers; by state]" => array(
+					"type" => "Uncertain Value", 
+					"interpretation" => "The value of the variable is either \"by soldiers\" or \"by state\", but it is not known which, throughout the polity's lifetime.",
+					"note" => "The values must not contain the dash character \"-\", in addition to the special characters: \"[\", \"]\", \"{\", \"}\", \";\" or \":\")"),
+			"[5,000-15,000]" => array(
+					"type" => "Value Range", 
+					"interpretation" => "The variable has a value between 5,000 and 15,000, but it is not known where exactly on the range it is, and this is the case throughout the polity's lifetime.",
+					"note" => "The values should be numeric as a range is not meaningful otherwise. The values must not contain the dash character \"-\", or other special characters: (\"[\", \"]\", \"{\", \"}\", \";\" or \":\")."),
+			"{sheep; horse; goat}" => array(
+					"type" => "Disputed Value", 
+					"interpretation" => "The value of the variable is disputed. Credible experts disagree as to whether the value is sheep, goat or horse and this is the case throughout the polity's lifetime.",
+					"note" => "The values must not contain the dash character \"-\", or other special characters: (\"[\", \"]\", \"{\", \"}\", \";\" or \":\")."),
+			"5,300,000: 120bce" => array(
+					"type" => "Dated Value",
+					"interpretation" => "The value of the variable is 5,300,000 in the year 120bce",
+					"note" => "No assumptions can be made as to the value of the variable at any other date."),
+			"5,300,000: 120bce-75bce; 6,100,000:75bce-30ce" => array(
+					"type" => "Dated Value List",
+					"interpretation" => "The value of the variable changed over the lifetime of the polity. It was 5,300,000 between 120BCE and 75BCE and 6,100,000 between 75BCE and 30CE",
+					"note" => "Ideally, dated value lists should cover the entire lifespan of the polity."),				
+			"[1,500,000 - 2,000,000]: 100bce" => array(
+					"type" => "Dated Value Range",
+					"interpretation" => "The value of the variable was between 1.5 million and 2 million in the year 100BCE. It is not known where on this range the real value was.",
+					"note" => "This only tells us the value for a single point in time"),
+			"232: 500bce-90bce; 321: 90BCE-15ce; 324: 15CE-45CE" => array(
+					"type" => "Changing Value over Time",
+					"interpretation" => "The value of the variable was 232 from 500BCE, it changed to 321 in 90BCE, then changed again to 324 in 15CE and remained at that value until 45CE. However the date of the change is disputed - 150BCE and 90BCE are two proposed dates for the change.",
+					"note" => "Ideally, the date ranges should cover the entire polity lifetime."),
+			"absent: 500bce-{150bce;90bce}; present: {150bce;90bce}-1ce" => array(
+					"type" => "Value Change at Disputed Date",
+					"interpretation" => "The value of the variable was \"absent\" from 500BCE, then it changed to \"present\" which it remained at until the year 1CE. However the date of the change is disputed - 150BCE and 90BCE are two proposed dates for the change.",
+					"note" => "All credible proposed dates should be included."),
+			"absent: 450bce-[90bce;1ce]; present: [90bce;1ce]-53ce" => array(
+					"type" => "Value Change at Uncertain Date",
+					"interpretation" => "The value of the variable was \"absent\" from 450BCE, then it changed to \"present\" which it remained at until the year 53CE. However the date of the change is uncertain - 1CE and 90BCE are two possibilities for the change.",
+					"note" => "All credible proposed dates should be included."),
+			"absent: 500bce-150bce; {absent; present}:150bce-90bce; present: 90bce-1ce" => array("type" => "Value Disputed During Date Range",
+					"interpretation" => "The value of the variable was \"absent\" from 500BCE to 150BCE, from 150BCE to 90BCE, it was either \"absent\" or \"present\", then from 90BCE to ICE it was \"present\"",
+					"note" => "This is a re-stating of the above example, focusing on the disputed value rather than the disputed date.  It is semantically identical."),
+			"present: [1380 CE - 1450 CE; 1430 CE - 1450 CE; 1350 CE - 1450 CE]" => array(
+					"type" => "Period of value unknown",
+					"interpretation" => "The value of the variable was \"present\" for a period which either ran from 1380-1450 CE or from a period from 1430-1450 CE, or from a period from 1350-1450 CE",
+					"note" => "This is semantically different than the disputed change times examples above: we are saying that the value holds for one of these distinct ranges.")
 		);
-		foreach($teststrings as $t){
-			echo "<h3>$t</h3>";
-			opr($this->parseVariableValue($t));			
+		$examples['discouraged'] = array( 
+			"present: 1380-1450 CE" => array(
+				"type" => "Dates without Suffix",
+				"interpretation" => "The value is present from 1380CE to 1450CE.",
+				"note" => "It is always better to add suffixes (bce, ce) to dates in date ranges to remove any chance or mistakes."
+			),
+			"4: 1380-1450 BCE" => array(
+				"type" => "Date Range out of Sequence",
+				"interpretation" => "The value was 4 from 1380CE to 1450CE.",
+				"note" => "Date ranges should always be from earlier date to later date."
+			),
+			"[goat;sheep;pig]: {150bc;90bc}-{1;67ce}" => array(
+				"type" => "Uncertain Value and Date",
+				"interpretation" => "The value of the variable became either \"goat\", \"pig\" or \"sheep\" in either 150BCE or 90BCE, the date being disputed and remained at that value until either 1CE or 67CE, which is also a matter of dispute.",
+				"note" => "You should make either the date or the value uncertain, but not both. It introduces too much uncertainty into the value to be useful."
+			),
+				"goat: [600bce;500bc]-{150bc;90ce;40bc}; [goat;sheep;pig]: {150bc;90bc}-{1;67ce}" => array(
+				"type" => "Overly complex sequence",
+				"interpretation" => "The value of the variable was \"goat\" from a period that started either in 600BCE or 500BCE, and continued until one of 3 disputed dates: 40BCE, 150BCE or 90BCE.
+					Then it changed to either \"goat\", \"pig\" or \"sheep\" in either 150BCE or 90BCE, the date being disputed and remained at that value until either 1CE or 67CE, which is also a matter of dispute.",
+				"note" => "People typically can't follow the logic of such statements and will make mistakes, contradictions, etc once statements become this complex and hedged with uncertainty."
+			),
+			"{[180,000-270,000]; 604,000}: 423 CE"	=> array(
+				"type" => "Value Range within Disputed Value",
+				"interpretation" => "The value of the variable was in 423CE is disputed. One opinion is that it was between 180,000 and 270,000, another is that it was 604,000.",
+				"note" => "Overly complex - hard to reliably turn into datapoints."
+			),
+			"absent: {380-450 CE; 1450 CE; 150-50 CE}" => array(
+				"type" => "Date Ranges mixed with Single Dates",
+				"interpretation" => "The value of the variable was \"absent\" for some period, but the period is disputed between 380CE - 450CE and 50CE - 150CE. Another opinion states that the value was absent in 1450CE.",
+				"note" => "It is ambiguous whether the ranges refer to an uncertain particular date, or to a long-running process. "
+			),
+			"absent: {450 CE; 1450 CE; 150-50 CE}" => array(
+					"type" => "Date Ranges mixed with Single Dates",
+					"interpretation" => "The value of the variable was \"absent\" on a particular date but that date is disputed. It is either 450CE, 1450CE or some date between 50CE and 150CE.",
+					"note" => "If most of the dates in such a list are single dates, ranges are interpreted as constraints on single dates, not date ranges."
+			)		
+		);
+		$examples['warning'] = array(
+			"1; 2; john" => array(
+					"type" => "List of values without dates",
+					"interpretation" => "The value is 1, 2 and john.",
+					"note" => "Lists of values need to be dated to differentiate them or coded as [uncertain] or {disputed values}. This is interpreted as a list of values all of which hold."
+			),
+			"[absent,present]" => array(
+					"type" => "Uncertain values separated by a comma",
+					"interpretation" => "The value is absent or present, which one is unknown.",
+					"note" => "Lists of values need to be divided by a semi-colon."
+			),				
+			"{absent,present}" => array(
+					"type" => "Disputed values separated by a comma",
+					"interpretation" => "The value is absent or present, which one is disputed.",
+					"note" => "Lists of values need to be divided by a semi-colon."
+			),				
+			"{absent}" => array(
+					"type" => "Single disputed value",
+					"interpretation" => "The value is absent although this is disputed.",
+					"note" => "Disputed values need alternatives."
+			),				
+		);
+		
+		foreach($examples as $set => $examps){
+			foreach($examps as $val => $meta){
+				$examples[$set][$val]['result'] = $this->parseVariableValue($val);
+			}
 		}
-	}		
-	
-	
+		return $examples;
+	}
 	
 	/*
 	 * Log into the Seshat Wiki....

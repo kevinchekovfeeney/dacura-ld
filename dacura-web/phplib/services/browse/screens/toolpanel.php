@@ -1,4 +1,4 @@
-<div class="dacura-dashboard-panel" id="tool-panel">
+<!-- <div class="dacura-dashboard-panel" id="tool-panel">
 	<a href='<?=$service->get_service_url("candidate_viewer");?>'>
 		<div class='dacura-dashboard-button-wide' id='dacura-users-button' title="Knowledge Extraction">
 					<img class='dacura-button-img' src="<?=$service->url("image", "buttons/knowledge.png")?>">
@@ -19,3 +19,4 @@
 		
 	</a>				
 </div>
+ -->

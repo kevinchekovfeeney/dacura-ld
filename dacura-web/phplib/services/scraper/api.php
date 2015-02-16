@@ -6,11 +6,14 @@ getRoute()->post('/polities', 'getpolities');
 getRoute()->post('/dump', 'dump');
 getRoute()->get('/view/(.+)', 'viewReport');
 getRoute()->get('/grabscript', 'getGrabScript');
-getRoute()->get('/test', 'testParser');
-getRoute()->post('/parse', 'parseData');
-getRoute()->post('/', 'getpolitydata');
+//getRoute()->get('/test', 'testParser');
+getRoute()->post('/parse', 'parseVariable');
+//getRoute()->post('/', 'getpolitydata');
 
 
+/*
+ * The api calls which access the seshat wiki data are accesss controlled
+ */
 function getngas(){
 	global $dacura_server;
 	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("getngas")){
@@ -69,8 +72,11 @@ function viewReport($rep){
 	else {
 		$dacura_server->write_http_error();
 	}
-	
 }
+
+/*
+ * The api calls below are world accessible
+ */
 
 function getGrabScript(){
 	global $dacura_server, $service;
@@ -98,17 +104,6 @@ function getGrabScript(){
 		ob_end_clean();	
 		$dacura_server->write_http_error(500, "grab javascript file $f not found");
 	}
-}
-
-function testParser(){
-	global $dacura_server;
-	$dacura_server->init("testParser");
-	if($dacura_server->userHasRole("admin")){
-		opr($dacura_server->testParser());
-	}
-	else {
-		$dacura_server->write_http_error();
-	}	
 }
 
 /*
@@ -149,4 +144,45 @@ function parseData(){
 	}
 }
 
+/*
+ * Input: string in $_POST['data']
+ * { "value": string, "result_code": ["empty"|"simple"|"complex"|"error"], "result_msg", "datapoints": [{expanded content}]
+ */
+function parseVariable(){
+	global $dacura_server;
+	header("Access-Control-Allow-Origin: *");
+	$dacura_server->init("parseVariable");
+	if(isset($_POST["data"]) && $_POST["data"]){
+		$var = $_POST["data"];
+		$one_result = $dacura_server->parseVariableValue($var);
+		$dacura_server->write_json_result($one_result, "Parsed value: $var: ".$one_result["result_code"]);				
+	}
+	else {
+		$dacura_server->write_http_result(400, "No data included in post request for parsing", "notice");
+	}
+}
+
+
+/*
+ * Input: json-encoded array of values in $_POST['data']
+ * [ "{variable value string}", ....]
+ * Output: array of json objects:
+ * [
+ *
+ */
+function parseVariables(){
+	global $dacura_server;
+	header("Access-Control-Allow-Origin: *");
+	$dacura_server->init("parseVariables");
+	if(isset($_POST["data"]) && $_POST["data"] && ($vars = json_decode($_POST['data'], true))){
+		$results = array();
+		foreach($vars as $var){
+			$results[] = $dacura_server->parseVariableValue($var);
+		}
+		$dacura_server->write_json_result($results, "Parsed value: $var: ".$one_result["result_code"]);				
+	}
+	else {
+		$dacura_server->write_http_result(400, "No parseable data found in post request", "notice");
+	}	
+}
 
