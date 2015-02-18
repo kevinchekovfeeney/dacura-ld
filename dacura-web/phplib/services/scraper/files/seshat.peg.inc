@@ -16,7 +16,7 @@ use hafriedlander\Peg\Parser;
 /**
  * This parser parses Seshat data
  * Needs to be run from the command line...
- * >php cli.php seshat.peg.inc
+ * >php cli.php seshat.peg.inc seshat.parser.php
  * @author Chekov
  */
 class seshatParsing extends Parser\Basic {
