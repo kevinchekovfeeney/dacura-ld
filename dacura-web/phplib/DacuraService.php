@@ -101,6 +101,9 @@ class DacuraService extends DacuraObject {
 		$srvclass = ucfirst($this->servicename)."DacuraServer";
 		try {
 			$srvr = new $srvclass($this);
+			if($srvr->errcode){
+				return $this->failure_result($srvr->errmsg, $srvr->errcode);
+			}				
 			$u = $srvr->getUser(0);
 			if($u){
 				$this->logger->user_name = $u->getName();

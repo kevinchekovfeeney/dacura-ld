@@ -19,6 +19,7 @@
 			html += "<td>" + factoid.comment + "</td>";
 			html += "</tr>";
 		}
+		html += "</table>";
 		return html;
 	};
 </script>

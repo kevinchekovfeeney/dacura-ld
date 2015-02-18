@@ -606,14 +606,17 @@ class ScraperDacuraServer extends DacuraServer {
 			$factoids = array();
 			foreach($vals as $val){
 				if($val){
-					$factoids[] = $this->createFactoid("", "", "", $val, "", "list", "complex", "warning - syntax incorrect");
+					$factoids[] = $this->createFactoid("", "", "", $val, "", "list", "complex", "");
 				}
 			}
-			$ret_val['result_message'] = "Using semi-colon (;) to separate a list of variable values (not in the syntax!)";
+			$ret_val['result_message'] = "Using semi-colon (;) to separate a list of variable values";
 		}
 		if($factoids){
 			$ret_val['datapoints'] = $factoids;
 			$ret_val['result_code'] = "warning";
+			if($ret_val['result_message'] == "Using semi-colon (;) to separate a list of variable values"){ //ugly hack
+				$ret_val['result_code'] = "complex";
+			}
 		}
 		else {
 			$ret_val["result_message"] = "Value $txt failed to parse. It has a formatting error. ";				
@@ -621,12 +624,10 @@ class ScraperDacuraServer extends DacuraServer {
 		return $ret_val;
 	}
 	
-	
 	/*
 	 * Takes a $fact (node from parse tree) representing a dated fact
 	 * Returns an array of factoids. 
 	 */
-	
 	function processDatedFact($fact, $orig){
 		foreach($fact as $factbit){
 			if($factbit['name'] == "undatedfact"){
@@ -656,8 +657,6 @@ class ScraperDacuraServer extends DacuraServer {
 		}
 		return $factoids;
 	}
-	
-	
 	
 	/*
 	 * Undated facts can be either string | complex
@@ -1137,52 +1136,53 @@ class ScraperDacuraServer extends DacuraServer {
 		$examples = array();
 		$examples['good'] = array( 
 			"present" => array(
-					"type" => "Simple Value",
-					"interpretation" => "The variable has the value \"present\" throughout the polity's lifetime.",
-					"note" => "MUST not contain the characters \"[\", \"]\", \"{\", \"}\", \";\" or \":\"))"), 
+				"type" => "Simple Value",
+				"interpretation" => "The variable has the value \"present\" throughout the polity's lifetime.",
+				"note" => "MUST not contain the characters \"[\", \"]\", \"{\", \"}\", \";\" or \":\"))"), 
 			"[by soldiers; by state]" => array(
-					"type" => "Uncertain Value", 
-					"interpretation" => "The value of the variable is either \"by soldiers\" or \"by state\", but it is not known which, throughout the polity's lifetime.",
-					"note" => "The values must not contain the dash character \"-\", in addition to the special characters: \"[\", \"]\", \"{\", \"}\", \";\" or \":\")"),
+				"type" => "Uncertain Value", 
+				"interpretation" => "The value of the variable is either \"by soldiers\" or \"by state\", but it is not known which, throughout the polity's lifetime.",
+				"note" => "The values must not contain the dash character \"-\", in addition to the special characters: \"[\", \"]\", \"{\", \"}\", \";\" or \":\")"),
 			"[5,000-15,000]" => array(
-					"type" => "Value Range", 
-					"interpretation" => "The variable has a value between 5,000 and 15,000, but it is not known where exactly on the range it is, and this is the case throughout the polity's lifetime.",
-					"note" => "The values should be numeric as a range is not meaningful otherwise. The values must not contain the dash character \"-\", or other special characters: (\"[\", \"]\", \"{\", \"}\", \";\" or \":\")."),
+				"type" => "Value Range", 
+				"interpretation" => "The variable has a value between 5,000 and 15,000, but it is not known where exactly on the range it is, and this is the case throughout the polity's lifetime.",
+				"note" => "The values should be numeric as a range is not meaningful otherwise. The values must not contain the dash character \"-\", or other special characters: (\"[\", \"]\", \"{\", \"}\", \";\" or \":\")."),
 			"{sheep; horse; goat}" => array(
-					"type" => "Disputed Value", 
-					"interpretation" => "The value of the variable is disputed. Credible experts disagree as to whether the value is sheep, goat or horse and this is the case throughout the polity's lifetime.",
-					"note" => "The values must not contain the dash character \"-\", or other special characters: (\"[\", \"]\", \"{\", \"}\", \";\" or \":\")."),
+				"type" => "Disputed Value", 
+				"interpretation" => "The value of the variable is disputed. Credible experts disagree as to whether the value is sheep, goat or horse and this is the case throughout the polity's lifetime.",
+				"note" => "The values must not contain the dash character \"-\", or other special characters: (\"[\", \"]\", \"{\", \"}\", \";\" or \":\")."),
 			"5,300,000: 120bce" => array(
-					"type" => "Dated Value",
-					"interpretation" => "The value of the variable is 5,300,000 in the year 120bce",
-					"note" => "No assumptions can be made as to the value of the variable at any other date."),
+				"type" => "Dated Value",
+				"interpretation" => "The value of the variable is 5,300,000 in the year 120bce",
+				"note" => "No assumptions can be made as to the value of the variable at any other date."),
 			"5,300,000: 120bce-75bce; 6,100,000:75bce-30ce" => array(
-					"type" => "Dated Value List",
-					"interpretation" => "The value of the variable changed over the lifetime of the polity. It was 5,300,000 between 120BCE and 75BCE and 6,100,000 between 75BCE and 30CE",
-					"note" => "Ideally, dated value lists should cover the entire lifespan of the polity."),				
+				"type" => "Dated Value List",
+				"interpretation" => "The value of the variable changed over the lifetime of the polity. It was 5,300,000 between 120BCE and 75BCE and 6,100,000 between 75BCE and 30CE",
+				"note" => "Ideally, dated value lists should cover the entire lifespan of the polity."),				
 			"[1,500,000 - 2,000,000]: 100bce" => array(
-					"type" => "Dated Value Range",
-					"interpretation" => "The value of the variable was between 1.5 million and 2 million in the year 100BCE. It is not known where on this range the real value was.",
-					"note" => "This only tells us the value for a single point in time"),
+				"type" => "Dated Value Range",
+				"interpretation" => "The value of the variable was between 1.5 million and 2 million in the year 100BCE. It is not known where on this range the real value was.",
+				"note" => "This only tells us the value for a single point in time"),
 			"232: 500bce-90bce; 321: 90BCE-15ce; 324: 15CE-45CE" => array(
-					"type" => "Changing Value over Time",
-					"interpretation" => "The value of the variable was 232 from 500BCE, it changed to 321 in 90BCE, then changed again to 324 in 15CE and remained at that value until 45CE. However the date of the change is disputed - 150BCE and 90BCE are two proposed dates for the change.",
-					"note" => "Ideally, the date ranges should cover the entire polity lifetime."),
+				"type" => "Changing Value over Time",
+				"interpretation" => "The value of the variable was 232 from 500BCE, it changed to 321 in 90BCE, then changed again to 324 in 15CE and remained at that value until 45CE. However the date of the change is disputed - 150BCE and 90BCE are two proposed dates for the change.",
+				"note" => "Ideally, the date ranges should cover the entire polity lifetime."),
 			"absent: 500bce-{150bce;90bce}; present: {150bce;90bce}-1ce" => array(
-					"type" => "Value Change at Disputed Date",
-					"interpretation" => "The value of the variable was \"absent\" from 500BCE, then it changed to \"present\" which it remained at until the year 1CE. However the date of the change is disputed - 150BCE and 90BCE are two proposed dates for the change.",
-					"note" => "All credible proposed dates should be included."),
+				"type" => "Value Change at Disputed Date",
+				"interpretation" => "The value of the variable was \"absent\" from 500BCE, then it changed to \"present\" which it remained at until the year 1CE. However the date of the change is disputed - 150BCE and 90BCE are two proposed dates for the change.",
+				"note" => "All credible proposed dates should be included."),
 			"absent: 450bce-[90bce;1ce]; present: [90bce;1ce]-53ce" => array(
-					"type" => "Value Change at Uncertain Date",
-					"interpretation" => "The value of the variable was \"absent\" from 450BCE, then it changed to \"present\" which it remained at until the year 53CE. However the date of the change is uncertain - 1CE and 90BCE are two possibilities for the change.",
-					"note" => "All credible proposed dates should be included."),
-			"absent: 500bce-150bce; {absent; present}:150bce-90bce; present: 90bce-1ce" => array("type" => "Value Disputed During Date Range",
-					"interpretation" => "The value of the variable was \"absent\" from 500BCE to 150BCE, from 150BCE to 90BCE, it was either \"absent\" or \"present\", then from 90BCE to ICE it was \"present\"",
-					"note" => "This is a re-stating of the above example, focusing on the disputed value rather than the disputed date.  It is semantically identical."),
+				"type" => "Value Change at Uncertain Date",
+				"interpretation" => "The value of the variable was \"absent\" from 450BCE, then it changed to \"present\" which it remained at until the year 53CE. However the date of the change is uncertain - 1CE and 90BCE are two possibilities for the change.",
+				"note" => "All credible proposed dates should be included."),
+			"absent: 500bce-150bce; {absent; present}:150bce-90bce; present: 90bce-1ce" => array(
+				"type" => "Value Disputed During Date Range",
+				"interpretation" => "The value of the variable was \"absent\" from 500BCE to 150BCE, from 150BCE to 90BCE, it was either \"absent\" or \"present\", then from 90BCE to ICE it was \"present\"",
+				"note" => "This is a re-stating of the above example, focusing on the disputed value rather than the disputed date.  It is semantically identical."),
 			"present: [1380 CE - 1450 CE; 1430 CE - 1450 CE; 1350 CE - 1450 CE]" => array(
-					"type" => "Period of value unknown",
-					"interpretation" => "The value of the variable was \"present\" for a period which either ran from 1380-1450 CE or from a period from 1430-1450 CE, or from a period from 1350-1450 CE",
-					"note" => "This is semantically different than the disputed change times examples above: we are saying that the value holds for one of these distinct ranges.")
+				"type" => "Period of value unknown",
+				"interpretation" => "The value of the variable was \"present\" for a period which either ran from 1380-1450 CE or from a period from 1430-1450 CE, or from a period from 1350-1450 CE",
+				"note" => "This is semantically different than the disputed change times examples above: we are saying that the value holds for one of these distinct ranges.")
 		);
 		$examples['discouraged'] = array( 
 			"present: 1380-1450 CE" => array(
@@ -1220,14 +1220,15 @@ class ScraperDacuraServer extends DacuraServer {
 					"type" => "Date Ranges mixed with Single Dates",
 					"interpretation" => "The value of the variable was \"absent\" on a particular date but that date is disputed. It is either 450CE, 1450CE or some date between 50CE and 150CE.",
 					"note" => "If most of the dates in such a list are single dates, ranges are interpreted as constraints on single dates, not date ranges."
-			)		
-		);
-		$examples['warning'] = array(
+			),
 			"1; 2; john" => array(
 					"type" => "List of values without dates",
 					"interpretation" => "The value is 1, 2 and john.",
 					"note" => "Lists of values need to be dated to differentiate them or coded as [uncertain] or {disputed values}. This is interpreted as a list of values all of which hold."
-			),
+			)		
+		);
+		$examples['warning'] = array(
+			
 			"[absent,present]" => array(
 					"type" => "Uncertain values separated by a comma",
 					"interpretation" => "The value is absent or present, which one is unknown.",
@@ -1271,7 +1272,7 @@ class ScraperDacuraServer extends DacuraServer {
 		$store = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$store){
 			$this->ucontext->logger->timeEvent("Logging in Failed");				
-			return $this->failure_result("Failed to retrieve login page ".$this->settings['scraper']['loginUrl'], 401, "warning");				
+			return $this->failure_result("Failed to retrieve login page ".$this->settings['scraper']['loginUrl'], curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "warning");				
 		}
 		$this->ucontext->logger->timeEvent("Login Page Retrieved", "debug");				
 		$loginToken = false;

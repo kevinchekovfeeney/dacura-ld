@@ -533,7 +533,7 @@
 							}
 							catch(e) 
 							{							
-								$('.data-got').html("<p class='seshat-error'>Failed to parse message from server: " + e.message + "</p>");
+								$('.data-got').html("<p class='seshat-error'>Failed to parse message from server: " + e.message + msgs[i] + "</p>");
 							}
 						}
 					};

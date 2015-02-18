@@ -6,10 +6,8 @@ getRoute()->post('/polities', 'getpolities');
 getRoute()->post('/dump', 'dump');
 getRoute()->get('/view/(.+)', 'viewReport');
 getRoute()->get('/grabscript', 'getGrabScript');
-//getRoute()->get('/test', 'testParser');
 getRoute()->post('/parse', 'parseVariable');
-//getRoute()->post('/', 'getpolitydata');
-
+getRoute()->post('/validate', 'parseVariables');
 
 /*
  * The api calls which access the seshat wiki data are accesss controlled
@@ -107,44 +105,6 @@ function getGrabScript(){
 }
 
 /*
- * Needs to be re-written to take a more sensible format of input data. 
- */
-function parseData(){
-	global $dacura_server;
-	header("Access-Control-Allow-Origin: *");
-	$dacura_server->init("parsePage");
-	if(isset($_POST["data"]) && $_POST["data"]){
-		$parsed_data = json_decode($_POST["data"], true);
-		if($parsed_data){
-			for($i = 0; $i < count($parsed_data['data']); $i++){
-				$one_result = $dacura_server->parseFactsFromString($parsed_data['data'][$i]['contents']);
-				if(count($one_result['errors']) > 0){
-					$parsed_data['data'][$i]['state'] = "error";
-					$parsed_data['data'][$i]['errorMessage'] = $one_result['errors'][0]['comment'];
-				}
-				elseif($one_result['empty'] > 0) {
-					$parsed_data['data'][$i]['state'] = "empty";						
-				}
-				elseif($one_result['lines'] > 0){
-					$parsed_data['data'][$i]['state'] = "valid";						
-				}
-				else {
-					$parsed_data['data'][$i]['state'] = "error";
-					$parsed_data['data'][$i]['errorMessage'] = "Parser failed - not empty, error or valid";
-				}
-			}
-			$dacura_server->write_json_result($parsed_data, "Returned list of ".count($parsed_data['data'])." facts");				
-		}
-		else {
-			$dacura_server->write_http_result(400, "Data in post request does not have proper json format", "notice");				
-		}
-	}
-	else {
-		$dacura_server->write_http_result(400, "No data included in post request for parsing", "notice");
-	}
-}
-
-/*
  * Input: string in $_POST['data']
  * { "value": string, "result_code": ["empty"|"simple"|"complex"|"error"], "result_msg", "datapoints": [{expanded content}]
  */
@@ -179,7 +139,7 @@ function parseVariables(){
 		foreach($vars as $var){
 			$results[] = $dacura_server->parseVariableValue($var);
 		}
-		$dacura_server->write_json_result($results, "Parsed value: $var: ".$one_result["result_code"]);				
+		$dacura_server->write_json_result($results, "Parsed ". count($results). " variables");				
 	}
 	else {
 		$dacura_server->write_http_result(400, "No parseable data found in post request", "notice");

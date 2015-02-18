@@ -20,29 +20,39 @@ var dacura = {
 		grabber: {}
 };
 
-dacura.grabber.insertModal = function (){
-	var modal = "<div id='modal-dim'></div><div id='modal'>";
-	modal += "<div id='modal-header'><b>Seshat Validation Tool</b></div>"
-	modal += "<p id='modal-text'>Analysing variables on page...</p>";
-	modal += "<button id='modal-close'>Close</button>";
-	modal += "</div>";
-	$("body").append(modal);
-	$("#modal-close").button();
-	$("#modal-close").click(function(){
-		$("body").css("overflow", "auto");
-		$("#modal-dim").hide();
-		$("#modal-results").hide();
-		$("#modal").hide();
-		$("#modal-next").hide();
-		$("#modal-prev").hide();
-		$('#ca-grab').show()
-		$("#modal").css("position", "absolute");
-		$("#modal").css("top", "0");
-		$("#modal").css("right", "0");
-		$("#modal").css("left", "0");
-		$("#modal").css("bottom", "0");
-		$("#modal").css("margin", "auto");
-	});
+dacura.grabber.getParsedTableHTML = function(variable, factoids){
+	//alert(factoids.length);
+	var html = "<table class='variable_datapoints'><tr><th>Row</th><th>Name</th><th>Value (from)</th><th>Value (to)</th>";
+	html += "<th>Date (from)</th><th>Date (to)</th><th>Value Type</th><th>Date Type</th><th>Notes</th></tr>";
+	for(var i = 0; i<factoids.length; i++){
+		factoid = factoids[i];
+		html += "<tr>";
+		html += "<td>" + (i+1) + "</td>";
+		html += "<td>" + variable + "</td>";
+		html += "<td>" + factoid.value_from + "</td>";
+		html += "<td>" + factoid.value_to + "</td>";
+		html += "<td>" + factoid.date_from + "</td>";
+		html += "<td>" + factoid.date_to + "</td>";
+		html += "<td>" + factoid.value_type + "</td>";
+		html += "<td>" + factoid.date_type + "</td>";
+		html += "<td>" + factoid.comment + "</td>";
+		html += "</tr>";
+	}
+	html += "</table>";
+	return html;
+};
+
+dacura.grabber.insertResultPane = function (){
+	var pane = "<div id='validator-results'><div id='validator-branding'>"; 
+	pane += "<img height='24' src='<?=$service->url('image', 'dacura-logo-simple.png')?>'></div>";
+	pane += "<div id='validator-name'>Seshat Validation Tool</div>";
+	pane += "<div id='validator-stats'></div>";
+	pane += "<div id='validator-controls'></div>"
+	pane += "<div id='validator-close'><button id='validator-close-button'>Clear</button></div>"
+	pane += "<div id='validator-variable'></div>"
+	pane += "</div>";
+	$("body").append(pane);
+	$("#validator-results").hide();	
 };
 
 //https://developer.mozilla.org/en-US/docs/Using_XPath
@@ -66,6 +76,14 @@ dacura.grabber.getXPathForElement = function(el, xml){
 	return xpath;
 };
 
+
+
+dacura.grabber.makeContent = function (contents){
+	var x = '<span class="pop">' + contents + '</span>';
+	return x;
+};
+
+
 dacura.grabber.grab = function(page){
 	//this function grabs all the facts on the page
 	factCollection = page.evaluate('//*[text()[contains(., "♠")]]', page, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null)
@@ -73,202 +91,280 @@ dacura.grabber.grab = function(page){
 	for(var i = 0;i < factCollection.snapshotLength;i++){
 		node = factCollection.snapshotItem(i);
 		xpath = this.getXPathForElement(node, page);
+		factParts = {"id": (i+1), "location": xpath};
 		text = node.innerHTML;
-		factParts = {"id": (i+1) "contents": text, "location": xpath};
+		if(text.indexOf("♣") < 0 || text.indexOf("♥") < 0 ){
+			factParts.parsed = { "result_code" : "error", "result_message" : "incorrectly formatted variable, use ♠ VAR ♣ VAL ♥"}
+			factParts.contents = "";
+			factParts.varname = "";
+		}
+		else {
+			factParts.contents = text.substring(text.indexOf("♣")+1, text.indexOf("♥")-1).trim();
+			factParts.varname = text.substring(text.indexOf("♠")+1, text.indexOf("♣")-1).trim();
+			if(factParts.contents.length == 0){
+				factParts.parsed = { "result_code" : "empty", "result_message" : "No value entered yet"}				
+			}
+		}
 		facts[facts.length] = factParts;
 	}
 	return facts;
 };
 
-dacura.grabber.display = function (json){
-	var good = 0;
-	var bad = 0;
-	var empty = 0;
+dacura.grabber.displayFacts = function (){
+	var stats = {"error": 0, "warning": 0, "complex": 0, "simple" : 0, "empty": 0};
+	error_sequence = [];
+	var json = dacura.grabber.pageFacts;
 	for(var i = 0;i < json.length;i++){
+		stats[json[i]["parsed"]["result_code"]]++;
+		if(json[i].parsed.result_code == "error" || json[i].parsed.result_code == "warning"){
+			error_sequence[error_sequence.length] = json[i].id;
+		}
 		xpath = json[i]["location"];
 		node = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null).snapshotItem(0);
-		if(json[i]["state"] == "error"){
-			node.style.color = "red";
-			node.classList.add("errorText");
-			content = this.makeContent(json[i]["errorMessage"]);
-			$(node).append(content);
-			bad += 1;
-			errorName = "error" + bad;
-			$(node).prepend("<a id='" + errorName + "'></a><img src='<?=$service->get_service_file_url("error.png")?>' alt='error' class='error'>");
-		}else if(json[i]["state"] == "valid"){
-			node.style.color = "green";
-			node.classList.add("correctText");
-			$(node).prepend("<img src='<?=$service->get_service_file_url("correct.png")?>' alt='correct' class='correct'>");
-			good += 1;
-		}else{
-			empty++;
-			node.style.color = "blue";
-			$(node).prepend("<img src='<?=$service->get_service_file_url("empty.png")?>' alt='empty' class='empty'>");
-}
+		dacura.grabber.decorateFact(node, json[i]["parsed"], json[i]["id"]);
 	}
-	return [good, bad, empty, json.length]
+	$('.seshatFact').click(function(){
+		var fid = $(this).attr("id").substring(5);
+		//alert(fid);
+		dacura.grabber.loadFact(fid);
+	});
+	//write into the results pane..
+	dacura.grabber.displayPageStats(stats);
+	dacura.grabber.error_ids = error_sequence;
+	dacura.grabber.displayPageControls();
+	$('#validator-variable').hide();
+	$('#validator-results').slideDown("slow");
 };
 
-dacura.grabber.makeContent = function (contents){
-	var x = '<span class="pop">' + contents + '</span>';
-	return x;
-};
 
-//is there a handler for inserting css?
-style=document.createElement("link");
-style.setAttribute("rel", "stylesheet");
-style.setAttribute("type", "text/css");
-style.setAttribute("href", "<?=$service->url("css", 'jquery-ui.css')?>");
-document.head.appendChild(style);
+dacura.grabber.displayPageControls = function(){
+	$("button.validation-errors").remove();
+	if(dacura.grabber.error_ids.length == 0){
+		//do nothing
+	}
+	else if(dacura.grabber.error_ids.length == 1){
+		$('#validator-controls').prepend("<button class='validation-errors' id='load_fact_" +dacura.grabber.error_ids[0]+"'>View Error</button>");
+	}
+	else {
+		if(typeof dacura.grabber.current_error == "undefined" || dacura.grabber.current_error == null ){
+			$('#validator-controls').prepend("<button class='validation-errors' id='load_fact_" +dacura.grabber.error_ids[0]+"'>Next Error</button>");
+		}
+		else {
+			for(i=0; i<dacura.grabber.error_ids.length; i++){
+				if(dacura.grabber.error_ids[i] == dacura.grabber.current_error){
+					if(i == (dacura.grabber.error_ids.length - 1)){
+						$('#validator-controls').prepend("<button class='validation-errors' id='load_fact_" +dacura.grabber.error_ids[i-1]+"'>Previous Error</button>");
+					}
+					else if(i == 0){
+						$('#validator-controls').prepend("<button class='validation-errors' id='load_fact_" +dacura.grabber.error_ids[i+1]+"'>Next Error</button>");						
+					}
+					else{
+						$('#validator-controls').prepend("<button class='validation-errors' id='load_fact_" +dacura.grabber.error_ids[i+1]+"'>Next Error</button>");						
+						$('#validator-controls').prepend("<button class='validation-errors' id='load_fact_" +dacura.grabber.error_ids[i-1]+"'>Previous Error</button>");						
+					}
+				}
+			}
+		}
+	}
+	$('.validation-errors').button().click(function(){
+		var jqid = $(this).attr("id").substring(10);
+		dacura.grabber.loadFact(jqid);
+	});
 
-var css = ".pop{border:1px #f00 solid;background:#fbc;padding:3px;visibility:hidden;position:absolute;left:1.6em;margin:1.6em 0;color:#000;}"
-	+ ".errorText:hover span{visibility:visible;}"
-	+ "#modal-dim{width:100%;height:100%;background:rgba(127,127,127,0.5);position:absolute;left:0;top:0;display:block;}"
-	+ "#modal{width:25em;height:15em;background:#fff;position:absolute;left:0;"
-		+ "right:0;top:0;bottom:0;margin:auto;border:1px solid #000;border-radius:1em;padding:1em;}"
-	+ "#modal-header{background:#da3;margin:-1em;padding:1em;border-radius:1em 1em 0 0;margin-bottom:1em;}"
-	+ "#modal-clear{margin-bottom: 0.2em;"
-var style = document.createElement("style");
-style.type = 'text/css';
-if (style.styleSheet){
-	style.styleSheet.cssText = css;
-}else{
-	style.appendChild(document.createTextNode(css));
 }
-document.head.appendChild(style);
-if($("#ca-grab").length){
-	//do nothing
-}else{
-	$("<li id='ca-grab'><span><a>Validate</a></span></li>").insertBefore("#ca-view");
-};
 
-var grabison = false;
+dacura.grabber.loadFact = function(id){
+	var fact = 	dacura.grabber.pageFacts[id-1];
+	if(fact.varname == "") fact.varname = "~";
+	if(fact.contents == "") fact.contents = "~";
+	if(fact.result_message == "") fact.result_message = "~";
+	var html = "<dl><dt>Variable:</dt><dd>"+ fact.varname + "</dd><dt>Value:</dt><dd>" + fact.contents  
+			+ "</dd><dt>Result:</dt><dd>" + fact.parsed.result_code + "</dd>" + 
+			"<dt>Message:</dt><dd>" + fact.parsed.result_message + "</dd><dt>Datapoints:</dt>";
+	var dpcount = 0;
+	if(typeof fact.parsed.datapoints == "object"){
+		for (var k in fact.parsed.datapoints){
+			dpcount++;
+		}
+		html += "<dd>" + dpcount + " <a id='dptoggle' href='javascript:dacura.grabber.toggleDatapoints(\"" + id + "\")'>(show)</a></dd></dl>";
+		html += this.getParsedTableHTML(fact.varname, fact.parsed.datapoints);
+	}
+	else {
+		html += "<dd>0</dd>";
+	}
+	if(fact.parsed.result_code == "error" || fact.parsed.result_code == "warning"){
+		dacura.grabber.current_error = id;
+	}
+	else {
+		dacura.grabber.current_error = null;
+	}
+	dacura.grabber.displayPageControls();
+	$('#validator-variable').slideUp("fast", function() {
+		$('#validator-variable').html(html).slideDown("slow", function() {
+			var faketop = $('#validator-results').height();
+			$('html, body').animate({
+				scrollTop: $("#fact_" + id).offset().top - (faketop + 20)
+			}, 2000);
+		});		
+		// Animation complete.
+	});
 
-$('#ca-grab').click(function(){
-	if(grabison){
+}
+
+dacura.grabber.toggleDatapoints = function(id){
+	if($('#dptoggle').html() == "(show)"){
+		$('#dptoggle').html("(hide)"); 
+	}
+	else {
+		$('#dptoggle').html("(show)"); 
+	}
+	$('.variable_datapoints').toggle();
+	var faketop = $('#validator-results').height();
+	$('html, body').animate({
+		scrollTop: $("#fact_" + id).offset().top - (faketop + 20)
+	}, 2000);
+}
+
+dacura.grabber.displayPageStats = function(stats){
+	$('#validator-stats').html("<dl><dt class='seshatCorrect'>Correct</dt><dd class='seshatCorrect'>" + (stats.complex + stats.simple) + "</dd>" + 
+		"<dt class='seshatEmpty'>Empty</dt><dd class='seshatEmpty'>" + (stats.empty) + "</dd>" + 
+		"<dt class='seshatError'>Problems</dt><dd class='seshatError'>" + (stats.error + stats.warning) + "</dd></dl>");
+}
+
+dacura.grabber.decorateFact = function(node, parsed, id){
+	node.classList.add("seshatFact");
+    $(node).attr("id", "fact_" + id);
+	if(parsed.result_code == "error" || parsed.result_code == "warning"){
+		node.classList.add("seshatError");
+		$(node).attr("title", parsed.result_message);
+		$(node).prepend("<img class='seshat_fact_img seshat_error' src='<?=$service->get_service_file_url('error.png')?>' alt='error' title='error parsing variable'>");
+	}
+	else if(parsed.result_code == "empty"){
+		node.classList.add("seshatEmpty");
+		$(node).prepend("<img class='seshat_fact_img seshat_empty' src='<?=$service->get_service_file_url('empty.png')?>' alt='empty' title='empty variable' class='empty'>");
+	}
+	else if(parsed.result_code == "complex" || parsed.result_code == "simple"){
+		node.classList.add("seshatCorrect");
+		$(node).prepend("<img class='seshat_fact_img seshat_correct' src='<?=$service->get_service_file_url('correct.png')?>' alt='correct' title='variable parsed correctly'>");
+	}
+	else {
+		node.classList.add("seshatUnknown");
+		$(node).prepend("<img class='seshat_fact_img seshat_unknown' src='<?=$service->get_service_file_url('unknown.png')?>' alt='unknown' title='variable parser returned unknonwn value'>");
+	}
+}
+
+
+dacura.grabber.parsePageFacts = function(){
+	if(pageParsed){
+		dacura.grabber.displayFacts();
 		return;
 	}
-	grabison = true;
-	$("#modal-close").show();
-	$("#modal-clear").hide();
-	var errorNumber = 0;
-	$('#ca-grab').hide();
-	$("body").css("overflow", "hidden");
-	$(".correct").remove();
-	$(".error").remove();
-	$("#modal-next").remove();
-	$("#modal-prev").remove();
-	var user = $("#pt-userpage").text();
-	var nga = "";
-	var polity = $.trim($("#firstHeading").text())
-	x = {"nga": nga, "polity": polity, "user": user};
-	y = {"metadata": x, "data": dacura.grabber.grab(document)};
-	if($("#modal").length){
-		$("#modal-close").html('<span class="ui-button-text">Close</span>');
-		$("#modal-dim").show();
-		$("#modal-text").html("Analysing variables on page...");
-		$("#modal").show();
-	}else{
-		dacura.grabber.insertModal();
+	var pfacts = [];
+	var fact_ids = [];
+	for(i in dacura.grabber.pageFacts){
+		if(typeof dacura.grabber.pageFacts[i].parsed != "object"){
+			pfacts[pfacts.length] = dacura.grabber.pageFacts[i].contents;
+			fact_ids[fact_ids.length] = i;			
+		}
 	}
 	xhr = {};
-	xhr.data = {data: JSON.stringify(y)};
-	xhr.url = "<?=$service->my_url("rest")?>/parse";
+	xhr.data = { "data" : JSON.stringify(pfacts)};
+	xhr.url = "<?=$service->my_url('rest')?>/validate";
 	xhr.type = "POST";
+	xhr.beforeSend = function(){
+		var msg = fact_ids.length + " Variables being analysed";
+		dacura.grabber.showBusyMessage(msg);
+	};
+	xhr.complete = function(){
+		grabison = false;
+	};
 	$.ajax(xhr)
 	.done(function(response, textStatus, jqXHR) {
-		$("#modal-close").html('<span class="ui-button-text">View results</span>');
-		errorNumber = 0;
-		if($("#modal-results").length){
-			$("#modal-results").show();
-		}else{
-			$("#modal").append("<button id='modal-results'>View next error</button>");
-			$("#modal-results").button();
+		try {
+			var results = JSON.parse(response);
+			for(i in results){
+				dacura.grabber.pageFacts[fact_ids[i]].parsed = results[i];
+			}
+			dacura.grabber.displayFacts();
+			pageParsed = true;
+			dacura.grabber.clearBusyMessage();
 		}
-		$("#modal-results").click(function(){
-			$("#modal-close").html('<span class="ui-button-text">Close</span>');
-			$("#modal-close").hide();
-			errorNumber = 1;
-			var anchor = "#error1";
-			$('html, body').animate({
-				scrollTop: $(anchor).offset().top
-			}, 1000);
-			$("body").css("overflow", "auto");
-			$("#modal-dim").hide();
-			$("#modal-results").hide();
-			$("#modal").css("position", "fixed");
-			$("#modal").css("top", "2em");
-			$("#modal").css("right", "2em");
-			$("#modal").css("left", "auto");
-			$("#modal").css("bottom", "auto");
-			$("#modal").css("margin", "none");
-			if($("#modal-clear").length){
-				$("#modal-clear").show();
-			}else{
-				$("#modal").append("<button id='modal-clear'>Clear results</button><br>");
-				$("#modal-clear").button();
-				$("#modal-clear").click(function(){
-					$("body").css("overflow", "auto");
-					$("#modal-dim").hide();
-					$("#modal-results").hide();
-					$("#modal").hide();
-					$("#modal-next").hide();
-					$("#modal-prev").hide();
-					$('#ca-grab').show()
-					$("#modal").css("position", "absolute");
-					$("#modal").css("top", "0");
-					$("#modal").css("right", "0");
-					$("#modal").css("left", "0");
-					$("#modal").css("bottom", "0");
-					$("#modal").css("margin", "auto");
-					$(".error").hide();
-					$(".correct").hide();
-					$(".errorText").css("color", "black");
-					$(".correctText").css("color", "black");
-				});
-			}
-			if($("#modal-next").length){
-				$("#modal-next").show();
-			}else{
-				$("#modal").append("<button id='modal-next'>Next error</button>");
-				$("#modal-next").button();
-				$("#modal-next").click(function(){
-					errorNumber = errorNumber + 1;
-					if(errorNumber > errorLength){
-						errorNumber = 1;
-					}
-					var anchor = "#error" + errorNumber;
-					$('html, body').animate({
-						scrollTop: $(anchor).offset().top
-					}, 1000);
-				});
-			}
-			if($("#modal-prev").length){
-				$("#modal-prev").show();
-			}else{
-				$("#modal").append("<button id='modal-prev'>Previous error</button>");
-				$("#modal-prev").button();
-				$("#modal-prev").click(function(){
-					errorNumber = errorNumber - 1;
-					if(errorNumber < 1){
-						errorNumber = errorLength;
-					}
-					var anchor = "#error" + errorNumber;
-					$('html, body').animate({
-						scrollTop: $(anchor).offset().top
-					}, 1000);
-				});
-			}
-		});
-		y = JSON.parse(response);
-		x = dacura.grabber.display(y["data"]);
-		$("#modal-text").html("Analysis completed successfully.<br>" + x[3] + " variables detected<br>" + x[0] + " correct<br>" + x[1] + " syntax errors<br>" + x[2] + " empty variables");
-		var errorLength = x[1];
-		grabison = false;
-
+		catch(e){
+			dacura.grabber.showParseErrorMessage("Failed to contact server to parse variables: " + e.message);
+		}
 	})
 	.fail(function (jqXHR, textStatus){
-		alert("Scan failed. Error: " + jqXHR.responseText);
+		dacura.grabber.showParseErrorMessage("Failed to contact server to parse variables: " + jqXHR.responseText);
 		grabison = false;
 	});
-});
+};
+
+dacura.grabber.showBusyMessage = function(msg){
+	$('body').append("<div id='grabber-busy'><img class='dialog-busy' src='<?=$service->url('image', 'ajax-loader.gif')?>'> "+msg+"</div>");
+	$('#grabber-busy').dialog({
+		 modal: true,
+		 title: "Analysing Page",
+		 buttons: {
+			 cancel: function() {
+				 $( this ).dialog( "close" );
+				 dacura.grabber.clear();
+			 }
+		 }
+	});
+};
+dacura.grabber.clearBusyMessage = function(){
+	$('#grabber-busy').remove();
+};
+
+dacura.grabber.showParseErrorMessage= function(msg){
+	$('#grabber-busy').html("<div class='seshatError'>Error: " + msg + "</div>");
+};
+
+dacura.grabber.clear = function(){
+	grabison = false;
+	$('#validator-variable').slideUp("fast");
+	$('#validator-results').slideUp("slow");
+	$('.seshat_fact_img').remove();
+	$('.seshatFact').unbind('click');
+	$('.seshatFact').removeClass("seshatFact seshatError seshatEmpty seshatCorrect");
+};
+
+
+
+
+var grabison = false;
+var pageParsed = false;
+dacura.grabber.error_ids = [];
+if($("#ca-grab").length){
+	//do nothing
+}
+else if(!$("#ca-view").length){
+	alert("You can only invoke this validator on a Seshat media wiki page!");
+}
+else{
+	dacura.grabber.pageFacts = dacura.grabber.grab(document);
+	style=document.createElement("link");
+	style.setAttribute("rel", "stylesheet");
+	style.setAttribute("type", "text/css");
+	style.setAttribute("href", "<?=$service->url('css', 'jquery-ui.css')?>");
+	document.head.appendChild(style);
+	style=document.createElement("link");
+	style.setAttribute("rel", "stylesheet");
+	style.setAttribute("type", "text/css");
+	style.setAttribute("href", "<?=$service->get_service_file_url('grab.css')?>");
+	document.head.appendChild(style);
+	dacura.grabber.insertResultPane();
+	$("<li id='ca-grab'><span><a>Validate</a></span></li>").insertBefore("#ca-view");
+	$('#ca-grab').click(function(){
+		if(grabison){
+			return;
+		}
+		grabison = true;
+		$('button#validator-close-button').button().click(function(){
+			dacura.grabber.clear();
+		});
+		dacura.grabber.parsePageFacts();
+	});
+};
+
+

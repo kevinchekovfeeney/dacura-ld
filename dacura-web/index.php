@@ -28,7 +28,11 @@ $servman = new ServiceLoader($dacura_settings);
 $service = $servman->loadServiceFromURL($request_log);
 if($service){
 	$dacura_server = $service->loadServer();
-	if($dacura_server->userHasViewPagePermission()){
+	if(!$dacura_server){
+		$servman->renderErrorPage("error", $service->errcode, $service->errmsg );
+		$request_log->setResult($service->errmsg , "Failed to load Dacura Server " . $dacura_server->errcode ." | " .$dacura_server->errmsg);
+	}
+	elseif($dacura_server->userHasViewPagePermission()){
 		$service->renderFullPage($dacura_server);
 		$request_log->setResult(200, "Page rendered");
 	}
