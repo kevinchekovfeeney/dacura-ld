@@ -205,8 +205,9 @@ class ScraperDacuraServer extends DacuraServer {
 			}
 			$summaries[] = $summary;
 		}
-		$this->fileman->dumpData($html_op, "</table>");				
-		$this->fileman->dumpData($error_op, "</table>");				
+		$tab_style = "<style>th,td { padding: 2px; border: 1px solid black; }\ntable { border-collapse: collapse}</stlye>";
+		$this->fileman->dumpData($html_op, "</table>$tab_style");				
+		$this->fileman->dumpData($error_op, "</table>$tab_style");				
 		$this->fileman->endServiceDump($error_op);
 		$this->fileman->endServiceDump($html_op);
 		$this->fileman->endServiceDump($tsv_op);
@@ -249,7 +250,7 @@ class ScraperDacuraServer extends DacuraServer {
 					header("Cache-control: private"); //use this to open files directly
 					break;
 				case "html" :
-					header("Content-type: Content-Type: text/html; charset=utf-8");
+					header("Content-Type: text/html; charset=utf-8");
 					break;
 				default;
 				    header("Content-type: application/octet-stream");
@@ -402,7 +403,7 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Returns a FactList...
 	 */
 	function parseFactsFromString($str, $section = "", $subsection = ""){
-		$pattern = '/\x{2660}([^\x{2660}\x{2665}]*)\x{2663}([^\x{2660}]*)\x{2665}/u';
+		$pattern = '/\x{2660}([^\x{2660}\x{2665}]*)\x{2663}([^\x{2660}]*)\x{2665}/Uu';
 		$matches = array();
 		$factoids = array();
 		$res = array("variables" => array(), "errors" => array(), "warnings" => array(), "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0);
@@ -480,18 +481,13 @@ class ScraperDacuraServer extends DacuraServer {
 	}
 	
 	function getEmptyError(){
-		return array("type" => "warning", "nga" => "", "polity" => "", "section" => "", "subsection" => "", "variable" => "", 
+		return array("type" => "error", "nga" => "", "polity" => "", "section" => "", "subsection" => "", "variable" => "", 
 				"value" => "", "comment" => "", "link" => "");
 	}
 	
 	function getEmptyWarning(){
 		return array("type" => "warning", "nga" => "", "polity" => "", "section" => "", "subsection" => "", "variable" => "",
 			"value" => "", "comment" => "", "link" => "");
-	}
-	
-	
-	function characteriseError($txt){
-		return "Need to write a function to give a basic attempt to characterise errors.";		
 	}
 	
 	/*
@@ -593,12 +589,12 @@ class ScraperDacuraServer extends DacuraServer {
 		if($is_bad_list && strpos($txt, ",") !== false){
 			$vals = explode(",", substr($txt, 1, strlen($txt)-2));
 			foreach($vals as $val){
-				$factoids[] = $this->createFactoid("", "", "", $val, "", $is_bad_list, "complex", "warning - syntax incorrect");
+				$factoids[] = $this->createFactoid("", "", "", $val, "", $is_bad_list, "complex", "warning - Using comma (,) instead of semi-colon (;) to separate list of $is_bad_list values");
 			}
-			$ret_val['result_message'] = "Using comma (,) instead of semi-colon (;) to separate list of $is_bad_list values";
+			$ret_val['result_message'] = "Warning: using comma (,) instead of semi-colon (;) to separate list of $is_bad_list values";
 		}
 		elseif($is_bad_list && !strpbrk(substr($txt, 1, strlen($txt)-3), ":;[{,")){
-			$factoids = array($this->createFactoid("", "", "", trim(substr($txt, 1, strlen($txt)-2)), "", $is_bad_list, "simple", "warning - syntax incorrect"));				
+			$factoids = array($this->createFactoid("", "", "", trim(substr($txt, 1, strlen($txt)-2)), "", $is_bad_list, "simple", "warning - Surrounding a simple value in $is_bad_list brackets"));				
 			$ret_val['result_message'] = "Surrounding a simple value in $is_bad_list brackets";
 		}
 		elseif(!$is_bad_list && strpos($txt, ";") !== false && !strpbrk($txt, ":[{,")){
@@ -609,12 +605,12 @@ class ScraperDacuraServer extends DacuraServer {
 					$factoids[] = $this->createFactoid("", "", "", $val, "", "list", "complex", "");
 				}
 			}
-			$ret_val['result_message'] = "Using semi-colon (;) to separate a list of variable values";
+			$ret_val['result_message'] = "list of variable values";
 		}
 		if($factoids){
 			$ret_val['datapoints'] = $factoids;
 			$ret_val['result_code'] = "warning";
-			if($ret_val['result_message'] == "Using semi-colon (;) to separate a list of variable values"){ //ugly hack
+			if($ret_val['result_message'] == "list of variable values"){ //ugly hack
 				$ret_val['result_code'] = "complex";
 			}
 		}
@@ -736,7 +732,6 @@ class ScraperDacuraServer extends DacuraServer {
 			else {
 				$datevals = $this->consolidateDates($base, "disputed");
 			}
-				
 		}
 		elseif($fact['name'] == "uncertaindate" || ($fact['name'] == "singledate" && $fact['value']['name'] == "uncertaindate")){
 			//just make a range from the first to the last..
@@ -917,7 +912,6 @@ class ScraperDacuraServer extends DacuraServer {
 			}
 		}
 		return false;
-		
 	}
 	
 	function getLastYearSuffix($str){
@@ -1012,7 +1006,6 @@ class ScraperDacuraServer extends DacuraServer {
 		$date_val = "$earliest - $latest";
 		return array("type" => $type, "value" => $str, "comment" => "Date is $type");
 	}
-	
 	
 	/*
 	 * deals with the problem of missing suffixes in ranges
@@ -1163,6 +1156,10 @@ class ScraperDacuraServer extends DacuraServer {
 				"type" => "Dated Value Range",
 				"interpretation" => "The value of the variable was between 1.5 million and 2 million in the year 100BCE. It is not known where on this range the real value was.",
 				"note" => "This only tells us the value for a single point in time"),
+			"1; 2; john; tree; rhubarb; fruit salad" => array(
+				"type" => "Variable with a list of values",
+				"interpretation" => "The value of the variable is simultaneously 1, 2, john, tree, rhubarb and fruit salad.",
+				"note" => "Semi-colons signify lists of values, all of which hold."),
 			"232: 500bce-90bce; 321: 90BCE-15ce; 324: 15CE-45CE" => array(
 				"type" => "Changing Value over Time",
 				"interpretation" => "The value of the variable was 232 from 500BCE, it changed to 321 in 90BCE, then changed again to 324 in 15CE and remained at that value until 45CE. However the date of the change is disputed - 150BCE and 90BCE are two proposed dates for the change.",
@@ -1217,18 +1214,12 @@ class ScraperDacuraServer extends DacuraServer {
 				"note" => "It is ambiguous whether the ranges refer to an uncertain particular date, or to a long-running process. "
 			),
 			"absent: {450 CE; 1450 CE; 150-50 CE}" => array(
-					"type" => "Date Ranges mixed with Single Dates",
-					"interpretation" => "The value of the variable was \"absent\" on a particular date but that date is disputed. It is either 450CE, 1450CE or some date between 50CE and 150CE.",
-					"note" => "If most of the dates in such a list are single dates, ranges are interpreted as constraints on single dates, not date ranges."
-			),
-			"1; 2; john" => array(
-					"type" => "List of values without dates",
-					"interpretation" => "The value is 1, 2 and john.",
-					"note" => "Lists of values need to be dated to differentiate them or coded as [uncertain] or {disputed values}. This is interpreted as a list of values all of which hold."
+				"type" => "Date Ranges mixed with Single Dates",
+				"interpretation" => "The value of the variable was \"absent\" on a particular date but that date is disputed. It is either 450CE, 1450CE or some date between 50CE and 150CE.",
+				"note" => "If most of the dates in such a list are single dates, ranges are interpreted as constraints on single dates, not date ranges."
 			)		
 		);
 		$examples['warning'] = array(
-			
 			"[absent,present]" => array(
 					"type" => "Uncertain values separated by a comma",
 					"interpretation" => "The value is absent or present, which one is unknown.",
@@ -1243,6 +1234,11 @@ class ScraperDacuraServer extends DacuraServer {
 					"type" => "Single disputed value",
 					"interpretation" => "The value is absent although this is disputed.",
 					"note" => "Disputed values need alternatives."
+			),				
+			"[present]" => array(
+					"type" => "Single uncertain value",
+					"interpretation" => "The value is present, although this is not certain.",
+					"note" => "Uncertain values need alternatives."
 			),				
 		);
 		
@@ -1312,11 +1308,20 @@ class ScraperDacuraServer extends DacuraServer {
 		return str_replace("_", " ", $x);
 	}
 	
+	function parsePolityName($url){
+		$p_details = array(
+			"url" => $url,
+			"shorturl" => substr($url, 0,40),
+			"polityname" => "");
+		$bits = explode("/", $url);
+		$x = $bits[count($bits) - 1];
+		$p_details['polityname'] = str_replace("_", " ", $x);
+		return $p_details;
+	}
+	
 	function unformatSectionName($tit){
 		return str_replace(" ", "_", $tit);
 	}
-	
-	
 
 }
 

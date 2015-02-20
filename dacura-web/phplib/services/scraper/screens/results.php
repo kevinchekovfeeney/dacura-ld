@@ -21,7 +21,9 @@
 	<table class='scraper-report'><tr><th>NGA</th><th>Page</th><th>Failure</th></tr>
 	<?php
 	foreach($params['failures'] as $pf){
-		echo "<tr><td>" . $pf[0] . "</td><td>" . $pf[1] . "</td><td>" . $pf[3] .":".$pf[2] ."</td></tr>";
+		$pd = $dacura_server->parsePolityName($pf[1]);
+		$txt = "<a href='".$pf[1]."'>".$pd['polityname']."</a>";
+		echo "<tr><td>" . $dacura_server->formatNGAName($pf[0]) . "</td><td>$txt</td><td><small><strong>" . $pf[3] ."</strong>: ".$pf[2] ."</small></td></tr>";
 	}
 	echo "</table>";
 }

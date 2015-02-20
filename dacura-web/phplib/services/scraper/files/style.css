@@ -9,6 +9,7 @@
 
 .scraper-screen {
 	display: none;
+	text-align: center;
 }
 
 div#scraper-info {

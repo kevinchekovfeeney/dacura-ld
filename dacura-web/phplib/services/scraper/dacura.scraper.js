@@ -72,3 +72,29 @@ dacura.scraper.api.parseValue = function(data, xhr){
 	return xhr;
 }
 
+dacura.scraper.tidyNGAString = function(contents){
+	contents = contents.replace('http://seshat.info/', '');
+	var pattern = "_";
+    re = new RegExp(pattern, "g");
+	contents = contents.replace(re, ' ');
+	contents = contents.replace('Select All', '');
+	return contents;
+}
+
+dacura.scraper.parsePolityString = function(str){
+	p_details = {
+		url: str,
+		shorturl: str.substr(0,40),
+		polityname: "", 
+		period: ""	
+	};
+	str = str.replace('http://seshat.info/', '');
+	re = new RegExp("_", "g");
+	str = str.replace(re, ' ');
+	re = new RegExp("^([^\(\)]*)([^\)]*)");
+	res =  re.exec(str);
+	p_details.polityname = res[1]; 
+	p_details.period = res[2].substr(1);
+	return p_details;
+}
+

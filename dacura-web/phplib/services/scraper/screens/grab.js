@@ -76,13 +76,10 @@ dacura.grabber.getXPathForElement = function(el, xml){
 	return xpath;
 };
 
-
-
 dacura.grabber.makeContent = function (contents){
 	var x = '<span class="pop">' + contents + '</span>';
 	return x;
 };
-
 
 dacura.grabber.grab = function(page){
 	//this function grabs all the facts on the page
@@ -99,8 +96,8 @@ dacura.grabber.grab = function(page){
 			factParts.varname = "";
 		}
 		else {
-			factParts.contents = text.substring(text.indexOf("♣")+1, text.indexOf("♥")-1).trim();
-			factParts.varname = text.substring(text.indexOf("♠")+1, text.indexOf("♣")-1).trim();
+			factParts.contents = text.substring(text.indexOf("♣")+1, text.indexOf("♥")).trim();
+			factParts.varname = text.substring(text.indexOf("♠")+1, text.indexOf("♣")).trim();
 			if(factParts.contents.length == 0){
 				factParts.parsed = { "result_code" : "empty", "result_message" : "No value entered yet"}				
 			}
@@ -136,7 +133,6 @@ dacura.grabber.displayFacts = function (){
 	$('#validator-results').slideDown("slow");
 };
 
-
 dacura.grabber.displayPageControls = function(){
 	$("button.validation-errors").remove();
 	if(dacura.grabber.error_ids.length == 0){
@@ -170,7 +166,6 @@ dacura.grabber.displayPageControls = function(){
 		var jqid = $(this).attr("id").substring(10);
 		dacura.grabber.loadFact(jqid);
 	});
-
 }
 
 dacura.grabber.loadFact = function(id){
@@ -208,7 +203,6 @@ dacura.grabber.loadFact = function(id){
 		});		
 		// Animation complete.
 	});
-
 }
 
 dacura.grabber.toggleDatapoints = function(id){
@@ -252,7 +246,6 @@ dacura.grabber.decorateFact = function(node, parsed, id){
 		$(node).prepend("<img class='seshat_fact_img seshat_unknown' src='<?=$service->get_service_file_url('unknown.png')?>' alt='unknown' title='variable parser returned unknonwn value'>");
 	}
 }
-
 
 dacura.grabber.parsePageFacts = function(){
 	if(pageParsed){
@@ -312,6 +305,7 @@ dacura.grabber.showBusyMessage = function(msg){
 		 }
 	});
 };
+
 dacura.grabber.clearBusyMessage = function(){
 	$('#grabber-busy').remove();
 };
@@ -330,18 +324,13 @@ dacura.grabber.clear = function(){
 };
 
 
-
-
 var grabison = false;
 var pageParsed = false;
 dacura.grabber.error_ids = [];
 if($("#ca-grab").length){
-	//do nothing
+	//do nothing - the grabber has already been added to the page
 }
-else if(!$("#ca-view").length){
-	alert("You can only invoke this validator on a Seshat media wiki page!");
-}
-else{
+else if ($('#ca-view').length){
 	dacura.grabber.pageFacts = dacura.grabber.grab(document);
 	style=document.createElement("link");
 	style.setAttribute("rel", "stylesheet");
@@ -365,6 +354,9 @@ else{
 		});
 		dacura.grabber.parsePageFacts();
 	});
-};
+}
+else {
+	//do nothing - can only be invoked on a media wiki page with the view tab
+}
 
 

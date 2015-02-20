@@ -1,7 +1,7 @@
 <?php
 $settings = array(
 	"cookiejar" => $dacura_settings['storage_base']."cookiejar.txt",
-	"use_cache" => true,
+	"use_cache" => false,
 	"username" => 'Gavin',
 	"password" => 'cheguevara',
 	"loginUrl" => 'http://seshat.info/w/index.php?title=Special:UserLogin&action=submitlogin',

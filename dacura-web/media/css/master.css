@@ -86,12 +86,15 @@ img { border: 0;}
 }
 
 #fullscreen-tool {
-		width: 1020px;
+	width: 1020px;
 	background-color: #FBFAF9;
-	margin: 0 auto;
-	
+	margin: 0 auto;	
 }
 
+
+.dacura-widget {
+	text-align: center;
+}
 
 #dashboard-container {
 	padding-top: 50px;
@@ -164,6 +167,7 @@ div.dacura-dashboard-task-button
 }
 
 div.dacura-dashboard-panel {
+	text-align: center;
 }
 
 
@@ -484,7 +488,6 @@ table.dc-wizard td.input-help {
 }
 
 .dacura-user-message-box {
-	display: inline-block;
 	margin: 2px;
 	font-size: 0.9em;	
 	border-radius: 4px;
