@@ -16,9 +16,8 @@ class HomeService extends DacuraService {
 	function renderFullPage($server){
 		/* This will give an error. Note the output
 		 * above, which is before the header() call */
-		$url = $this->get_service_url($server->getUserHomeService(), array(), "html", $this->collection_id, $this->dataset_id);
+		$cid = ($server->cid() == "all") ? $server->getUserHomeContext($server->getUser()) : $server->cid();
+		$url = $this->get_service_url($server->getUserHomeService(), array(), "html", $cid, "all");
 		header("Location: $url");
 	}
-	
-	
 }

@@ -178,8 +178,8 @@ class DacuraService extends DacuraObject {
 		}
 		$req_role = $this->protected_screens[$this->screen];
 		if(!isset($req_role[1]) or $req_role[1] === false) $req_role[1] = $this->collection_id;
-		if(!isset($req_role[2]) or $req_role[2] === false) $req_role[2] = $this->dataset_id;
-		if($user->hasSufficientRole($req_role[0], $req_role[1], $req_role[2])){
+		if(!isset($req_role[2]) or $req_role[2] === false) $req_role[2] = $this->dataset_id;	
+		if($user->hasSufficientRole($req_role[0], $req_role[1], $req_role[2])){			
 			return true;
 		}
 		return $this->failure_result("User " . $user->getName(). " does not have role required to view $this->screen screen.", 401);
@@ -193,6 +193,14 @@ class DacuraService extends DacuraObject {
 
 	function handlePageLoad($dacura_server){
 		$this->renderScreen($this->screen, $this->args);
+	}
+	
+	function getServiceContextLinks(){
+		return "<a href='".$this->get_service_url()."'>".$this->getTitle()."</a>";
+	}
+	
+	function getTitle(){
+		return ucfirst($this->servicename)." Service";
 	}
 	
 	/*

@@ -44,19 +44,20 @@ class UserRole extends DacuraObject {
 	 * Returns true if this role covers the passed requirements
 	 */
 	function covers($r, $cid, $did){
+		
 		if($this->roleCompare($this->role, $r) < 0){
 			return false;
 		}
-		if(($this->collection_id == "all")){
+		if(($this->collection_id == "all" or $cid == 'any')){
 			return true;
 		}
-		elseif($this->collection_id != $cid && $cid != "all"){
+		elseif($this->collection_id != $cid){
 			return false;
 		}
 		elseif($this->dataset_id == "all"){
 			return true;
 		}
-		elseif($this->dataset_id == $did or $did == "all"){
+		elseif($this->dataset_id == $did or $did == "any"){
 			return true;
 		}
 		return false;

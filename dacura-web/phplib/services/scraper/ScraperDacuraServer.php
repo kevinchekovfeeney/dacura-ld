@@ -60,8 +60,8 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Fetches the list of NGAs from the Seshat Main page (the World-30 sample table)
 	 * Returns an array of URLs
 	 */
-	function getNGAList(){
-		if($this->settings['scraper']['use_cache']){
+	function getNGAList($suppress_cache = false){
+		if($this->settings['scraper']['use_cache'] && !$suppress_cache){
 			$x = $this->fileman->decache("scraper", $this->settings['scraper']['mainPage'], $this->ch);
 			if($x) {
 				return $x;
@@ -76,7 +76,6 @@ class ScraperDacuraServer extends DacuraServer {
 			return $this->failure_result("Failed to retrieve nga list page ".$this->settings['scraper']['mainPage'], curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "warning");
 		}
 		$fmod = curl_getinfo($this->ch, CURLINFO_FILETIME);
-		
 		$dom = new DOMDocument;
 		$dom->loadXML($content);
 		$xpath = new DOMXPath($dom);
@@ -102,8 +101,8 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Takes the URL of the polity page
 	 * Returns an array of URLs
 	 */
-	function getPolities($pageURL){
-		if($this->settings['scraper']['use_cache']){
+	function getPolities($pageURL, $suppress_cache = false ){
+		if($this->settings['scraper']['use_cache'] && !$suppress_cache){
 			$x = $this->fileman->decache("scraper", $pageURL, $this->ch);
 			if($x) return $x;
 		}
@@ -136,11 +135,12 @@ class ScraperDacuraServer extends DacuraServer {
 	/**
 	 * Produces a dump of the NGA / polity sets passed in
 	 * @param $data associative array of NGA name -> polity URL
+	 * @param $suppress_cache - turn off cache for this call
 	 */
-	function getDump($data){
+	function getDump($data, $suppress_cache = false){
 		$polities_retrieved = array();
 		$summaries = array();
-		$headers = array("NGA", "Polity", "Area", "Section", "Variable", "Value From", "Value To",
+		$headers = array("NGA", "Polity", "Section", "Subsection", "Variable", "Value From", "Value To",
 				"Date From", "Date To", "Fact Type", "Value Note", "Date Note", "Comment");
 		$error_headers = array("NGA", "Polity", "Section", "Subsection", "Variable", "Type", "Value", "Error");
 		$stats = array( "ngas" => 0, "polities" => 0, "errors" => 0, "warnings" => 0, "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0);
@@ -161,7 +161,7 @@ class ScraperDacuraServer extends DacuraServer {
 				if(!$p) continue;
 				if(!isset($polities_retrieved[$p])){
 					$this->logEvent("debug", 200, "retrieving facts from $p");
-					$pfacts = $this->getFactsFromURL($p);
+					$pfacts = $this->getFactsFromURL($p, $suppress_cache);
 					if($pfacts){
 						$polities_retrieved[$p] = $pfacts;
 						//op errors
@@ -269,13 +269,10 @@ class ScraperDacuraServer extends DacuraServer {
 			return $this->failure_result("Could not open requested report file $repname", 404);
 		}
 	}
-	
-	
-	
+		
 	/*
 	 * Dump Statistics - showing how many variables have been retrieved
 	 */
-	
 	function statsToString($fact_list, $second_fl = false){
 		$html = "<table class='scraper-report'><tr><th>Vars</th><th>Errors</th><th>Empty</th><th>Data</th></tr>";
 		$html .= "<tr><td>". $fact_list['total_variables']."</td><td>".count($fact_list['errors'])."</td><td>".$fact_list['empty'];
@@ -299,21 +296,20 @@ class ScraperDacuraServer extends DacuraServer {
 		$stats['errors'] += count($nfacts['errors']);
 		$stats['warnings'] += count($nfacts['warnings']);
 	}
-	
 
 	/*
 	 * Functions for turning a seshat page into an array of facts...
 	 */
-	function getFactsFromURL($pageURL){
+	function getFactsFromURL($pageURL, $suppress_cache = false){
 		$content = false;
-		if($this->settings['scraper']['use_cache']){
+		if($this->settings['scraper']['use_cache'] && !$suppress_cache){
 			$content = $this->fileman->decache("scraper", $pageURL, $this->ch);
 		}
 		if(!$content){
 			curl_setopt($this->ch, CURLOPT_URL, $pageURL);
 			$content = curl_exec($this->ch);
 			if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-				return $this->failure_result("Failed to retrieve $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "info");
+				return $this->failure_result("Failed to retrieve url: $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "info");
 			}	
 			if($content && $this->settings['scraper']['use_cache']){
 				$config = $this->settings['scraper']['cache_config'];
@@ -409,7 +405,7 @@ class ScraperDacuraServer extends DacuraServer {
 		$res = array("variables" => array(), "errors" => array(), "warnings" => array(), "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0);
 		if(preg_match_all($pattern, $str, $matches)){
 			for($i = 0; $i< count($matches[0]); $i++){
-				$key = $matches[1][$i];
+				$key = trim($matches[1][$i]);
 				$val = trim($matches[2][$i]);
 				if(isset($factoids[$key])){
 					$n = 1;

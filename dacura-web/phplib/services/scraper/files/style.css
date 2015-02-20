@@ -201,4 +201,10 @@ div#scraper-examples dd table td  {
 	font-weight: bold;
 }
 
+#testpage-results table {
+	background-color: white;
+}
 
+#testpage-results {
+	background-color: white;
+}

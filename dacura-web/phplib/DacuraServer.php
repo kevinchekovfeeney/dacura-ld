@@ -81,6 +81,10 @@ class DacuraServer extends DacuraObject {
 		return $this->ucontext->getDatasetID();
 	}
 	
+	function sname(){
+		return $this->ucontext->name();
+	}
+	
 	function contextStr(){
 		return "[".$this->cid()."|".$this->did()."]";
 	}
@@ -149,11 +153,22 @@ class DacuraServer extends DacuraObject {
 						$datasets[$datid] = $ds->name;
 					}
 				}
+				$choices[$colid]['datasets'] = $datasets;
 			}
 		}
 		return $choices;
 	}
 	
+	/*
+	 * Returns the user's home context (i.e. which collection they belong to) 
+	 * all indicates that they are a dacura user and their home context is the user's home...
+	 */
+	function getUserHomeContext($u){
+		if($u->isGod() or $u->hasCollectionRole("all")){
+			return "all";
+		}
+		return $u->roles[0]->collectionID();
+	}
 	
 	
 	function userHasRole($role, $cid = false, $did = false){
@@ -315,32 +330,7 @@ class DacuraServer extends DacuraObject {
 	 * Beneath here be dragons
 	 */
 	
-	function getUserHomeContext($u){
-		$appcontext = new ApplicationContext();
-		$appcontext->setName("browse");
-		if($u->isGod() or $u->rolesSpanCollections()){
-		}
-		else {
-			$cid = $u->getRoleCollectionId();
-			if($cid){
-				$appcontext->setCollection($cid);
-				if($u->isCollectionAdmin($cid) or $u->rolesSpanDatasets($cid)){
-					return $appcontext;
-				}
-				else {
-					$dsid = $u->getRoleDatasetId();
-					if($dsid) $appcontext->setDataset($dsid);
-				}
-			}
-		}
-		return $appcontext;
-		//is the user god?  has the user roles in multiple collections?
-		// => root
-		//is the user an account admin? does the user have roles in multiple datasets?
-		// => account/x
-		//no => dataset...
-		//return "A";
-	}
+
 	
 	//$app = $ds->setUserContext($dcuser, $path);
 	function setUserContext(&$dcuser, $path){

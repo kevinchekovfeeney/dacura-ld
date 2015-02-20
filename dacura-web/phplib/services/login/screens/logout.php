@@ -60,5 +60,6 @@ dacura.login.enablelogout = function(){
 	});
 }
 
+<?php if($params['execute']) echo "dacura.login.logout();" ?>
 
 </script>	

@@ -49,7 +49,7 @@ dacura.scraper.api.parsePage = function(data, xhr){
 		xhr.data ={};
 	}
 	xhr.type = "POST";
-	xhr.url = dacura.scraper.apiurl + "/parse";
+	xhr.url = dacura.scraper.apiurl + "/parsepage";
 	return xhr;
 }
 
@@ -58,7 +58,6 @@ dacura.scraper.abortdump = function(){
 }
 
 dacura.scraper.dump = function (args, oncomp, onmessage, onerror){
-	//dacura.toolbox.slowAjax(dacura.scraper.apiurl + "/dump", "POST", args, oncomp, onmessage, onerror);
 	dacura.toolbox.slowAjax(dacura.scraper.apiurl + "/dump", "POST", args, oncomp, onmessage);
 }
 
