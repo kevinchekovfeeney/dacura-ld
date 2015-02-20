@@ -164,10 +164,16 @@ class DacuraServer extends DacuraObject {
 	 * all indicates that they are a dacura user and their home context is the user's home...
 	 */
 	function getUserHomeContext($u){
+		if(!$u){
+			return false;
+		}
 		if($u->isGod() or $u->hasCollectionRole("all")){
 			return "all";
 		}
-		return $u->roles[0]->collectionID();
+		if(isset($u->roles[0])){
+			return $u->roles[0]->collectionID();
+		}
+		return $this->failure_result("User $u->email has no roles", 403);
 	}
 	
 	
