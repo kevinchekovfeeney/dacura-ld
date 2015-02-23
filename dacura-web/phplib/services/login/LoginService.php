@@ -6,6 +6,7 @@ class LoginService extends DacuraService {
 
 	var $default_screen = "login";
 	var $public_screens = array("login", "home", "register", "lost");
+	var $protected_screens = array("logout" => array("nobody", "any", "any"));
 	
 	function renderFullPageHeader(){
 		parent::renderFullPageHeader();
@@ -26,7 +27,10 @@ class LoginService extends DacuraService {
 		}
 		$dcuser = $lds->getUser(0);
 		if($dcuser){
-			$params = array("username" => $dcuser->name);
+			$params = array("username" => $dcuser->name, "execute" => false);
+			if($this->screen == "logout"){
+				$params['execute'] = true;	
+			}
 			$this->renderScreen("logout", $params);
 		}
 		else{
@@ -47,7 +51,6 @@ class LoginService extends DacuraService {
 				else {
 					$this->renderScreen("register_success", array("message" => "Good to have you on board ".$user->email));
 				}
-				
 			}
 			elseif($this->screen == 'lost'){
 				$code = $this->args["code"];

@@ -93,33 +93,7 @@
 			}
 			return true;
 		}
-
-		function tidyNGAString(contents){
-			contents = contents.replace('http://seshat.info/', '');
-			var pattern = "_";
-		    re = new RegExp(pattern, "g");
-			contents = contents.replace(re, ' ');
-			contents = contents.replace('Select All', '');
-			return contents;
-		}
-
-		function parsePolityString(str){
-			p_details = {
-				url: str,
-				shorturl: str.substr(0,50),
-				polityname: "", 
-				period: ""	
-			};
-			str = str.replace('http://seshat.info/', '');
-			re = new RegExp("_", "g");
-			str = str.replace(re, ' ');
-			re = new RegExp("^([^\(\)]*)([^\)]*)");
-			res =  re.exec(str);
-			p_details.polityname = res[1]; 
-			p_details.period = res[2].substr(1);
-			return p_details;
-		}
-		
+	
 		function formatReport(report){
 			string = "<h4>Results Summary</h4>";
 			string += "<table class='scraper-report'><tr><th>NGA</th><th>Polities</th><th>Variables</th><th>Non-Zero</th><th>Simple</th><th>Complex</th><th>Parse Success</th><th>Parse Failure</th></tr>"
@@ -255,7 +229,7 @@
 							for(var i=0;i<x.length;i++){
 								if(include(x[i]) ){
 									ngaStatus.loaded++; 
-									addition += "<tr><td>" + tidyNGAString(x[i]) + "</td><td><a href='" + x[i] + "'>" + x[i] + "</a></td><td><input type='checkbox' class='ngaValid' id='" + x[i] + "'></td></tr>";
+									addition += "<tr><td>" + dacura.scraper.tidyNGAString(x[i]) + "</td><td><a href='" + x[i] + "'>" + x[i] + "</a></td><td><input type='checkbox' class='ngaValid' id='" + x[i] + "'></td></tr>";
 								}
 							}
 							ngaStatus.message = ngaStatus.loaded + " NGAs identified. please select the NGAs for which you wish to export data from the list below";
@@ -336,7 +310,7 @@
 						var numComplete = 0;
 						requests[requests.length] = $.ajax(ajs)
 							.done(function(response, textStatus, jqXHR) {				
-								var name = tidyNGAString(this.nga);
+								var name = dacura.scraper.tidyNGAString(this.nga);
 								var myOrder = ++numComplete;
 								try {
 									x = JSON.parse(response);
@@ -367,7 +341,7 @@
 										addition = "<h3>" + name + " (" + polities.length + ") <span>Select all <input type='checkbox' class='selectAll'></span></h3><div class='ngas'>";
 										addition += "<table class='polity-list seshat-list' title='" + this.nga +"'><tr><th>Polity</th><th>Period</th><th>URL</th><th></th></tr>";
 										for(var i=0;i<polities.length;i++){
-											var pdet = parsePolityString(polities[i]);
+											var pdet = dacura.scraper.parsePolityString(polities[i]);
 											addition += "<tr><td>" + pdet.polityname + "</td><td>"+pdet.period+"</td><td>";
 											if(pdet.url.length > 50) {
 												addition += "<a href='" + pdet.url + "' title='" + pdet.url + "'>" + pdet.url.substr(0,50) + "...</a>";
@@ -400,12 +374,12 @@
 							.fail(function (jqXHR, textStatus){
 								if(jqXHR.status != 0){
 									var myOrder = ++numComplete;
-									$('.polity-got').html("<p class='seshat-error'>Failed to get polity list for " + tidyNGAString(this.nga) + " (" +  myOrder + "/" + ngaCount + ")</p>");
+									$('.polity-got').html("<p class='seshat-error'>Failed to get polity list for " + dacura.scraper.tidyNGAString(this.nga) + " (" +  myOrder + "/" + ngaCount + ")</p>");
 									$('.determinate-progress').progressbar({
 										value: (myOrder / ngaCount) * 100
 									});
 									NGAerrorCount++;
-									polityStatus.message += "<span class='seshat-detail seshat-error'>Network error (" + jqXHR.status + "). Failed to load " + tidyNGAString(this.nga) + "</span><br>";
+									polityStatus.message += "<span class='seshat-detail seshat-error'>Network error (" + jqXHR.status + "). Failed to load " + dacura.scraper.tidyNGAString(this.nga) + "</span><br>";
 								}
 							}								
 					    );

@@ -8,6 +8,7 @@ getRoute()->get('/view/(.+)', 'viewReport');
 getRoute()->get('/grabscript', 'getGrabScript');
 getRoute()->post('/parse', 'parseVariable');
 getRoute()->post('/validate', 'parseVariables');
+getRoute()->post('/parsepage', 'parsePage');
 
 /*
  * The api calls which access the seshat wiki data are accesss controlled
@@ -65,6 +66,24 @@ function viewReport($rep){
 		}
 		else {
 			$dacura_server->write_http_error();				
+		}
+	}
+	else {
+		$dacura_server->write_http_error();
+	}
+}
+
+function parsePage(){
+	global $dacura_server;
+	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("parsepage")){
+		$url = $_POST["url"];
+		$facts = $dacura_server->getFactsFromURL($url, true);//don't get version from cache
+		if($facts){
+			$rows = $dacura_server->factListToRows("NA", $dacura_server->formatNGAName($url), $facts, true);
+			$dacura_server->write_json_result($rows, "Returned list of ".count($facts)." Facts");				
+		}
+		else {
+			$dacura_server->write_http_error();
 		}
 	}
 	else {
@@ -133,6 +152,7 @@ function parseVariable(){
 function parseVariables(){
 	global $dacura_server;
 	header("Access-Control-Allow-Origin: *");
+	
 	$dacura_server->init("parseVariables");
 	if(isset($_POST["data"]) && $_POST["data"] && ($vars = json_decode($_POST['data'], true))){
 		$results = array();

@@ -1,6 +1,5 @@
 <?php
-$hsds = new DacuraServer($service);
-$choices = $hsds->getUserAvailableContexts($params['type']);
+$choices = $dacura_server->getUserAvailableContexts($params['type']);
 ?>
 <select class='dccontextchanger' id='dccollectioncontext'>
 <?php 

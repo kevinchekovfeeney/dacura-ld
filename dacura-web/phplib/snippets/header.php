@@ -15,9 +15,7 @@
 </script>
 <script src="<?=$service->url("js", "jquery-ui.js")?>"></script>
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery-ui.css")?>" />
-<!--[if IE]>
-<script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-<![endif]-->
+
 <script>
 $( document ).ready(function() {
 	//$('#dacura-modal').dialog( {modal: true, autoOpen: false});

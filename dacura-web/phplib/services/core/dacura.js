@@ -184,3 +184,7 @@ dacura.toolbox.getServiceURL = function(base, api, cid, did, sname, args){
 	return url;
 }
 
+dacura.toolbox.validateURL = function (url){
+	return /^(https|http):/.test(url);
+}
+

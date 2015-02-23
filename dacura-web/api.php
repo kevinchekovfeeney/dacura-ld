@@ -28,6 +28,8 @@ include_once("phplib/DacuraObject.php");
 include_once("phplib/ServiceLoader.php");
 include_once("phplib/DacuraUser.php");
 
+
+
 session_start();
 
 function write_error($str, $code = 400){
