@@ -1,0 +1,127 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import argparse
+import datetime
+import time
+import logging
+import traceback
+import glob
+import re
+from subprocess import call
+
+serverlist = [{"name" : "aligned", 
+               "directories" : ['/var/www/mediawiki'], 
+               "mysql_dbs" : [{"db_name" : "mediawiki", 
+                               "db_user" : "root", 
+                               "db_pass" : "atlassian" }]}, 
+              {"name" : "tcdfame2", 
+               "directories" : ['/var/www/wp'], 
+               "mysql_dbs" : [{"db_name" : "wordpress", 
+                               "db_user" : "dacura-wordpress", 
+                               "db_pass" : "ptnt4gTp"}]}]
+
+#RSYNC = '/usr/bin/rsync'
+RDIFF = '/usr/bin/rdiff-backup'
+SSH = '/usr/bin/ssh'
+TEMP = '/tmp/'
+HOME = '/media/backup/'
+
+DUMPCMD = "mkdir -p /tmp/%(db_name)s ; mysqldump %(db_name)s -u%(db_user)s -p%(db_pass)s > "+TEMP+"%(db_name)s/%(db_name)s.sql"
+
+__LOG_FILE__ = HOME + 'log/backup.log'
+__LOG_FORMAT__ = '%(asctime)-15s %(message)s'
+
+def top_level_error_handler(exctype, value, tb): 
+    logging.error("Fatal exception: %s with value %s" % (exctype, value)) 
+    logging.error("Traceback:\n%s" % traceback.format_tb(tb))
+sys.excepthook = top_level_error_handler
+
+def ensure_directory_exists(directory): 
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+def now(): 
+    """Microseconds should be enough to avoid collision"""
+    return datetime.datetime.now().isoformat()
+
+# Date
+def version_filename(basename): 
+    return basename + now()
+
+def get_latest_path(server): 
+    largest = 0
+    # If we have never been run before, we start fresh, hence create a new path. 
+    path = HOME + server + '/backup-' + now() + '/'
+    for elt in glob.glob(HOME + server + '/backup-*'):
+        m = re.match(HOME + server + '/backup-(.*)', elt)
+        if m: 
+            dt = datetime.datetime.strptime(m.group(1), "%Y-%m-%dT%H:%M:%S.%f")
+            timestamp = time.mktime(dt.timetuple())
+            if timestamp > largest: 
+                largest = timestamp
+                path = elt
+    return path
+
+
+if __name__ == '__main__': 
+    parser = argparse.ArgumentParser(description='Get backups')
+    parser.add_argument('--fresh', help='Start with a new date, so we have a complete backup', action='store_const', const=True)
+    parser.add_argument('--log', help='Location of log file', default=__LOG_FILE__)
+    args = vars(parser.parse_args())
+
+    ## Iritating logging setup
+    root = logging.getLogger() 
+    if root.handlers:
+        for handler in root.handlers: 
+            root.removeHandler(handler)
+    logging.basicConfig(filename=args['log'], level=logging.INFO, format=__LOG_FORMAT__)
+    
+    logging.info("-" * 80)
+    logging.info("Initiating backups")
+
+    if not os.path.exists(RDIFF):
+        logging.error("No rdiff-backup found, please install or change path to binary in RDIFF variable.")
+
+    command = RDIFF
+    cmd_args = ['--force']
+
+    for server in serverlist: 
+        # We want to make sure that we are doing incremental deltas
+        # into the same location, but creating a new location for all 
+        # full backups.
+        logging.info("Processing server '%(name)s'" % server)
+        # Try each server independently of errors. 
+        try: 
+            source_base = server['name'] + '::'
+            if args['fresh']:                
+                inc = "full backup"
+                destination = HOME + server['name'] + '/backup-' + now() +'/'
+            else:
+                inc = "incremental backup"
+                destination = get_latest_path(server['name'])
+            
+            logging.info("  Performing %s to destination %s" % (inc,destination))
+            ensure_directory_exists(destination)
+
+            for d in server['directories']:
+                logging.info("    Processing directory %s" % d)
+                source = source_base + d
+                ensure_directory_exists(destination + d)
+                call([command] + cmd_args + [source, destination + d])
+              
+            logging.info("  Downloading relevant mysql databases:")
+            for d in server['mysql_dbs']: 
+                logging.info("    Processing database '%s'" % d['db_name'])
+                call([SSH, server['name'], (DUMPCMD % d)])
+                source = source_base + TEMP + '/' + d['db_name'] + '/' 
+                call([command] + cmd_args + [source, destination])
+
+        except Exception as e:
+            ex_type, ex, tb = sys.exc_info()
+            logging.error("Fatal error: %s" % e)
+            logging.error(traceback.format_tb(tb))
+    
+    logging.info("Completed!")
+    logging.info("-" * 80)
