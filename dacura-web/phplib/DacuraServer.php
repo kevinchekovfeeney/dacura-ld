@@ -267,6 +267,7 @@ class DacuraServer extends DacuraObject {
 	 * @return boolean always true (for using as return $x->write_json_result to indicate success result)
 	 */
 	function write_json_result($ting, $note = "Result returned"){
+		//header("Content-Type: application/json");
 		echo json_encode($ting);
 		$this->ucontext->logger->setResult(200, $note);
 		return true;
