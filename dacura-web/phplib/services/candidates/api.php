@@ -1,10 +1,11 @@
 <?php
 //getRoute()->get('/datatable', 'datatable');
 //getRoute()->get('/datatable/(\w+)', 'datatable_record');
-getRoute()->get('/', 'get_candidates');
-getRoute()->post('/', 'update_candidates');
+//getRoute()->get('/', 'get_candidates');
+//getRoute()->post('/', 'update_candidates');
+getRoute()->post('/(\w+)', 'create_candidate');
 getRoute()->get('/(\w+)', 'get_candidate');
-getRoute()->post('/(\w+)/(\w+)', 'update_candidate');
+getRoute()->post('/(\w+)', 'update_candidate');
 getRoute()->delete('/(\w+)', 'delete_candidate');
 
 

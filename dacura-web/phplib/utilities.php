@@ -24,7 +24,6 @@ function createRandomKey($length)
 }
 
 function sendemail($recip, $subj, $text){
-	global $dacura_settings;
 	$headers = 'From: feeney.kdeg@gmail.com' . "\r\n" .
 			'Reply-To: feeney.kdeg@gmail.com' . "\r\n" .
 			'X-Mailer: PHP/' . phpversion();

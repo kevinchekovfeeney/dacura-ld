@@ -186,7 +186,7 @@ dacura.grabber.loadFact = function(id){
 	if(fact.contents == "") fact.contents = "~";
 	if(fact.result_message == "") fact.result_message = "~";
 	var html = "<dl class='parsedVariable'><dt>Variable:</dt><dd class='varname'>"+ fact.varname + "</dd><dt>Value:</dt><dd class='varval'>" + fact.contents  
-			+ "</dd><dt>Result:</dt><dd class='seshatResult seshat" + fact.parsed.result_code.ucfirst() + "' >" + fact.parsed.result_code.ucfirst() + "</dd>" + 
+			+ "</dd><dt>Type:</dt><dd class='seshatResult seshat" + fact.parsed.result_code.ucfirst() + "' >" + fact.parsed.result_code.ucfirst() + "</dd>" + 
 			"<dt>Message:</dt><dd class='varmsg'>" + fact.parsed.result_message + "</dd><dt>Datapoints:</dt>";
 	var dpcount = 0;
 	if(typeof fact.parsed.datapoints == "object"){

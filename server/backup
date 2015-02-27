@@ -12,15 +12,24 @@ import re
 from subprocess import call
 
 serverlist = [{"name" : "aligned", 
-               "directories" : ['/var/www/mediawiki'], 
+               "directories" : ['/var/www/mediawiki', '/var/www/seshat-wiki'], 
                "mysql_dbs" : [{"db_name" : "mediawiki", 
+                               "db_user" : "root", 
+                               "db_pass" : "atlassian" }, 
+                               {"db_name" : "mediawiki", 
                                "db_user" : "root", 
                                "db_pass" : "atlassian" }]}, 
               {"name" : "tcdfame2", 
-               "directories" : ['/var/www/wp'], 
+               "directories" : ['/var/www/wp', '/var/git', '/var/fuseki/data', ], 
                "mysql_dbs" : [{"db_name" : "wordpress", 
                                "db_user" : "dacura-wordpress", 
-                               "db_pass" : "ptnt4gTp"}]}]
+                               "db_pass" : "ptnt4gTp"}, 
+                               {"db_name" : "jiradb", 
+                               "db_user" : "root", 
+                               "db_pass" : "atlassian"}, 
+                               {"db_name" : "seshat73_mw", 
+                               "db_user" : "root", 
+                               "db_pass" : "atlassian"}]}]
 
 #RSYNC = '/usr/bin/rsync'
 RDIFF = '/usr/bin/rdiff-backup'
