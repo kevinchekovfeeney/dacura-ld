@@ -1,5 +1,8 @@
 
-:- module(schemaRules,[checkDB/3, demoDB/0, demoDB/1, demoDB/2, demoDB/3, populateDB/1]).
+:- module(schemaRules,[demoDB/0, demoDB/1, demoDB/2, demoDB/3, 
+		       populateDB/1, 
+		       checkDB/1, 
+		       loadAndCheckDB/3]).
 
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/turtle)). 
@@ -36,6 +39,7 @@ duplicateClasses(L) :- setof(Y,notUniqueClass(Y), L).
 subClass(X) :- rdf(X, rdfs:subClassOf, _, schema).
 
 subClassOf(X,Y) :- rdf(X, rdfs:subClassOf, Y, schema).
+subClassOf(X,Z) :- rdf(X, rdfs:subClassOf, Y, schema), subClassOf(Y,Z).
 
 subClassOfClass(X) :- subClassOf(X,Y), class(Y).
 
@@ -70,6 +74,7 @@ duplicateProperties(L) :- setof(Y,notUniqueProperty(Y), L).
 subProperty(X) :- rdf(X, rdfs:subPropertyOf, _, schema).
 
 subPropertyOf(X,Y) :- rdf(X, rdfs:subPropertyOf, Y, schema).
+subPropertyOf(X,Z) :- rdf(X, rdfs:subPropertyOf, Y, schema), subPropertyOf(Y, Z). 
 
 subPropertyOfProperty(X) :- subPropertyOf(X,Y), class(Y).
 
@@ -174,6 +179,7 @@ classPropertyClass(C,P,Z) :- subClassOf(C, K), classPropertyClass(K, P, Z).
 %classPropertyLiteral(C,P) :- domain(P,C), range(P,rdf:'PlainLiteral'), class(C), property(P). 
 classPropertyLiteral(C,P) :- domain(P,C), range(P,'http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral'), class(C), property(P). 
 
+generateLinks(_,X,[rdf(X, 'http://www.w3.org/2000/01/rdf-schema#label', 'Rubbish')],_).
 generateLinks(C,X,[Triple],_) :- 
     classPropertyLiteral(C,P), 
     Triple = rdf(X,P,literal(lang(en, 'some arbitrary literal'))).
@@ -204,6 +210,13 @@ generateClosed(C,[rdf(X,'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',C)|O],
     put_assoc(C, S, X, S2),
     bagof(R, generateLinks(C, X, R, S2), L), 
     flatten(L,O).
+generateClosed(C,[rdf(X,'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',Sub)|O],S) :- 
+    subClassOf(Sub,C),
+    atom_concat(Sub, '-instance', A),
+    gensym(A, X), 
+    put_assoc(Sub, S, X, S2),
+    bagof(R, generateLinks(Sub, X, R, S2), L), 
+    flatten(L,O).
 
 generate(L) :- empty_assoc(S), classRoot(C), generateClosed(C, L, S). 
 
@@ -214,14 +227,15 @@ generateN(N,L) :- N > 0, M is N-1, generate(L1), generateN(M,L2),append(L1,L2,L)
 addToDB(rdf(X,Y,Z)) :- rdf_assert(X,Y,Z,instance). 
 :- rdf_meta populateDB. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Carefully Corrupting the DB.
-
 % N specifies number of times to decend the class hierarchy rather than 
 % the number of classes or triples.  This is convenient as consistency 
 % is a global property which can't easily be maintained without total traversal. 
 % If you have a big schema, make N small. 
-populateDB(N) :- generateN(N,L), maplist(addToDB, L).
+populateDB(N) :- generateN(N,L), maplist(addToDB, L), !.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Carefully Corrupting the DB.
 
 corrupt_class :- 
     class(X), rdf_assert(X, rdf:type, owl:'Class', schema). % create duplicates
@@ -269,11 +283,14 @@ streamString(Handle, String) :-
     open_memory_file(Handle, read, R, [free_on_close(true)]),
     read_string(R, _, String).
 
-checkDB(Schema,Instance,Output) :-
+loadAndCheckDB(Schema,Instance,Output) :-
     % clear out the triple store.
     % load rdf
     rdf_load(Schema, [graph(schema)]),
     rdf_load(Instance, [graph(instance)]),
+    checkDB(Output).
+
+checkDB(Output) :-
     %% Setup output string stream 
     stringStream(Handle,Stream),
     write(Stream, '***** Starting check of DB *****'),
