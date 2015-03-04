@@ -4,7 +4,7 @@
 :- use_module(library(http/html_write)).
 :- use_module(library(http/http_parameters)).
 
-:- use_module(weiRules).
+:- use_module(schemaRules).
 
 write_schema(S,PS) :- 
     tmp_file('schema.rdf',PS),

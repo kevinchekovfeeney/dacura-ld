@@ -1,5 +1,5 @@
 
-:- module(weiRules,[checkDB/3, demoDB/0, demoDB/1, demoDB/2, demoDB/3, populateDB/1]).
+:- module(schemaRules,[checkDB/3, demoDB/0, demoDB/1, demoDB/2, demoDB/3, populateDB/1]).
 
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/turtle)). 
