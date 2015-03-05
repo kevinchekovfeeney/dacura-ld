@@ -36,10 +36,10 @@ duplicateClasses(L) :- setof(Y,notUniqueClass(Y), L).
 
 % subclasses 
 
-subClass(X) :- rdf(X, rdfs:subClassOf, _, schema).
-
 subClassOf(X,Y) :- rdf(X, rdfs:subClassOf, Y, schema).
 subClassOf(X,Z) :- rdf(X, rdfs:subClassOf, Y, schema), subClassOf(Y,Z).
+
+subClass(X) :- subClassOf(X,_).
 
 subClassOfClass(X) :- subClassOf(X,Y), class(Y).
 
@@ -93,19 +93,37 @@ propertyCycle(P) :- empty_assoc(S), propertyCycleHelp(P,S).
 
 noPropertyCycles :- property(P), forall( propertyCycle(P), false). 
 
+% data types.  / list all primitive types we will be using here.
+
+type(X) :- class(X). 
+type('http://www.w3.org/2001/XMLSchema#dateTime').
+type('http://www.w3.org/2001/XMLSchema#string').
+
 % range / domain
 
-range(P,X) :- rdf(P, rdfs:range, X, schema).
+range(P,R) :- rdf(P, rdfs:range, R, schema).
 
-domain(P,X) :- rdf(P, rdfs:domain, X, schema). 
+domain(P,D) :- rdf(P, rdfs:domain, D, schema). 
 
-uniqueRange(P,X) :- range(P,X), bagof(Y, class(Y), L), count(P,L,1).
+validRange(P,R) :- range(P,R), type(R).
+validDomain(P,D) :- range(P,D), type(D).
 
-notUniqueRange(P,X) :- range(P,X), bagof(Y, class(Y), L), \+ count(P,L,1).
+uniqueValidRange(P,R) :- range(P,R), findall(R2, validRange(P,R2), L), length(L,1).
 
-allUniqueRange :- forall(range(P,X), uniqueRange(P,X)).
+uniqueValidDomain(P,D) :- domain(P,D), findall(D2, validRange(P,D2), L), length(L,1).
 
-duplicateRange(L) :- setof(Y,notUniqueRange(Y,_), L).
+notUniqueValidRange(P,R) :- range(P,R), findall(R2, validRange(P,R2), L), \+ length(L,1).
+
+notUniqueValidDomain(P,D) :- domain(P,D), findall(D2, validDomain(P,D2), L), \+ length(L,1).
+
+allUniqueValidRange :- forall(range(P,X), uniqueValidRange(P,X)).
+
+allUniqueValidDomain :- forall(domain(P,X), uniqueValidDomain(P,X)).
+
+invalidRange(L) :- setof(Y,notUniqueValidRange(Y,_), L).
+
+invalidDomain(L) :- setof(Y,notUniqueValidDomain(Y,_), L).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %% Instance constraints
@@ -122,19 +140,16 @@ noOrphans :- forall(instance(X), instanceHasClass(X)).
 
 orphanInstances(L) :- setof(Y,orphanInstance(Y), L).
 
-instanceDomainExists(X) :- domain(X,P), property(P).
-instanceRangeExists(X) :- range(X,P), property(P).
+noInstanceDomain(P) :- domain(P,C), \+ type(C).
+noInstanceRange(P) :- range(P,C), \+ type(C).
 
-noInstanceDomain(X) :- domain(X,P), \+ property(P).
-noInstanceRange(X) :- range(X,P), \+ property(P).
+instanceProperty(X,P) :- instance(X), rdf(X, P, _), \+ P=rdf:type.
 
-allDomainedInstances :- forall(domain(X,_), instanceDomainExists(X)).
-allRangedInstances :- forall(range(X,_), instanceRangeExists(X)).
+allDomainedInstances :- forall(instanceProperty(_,P), validDomain(P,_)).
+allRangedInstances :- forall(instanceProperty(_,P), validRange(P,_)).
 
 orphanDomains(L) :-setof(Y, notInstanceDomain(Y), L). 
 orphanRanges(L) :-setof(Y, notInstanceRange(Y), L). 
-
-instanceProperty(X,P) :- instance(X), rdf(X, P, _), \+ P=rdf:type.
 
 instanceHasPropertyClass(X) :- instanceProperty(X,P), property(P).
 
@@ -367,11 +382,20 @@ checkDB(Output) :-
 	 nl(Stream)
      ; true)     
     ,
-    (\+ allUniqueRange ->
+    (\+ allUniqueValidRange ->
 	 nl(Stream),	 
-	 write(Stream, 'Property with non-unique range found: '), 
+	 write(Stream, 'Property with non-unique or invalid range found: '), 
 	 nl(Stream),
-	 duplicateRange(DR),
+	 invalidRange(DR),
+	 write(Stream, DR),
+	 nl(Stream)
+     ; true)     
+    ,
+    (\+ allUniqueValidDomain ->
+	 nl(Stream),	 
+	 write(Stream, 'Property with non-unique or invalid domain found: '), 
+	 nl(Stream),
+	 invalidDomain(DR),
 	 write(Stream, DR),
 	 nl(Stream)
      ; true)     

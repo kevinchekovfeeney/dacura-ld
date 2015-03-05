@@ -3,7 +3,7 @@
 :- use_module(library(http/http_dispatch)).
 :- use_module(library(http/html_write)).
 :- use_module(library(http/http_parameters)).
-
+:- use_module(library(http/json)).
 :- use_module(schemaRules).
 
 write_schema(S,PS) :- 
@@ -54,5 +54,11 @@ rdf_page_grammar(String) -->
 			       dt(''), 
 			       dd(input([type=submit, value='Submit']))
 			  ]))])])]).
+
+:- http_handler(/api/schema/check, schema_check_page, []).
+
+schema_check_page(Request) :- 
+    http_parameters(Request,[],[form_data(Data)]),
+    
 
 %:- server(8000)
