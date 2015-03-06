@@ -2,7 +2,8 @@
 :- module(schemaRules,[demoDB/0, demoDB/1, demoDB/2, demoDB/3, 
 		       populateDB/1, 
 		       checkDB/1, 
-		       loadAndCheckDB/3]).
+		       loadAndCheckDB/3, 
+		       tests/0]).
 
 :- use_module(library(semweb/rdf_db)).
 :- use_module(library(semweb/turtle)). 
@@ -30,74 +31,69 @@ uniqueClass(Y) :- class(Y), bagof(X, class(X), L), count(Y,L,1).
 
 notUniqueClass(Y) :- class(Y), bagof(X, class(X), L), \+ count(Y,L,1).
 
-allUniqueClasses :- forall(class(X), uniqueClass(X)).
-
 duplicateClasses(L) :- setof(Y,notUniqueClass(Y), L).
 
 % subclasses 
 
+subClass(X,Y) :- rdf(X, rdfs:subClassOf, Y, schema).
+
 subClassOf(X,Y) :- rdf(X, rdfs:subClassOf, Y, schema).
 subClassOf(X,Z) :- rdf(X, rdfs:subClassOf, Y, schema), subClassOf(Y,Z).
 
-subClass(X) :- subClassOf(X,_).
+subClassOfClass(X,Y) :- subClassOf(X,Y), class(Y).
 
-subClassOfClass(X) :- subClassOf(X,Y), class(Y).
+notSubClassOfClass(X,Y) :- subClassOf(X,Y), \+ class(Y).
 
-notSubClassOfClass(X) :- subClassOf(X,Y), \+ class(Y).
-
-allSubClassesHaveClass :- forall(subClass(X), subClassOfClass(X)).
-
-orphanSubClasses(L) :- setof(Y,notSubClassOfClass(Y),L).
+orphanSubClasses(L) :- setof(notSubClassOfClass(X,Y), notSubClassOfClass(X,Y),L).
 
 % subclass cycles
-classCycleHelp(C,S) :- get_assoc(C,S,true).
-classCycleHelp(C,S) :- class(C), subClassOf(K, C), put_assoc(C, S, true, S2), classCycleHelp(K,S2).
+classCycleHelp(C,S,[]) :- get_assoc(C,S,true), !.
+classCycleHelp(C,S,[K|P]) :- class(C), subClass(K, C), put_assoc(C, S, true, S2), classCycleHelp(K,S2,P).
 
-classCycle(C) :- empty_assoc(S), classCycleHelp(C,S). 
+classCycle(C,P) :- empty_assoc(S), classCycleHelp(C,S,P). 
 
-noClassCycles :- class(C), forall( classCycle(C), false). 
+classCycles(L) :- setof(classCycle(CC,P), classCycle(CC,P), L).
 
 % properties.
+:- rdf_meta property(r).
+property(rdfs:label).
+property(rdfs:comment).
+property(P) :- rdf(P, rdf:type, owl:'ObjectProperty', schema).
+property(P) :- rdf(P, rdf:type, owl:'DataProperty', schema).
 
-property(X) :- rdf(X, rdf:type, owl:'ObjectProperty', schema).
+uniqueProperty(P) :- property(P), bagof(P2, property(P2), L), count(P,L,1).
 
-uniqueProperty(Y) :- property(Y), bagof(X, property(X), L), count(Y,L,1).
+notUniqueProperty(P) :- property(P), bagof(P2, property(P2), L), \+ count(P,L,1).
 
-notUniqueProperty(Y) :- property(Y), bagof(X, property(X), L), \+ count(Y,L,1).
-
-allUniqueProperties :- forall(property(X), uniqueProperty(X)).
-
-duplicateProperties(L) :- setof(Y,notUniqueProperty(Y), L).
+duplicateProperties(L) :- setof(P,notUniqueProperty(P), L).
 
 % subProperties.
 
-subProperty(X) :- rdf(X, rdfs:subPropertyOf, _, schema).
+subProperty(X,Y) :- rdf(X, rdfs:subPropertyOf, Y, schema).
 
 subPropertyOf(X,Y) :- rdf(X, rdfs:subPropertyOf, Y, schema).
 subPropertyOf(X,Z) :- rdf(X, rdfs:subPropertyOf, Y, schema), subPropertyOf(Y, Z). 
 
-subPropertyOfProperty(X) :- subPropertyOf(X,Y), class(Y).
+subPropertyOfProperty(X,Y) :- subPropertyOf(X,Y), property(Y).
 
-notSubPropertyOfProperty(X) :- subPropertyOf(X,Y), \+ class(Y).
+notSubPropertyOfProperty(X,Y) :- subPropertyOf(X,Y), \+ property(Y).
 
-allSubPropertyesHaveProperty :- forall(subProperty(X), subPropertyOfProperty(X,_)).
-
-orphanSubPropertyes(L) :- setof(Y,notSubPropertyOfProperty(Y),L).
+orphanSubProperties(L) :- setof(notSubPropertyOfProperty(X,Y),notSubPropertyOfProperty(X,Y),L).
 
 % subProperty cycles 
 
-propertyCycleHelp(P,S) :- get_assoc(P,S,true).
-propertyCycleHelp(P,S) :- property(P), subPropertyOf(Q, P), put_assoc(P, S, true, S2), propertyCycleHelp(Q,S2).
+propertyCycleHelp(P,S,[]) :- get_assoc(P,S,true), !.
+propertyCycleHelp(P,S,[Q|T]) :- property(P), subProperty(Q, P), put_assoc(P, S, true, S2), propertyCycleHelp(Q,S2,T).
 
-propertyCycle(P) :- empty_assoc(S), propertyCycleHelp(P,S). 
+propertyCycle(P,PC) :- empty_assoc(S), propertyCycleHelp(P,S,PC). 
 
-noPropertyCycles :- property(P), forall( propertyCycle(P), false). 
+propertyCycles(L) :- setof(propertyCycle(P,PC), propertyCycle(P,PC),L).
 
 % data types.  / list all primitive types we will be using here.
 
+:- rdf_meta type(r).
 type(X) :- class(X). 
-type('http://www.w3.org/2001/XMLSchema#dateTime').
-type('http://www.w3.org/2001/XMLSchema#string').
+type(X) :- rdf_match_label(prefix, 'http://www.w3.org/2001/XMLSchema#', X). 
 
 % range / domain
 
@@ -106,7 +102,7 @@ range(P,R) :- rdf(P, rdfs:range, R, schema).
 domain(P,D) :- rdf(P, rdfs:domain, D, schema). 
 
 validRange(P,R) :- range(P,R), type(R).
-validDomain(P,D) :- range(P,D), type(D).
+validDomain(P,D) :- domain(P,D), type(D).
 
 uniqueValidRange(P,R) :- range(P,R), findall(R2, validRange(P,R2), L), length(L,1).
 
@@ -116,13 +112,10 @@ notUniqueValidRange(P,R) :- range(P,R), findall(R2, validRange(P,R2), L), \+ len
 
 notUniqueValidDomain(P,D) :- domain(P,D), findall(D2, validDomain(P,D2), L), \+ length(L,1).
 
-allUniqueValidRange :- forall(range(P,X), uniqueValidRange(P,X)).
+% does this do too much? 
+invalidRange(L) :- setof(range(Y, R), notUniqueValidRange(Y,R), L).
 
-allUniqueValidDomain :- forall(domain(P,X), uniqueValidDomain(P,X)).
-
-invalidRange(L) :- setof(Y,notUniqueValidRange(Y,_), L).
-
-invalidDomain(L) :- setof(Y,notUniqueValidDomain(Y,_), L).
+invalidDomain(L) :- setof(domain(Y, D), notUniqueValidDomain(Y,D), L).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%
@@ -132,41 +125,30 @@ instanceClass(X, Y) :- rdf(X, rdf:type, Y, instance).
 
 instance(X) :- instanceClass(X,_).
 
-instanceHasClass(X) :- instanceClass(X, Y), class(Y).
+instanceHasClass(X,C) :- instanceClass(X, C), class(C).
 
-orphanInstance(X) :- instanceClass(X,Y), \+ class(Y).
+orphanInstance(X,C) :- instanceClass(X,C), \+ class(C).
 
-noOrphans :- forall(instance(X), instanceHasClass(X)).
+noOrphans :- \+ orphanInstance(_,_).
 
-orphanInstances(L) :- setof(Y,orphanInstance(Y), L).
-
-noInstanceDomain(P) :- domain(P,C), \+ type(C).
-noInstanceRange(P) :- range(P,C), \+ type(C).
+orphanInstances(L) :- setof(orphanInstance(X,C),orphanInstance(X,C), L).
 
 instanceProperty(X,P) :- instance(X), rdf(X, P, _), \+ P=rdf:type.
 
-allDomainedInstances :- forall(instanceProperty(_,P), validDomain(P,_)).
-allRangedInstances :- forall(instanceProperty(_,P), validRange(P,_)).
+instanceHasPropertyClass(X,P) :- instanceProperty(X,P), property(P).
 
-orphanDomains(L) :-setof(Y, notInstanceDomain(Y), L). 
-orphanRanges(L) :-setof(Y, notInstanceRange(Y), L). 
+noInstancePropertyClass(X,P) :- instanceProperty(X,P), \+ property(P).
 
-instanceHasPropertyClass(X) :- instanceProperty(X,P), property(P).
-
-noInstancePropertyClass(X) :- instanceProperty(X,P), \+ property(P).
-
-allPropertiedInstances :- forall(instance(X), instanceHasPropertyClass(X)).
-
-orphanProperties(L) :- setof(Y, noInstancePropertyClass(Y), L). 
+orphanProperties(L) :- setof(noInstancePropertyClass(X,Y), noInstancePropertyClass(X,Y), L). 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Blank nodes
 
-blankNodes(X) :- rdf(X,_,_), rdf_is_bnode(X).
-blankNodes(Y) :- rdf(_,Y,_), rdf_is_bnode(Y).
-blankNodes(Z) :- rdf(_,_,Z), rdf_is_bnode(Z).
+blankNode(X) :- rdf(X,_,_), rdf_is_bnode(X).
+blankNode(Y) :- rdf(_,Y,_), rdf_is_bnode(Y).
+blankNode(Z) :- rdf(_,_,Z), rdf_is_bnode(Z).
 
-noBlankNodes :- forall( blankNodes(_), false).
+blankNodes(L) :- setof(X, blankNode(X), L). 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Labels 
@@ -175,7 +157,6 @@ classHasLabel(X,Y) :- class(X), rdf(X, rdfs:label, Y, schema).
 classHasNoLabel(X) :- class(X), \+ rdf(X, rdfs:label, _, schema).
 
 classHasOneLabel(X) :- classHasLabel(X,Label), bagof(label(Y,Label2), classHasLabel(Y,Label2), L), count(label(X,Label),L,1).
-allClassesHaveOneLabel(X) :-forall(class(X), classHasOneLabel(X)). 
 
 duplicateLabelClasses(X) :- classHasLabel(X,Label), bagof(label(Y,Label2), classHasLabel(Y,Label2), L), \+ count(label(X,Label),L,1).
 
@@ -276,19 +257,90 @@ corruptDB(N) :-
 
 %% Schema and Instance
 
-demoDB :-  % abolish(rdf/3), abolish(rdf/4), 
-	rdf_load('plants.rdf', [graph(instance)]), rdf_load('plant-onto.rdf', [graph(schema)]).
+demoDB :-  
+    rdf_retractall(_, _, _, _), 
+    rdf_load('testData/plants.rdf', [graph(instance)]), 
+    rdf_load('testData/plant-onto.rdf', [graph(schema)]).
 
-demoDB(Schema) :- rdf_load(Schema, [graph(schema)]). 
+demoDB(Schema) :- 
+    rdf_retractall(_, _, _, _), 
+    rdf_load(Schema, [graph(schema)]). 
 
-demoDB(Instance,Schema) :- rdf_load(Instance, [graph(instance)]), 
-			   rdf_load(Schema, [graph(schema)]).
+demoDB(Schema,Instance) :- 
+    rdf_retractall(_, _, _, _), 
+    rdf_load(Schema, [graph(schema)]), 
+    rdf_load(Instance, [graph(instance)]).
 
-demoDB(Instance,Schema,Options) :- rdf_load(Instance, [graph(instance)|Options]), 
-				   rdf_load(Schema, [graph(schema)|Options]).
+demoDB(Schema,Instance,Options) :- 
+    rdf_retractall(_, _, _, _), 
+    rdf_load(Schema, [graph(schema)|Options]),     
+    rdf_load(Instance, [graph(instance)|Options]). 
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DB Checker
+
+test(classCycles).
+test(propertyCycles). 
+test(duplicateClasses).
+test(duplicateProperties).
+test(orphanSubClasses).
+test(orphanSubProperties). 
+test(orphanInstances).
+test(orphanProperties). 
+test(blankNodes).
+test(invalidRange). 
+test(invalidDomain). 
+
+% this package prefixing is a ridiculous hack to deal with metapredicate handling.
+testMessage(schemaRules:classCycles, 'Cycles in class hierarchy: ') :- !.
+testMessage(schemaRules:propertyCycles, 'Cycles in property hierarchy: ') :- !. 
+testMessage(schemaRules:duplicateClasses, 'Duplicate classes: ') :- !.
+testMessage(schemaRules:duplicateProperties, 'Duplicate properties: ') :- !.
+testMessage(schemaRules:orphanSubClasses, 'Orphaned subclasses: ') :- !.
+testMessage(schemaRules:orphanSubProperties, 'Orphaned subproperties: ') :- !.
+testMessage(schemaRules:orphanInstances, 'Orphaned instances: ') :- !.
+testMessage(schemaRules:orphanProperties, 'Missing class for properties: ') :- !. 
+testMessage(schemaRules:blankNodes, 'Blank Nodes found: ') :- !.
+testMessage(schemaRules:invalidRange, 'Property with non-unique or invalid range found: ') :- !. 
+testMessage(schemaRules:invalidDomain, 'Property with non-unique or invalid domain found: ') :- !. 
+testMessage(_,'Unknown test').
+
+:- meta_predicate validate(1,?).
+validate(Test, Stream) :- 
+    call(Test, C),
+    nl(Stream),	
+    testMessage(Test, Message),
+    write(Test),nl,
+    write(Stream, Message),
+    nl(Stream),	 
+    write(Stream, C), 
+    nl(Stream), 
+    fail.
+
+% validate will always fail, we want to iterate over choice points in T
+% to accumulate all I/O side effects.
+runValidate(Stream) :-
+    test(Test), 
+    validate(Test,Stream). 
+runValidate(_).
+
+:- meta_predicate runTest(1,?).
+runTest(Test) :- 
+    atom_concat('testData/', Test, TestBegin), 
+    atom_concat(TestBegin, '.ttl', TestFile), 
+    demoDB(TestFile, 'testData/instance.ttl'), 
+    call(Test, _), !, fail.
+runTest(Test) :-
+    atom_concat('Failed test ', Test, Fail),
+    write(Fail), nl, fail.
+
+% runTest will always fail, we want to iterate over choice points in T
+% to accumulate all I/O side effects.
+tests :- 
+    test(Test),
+    runTest(Test).
+tests.
 
 stringStream(Handle, Stream) :-
     new_memory_file(Handle),
@@ -310,98 +362,8 @@ checkDB(Output) :-
     stringStream(Handle,Stream),
     write(Stream, '***** Starting check of DB *****'),
     nl(Stream),	 
-    (\+ allUniqueClasses ->
-	 nl(Stream),	 
-	 write(Stream, 'Dulicate classes: '), 
-	 nl(Stream),	 
-	 duplicateClasses(C),
-	 write(Stream, C), 
-	 nl(Stream)
-     ; true)
-    ,
-    (\+ allUniqueProperties ->
-	 nl(Stream),	 
-	 write(Stream, 'Dulicate properties: '), 
-	 nl(Stream),	 
-	 duplicateProperties(P),
-	 write(Stream, P), 
-	 nl(Stream)
-     ; true)
-    ,
-    (\+ allSubClassesHaveClass->
-	 nl(Stream),	 
-	 write(Stream, 'Orphaned subclasses: '), 
-	 nl(Stream),
-	 orphanSubClasses(S),
-	 write(Stream, S), 
-	 nl(Stream)
-     ; true)
-    ,
-    (\+ noOrphans ->
-	 nl(Stream),	 
-	 write(Stream, 'Orphaned instances: '), 
-	 nl(Stream),
-	 orphanInstances(O),
-	 write(Stream, O),
-	 nl(Stream)
-     ; true )
-    , 
-    (\+ allRangedInstances ->
-	 nl(Stream),	 
-	 write(Stream, 'Missing Range for instances: '), 
-	 nl(Stream),
-	 noInstanceRange(R),
-	 write(Stream, R),
-	 nl(Stream)
-     ; true )
-    , 
-    (\+ allDomainedInstances ->
-	 nl(Stream),	 
-	 write(Stream, 'Missing Domain for instances: '), 
-	 nl(Stream),
-	 noInstanceDomain(D),
-	 write(Stream, D),
-	 nl(Stream)
-     ; true)     
-    ,
-    (\+ allPropertiedInstances ->
-	 nl(Stream),	 
-	 write(Stream, 'Missing class for properties: '), 
-	 nl(Stream),
-	 orphanProperties(IP),
-	 write(Stream, IP),
-	 nl(Stream)
-     ; true)
-    ,
-    (\+ noBlankNodes ->
-	 nl(Stream),	 
-	 write(Stream, 'Blank Nodes found: '), 
-	 nl(Stream),
-	 blankNodes(BN),
-	 write(Stream, BN),
-	 nl(Stream)
-     ; true)     
-    ,
-    (\+ allUniqueValidRange ->
-	 nl(Stream),	 
-	 write(Stream, 'Property with non-unique or invalid range found: '), 
-	 nl(Stream),
-	 invalidRange(DR),
-	 write(Stream, DR),
-	 nl(Stream)
-     ; true)     
-    ,
-    (\+ allUniqueValidDomain ->
-	 nl(Stream),	 
-	 write(Stream, 'Property with non-unique or invalid domain found: '), 
-	 nl(Stream),
-	 invalidDomain(DR),
-	 write(Stream, DR),
-	 nl(Stream)
-     ; true)     
-    ,
+    runValidate(Stream),
     nl(Stream),
     write(Stream, 'Finished checking DB!'),
     close(Stream), 
-    streamString(Handle, Output),
-    true.
+    streamString(Handle, Output).

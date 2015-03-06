@@ -1,0 +1,203 @@
+@prefix sghd: <http://dacura.cs.tcd.ie/data/seshat#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#>. 
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix owl:  <http://www.w3.org/2002/07/owl#>.
+@prefix dc:   <http://purl.org/dc/elements/1.1/>.
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+
+# 	The Seshat Ontology
+
+# Some basic meta-data about the ontology
+
+<http://dacura.cs.tcd.ie/data/seshat#> a owl:Ontology;
+	dc:title "Seshat Global History Databank Ontology";
+	rdfs:comment "The Seshat Global History Databank (SGHD) ontology is designed to describe human societies throughout time.";	
+	rdfs:label "Seshat Global History Databank Ontology" ;
+	owl:versionInfo "0.1.00";	
+	dc:date "2015-02-27" ;
+	dc:creator "Rob Brennan" ;
+	dc:creator "Kevin Feeney" ;
+        dc:contributor "Odhran Gavin" ,
+                       "Gavin Mendel-Gleason" ,
+                       "Bojan Bozic" ,
+                       "Pieter Francois" ,
+                       "Harvey Whitehouse" ,
+                       "Peter Turchin" ;
+	dc:rights "This ontology is distributed under a Creative Commons Attribution License - http://creativecommons.org/licenses/by/3.0";
+	dc:description "This ontology will be used by the Evolution Institute and its partners to describe time series data collected about all human societies.".
+
+#Change Log
+# v0.1.0 first version
+
+# Main body 
+
+# Classes
+
+sghd:TemporalEntity a owl:Class;
+	rdfs:label "temporal entity";
+	rdfs:comment "An abstract concept describing anything that must have temporal bounds.".
+
+sghd:UnitOfSocialOrganisation a owl:Class;
+	rdfs:subClassOf sghd:TemporalEntity;
+	rdfs:label "unit of social organisation";
+	rdfs:comment "An abstract concept describing human social groups.".
+# Question: how does this relate to dbpedia-owl:Agent, prov:Agent?
+
+sghd:SovereignOrganisation a owl:Class;
+	rdfs:subClassOf sghd:UnitOfSocialOrganisation;
+	rdfs:label "sovereign organisation";
+	rdfs:comment "A derived concept covering human social groups with some self-governing powers.".
+
+sghd:SubPolity a owl:Class;
+	rdfs:subClassOf sghd:SovereignOrganisation;
+	rdfs:label "sub-polity";
+	rdfs:comment "A derived concept covering human social groups that are temporal, geographic or political components of other human social groups.".
+
+sghd:Polity a owl:Class;
+	rdfs:subClassOf sghd:SovereignOrganisation;
+	rdfs:label "polity";
+	rdfs:comment "A polity is defined as an independent political unit. Kinds of polities range from villages (local communities) through simple and complex chiefdoms to states and empires. A polity can be either centralized or not (e.g., organized as a confederation). What distinguishes a polity from other human groupings and organizations is that it is politically independent of any overarching authority; it possesses sovereignty. Polities are defined spatially by the area enclosed within a boundary on the world map. There may be more than one such areas. Polities are dynamical entities, and thus their geographical extent may change with time. Thus, typically each polity will be defined by a set of multiple boundaries, each for a specified period of time. For prehistoric periods and for NGAs populated by a multitude of small-scale polities we use a variant called quasi-polity.".
+
+sghd:QuasiPolity a owl:Class;
+	rdfs:subClassOf sghd:SovereignOrganisation;
+	rdfs:label "quasi-polity";
+	rdfs:comment " The polity-based approach is not feasible for those periods when a NGA is divided up among a multitude of small-scale polities (e.g., independent villages or even many small chiefdoms). In this instance we use the concept of 'quasi-polity'. Similarly, for societies known only archaeologically we may not be able to establish the boundaries of polities, even approximately. Quasi-polity is defined as a cultural area with some degree of cultural (including linguistic, if known) homogeneity that is distinct from surrounding areas. For example, the Marshall Islands before German occupation had no overarching native or colonial authority (chiefs controlled various subsets of islands and atolls) and therefore it was not a polity. But it was a quasi-polity because of the significant cultural and linguistic uniformity. The idea is to collect data for the quasi-polity as a whole. This way we can integrate over (often patchy) data from different sites and different polities to estimate what a 'generic' polity was like. Accordingly, when coding, for example, social complexity variables, enter data not for the whole NGA but for a 'typical' polity in it. For example, when coding for a quasi-polity polity territory is not the area of the NGA as a whole, but the average or typical area of polities within the NGA.".
+
+sghd:InterestGroup a owl:Class;
+	rdfs:subClassOf sghd:UnitOfSocialOrganisation;
+	rdfs:label "interest group";
+	rdfs:comment "An Interest Group(IG) is a social group that pursues some common interest, so that its members are united by a common goal or goals. Polities and religious cults are also interest groups, but the IG category is broader. It also includes ethnic groups, professional associations, warrior bands, solidarity associations, mutual aid societies, firms and banks (including their premodern variants), etc. The IG is defined sociologically, not geographically. However, if desired, a geographic area, enclosed within a boundary, may be associated with it in the same way as with a polity or a  Religious System(RS). ".
+
+sghd:ReligiousSystem a owl:Class;
+	rdfs:subClassOf sghd:InterestGroup;
+	rdfs:label "religious system";
+	rdfs:comment "Religious System (RS). This unit is defined in ways that are analogous to a polity, except it reflects religious, rather than political authority. Religious systems are dynamical and are typically defined by a set of dated boundaries. Unlike polities, religious systems often overlap with each other.".
+
+sghd:City a owl:Class;
+	rdfs:subClassOf sghd:UnitOfSocialOrganisation;
+	rdfs:label "city";
+	rdfs:comment "Cities are represented by a single point on the map that doesn’t change with time. Although it is possible to reflect their spatial expansion dynamically, we chose not to do so in the current implementation.".
+
+sghd:UnitOfTerritory a owl:Class;
+	rdfs:label "unit of territory";
+	rdfs:comment "An abstract concept describing geographical locations or areas.".
+# Question: How is this related to dbpedia_owl:Place or subclasses of it?
+
+sghd:CollectionOfTerritories a owl:Class;
+	rdfs:subClassOf sghd:UnitOfTerritory;
+	rdfs:label "collection of territories";
+	rdfs:comment "A container class for a group of units of territories.".
+
+sghd:FreeFormArea a owl:Class;
+	rdfs:subClassOf sghd:UnitOfTerritory;
+	rdfs:label "free form area";
+	rdfs:comment "Freeform area (FA). This is an area enclosed within a boundary, or a dated set of boundaries. Basically, it is our method for treating an arbitrary shape on the map to which a historical expert wishes to tie certain values of coded variables. Examples include a province within an empire, something with a hole in it, or a ‘southeast corner of a region.".
+
+sghd:NaturalGeographicArea a owl:Class;
+	rdfs:subClassOf sghd:UnitOfTerritory;
+	rdfs:label "natural geographic area";
+	rdfs:comment "Natural Geographic Region (NGA). This type of unit is defined spatially by the area enclosed within a boundary drawn on the world map. It does not change with time. Its rough spatial scale is 100 km × 100 km (+/- 50%). Examples: Latium, Upper Egypt, Middle Yellow River Valley. ".
+
+sghd:Event a owl:Class;
+	rdfs:subClassOf sghd:TemporalEntity;
+	rdfs:label "event";
+	rdfs:comment "An abstract class describing historical events.".
+
+sghd:War a rdfs:Class;
+	rdfs:subClassOf sghd:Event;
+	rdfs:label "war";
+	rdfs:comment "A derived concept covering historical wars.".
+
+sghd:Battle a rdfs:Class;
+	rdfs:subClassOf sghd:Event;
+	rdfs:label "battle";
+	rdfs:comment "A derived concept covering historical battles.".
+
+sghd:ValueWithDuration a rdfs:Class;
+	rdfs:label "value with duration";
+	rdfs:comment "An abstract concept used to collect values that have a timespan associated with the property targeting the value.".
+
+sghd:UnitOfSocialOrganisationWithDuration a owl:Class;
+	rdfs:subClassOf sghd:UnitOfSocialOrganisation; 
+	rdfs:subClassOf sghd:ValueWithDuration; 
+	rdfs:label "unit of social organisation with duration";
+	rdfs:comment "A temporally scoped abstract concept describing human social groups.".
+
+sghd:UnitOfTerritoryWithDuration a owl:Class;
+	rdfs:subClassOf sghd:UnitOfTerritory; 
+	rdfs:subClassOf sghd:ValueWithDuration; 
+	rdfs:label "unit of social organisation with duration";
+	rdfs:comment "A temporally scoped abstract concept describing geogaphical areas.".
+
+sghd:EventWithDuration a owl:Class;
+	rdfs:subClassOf sghd:Event; 
+	rdfs:subClassOf sghd:ValueWithDuration; 
+	rdfs:label "event with duration";
+	rdfs:comment "A temporally scoped abstract concept describing events.".
+
+# Properties
+sghd:start a owl:DataProperty;
+	rdfs:label "start" ;
+	rdfs:domain sghd:ValueWithDuration;
+	rdfs:range  xsd:dateTime;
+	rdfs:range  xsd:dateTime;
+	rdfs:comment "A property used to associate the start time with a value with duration." .
+
+sghd:end a owl:DataProperty;
+	rdfs:label "end" ;
+	rdfs:domain sghd:ValueWithDuration;
+	rdfs:range  xsd:dateTime;
+	rdfs:comment "A property used to associate the start time with a value with duration." .
+# Unsure how to encode bigbang, heatdeath in xsd:datetime! 
+
+sghd:associatedWithTerritory a owl:ObjectProperty;
+	rdfs:label "associated with territory" ;
+	rdfs:domain sghd:UnitOfSocialOrganisation;
+	rdfs:range  sghd:bad;
+	rdfs:comment "A temporally scoped property used to associate a SocialOrganisation with a Territory." .
+
+sghd:controlsTerritory a owl:ObjectProperty;
+	rdfs:subPropertyOf sghd:associatedWithTerritory;
+	rdfs:label "controls territory" ;
+	rdfs:comment "A temporally scoped property that indicates control of a Territory by a SocialOrganisation" .
+
+sghd:relatedToSocialOrganisation a owl:ObjectProperty;
+	rdfs:label "relatedToSocialOrganisation" ;
+	rdfs:domain sghd:UnitOfSocialOrganisation;
+	rdfs:range  sghd:UnitOfSocialOrganisationWithDuration;
+	rdfs:comment "A temporally scoped property used to associate a SocialOrganisation with another SocialOrganisation." .
+
+sghd:associatedWithEvent a owl:ObjectProperty;
+	rdfs:label "associated with event" ;
+	rdfs:domain sghd:UnitOfSocialOrganisation;
+	rdfs:range  sghd:EventWithDuration;
+	rdfs:comment "A temporally scoped property used to associate a SocialOrganisation with an Event." .
+
+sghd:includesUnitOfTerritory a owl:ObjectProperty;
+	rdfs:label "includes unit of territory" ;
+	rdfs:domain sghd:CollectionOfTerritories;
+	rdfs:range  sghd:UnitOfTerritory;
+	rdfs:comment "A property used to associate a CollectionOfTerritories with its consituent UnitsOfTerritory." .
+
+sghd:startDate a owl:DataProperty;
+	rdfs:label "start date" ;
+	rdfs:domain sghd:TemporalEntity;
+	rdfs:range  xsd:dateTime;
+	rdfs:comment "A property used to define the start of the temporal bounds of a TemporalEntity. For example, corresponds to the Duration start date for a Polity from the Seshat codebook." .
+# Note could use OWL-style property scoping to reuse sghd:end
+
+sghd:endDate a owl:DataProperty;
+	rdfs:label "end date" ;
+	rdfs:domain sghd:TemporalEntity;
+	rdfs:range  xsd:dateTime;
+	rdfs:comment "A property used to define the end of the temporal bounds of a TemporalEntity. For example, corresponds to the Polity Duration end date from the Seshat codebook." .
+# Note could use OWL-style property scoping to reuse sghd:end
+
+sghd:polygon a owl:DataProperty;
+	rdfs:label "polygon" ;
+	rdfs:domain sghd:UnitOfTerritory;
+	rdfs:range  xsd:string;
+	rdfs:comment "A property used to define the geographical polygon encompassed by a UnitOfTerritory." .
+
+
