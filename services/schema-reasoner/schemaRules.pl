@@ -24,7 +24,7 @@ count(A,[B|L],C) :- count(A,L,K), (A=B -> C is K+1 ; C=K).
 % Schema constraints
 
 %classes
-
+class(X) :- rdf(X, rdf:type, rdfs:'Class', schema).
 class(X) :- rdf(X, rdf:type, owl:'Class', schema). 
 
 uniqueClass(Y) :- class(Y), bagof(X, class(X), L), count(Y,L,1).
