@@ -131,7 +131,6 @@ class ScraperDacuraServer extends DacuraServer {
 		return $polities;
 	}
 	
-	
 	/**
 	 * Produces a dump of the NGA / polity sets passed in
 	 * @param $data associative array of NGA name -> polity URL
@@ -319,6 +318,115 @@ class ScraperDacuraServer extends DacuraServer {
 		}
 		$facts = $this->getFactsFromPage($content);
 		return $facts;
+	}
+
+
+	/**
+	 *
+	 */
+	function generateSchema(){
+		curl_setopt($this->ch, CURLOPT_URL, $this->settings['scraper']['codeBook']);
+		$content = curl_exec($this->ch);
+		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+			return $this->failure_result("Failed to retrieve url: $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "info");
+		}
+		echo("#Main Variables (polity-based)\n");
+		$bits = explode("Main Variables (polity-based)", $content);
+		$content = $bits[count($bits)-1];//ditch the early bit;
+		$bits = explode("</dl>", $content);
+		array_pop($bits);
+		$content = implode("</dl>", $bits); 
+		$sections = explode("<h2>", $content);
+		foreach($sections as $sect){
+			$properties = array();
+			$sec_bits = explode("</span></h2>", $sect);
+			if(count($sec_bits) == 2){
+				$sec_title = substr($sec_bits[0], strrpos($sec_bits[0], ">")+1);
+				echo("#$sec_title");
+				mb_regex_encoding('UTF-8');
+				$pieces = mb_split('♠', $sec_bits[1]);
+				foreach($pieces as $piece){
+					$sub_pieces = mb_split("♣.*♥", $piece);
+					
+					$property_name = trim(strip_tags($sub_pieces[0]));
+					if($property_name){
+						$property_comment = trim(strip_tags($sub_pieces[1]));
+						$property_nam = str_replace(array("(", ")", "-"), " ", $property_name);
+						$names_pieces = preg_split("/\s+/", $property_nam);
+						//echo count($names_pieces);
+						$pname = "";
+						foreach($names_pieces as $np){
+							$pname .= ucfirst($np);
+						}
+						$domain = $this->mapVariableToDomain($pname);
+						if($domain){
+							$range = $this->mapVariableToRange($pname);
+							$prop_assertions = array();
+							$prop_assertions[] = 'sghd:'.$pname." a ".$range[0].";\n";
+							$prop_assertions[] = "\trdfs:label \"$property_name\";\n"; 
+							$prop_assertions[] = "\trdfs:domain $domain;\n";
+							$prop_assertions[] = "\trdfs:range  $range[1];\n";
+							if($this->allowsMultipleValues($pname) === false){
+								$prop_assertions[] = "\trdfs:subClassOf [ a owl:Restriction ;\n";
+								$prop_assertions[] = "\t\towl:maxCardinality 1 ;\n";
+								$prop_assertions[] = "\t\towl:onProperty sghd:$pname\n";
+								$prop_assertions[] = "\t\t] ;\n";
+							}
+							$prop_assertions[] = "\trdfs:comment \"$property_comment\" .\n\n";
+							//opr($prop_assertions);
+							foreach($prop_assertions as $p){
+								echo $p;
+							}
+						}
+					}
+				}
+				//get rid of all text up to first variable...
+			}		
+		}
+		//rdfs:subClassOf
+		//[ a       owl:Restriction ;
+		//owl:maxCardinality 1 ;
+		//owl:onProperty :hours
+		//] ;
+		
+		//$facts = $this->getFactsFromPage($content);
+		//mb_regex_encoding('UTF-8');
+		//$pieces = mb_split('♠', $content);
+		//get rid of all text up to first variable...
+		//array_shift($pieces);
+		//opr($pieces);
+		return true;
+ 
+		//$cfacts = $this->getSchemaFromURL($this->settings['scraper']['codeBook']);
+	
+	}
+	
+	function allowsMultipleValues($property_name){
+		$map = array(
+			"AlternativeNames"	
+		);
+		return in_array($property_name, $map);
+	}
+	
+	function mapVariableToDomain($property_name, $context = ""){
+		$map = array(
+			"RA" => false, 
+			"Expert" => false,
+			"Duration" => "sghd:TemporalEntity"
+		);
+		if(isset($map[$property_name])) {
+			return $map[$property_name];
+		}
+		return "sghd:UnitOfSocialOrganisation";
+	}
+	
+	function mapVariableToRange($property_name){
+		$map = array(
+			"Duration" => array("owl:ObjectProperty", "time:Interval"), 
+			"UTMZone" => array("owl:ObjectProperty", "tzont:TimeZone"),
+			"PeakDate" => array("owl:ObjectProperty", "time:TemporalEntity")
+		);
+		return (isset($map[$property_name])) ? $map[$property_name] : array("owl:DataProperty", "xsd:string");
 	}
 	
 	/*

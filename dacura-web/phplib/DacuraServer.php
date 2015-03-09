@@ -21,7 +21,9 @@ require_once("FileManager.php");
 class DacuraServer extends DacuraObject {
 	var $settings;
 	var $userman;	//user & session manager
-	var $ucontext; //user context
+	var $ucontext; 
+	var $collection; //collection object in which context the call is made
+	var $dataset; //dataset object in which the call is made
 	var $dbclass = "UsersDBManager";//the class of the associated dbmanager
 	var $dbman; //storage manager
 	var $fileman; //log manager, responsible for logging, caching, dumping data
@@ -67,6 +69,16 @@ class DacuraServer extends DacuraObject {
 			return $obj;
 		}
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+	}
+	
+	function loadContextConfiguration(){
+		if($this->cid() != "all"){
+			$this->collection = $this->getCollection($this->cid());
+			if($this->did() != "all"){
+				$this->dataset = $this->getDataset($this->did());
+			}
+		}
+		
 	}
 	
 	/*
