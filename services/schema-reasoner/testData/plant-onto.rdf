@@ -1,0 +1,37 @@
+
+<!-- Processed by Id: cwm.py,v 1.197 2007/12/13 15:38:39 syosi Exp -->
+<!--     using base file:///home/gavin/Documents/code/rdf/Reasoner/plant-onto.n3-->
+
+
+<rdf:RDF xmlns="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+
+    <owl:ObjectProperty rdf:about="http://www.linkeddatatools.com/plants#colour">
+        <domain rdf:resource="http://www.linkeddatatools.com/plants#planttype"/>
+        <range rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#PlainLiteral"/>
+    </owl:ObjectProperty>
+
+    <owl:Class rdf:about="http://www.linkeddatatools.com/plants#flowers">
+        <comment>Flowering plants, also known as angiosperms.</comment>
+        <label>Flowering plants</label>
+        <subClassOf rdf:resource="http://www.linkeddatatools.com/plants#planttype"/>
+    </owl:Class>
+
+    <owl:ObjectProperty rdf:about="http://www.linkeddatatools.com/plants#grows_well_with">
+        <domain rdf:resource="http://www.linkeddatatools.com/plants#planttype"/>
+        <range rdf:resource="http://www.linkeddatatools.com/plants#planttype"/>
+    </owl:ObjectProperty>
+
+    <owl:Class rdf:about="http://www.linkeddatatools.com/plants#planttype">
+        <comment>The class of all plant types.</comment>
+        <label>The plant type</label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.linkeddatatools.com/plants#shrubs">
+        <comment>Shrubs, a type of plant which branches from the base.</comment>
+        <label>Shrubbery</label>
+        <subClassOf rdf:resource="http://www.linkeddatatools.com/plants#planttype"/>
+    </owl:Class>
+</rdf:RDF>
