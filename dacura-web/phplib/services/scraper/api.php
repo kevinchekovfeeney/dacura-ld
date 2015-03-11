@@ -2,6 +2,7 @@
 require_once("phplib/libs/epiphany/src/Epi.php");
 
 getRoute()->get('/nga', 'getngas');
+getRoute()->get('/schema', 'schema');
 getRoute()->post('/polities', 'getpolities');
 getRoute()->post('/dump', 'dump');
 getRoute()->get('/view/(.+)', 'viewReport');
@@ -27,6 +28,26 @@ function getngas(){
 	else {
 		$dacura_server->write_http_error();
 	}
+}
+
+/*
+ * Generate a RDFS schema from the Seshat Codebook page
+ */
+function schema(){
+	global $dacura_server;
+	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("schema")){
+		$x = $dacura_server->generateSchema();
+		if($x){
+			echo $x;
+		}
+		else {
+			$dacura_server->write_http_error();
+		}
+	}
+	else {
+		$dacura_server->write_http_error();
+	}
+	
 }
 
 function getpolities(){

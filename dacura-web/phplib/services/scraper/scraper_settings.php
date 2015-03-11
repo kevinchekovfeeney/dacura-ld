@@ -6,7 +6,8 @@ $settings = array(
 	"password" => 'cheguevara',
 	"loginUrl" => 'http://seshat.info/w/index.php?title=Special:UserLogin&action=submitlogin',
 	"mainPage" => 'http://seshat.info/Main_Page',
-	"grabScriptFiles" => array(
+	"codeBook" => 'http://seshat.info/Code_book',
+		"grabScriptFiles" => array(
 			$dacura_settings['path_to_files']."js/jquery.js", 
 			$dacura_settings['path_to_files']."js/jquery-ui.js"	
 	),

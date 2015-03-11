@@ -1,3 +1,4 @@
+
 <?php
 //getRoute()->get('/datatable', 'datatable');
 //getRoute()->get('/datatable/(\w+)', 'datatable_record');
@@ -42,7 +43,7 @@ function update_candidates(){
 }
 
 function get_candidate($id){
-	
+
 }
 
 function update_candidate($target_type, $target_id){
@@ -53,17 +54,17 @@ function update_candidate($target_type, $target_id){
 	if($c_id == "all" or $d_id == "all"){
 		$dacura_server->write_http_error(400, "candidate updates must be sent to a specific dataset");
 	}
-	$target = isset($_POST['target']) ? json_decode($_POST['target'], true) : array(); 
-	$source = isset($_POST['source']) ? json_decode($_POST['source'], true) : array(); 
-	$candidate = isset($_POST['candidate']) ? json_decode($_POST['candidate'], true) : array(); 
+	$target = isset($_POST['target']) ? json_decode($_POST['target'], true) : array();
+	$source = isset($_POST['source']) ? json_decode($_POST['source'], true) : array();
+	$candidate = isset($_POST['candidate']) ? json_decode($_POST['candidate'], true) : array();
 	$dacura_server->init("update_candidate", $target_type, $target_id);
 	if($target_type == "report"){
 		if($target_id == "create"){
-			
+				
 		}
 	}
 	else { //"candidate"
-		
+
 	}
 }
 
@@ -73,7 +74,7 @@ function datatable(){
 	$dto = $cds->getDataTablesOutput();
 	if($dto) echo json_encode($dto);
 	else $cds->write_error("Failed to fetch table of candidates.".$cds->errmsg, 400);
-	
+
 }
 
 function datatable_record($x){
@@ -81,6 +82,6 @@ function datatable_record($x){
 	$cds = new CandidatesDacuraServer($service);
 	$sto = $cds->getStateTablesOutput($x);
 	if($sto) echo json_encode($sto);
-	else $cds->write_error("Failed to fetch table of candidate $x state changes.".$cds->errmsg, 400);	
-	
+	else $cds->write_error("Failed to fetch table of candidate $x state changes.".$cds->errmsg, 400);
+
 }

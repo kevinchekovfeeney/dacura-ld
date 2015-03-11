@@ -93,62 +93,9 @@
 			}
 			return true;
 		}
-	
-		function formatReport(report){
-			string = "<h4>Results Summary</h4>";
-			string += "<table class='scraper-report'><tr><th>NGA</th><th>Polities</th><th>Variables</th><th>Non-Zero</th><th>Simple</th><th>Complex</th><th>Parse Success</th><th>Parse Failure</th></tr>"
-			for(each in report["contents"]){
-				nga = report["contents"][each]
-				string += "<tr><td>" + nga["nga"] + "</td>";
-				string += "<td>" + nga["polityCount"] + "</td>";
-				string += "<td>" + nga["totalCount"] + "</td>";
-				string += "<td>" + nga["nonZeroCount"] + "</td>";
-				string += "<td>" + (nga["nonZeroCount"] - nga["parseCount"]) + "</td>";
-				string += "<td>" + nga["parseCount"] + "</td>";
-				string += "<td>" + nga["successCount"] + "</td>";
-				string += "<td>" + nga["failureCount"] + "</td>";
-				string += "</tr>";
-			}
-			string += "</table>";
-			string += "<p><a href='" + report['fileurl'] + "'><b>Download the results</b></a></p>";
-			return string;
-		}
 
-		function formatErrors(report){
-			if(report["errors"].length > 1){
-				string = "<h4>Errors encountered in data</h4>";
-				string += "<table class='scraper-report'><tr><th>Polity</th><th>Variable</th><th>Error</th></tr>";
-				for(var i = 0;i < report["errors"].length; i++){
-					var x = report["errors"][i];
-					string += "<tr><td><a href='" + x["url"] + "'>" + x["polity"] + "</a></td>";
-					string += "<td>" + x["value"][0] + "</td>" + "<td>" + x["errorMessage"] + "</td></tr>"
-				}
-				string += "</table>";
-			}
-			else {
-				string = "<h4>No errors encountered in data</h4>";
-			}
-			return string;
-		}
-
-		function formatFailures(failures){
-			string = "";
-			if(failures.length > 0){
-				string = "<h4>The following pages could not be scraped:</h4>";
-				string += "<table class='scraper-report'><tr><th>Page</th><th>Failure Type</th></tr>";
-				for(var i = 0;i < failures.length; i++){
-					string += "<tr><td>" + failures[i][0] + "</td><td>" + failures[i][1] + ": " + failures[i][2] + "</td></tr>";
-				}
-				string += "</table>";
-			}
-			return string;
-		}
-
-		var ngaData = [];
 		var requests = [];
-		var polityData = [];
 		var NGAsObtainedCount = 0;
-		var politiesObtainedCount = 0;
 		var includeAll = false;
 
 		var ngaStatus = {
