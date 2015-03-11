@@ -48,7 +48,8 @@ orphanSubClasses(L) :- setof(notSubClassOfClass(X,Y), notSubClassOfClass(X,Y),L)
 
 % subclass cycles
 classCycleHelp(C,S,[]) :- get_assoc(C,S,true), !.
-classCycleHelp(C,S,[K|P]) :- class(C), subClass(K, C), put_assoc(C, S, true, S2), classCycleHelp(K,S2,P).
+classCycleHelp(C,S,[K|P]) :- class(C), subClass(K, C), 
+			     put_assoc(C, S, true, S2), classCycleHelp(K,S2,P).
 
 classCycle(C,P) :- empty_assoc(S), classCycleHelp(C,S,P). 
 
@@ -216,18 +217,22 @@ generateClosed(C,[rdf(X,'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',Sub)|O
 
 generate(L) :- empty_assoc(S), classRoot(C), generateClosed(C, L, S). 
 
-generateN(0,[]).
-generateN(N,L) :- N > 0, M is N-1, generate(L1), generateN(M,L2),append(L1,L2,L).
+generateN(N,L) :- findnsols(N, L1, generate(L1), LL), flatten(LL, L).
 
 :- use_module(library(apply)).
 addToDB(rdf(X,Y,Z)) :- rdf_assert(X,Y,Z,instance). 
 :- rdf_meta populateDB. 
 
 % N specifies number of times to decend the class hierarchy rather than 
-% the number of classes or triples.  This is convenient as consistency 
+% the number of classes or triples, M is the number of solutions to look for 
+% in the class hierarchy.  This is convenient as consistency 
 % is a global property which can't easily be maintained without total traversal. 
-% If you have a big schema, make N small. 
-populateDB(N) :- generateN(N,L), maplist(addToDB, L), !.
+
+populateDB(0, _) :- !.
+populateDB(N, M) :- N2 is N-1, generateN(N,L), maplist(addToDB, L), populateDB(N2, M). 
+
+% sorry about the magic numbers...
+populateDB(N) :- HierarchyTravesals=300, populateDB(N, HierarchyTravesals). 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -280,6 +285,8 @@ demoDB(Schema,Instance,Options) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DB Checker
 
+%! test(+Test:atom) is det.
+%! test(?Test:atom) is nondet.
 test(classCycles).
 test(propertyCycles). 
 test(duplicateClasses).
@@ -292,6 +299,8 @@ test(blankNodes).
 test(invalidRange). 
 test(invalidDomain). 
 
+%! testMessage(+Test:atom, -Message:atom) is det.
+%! testMessage(?Test:atom, -Message:atom) is det.
 % this package prefixing is a ridiculous hack to deal with metapredicate handling.
 testMessage(schemaRules:classCycles, 'Cycles in class hierarchy: ') :- !.
 testMessage(schemaRules:propertyCycles, 'Cycles in property hierarchy: ') :- !. 
