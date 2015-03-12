@@ -11,6 +11,7 @@
  */
 
 include_once("CandidateAction.php");
+include_once("Provenance.php");
 
 class thingWithSchema extends DacuraObject {
 	var $json_ld_mapping; //JSON-LD mapping
@@ -20,6 +21,10 @@ class thingWithSchema extends DacuraObject {
 		$this->json_schema = json_decode(file_get_contents($file));
 	}
 	
+	function genid($prefix = "") {
+		return uniqid($prefix);
+	}
+	
 	function checkJSONSchema($js){
 		$schema_errors = Jsv4::validate($js, $this->json_schema);
 		foreach($schema_errors as $se){
@@ -27,6 +32,23 @@ class thingWithSchema extends DacuraObject {
 			opr($se);
 		}
 	}
+	
+	function findObjectWithKey($k, $arr){
+		if(!is_array($arr)) return false;
+		foreach($arr as $id => $obj){
+			if(is_array($obj)){
+				if($id == $k){
+					return $obj;
+				}
+				else {
+					return $this->findObjectWithKey($k, $obj);
+				}
+			}
+		}
+		return false;
+	}
+	
+	function applyIDMap($map){}
 	
 }
 
@@ -98,7 +120,7 @@ class Candidate extends thingWithSchema {
 	}
 	
 	function getAgentKey(){
-		$ag = $this->prov->getAgent("dacuraAgent");
+		$ag = $this->prov->getAgent("dacura:dacuraAgent");
 		if(!$ag)
 		{
 			return false;
@@ -107,6 +129,28 @@ class Candidate extends thingWithSchema {
 		//return ($ag = $this->prov->getAgent("dacuraAgent") && isset($ag['key'])) ? $ag['key'] : false;
 	}
 	
+	function getFacet($fid){
+		//return $this->findObjectWithKey($this->id."/".$fid, $this->contents);
+		//go through object and see if there is a particular id there....
+		$frag_id = $this->id."/".$fid;
+		foreach($this->contents as $prop => $vals){
+			$obj = $this->findObjectWithKey($frag_id, $vals);
+			if($obj) return $obj;
+		}
+		$obj = $this->prov->getFragment($frag_id);
+		if($obj) return $obj;
+		$obj = $this->annotation->getFragment($frag_id);
+		if($obj) return $obj;
+		return false;
+	}
+	
+	function candidateHasFragmentWithID($frag_id){
+		foreach($this->contents as $prop => $vals){
+			$obj = $this->findObjectWithKey($frag_id, $vals);
+			if($obj) return true;
+		}
+		return false;
+	}
 	
 	function set_version($v){
 		$this->version = $v;
@@ -123,15 +167,24 @@ class Candidate extends thingWithSchema {
 	/*
 	 * PHP objects for our main players...
 	 */
-	function loadFromAPI($source, $cand, $note){
+	function loadFromAPI($obj){
 		$this->prov = new Provenance();
 		$this->annotation = new Annotation();
-		$this->prov->load($source);
-		if($note) $this->annotation->load($note);
-		$this->load($cand);
-		$this->type = $cand['class'];
-		unset($this->contents['class']);
+		$this->prov->load($obj['provenance']);
+		if(isset($obj['annotation'])){
+			$this->annotation->load($obj['annotation']);
+		}
+		$this->load($obj['candidate']);
+		$this->type = $obj['candidate']['rdf:type'];
 		return true;
+	}
+	
+	function get_json_ld(){
+		$ld = array("id" => $this->id);
+		$ld['candidate'] = $this->contents;
+		$ld['provenance'] = $this->prov->get_json_ld();
+		$ld['annotation'] = $this->annotation->get_json_ld();
+		return $ld;
 	}
 	
 	function loadFromJSON($cand, $source = false, $note = false){
@@ -147,7 +200,7 @@ class Candidate extends thingWithSchema {
 				//return false;
 			}
 		}
-		return ($this->contents = json_decode($cand));
+		return ($this->contents = json_decode($cand, true));
 	}
 	
 	function hasExternalReferences($follow_internals = false){
@@ -174,18 +227,116 @@ class Candidate extends thingWithSchema {
 class CandidateUpdateRequest extends Candidate {
 	var $original; //the current state of the target candidate 
 	var $delta;	//the changed state of the target candidate (if the update request is accepted)
-	var $update; //the state update 
-	
-	function setOriginal($cur){
-		$this->original = $cur;
-	}
-	
+	var $changes; // array describing changes from old to new
+	var $rollback; // array describing changes from old to new
+	var $id_map; // array of blank node ids mapped into urls...
+
 	function generateDelta(){
-		$this->delta = $original;
+		if($this->applyUpdates($this->contents, $this->delta->contents)){
+			//should also do the same with provenance and annotations
+			return true;
+		}
+		else return false;
 		//need to take my graph
 		//merge it into original's graph
 		//generate transform from original to new
 	}
+	
+	function applyUpdates($props, &$dprops){
+		foreach($props as $prop => $v){
+			if(!is_array($v) or count($v) == 0){ // property => value
+				if($v){
+					$dprops[$prop] = $v;
+				}
+				else {
+					if(isset($dprops[$prop])){
+						unset($dprops[$prop]);
+					}
+					else {
+						return $this->failure_result("Attempted to remove non-existant property $prop", 404);
+					}
+				}
+			}
+			else { // property => {id => embedded_object, ...} value is array 
+				foreach($v as $id => $obj){
+					if(!$obj){ // delete fragment
+						if(isset($dprops[$prop][$id])){
+							unset($dprops[$prop][$id]);
+						}
+						else {
+							return $this->failure_result("Attempted to remove non-existant property value $prop $id", 404);
+						}
+					}
+					elseif(!is_array($obj)){
+						return $this->failure_result("Update object format error - attempting to replace embedded object with non json-object", 404);						
+					}
+					else { // correct - array of things
+						if(isBlankNode($id)){
+							//$plan['create'][$id] = array($p, $obj);//property, object
+							$new_id = $this->genid($this->delta->id."/");
+							$this->id_map[$id] = $new_id;
+							$dprops[$prop][$new_id] = $obj;
+							$id = $new_id;
+						}
+						elseif(!isset($dprops[$prop][$id])){
+							return $this->failure_result("Attempting to update $prop with non existant id $id", 404);
+						}
+						else {
+							if(!$this->applyUpdates($props[$prop][$id], $dprops[$prop][$id])){
+								return false;
+							}
+						}
+					}
+				}
+			
+			}
+		}
+		return true;
+	}
+	//here is where we go through the update request and turn it into a list of updates
+	function expand(){
+		if($this->generateDelta()){
+			$this->changes = array("add" => array(), "del" => array(), "update" => array());
+			$this->candidateCompare($this->original->contents, $this->delta->contents, $this->original->id, $this->changes);//now generate changeset..
+			$this->rollback = array("add" => array(), "del" => array(), "update" => array());
+			$this->candidateCompare($this->delta->contents, $this->original->contents, $this->original->id, $this->rollback);//now generate changeset..
+			//need to also do the annotations and provenance ... Later!
+			return true;
+		}
+		return $this->failure_result($this->errmsg, $this->errcode);		
+	}
+	
+	//res -> add: (context, fragment)
+	//res -> delete: (context, $property, fragment)
+	//res -> update: (context, $property, fragment1, fragment2)
+	function candidateCompare($ocand, $dcand, $context, &$res){
+		foreach($ocand as $p => $v){
+			if(!isset($dcand[$p]) || !$dcand[$p] || (is_array($dcand[$p]) && count($dcand[$p]) == 0)){
+				$res['del'][] = array($context, $p, $v);
+				continue;
+			}
+			$nv = $dcand[$p];
+			if(!is_array($v)){
+				if($nv != $v){
+					$res['update'][] = array($context, $p, $nv, $v);
+				}
+			}
+			else {
+				//update to a compound object...
+				$this->candidateCompare($ocand[$p], $dcand[$p], "$context.$p", $res);
+			}
+		}
+		//now go through the delta cand to find new nodes...
+		foreach($dcand as $p => $v){
+			if(!isset($ocand[$p]) || !$ocand[$p]){
+				$res['add'][] = array($context, $p, $v);
+				continue;
+			}	
+		}
+		return true;
+	}
+	
+
 	
 	function get_delta(){
 		return $this->delta;
@@ -200,8 +351,52 @@ class CandidateUpdateRequest extends Candidate {
 }
 
 class CandidateCreateRequest extends Candidate {
+	
+	public static $ix = 0;
+	
+	
 	function __construct(){
 		$this->version = 1;
+	}
+	
+	function expandarray($arr, &$map, $prefix = ""){
+		if(!is_array($arr)){
+			return $arr;
+		}
+		$newarr = array();
+		foreach($arr as $key => $val){
+			if(is_array($val)){
+				$newid = $this->genid($prefix);
+				if(isset($val['@id'])){
+					$map[$val['@id']] = $newid;
+					unset($val['@id']);
+				}
+				$newarr[$newid] = $this->expandarray($val, $map, $prefix);
+			}
+			else {
+				$newarr[$key] = $val;
+			}
+		}	
+		return $newarr;
+	}
+	
+	function expand(){
+		$this->id = $this->genid();
+		$id_map = array("_:candidate" => $this->id);
+		//add ids to everything, ensure that everything inter-relates
+		//get_content id, then, get
+		foreach($this->contents as $k => $v){
+			if(!is_array($v)){
+				continue;
+			}
+			$this->contents[$k] = $this->expandarray($v, $id_map, $this->id."/");
+		}
+		//now we deal with provenance and annotation references....
+		$this->annotation->expand($id_map, $this->id."/");
+		$this->prov->expand($id_map, $this->id."/");
+		$this->annotation->applyIDMap($id_map);
+		$this->prov->applyIDMap($id_map);
+		return true;
 	}
 }
 
@@ -209,90 +404,79 @@ class CandidateSchema extends Candidate {
 	function __construct(){}
 }
 
-/*
-{
-	"entity": { // Map of entities by entities' IDs
-},
-"activity": { // Map of activities by IDs
-},
-"agent": { // Map of agents by IDs
-},
-<relationName>: { // A map of relations of type relationName by their IDs
-},
-...
-"bundle": { // Map of named bundles by IDs
-}
-}*/
-class Provenance extends thingWithSchema {
-	var $entities = array();
-	var $activities = array();
-	var $agents = array();
-	var $relations = array();
-	var $bundles = array();
-	//var $relation
-	function checkProvenanceSchema($json){
-		$this->loadJSONSchema("phplib/schema/prov.json.schema");
-		$this->checkJSONSchema($json);
-	}
-	
-	function load($arr){
-		//$this->checkProvenanceSchema($arr);
-		if(isset($arr['entity'])){
-			$this->entities = $arr['entity'];
-		}
-		if(isset($arr['activity'])){
-			$this->activities = $arr['activity'];
-		}
-		if(isset($arr['agent'])){
-			$this->agents = $arr['agent'];
-		}
-		if(isset($arr['bundle'])){
-			$this->bundles = $arr['bundle'];
-		}
-		foreach($arr as $k => $v){
-			if(!in_array($k, array("entity", "activity", "agent", "bundle"))){
-				$this->relations[$k] = $v;
-			}
-		}		
-	}
-	
-	function load_json($json){
-		$json = json_decode($json, true);
-		if(!$json or !is_array($json)){
-			return false;
-		}
-		$this->load($json);
-		return true;
-	}
-	
-	function get_json(){
-		$prov_obj = array();
-		if(isset($this->entities) && $this->entities){
-			$prov_obj["entity"] = $this->entities;
-		}
-		if(isset($this->activitives) && $this->activitives){
-			$prov_obj["activity"] = $this->activitives;
-		}
-		if(isset($this->agents) && $this->agents){
-			$prov_obj["agent"] = $this->agents;
-		}
-		if(isset($this->bundles) && $this->bundles){
-			$prov_obj["bundle"] = $this->bundles;
-		}
-		foreach($this->relations as $k => $v){
-			$prov_obj[$k] = $v;
-		}
-		return json_encode($prov_obj);
-	}
-	
-	function getAgent($id){
-		return isset($this->agents[$id]) ? $this->agents[$id] : false;
-	}
-	
-}
 
 class Annotation extends thingWithSchema {
 	var $contents;
+	
+	function expandinternal($arr, &$map, $prefix, $first=false){
+		if(!is_array($arr)){
+			return $arr;
+		}
+		if(!$first){
+			$newid = $this->genid($prefix);
+			$narr = array($newid => array());
+			foreach($arr as $n => $v){
+				$narr[$newid][$n] = $this->expandinternal($v,$map, $prefix);
+			}
+			return $narr;
+		}
+		else {
+			foreach($arr as $n => $v){
+				$arr[$n] = $this->expandinternal($v, $map, $prefix);
+			}
+			return $arr;
+		}
+	}
+	
+	function apply_map_to_array($arr, $map){
+		$narr = array();
+		foreach($arr as $k => $v){
+			if(is_array($v)){
+				$narr[$k] = $this->apply_map_to_array($v, $map);
+			}
+			else {
+				if(isset($map[$v])){
+					$narr[$k] = $map[$v];
+				}
+				else {
+					$narr[$k] = $v;
+				}
+			}
+		}
+		return $narr;
+	}
+	
+	function applyIDMap($map){
+		foreach($this->contents as $ck => $cu){
+			$this->contents[$ck] = $this->apply_map_to_array($cu, $map);
+		}
+	}
+	function expand(&$map, $prefix = ""){
+		foreach($this->contents as $ck => $cu){
+			if(isBlankNode($ck)){
+				unset($this->contents[$ck]);
+				$x = $this->genid($prefix);
+				$map[$ck] = $x;
+				$ck = $x;
+			}
+			if($ck){
+				$this->contents[$ck] = $this->expandinternal($cu, $map, $prefix, true);
+			}
+		}
+	}
+	
+	function getFragment($frag_id){
+		foreach($this->contents as $id => $obj){
+			if($frag_id == $id){
+				return $obj;
+			}
+			else {
+				$nobj = $this->findObjectWithKey($frag_id, $obj);
+				if($nobj) return $nobj;
+			}
+		}
+		return false;
+	}
 	
 	function load($arr){
 		$this->contents = $arr;
@@ -300,6 +484,10 @@ class Annotation extends thingWithSchema {
 	
 	function load_json($json){
 		return ($this->contents = json_decode($json, true));
+	}
+	
+	function get_json_ld(){
+		return $this->contents;
 	}
 	
 	function get_json(){

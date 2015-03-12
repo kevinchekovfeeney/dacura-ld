@@ -32,3 +32,12 @@ function sendemail($recip, $subj, $text){
 	}
 	return false;
 }
+
+function getNamespacePortion($str){
+	$bits = explode(":", $str);
+	return (count($bits) > 1) ? $bits[0]: false;
+}
+
+function isBlankNode($str){
+	return (getNamespacePortion($str) == "_");
+}

@@ -22,20 +22,24 @@ class CandidateDBManager extends UsersDBManager {
 	}
 	
 	function deferCandidateUpdate($cand, $res){
-		$this->insert_candidate_update($ucand->update());		
+		$ucand->delta->status = "pending";
+		$this->insert_candidate_update($ucand->delta);		
 	}
 	
 	function updateCandidate($ucand, $res){
-		$this->insert_candidate_update($ucand->update());
-		$this->update_candidate($ucand->delta());
+		$ucand->status = "accept";
+		$this->insert_candidate_update($ucand);
+		$ucand->delta->version++;
+		$this->update_candidate($ucand->delta);
+		//$this->insert_rollback($ucand);
 		//write candidate update to disk at same time as writing candidate update
 	}
 	
 	function insert_candidate_update($cand){
 		$stmt = $this->link->prepare("INSERT INTO candidate_update_requests
 					(candid, candidate_version,
-					candidate, provenance, annotations, status, createtime, modtime)
-					VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+					candidate, provenance, annotation, status, createtime, modtime)
+					VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
 		$res = $stmt->execute(array(
 				$cand->id,
 				$cand->version(),
@@ -56,10 +60,11 @@ class CandidateDBManager extends UsersDBManager {
 	function insert_candidate($cand){
 		try {
 			$stmt = $this->link->prepare("INSERT INTO candidates 
-					(collectionid, datasetid, version, candidate_class, candidate_version, 
-					candidate, provenance, annotations, status, createtime, modtime, report) 
-					VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+					(id, collectionid, datasetid, version, candidate_class, candidate_version, 
+					candidate, provenance, annotation, status, createtime, modtime, report) 
+					VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			$res = $stmt->execute(array(
+					$cand->id,
 					$cand->cid, 
 					$cand->did, 
 					$cand->version(), 
@@ -85,7 +90,7 @@ class CandidateDBManager extends UsersDBManager {
 		try {
 			$stmt = $this->link->prepare("UPDATE candidates SET
 					collectionid = ?, datasetid = ?, version = ?, candidate_class = ?, candidate_version = ?,
-					candidate = ?, provenance = ?, annotations = ?, status = ?, modtime = ?, report = ? WHERE id = ?");
+					candidate = ?, provenance = ?, annotation = ?, status = ?, modtime = ?, report = ? WHERE id = ?");
 			$res = $stmt->execute(array(
 					$cand->cid,
 					$cand->did,
@@ -109,14 +114,14 @@ class CandidateDBManager extends UsersDBManager {
 	
 	function load_candidate($cand){
 		try {
-			$stmt = $this->link->prepare("SELECT collectionid, datasetid, version, candidate_class, candidate_version, candidate, provenance, annotations, status, createtime, modtime, report FROM candidates where id=?");
+			$stmt = $this->link->prepare("SELECT collectionid, datasetid, version, candidate_class, candidate_version, candidate, provenance, annotation, status, createtime, modtime, report FROM candidates where id=?");
 			$stmt->execute(array($cand->id));
 			$row = $stmt->fetch(PDO::FETCH_ASSOC);
 			if($row){
 				$cand->setContext($row['collectionid'], $row['datasetid']);
 				$cand->set_version($row['version']);
 				$cand->set_class($row['candidate_class'], $row['candidate_version']);
-				if(!$cand->loadFromJSON($row['candidate'], $row['provenance'], $row['annotations'])){
+				if(!$cand->loadFromJSON($row['candidate'], $row['provenance'], $row['annotation'])){
 					return $this->failure_result("Failed to load candidate from stored json", 500);
 				}
 				$cand->created = $row['createtime'];
@@ -234,11 +239,6 @@ class CandidateDBManager extends UsersDBManager {
 		$this->errmsg = "No candidates remaining";
 		return false;
 	}
-	
-
-	
-	
-	
 	
 	function catch_multiples($u, $c){
 		return true;

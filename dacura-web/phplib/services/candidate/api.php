@@ -10,12 +10,27 @@
 getRoute()->get('/', 'usage');//show usage information for root get access
 getRoute()->post('/', 'create_candidate');//create a new candidate (type etc, are in payload)
 getRoute()->get('/type/(\w+)', 'get_candidate_schema');
+getRoute()->get('/(\w+)/(\w+)', 'get_candidate');//with fragment id
 getRoute()->get('/(\w+)', 'get_candidate');
 getRoute()->post('/(\w+)', 'update_candidate');
+getRoute()->post('/(\w+)/(\w+)', 'update_candidate');//with fragment id
 getRoute()->delete('/(\w+)', 'delete_candidate');
 
+
+function get_candidate($candidate_id, $facet_id = false){
+	global $dacura_server;
+	//$facet = isset($_GET['facet']) ? $_GET['facet'] : false;
+	$format = isset($_GET['format']) ? $_GET['format'] : false;
+	$dacura_server->init("get_candidate", $candidate_id, $facet_id);
+	$cand = $dacura_server->getCandidate($candidate_id, $facet_id, $format);
+	if($cand){
+		return $dacura_server->send_candidate($cand);
+	}
+	$dacura_server->write_http_error();
+}
+
 /*
- * post requests take input as a application/x-www-form-urlencoded 
+ * post requests take input as a application/json
  */
 
 /**
@@ -27,24 +42,25 @@ getRoute()->delete('/(\w+)', 'delete_candidate');
  * candidate => dacura candidate object describing the properties to be updated or added 
  * 
  */
-function update_candidate($target_id){
+function update_candidate($target_id, $fragment_id = false){
 	global $dacura_server;
+	global $dacura_server;
+	$json = file_get_contents('php://input');
+	$obj = json_decode($json, true);
+	if(!$obj){
+		return $dacura_server->write_http_error(400, "candidate update must have a valid body");
+	}
 	/*
-	 * Source and candidate are required for update
+	 * Source and candidate are required 
 	 */
-	if(!(isset($_POST['source'])) || !($source = json_decode($_POST['source'], true))){
-		$dacura_server->write_http_error(400, "candidate create must have a valid json source");
+	if(!(isset($obj['provenance'])) || !(isset($obj['candidate']))){
+		return $dacura_server->write_http_error(400, "candidate create requires both provenance and candidate");
 	}
-	if(!isset($_POST['candidate']) || !($candidate = json_decode($_POST['candidate'], true))){
-		$dacura_server->write_http_error(400, "candidate create must have a valid json candidate object");
-	}
-	$annotations = isset($_POST['annotations']) ? json_decode($_POST['annotations'], true) : array();
-	$test = isset($_POST['test']) ? true : false;
 	//runs the request through the dacura update analyser
-	$cand = $dacura_server->updateCandidate($target_id, $source, $candidate, $annotations, isset($_POST['test']));
+	$cand = $dacura_server->createUpdateCandidate($target_id, $obj, $fragment_id, isset($obj['test']));
 	if($cand){
 		//apply workflow
-		$submission_result = $dacura_server->processCandidate($cand);
+		$submission_result = $dacura_server->processCandidate($cand, $fragment_id, isset($obj['test']));
 		if($submission_result){
 			return $dacura_server->write_json_result($submission_result, "Updated candidate ".$cand->reportString());
 		}
@@ -54,31 +70,32 @@ function update_candidate($target_id){
 
 function create_candidate(){
 	global $dacura_server;
+	$json = file_get_contents('php://input');
+	$obj = json_decode($json, true);
+	if(!$obj){
+		return $dacura_server->write_http_error(400, "candidate create must have a valid body");
+	}
 	/*
 	 * Source and candidate are required for create
 	 */
-	if(!(isset($_POST['source'])) || !($source = json_decode($_POST['source'], true))){
-		return $dacura_server->write_http_error(400, "candidate create must have a valid json source");
-	}
-	if(!isset($_POST['candidate']) || !($candidate = json_decode($_POST['candidate'], true))){
-		return $dacura_server->write_http_error(400, "candidate create must have a valid json candidate object");
+	if(!(isset($obj['provenance'])) || !(isset($obj['candidate']))){
+		return $dacura_server->write_http_error(400, "candidate create requires both provenance and candidate");
 	}
 	/*
 	 * create also requires a candidate class
 	 */
-	if(!isset($candidate['class']) or !$candidate['class']){
+	if(!isset($obj['candidate']['rdf:type']) or ! $obj['candidate']['rdf:type']){
 		$dacura_server->write_http_error(400, "candidate create must have a valid candidate class");
 	}
 	/*
 	 * annotations are optional
 	 */
-	$annotations = isset($_POST['annotations']) ? json_decode($_POST['annotations'], true) : array();
 	$dacura_server->init("create_candidate");
 	//runs the request through the dacura update analyser
-	$cand = $dacura_server->createCandidate($source, $candidate, $annotations, isset($_POST['test']));
+	$cand = $dacura_server->createCandidate($obj, isset($obj['test']));
 	if($cand){
 		//apply workflow
-		$submission_result = $dacura_server->processCandidate($cand);
+		$submission_result = $dacura_server->processCandidate($cand, false, isset($obj['test']));
 		if($submission_result){
 			return $dacura_server->write_json_result($submission_result, "Created candidate ".$cand->reportString());		
 		}	
@@ -98,17 +115,6 @@ function get_candidate_schema($candidate_type){
 	$dacura_server->write_http_error();
 }
 
-function get_candidate($candidate_id){
-	global $dacura_server;
-	$facet = isset($_GET['facet']) ? $_GET['facet'] : false;
-	$format = isset($_GET['format']) ? $_GET['format'] : false;
-	$dacura_server->init("get_candidate", $candidate_id, $facet);
-	$cand = $dacura_server->getCandidate($candidate_id, $facet, $format);
-	if($cand){
-		return $dacura_server->send_candidate($cand);
-	}
-	$dacura_server->write_http_error();
-}
 
 /**
  * Batch operations...???

@@ -9,9 +9,18 @@ class CandidateDacuraServer extends DacuraServer {
 
 	var $dbclass = "CandidateDBManager";
 	
-	function getCandidate($candidate_id, $facet, $format){
+	function getCandidate($candidate_id, $facet_id = false, $format = false){
 		$cand = new Candidate($candidate_id);
 		if($this->dbman->load_candidate($cand)){
+			if($facet_id){
+				$facet = $cand->getFacet($facet_id);
+				if($facet){
+					return $facet;
+				}
+				else {
+					return $this->failure_result("Failed to load facet $facet_id", 404);						
+				}				
+			}
 			return $cand;
 		}
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
@@ -21,10 +30,10 @@ class CandidateDacuraServer extends DacuraServer {
 		return $this->failure_result("Testing", 500);
 	}
 	
-	function createCandidate($source, $candidate, $annotations, $test_flag){
+	function createCandidate($obj, $test_flag){
 		$ccand = new CandidateCreateRequest();
 		$ccand->setContext($this->cid(), $this->did());
-		if(!$ccand->loadFromAPI($source, $candidate, $annotations)){
+		if(!$ccand->loadFromAPI($obj)){
 			return $this->failure_result("failed to load candidate create request from input ".$ccand->errmsg, 400);
 		}
 		$dacura_agent_id = $ccand->getAgentKey();
@@ -33,13 +42,16 @@ class CandidateDacuraServer extends DacuraServer {
 			//rejected!
 		}
 		//check endpoint permissions
-		if(!$this->endpointCreateAllowed($dacura_agent_id, $candidate['class'])){
+		if(!$this->endpointCreateAllowed($dacura_agent_id, $ccand->type)){
 			//rejected
 			return $this->failure_result("not permitted to create that", 403);
 		}
 		//now we do our fine-grained permissions stuff with all the objects formed..
 		if(!$this->createCandidatePermitted($ccand)){
 			return $this->failure_result("Not permitted to create that candidate", 400);				
+		}
+		if(!$ccand->expand()){
+			return $this->failure_result("Failed somehow", 500);
 		}
 		//run something on ccand to make it do all of its schema checking stuff
 		return $ccand;
@@ -52,24 +64,29 @@ class CandidateDacuraServer extends DacuraServer {
 	 * @param array $candidate
 	 * @param array $annotations
 	 */
-	function updateCandidate($target_id, $source, $candidate, $annotations, $test_flag){
+	function createUpdateCandidate($target_id, $obj, $fragment_id, $is_test = false){
 		$ucand = new CandidateUpdateRequest($target_id);
-		$ocand = $this->loadCandidate($target_id);
+		$ocand = $this->getCandidate($target_id, $fragment_id);
 		if(!$ocand){
 			return $this->failure_result("Failed to load Candidate to be updated", 403);
 		}
-		$ucand->setOriginal($ocand);
+		$dcand = $this->getCandidate($target_id, $fragment_id);
+		if(!$dcand){
+			return $this->failure_result("Failed to load Candidate to be updated", 403);
+		}
+		$ucand->original =& $ocand;
+		$ucand->delta =& $dcand;
 		$ucand->setContext($this->cid(), $this->did());
-		if(!$ucand->loadFromAPI($source, $candidate, $annotations)){
+		if(!$ucand->loadFromAPI($obj)){
 			return $this->failure_result("failed to load candidate create request from input", 400);
 		}
-		$dacura_agent_id = $ccand->getAgentKey();
+		$dacura_agent_id = $ucand->getAgentKey();
 		if(!$dacura_agent_id){
 			return $this->failure_result("no dacura user agent id in source", 400);
 			//rejected!
 		}
 		//check endpoint permissions
-		if(!$this->endpointCreateAllowed($dacura_agent_id, $candidate['class'])){
+		if(!$this->endpointCreateAllowed($dacura_agent_id, $ucand->type)){
 			//rejected
 			return $this->failure_result("not permitted to create that", 403);
 		}
@@ -77,12 +94,10 @@ class CandidateDacuraServer extends DacuraServer {
 		if(!$this->updateCandidatePermitted($ucand)){
 			return $this->failure_result("Not permitted to update that candidate", 400);
 		}
+		if(!$ucand->expand()){
+			return $this->failure_result($ucand->errmsg, $ucand->errcode);
+		}
 		return $ucand;
-	}
-	
-	function loadCandidate($candid){
-		$cand = new Candidate($candid);
-		return $this->dbman->load_candidate($cand);
 	}
 	
 	function endpointCreateAllowed($dacura_user_agent, $candidate_class){
@@ -108,11 +123,8 @@ class CandidateDacuraServer extends DacuraServer {
 	 * 
 	 * @param Candidate $cand
 	 */
-	function processCandidate($cand){
+	function processCandidate($cand, $fragment_id = false, $is_test = false){
 		if(isset($cand->original)){
-			if(!$cand->generateDelta()){
-				return $this->failure_result("x", 400);
-			}
 			/*
 			 * Now we need our semantic validation....
 			 * and generation of upgrade formulae
@@ -121,9 +133,12 @@ class CandidateDacuraServer extends DacuraServer {
 			 */
 			$sa = new SemanticAnalysis();
 			$res = $sa->update_consequences($cand);
+			if($is_test){
+				return $res;
+			}
 			//if pending or accepted -> write update request to database...
 			if($res == "accept"){
-				$this->dbman->updateCandidate($cand, $res);				
+				$this->dbman->updateCandidate($cand, $res);
 			}
 			elseif($res == "pending"){
 				$this->dbman->deferCandidateUpdate($cand, $res);				
@@ -131,6 +146,7 @@ class CandidateDacuraServer extends DacuraServer {
 			else {
 				return $this->failure_result("sss", 400);
 			}			
+			$ret = array("Changes" => $cand->changes, "Rollback" => $cand->rollback, "Before" => $cand->original->get_json_ld(), "After " => $cand->delta->get_json_ld());				
 		}
 		else {
 			$sa = new SemanticAnalysis();
@@ -141,18 +157,21 @@ class CandidateDacuraServer extends DacuraServer {
 			 * if accepted -> update instance graph
 			 */
 			$res = $sa->create_consequences($cand);
+			if($is_test){
+				return $res;
+			}
 			if($res == "accept" || $res == "pending"){
 				$this->dbman->createCandidate($cand, $res);
 				if($res == "accept"){
 					//spit it into the graph!
-						
 				}
 			}
 			else {
 				return $this->failure_result("sss", 400);
-			}		
+			}	
+			$ret = $cand->get_json_ld();
 		}
-		return $this->failure_result("Testing", 500);
+		return $ret;//$this->failure_result("Testing", 500);
 	}
 	
 	function send_candidate_schema($cand){
@@ -160,7 +179,13 @@ class CandidateDacuraServer extends DacuraServer {
 	}
 	
 	function send_candidate($cand){
-		return $this->write_json_result($cand, "Sent the candidate");
+		if(is_object($cand)){
+			$cand_jsonld = $cand->get_json_ld();				
+		}
+		else {
+			$cand_jsonld = $cand;				
+		}
+		return $this->write_json_result($cand_jsonld, "Sent the candidate");
 	}
 	
 }
