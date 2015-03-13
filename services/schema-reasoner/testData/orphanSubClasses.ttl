@@ -55,7 +55,7 @@ sghd:SubPolity a owl:Class;
 	rdfs:comment "A derived concept covering human social groups that are temporal, geographic or political components of other human social groups.".
 
 sghd:Polity a owl:Class;
-	rdfs:subClassOf sghd:SovereignOrganisation;
+	rdfs:subClassOf sghd:Rubbish;
 	rdfs:label "polity";
 	rdfs:comment "A polity is defined as an independent political unit. Kinds of polities range from villages (local communities) through simple and complex chiefdoms to states and empires. A polity can be either centralized or not (e.g., organized as a confederation). What distinguishes a polity from other human groupings and organizations is that it is politically independent of any overarching authority; it possesses sovereignty. Polities are defined spatially by the area enclosed within a boundary on the world map. There may be more than one such areas. Polities are dynamical entities, and thus their geographical extent may change with time. Thus, typically each polity will be defined by a set of multiple boundaries, each for a specified period of time. For prehistoric periods and for NGAs populated by a multitude of small-scale polities we use a variant called quasi-polity.".
 
