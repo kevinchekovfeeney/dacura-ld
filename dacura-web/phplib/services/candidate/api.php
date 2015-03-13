@@ -60,7 +60,7 @@ function update_candidate($target_id, $fragment_id = false){
 	$cand = $dacura_server->createUpdateCandidate($target_id, $obj, $fragment_id, isset($obj['test']));
 	if($cand){
 		//apply workflow
-		$submission_result = $dacura_server->processCandidate($cand, $fragment_id, isset($obj['test']));
+		$submission_result = $dacura_server->processUpdateCandidate($cand, $fragment_id, isset($obj['test']));
 		if($submission_result){
 			return $dacura_server->write_json_result($submission_result, "Updated candidate ".$cand->reportString());
 		}
@@ -95,7 +95,7 @@ function create_candidate(){
 	$cand = $dacura_server->createCandidate($obj, isset($obj['test']));
 	if($cand){
 		//apply workflow
-		$submission_result = $dacura_server->processCandidate($cand, false, isset($obj['test']));
+		$submission_result = $dacura_server->processCreateCandidate($cand, isset($obj['test']));
 		if($submission_result){
 			return $dacura_server->write_json_result($submission_result, "Created candidate ".$cand->reportString());		
 		}	
@@ -114,40 +114,3 @@ function get_candidate_schema($candidate_type){
 	}
 	$dacura_server->write_http_error();
 }
-
-
-/**
- * Batch operations...???
-function get_candidates(){
-	global $dacura_server;
-	$dacura_server->init("get_candidates");
-	$c_id = $dacura_server->ucontext->getCollectionID();
-	$d_id = $dacura_server->ucontext->getDatasetID();
-	$format = isset($_GET['format']) ? $_GET['format'] : "json";
-	if($dacura_server->userHasRole("admin")){
-		$collobj = $dacura_server->getCandidates($c_id, $d_id, $format);
-		if($format == "json"){
-			return $dacura_server->write_json_result($collobj, "Retrieved configuration listing for ".$dacura_server->contextStr());
-		}
-	}
-	$dacura_server->write_http_error();
-}
-
-function update_candidates(){
-	global $dacura_server;
-	$dacura_server->init("get_candidates");
-	$c_id = $dacura_server->ucontext->getCollectionID();
-	$d_id = $dacura_server->ucontext->getDatasetID();
-	$format = isset($_GET['format']) ? $_GET['format'] : "json";
-	$candidates_update_list = json_decode($_POST['candidates'], true);
-
-	if($dacura_server->userHasRole("admin")){
-		$collobj = $dacura_server->updateCandidates($c_id, $d_id, $format);
-		if($format == "json"){
-			return $dacura_server->write_json_result($collobj, "Retrieved configuration listing for ".$dacura_server->contextStr());
-		}
-	}
-	$dacura_server->write_http_error();
-}
-
-*/

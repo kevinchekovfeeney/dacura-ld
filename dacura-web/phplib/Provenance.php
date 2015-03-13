@@ -15,7 +15,9 @@
  
  "prefix"
  }*/
-class Provenance extends thingWithSchema {
+require_once("JSONLD.php");
+
+class Provenance extends JSONLD {
 	var $entities = array();
 	var $activities = array();
 	var $agents = array();

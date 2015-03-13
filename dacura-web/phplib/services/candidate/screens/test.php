@@ -97,11 +97,13 @@ suo.provenance = {
 			"prov:type": "dacura:candidateEditing"
 		}
 	},
-	wasGeneratedBy: [{"entity": "_:candidate", "activity": "_:a1"}],
-	wasAssociatedWith: [
-	         {"agent": "dacura:jim", "activity": "_:a1"}, 
-	         {"agent": "dacura:dacuraAgent", "activity": "_:a1"}
-	]
+	wasGeneratedBy: {"_:g1" : 
+		{"entity": "_:candidate", "activity": "_:a1"}
+	},
+	wasAssociatedWith: {
+	   "_:ag1" : {"agent": "dacura:jim", "activity": "_:a1"}, 
+	   "_:ag2" : {"agent": "dacura:dacuraAgent", "activity": "_:a1"}
+	}
 };
 
 sco.provenance = {
@@ -119,11 +121,13 @@ sco.provenance = {
 			"prov:type": "dacura:candidateCreation"
 		}
 	},
-	wasGeneratedBy: [{"entity": "_:candidate", "activity": "_:a1"}],
-	wasAssociatedWith: [
-	         {"agent": "dacura:john", "activity": "_:a1"}, 
-	         {"agent": "dacura:dacuraAgent", "activity": "_:a1"}
-	]
+	wasGeneratedBy: {
+		"_:g1" : {"entity": "_:candidate", "activity": "_:a1"}
+	},
+	wasAssociatedWith: {
+	   "_:ag1" : {"agent": "dacura:jim", "activity": "_:a1"}, 
+	   "_:ag2" : {"agent": "dacura:dacuraAgent", "activity": "_:a1"}
+	}
 };
 
 suo.annotation = {

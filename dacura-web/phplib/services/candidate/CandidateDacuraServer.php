@@ -2,6 +2,8 @@
 include_once("phplib/DacuraServer.php");
 include_once("phplib/db/CandidateDBManager.php");
 include_once("phplib/Candidate.php");
+include_once("phplib/CandidateCreateRequest.php");
+include_once("phplib/CandidateUpdateRequest.php");
 include_once("phplib/libs/jsv4.php");
 
 
@@ -55,6 +57,25 @@ class CandidateDacuraServer extends DacuraServer {
 		}
 		//run something on ccand to make it do all of its schema checking stuff
 		return $ccand;
+	}
+	
+	function processCreateCandidate($cand, $is_test=false){
+		$sa = new SemanticAnalysis();
+		$res = $sa->create_consequences($cand);
+		if($is_test){
+			return $res;
+		}
+		if($res == "accept" || $res == "pending"){
+			$this->dbman->createCandidate($cand, $res);
+			if($res == "accept"){
+				//spit it into the graph!
+			}
+		}
+		else {
+			return $this->failure_result("sss", 400);
+		}
+		$ret = $cand->get_json_ld();
+		return $ret;
 	}
 	
 	/**
@@ -123,57 +144,26 @@ class CandidateDacuraServer extends DacuraServer {
 	 * 
 	 * @param Candidate $cand
 	 */
-	function processCandidate($cand, $fragment_id = false, $is_test = false){
-		if(isset($cand->original)){
-			/*
-			 * Now we need our semantic validation....
-			 * and generation of upgrade formulae
-			 * Followed by our routing / accepted / rejected / pending
-			 * 
-			 */
-			$sa = new SemanticAnalysis();
-			$res = $sa->update_consequences($cand);
-			if($is_test){
-				return $res;
-			}
-			//if pending or accepted -> write update request to database...
-			if($res == "accept"){
-				$this->dbman->updateCandidate($cand, $res);
-			}
-			elseif($res == "pending"){
-				$this->dbman->deferCandidateUpdate($cand, $res);				
-			}
-			else {
-				return $this->failure_result("sss", 400);
-			}			
-			$ret = array("Changes" => $cand->changes, "Rollback" => $cand->rollback, "Before" => $cand->original->get_json_ld(), "After " => $cand->delta->get_json_ld());				
+	function processUpdateCandidate($cand, $fragment_id = false, $is_test = false){
+		$sa = new SemanticAnalysis();
+		$res = $sa->update_consequences($cand);
+		if($is_test){
+			return $res;
+		}
+		//if pending or accepted -> write update request to database...
+		if($res == "accept"){
+			$this->dbman->updateCandidate($cand, $res);
+		}
+		elseif($res == "pending"){
+			$this->dbman->deferCandidateUpdate($cand, $res);				
 		}
 		else {
-			$sa = new SemanticAnalysis();
-			/*
-			 * Now we need our semantic validation....
-			 * Followed by our routing / accepted / rejected / pending
-			 * if pending or accepted -> write candidate to table
-			 * if accepted -> update instance graph
-			 */
-			$res = $sa->create_consequences($cand);
-			if($is_test){
-				return $res;
-			}
-			if($res == "accept" || $res == "pending"){
-				$this->dbman->createCandidate($cand, $res);
-				if($res == "accept"){
-					//spit it into the graph!
-				}
-			}
-			else {
-				return $this->failure_result("sss", 400);
-			}	
-			$ret = $cand->get_json_ld();
-		}
-		return $ret;//$this->failure_result("Testing", 500);
+			return $this->failure_result("sss", 400);
+		}			
+		$ret = array("Changes" => $cand->changes, "Rollback" => $cand->rollback, "Before" => $cand->original->get_json_ld(), "After " => $cand->delta->get_json_ld());
+		return $ret;				
 	}
-	
+		
 	function send_candidate_schema($cand){
 		return $this->write_json_result($cand, "Sent the candidate schema");
 	}
