@@ -7,7 +7,7 @@
  * These API calls have candidate ids as targets
  * this is just an api - it has no associated pages. 
  */
-getRoute()->get('/', 'usage');//show usage information for root get access
+getRoute()->get('/', 'list_candidates');//show usage information for root get access
 getRoute()->post('/', 'create_candidate');//create a new candidate (type etc, are in payload)
 getRoute()->get('/type/(\w+)', 'get_candidate_schema');
 getRoute()->get('/(\w+)/(\w+)', 'get_candidate');//with fragment id
@@ -15,14 +15,25 @@ getRoute()->get('/(\w+)', 'get_candidate');
 getRoute()->post('/(\w+)', 'update_candidate');
 getRoute()->post('/(\w+)/(\w+)', 'update_candidate');//with fragment id
 getRoute()->delete('/(\w+)', 'delete_candidate');
+getRoute()->delete('/(\w+)/(\w+)', 'delete_candidate');//with fragment id
 
+function delete_candidate($candidate_id, $fragment_id = false){
+	
+}
 
-function get_candidate($candidate_id, $facet_id = false){
+function list_candidates(){
+	//probably want to do a bunch of lookups to 'get variables etc, but for now we're gonna do a quick and dirty one.
+}
+
+function get_candidate($candidate_id, $fragment_id = false){
 	global $dacura_server;
 	//$facet = isset($_GET['facet']) ? $_GET['facet'] : false;
 	$format = isset($_GET['format']) ? $_GET['format'] : false;
-	$dacura_server->init("get_candidate", $candidate_id, $facet_id);
-	$cand = $dacura_server->getCandidate($candidate_id, $facet_id, $format);
+	$dacura_server->init("get_candidate", $candidate_id, $fragment_id);
+	if($fragment_id){
+		$fragment_id = "local:".$candidate_id."/".$fragment_id;
+	}
+	$cand = $dacura_server->getCandidate($candidate_id, $fragment_id, $format);
 	if($cand){
 		return $dacura_server->send_candidate($cand);
 	}
@@ -44,9 +55,11 @@ function get_candidate($candidate_id, $facet_id = false){
  */
 function update_candidate($target_id, $fragment_id = false){
 	global $dacura_server;
-	global $dacura_server;
 	$json = file_get_contents('php://input');
 	$obj = json_decode($json, true);
+	if(isset($obj['@id'])){
+		unset($obj['@id']);
+	}
 	if(!$obj){
 		return $dacura_server->write_http_error(400, "candidate update must have a valid body");
 	}
@@ -55,6 +68,9 @@ function update_candidate($target_id, $fragment_id = false){
 	 */
 	if(!(isset($obj['provenance'])) || !(isset($obj['candidate']))){
 		return $dacura_server->write_http_error(400, "candidate create requires both provenance and candidate");
+	}
+	if($fragment_id){
+		$fragment_id = "local:".$candidate_id."/".$fragment_id;
 	}
 	//runs the request through the dacura update analyser
 	$cand = $dacura_server->createUpdateCandidate($target_id, $obj, $fragment_id, isset($obj['test']));

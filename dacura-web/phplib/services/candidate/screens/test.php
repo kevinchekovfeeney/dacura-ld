@@ -72,6 +72,44 @@ sco.candidate = {
 	"seshat:name" 	: [{value: "Roman Empire"}]
 };
 
+//only include agents and entities that are being added to the system...
+sco.provenance = [
+    {	
+        "@id": "_:candidate", 
+		"rdf:type": "prov:Entity",
+		"prov:wasGeneratedBy": {
+			"rdf:type": "prov:Activity",
+			"@id": "_:act1",
+			"startTime": "2011-11-16T16:05:00", 
+			"endTime": "2011-11-16T16:06:00", 
+			"prov:type": "dacura:candidateCreation",
+			"prov:wasAssociatedWith": {"rdf:type": "prov:Agent", "prov:type": "prov:SoftwareAgent"}
+	    } 
+    }, 
+    {
+        "@id": "_:p2", 
+    	"rdf:type": "prov:Entity",
+		"prov:wasGeneratedBy": {
+			"rdf:type": "prov:Activity",
+			"startTime": "2011-11-16T16:05:00", 
+			"endTime": "2011-11-16T16:06:00", 
+			"prov:type": "dacura:candidateCreation",
+			"prov:wasAssociatedWith": {"rdf:type": "prov:Agent", "prov:type": "prov:SoftwareAgent"}
+	    } 
+    }
+];
+sco.annotation = [
+    {
+		"rdf:type" : "oa:Annotation",
+		"oa:hasTarget" : "_:candidate", 
+		"oa:hasBody": { "rdf:type" : "dctypes:Text", "cnt:chars": "This data is completely wrong"},
+		"oa:annotatedBy": "dacura:john"
+	},
+	{"rdf:type" : "dctypes:Text", "cnt:chars": "This data is completely right"}
+];
+
+
+
 var suo = {};
 suo.candidate = { 
 	"rdf:type" 			: "seshat:Polity",
@@ -106,29 +144,7 @@ suo.provenance = {
 	}
 };
 
-sco.provenance = {
-	prefix: { 
-		"dacura" : "http://dacura.scss.tcd.ie/data/provenance" 
-	},
-	agent: {
-		"dacura:dacuraAgent": {"prov:type": "prov:SoftwareAgent", "dacura:key" : "agentkey"},
-		"dacura:john": {"prov:type": "prov:Person"}
-	},
-	activity: {
-		"_:a1" : {
-			"startTime": "2011-11-16T16:05:00", 
-			"endTime": "2011-11-16T16:06:00", 
-			"prov:type": "dacura:candidateCreation"
-		}
-	},
-	wasGeneratedBy: {
-		"_:g1" : {"entity": "_:candidate", "activity": "_:a1"}
-	},
-	wasAssociatedWith: {
-	   "_:ag1" : {"agent": "dacura:jim", "activity": "_:a1"}, 
-	   "_:ag2" : {"agent": "dacura:dacuraAgent", "activity": "_:a1"}
-	}
-};
+
 
 suo.annotation = {
 	'_:ano1': {
@@ -140,14 +156,6 @@ suo.annotation = {
 
 
 
-sco.annotation = {
-	'_:ano1': {
-		"oa:hasTarget" : "_:candidate", 
-		"oa:hasBody": { "rdf:type" : "dctypes:Text", "cnt:chars": "This data is completely wrong"},
-		"oa:annotatedBy": "dacura:john"
-	},
-	'_:body': {"rdf:type" : "dctypes:Text", "cnt:chars": "This data is completely right"}
-};
 
 
 var pvco = {};

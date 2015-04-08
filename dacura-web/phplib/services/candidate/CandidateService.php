@@ -5,11 +5,28 @@ include_once("CandidateDacuraServer.php");
 class CandidateService extends DacuraService {
 	
 	var $public_screens = array("test");
-	var $default_screen = "test";
+	var $default_screen = "list";
+	var $protected_screens = array("list" => array("admin"), "view" => array("admin"));
+	
+	
+	function renderFullPageHeader(){
+		parent::renderFullPageHeader();
+		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.candidate.js");
+	}
 	
 	function handlePageLoad($dacura_server){
-		if($this->screen == "test"){
-			$this->renderScreen("test", array());
+		if($this->screen == "list"){
+			if($this->collection_id == "all"){
+				$this->params['show_collection'] = true;
+				$this->params['show_dataset'] = true;
+			}
+			elseif($this->dataset_id == "all"){
+				$this->params['show_dataset'] = true;				
+			}
+			$this->renderScreen("list", $params);
+		}
+		elseif($this->screen == "test"){
+			$this->renderScreen("test", $params);				
 		}
 		else {
 			if($this->args){

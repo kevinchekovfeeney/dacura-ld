@@ -1,26 +1,24 @@
 <?php
 include_once("phplib/DacuraServer.php");
 include_once("phplib/db/CandidateDBManager.php");
-include_once("phplib/Candidate.php");
-include_once("phplib/CandidateCreateRequest.php");
-include_once("phplib/CandidateUpdateRequest.php");
-include_once("phplib/libs/jsv4.php");
-
+include_once("phplib/LD/Candidate.php");
+include_once("phplib/LD/CandidateCreateRequest.php");
+include_once("phplib/LD/CandidateUpdateRequest.php");
 
 class CandidateDacuraServer extends DacuraServer {
 
 	var $dbclass = "CandidateDBManager";
 	
-	function getCandidate($candidate_id, $facet_id = false, $format = false){
-		$cand = new Candidate($candidate_id);
+	function getCandidate($candidate_id, $fragment_id = false, $format = false){
+		$cand = new Candidate($candidate_id, $this->ucontext->my_url());
 		if($this->dbman->load_candidate($cand)){
-			if($facet_id){
-				$facet = $cand->getFacet($facet_id);
-				if($facet){
-					return $facet;
+			if($fragment_id){
+				$frag = $cand->getFragment($fragment_id);
+				if($frag){
+					return $frag;
 				}
 				else {
-					return $this->failure_result("Failed to load facet $facet_id", 404);						
+					return $this->failure_result("Failed to load facet $fragment_id", 404);						
 				}				
 			}
 			return $cand;
@@ -33,18 +31,18 @@ class CandidateDacuraServer extends DacuraServer {
 	}
 	
 	function createCandidate($obj, $test_flag){
-		$ccand = new CandidateCreateRequest();
+		$id = $this->generateNewCandidateID();
+		$ccand = new CandidateCreateRequest($id, $this->ucontext->my_url());
 		$ccand->setContext($this->cid(), $this->did());
-		if(!$ccand->loadFromAPI($obj)){
-			return $this->failure_result("failed to load candidate create request from input ".$ccand->errmsg, 400);
-		}
-		$dacura_agent_id = $ccand->getAgentKey();
+		$ccand->loadFromAPI($obj);
+		//opr($ccand);
+		/*$dacura_agent_id = $ccand->getAgentKey();
 		if(!$dacura_agent_id){
 			return $this->failure_result("no dacura user agent id in source", 400);
 			//rejected!
-		}
+		}*/
 		//check endpoint permissions
-		if(!$this->endpointCreateAllowed($dacura_agent_id, $ccand->type)){
+		if(!$this->endpointCreateAllowed(0, $ccand->type)){
 			//rejected
 			return $this->failure_result("not permitted to create that", 403);
 		}
@@ -53,10 +51,19 @@ class CandidateDacuraServer extends DacuraServer {
 			return $this->failure_result("Not permitted to create that candidate", 400);				
 		}
 		if(!$ccand->expand()){
-			return $this->failure_result("Failed somehow", 500);
+			return $this->failure_result($ccand->errmsg, $ccand->errcode);
 		}
+		//opr($ccand);
 		//run something on ccand to make it do all of its schema checking stuff
 		return $ccand;
+	}
+	
+	function generateUpdateCandidateID(){
+		return uniqid_base36(true);
+	}
+	
+	function generateNewCandidateID(){
+		return uniqid_base36(true);
 	}
 	
 	function processCreateCandidate($cand, $is_test=false){
@@ -81,53 +88,46 @@ class CandidateDacuraServer extends DacuraServer {
 	/**
 	 *
 	 * @param string $target_id
-	 * @param array $source
-	 * @param array $candidate
-	 * @param array $annotations
 	 */
 	function createUpdateCandidate($target_id, $obj, $fragment_id, $is_test = false){
-		$ucand = new CandidateUpdateRequest($target_id);
+		$ucand = new CandidateUpdateRequest($target_id, $this->ucontext->my_url());
 		$ocand = $this->getCandidate($target_id, $fragment_id);
 		if(!$ocand){
 			return $this->failure_result("Failed to load Candidate to be updated", 403);
 		}
-		$dcand = $this->getCandidate($target_id, $fragment_id);
-		if(!$dcand){
-			return $this->failure_result("Failed to load Candidate to be updated", 403);
-		}
-		$ucand->original =& $ocand;
-		$ucand->delta =& $dcand;
 		$ucand->setContext($this->cid(), $this->did());
-		if(!$ucand->loadFromAPI($obj)){
-			return $this->failure_result("failed to load candidate create request from input", 400);
+		//check context mismatch
+		if(!$ucand->contextEncompasses($ocand->cid, $ocand->did)){
+			return $this->failure_result("Cannot update candidate through context ", 403);				
 		}
-		$dacura_agent_id = $ucand->getAgentKey();
+		$ucand->loadFromAPI($obj);
+		/*$dacura_agent_id = $ucand->getAgentKey();
 		if(!$dacura_agent_id){
 			return $this->failure_result("no dacura user agent id in source", 400);
 			//rejected!
-		}
+		}*/
 		//check endpoint permissions
-		if(!$this->endpointCreateAllowed($dacura_agent_id, $ucand->type)){
+		if(!$this->endpointCreateAllowed(false, $ucand->type)){
 			//rejected
 			return $this->failure_result("not permitted to create that", 403);
 		}
-		//check internal referential integrity (targets of 
+		$ucand->setOriginal($ocand);	
+		if(!$ucand->applyUpdates()){
+			return $this->failure_result($ucand->errmsg, $ucand->errcode);
+		}
+		if(!$ucand->analyse()){
+			return $this->failure_result($ucand->errmsg, $ucand->errcode);
+		}
 		if(!$this->updateCandidatePermitted($ucand)){
 			return $this->failure_result("Not permitted to update that candidate", 400);
-		}
-		if(!$ucand->expand()){
-			return $this->failure_result($ucand->errmsg, $ucand->errcode);
 		}
 		return $ucand;
 	}
 	
+	
 	function endpointCreateAllowed($dacura_user_agent, $candidate_class){
 		$this->loadContextConfiguration();
 		return true;
-	}
-	
-	function extractDacuraAgentFromProvenance($source){
-		return "testing";
 	}
 	
 	function createCandidatePermitted($cand){
@@ -137,8 +137,6 @@ class CandidateDacuraServer extends DacuraServer {
 	function updateCandidatePermitted($cand){
 		return true;
 	}
-	
-
 	
 	/**
 	 * 
@@ -160,7 +158,7 @@ class CandidateDacuraServer extends DacuraServer {
 		else {
 			return $this->failure_result("sss", 400);
 		}			
-		$ret = array("Changes" => $cand->changes, "Rollback" => $cand->rollback, "Before" => $cand->original->get_json_ld(), "After " => $cand->delta->get_json_ld());
+		$ret = array("Changes" => $cand->changes, "Before" => $cand->original->get_json_ld(), "After " => $cand->delta->get_json_ld());
 		return $ret;				
 	}
 		
@@ -177,7 +175,6 @@ class CandidateDacuraServer extends DacuraServer {
 		}
 		return $this->write_json_result($cand_jsonld, "Sent the candidate");
 	}
-	
 }
 
 class SemanticAnalysis {
