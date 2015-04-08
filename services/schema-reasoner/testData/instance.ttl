@@ -7,4 +7,23 @@
 @prefix foaf: <http://xmlns.com/foaf/0.1/>.
 
 sghd:thing rdf:type sghd:funkymonkey ; 
-           sghd:someproperty sghd:funkymonkey.
+        sghd:someproperty sghd:funkymonkey .
+
+sghd:typedThingy1 rdf:type sghd:typedThingy ; 
+	sghd:stringTyped "a string" ;
+
+	sghd:floatTyped 1.3e2 ;
+	sghd:floatTyped 10e0 ;
+	sghd:floatTyped -12.5e10 ;
+	# some failures
+	sghd:floatTyped "1.3e2"^^xsd:double ;
+	sghd:floatTyped "-12.5e10"^^<http://www.w3.org/2001/XMLSchema#double> ;
+	
+	sghd:integerTyped -5 ;
+	sghd:integerTyped 0 ;
+	sghd:integerTyped 1 ;
+	sghd:integerTyped 10 ;
+	sghd:integerTyped +1 ;
+	# some long form examples
+	sghd:integerTyped "-5"^^xsd:integer ;
+	sghd:integerTyepd "10"^^<http://www.w3.org/2001/XMLSchema#integer> .
