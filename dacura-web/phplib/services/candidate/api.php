@@ -23,6 +23,13 @@ function delete_candidate($candidate_id, $fragment_id = false){
 
 function list_candidates(){
 	//probably want to do a bunch of lookups to 'get variables etc, but for now we're gonna do a quick and dirty one.
+	global $dacura_server;
+	$dacura_server->init("list_candidates");
+	$cands = $dacura_server->getCandidates();
+	if($cands){
+		return $dacura_server->write_json_result($cands, "Returned " . count($cands) . " candidates");
+	}
+	$dacura_server->write_http_error();
 }
 
 function get_candidate($candidate_id, $fragment_id = false){
@@ -35,7 +42,8 @@ function get_candidate($candidate_id, $fragment_id = false){
 	}
 	$cand = $dacura_server->getCandidate($candidate_id, $fragment_id, $format);
 	if($cand){
-		return $dacura_server->send_candidate($cand);
+		return $dacura_server->write_json_result($cand, "fetched candidate ".$cand->reportString());
+		//return $dacura_server->send_candidate($cand);
 	}
 	$dacura_server->write_http_error();
 }

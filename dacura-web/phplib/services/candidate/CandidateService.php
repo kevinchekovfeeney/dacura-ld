@@ -15,13 +15,14 @@ class CandidateService extends DacuraService {
 	}
 	
 	function handlePageLoad($dacura_server){
+		$params = array();
 		if($this->screen == "list"){
 			if($this->collection_id == "all"){
-				$this->params['show_collection'] = true;
-				$this->params['show_dataset'] = true;
+				$params['show_collection'] = true;
+				$params['show_dataset'] = true;
 			}
 			elseif($this->dataset_id == "all"){
-				$this->params['show_dataset'] = true;				
+				$params['show_dataset'] = true;				
 			}
 			$this->renderScreen("list", $params);
 		}

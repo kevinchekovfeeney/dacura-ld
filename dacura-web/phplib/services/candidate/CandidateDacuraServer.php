@@ -26,6 +26,10 @@ class CandidateDacuraServer extends DacuraServer {
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 	}
 	
+	function getCandidates(){
+		return ($data = $this->dbman->get_candidate_list()) ? $data : $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+	}
+	
 	function getCandidateSchema($candidate_type, $facet, $format){
 		return $this->failure_result("Testing", 500);
 	}

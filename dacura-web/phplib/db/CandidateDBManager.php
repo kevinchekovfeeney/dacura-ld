@@ -54,6 +54,7 @@ class CandidateDBManager extends UsersDBManager {
 		return $id;
 	}
 	
+	
 	/**
 	 * Low-level updates -> just write the passed objects to disk.
 	 */
@@ -138,6 +139,23 @@ class CandidateDBManager extends UsersDBManager {
 		return true;
 	}
 	
+	function get_candidate_list(){
+		try {
+			$stmt = $this->link->prepare("SELECT id, collectionid, datasetid, version, candidate_class, schema_version, status, createtime, modtime, report FROM candidates");
+			$stmt->execute(array());
+			$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			if($rows){
+				return $rows;
+			}
+			else {
+				return $this->failure_result("No candidate with id ".$cand->id." in system", 404);
+			}
+		}
+		catch(PDOException $e){
+			return $this->failure_result("PDO Error".$e->getMessage(), 500);
+		}
+	}
+	
 		
 	function has_candidate($id){
 		try {
@@ -152,6 +170,10 @@ class CandidateDBManager extends UsersDBManager {
 			return $this->failure_result("error retrieving candidate $id ".$e->getMessage(), 500);
 		}
 	}
+	
+	/*
+	 * Below here be dragons
+	 */
 	
 	function get_uncached_candidates($yr, $fstore) {
 		$hits = array();

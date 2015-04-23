@@ -61,6 +61,7 @@ dacura.grabber.grabFacts = function(){
 	var i = 0;
 	var facts = [];
 	var page = $('#bodyContent').html();
+	this.originalpage = page;
 	//document.body.innerHTML;
 	while(matches = regex.exec(page)){
 		factParts = {
@@ -88,7 +89,7 @@ dacura.grabber.displayFacts = function (){
 	var stats = {"error": 0, "warning": 0, "complex": 0, "simple" : 0, "empty": 0};
 	error_sequence = [];
 	var json = dacura.grabber.pageFacts;
-	this.originalpage = $('#bodyContent').html();//document.body.innerHTML;
+	//this.originalpage = $('#bodyContent').html();//document.body.innerHTML;
 	var npage = "";
 	var npage_offset = 0;
 	for(var i = 0;i < json.length;i++){

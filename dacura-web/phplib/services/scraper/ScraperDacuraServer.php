@@ -1377,6 +1377,7 @@ class ScraperDacuraServer extends DacuraServer {
 		$this->ucontext->logger->timeEvent("Login Page Retrieved", "debug");				
 		$loginToken = false;
 		$dom = new DOMDocument;
+		libxml_use_internal_errors(true);
 		$dom->loadHTML($store);
 		$xpath = new DOMXPath($dom);
 		$nodes = $xpath->query('//input');
@@ -1390,6 +1391,7 @@ class ScraperDacuraServer extends DacuraServer {
 		if(!$loginToken){
 			return $this->failure_result("Failed to find login token on login page ".$this->settings['scraper']['loginUrl'], 404, "error");				
 		}
+		libxml_clear_errors();
 		//login
 		curl_setopt($this->ch, CURLOPT_POST, 1);
 		curl_setopt($this->ch, CURLOPT_POSTFIELDS, 'wpName='.$this->settings['scraper']['username'].'&wpPassword='.$this->settings['scraper']['password'].'&wpLoginAttempt=Log+in&wpLoginToken='.$loginToken);
