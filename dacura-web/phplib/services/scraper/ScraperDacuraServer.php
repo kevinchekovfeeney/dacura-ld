@@ -362,7 +362,7 @@ class ScraperDacuraServer extends DacuraServer {
 						if($domain){
 							$range = $this->mapVariableToRange($pname);
 							$prop_assertions = array();
-							$prop_assertions[] = 'sghd:'.$pname." a ".$range[0].";\n";
+							$prop_assertions[] = 'seshat:'.$pname." a ".$range[0].";\n";
 							$prop_assertions[] = "\trdfs:label \"$property_name\";\n"; 
 							$prop_assertions[] = "\trdfs:domain $domain;\n";
 							$prop_assertions[] = "\trdfs:range  $range[1];\n";
@@ -373,9 +373,9 @@ class ScraperDacuraServer extends DacuraServer {
 								$prop_assertions[] = "\t\t] ;\n";
 							}
 							$prop_assertions[] = "\trdfs:comment \"$property_comment\" .\n\n";
-							//opr($prop_assertions);
+							opr($prop_assertions);
 							foreach($prop_assertions as $p){
-								echo $p;
+								//echo $p;
 							}
 						}
 					}
@@ -401,6 +401,8 @@ class ScraperDacuraServer extends DacuraServer {
 	
 	}
 	
+	//The following 3 functions are mappings to rdf for each variable
+	
 	function allowsMultipleValues($property_name){
 		$map = array(
 			"AlternativeNames"	
@@ -412,12 +414,12 @@ class ScraperDacuraServer extends DacuraServer {
 		$map = array(
 			"RA" => false, 
 			"Expert" => false,
-			"Duration" => "sghd:TemporalEntity"
+			"Duration" => "seshat:TemporalEntity"
 		);
 		if(isset($map[$property_name])) {
 			return $map[$property_name];
 		}
-		return "sghd:UnitOfSocialOrganisation";
+		return "seshat:SocialOrganisation";
 	}
 	
 	function mapVariableToRange($property_name){
