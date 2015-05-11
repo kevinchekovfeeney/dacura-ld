@@ -362,7 +362,7 @@ class ScraperDacuraServer extends DacuraServer {
 						if($domain){
 							$range = $this->mapVariableToRange($pname);
 							$prop_assertions = array();
-							$prop_assertions[] = 'sghd:'.$pname." a ".$range[0].";\n";
+							$prop_assertions[] = 'seshat:'.$pname." a ".$range[0].";\n";
 							$prop_assertions[] = "\trdfs:label \"$property_name\";\n"; 
 							$prop_assertions[] = "\trdfs:domain $domain;\n";
 							$prop_assertions[] = "\trdfs:range  $range[1];\n";
@@ -373,9 +373,9 @@ class ScraperDacuraServer extends DacuraServer {
 								$prop_assertions[] = "\t\t] ;\n";
 							}
 							$prop_assertions[] = "\trdfs:comment \"$property_comment\" .\n\n";
-							//opr($prop_assertions);
+							opr($prop_assertions);
 							foreach($prop_assertions as $p){
-								echo $p;
+								//echo $p;
 							}
 						}
 					}
@@ -401,6 +401,8 @@ class ScraperDacuraServer extends DacuraServer {
 	
 	}
 	
+	//The following 3 functions are mappings to rdf for each variable
+	
 	function allowsMultipleValues($property_name){
 		$map = array(
 			"AlternativeNames"	
@@ -412,12 +414,12 @@ class ScraperDacuraServer extends DacuraServer {
 		$map = array(
 			"RA" => false, 
 			"Expert" => false,
-			"Duration" => "sghd:TemporalEntity"
+			"Duration" => "seshat:TemporalEntity"
 		);
 		if(isset($map[$property_name])) {
 			return $map[$property_name];
 		}
-		return "sghd:UnitOfSocialOrganisation";
+		return "seshat:SocialOrganisation";
 	}
 	
 	function mapVariableToRange($property_name){
@@ -1377,6 +1379,7 @@ class ScraperDacuraServer extends DacuraServer {
 		$this->ucontext->logger->timeEvent("Login Page Retrieved", "debug");				
 		$loginToken = false;
 		$dom = new DOMDocument;
+		libxml_use_internal_errors(true);
 		$dom->loadHTML($store);
 		$xpath = new DOMXPath($dom);
 		$nodes = $xpath->query('//input');
@@ -1390,6 +1393,7 @@ class ScraperDacuraServer extends DacuraServer {
 		if(!$loginToken){
 			return $this->failure_result("Failed to find login token on login page ".$this->settings['scraper']['loginUrl'], 404, "error");				
 		}
+		libxml_clear_errors();
 		//login
 		curl_setopt($this->ch, CURLOPT_POST, 1);
 		curl_setopt($this->ch, CURLOPT_POSTFIELDS, 'wpName='.$this->settings['scraper']['username'].'&wpPassword='.$this->settings['scraper']['password'].'&wpLoginAttempt=Log+in&wpLoginToken='.$loginToken);

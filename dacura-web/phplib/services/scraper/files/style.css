@@ -34,26 +34,6 @@ div.tool-buttons {
 	padding-left: 10px;
 }
 
-.tool-header {
-	border-bottom: 1px #888 solid;
-	margin-bottom: 10px;
-	margin-top: -10px;
-	margin-left: -10px;
-	margin-right: -10px;
-	text-align: left;
-	padding: 10px;
-	background-color: #ccc;
-}
-
-.tool-header span.tool-title {
-	font-size: 20px; 
-	font-weight: bold;
-	padding-right: 20px; 
-}
-
-.tool-header span.tool-description {
-	float: right;
-}
 
 .polity-intro {
 	font-size: 1.2em;
@@ -65,7 +45,6 @@ div.tool-buttons {
 	font-weight: bold;
 	margin-right; 12px;
 }
-
 
 table.seshat-list {
 	width: 100%;
