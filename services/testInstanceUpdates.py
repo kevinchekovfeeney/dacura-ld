@@ -41,6 +41,12 @@ def new_instant_message():
      [node,FOAF+'accountName', "An account name", instance],
      [SIOC+name, NS+'link', 'http://www.swig.org/2009-03-10.html#' + name, instance]]
 
+def nMessages(n):
+    triples = []
+    for i in range(0, n):
+        triples.append(new_instant_message())
+    return triples
+    
 def SPARQLise(triples):
     Query = """
     INSERT DATA
