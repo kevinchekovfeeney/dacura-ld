@@ -87,6 +87,8 @@ function generateBNIDs(&$props, &$idmap){
 	$props = $nprops;
 }
 
+
+
 /**
  * update internal references by replacing blank node values with newly generated ids..
  */
@@ -159,14 +161,12 @@ function validLD($props){
 	return true;
 }
 
-/*
+
 function genid($x){
-	if(!isset($this->i)){
-			$this->i = 0;
-		}
-		return ++$this->i;
-	}
-	*/
+	return uniqid_base36(true);
+	static $i = 0;
+	return ++$i;
+}
 
 function indexLD($props, &$index){
 	foreach($props as $p => $v){
@@ -312,8 +312,28 @@ function getFragmentInContext($f, $props, $nobj){
 	return false;
 }
 
-function addAnonObj($anonobj, &$dprops, $prop, &$idmap){
-	
-}
+/*
+ * Adds a new object as a value of propert p and generates a non anonymous id for it
+ */
+function addAnonObj($obj, &$prop, $p, &$idmap, $bnid = false){
+	if(!isset($prop[$p]) or !is_array($prop[$p])){
+		$prop[$p] = array();
+	}
+	if($bnid === false && isset($obj['@id']) && $obj['@id']){
+		$bnid = $obj['@id'];
+		unset($obj['@id']);
+	}
+	if($bnid && isset($idmap[$bnid])){
+		$new_id = $idmap[$bnid];
+	}
+	else {
+		$new_id = genid();
+	}
+	if($bnid){
+		$idmap[$bnid] = $new_id;
+	}
 
+	$prop[$p][$new_id] = $obj;
+	return $new_id;
+}
 
