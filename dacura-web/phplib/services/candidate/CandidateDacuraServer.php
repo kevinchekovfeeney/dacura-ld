@@ -1,6 +1,7 @@
 <?php
 include_once("phplib/DacuraServer.php");
 include_once("phplib/db/CandidateDBManager.php");
+include_once("phplib/LD/Schema.php");
 include_once("phplib/LD/Candidate.php");
 include_once("phplib/LD/CandidateCreateRequest.php");
 include_once("phplib/LD/CandidateUpdateRequest.php");
@@ -8,17 +9,27 @@ include_once("phplib/LD/CandidateUpdateRequest.php");
 class CandidateDacuraServer extends DacuraServer {
 
 	var $dbclass = "CandidateDBManager";
+	var $schema; //the schema in use is defined by the context.
 	
-	function getCandidate($candidate_id, $fragment_id = false, $format = false){
-		$cand = new Candidate($candidate_id, $this->ucontext->my_url());
+	function getCandidate($candidate_id, $fragment_id = false, $version = false){
+		$cand = new Candidate($candidate_id);
 		if($this->dbman->load_candidate($cand)){
+			if($version && $cand->version() > $version){
+				if(!$this->rollBackCandidate($cand, $version)){
+					return false;
+				}
+			}
+			$cand->loadSchema($this->settings['install_url']);
+			$cand->buildIndex();				
 			if($fragment_id){
+				//opr($cand->index);
 				$frag = $cand->getFragment($fragment_id);
 				if($frag){
-					return $frag;
+					$cand->contents = $frag;
+					//$cand->fragment = $fragment_id;
 				}
 				else {
-					return $this->failure_result("Failed to load facet $fragment_id", 404);						
+					return $this->failure_result("Failed to load fragment $fragment_id", 404);						
 				}				
 			}
 			return $cand;
@@ -26,17 +37,55 @@ class CandidateDacuraServer extends DacuraServer {
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 	}
 	
+	function getCandidateHistory($cand, $to_version = 1){
+		$history = $this->dbman->get_candidate_update_history($cand, $to_version);
+		if($history === false){
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+		}
+		if($to_version == 1 && count($history) > 0){
+			//$initial_cand = $this->rollBackCandidate($cand, 1);
+			$history[] = array(
+				'from_version' => 0,
+				"to_version" => 1,
+				"modtime" => $cand->created,
+				"createtime" => $cand->created,
+				"schema_version" => $cand->type_version,
+				"backward" => "{}",
+				"forward" => "create"						
+			);
+		}
+		return $history;
+	}
+	
+	function getCandidatePending($cand){
+		$updates = $this->dbman->get_relevant_updates($cand);
+		return $updates;
+	}
+	
 	function getCandidates(){
 		return ($data = $this->dbman->get_candidate_list()) ? $data : $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 	}
 	
-	function getCandidateSchema($candidate_type, $facet, $format){
-		return $this->failure_result("Testing", 500);
+	function rollBackCandidate(&$cand, $version){
+		$history = $this->getCandidateHistory($cand, $version);
+		foreach($history as $i => $old){
+			if($old['from_version'] < $version){
+				continue;
+			}
+			$cand->version = $old['from_version'];
+			$cand->type_version = $old['schema_version'];
+			$cand->modified = $old['modtime'];
+			$update = json_decode($old['backward'], true);
+			if(!$cand->update($update, true)){
+				return $this->failure_result($cand->errmsg, $cand->errcode);
+			}
+		}
+		return true;
 	}
 	
 	function createCandidate($obj, $test_flag){
 		$id = $this->generateNewCandidateID();
-		$ccand = new CandidateCreateRequest($id, $this->ucontext->my_url());
+		$ccand = new CandidateCreateRequest($id, $this->schema);
 		$ccand->setContext($this->cid(), $this->did());
 		$ccand->loadFromAPI($obj);
 		//opr($ccand);
@@ -94,7 +143,7 @@ class CandidateDacuraServer extends DacuraServer {
 	 * @param string $target_id
 	 */
 	function createUpdateCandidate($target_id, $obj, $fragment_id, $is_test = false){
-		$ucand = new CandidateUpdateRequest($target_id, $this->ucontext->my_url());
+		$ucand = new CandidateUpdateRequest($target_id, $this->schema);
 		$ocand = $this->getCandidate($target_id, $fragment_id);
 		if(!$ocand){
 			return $this->failure_result("Failed to load Candidate to be updated", 403);
@@ -115,13 +164,14 @@ class CandidateDacuraServer extends DacuraServer {
 			//rejected
 			return $this->failure_result("not permitted to create that", 403);
 		}
-		$ucand->setOriginal($ocand);	
+		$ucand->setOriginal($ocand);		
 		if(!$ucand->applyUpdates()){
 			return $this->failure_result($ucand->errmsg, $ucand->errcode);
 		}
+		
 		if(!$ucand->analyse()){
 			return $this->failure_result($ucand->errmsg, $ucand->errcode);
-		}
+		}		
 		if(!$this->updateCandidatePermitted($ucand)){
 			return $this->failure_result("Not permitted to update that candidate", 400);
 		}
@@ -162,7 +212,7 @@ class CandidateDacuraServer extends DacuraServer {
 		else {
 			return $this->failure_result("sss", 400);
 		}			
-		$ret = array("Changes" => $cand->changes, "Before" => $cand->original->get_json_ld(), "After " => $cand->delta->get_json_ld());
+		$ret = array("Changes" => $cand->changes);
 		return $ret;				
 	}
 		
@@ -170,14 +220,11 @@ class CandidateDacuraServer extends DacuraServer {
 		return $this->write_json_result($cand, "Sent the candidate schema");
 	}
 	
-	function send_candidate($cand){
-		if(is_object($cand)){
-			$cand_jsonld = $cand->get_json_ld();				
+	function send_candidate($cand, $format, $display){
+		if($format == "triples"){
+			$cand->contents = $cand->asTriples();		
 		}
-		else {
-			$cand_jsonld = $cand;				
-		}
-		return $this->write_json_result($cand_jsonld, "Sent the candidate");
+		return $this->write_json_result($cand, "Sent the candidate");
 	}
 }
 

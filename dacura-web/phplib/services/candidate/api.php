@@ -35,18 +35,31 @@ function list_candidates(){
 function get_candidate($candidate_id, $fragment_id = false){
 	global $dacura_server;
 	//$facet = isset($_GET['facet']) ? $_GET['facet'] : false;
-	$format = isset($_GET['format']) ? $_GET['format'] : false;
+	$version = isset($_GET['version']) ? $_GET['version'] : false;
 	$dacura_server->init("get_candidate", $candidate_id, $fragment_id);
 	if($fragment_id){
 		$fragment_id = "local:".$candidate_id."/".$fragment_id;
 	}
-	$cand = $dacura_server->getCandidate($candidate_id, $fragment_id, $format);
+	$cand = $dacura_server->getCandidate($candidate_id, $fragment_id, $version);
 	if($cand){
-		return $dacura_server->write_json_result($cand, "fetched candidate ".$cand->reportString());
-		//return $dacura_server->send_candidate($cand);
+		if(!$fragment_id){
+			$cand->history = $dacura_server->getCandidateHistory($cand);
+			$cand->pending = $dacura_server->getCandidatePending($cand);
+		}
+		else {
+			//return $dacura_server->write_json_result($cand, "fetched fragment ".$fragment_id);			
+		}
+		$format = isset($_GET['format']) ? $_GET['format'] : false;
+		$display = isset($_GET['display']) ? $_GET['display'] : false;
+		return $dacura_server->send_candidate($cand, $format, $display);
 	}
-	$dacura_server->write_http_error();
+	else {
+		return $dacura_server->write_http_error();
+	}
 }
+
+
+
 
 /*
  * post requests take input as a application/json
@@ -75,7 +88,7 @@ function update_candidate($target_id, $fragment_id = false){
 	 * Source and candidate are required 
 	 */
 	if(!(isset($obj['provenance'])) || !(isset($obj['candidate']))){
-		return $dacura_server->write_http_error(400, "candidate create requires both provenance and candidate");
+		return $dacura_server->write_http_error(400, "candidate update requires both provenance and candidate properties");
 	}
 	if($fragment_id){
 		$fragment_id = "local:".$candidate_id."/".$fragment_id;

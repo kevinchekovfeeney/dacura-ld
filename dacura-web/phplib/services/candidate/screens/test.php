@@ -256,7 +256,7 @@ $('document').ready(function(){
 			alert("JSON does not parse "+ e.message);
 			return;
 		}
-		var ajs = dacura.candidate.api.update(i, uobj);
+		var ajs = dacura.candidate.api.update(i, uobj.contents);
 		ajs.beforeSend = function(){
 			
 		};

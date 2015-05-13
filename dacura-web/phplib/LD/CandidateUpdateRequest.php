@@ -52,11 +52,16 @@ class CandidateUpdateRequest extends Candidate {
 	
 
 	function analyse(){
-		$this->changes = $this->original->compare($this->delta);
-		if(!$this->changes){
-			return $this->failure_result($this->original->errmsg, $this->original->errcode);
+		if($this->original->compare($this->delta)){
+			$this->changes = $this->original->changes;
+			return true;
 		}
-		return true;
+		return $this->failure_result($this->original->errmsg, $this->original->errcode);
+		//return $this->failure_result("")
+		//return false;
+		//if(!$this->changes){
+		//}
+		//return true;
 		/*$changes = array();
 		if(parent::analyseUpdate($this->id, $this->original->contents, $this->delta->contents, $changes)){
 			$changes["broken_links"] = $this->checkMissingLinks();

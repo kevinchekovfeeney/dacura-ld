@@ -54,6 +54,32 @@ class CandidateDBManager extends UsersDBManager {
 		return $id;
 	}
 	
+	function get_candidate_update_history($cand, $to_version = 1){
+		try {
+			$stmt = $this->link->prepare("SELECT * FROM candidate_update_requests 
+					WHERE candid=? AND to_version <= ? AND from_version >= ? ORDER BY from_version DESC");
+			$stmt->execute(array($cand->id, $cand->version(), $to_version));
+			$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			return $rows;
+		}
+		catch(PDOException $e){
+			return $this->failure_result("PDO Error".$e->getMessage(), 500);
+		}
+	}
+	
+	function get_relevant_updates($cand){
+		try {
+			//GET ALL updates where $cand.version >= $update.from_version && $cand.to_version == null or $cand.to_version > $cand.version;
+			$stmt = $this->link->prepare("SELECT * FROM candidate_update_requests
+						WHERE candid=? AND from_version <= ? AND (to_version = null OR to_version > ?)");
+			$stmt->execute(array($cand->id, $cand->version(), $cand->version()));
+			$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			return $rows;
+		}
+		catch(PDOException $e){
+			return $this->failure_result("PDO Error".$e->getMessage(), 500);
+		}	
+	}
 	
 	/**
 	 * Low-level updates -> just write the passed objects to disk.
@@ -113,19 +139,20 @@ class CandidateDBManager extends UsersDBManager {
 		}
 	}
 	
-	function load_candidate($cand){
+	function load_candidate($cand, $version = false){
 		try {
 			$stmt = $this->link->prepare("SELECT collectionid, datasetid, version, candidate_class, schema_version, candidate, provenance, annotation, status, createtime, modtime, report FROM candidates where id=?");
 			$stmt->execute(array($cand->id));
 			$row = $stmt->fetch(PDO::FETCH_ASSOC);
 			if($row){
 				$cand->setContext($row['collectionid'], $row['datasetid']);
-				$cand->set_version($row['version']);
+				$cand->set_version($row['version'], true);
 				$cand->set_class($row['candidate_class'], $row['schema_version']);
 				if(!$cand->loadFromJSON($row['candidate'], $row['provenance'], $row['annotation'])){
 					return $this->failure_result("Failed to load candidate from stored json", 500);
 				}
 				$cand->created = $row['createtime'];
+				$cand->status = $row['status'];
 				$cand->modified = $row['modtime'];
 				$cand->set_report($row['report']);	
 			}

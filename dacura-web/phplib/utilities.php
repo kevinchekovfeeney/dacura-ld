@@ -65,6 +65,11 @@ function deepArrCopy($x){
 	return $vals;
 }
 
+function isNamespacedURL($x){
+	$bits = explode(":", $x);
+	return (count($bits) > 1 && strlen($bits[0]) <= 16 && !preg_match('/[^a-z0-9]/', $bits[0]));
+}
+
 function getNamespacePortion($str){
 	$bits = explode(":", $str);
 	return (count($bits) > 1) ? $bits[0]: false;
