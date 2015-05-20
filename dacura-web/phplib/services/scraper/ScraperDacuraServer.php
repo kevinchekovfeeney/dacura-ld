@@ -53,6 +53,7 @@ class ScraperDacuraServer extends DacuraServer {
 	 */
 	
 	function seshatInit($action, $object=""){
+		ini_set("memory_limit","512M");
 		$this->init($action, $object);
 		return $this->login();		
 	}
