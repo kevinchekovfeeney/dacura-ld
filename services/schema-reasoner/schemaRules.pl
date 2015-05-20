@@ -235,12 +235,12 @@ orphanProperties(L) :- setof(noInstancePropertyClass(X,Y), noInstancePropertyCla
 %%%%%%%%%%%%%%%%%%%%%%%
 %% Instance Type Checking constraints 
 
-noInstanceRange(X, P, R, V) :- 
+invalidInstanceRange(X, P, R, V) :- 
     rdf(X,P,V, instance), nl, write(X), instanceProperty(X,P), nl, write(P), range(P, R), nl, 
     write(R), \+ typeCheckRange(R,V).
 
 
-noInstanceRanges(L) :- setof(noInstanceRange(X,P,R,V), noInstanceRange(X,P,R,V), L).
+invalidInstanceRanges(L) :- setof(invalidInstanceRange(X,P,R,V), invalidInstanceRange(X,P,R,V), L).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Blank nodes
@@ -321,13 +321,12 @@ generateN(N,L) :- findnsols(N, L1, generate(L1), LL), flatten(LL, L).
 
 :- use_module(library(apply)).
 addToDB(rdf(X,Y,Z)) :- rdf_assert(X,Y,Z,instance). 
-:- rdf_meta populateDB. 
+
 
 % N specifies number of times to decend the class hierarchy rather than 
 % the number of classes or triples, M is the number of solutions to look for 
 % in the class hierarchy.  This is convenient as consistency 
-% is a global property which can't easily be maintained without total traversal. 
-
+% is a global property which can't easily be maintained without total traversal.  
 populateDB(0, _) :- !.
 populateDB(N, M) :- N2 is N-1, generateN(N,L), maplist(addToDB, L), populateDB(N2, M). 
 
@@ -364,8 +363,8 @@ corruptDB(N) :-
 
 demoDB :-  
     rdf_retractall(_, _, _, _), 
-    rdf_load('testData/plants.rdf', [graph(instance)]), 
-    rdf_load('testData/plant-onto.rdf', [graph(schema)]).
+    rdf_load('data/plants.rdf', [graph(instance)]), 
+    rdf_load('data/plant-onto.rdf', [graph(schema)]).
 
 demoDB(Schema) :- 
     rdf_retractall(_, _, _, _), 
@@ -398,6 +397,7 @@ test(orphanProperties).
 test(blankNodes).
 test(invalidRange). 
 test(invalidDomain). 
+test(invalidInstanceRange).
 
 %! testMessage(+Test:atom, -Message:atom) is det.
 %! testMessage(?Test:atom, -Message:atom) is det.
@@ -413,6 +413,7 @@ testMessage(schemaRules:orphanProperties, 'Missing class for properties: ') :- !
 testMessage(schemaRules:blankNodes, 'Blank Nodes found: ') :- !.
 testMessage(schemaRules:invalidRange, 'Property with non-unique or invalid range found: ') :- !. 
 testMessage(schemaRules:invalidDomain, 'Property with non-unique or invalid domain found: ') :- !. 
+testMessage(schemaRules:invalidInstanceRange, 'Instance data has incorrect type: ') :- !. 
 testMessage(_,'Unknown test').
 
 :- meta_predicate validate(1,?).

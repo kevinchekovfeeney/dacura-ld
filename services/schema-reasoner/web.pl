@@ -21,7 +21,7 @@ write_instance(S,IS) :-
 my_server(Port) :-
     http_server(http_dispatch, [port(Port)]).
 
-:- http_handler(/, rdf_file_page, []).
+:- http_handler(/schema-checker, rdf_file_page, []).
 
 rdf_file_page(Request) :-
     http_parameters(Request,[],[form_data(Data)]),
@@ -59,6 +59,8 @@ rdf_page_grammar(String) -->
 
 schema_check_page(Request) :- 
     http_parameters(Request,[],[form_data(Data)]),
+    format('Content-type: text/plain~n~n'),
+    write_schema(S,PS), 
     
 
 %:- server(8000)
