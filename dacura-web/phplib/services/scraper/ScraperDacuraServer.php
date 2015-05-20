@@ -478,7 +478,7 @@ class ScraperDacuraServer extends DacuraServer {
 							$sec_fact_list = $this->parseFactsFromString($subsect, $sec_title);
 							$sec_fact_list['sections'] = array();
 						}
-						else {
+						 else {
 							$subsec_bits = explode("</span></h3>", $subsect);
 							if(count($subsec_bits) == 2){
 								$subsec_head_start_pos = strpos($subsec_bits[0], ">") + 1;
