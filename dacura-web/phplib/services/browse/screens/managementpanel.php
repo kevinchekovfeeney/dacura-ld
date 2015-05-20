@@ -19,7 +19,7 @@
 	</a>				
 
 	</a>				
-	<a href='<?=$service->get_service_url("candidates")?>'>
+	<a href='<?=$service->get_service_url("candidate")?>'>
 			<div class='dacura-dashboard-button' id='dacura-candidates-button' title="candidate management">
 			<img class='dacura-button-img' src="<?=$service->url("image", "buttons/candidates.png")?>">
 			<div class="dacura-button-title">Candidates</div>
