@@ -79,9 +79,9 @@ class DacuraServer extends DacuraObject {
 	function loadContextConfiguration(){
 		$this->loadServerConfiguration();
 		if($this->cid() != "all"){
-			$this->loadCollectionConfiguration();
+			$this->loadCollectionConfiguration($this->cid());
 			if($this->did() != "all"){
-				$this->loadDatasetConfiguration();
+				$this->loadDatasetConfiguration($this->did());
 			}
 		}
 	}

@@ -12,13 +12,13 @@
 
 require_once "LDPropertyValue.php";
 
-function embedLDObjects(&$objs, $id){
+function embedLDObjects(&$objs, $id, $cwurl){
 	$obj = $objs[$id];
 	unset($objs[$id]);
 	foreach($obj as $prop => $vals){
 		$expandable = true;
 		foreach($vals as $val){
-			$pv = new LDPropertyValue($val);
+			$pv = new LDPropertyValue($val, $cwurl);
 			if(!($pv->bn() || $pv->cwlink())){
 				$expandable = false;
 				continue;
@@ -27,7 +27,7 @@ function embedLDObjects(&$objs, $id){
 		if($expandable){
 			foreach($vals as $val){
 				if(isset($objs[$val])){
-					$obj[$prop][$val] = embedLDObjects($objs, $val);
+					$obj[$prop][$val] = embedLDObjects($objs, $val, $cwurl);
 				}
 			}
 		}
@@ -38,9 +38,9 @@ function embedLDObjects(&$objs, $id){
 /*
  * Expand the structure, generate real ids for blank nodes and update any references to the blank nodes to the new ids
  */
-function expandLD(&$props){
+function expandLD($idbase, &$props){
 	$idmap = array();
-	generateBNIDS($props, $idmap);
+	generateBNIDS($idbase, $props, $idmap);
 	$missing_refs = updateBNReferences($props, $idmap);
 	if($missing_refs === false){
 		return false;
@@ -55,32 +55,38 @@ function expandLD(&$props){
  * Generates ids for blank nodes and alters the structure
  * to expand embedded objects and object lists with ld structure
  */
-function generateBNIDs(&$props, &$idmap){
+function generateBNIDs($idbase, &$props, &$idmap, $cwurl){
 	$nprops = array();
 	foreach($props as $p => $v){
-		$pv = new LDPropertyValue($v);
+		//opr($v);
+		$pv = new LDPropertyValue($v, $cwurl);
 		if($pv->embedded()){
-			$new_id = addAnonObj($v, $nprops, $p, $idmap);
-			generateBNIDs($nprops[$p][$new_id], $idmap);
+			echo "embedded object $p\n";
+			$new_id = addAnonObj($idbase, $v, $nprops, $p, $idmap, $cwurl);
+			generateBNIDs($idbase, $nprops[$p][$new_id], $idmap, $cwurl);
 		}
 		elseif($pv->objectlist()){
+			echo "object list $p\n";
 			foreach($props[$p] as $obj){
-				$new_id = addAnonObj($obj, $nprops, $p, $idmap);
-				generateBNIDs($nprops[$p][$new_id], $idmap);
+				$new_id = addAnonObj($idbase, $obj, $nprops, $p, $idmap, $cwurl);
+				//echo "new id $new_id\n";
+				generateBNIDs($idbase, $nprops[$p][$new_id], $idmap, $cwurl);
 			}
 		}
 		elseif($pv->embeddedlist()){
+			echo "embedded list $p\n";
 			foreach($props[$p] as $id => $obj){
 				if(isBlankNode($id)){
-					$nid = addAnonObj($obj, $nprops, $p, $idmap, $id);
-					generateBNIDs($nprops[$p][$nid], $idmap);
+					$nid = addAnonObj($idbase, $obj, $nprops, $p, $idmap, $cwurl, $id);
+					generateBNIDs($idbase, $nprops[$p][$nid], $idmap, $cwurl);
 				}
 				else {
-					generateBNIDs($nprops[$p][$id], $idmap);
+					generateBNIDs($idbase, $nprops[$p][$id], $idmap, $cwurl);
 				}
 			}
 		}
 		else {
+			echo "not object $p\n";
 			$nprops[$p] = $v;
 		}
 	}
@@ -92,10 +98,10 @@ function generateBNIDs(&$props, &$idmap){
 /**
  * update internal references by replacing blank node values with newly generated ids..
  */
-function updateBNReferences(&$props, $idma){
+function updateBNReferences(&$props, $idmap, $cwurl){
 	$unresolved = array();
 	foreach($props as $p => $v){
-		$pv = new LDPropertyValue($v);
+		$pv = new LDPropertyValue($v, $cwurl);
 		if($pv->bn()){
 			if(isset($idmap[$v])){
 				$props[$p] = $idmap[$v];
@@ -134,25 +140,25 @@ function updateBNReferences(&$props, $idma){
 	return $unresolved;
 }
 
-function validLD($props){
+function validLD($props, $cwurl){
 	foreach($props as $p => $v){
-		$pv = new LDPropertyValue($v);
+		$pv = new LDPropertyValue($v, $cwurl);
 		if($pv->illegal()){
 			return false;//$this->failure_result("Property $p has illegal value ".json_encode($v), 400);
 		}
 		elseif($pv->embedded()){
-			return validLD($props[$p]);
+			return validLD($props[$p], $cwurl);
 		}
 		elseif($pv->objectlist()){
 			foreach($v as $obj){
-				if(!validLD($obj)){
+				if(!validLD($obj, $cwurl)){
 					return false;
 				}
 			}
 		}
 		elseif($pv->embeddedlist()){
 			foreach($v as $id => $obj){
-				if(!validLD($obj)){
+				if(!validLD($obj, $cwurl)){
 					return false;
 				}
 			}
@@ -162,15 +168,22 @@ function validLD($props){
 }
 
 
-function genid($x){
-	return uniqid_base36(true);
-	static $i = 0;
-	return ++$i;
+function genid($idbase, $bn = false){
+	if($bn == "_:candidate"){
+		return "local:".$idbase."/candidate";
+	}
+	elseif($bn == "_:provenance"){
+		return "local:".$idbase."/provenance";
+	}
+	elseif($bn == "_:annotation"){
+		return "local:".$idbase."/annotation";
+	}
+	return "local:".$idbase . "/" . uniqid_base36(false);
 }
 
-function indexLD($props, &$index){
+function indexLD($props, &$index, $cwurl){
 	foreach($props as $p => $v){
-		$pv = new LDPropertyValue($v);
+		$pv = new LDPropertyValue($v, $cwurl);
 		if($pv->embeddedlist()){
 			foreach($v as $id => $obj){
 				if(!isset($index[$id])){
@@ -179,18 +192,84 @@ function indexLD($props, &$index){
 				else {
 					$index[$id][] = $props[$p][$id];
 				}
-				indexLD($obj, $index);
+				indexLD($obj, $index, $cwurl);
 			}
 		}
 	}
 }
 
 
-function getObjectAsTriples($id, $obj){
+function getObjectAsTurtle($id, $obj, $cwurl){
+	$lines = array();
+	if($obj && is_array($obj)){
+		if(isset($obj["rdf:type"])){
+			if(is_array($obj["rdf:type"])){
+				$lines[] = array($id, "a", $obj["rdf:type"][0]);				
+				array_shift($obj["rdf:type"]);
+			}
+			else {
+				$lines[] = array($id, "a", $obj["rdf:type"]);
+				unset($obj["rdf:type"]);
+			}
+		}	
+		$sublines = array();
+		foreach($obj as $p => $v){
+			if(count($lines) > 0){
+				$nline= array("", $p);
+			}
+			else {
+				$nline= array($id, $p);
+			}
+			$pv = new LDPropertyValue($v, $cwurl);
+			if($pv->literal()){
+				$nline[] = '"'.$v.'"';
+				$lines[] = $nline;
+			}
+			elseif($pv->embeddedlist()){
+				$llines = 0;
+				foreach($v as $oid => $eobj){
+					if($llines == 0){
+						if(count($lines) > 0){
+							$eline= array("", $p);
+						}
+						else {
+							$eline= array($id, $p);
+						}
+						$eline[] = $oid;
+						$llines = 1;
+					}
+					else {
+						$eline = array("", "", $oid);
+					}
+					$lines[] = $eline;
+					$sublines = array_merge($sublines, getObjectAsTurtle($oid, $eobj, $cwurl));			
+				}
+			}
+		}
+		foreach($lines as $i => $line){
+			if($i == count($lines) - 1){
+				$lines[$i][]=".";				
+			}
+			elseif($lines[$i+1][0] == "" && $lines[$i+1][1] == ""){
+				$lines[$i][]=",";
+			}
+			elseif($lines[$i+1][0] == ""){
+				$lines[$i][]=";";				
+			}
+			else {
+				$lines[$i][]=".";
+			}
+		}
+		$lines = array_merge($lines, $sublines);		
+	}
+	return $lines;
+}
+
+function getObjectAsTriples($id, $obj, $cwurl){
 	$triples = array();
 	if($obj && is_array($obj)){
 		foreach($obj as $p => $v){
-			$nt = getValueAsTriples($id, $p, $v);
+			$nt = getValueAsTriples($id, $p, $v, $cwurl);
 			if($nt === false){
 				return false;
 			}
@@ -202,8 +281,8 @@ function getObjectAsTriples($id, $obj){
 	return $triples;
 }
 
-function getValueAsTriples($id, $p, $v){
-	$pv = new LDPropertyValue($v);
+function getValueAsTriples($id, $p, $v, $cwurl){
+	$pv = new LDPropertyValue($v, $cwurl);
 	$anon = 0;
 	$triples = array();
 	if($pv->literal()){
@@ -215,32 +294,22 @@ function getValueAsTriples($id, $p, $v){
 		}
 	}
 	elseif($pv->embedded()){
-		if(isset($v['@id'])){
-			$aid = $v['@id'];
-		}
-		else {
-			$aid = "_:".(++$anon); //need to generate something to allow us to triplify it
-		}
+		$aid = "_:".(++$anon) . "xx"; //need to generate something to allow us to triplify it
 		$triples[] = array($id, $p, $aid);
-		$triples = array_merge($triples, getObjectAsTriples($aid, $v));
+		$triples = array_merge($triples, getObjectAsTriples($aid, $v, $cwurl));
 	}
 	elseif($pv->objectlist()){
 		foreach($v as $obj){
 			//see if we have an id
-			if(isset($obj['@id'])){
-				$aid = $obj['@id'];
-			}
-			else {
-				$aid = "_:".(++$anon);
-			}
+			$aid = "_:".(++$anon);
 			$triples[] = array($id, $p, $aid);
-			$triples = array_merge($triples, getObjectAsTriples($aid, $obj));
+			$triples = array_merge($triples, getObjectAsTriples($aid, $obj, $cwurl));
 		}
 	}
 	elseif($pv->embeddedlist()){
 		foreach($v as $oid => $obj){
 			$triples[] = array($id, $p, $oid);
-			$triples = array_merge($triples, getObjectAsTriples($oid, $obj));
+			$triples = array_merge($triples, getObjectAsTriples($oid, $obj, $cwurl));
 		}
 	}
 	else {
@@ -249,9 +318,9 @@ function getValueAsTriples($id, $p, $v){
 	return $triples;
 }
 	
-function setFragment($f, &$dprops, $nprops){
+function setFragment($f, &$dprops, $nprops, $cwurl){
 	foreach($dprops as $p => $v){
-		$pv = new LDPropertyValue($v);
+		$pv = new LDPropertyValue($v, $cwurl);
 		if($pv->embeddedlist()){
 			foreach($v as $id => $obj){
 				if($id == $f){
@@ -259,7 +328,7 @@ function setFragment($f, &$dprops, $nprops){
 					return true;
 				}
 				else {
-					if(setFragment($f, $dprops[$p][$id], $nprops)){
+					if(setFragment($f, $dprops[$p][$id], $nprops, $cwurl)){
 						return true;
 					}
 				}
@@ -269,16 +338,16 @@ function setFragment($f, &$dprops, $nprops){
 	return false;
 }
 
-function getFragment($f, $props){
+function getFragment($f, $props, $cwurl){
 	foreach($props as $p => $v){
-		$pv = new LDPropertyValue($v);
+		$pv = new LDPropertyValue($v, $cwurl);
 		if($pv->embeddedlist()){
 			foreach($v as $id => $obj){
 				if($id == $f){
 					return $obj;
 				}
 				else {
-					return getFragment($f, $obj);
+					return getFragment($f, $obj, $cwurl);
 				}
 			}
 		}
@@ -286,20 +355,41 @@ function getFragment($f, $props){
 	return false;
 }
 
-function getFragmentInContext($f, $props, $nobj){
+function getFragmentContext($f, $props, $cwurl){
+	$paths = array();
+	foreach($props as $p => $v){
+		$pv = new LDPropertyValue($v, $cwurl);
+		if($pv->embeddedlist()){
+			foreach($v as $id => $obj){
+				if($id == $f){
+					$paths[] = array($p);
+				}
+				else {
+					$cpaths = getFragmentContext($f, $obj, $cwurl);
+					foreach($cpaths as $pat){
+						$paths[] = array_merge(array($p, $id), $pat);
+					}		
+				}
+			}
+		}	
+	}
+	return $paths;
+}
+
+function getFragmentInContext($f, $props, $cwurl){
 	$nprops = array();
 	foreach($props as $p => $v){
-		$pv = new LDPropertyValue($v);
+		$pv = new LDPropertyValue($v, $cwurl);
 		if($pv->embeddedlist()){
 			foreach($v as $id => $obj){
 				//$nprops[$p][$id] = array();
 				if($id == $f){
 					$nprops[$p] = array();
-					$nprops[$p][$id] = $nobj;
+					$nprops[$p][$id] = $obj;
 					return $nprops;
 				}
 				else {
-					$cprops = getFragmentInContext($f, $obj, $nobj);
+					$cprops = getFragmentInContext($f, $obj, $cwurl);
 					if($cprops){
 						$nprops[$p] = array();
 						$nprops[$p][$id] = $cprops;
@@ -315,7 +405,7 @@ function getFragmentInContext($f, $props, $nobj){
 /*
  * Adds a new object as a value of propert p and generates a non anonymous id for it
  */
-function addAnonObj($obj, &$prop, $p, &$idmap, $bnid = false){
+function addAnonObj($idbase, $obj, &$prop, $p, &$idmap, $cwurl, $bnid = false){
 	if(!isset($prop[$p]) or !is_array($prop[$p])){
 		$prop[$p] = array();
 	}
@@ -327,7 +417,7 @@ function addAnonObj($obj, &$prop, $p, &$idmap, $bnid = false){
 		$new_id = $idmap[$bnid];
 	}
 	else {
-		$new_id = genid();
+		$new_id = genid($idbase, $bnid);
 	}
 	if($bnid){
 		$idmap[$bnid] = $new_id;

@@ -886,3 +886,103 @@ span.bcstatus{
 	padding-right: 20px; 
 }
 
+#linked data properties from candidate table html view
+
+table.ld-properties td {
+	padding-left: 8px;
+	
+}
+table.ld-properties {
+	border-left: 1px solid #aaa;
+	border-right: 1px solid #aaa;
+	border-bottom: 1px solid #aaa;
+	border-top: 1px solid #aaa;
+	width: 100%;
+	border-collapse: collapse;
+	background-color: white;
+}
+
+table.ld-properties tr.embedded-object td.container {
+	padding: 0 14px 14px 14px;
+}
+
+td.prop-pd {
+	padding: 2px 0;
+}
+
+td.pid-embedded {
+	padding-top: 4px;
+}
+
+.dacura-property {
+	font-weight: bold;
+}
+
+table.ld-properties a {
+	text-decoration: none;
+}
+
+.dacura-property-value {
+	text-decoration: italic;
+}
+
+.dacura-literal{
+}
+
+.not-a-url,
+.unknown-namespace {
+	 font-weight: bold;
+	 color: #a88;
+}
+
+div.annotation-record,
+div.provenance-record {
+	background-color: #666;
+	color: white;
+	padding: 4px 8px;
+	font-weight: bold;
+}
+
+div.even_depth, 
+div.odd_depth {
+	border: 1px solid #aaa;
+}
+
+.pidembedded {
+	margin-bottom: 2px;
+	margin-top: 3px;	
+	padding: 3px 0px 2px 6px;
+	width: 100%;
+}
+
+.container table {
+	margin-top:-4px;
+}
+
+div.odd_depth {
+	background-color: #eeeeee;
+}
+
+div.even_depth {
+	background-color: white;
+	
+}
+
+
+td.even_depth, 
+td.odd_depth {
+ 	padding-right: 22px;
+}
+
+td.prop-pd {
+	padding-left: 6px;	
+}
+
+tr.firstp td.odd_depth {
+	border-top: 1px solid #aaa;
+}
+
+
+table.even_depth {
+	background-color: #eeeeee;
+}

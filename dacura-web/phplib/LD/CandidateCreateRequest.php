@@ -58,7 +58,8 @@ class CandidateCreateRequest extends Candidate {
 
 	
 	function loadFromAPI($obj){
-		parent::loadFromAPI($obj);
+		//parent::loadFromAPI($obj);
+		$this->contents = array();
 		if(!isset($obj['candidate']['rdf:type'])){
 			return $this->failure_result("No type found in create candidate - create requests must include an rdf:type", 400);
 		}
@@ -66,17 +67,9 @@ class CandidateCreateRequest extends Candidate {
 		$this->type_version = "0.1.0";
 		//massage the structure into the one that we want by adding in blank node ids for the parts of the message
 		$this->contents["candidate"] = array("_:candidate" => $obj['candidate']);
-		$this->contents["provenance"] = array("_:provenance" => $obj['provenance']);
-		$this->contents["annotation"] = array("_:annotation" => $obj['annotation']);
+		$this->contents["provenance"] = $obj['provenance'];
+		$this->contents["annotation"] = $obj['annotation'];
 	}	
 
-	//add ids to everything, ensure that everything inter-relates
-	function expand(){
-		if($this->validate()){
-			return parent::expand();
-		}
-		else {
-			return false;
-		}
-	}
+	
 }

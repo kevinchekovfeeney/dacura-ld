@@ -49,7 +49,7 @@ function sendemail($recip, $subj, $text){
 }
 
 function isURL($str){
-	return (filter_var($str, FILTER_VALIDATE_URL) === false);
+	return (!filter_var($str, FILTER_VALIDATE_URL) === false);
 }
 
 function deepArrCopy($x){
@@ -67,7 +67,7 @@ function deepArrCopy($x){
 
 function isNamespacedURL($x){
 	$bits = explode(":", $x);
-	return (count($bits) > 1 && strlen($bits[0]) <= 16 && !preg_match('/[^a-z0-9]/', $bits[0]));
+	return (!isURL($x) && count($bits) > 1 && strlen($bits[0]) <= 16 && strlen($bits[0]) >= 2 && !preg_match('/[^a-z0-9]/', $bits[0]));
 }
 
 function getNamespacePortion($str){

@@ -19,7 +19,8 @@ require_once('files/seshat.parser.php');
 class ScraperDacuraServer extends DacuraServer {
 	
 	var $ch; //curl handle
-
+	var $content_start_html = '<h1><span class="mw-headline"';
+	var	$content_end_html = "<div class=\"printfooter\">";
 	/*
 	 * These are just a note of the variables which have implicit subsections
 	 * 
@@ -119,7 +120,12 @@ class ScraperDacuraServer extends DacuraServer {
 		$links = $xpath->query('//a/@href');
 		foreach($links as $link){
 			$x = $link->value;
-			$url = 'http://seshat.info'.$x;
+			if(strstr($x, "seshat.info:") or $x[0] == ":"){
+				continue;
+			}
+			if(!strstr($x, "seshat.info")){
+				$url = 'http://seshat.info'.$x;
+			}	
 			$polities[] = $url;
 		}
 		if($this->settings['scraper']['use_cache']){
@@ -154,7 +160,7 @@ class ScraperDacuraServer extends DacuraServer {
 		$this->fileman->dumpData($tsv_op, implode("\t", $headers)."\n");
 		foreach($data as $nga => $polities){
 			$stats['ngas']++;
-			$summary = array("nga" => $this->formatNGAName($nga), "polities" => count($polities), "failures" => 0, 
+			$summary = array("nga" => $this->formatNGAName($nga), "polities" => count($polities), "failures" => 0, "warnings" => 0,
 					"total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0, "errors" => 0);
 			foreach($polities as $p){
 				if(!$p) continue;
@@ -440,14 +446,18 @@ class ScraperDacuraServer extends DacuraServer {
 		$fact_list = array( "variables" => array(), "errors" => array(), "warnings" => array(),
 				"title" => "", "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0, "sections" => array());
 		// strip out the non-content to minimise collision risk
-		if(strpos($content, "<div class=\"printfooter\">") && strpos($content, "<h1><span class=\"editsection\">")){
-				$content = substr($content, strpos($content, "<h1><span class=\"editsection\">"), strpos($content, "<div class=\"printfooter\">") - strpos($content, "<h1><span class=\"editsection\">"));
+		$content_start_offset = strpos($content, $this->content_start_html);
+		$content_end_offset = strpos($content, $this->content_end_html);
+		if($content_start_offset && $content_end_offset){
+				$content = substr($content, $content_start_offset , $content_end_offset - $content_start_offset);
 		}
 		// Divide into main sections....
 		$sections = explode("<h2>", $content);
 		$i = 0;
+		//echo count($sections) . " sections found\n";
 		foreach($sections as $sect){
-			if(++$i == 1){ 	//variables that appear before the first section -> page level variables 
+			++$i;
+			if($i == 1){ 	//variables that appear before the first section -> page level variables 
 				$sfl = $this->parseFactsFromString($sect);
 				$this->updateFactStats($fact_list, $sfl);
 				$fact_list['variables'] = array_merge($fact_list['variables'], $sfl['variables']);
@@ -456,7 +466,10 @@ class ScraperDacuraServer extends DacuraServer {
 				//divide into sub-sections
 				$sec_bits = explode("</span></h2>", $sect);
 				if(count($sec_bits) == 2){
-					$sec_title = substr($sec_bits[0], strrpos($sec_bits[0], ">")+1);
+					$sec_head_start_pos = strpos($sec_bits[0], ">") + 1;
+					$sec_head_end_pos = strpos(substr($sec_bits[0], 1), "<") + 1;
+					$sec_title = substr($sec_bits[0], $sec_head_start_pos, $sec_head_end_pos - $sec_head_start_pos);
+					if(!$sec_title) $sec_title = "Unknown";
 					$sec_content = $sec_bits[1];
 					$subsects = explode("<h3>", $sec_content);
 					$j = 0;
@@ -468,11 +481,19 @@ class ScraperDacuraServer extends DacuraServer {
 						else {
 							$subsec_bits = explode("</span></h3>", $subsect);
 							if(count($subsec_bits) == 2){
-								$subsec_title = substr($subsec_bits[0], strrpos($subsec_bits[0], ">") + 1);
+								$subsec_head_start_pos = strpos($subsec_bits[0], ">") + 1;
+								$subsec_head_end_pos = strpos(substr($subsec_bits[0], 1), "<") + 1;
+								$subsec_title = substr($subsec_bits[0], $subsec_head_start_pos, $subsec_head_end_pos - $subsec_head_start_pos);
+								if(!$subsec_title) $subsec_title = "Unknown";
 								$subsec_content = $subsec_bits[1];
 								$ssfl = $this->parseFactsFromString($subsec_content, $sec_title, $subsec_title);
 								$this->updateFactStats($sec_fact_list, $ssfl);
-								$sec_fact_list['sections'][$subsec_title] = $ssfl; 
+								$k = 0;
+								$nsubtitle = $subsec_title;
+								while(isset($sec_fact_list['sections'][$nsubtitle])){
+									$nsubtitle = $subsec_title ."_".$k++;
+								}
+								$sec_fact_list['sections'][$nsubtitle] = $ssfl; 
 							}
 							else {
 								$ssfl = $this->parseFactsFromString($subsect, $sec_title);
@@ -482,7 +503,12 @@ class ScraperDacuraServer extends DacuraServer {
 						}
 					}
 					$this->updateFactStats($fact_list, $sec_fact_list);
-					$fact_list["sections"][$sec_title] = $sec_fact_list;
+					$k = 0;
+					$nsectitle = $sec_title;
+					while(isset($sec_fact_list['sections'][$nsectitle])){
+						$nsectitle = $sec_title ."_".$k++;
+					}
+					$fact_list["sections"][$nsectitle] = $sec_fact_list;
 				}
 				else {  //do our best...
 					$sfl = $this->parseFactsFromString($sect);

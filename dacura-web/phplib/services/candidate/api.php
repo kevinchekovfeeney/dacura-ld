@@ -51,7 +51,7 @@ function get_candidate($candidate_id, $fragment_id = false){
 		}
 		$format = isset($_GET['format']) ? $_GET['format'] : false;
 		$display = isset($_GET['display']) ? $_GET['display'] : false;
-		return $dacura_server->send_candidate($cand, $format, $display);
+		return $dacura_server->send_candidate($cand, $format, $display, $version);
 	}
 	else {
 		return $dacura_server->write_http_error();

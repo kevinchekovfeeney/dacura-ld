@@ -50,6 +50,11 @@ class CandidateUpdateRequest extends Candidate {
 		$this->delta->buildIndex();
 	}
 	
+	function loadFromAPI($obj){
+		$this->contents = $obj;
+	}
+	
+	
 
 	function analyse(){
 		if($this->original->compare($this->delta)){

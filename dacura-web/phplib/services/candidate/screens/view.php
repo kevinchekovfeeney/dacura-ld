@@ -3,49 +3,114 @@
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
 
 <style>
-  #toolbar {
-  	width: 99%;
-    padding: 4px;
+    
+  #version-data {
+	margin-top: -10px;
+	width: 102.5%;
+	margin-bottom: 6px;
+	margin-right: 0px;
+	margin-left: -10px;
+	padding: 0;
+	font-size: 0.8em;
+	color: #222;
+    display: inline-block;
+    border-bottom: 1px solid #888;
+ }
+ 
+ #version-data-table {
+ 	border-collapse: collapse;
+ 	width: 100%;
+ 	border-bottom: 1px solid #888;
+ 	border-top: 1px solid white;
+ }
+ 
+  #version-data-table td {
+ 	padding: 2px 4px; 
+ 	border: 0;
+ 	text-align: center;
+ 	border-right: 1px dotted #eee;
+ 	border-bottom: 1px solid white;
+  }
+ 
+ td#vcontrols {
+ 	text-align: right;
+ }
+ 
+  #version-controls {
     display: inline-block;
     font-size: 0.7em;
-    margin-top: -6px;
-    margin-bottom: -20px;
-  }
-  /* support: IE7 */
-  *+html #toolbar {
-    display: inline;
   }
   
- 
-  
-  #format {
-  	float: right;
+  #fragment-data {
+  	width: 100%;
+  	background-color: #fafaff;
+  	margin: 0px 0 10px 0;
+  }
+  .fragment-title {
+  	font-weight: bold;
+  	margin-right: 20px;
   }
   
-  #toolbar dl {
-  	float: right;
-  	border: 2px solid red;
-  	margin-top: -2px;
-  	margin-bottom: -2px;
-  	width: 565px;
-  	padding-top: 6px;
-  	padding-bottom: 4px;
+  .fragment-paths {
+  	font-size: 0.65em;
   }
- 
+  
+  .fragment-path {
+  	display: block;
+  }
+  
+  .fragment-step {
+  	padding-left: 6px;
+  	padding-right: 6px;
+  	border-right: 1px solid #888;
+  }
+  
+  div#control-bar {
+  	background-color: #d5f9e9;
+	margin-bottom: 0;
+	font-size: 0.6em;
+	border-radius: 3px 3px 0 0;
+	border-bottom: 1px solid #888;
+  }
+      
+  div#control-bar table {
+  	width: 100%;
+  }
+  
+  div#control-bar table td {
+  	width: 33%;
+  }
+  
+  td#control-bar-options {
+  	text-align: right;
+  }
+
+  td#control-bar-edit {
+  	text-align: center;
+  }
+  
+  div#candidate-body {
+ 	border: 1px solid #aaa;
+ 	background-color: #fdfdfd;
+ 	padding-left: 4px;
+ 	padding-top: 2px;
+  }
+  
+  
  .dacura-json-viewer {
  	white-space: pre;
  	unicode-bidi: embed;
  	font-size: 0.85em;
- 	border-top: 1px solid #aaa;
- 	border-left: 1px solid #aaa;
- 	border-right: 1px solid #aaa;
- 	background-color: #fdfdfd;
- 	padding-left: 4px;
- 	padding-top: 2px;
-}
+ }
+
+.dacura-table-viewer {
+ 	unicode-bidi: embed;
+ 	font-size: 0.85em;
+ }
 
  #version-label {
-  	font-size: 1.1em;
+  	font-size: 1.3em;
+  	font-weight: bold;
  	vertical-align: middle;
  	padding: 0px 4px;	
 }
@@ -56,16 +121,7 @@
  	vertical-align: middle;
  }
  
-#version-data {
-	margin-top: 18px;
-	margin-bottom: -6px;
-	margin-right: -4px;
-	margin-left: -6px;
-	padding: 4px 6px 4px 6px;
-	font-size: 0.8em;
-	border-radius: 3px 3px 0px 0px;
-	color: #222;
-}
+
 
 .version-meta {
 	padding: 6px 15px 8px 5px;
@@ -106,10 +162,6 @@ dl#candidate-meta-details {
 	margin-top: 0;
 }
 
-div#candidate-body {
-	margin-top: 10px;
-}
-
 div#candidate-meta {
 	padding-top: 10px;
 }
@@ -134,6 +186,10 @@ padding-left: 10px;
 border-left: #888 solid 1px;
 	font-weight: bold;
 	color: #111;
+}
+
+#display-bar {
+	font-size: 0.6em;
 }
 
 </style>
@@ -171,30 +227,62 @@ border-left: #888 solid 1px;
 				</span>
 	   		</div>
 			<div id="show-candidate">
-				<div id="candidate-meta">
-					<div id="toolbar" class="ui-widget-header ui-corner-all">
-						<span id="version-label">version</span>
-						<button id="beginning">go to first</button>
-						<button id="rewind">back</button>
-						<span id="candidate-version"></span> 
-						<button id="forward">forward</button>
-						<button id="end">latest version</button>
-						<span id="format">
+				<div id='version-data'>
+					<table id='version-data-table'>
+						<tr>
+							<td class='version-meta' id='candidate-status'></td>
+							<td class='version-meta' id="candidate-type-version"></span>
+							<td class='version-meta' id='version-type'></td>
+							<td class='version-meta' id='vcontrols'>
+								<div id="version-controls">
+									<span id="version-label">version</span>
+									<button id="beginning">go to first</button>
+									<button id="rewind">back</button>
+									<span id="candidate-version"></span> 
+									<button id="forward">forward</button>
+									<button id="end">latest version</button>
+								</div>
+							</td>
+						</tr>
+					</table>
+				</div>
+				<div id='fragment-data'></div>			
+				<div id='control-bar'>
+					<table id='control-bar-table'>
+					<tr>
+						<td id="control-bar-format">
+							<span class='view-mode' id="format">
 							    <input type="radio" id="format_json" name="format" checked="checked"><label for="format_json">JSON</label>
 							    <input type="radio" id="format_ttl" name="format"><label for="format_ttl">Turtle</label>
 							    <input type="radio" id="format_triples" name="format"><label for="format_triples">Triples</label>
 							    <input type="radio" id="format_html" name="format"><label for="format_html">HTML</label>
-						</span>
-					</div>
-				</div>
-				<div id='version-data'>
-					<span class='version-meta' id='version-type'></span>
-					<span class='version-meta' id='candidate-status'></span>
-					<span class='version-meta' id="candidate-type-version"></span>
-					<span class='version-meta' id='candidate-modified'></span>
-				</div>
-				
-				<div id="candidate-format">
+							</span>
+							<span class='edit-mode' id="edit-format">
+							    <input type="radio" id="edit_json" name="eformat" checked="checked"><label for="edit_json">JSON</label>
+							    <input type="radio" id="edit_html" name="eformat"><label for="edit_html">HTML</label>
+							</span>
+						</td>
+						<td id="control-bar-edit">
+							<span class='view-mode' id="setedit">
+								<button id="display_edit" name="ebar">Edit</button>
+							</span>
+							<span class='edit-mode' id="editcancel">
+							    <button class='edit-mode' id="cancel_edit">Cancel Edit</button>
+						    </span>
+							</td>
+						<td id="control-bar-options">
+							<span id="editbar" class='edit-mode'>
+							    <button class='edit-mode' id="test_edit">Test Changes</button>
+							    <button class='edit-mode' id="save_edit" name="ebar">Save Changes</button>
+							</span>
+							<span id="display" class="view-mode">
+								<input type="checkbox" id="display_ns" name="display" checked="checked"><label for="display_ns">Namespaces</label>
+							    <input type="checkbox" id="display_links" name="display"><label for="display_links">Links</label>
+							</span>
+						</td>
+						
+						</tr>
+					</table>
 				</div>
 				<div id="candidate-body">
 				</div>			
@@ -262,9 +350,14 @@ function timeConverter(UNIX_timestamp){
 dacura.candidate.currentCandidate = null;
 dacura.candidate.viewArgs = {
 	format: "<?=isset($params['format'])? $params['format'] : "json" ?>",
-	display: "<?=isset($params['display'])? $params['display'] : 'default' ?>",
+	display: "<?=isset($params['display'])? $params['display'] : 'ns' ?>",
 	version: <?=isset($params['version'])? $params['version'] : 0 ?>,
+	edit: <?=isset($params['edit'])? 1 : 0 ?>,
 };
+
+dacura.candidate.getArgString = function() {
+	return "?version=" + dacura.candidate.viewArgs.version + "&format=" + dacura.candidate.viewArgs.format + "&display=" + dacura.candidate.viewArgs.display; 
+}
 
 dacura.candidate.clearCandidate = function (){
 	$('#candidate-history').html('<table id="history_table" class="dch"><thead><tr><th>Version</th><th>Schema Version</th>' +
@@ -281,12 +374,12 @@ dacura.candidate.drawCandidate = function(data){
 	$('#cand_created').html(timeConverter(data.created));
 	$('.cand-id').html(data.id); 
 	if(data.version == data.latest_version){
-		$('#version-type').html("Latest Version");
+		$('#version-type').html("Latest Version, Created: " + timeConverter(data.modified));
 		$( "#forward" ).button("disable");
 		$( "#end" ).button("disable");
 	}
 	else {
-		$('#version-type').html("Replaced: " + timeConverter(data.modified));		
+		$('#version-type').html("Created: " + timeConverter(data.modified) + ". Replaced: " + timeConverter(data.modified));		
 		$( "#forward" ).button("enable");
 		$( "#end" ).button("enable");
 	}
@@ -300,9 +393,23 @@ dacura.candidate.drawCandidate = function(data){
 	}
 	$('#candidate-type-version').html("Schema: v" + data.type_version); 
 	$('#candidate-status').html("Status: " + data.status); 
-	$('#candidate-modified').html("Created: " + timeConverter(data.modified)); 
 	$('#candidate-version').html(data.version); 
-	
+	if(typeof data.fragment_id != "undefined"){
+		fids = data.fragment_id.split("/");
+		fid = fids[fids.length -1];
+		fdets = data.fragment_details;
+		fpaths = data.fragment_paths;
+		fpathhtml = "<div class='fragment-paths'>";
+		for(i in fpaths){
+			fpathhtml += "<span class='fragment-path'>";
+			fpathhtml += "<span class='fragment-step'>" + data.id + "</span><span class='fragment-step'>";
+			fpathhtml += fpaths[i].join("</span><span class='fragment-step'>");
+			fpathhtml += "</span><span class='fragment-step'>" + data.fragment_id + "</span></span>";
+		}
+		fpathhtml += "</div>";
+		$('#fragment-data').html("<span class='fragment-title-label'>Fragment</span> <span class='fragment-title'>" + fid + "</span><span class='fragment-details'>" + fdets + "</span>" + fpathhtml);
+		$('#fragment-data').show();
+	}
 	dacura.candidate.drawContents(data.contents);
 	/*JSONEditor.prototype.ADD_IMG = '<?=$service->url("image", "add.png")?>';
     JSONEditor.prototype.DELETE_IMG = '<?=$service->url("image", "delete.png")?>';
@@ -330,25 +437,37 @@ dacura.candidate.drawCandidate = function(data){
 
 dacura.candidate.drawContents = function(contents){
 	if(dacura.candidate.viewArgs.format == "json"){
-		$('#candidate-body').html(JSON.stringify(contents, null, 4)).addClass("dacura-json-viewer");
+		$('#candidate-body').html("<div class='dacura-json-viewer'>" + JSON.stringify(contents, null, 4) + "</div>");
+	}
+	else if(dacura.candidate.viewArgs.format == "ttl"){
+		var html = "<div class='dacura-table-viewer'><table class='dacura-triples-viewer'><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr>";
+		for (var i in contents) {
+			var row = "<tr><td>" + contents[i][0] + "</td>";
+				row += "<td>" + contents[i][1] + "</td>";
+				row += "<td>" + contents[i][2] + contents[i][3] + "</td></tr>";
+				html += row;
+		}
+		$('#candidate-body').html(html + "</table></div>");	
 	}
 	else if(dacura.candidate.viewArgs.format == "triples"){
-		var html = "<table class='dacura-triples-viewer'><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr>";
+		var html = "<div class='dacura-table-viewer'><table class='dacura-triples-viewer'><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr>";
 		for (var i in contents) {
-			var row = "<tr><td>" + escapeHTML("<"+ contents[i][0] + "> ") + "</td>";
-			row += "<td>" + escapeHTML("<"+ contents[i][1] + "> ") + "</td>";
-			row += "<td>" + escapeHTML("<"+ contents[i][2] + "> .") + "</td></tr>";
+			var row = "<tr><td>&lt;" + contents[i][0] + "&gt; </td>";
+			row += "<td>&lt;" + contents[i][1] + "&gt; </td>";
+			row += "<td>&lt;" + contents[i][2] + "&gt; .</td></tr>";
 			html += row;
 		}
-		$('#candidate-body').html(html + "</table>");	
+		$('#candidate-body').html(html + "</table></div>");	
 	}
-	
-	else if(dacura.candidate.viewArgs.format == "turtle"){
-		//since we have no blank nodes in the triplestore only have to care about directives..
-		//@base
-		//
-		
-	}	
+	else if(dacura.candidate.viewArgs.format == "html"){
+		var html = "<div class='dacura-html-viewer'>";
+		html += contents;
+		$('#candidate-body').html(html + "</table></div>");	
+		//dacura.candidate.collapseAllEmbedded();
+		$('.pidembedded').click(function(event){
+			$('#'+ event.target.id + "_objrow").toggle();
+		});
+	}
 }
 
 function escapeHTML( string )
@@ -387,6 +506,77 @@ dacura.candidate.drawHistoryTable = function(data){
 	    });
 		$('#history_table').dataTable(<?=$dacura_server->getServiceSetting('history_datatable_init_string', "{}");?>).show();
 	}
+}
+
+dacura.candidate.makeCheckboxesBehave = function (){
+    if(dacura.candidate.viewArgs.format == "json"){
+    	$("#format_json").prop('checked', true);
+    }
+    else if(dacura.candidate.viewArgs.format == "ttl"){
+    	$("#format_ttl").prop('checked', true);
+    }
+    else if(dacura.candidate.viewArgs.format == "html"){
+    	$("#format_html").prop('checked', true);
+    }
+    else if(dacura.candidate.viewArgs.format == "triples"){
+    	$("#format_triples").prop('checked', true);
+    }
+    if(dacura.candidate.viewArgs.display.indexOf("links") >= 0){
+    	$("#display_links").prop('checked', true);
+    }
+    else {
+    	$("#display_links").prop('checked', false);
+    }
+    if(dacura.candidate.viewArgs.display.indexOf("ns") >= 0){
+    	$("#display_ns").prop('checked', true);
+    }
+    else {
+    	$("#display_ns").prop('checked', false);
+    }
+    if(dacura.candidate.viewArgs.edit == 0){
+    	dacura.candidate.clearEditMode();
+    }
+    else {
+    	dacura.candidate.setEditMode();
+    }
+}
+
+dacura.candidate.clearEditMode = function(){
+	$("#display_edit").prop('checked', false);
+	$("div#candidate-body").css("border", "1px solid #aaa");
+	$("div#control-bar").css("border", "1px solid #aaa");
+	$("div#control-bar").css("background-color", "#d5f9e9");
+	$("div#candidate-body").css("background-color", "#fdfdfd");
+	if($("#edit_html").is(':checked')){
+		dacura.candidate.viewArgs.format == "html";
+    	$("#format_html").click();    		
+	}
+	$('.edit-mode').hide();
+	$('.view-mode').show();
+	dacura.candidate.makeRequest();
+}
+
+
+dacura.candidate.setEditMode = function(){
+	$('.edit-mode').show();
+	$('.view-mode').hide();
+	$("div#candidate-body").css("border", "1px solid #88f");
+	$("div#control-bar").css("border", "1px solid blue");
+	$("div#control-bar").css("background-color", "#d5e9f9");
+	$("div#candidate-body").css("background-color", "#f0f0ff");
+	
+	if($("#format_html").is(':checked')){
+		//$("#edit_html").prop('checked', true); 
+		$('#edit_html').click();
+	}
+	else {
+		$('#edit_json').click();
+	}
+	//$("#editmode").hide();
+	//$("#editbar").show();
+	//$("#control-bar-options").hide();
+	//$("#format").hide();
+	//$("#edit-format").show();
 }
 
 dacura.candidate.drawPendingTable = function(data){		
@@ -435,6 +625,25 @@ dacura.candidate.makeRequest = function(){
 	});	
 }
 
+function loadDisplaySetting(){
+	var options = [];
+	if($("#display_links").is(':checked')){
+		options.push("links");
+	}
+	if($("#display_ns").is(':checked')){
+		options.push("ns");
+	}
+	optstr = options.join("_");
+	if(optstr != dacura.candidate.viewArgs.display){
+		dacura.candidate.viewArgs.display = optstr;
+    	dacura.candidate.makeRequest();
+	}
+}
+
+dacura.candidate.collapseAllEmbedded = function(){
+	$('.embedded-object').css("display",  "none");
+}
+
 $('document').ready(function(){
  	$( "#beginning" ).button({
       text: false,
@@ -472,7 +681,31 @@ $('document').ready(function(){
     	dacura.candidate.viewArgs.version = 0;
     	dacura.candidate.makeRequest();
     });
+    dacura.candidate.makeCheckboxesBehave();
     $( "#format" ).buttonset();
+	$( "#test_edit" ).button().click(function(){
+		alert("test");
+	});
+	$( "#save_edit" ).button().click(function(){
+		alert("save");
+	});
+	$( "#display" ).buttonset();
+	$( "#display_ns").button().click(function(){
+		loadDisplaySetting();
+	});
+	$( "#display_links").button().click(function(){
+		loadDisplaySetting()
+	});
+
+    $('#edit-format').buttonset();
+    $('#display_edit').button().click(function(){
+       	dacura.candidate.setEditMode();
+    });
+
+    $('#cancel_edit').button().click(function(){
+       dacura.candidate.clearEditMode();
+	});
+	
     $('#format_json').click(function(){
     	dacura.candidate.viewArgs.format = "json";    
     	dacura.candidate.makeRequest();

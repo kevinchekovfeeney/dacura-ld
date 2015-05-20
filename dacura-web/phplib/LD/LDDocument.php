@@ -28,6 +28,7 @@ class LDDocument extends DacuraObject {
 	var $index = false; //obj_id => &$obj
 	var $bad_links = array(); //different types of bad links in the document
 	var $idmap = array(); //blank nodes that have been mapped to new names in the document
+	var $cwurl = "";
 	
 	function __construct($id){
 		$this->id = $id;
@@ -38,19 +39,7 @@ class LDDocument extends DacuraObject {
 		$this->index = false;
 		$this->bad_links = deepArrCopy($this->bad_links);
 	}
-	
-	
-	/*
-	 * Generates a globally unique id for a fragment within the json ld object
-	 * by concatenating the object id and a unique id thingie
-	 */
-	function genid($bn = false) {
-		if($bn == "_:candidate"){
-			return "local:".$this->id."/candidate";
-		}
-		return "local:".$this->id . "/" . uniqid_base36(false);
-	}
-	
+
 	function get_json($key = false){
 		if($key){
 			return json_encode($this->contents[$key]);
@@ -76,13 +65,9 @@ class LDDocument extends DacuraObject {
 		$this->contents = $arr;
 	}
 
-	function loadFromAPI($obj){
-		$this->contents = $obj;
-	}
-
 	function buildIndex(){
 		$this->index = array();
-		indexLD($this->contents, $this->index);
+		indexLD($this->contents, $this->index, $this->cwurl);
 	}
 
 	function get_json_ld(){
@@ -92,7 +77,7 @@ class LDDocument extends DacuraObject {
 	}
 
 	function expand(){
-		$rep = expandLD($this->contents);
+		$rep = expandLD($this->id, $this->contents, $this->cwurl);
 		if($rep === false){
 			return false;
 		}
@@ -111,7 +96,11 @@ class LDDocument extends DacuraObject {
 	}
 	
 	function triples(){
-		return getObjectAsTriples($this->id, $this->contents);
+		return getObjectAsTriples($this->id, $this->contents, $this->cwurl);
+	}
+	
+	function turtle(){
+		return getObjectAsTurtle($this->id, $this->contents, $this->cwurl);
 	}
 	
 	function compliant(){
@@ -120,12 +109,12 @@ class LDDocument extends DacuraObject {
 	}
 	
 	function isDocumentLocalLink($v){
-		return (substr($v, 0, 6) == "local:" && substr($v, 6) == $this->id) && (substr($v, 0, strlen($this->id)) == $this->id);
+		return (substr($v, 0, 6) == "local:" && substr($v, 6, strlen($this->id)) == $this->id) || (substr($v, 0, strlen($this->id)) == $this->id) || $this->cwurl.$this->id == substr($v, 0, strlen($this->cwurl.$this->id));
 	}
 	
 	function findMissingLinks(){
 		if($this->index === false){
-			$this->buildIndex($this->contents, $this->index);
+			$this->buildIndex($this->contents, $this->index, $this->cwurl);
 		}
 		$ml = $this->findInternalMissingLinks($this->contents, array_keys($this->index), $this->id);
 		$x = count($ml);
@@ -190,7 +179,7 @@ class LDDocument extends DacuraObject {
 	function findInternalMissingLinks($props, $legal_vals, $id){
 		$missing = array();
 		foreach($props as $prop => $v){
-			$pv = new LDPropertyValue($v);
+			$pv = new LDPropertyValue($v, $this->cwurl);
 			if($this->isDocumentLocalLink($v) && !in_array($v, $legal_vals)){
 				$missing[] = array($id, $prop, $v);
 			}
@@ -224,7 +213,7 @@ class LDDocument extends DacuraObject {
 		//opr($update_obj);
 		$this->applyUpdates($update_obj, $this->contents, $this->idmap, $is_force);
 		if(count($this->idmap) > 0){
-			$unresolved = updateBNReferences($this->contents, $this->idmap);
+			$unresolved = updateBNReferences($this->contents, $this->idmap, $this->cwurl);
 			if($unresolved === false){
 				return false;
 			}
@@ -250,7 +239,7 @@ class LDDocument extends DacuraObject {
 			if(!is_array($dprops)){
 				$dprops = array();
 			}
-			$pv = new LDPropertyValue($v);
+			$pv = new LDPropertyValue($v, $this->cwurl);
 			if($pv->illegal()){
 				return $this->failure_result($pv->errmsg, $pv->errcode);
 			}
@@ -270,12 +259,12 @@ class LDDocument extends DacuraObject {
 			}
 			elseif($pv->objectlist()){ //list of new objects (may have @ids inside)
 				foreach($v as $obj){
-					addAnonObj($obj, $dprops, $prop, $idmap);
+					addAnonObj($obj, $dprops, $prop, $idmap, $this->cwurl);
 				}
 			}
 			elseif($pv->embedded()){ //new object to add to the list - give him an id and insert him
 				//opr($v);
-				addAnonObj($v, $dprops, $prop, $idmap);
+				addAnonObj($v, $dprops, $prop, $idmap, $this->cwurl);
 			}
 			elseif($pv->embeddedlist()){
 				//if(!isset($drops[$prop]) or !is_array($dprops[$prop])){
@@ -283,7 +272,7 @@ class LDDocument extends DacuraObject {
 				//}
 				$bnids = $pv->getbnids();//new nodes
 				foreach($bnids as $bnid){
-					addAnonObj($v[$bnid], $dprops, $prop, $idmap, $bnid);
+					addAnonObj($v[$bnid], $dprops, $prop, $idmap, $this->cwurl, $bnid);
 				}
 				$delids = $pv->getdelids();//delete nodes
 				foreach($delids as $did){
@@ -325,19 +314,19 @@ class LDDocument extends DacuraObject {
 			if(!isset($orig[$p])){
 				$forward[$p] = $v;
 				$back[$p] = array();
-				$st['add'] = array_merge($st['add'], getValueAsTriples($frag_id, $p, $v));
+				$st['add'] = array_merge($st['add'], getValueAsTriples($frag_id, $p, $v, $this->cwurl));
 			}
 		}
 		//now we go through the original properties and see which ones we need to update or delete..
 		foreach($orig as $p => $v){
 			if(!isset($upd[$p])){
-				$st['del'] = array_merge($st['del'], getValueAsTriples($frag_id, $p, $v));
+				$st['del'] = array_merge($st['del'], getValueAsTriples($frag_id, $p, $v, $this->cwurl));
 				$back[$p] = $v;
 				$forward[$p] = array();
 			}
 			else { //property exists in both new and old
-				$porig = new LDPropertyValue($orig[$p]);
-				$pupd = new LDPropertyValue($upd[$p]);
+				$porig = new LDPropertyValue($orig[$p], $this->cwurl);
+				$pupd = new LDPropertyValue($upd[$p], $this->cwurl);
 				if($porig->sameLDType($pupd)){
 					if($porig->literal() && $v != $upd[$p]){
 						$st['upd'][] = array($frag_id, $p, $v, $upd[$p]);
@@ -368,7 +357,7 @@ class LDDocument extends DacuraObject {
 							if(!isset($upd[$p][$id])){ //delete
 								$forward[$p] = array($id => array());
 								$back[$p] = array($id => $obj);
-								$st['del'] = array_merge($st['del'], getObjectAsTriples($id, $obj));
+								$st['del'] = array_merge($st['del'], getObjectAsTriples($id, $obj, $this->cwurl));
 							}
 							else {
 								$nforward = array();
@@ -394,7 +383,7 @@ class LDDocument extends DacuraObject {
 									$forward[$p] = array();
 									$back[$p] = array();
 								}
-								$st['add'] = array_merge($st['add'], getObjectAsTriples($id, $obj));
+								$st['add'] = array_merge($st['add'], getObjectAsTriples($id, $obj, $this->cwurl));
 								$forward[$p][$id] = $obj;
 								$back[$p][$id] = array();
 							}
@@ -465,8 +454,8 @@ class LDDocument extends DacuraObject {
 	
 	function analyseValueTypeChange($frag_id, $p, $v, $t, $v2, $t2){
 		//$st['del'] = array($frag_id, $p, $val);
-		$del = $this->getValueAsTriples($frag_id, $p, $v);
-		$add = $this->getValueAsTriples($frag_id, $p, $v2);
+		$del = $this->getValueAsTriples($frag_id, $p, $v, $this->cwurl);
+		$add = $this->getValueAsTriples($frag_id, $p, $v2, $this->cwurl);
 		//$this->getValueAsTriples($frag_id, $p, $v2);
 		if(isset($del) && isset($add)){
 			$rem = $this->removeOverwrites($del, $add);

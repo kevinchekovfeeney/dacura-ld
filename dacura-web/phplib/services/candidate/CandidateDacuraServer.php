@@ -11,7 +11,7 @@ class CandidateDacuraServer extends DacuraServer {
 	var $dbclass = "CandidateDBManager";
 	var $schema; //the schema in use is defined by the context.
 	
-	function getCandidate($candidate_id, $fragment_id = false, $version = false){
+	function getCandidate($candidate_id, $fragment_id = false, $version = false, $show_context = true){
 		$cand = new Candidate($candidate_id);
 		if($this->dbman->load_candidate($cand)){
 			if($version && $cand->version() > $version){
@@ -19,18 +19,30 @@ class CandidateDacuraServer extends DacuraServer {
 					return false;
 				}
 			}
-			$cand->loadSchema($this->settings['install_url']);
+			$cand->loadSchema($this->settings['install_url']);			
 			$cand->buildIndex();				
 			if($fragment_id){
-				//opr($cand->index);
 				$frag = $cand->getFragment($fragment_id);
-				if($frag){
-					$cand->contents = $frag;
-					//$cand->fragment = $fragment_id;
+				$cand->fragment_id = $fragment_id;
+				if($show_context){
+					$cand->setContentsToFragment($fragment_id);
+					$types = array();
+					foreach($frag as $fobj){
+						if(isset($fobj['rdf:type'])){
+							$types[] = $fobj['rdf:type'];
+						}
+					}
+					$cand->fragment_paths = $cand->getFragmentPaths($fragment_id);
+					$cand->fragment_details = count($types) == 0 ? "Undefined Type" : "Types: ".implode(", ", $types);
 				}
-				else {
-					return $this->failure_result("Failed to load fragment $fragment_id", 404);						
-				}				
+				else { 	//for pure, context-free data access
+					if($frag){
+						$cand->contents = $frag;
+					}
+					else {
+						return $this->failure_result("Failed to load fragment $fragment_id", 404);						
+					}
+				}
 			}
 			return $cand;
 		}
@@ -85,6 +97,7 @@ class CandidateDacuraServer extends DacuraServer {
 	
 	function createCandidate($obj, $test_flag){
 		$id = $this->generateNewCandidateID();
+		$this->schema = new Schema($this->cid(), $this->did(), $this->settings['install_url']);
 		$ccand = new CandidateCreateRequest($id, $this->schema);
 		$ccand->setContext($this->cid(), $this->did());
 		$ccand->loadFromAPI($obj);
@@ -102,6 +115,9 @@ class CandidateDacuraServer extends DacuraServer {
 		//now we do our fine-grained permissions stuff with all the objects formed..
 		if(!$this->createCandidatePermitted($ccand)){
 			return $this->failure_result("Not permitted to create that candidate", 400);				
+		}
+		if(!$ccand->validate()){
+			return $this->failure_result($ccand->errmsg, $ccand->errcode);				
 		}
 		if(!$ccand->expand()){
 			return $this->failure_result($ccand->errmsg, $ccand->errcode);
@@ -220,11 +236,33 @@ class CandidateDacuraServer extends DacuraServer {
 		return $this->write_json_result($cand, "Sent the candidate schema");
 	}
 	
-	function send_candidate($cand, $format, $display){
+	function send_candidate($cand, $format, $display, $version){
+		$vstr = "?version=".$version."&format=".$format."&display=".$display;
+		if(!$this->should_display("ns", $format, $display)){
+			$cand->expandNS();				
+		}
+		if($this->should_display("links", $format, $display)){
+			$cand->contents = $cand->linkify($vstr);
+		}
 		if($format == "triples"){
-			$cand->contents = $cand->asTriples();		
+			$cand->contents = $cand->triples();		
+		}
+		elseif($format == "ttl"){
+			$cand->contents = $cand->turtle();
+		}
+		elseif($format == "html"){
+			$cand->contents = $cand->html($this->ucontext, $vstr);				
+		}
+		elseif($format == "json"){
+					
 		}
 		return $this->write_json_result($cand, "Sent the candidate");
+	}
+	
+	function should_display($option, $format, $display){
+		if($option == 'links' && $format == "html") return false;
+		$display_options = explode("_", $display);
+		return in_array($option, $display_options);
 	}
 }
 

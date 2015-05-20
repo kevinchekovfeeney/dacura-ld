@@ -22,10 +22,12 @@ class LDPropertyValue extends DacuraObject {
 	var $literal_type;//BN, CW, OW (URL), L
 	var $array_type;//literal, object
 	var $array_literal_types;//array of(BN, CN, OW, L) for types of
-	var $object_type;//EO, EOL
+	var $object_type;//EO, EOL -> embedded object, embedded object list
+	var $cwurl;
 
-	function __construct($val){
+	function __construct($val, $cwurl){
 		$this->load($val);
+		$this->cwurl = $cwurl;
 	}
 
 	function getLiteralType($val){
@@ -51,7 +53,7 @@ class LDPropertyValue extends DacuraObject {
 	}
 	
 	function isCWLink($v){
-		return substr($v, 0, 6) == "local:";
+		return substr($v, 0, 6) == "local:" || substr($v, 0, strlen($this->cwurl)) == $this->cwurl;
 	}
 
 	function sameLDType($other){
