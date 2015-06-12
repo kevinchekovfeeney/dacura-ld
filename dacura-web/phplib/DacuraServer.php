@@ -21,9 +21,11 @@ require_once("FileManager.php");
 class DacuraServer extends DacuraObject {
 	var $settings;
 	var $userman;	//user & session manager
-	var $ucontext; 
-	var $collection; //collection object in which context the call is made
-	var $dataset; //dataset object in which the call is made
+	var $ucontext;
+	var $config; //configuration for the context -> dataset, collection, schema, etc
+	//has contents schema, 
+	//var $collection; //collection object in which context the call is made
+	//var $dataset; //dataset object in which the call is made
 	var $dbclass = "UsersDBManager";//the class of the associated dbmanager
 	var $dbman; //storage manager
 	var $fileman; //log manager, responsible for logging, caching, dumping data
@@ -39,6 +41,9 @@ class DacuraServer extends DacuraObject {
 		}
 		$this->userman = new UserManager($this->dbman, $service);
 		$this->fileman = new FileManager($service);
+		if(!$this->loadContextConfiguration()){
+			return $this->failure_result('Context Loading Failed: ' . $this->errmsg, $this->errcode);				
+		}
 	}
 
 	/* 
@@ -72,13 +77,42 @@ class DacuraServer extends DacuraObject {
 	}
 	
 	function loadContextConfiguration(){
+		$this->loadServerConfiguration();
 		if($this->cid() != "all"){
-			$this->collection = $this->getCollection($this->cid());
+			$this->loadCollectionConfiguration($this->cid());
 			if($this->did() != "all"){
-				$this->dataset = $this->getDataset($this->did());
+				$this->loadDatasetConfiguration($this->did());
 			}
 		}
-		
+	}
+	
+	function loadServerConfiguration(){
+		$this->config = array();		
+	}
+	
+	function loadCollectionConfiguration($id){
+		$col = $this->getCollection($id);
+		if($col){
+			foreach($col->config as $k => $v){
+				$this->config[$k] = $v;
+			}
+			if($this->did() != "all"){
+				return $this->loadDatasetConfiguration();
+			}
+			else return true;
+		}
+		return false;
+	}
+	
+	function loadDatasetConfiguration($id){
+		$ds = $this->getDataset($id);
+		if($ds){
+			foreach($ds->config as $k => $v){
+				$this->config[$k] = $v;
+			}
+			return true;
+		}
+		return false;
 	}
 	
 	/*

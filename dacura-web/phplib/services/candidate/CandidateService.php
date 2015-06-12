@@ -36,7 +36,11 @@ class CandidateService extends DacuraService {
 			else {
 				$id = $this->screen;
 			}
-			$this->renderScreen("view", array("id" => $id));
+			$params = array("id" => $id);
+			if(isset($_GET['version'])) $params['version'] = $_GET['version']; 
+			if(isset($_GET['format'])) $params['format'] = $_GET['format']; 
+			if(isset($_GET['display'])) $params['display'] = $_GET['display']; 
+			$this->renderScreen("view", $params);
 		}
 	}
 	

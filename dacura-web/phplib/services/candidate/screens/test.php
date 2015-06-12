@@ -73,31 +73,32 @@ sco.candidate = {
 };
 
 //only include agents and entities that are being added to the system...
-sco.provenance = [
-    {	
-        "@id": "_:candidate", 
-		"rdf:type": "prov:Entity",
-		"prov:wasGeneratedBy": {
-			"rdf:type": "prov:Activity",
-			"@id": "_:act1",
-			"startTime": "2011-11-16T16:05:00", 
-			"endTime": "2011-11-16T16:06:00", 
-			"prov:type": "dacura:candidateCreation",
-			"prov:wasAssociatedWith": {"rdf:type": "prov:Agent", "prov:type": "prov:SoftwareAgent"}
-	    } 
-    }, 
-    {
-        "@id": "_:p2", 
-    	"rdf:type": "prov:Entity",
-		"prov:wasGeneratedBy": {
-			"rdf:type": "prov:Activity",
-			"startTime": "2011-11-16T16:05:00", 
-			"endTime": "2011-11-16T16:06:00", 
-			"prov:type": "dacura:candidateCreation",
-			"prov:wasAssociatedWith": {"rdf:type": "prov:Agent", "prov:type": "prov:SoftwareAgent"}
-	    } 
-    }
+sco.provenance = [                  
+	    {	
+		    "prov:target": "_:candidate",
+			"rdf:type": "prov:Entity",
+			"prov:wasGeneratedBy": {
+				"rdf:type": "prov:Activity",
+				"@id": "_:act1",
+				"startTime": "2011-11-16T16:05:00", 
+				"endTime": "2011-11-16T16:06:00", 
+				"prov:type": "dacura:candidateCreation",
+				"prov:wasAssociatedWith": {"rdf:type": "prov:Agent", "prov:type": "prov:SoftwareAgent"}
+		    } 
+	    }, 
+	    {
+		    "prov:target": "_:p2",
+	    	"rdf:type": "prov:Entity",
+			"prov:wasGeneratedBy": {
+				"rdf:type": "prov:Activity",
+				"startTime": "2011-11-16T16:05:00", 
+				"endTime": "2011-11-16T16:06:00", 
+				"prov:type": "dacura:candidateCreation",
+				"prov:wasAssociatedWith": {"rdf:type": "prov:Agent", "prov:type": "prov:SoftwareAgent"}
+		    } 
+    	}
 ];
+
 sco.annotation = [
     {
 		"rdf:type" : "oa:Annotation",
@@ -256,7 +257,7 @@ $('document').ready(function(){
 			alert("JSON does not parse "+ e.message);
 			return;
 		}
-		var ajs = dacura.candidate.api.update(i, uobj);
+		var ajs = dacura.candidate.api.update(i, uobj.contents);
 		ajs.beforeSend = function(){
 			
 		};

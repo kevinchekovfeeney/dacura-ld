@@ -143,6 +143,15 @@ class DacuraService extends DacuraObject {
 		}
 	}
 	
+	function renderScreenAsString($screen, $params, $other_service = false){
+		ob_start();
+		/* PERFORM COMLEX QUERY, ECHO RESULTS, ETC. */
+		$this->renderScreen($screen, $params, $other_service);
+		$page = ob_get_contents();
+		ob_end_clean();
+		return $page;
+	}
+	
 	function writeIncludedInterpolatedScripts($path){
 		$service = &$this;
 		echo "<script>"; 

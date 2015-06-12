@@ -22,12 +22,12 @@ class LDPropertyValue extends DacuraObject {
 	var $literal_type;//BN, CW, OW (URL), L
 	var $array_type;//literal, object
 	var $array_literal_types;//array of(BN, CN, OW, L) for types of
-	var $object_type;//EO, EOL
-	var $cw_base;
+	var $object_type;//EO, EOL -> embedded object, embedded object list
+	var $cwurl;
 
-	function __construct($val, $cw_base){
-		$this->cw_base = $cw_base;
+	function __construct($val, $cwurl){
 		$this->load($val);
+		$this->cwurl = $cwurl;
 	}
 
 	function getLiteralType($val){
@@ -37,7 +37,7 @@ class LDPropertyValue extends DacuraObject {
 		elseif($this->isCWLink($val)){
 			return "CW";
 		}
-		elseif(isURL($val)){
+		elseif($this->isOWLink($val)){
 			return "OW";
 		}
 		else {
@@ -45,8 +45,15 @@ class LDPropertyValue extends DacuraObject {
 		}
 	}
 
+	function isOWLink($val){
+		if(isURL($val) or isNamespacedURL($val)){
+			return true;
+		}
+		return false;
+	}
+	
 	function isCWLink($v){
-		return substr($v, 0, 6) == "local:" or substr($v, 0, strlen($this->cw_base)) == $this->cw_base;
+		return substr($v, 0, 6) == "local:" || substr($v, 0, strlen($this->cwurl)) == $this->cwurl;
 	}
 
 	function sameLDType($other){
@@ -162,6 +169,10 @@ class LDPropertyValue extends DacuraObject {
 
 	function owlink(){
 		return $this->json_type == "literal" && $this->literal_type == "OW";
+	}
+	
+	function link(){
+		return $this->cwlink() or $this->owlink();
 	}
 
 	function literal(){
