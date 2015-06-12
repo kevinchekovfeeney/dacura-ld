@@ -26,34 +26,62 @@ def gensym(name):
     return name + str(counter+1)
 
 
+# def new_instant_message():
+#     name = gensym('Message-')
+#     node = gensym('Node')
+#     instance = 'instance'
+#     return """
+#         ['%(object)s', '%(type)s', '%(InstantMessage)s',instance],
+#         ['%(object)s', '%(issued)s', literal(type('%(xsdDateTime)s','%(date)s')),instance],
+#         ['%(object)s', '%(content)s', literal(lang('Some content here...', en)), instance],
+#         ['%(object)s', '%(has_creator)s', '%(node)s', instance],
+#         ['%(node)s', '%(type)s', '%(UserAccount)s', instance],
+#         ['%(node)s','%(accountName)s', literal(lang('An account name',en)), instance],
+#         ['%(object)s', '%(link)s', '%(href)s', instance]
+#     """ % { "object" : SIOC+name, "node" : node, "type" : RDF+'type',
+#              "content" : NS+'content',
+#              "has_creator" : NS+'has_creator', 
+#              "UserAccount" : NS+'UserAccount', "link" : NS+'link',
+#              "href" : 'http://www.swig.org/2009-03-10.html#' + name,
+#              "issued" : PURL+'issued',
+#              "InstantMessage" : ST+'InstantMessage',
+#              "date" : datetime.datetime.now().isoformat(),
+#              "accountName" : FOAF+'accountName',
+#              "xsdDateTime" : XSD + 'dateTime'}
+
 def new_instant_message():
     name = gensym('Message-')
     node = gensym('Node')
     instance = 'instance'
-    return """
-        ['%(object)s', '%(type)s', '%(InstantMessage)s',instance],
-        ['%(object)s', '%(issued)s', literal(type('%(xsdDateTime)s','%(date)s')),instance],
-        ['%(object)s', '%(content)s', literal(lang('Some content here...', en)), instance],
-        ['%(object)s', '%(has_creator)s', '%(node)s', instance],
-        ['%(node)s', '%(type)s', '%(UserAccount)s', instance],
-        ['%(node)s','%(accountName)s', literal(lang('An account name',en)), instance],
-        ['%(object)s', '%(link)s', '%(href)s', instance]
-    """ % { "object" : SIOC+name, "node" : node, "type" : RDF+'type',
-             "content" : NS+'content',
-             "has_creator" : NS+'has_creator', 
-             "UserAccount" : NS+'UserAccount', "link" : NS+'link',
-             "href" : 'http://www.swig.org/2009-03-10.html#' + name,
-             "issued" : PURL+'issued',
-             "InstantMessage" : ST+'InstantMessage',
-             "date" : datetime.datetime.now().isoformat(),
-             "accountName" : FOAF+'accountName',
-             "xsdDateTime" : XSD + 'dateTime'}
+    obj = SIOC+name
+    typ = RDF+'type'
+    content = NS+'content'
+    has_creator = NS+'has_creator'
+    userAccount = NS+'UserAccount'
+    link = NS+'link'
+    href = 'http://www.swig.org/2009-03-10.html#' + name
+    issued = PURL+'issued'
+    instantMessage = ST+'InstantMessage'
+    date = datetime.datetime.now().isoformat()
+    accountName = FOAF+'accountName'
+    xsdDateTime = XSD + 'dateTime'
+    
+    return [[obj, typ, instantMessage,instance],
+            [obj, issued, {'type' : xsdDateTime,
+                           'data' : date}, instance], 
+            [obj, content, {'lang' : 'en',
+                            'data' : 'Some content here...'}, instance],
+            [obj, has_creator, node, instance],
+            [node, typ, userAccount, instance],
+            [node, accountName, {'lang' : 'en',
+                                  'data' : 'An account name'}, instance],
+            [obj, link, href, instance]]
 
 def nMessages(n):
-    triples = "[" + new_instant_message()
-    for i in range(1, n):
-        triples += ", " + new_instant_message()
-    return triples + "]"
+    triples = []
+    for i in range(0, n):
+        triples += new_instant_message()
+    return triples
     
 def SPARQLise(triples):
     Query = """
