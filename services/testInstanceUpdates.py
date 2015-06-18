@@ -100,12 +100,13 @@ def test_stardog_inserts():
     print "Completed in time %s" % (start - end)
     
 def test_dacura_inserts():
-    data = nMessages(10000)
+    data = nMessages(1)
     payload = {'pragma' : json.dumps({'tests' : 'all',
                                       'commit' : 'true'}),
                'update' : json.dumps({'inserts' : data,
                                       'updates' : [],
                                       'deletes' : []})}
+    print json.dumps(data)
     start = time.time()
     r = requests.post(INSTANCE, data=payload)
     end = time.time()
