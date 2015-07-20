@@ -1,9 +1,3 @@
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->get_service_file_url('style.css')?>" />
-   <div class="tool-header">
-   	<span class="tool-title">Seshat Scraper</span>
-	<span class="tool-description">This tool extracts structured data from the Seshat wiki.</span>
-   </div>
-   <div id="scraper-info"></div>
    <div class="scraper-screen" id="scraper-screen-1">
       <div class="tool-buttons">
    		<button class="dacura-button get-ngas" id="get-ngas">1. Choose NGAs to Export &gt;&gt;</button>

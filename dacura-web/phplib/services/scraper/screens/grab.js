@@ -57,7 +57,7 @@ dacura.grabber.insertResultPane = function (){
 
 
 dacura.grabber.grabFacts = function(){
-	var regex = /♠([^♠♥]*)♣([^♠]*)♥/gm;
+	var regex = /♠([^♠♥]*)♣([^♠♥]*)♥/gm;
 	var i = 0;
 	var facts = [];
 	var page = $('#bodyContent').html();

@@ -1,5 +1,5 @@
 
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->get_service_file_url('style.css')?>" />
+
 <script>
 	dacura.scraper.getParseTableHTML = function(variable, factoids){
 		//alert(factoids.length);
@@ -23,86 +23,24 @@
 		return html;
 	};
 </script>
-<div class="tool-header">
-   	<span class="tool-title">Seshat Variable Test Tool</span>
-	<span class="tool-description">This tool allows users to test Seshat variable values.</span>
-   </div>
    <div id="scraper-pane-holder">
 		 <ul id="scraper-pane-list" class="dch">
-		 	<li><a href="#scraper-examples">Examples</a></li>
-		 	<li><a href="#scraper-test">Test Variable</a></li>
-		 	<?php if($dacura_server->userHasRole("admin")) {?><li><a href="#scraper-testpage">Test URL</a></li><?php }?>
+		 	<li><a href="#scraper-test">Test Variable Value</a></li>
+		 	<?php if($dacura_server->userHasRole("admin")) {?><li><a href="#scraper-testpage">Test Page</a></li><?php }?>
 		</ul>
-		<div id="scraper-examples" class="scraper-pane dch pcdatatables">
-			<?php if(isset($params['examples']) && isset($params['examples']['good'])){
-				echo "<h2>Examples of Best Practice Usage</h2>";
-				$i = 0;
-				foreach($params['examples']["good"] as $val => $meta){
-					$i++;
-					echo "<h3>$i. ".$meta["type"]."</h3>";
-					echo "<dl><dt>Example</dt><dd>♠ <span class='formal_variable'>VAR</span> ♣ <span class='variable_value'>$val</span> ♥</dd>";
-					echo "<dt>Meaning</dt><dd>".$meta["interpretation"]."</dd>";
-					echo "<dt>Notes</dt><dd>".$meta["note"]."</dd>";
-					if($meta["result"]["result_code"] == "error" or $meta["result"]["result_code"] == "empty"){
-						echo "<dt>Parser Results</dt>";
-						echo "<dd>".$meta["result"]["result_code"].": ".$meta["result"]["result_message"]."</dd>";
-					}
-					elseif(isset($meta["result"]['datapoints']) && is_array($meta["result"]['datapoints']) && count($meta["result"]['datapoints'] > 0)){
-						echo "<dt>Datapoints (shows how the variable will be flattened into rows in a spreadsheet)</dt>";
-						echo "<dd class='datapoints' id='good_$i'></dd>";
-						echo '<script>$'."('#good_$i').html(dacura.scraper.getParseTableHTML('VAR', ".json_encode($meta["result"]['datapoints'])."));</script>";
-					}
-					echo "</dl>";	
-				}
-			}
-			if(isset($params['examples']['discouraged'])){
-				echo "<H2>Examples of Legal but Discouraged Usage</h2>";
-				foreach($params['examples']["discouraged"] as $val => $meta){
-					$i++;
-					echo "<h3>$i. ".$meta["type"]."</h3>";
-					echo "<dl><dt>Example</dt><dd>♠ <span class='formal_variable'>VAR</span> ♣ <span class='variable_value'>$val</span> ♥</dd>";
-					echo "<dt>Meaning</dt><dd>".$meta["interpretation"]."</dd>";
-					echo "<dt>Notes</dt><dd>".$meta["note"]."</dd>";
-					if($meta["result"]["result_code"] == "error" or $meta["result"]["result_code"] == "empty"){
-						echo "<dt>Parser Results</dt>";
-						echo "<dd>".$meta["result"]["result_code"].": ".$meta["result"]["result_message"]."</dd>";
-					}
-					elseif(isset($meta["result"]['datapoints']) && is_array($meta["result"]['datapoints']) && count($meta["result"]['datapoints'] > 0)){
-						echo "<dt>Datapoints (shows how the variable will be flattened into rows in a spreadsheet)</dt>";
-						echo "<dd class='datapoints' id='discouraged_$i'></dd>";
-						echo '<script>$'."('#discouraged_$i').html(dacura.scraper.getParseTableHTML('VAR', ".json_encode($meta["result"]['datapoints'])."));</script>";
-					}
-					echo "</dl>";	
-				}				
-			}
-			if(isset($params['examples']['warning'])){
-				echo "<H2>Examples of illegal usage that will raise a warning</h2>";
-				foreach($params['examples']["warning"] as $val => $meta){
-					$i++;
-					echo "<h3>$i. ".$meta["type"]."</h3>";
-					echo "<dl><dt>Example</dt><dd>♠ <span class='formal_variable'>VAR</span> ♣ <span class='variable_value'>$val</span> ♥</dd>";
-					echo "<dt>Meaning</dt><dd>".$meta["interpretation"]."</dd>";
-					echo "<dt>Notes</dt><dd>".$meta["note"]."</dd>";
-					echo "<dt>Parser Results</dt>";
-					echo "<dd>".$meta["result"]["result_code"].": ".$meta["result"]["result_message"]."</dd>";
-					if(isset($meta["result"]['datapoints']) && is_array($meta["result"]['datapoints']) && count($meta["result"]['datapoints'] > 0)){
-						echo "<dt>Datapoints (shows how the variable will be flattened into rows in a spreadsheet)</dt>";
-						echo "<dd class='datapoints' id='discouraged_$i'></dd>";
-						echo '<script>$'."('#discouraged_$i').html(dacura.scraper.getParseTableHTML('VAR', ".json_encode($meta["result"]['datapoints'])."));</script>";
-					}
-					echo "</dl>";
-				}
-			}?>
-		</div>
 		<div id="scraper-test" class="scraper-pane dch">
-			<div id="saddmsg"></div>
 			<div class="sholder">
-				<label class="seshatvar">♠ VAR ♣ </label><textarea id="seshatvalue"></textarea><label class="seshatvar"> ♥</label>
+				<p>Enter a seshat value into the box below to see how the Scraper will turn the value into datapoints</p>
+				<table><tr><td>
+				<div id="saddmsg"></div>
+				<textarea id="seshatvalue"></textarea>
+				</td><td align="center" valign="bottom">
+					<a class="button2" href="javascript:dacura.scraper.test()">Analyse</a>
+					<a id="clear" class="dch" style="margin-bottom: 4px" href="javascript:dacura.scraper.cleartest()">Clear</a>
+					
+				</td>
+				</tr></table>
 			</div>	
-			<div class="pcsection pcbuttons">
-				<a class="button2" href="javascript:dacura.scraper.cleartest()">Clear</a>
-				<a class="button2" href="javascript:dacura.scraper.test()">Test Variable</a>
-			</div>
 			<div class="sresults"></div>
 		</div>
 		<?php if($dacura_server->userHasRole("admin")) {?>
@@ -113,6 +51,7 @@
 				</div>	
 				<div class="pcsection pcbuttons">
 					<a class="button2" href="javascript:dacura.scraper.testpage()">Test Page</a>
+					
 				</div>
 				<div class="tpresults"></div>
 			</div>
@@ -120,29 +59,36 @@
 	</div>
 
 <script>
-
 	dacura.scraper.cleartest = function(){
 		$('#scraper-results').remove();
 		$("#saddmsg").html("");
 		$('#seshatvalue').val("");
+		$('#clear').hide();	
 	}		
 			
 	dacura.scraper.test = function(){
 		$('#scraper-results').remove();
+		$('#clear').show();
 		$("#saddmsg").html("");
 		var ajs = dacura.scraper.api.parseValue();
 		ajs.data.data = $('#seshatvalue').val();
 		$.ajax(ajs)
 			.done(function(data, textStatus, jqXHR) {
 				try {
-					var x = JSON.parse(data);
-					var html = "<div id='scraper-results'>";
-					html += "<h3>Results</h3><dl>";
-					html += "<dt>Value</dt><dd>" + x.value + "</dd>";
-					html += "<dt>Result Code</dt><dd>" + x.result_code + "</dd>";
-					html += "<dt>Result Message</dt><dd>" + x.result_message + "</dd>";
+					var x = JSON.parse(data);					
+					var html = "<div id='scraper-results' class='test-results test-results-" + x.result_code + "'>";
+					if(x.result_code == "error"){
+						html += "<h3>Error :<i>" + x.value + "</i></h3>";
+						html += "<p>" + x.result_message + "</p>";
+					}
+					else {
+						html += "<h3>Results for <i>" + x.value + "</i></h3>";
+					}
+					if(x.result_code == "warning"){
+						html += "<p><strong>Warning</strong>: " + x.result_message + "</p>";
+					}
 					if(typeof x.datapoints !== "undefined"){
-						html += "<dt>Datapoints</dt><dd class='datapoints'>" + dacura.scraper.getParseTableHTML('VAR', x.datapoints) + "</dd>";
+						html += dacura.scraper.getParseTableHTML('VAR', x.datapoints);
 					}
 					html += "</dl></div>";
 					$('.sresults').html(html);

@@ -11,5 +11,6 @@ $settings = array(
 			$dacura_settings['path_to_files']."js/jquery.js", 
 			$dacura_settings['path_to_files']."js/jquery-ui.js"	
 	),
+	"dump_format" => "csv",
 	"cache_config" => array( "type" => "time", "value" => 10000)
 );

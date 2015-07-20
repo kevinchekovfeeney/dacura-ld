@@ -6,8 +6,8 @@
 
 <title>Dacura</title>
 <link rel="shortcut icon" href="<?=$service->url("images", "favicon2.ico")?>" />
-<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,600' rel='stylesheet' type='text/css'>
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->settings['files_url']?>css/master.css" />
+<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "opensans.css")?>" />
 <script src="<?=$service->url("js", "jquery-1.9.1.min.js")?>"></script>
 <script src="<?=$service->settings['services_url']?>core/dacura.js"></script>
 <script>

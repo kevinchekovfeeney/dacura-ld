@@ -145,7 +145,6 @@ class DacuraService extends DacuraObject {
 	
 	function renderScreenAsString($screen, $params, $other_service = false){
 		ob_start();
-		/* PERFORM COMLEX QUERY, ECHO RESULTS, ETC. */
 		$this->renderScreen($screen, $params, $other_service);
 		$page = ob_get_contents();
 		ob_end_clean();
@@ -157,6 +156,27 @@ class DacuraService extends DacuraObject {
 		echo "<script>"; 
 		include_once($path);
 		echo "</script>";
+	}
+	
+	function renderToolHeader($option){
+		//options
+		$cls_str = "tool-header";
+		if(isset($option["css_class"]) && strlen(trim($option["css_class"])) > 1){
+			$cls_str .= " ".$option["css_class"];
+		}
+		$title = isset($option['title']) ? $option['title'] : "Dacura Tool";
+		if(isset($option['screen']) && $option['screen'] && $option['screen'] != "main"){
+			$title = "<a href='".$this->get_service_url()."'>".$title."</a> <span class='tool-subscreen'>".ucfirst($option['screen'])."</span>";
+		}
+		$subtitle = isset($option['subtitle']) ? $option['subtitle'] : "Generic Dacura Data Curation Tool";
+		$init_msg = isset($option['msg']) ? $option['msg'] : "";
+		
+		$html = "<div class='$cls_str'><span class='tool-title'>$title</span>";
+		$html .= "<span class='tool-description'>$subtitle</span><span class='tool-close'></span></div><div id='scraper-info'>$init_msg</div>";
+		echo $html;
+	}
+	
+	function renderToolFooter($option){
 	}
 	
 	

@@ -139,12 +139,62 @@ class ScraperDacuraServer extends DacuraServer {
 	}
 	
 	/**
+	 * Produces a monthly series of historical dumps of the data in the wiki
+	 * 
+	 */
+	function getHistory(){
+		$dates_list = array();
+		//$step_size = isset($date_info['step_size']) ? $date_info['step_size'] : "m";
+		//$sd = isset($date_info['start_date']) ? $date_info['start_date'] : false;	
+		//$ed = isset($date_info['end_date']) ? $date_info['end_date'] : strtotimedate();
+		$current_year = date("Y");
+		$current_month = date("m");
+		$dates_list[] = array(2012, 09);
+		$dates_list[] = array(2012, 10);
+		$dates_list[] = array(2012, 11);
+		$dates_list[] = array(2012, 12);
+		for($j = 2013; $j < $current_year; $j++){
+			for($i = 1; $i < 13; $i++){
+				$dates_list[] = array($j, $i);		
+			}
+		}
+		for($k = 1; $k < $current_month + 1; $k++){
+			$dates_list[] = array($current_year, $k);
+		}
+		foreach($dates_list as $i => $one_date){
+			$dates_list[$i][] = $this->getWikiURLforDate($this->settings['scraper']['mainPage'], $one_date[0], $one_date[1]);
+		}
+		return $dates_list;
+	}
+	
+	function getWikiURLforDate($page, $y, $m){
+		if($m < 10) $m = "0".$m;
+		$history_url = $page . "?action=history&offset=".$y.$m."01";
+		curl_setopt($this->ch, CURLOPT_URL, $history_url);
+		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
+		$content = curl_exec($this->ch);
+		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+			return $this->failure_result("Failed to retrieve page $page history for year $y, month $m", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "warning");
+		}
+		//$matches = array();
+		preg_match("/oldid\=\d+/", $content, $matches);
+		if(count($matches) > 0){
+			echo "got a match ";
+			opr($matches);
+			return $page . "?". $matches[0];	
+		}
+		echo $history_url."<hr><p>".$content." bytes returned"."<hr><P>";
+		return false;
+	}
+	
+	/**
 	 * Produces a dump of the NGA / polity sets passed in
 	 * @param $data associative array of NGA name -> polity URL
 	 * @param $suppress_cache - turn off cache for this call
 	 */
-	function getDump($data, $suppress_cache = false){
+	function getDump($data, $suppress_cache = false, $on_date = false){
 		$polities_retrieved = array();
+		$field_sep = ($this->settings['scraper']['dump_format'] == "csv") ? "," : "\t";
 		$summaries = array();
 		$headers = array("NGA", "Polity", "Section", "Subsection", "Variable", "Value From", "Value To",
 				"Date From", "Date To", "Fact Type", "Value Note", "Date Note", "Comment");
@@ -157,8 +207,8 @@ class ScraperDacuraServer extends DacuraServer {
 		$this->fileman->dumpData($error_op, "<table><tr><th>".implode("</th><th>", $error_headers)."</th></tr>");
 		$html_op = $this->fileman->startServiceDump("scraper", "Export", "html", true, true);
 		$this->fileman->dumpData($html_op, "<table><tr><th>".implode("</th><th>", $headers)."</th></tr>");
-		$tsv_op = $this->fileman->startServiceDump("scraper", "Export", "tsv", true, true);
-		$this->fileman->dumpData($tsv_op, implode("\t", $headers)."\n");
+		$tsv_op = $this->fileman->startServiceDump("scraper", "Export", $this->settings['scraper']['dump_format'], true, true);
+		$this->fileman->dumpData($tsv_op, implode($field_sep, $headers)."\n");
 		foreach($data as $nga => $polities){
 			$stats['ngas']++;
 			$summary = array("nga" => $this->formatNGAName($nga), "polities" => count($polities), "failures" => 0, "warnings" => 0,
@@ -205,7 +255,7 @@ class ScraperDacuraServer extends DacuraServer {
 					$rows = $this->factListToRows($this->formatNGAName($nga), $this->formatNGAName($p), $polities_retrieved[$p]);
 					foreach($rows as $row){
 						$this->fileman->dumpData($html_op, "<tr><td>".implode("</td><td>", $row)."</td></tr>");				
-						$this->fileman->dumpData($tsv_op, implode("\t", $row)."\n");			
+						$this->fileman->dumpData($tsv_op, implode($field_sep, $row)."\n");			
 					}
 				}
 			}
@@ -251,6 +301,12 @@ class ScraperDacuraServer extends DacuraServer {
 			switch ($ext) {
 				case "tsv" : 
 					header("Content-type: text/tab-separated-values");
+					header("Content-Disposition: attachment; filename=\"".$path_parts["basename"]."\""); // use 'attachment' to force a file download
+					header("Content-length: $fsize");
+					header("Cache-control: private"); //use this to open files directly
+					break;
+				case "csv" :
+					header("Content-type: text/comma-separated-values");
 					header("Content-Disposition: attachment; filename=\"".$path_parts["basename"]."\""); // use 'attachment' to force a file download
 					header("Content-length: $fsize");
 					header("Cache-control: private"); //use this to open files directly
@@ -447,11 +503,11 @@ class ScraperDacuraServer extends DacuraServer {
 		$fact_list = array( "variables" => array(), "errors" => array(), "warnings" => array(),
 				"title" => "", "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0, "sections" => array());
 		// strip out the non-content to minimise collision risk
-		$content_start_offset = strpos($content, $this->content_start_html);
+		/*$content_start_offset = strpos($content, $this->content_start_html);
 		$content_end_offset = strpos($content, $this->content_end_html);
 		if($content_start_offset && $content_end_offset){
 				$content = substr($content, $content_start_offset , $content_end_offset - $content_start_offset);
-		}
+		}*/
 		// Divide into main sections....
 		$sections = explode("<h2>", $content);
 		$i = 0;
@@ -470,6 +526,7 @@ class ScraperDacuraServer extends DacuraServer {
 					$sec_head_start_pos = strpos($sec_bits[0], ">") + 1;
 					$sec_head_end_pos = strpos(substr($sec_bits[0], 1), "<") + 1;
 					$sec_title = substr($sec_bits[0], $sec_head_start_pos, $sec_head_end_pos - $sec_head_start_pos);
+					$sec_title = str_replace(array(",", "#"), array("", ""), $sec_title );
 					if(!$sec_title) $sec_title = "Unknown";
 					$sec_content = $sec_bits[1];
 					$subsects = explode("<h3>", $sec_content);
@@ -485,6 +542,7 @@ class ScraperDacuraServer extends DacuraServer {
 								$subsec_head_start_pos = strpos($subsec_bits[0], ">") + 1;
 								$subsec_head_end_pos = strpos(substr($subsec_bits[0], 1), "<") + 1;
 								$subsec_title = substr($subsec_bits[0], $subsec_head_start_pos, $subsec_head_end_pos - $subsec_head_start_pos);
+								$subsec_title = str_replace(array(",", "#"), array("", ""), $subsec_title );
 								if(!$subsec_title) $subsec_title = "Unknown";
 								$subsec_content = $subsec_bits[1];
 								$ssfl = $this->parseFactsFromString($subsec_content, $sec_title, $subsec_title);
@@ -536,13 +594,14 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Returns a FactList...
 	 */
 	function parseFactsFromString($str, $section = "", $subsection = ""){
-		$pattern = '/\x{2660}([^\x{2660}\x{2665}]*)\x{2663}([^\x{2660}]*)\x{2665}/Uu';
+		$pattern = '/\x{2660}([^\x{2660}\x{2665}\x{2663}]*)\x{2663}([^\x{2660}\x{2665}]*)\x{2665}/Uu';
 		$matches = array();
 		$factoids = array();
 		$res = array("variables" => array(), "errors" => array(), "warnings" => array(), "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0);
 		if(preg_match_all($pattern, $str, $matches)){
 			for($i = 0; $i< count($matches[0]); $i++){
 				$key = trim($matches[1][$i]);
+				$key = str_replace(array(",", "#"), array("", ""), $key);
 				$val = trim($matches[2][$i]);
 				if(isset($factoids[$key])){
 					$n = 1;
@@ -639,6 +698,8 @@ class ScraperDacuraServer extends DacuraServer {
 	function parseVariableValue($t){
 		$val = strip_tags($t);
 		$val = trim(html_entity_decode($val));
+		//remove both # and , characters
+		$val = str_replace(array(",", "#"), array("", ""), $val);
 		$ret_val = array(
 			"value" => $val,
 			"result_code" => "",
@@ -1221,6 +1282,18 @@ class ScraperDacuraServer extends DacuraServer {
 	 */
 	function factListToRows($nga, $polity, $fl, $include_empties = false){
 		$rows = array();
+		foreach($fl["variables"] as $varname => $varvals){
+			if(is_array($varvals)){
+				foreach($varvals as $val){
+					$rows[] = array($nga, $polity, "", "", $varname, $val['value_from'], $val['value_to'], $val['date_from'], $val['date_to'], $val['fact_type'], $val['value_type'], $val['date_type'], $val['comment']);
+				}
+			}
+			else {//empty
+				if($include_empties){
+					$rows[] = array($nga, $polity, "", "", $varname, "", "", "", "", "empty", "", "", "");
+				}
+			}
+		}
 		if(!isset($fl["sections"]) or count($fl["sections"]) == 0){
 			return $rows;
 		}
@@ -1258,130 +1331,7 @@ class ScraperDacuraServer extends DacuraServer {
 	}	
 
 	
-	function parseCanonicalExamples(){
-		$examples = array();
-		$examples['good'] = array( 
-			"present" => array(
-				"type" => "Simple Value",
-				"interpretation" => "The variable has the value \"present\" throughout the polity's lifetime.",
-				"note" => "MUST not contain the characters \"[\", \"]\", \"{\", \"}\", \";\" or \":\"))"), 
-			"[by soldiers; by state]" => array(
-				"type" => "Uncertain Value", 
-				"interpretation" => "The value of the variable is either \"by soldiers\" or \"by state\", but it is not known which, throughout the polity's lifetime.",
-				"note" => "The values must not contain the dash character \"-\", in addition to the special characters: \"[\", \"]\", \"{\", \"}\", \";\" or \":\")"),
-			"[5,000-15,000]" => array(
-				"type" => "Value Range", 
-				"interpretation" => "The variable has a value between 5,000 and 15,000, but it is not known where exactly on the range it is, and this is the case throughout the polity's lifetime.",
-				"note" => "The values should be numeric as a range is not meaningful otherwise. The values must not contain the dash character \"-\", or other special characters: (\"[\", \"]\", \"{\", \"}\", \";\" or \":\")."),
-			"{sheep; horse; goat}" => array(
-				"type" => "Disputed Value", 
-				"interpretation" => "The value of the variable is disputed. Credible experts disagree as to whether the value is sheep, goat or horse and this is the case throughout the polity's lifetime.",
-				"note" => "The values must not contain the dash character \"-\", or other special characters: (\"[\", \"]\", \"{\", \"}\", \";\" or \":\")."),
-			"5,300,000: 120bce" => array(
-				"type" => "Dated Value",
-				"interpretation" => "The value of the variable is 5,300,000 in the year 120bce",
-				"note" => "No assumptions can be made as to the value of the variable at any other date."),
-			"5,300,000: 120bce-75bce; 6,100,000:75bce-30ce" => array(
-				"type" => "Dated Value List",
-				"interpretation" => "The value of the variable changed over the lifetime of the polity. It was 5,300,000 between 120BCE and 75BCE and 6,100,000 between 75BCE and 30CE",
-				"note" => "Ideally, dated value lists should cover the entire lifespan of the polity."),				
-			"[1,500,000 - 2,000,000]: 100bce" => array(
-				"type" => "Dated Value Range",
-				"interpretation" => "The value of the variable was between 1.5 million and 2 million in the year 100BCE. It is not known where on this range the real value was.",
-				"note" => "This only tells us the value for a single point in time"),
-			"1; 2; john; tree; rhubarb; fruit salad" => array(
-				"type" => "Variable with a list of values",
-				"interpretation" => "The value of the variable is simultaneously 1, 2, john, tree, rhubarb and fruit salad.",
-				"note" => "Semi-colons signify lists of values, all of which hold."),
-			"232: 500bce-90bce; 321: 90BCE-15ce; 324: 15CE-45CE" => array(
-				"type" => "Changing Value over Time",
-				"interpretation" => "The value of the variable was 232 from 500BCE, it changed to 321 in 90BCE, then changed again to 324 in 15CE and remained at that value until 45CE. However the date of the change is disputed - 150BCE and 90BCE are two proposed dates for the change.",
-				"note" => "Ideally, the date ranges should cover the entire polity lifetime."),
-			"absent: 500bce-{150bce;90bce}; present: {150bce;90bce}-1ce" => array(
-				"type" => "Value Change at Disputed Date",
-				"interpretation" => "The value of the variable was \"absent\" from 500BCE, then it changed to \"present\" which it remained at until the year 1CE. However the date of the change is disputed - 150BCE and 90BCE are two proposed dates for the change.",
-				"note" => "All credible proposed dates should be included."),
-			"absent: 450bce-[90bce;1ce]; present: [90bce;1ce]-53ce" => array(
-				"type" => "Value Change at Uncertain Date",
-				"interpretation" => "The value of the variable was \"absent\" from 450BCE, then it changed to \"present\" which it remained at until the year 53CE. However the date of the change is uncertain - 1CE and 90BCE are two possibilities for the change.",
-				"note" => "All credible proposed dates should be included."),
-			"absent: 500bce-150bce; {absent; present}:150bce-90bce; present: 90bce-1ce" => array(
-				"type" => "Value Disputed During Date Range",
-				"interpretation" => "The value of the variable was \"absent\" from 500BCE to 150BCE, from 150BCE to 90BCE, it was either \"absent\" or \"present\", then from 90BCE to ICE it was \"present\"",
-				"note" => "This is a re-stating of the above example, focusing on the disputed value rather than the disputed date.  It is semantically identical."),
-			"present: [1380 CE - 1450 CE; 1430 CE - 1450 CE; 1350 CE - 1450 CE]" => array(
-				"type" => "Period of value unknown",
-				"interpretation" => "The value of the variable was \"present\" for a period which either ran from 1380-1450 CE or from a period from 1430-1450 CE, or from a period from 1350-1450 CE",
-				"note" => "This is semantically different than the disputed change times examples above: we are saying that the value holds for one of these distinct ranges.")
-		);
-		$examples['discouraged'] = array( 
-			"present: 1380-1450 CE" => array(
-				"type" => "Dates without Suffix",
-				"interpretation" => "The value is present from 1380CE to 1450CE.",
-				"note" => "It is always better to add suffixes (bce, ce) to dates in date ranges to remove any chance or mistakes."
-			),
-			"4: 1380-1450 BCE" => array(
-				"type" => "Date Range out of Sequence",
-				"interpretation" => "The value was 4 from 1380CE to 1450CE.",
-				"note" => "Date ranges should always be from earlier date to later date."
-			),
-			"[goat;sheep;pig]: {150bc;90bc}-{1;67ce}" => array(
-				"type" => "Uncertain Value and Date",
-				"interpretation" => "The value of the variable became either \"goat\", \"pig\" or \"sheep\" in either 150BCE or 90BCE, the date being disputed and remained at that value until either 1CE or 67CE, which is also a matter of dispute.",
-				"note" => "You should make either the date or the value uncertain, but not both. It introduces too much uncertainty into the value to be useful."
-			),
-				"goat: [600bce;500bc]-{150bc;90ce;40bc}; [goat;sheep;pig]: {150bc;90bc}-{1;67ce}" => array(
-				"type" => "Overly complex sequence",
-				"interpretation" => "The value of the variable was \"goat\" from a period that started either in 600BCE or 500BCE, and continued until one of 3 disputed dates: 40BCE, 150BCE or 90BCE.
-					Then it changed to either \"goat\", \"pig\" or \"sheep\" in either 150BCE or 90BCE, the date being disputed and remained at that value until either 1CE or 67CE, which is also a matter of dispute.",
-				"note" => "People typically can't follow the logic of such statements and will make mistakes, contradictions, etc once statements become this complex and hedged with uncertainty."
-			),
-			"{[180,000-270,000]; 604,000}: 423 CE"	=> array(
-				"type" => "Value Range within Disputed Value",
-				"interpretation" => "The value of the variable was in 423CE is disputed. One opinion is that it was between 180,000 and 270,000, another is that it was 604,000.",
-				"note" => "Overly complex - hard to reliably turn into datapoints."
-			),
-			"absent: {380-450 CE; 1450 CE; 150-50 CE}" => array(
-				"type" => "Date Ranges mixed with Single Dates",
-				"interpretation" => "The value of the variable was \"absent\" for some period, but the period is disputed between 380CE - 450CE and 50CE - 150CE. Another opinion states that the value was absent in 1450CE.",
-				"note" => "It is ambiguous whether the ranges refer to an uncertain particular date, or to a long-running process. "
-			),
-			"absent: {450 CE; 1450 CE; 150-50 CE}" => array(
-				"type" => "Date Ranges mixed with Single Dates",
-				"interpretation" => "The value of the variable was \"absent\" on a particular date but that date is disputed. It is either 450CE, 1450CE or some date between 50CE and 150CE.",
-				"note" => "If most of the dates in such a list are single dates, ranges are interpreted as constraints on single dates, not date ranges."
-			)		
-		);
-		$examples['warning'] = array(
-			"[absent,present]" => array(
-					"type" => "Uncertain values separated by a comma",
-					"interpretation" => "The value is absent or present, which one is unknown.",
-					"note" => "Lists of values need to be divided by a semi-colon."
-			),				
-			"{absent,present}" => array(
-					"type" => "Disputed values separated by a comma",
-					"interpretation" => "The value is absent or present, which one is disputed.",
-					"note" => "Lists of values need to be divided by a semi-colon."
-			),				
-			"{absent}" => array(
-					"type" => "Single disputed value",
-					"interpretation" => "The value is absent although this is disputed.",
-					"note" => "Disputed values need alternatives."
-			),				
-			"[present]" => array(
-					"type" => "Single uncertain value",
-					"interpretation" => "The value is present, although this is not certain.",
-					"note" => "Uncertain values need alternatives."
-			),				
-		);
-		
-		foreach($examples as $set => $examps){
-			foreach($examps as $val => $meta){
-				$examples[$set][$val]['result'] = $this->parseVariableValue($val);
-			}
-		}
-		return $examples;
-	}
+
 	
 	/*
 	 * Log into the Seshat Wiki....
@@ -1440,7 +1390,8 @@ class ScraperDacuraServer extends DacuraServer {
 	function formatNGAName($url){
 		$bits = explode("/", $url);
 		$x = $bits[count($bits) - 1];
-		return str_replace("_", " ", $x);
+		return str_replace(array("_", ",", "#"), array(" ", "", ""), $x);
+		//return str_replace("_", " ", $x);
 	}
 	
 	function parsePolityName($url){

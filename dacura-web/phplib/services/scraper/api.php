@@ -7,6 +7,7 @@ getRoute()->post('/polities', 'getpolities');
 getRoute()->post('/dump', 'dump');
 getRoute()->get('/view/(.+)', 'viewReport');
 getRoute()->get('/grabscript', 'getGrabScript');
+getRoute()->get('/history', 'getHistory');
 getRoute()->post('/parse', 'parseVariable');
 getRoute()->post('/validate', 'parseVariables');
 getRoute()->post('/parsepage', 'parsePage');
@@ -64,12 +65,36 @@ function getpolities(){
 	}
 }
 
+/*
+ * returns a historical dump of the wiki as it was at a given date
+ */
+function getHistory(){
+	global $dacura_server;
+	set_time_limit(0);
+	$date_info = (isset($_POST['date_info'])) ? json_decode($_POST["date_info"]) : false;
+	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("history")){
+		if($date_info){
+			$dacura_server->getHistory($date_info);
+			$dacura_server->ucontext->logger->setResult(200, "Created Seshat for ". count($data)." NGAs");
+		}
+		else {
+			//$dacura_server->write_http_error(400, "No date information included in call");
+			$dacura_server->write_json_result($dacura_server->getHistory(), "Returned history of wiki");
+		}	
+	}
+	else {
+		$dacura_server->write_comet_error();
+	}
+	
+}
+
+
 function dump(){
 	global $dacura_server;
 	set_time_limit(0);
 	$data = json_decode($_POST["polities"]);
 	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("dump")){
-		$dacura_server->getDump($data);
+		$dacura_server->getDump($data, false);
 		$dacura_server->ucontext->logger->setResult(200, "Created Seshat for ". count($data)." NGAs");
 	}
 	else {

@@ -61,6 +61,12 @@ dacura.scraper.dump = function (args, oncomp, onmessage, onerror){
 	dacura.toolbox.slowAjax(dacura.scraper.apiurl + "/dump", "POST", args, oncomp, onmessage);
 }
 
+dacura.scraper.status = function (args, oncomp, onmessage, onerror){
+	//alert("status");
+	dacura.toolbox.slowAjax(dacura.scraper.apiurl + "/status", "GET", args, oncomp, onmessage);
+}
+
+
 dacura.scraper.api.parseValue = function(data, xhr){
 	if(typeof xhr == "undefined"){
 		xhr = {};
