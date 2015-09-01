@@ -14,8 +14,49 @@ include_once("phplib/db/ConfigDBManager.php");
 class ConfigDacuraServer extends DacuraServer {
 	
 	var $dbclass = "ConfigDBManager";
-		
+	var $context_loaded = false;
+	
+	//to prevent failure on create...
+	function loadContextConfiguration() {
+		$this->context_loaded = parent::loadContextConfiguration();
+		$this->errcode = false;
+		return true;
+	}
+	
+	function isValidCollectionID($id, $title){
+		$nid = filter_var($id, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_LOW);
+		$nid = filter_var($nid, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
+		if($nid != $id){
+			return $this->failure_result("Illegal characters in input", 400);
+		}
+		if(!(ctype_alnum($id) && strlen($id) > 1 && strlen($id) < 40)){
+			return $this->failure_result("Illegal Collection ID, it must be between 2 and 40 alphanumeric characters (no spaces or punctuation).", 400);
+		}
+		if(isServiceName($id, $this->settings)){
+			return $this->failure_result($id . " is the name of a dacura service, it cannot be used as a collection id.", 400);
+		}
+		elseif($this->isDacuraBannedWord($id)){
+			return $this->failure_result("$id is not permitted to be used as a collection id", 400);			
+		}
+		elseif($this->isDacuraBannedPhrase($title)){
+			return $this->failure_result("$title is not permitted to be used as a collection title", 400);				
+		}
+		elseif($this->dbman->hasCollection($id)){
+			return $this->failure_result("$id is already taken. Two dacura datasets cannot share the same ID.", 400);				
+		}
+		return true;
+		//cant be a service name
+		//cant be dacura
+		//cant be all
+	}
+	
+	function isValidDatasetID($id, $title){
+	}
+	
 	function createNewCollection($id, $title){
+		if(!$this->isValidCollectionID($id, $title)){
+			return false;
+		}
 		$obj = $this->getServiceSetting("default_collection_config", "{}");
 		if($this->dbman->createNewCollection($id, $title, $obj)){
 			if($this->createCollectionPaths($id)){
@@ -42,7 +83,6 @@ class ConfigDacuraServer extends DacuraServer {
 			}
 		}
 		return true;
-		
 	}
 	
 	function createNewDataset($cid, $id, $ctit){

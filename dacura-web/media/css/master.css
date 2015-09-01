@@ -49,7 +49,6 @@ ul {
   background: rgb(28, 16, 19); /* The Fallback */
   background: rgba(28, 16, 19, 0.85);
   color: white;
-  z-index: 8;
   font-size: 16px;
   position: fixed;
 }
@@ -273,7 +272,7 @@ div.dacura-button-title{
 #pagecontent {
 	margin: 50px auto 25px auto;
 	padding-top: 50px;
-	width: 800px;
+	width: 1000px;
 	background: rgba(255, 255, 255, .9);
 	border-radius: 3px;
 	padding: 10px;
@@ -281,7 +280,7 @@ div.dacura-button-title{
 
 #pagecontent-nopad {
 	margin: 50px auto 25px auto;
-	width: 800px;
+	width: 1000px;
 	background: rgba(255, 255, 255, .9);
 	border-radius: 3px;
 	padding: 0px;
@@ -307,10 +306,6 @@ div.dacura-button-title{
 
 #pagecontent-container {
 	padding-top: 70px;
-	width: 100%;
-}
-
-#tool-container {
 	width: 100%;
 }
 
@@ -346,7 +341,7 @@ div.dacura-button-title{
 
 
 .pcdatatables {
-	padding: 6px 0 34px 0;
+	padding: 6px 0 16px 0;
 }
 
 .pcbuttons {
@@ -396,7 +391,7 @@ tr.userhover {
 	border: 0;
 }
 
-ul.service-breadcrumbs {margin-left: -35px; margin-top: -12px}
+ul.service-breadcrumbs {margin-left: -27px; margin-top: -10px}
 .service-breadcrumbs { display: block;}  
 .service-breadcrumbs li {  display: inline; }  
 .service-breadcrumbs li.first { margin-left: -10px; padding-left: 0px;}  
@@ -508,18 +503,18 @@ table.dc-wizard td.input-help {
 
 
 .dacura-error {
-	text-align: center;
-	background: rgba(255, 155, 155, .4);
-	border: 1px solid #ddd;
+	background: rgba(255, 155, 155, .2);
+	border: 1px solid #f88;
 	padding: 2px;
 	border-radius: 3px;
 }
 
-.dacura-info{
+.dacura-info {
 	border: 1px solid #ddd;
+	margin: 2px auto;
+	background: white;
 	text-align: center;
-	background: rgba(155, 155, 255, .4);
-	padding: 2px;
+	padding: 6px;
 	border-radius: 3px;
 }
 
@@ -532,7 +527,9 @@ table.dc-wizard td.input-help {
 }
 
 .dacura-success{
-	background: rgba(155, 255, 155, .4);
+	background: rgba(155, 255, 155, .1);
+	border: 1px solid #4a4;
+	border-radius: 3px;
 	padding: 4px 20px;
 }
 
@@ -822,7 +819,6 @@ footer a {
 }
 
 .tab-top-message-holder {
-	min-height: 24px;
 	margin-bottom: 8px;
 	text-align: center;
 }
@@ -831,6 +827,19 @@ footer a {
 	background: rgba(255, 255, 255, .8);
 }
 
+.indeterminate-busy {
+	margin-left: 200px;
+	margin-right: 200px;
+	margin-bottom: 8px;
+}
+
+.dacura-busy-message {
+	padding-top: 20px;
+	padding-bottom: 20px;
+	background: rgba(255, 255, 255, .9);	
+	font-weight: bold;
+	text-align: center;
+}
 
 span.bcstatus{
 	height: 20px;
@@ -843,7 +852,6 @@ span.bcstatus{
 .dacura-busy-small {
 	height: 50px;
 	width: 100%;
-	background: url("../images/ajax-loader.gif") center 8px no-repeat;
 	z-index: 9999999999;
 }
 
@@ -851,12 +859,41 @@ span.bcstatus{
 .tool-header {
 	border-bottom: 1px #888 solid;
 	margin-bottom: 10px;
-	margin-top: -10px;
-	margin-left: -10px;
-	margin-right: -10px;
 	text-align: left;
 	padding: 10px;
 	background-color: #ccc;
+}
+
+.tool-body {
+	padding-bottom: 6px;
+}
+
+.tool-info {
+
+}
+
+#toggle_extra_message {
+	color: blue;
+	display: inline;
+	margin-left: 10px;
+	cursor: pointer;
+	font-size: 0.9em;
+}
+
+div.message-extra {
+	margin: 10px;
+	padding: 4px;
+	background-color: white;
+	border: 1px solid #888;
+}
+
+.tool-info .dacura-user-message-box {
+	padding-top: 10px;
+	padding-bottom: 10px;
+	clear: both;
+	margin-right: 50px;
+	margin-left: 50px;	
+	text-align: center;
 }
 
 .tool-header span.tool-title {
@@ -865,12 +902,26 @@ span.bcstatus{
 	padding-right: 20px; 
 }
 
+.tool-header span.tool-title a {
+	color: #444488;
+	text-decoration: none;
+}
+
+.tool-header span.tool-title a:hover {
+	color:  #2222aa;
+}
+
+.tool-header span.tool-title a::after {
+	content: " /";
+}	
+
 .tool-header span.tool-description {
 	float: right;
 }
 
 .tool-section-header {
 	border-bottom: 1px #888 solid;
+	border-top: 1px #888 solid;
 	margin-bottom: 10px;
 	margin-top: 10px;
 	margin-left: -10px;
@@ -881,10 +932,12 @@ span.bcstatus{
 }
 
 .tool-section-header span.section-title {
-	font-size: 18px; 
+	font-size: 16px; 
 	font-weight: bold;
 	padding-right: 20px; 
 }
+
+
 
 #linked data properties from candidate table html view
 
@@ -926,10 +979,15 @@ table.ld-properties a {
 	text-decoration: italic;
 }
 
-.dacura-literal{
+.dacura-literal {
+	color: #393;
 }
 
-.not-a-url,
+.not-a-url {
+	 font-weight: bold;
+	 color: #e66;
+}
+
 .unknown-namespace {
 	 font-weight: bold;
 	 color: #a88;

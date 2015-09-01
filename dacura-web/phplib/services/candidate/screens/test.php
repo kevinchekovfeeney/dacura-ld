@@ -44,10 +44,13 @@ dacura.candidate.api.update = function (id, data){
 
 </script>
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery.json-editor.css")?>" />
-
+<div style='background-color: white; padding: 20px;'>
+	<?php 
+		$fakets = new FakeTripleStore("C:\\Temp\\fakets.json");
+		echo ($fakets->html());		
+	?>
+</div>
 <script src='<?=$service->url("js", "jquery.json-editor.js")?>'></script>
-<div id='pagecontent-container'>
-	<div id='pagecontent'>
 		<div id="pagecontent-nopadding">
 			<div class="pctitle">Candidate API Service <span id="screen-context"></span></div>
 			<h2 id="whatsinbox"></h2>
@@ -193,6 +196,7 @@ pvco.annotation = {
 
 
 $('document').ready(function(){
+	
 	$('#jsoninput_ta').val(JSON.stringify(sco));
 	JSONEditor.prototype.ADD_IMG = '<?=$service->url("image", "add.png")?>';
     JSONEditor.prototype.DELETE_IMG = '<?=$service->url("image", "delete.png")?>';
@@ -204,7 +208,6 @@ $('document').ready(function(){
 	
 	
 	$("#create-test").button().click(function(){
-		var ajs = dacura.candidate.api.create(sco);
 		ajs.beforeSend = function(){
 			
 		};

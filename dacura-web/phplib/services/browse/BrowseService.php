@@ -20,6 +20,7 @@ class BrowseService extends DacuraService {
 		//parent::handlePageLoad($sc);
 		?>
 		<div id='dashboard-container'>
+		<div id='dashboard-header'></div>
 		<?php $this->renderScreen("menu", $bds->getMenuPanelParams($params))?>
 			<div id='dashboard-content'>
 				<div id='dashboard-tasks'>

@@ -19,38 +19,133 @@ require_once('files/seshat.parser.php');
 class ScraperDacuraServer extends DacuraServer {
 	
 	var $ch; //curl handle
-	var $content_start_html = '<h1><span class="mw-headline"';
-	var	$content_end_html = "<div class=\"printfooter\">";
-	/*
-	 * These are just a note of the variables which have implicit subsections
-	 * 
-	 * var $sectionsWithImplicitSubsections = array(
-			"Polity variables" => array("Scope of the central government", "Taxation", "Type of taxes", "Taxes are imposed on"), 
-			"Agriculture" => array("Shifting cultivation", "Agricultural technology", "Cultivators / Agri-businesses", "Soil preparation", "Carbohydrate source #1", "Carbohydrate source #2"
-	));
-	var $subsectionsWithImplicitSubsections = array(
-			"Specialized Buildings: polity owned" => array("The most impressive/costly building(s)"), 
-			"Information" => array("Measurement System", "Writing System", "Kinds of Written Documents"), 
-			"Other" => array("Money", "Postal System"), 
-			"Military Technologies" => array("Projectiles", "Handheld weapons", "Animals used in warfare", "Armor", "Naval technology", "Fortifications", "Other technologies"), 
-			"Largest scale collective ritual of the official cult" => array("Dysphoric elements", "Euphoric elements", "Cohesion", "Costs of participation"),
-			"Most widespread collective ritual of the official cult" => array("Dysphoric elements", "Euphoric elements", "Cohesion", "Costs of participation"),
-			"Most frequent collective ritual of the official cult" => array("Dysphoric elements", "Euphoric elements", "Cohesion", "Costs of participation"),
-			"Most euphoric collective ritual of the official cult" => array("Dysphoric elements", "Euphoric elements", "Cohesion", "Costs of participation"),
-			"Most dysphoric collective ritual" => array("Dysphoric elements", "Euphoric elements", "Cohesion", "Costs of participation"),
-			"Production" => array("Agriculture intensity", "Food storage"), 
-			"Technology" => array("Metallurgy"),
-			"Specialized buildings that are not polity-owned" => array("The most impressive/costly building(s)"),
-			"Trade" => array("Main imports", "Main exports", "Land transport"),
-			"Structural Inequality" => array("Legal distinctions between"),
-			"Kinship" => array("Marriage customs"),
-			"Punishment" => array("Execution can be imposed by", "Exile can be imposed by", "Corporal punishment can be imposed by", "Ostracism can by imposed by", "Seizure of property can by imposed by", "Supernatural sanctions can be imposed by"),
-			"Other" => array("Consumption")				
-	);*/
+	var $index = array(); //index of the structure and statistics of the wiki
 	
 	/*
 	 * Public Functions
 	 */
+	function __construct($service){
+		parent::__construct($service);
+		$x = $this->fileman->decache("scraper", "index");
+		if($x) {
+			$this->index = $x;
+		}
+		else {
+			$this->index = array();			
+		}
+	}
+	
+	function updateStatus($nga = false){
+		$stats = array( "ngas" => 0, "polities" => 0, "errors" => 0, "warnings" => 0, "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0);
+		if($nga == false or $nga == "false"){
+			$this->write_comet_update("phase", "Rebuilding List of NGAs");
+			$ngas = $this->getNGAList(true);
+			if(!$ngas){
+				$this->write_comet_error("Failed to load list of NGAs from wiki ".$this->errmsg, $this->errcode);
+				return false;
+			}
+			$seen_pols = array();
+			foreach($ngas as $anga){
+				$stats['ngas']++;
+				$this->write_comet_update("phase", "Processing NGA Pages " . $stats['ngas'] . " of " .count($ngas));
+				$pols = $this->getPolities($anga, true);
+				$percent_done = ($stats['ngas'] / count($ngas)) * 100;
+				$this->write_comet_update("progress", $percent_done);
+				if($pols){
+					$nganame = $this->formatNGAName($anga);
+					$this->write_comet_update("success", $nganame . "<span class='seshaturl'>$anga</span>");		
+					foreach($pols as $p){
+						if(!in_array($p, $seen_pols)){
+							$seen_pols[] = $p;
+						}
+					}
+				}
+				else {
+					$this->write_comet_update("error", "Failed to Retrieve Polity List for $anga");
+				}
+			}
+			foreach($seen_pols as $p){
+				$stats['polities']++;
+				$this->write_comet_update("phase", "Processing Polity Page " . $stats['polities'] . " of " .count($seen_pols));
+				//$msg = "<p class='status'>".$stats['polities'] . " of " . count($seen_pols)."</progress>";
+				$facts = $this->getFactsFromURL($p, true);
+				$percent_done = ($stats['polities'] / count($seen_pols)) * 100;
+				$this->write_comet_update("progress", $percent_done);
+				$polname = $this->formatNGAName($p);
+				if($facts){
+					$this->incorporateStats($stats, $facts);					
+					$this->write_comet_update("success", "<p>$polname <span class='seshaturl'>$p</span></p>".$this->statsToString($facts, $stats));
+				}
+				else {
+					$this->write_comet_update("error", "<p>$polname Failed</p>".
+							$this->statsToString($this->getEmptyFactList(), $stats));
+				}
+			}
+		}
+		else {
+			$stats['ngas'] = 1;
+			$pols = $this->getPolities($nga, true);
+			if(!is_array($pols)) {
+				$this->write_comet_error("Failed to Retrieve Polity List for $nga", $this->errcode);	
+				return false;			
+			}
+			else { 
+				foreach($pols as $p){
+					$stats['polities']++;
+					$this->write_comet_update("phase", "Processing Polity Page " . $stats['polities'] . " of " .count($pols));
+					$polname = $this->formatNGAName($p);
+					$facts = $this->getFactsFromURL($p, true);
+					$percent_done = ($stats['polities'] / count($pols)) * 100;
+					$this->write_comet_update("progress", $percent_done);
+					if($facts){
+						$this->incorporateStats($stats, $facts);
+						$this->write_comet_update("success", "<p>$polname <span class='seshaturl'>$p</span></p>".$this->statsToString($facts, $stats));
+					}
+					else {
+						$this->write_comet_update("error", "<p>$polname failed</p>".
+							$this->statsToString($this->getEmptyFactList(), $stats));
+					}
+				}		
+				$this->end_comet_output("success", $this->index);				
+			}
+		}
+		return true;
+	}
+	
+	function getStatus($nga = false){
+		return $this->index;
+	}
+	
+	function saveIndex($updated_page = false){
+		if($updated_page){
+			$this->index['stats'] = array(0, 0, 0, 0, 0);
+			//first update the nga stats.
+			foreach($this->index['polities'] as $p => $val){
+				$stat = $val[1]["stats"];
+				foreach($stat as $i => $v){
+					$this->index["stats"][$i] += $v;
+				}
+			}
+			foreach($this->index['ngas'] as $nga => $ngal){
+				if(in_array($updated_page, $ngal[1])){
+					if(!isset($this->index["ngastats"])){
+						$this->index["ngastats"] = array();
+					}
+					$this->index["ngastats"][$nga] = array(0, 0, 0, 0, 0);
+					foreach($ngal[1] as $pageid){
+						if(isset($this->index['polities'][$pageid])){
+							$prec = $this->index['polities'][$pageid][1];
+							foreach($prec["stats"] as $i => $v){
+								$this->index["ngastats"][$nga][$i] += $v;
+							}
+						}
+					}
+				}
+				
+			}
+		}
+		$this->fileman->cache("scraper", "index", $this->index, $this->settings['scraper']['indexcache_config']);
+	}
 	
 	function seshatInit($action, $object=""){
 		ini_set("memory_limit","512M");
@@ -58,6 +153,18 @@ class ScraperDacuraServer extends DacuraServer {
 		return $this->login();		
 	}
 	
+	function includePageLink($ln){
+		if(strpbrk($ln, "&#")){
+			return false;
+		}
+		$nonpages = array("User", "Special", "Conflicts:", "File:",  "Memento", "Main_Page", "Code_book", 
+				"Macrostate_Inventory", "Productivity_Template", "http", "mediawiki", "Talk");
+		foreach($nonpages as $non){
+			if(strpos($ln, $non) !== false) return false;
+		}
+		return true;
+	}
+		
 	/*
 	 * Fetches the list of NGAs from the Seshat Main page (the World-30 sample table)
 	 * Returns an array of URLs
@@ -89,9 +196,11 @@ class ScraperDacuraServer extends DacuraServer {
 			$ngaURLs[] = $url;
 		}
 		if($this->settings['scraper']['use_cache']){
-			$config = $this->settings['scraper']['cache_config'];
+			$config = $this->settings['scraper']['ngacache_config'];
 			$config["url"] = $this->settings['scraper']['mainPage'];
 			$this->fileman->cache("scraper", $this->settings['scraper']['mainPage'], $ngaURLs, $config);				
+			$this->index['nga_list'] = array(time(), $ngaURLs);
+			$this->saveIndex();
 		}
 		$this->logEvent("debug", 200, "get_ngas returned: ".count($ngaURLs)." from seshat main page");
 		return $ngaURLs;
@@ -119,73 +228,63 @@ class ScraperDacuraServer extends DacuraServer {
 		}
 		$xpath = new DOMXPath($dom);
 		$links = $xpath->query('//a/@href');
+		$polities = array();
 		foreach($links as $link){
 			$x = $link->value;
-			if(strstr($x, "seshat.info:") or $x[0] == ":"){
+			if(strstr($x, "seshat.info:") or 'http://seshat.info'.$x == $pageURL or $x[0] == ":" or !$this->includePageLink($x)){
 				continue;
 			}
 			if(!strstr($x, "seshat.info")){
 				$url = 'http://seshat.info'.$x;
-			}	
-			$polities[] = $url;
+			}
+			if(!in_array($url, $polities)){	
+				$polities[] = $url;
+			}
 		}
 		if($this->settings['scraper']['use_cache']){
 			$config = $this->settings['scraper']['cache_config'];
 			$config["url"] = $pageURL;
 			$this->fileman->cache("scraper", $pageURL, $polities, $config);				
+			if(!isset($this->index['ngas'])){
+				$this->index['ngas'] = array();
+			}
+			$this->index['ngas'][$pageURL] = array(time(), $polities);
+			$this->saveIndex();
 		}
 		$this->logEvent("debug", 200, "get_polities returned: ".count($polities)." from $pageURL");
 		return $polities;
 	}
 	
-	/**
-	 * Produces a monthly series of historical dumps of the data in the wiki
-	 * 
+	/*
+	 * Functions for turning a seshat page into an array of facts...
 	 */
-	function getHistory(){
-		$dates_list = array();
-		//$step_size = isset($date_info['step_size']) ? $date_info['step_size'] : "m";
-		//$sd = isset($date_info['start_date']) ? $date_info['start_date'] : false;	
-		//$ed = isset($date_info['end_date']) ? $date_info['end_date'] : strtotimedate();
-		$current_year = date("Y");
-		$current_month = date("m");
-		$dates_list[] = array(2012, 09);
-		$dates_list[] = array(2012, 10);
-		$dates_list[] = array(2012, 11);
-		$dates_list[] = array(2012, 12);
-		for($j = 2013; $j < $current_year; $j++){
-			for($i = 1; $i < 13; $i++){
-				$dates_list[] = array($j, $i);		
+	function getFactsFromURL($pageURL, $suppress_cache = false, $fetch_remote = true){
+		$facts = false;
+		if($this->settings['scraper']['use_cache'] && !$suppress_cache){
+			$facts = $this->fileman->decache("scraper", $pageURL, $this->ch, !$fetch_remote);
+		}
+		if(!$facts && $fetch_remote){
+			curl_setopt($this->ch, CURLOPT_URL, $pageURL);
+			$content = curl_exec($this->ch);
+			if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+				return $this->failure_result("Failed to retrieve url: $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "info");
+			}
+			$facts = $this->getFactsFromPage($content);
+			if($this->settings['scraper']['use_cache']){
+				$config = $this->settings['scraper']['cache_config'];
+				$config["url"] = $pageURL;
+				$this->fileman->cache("scraper", $pageURL, $facts, $config);
+				if(!isset($this->index['polities'])){
+					$this->index['polities'] = array();
+				}
+				$page_index = array("stats" => array($facts['total_variables']-$facts['empty'], $facts['lines'], $facts['empty'], count($facts['errors']), count($facts['warnings'])));
+				$this->index['polities'][$pageURL] = array(time(), $page_index);
+				$this->saveIndex($pageURL);
 			}
 		}
-		for($k = 1; $k < $current_month + 1; $k++){
-			$dates_list[] = array($current_year, $k);
-		}
-		foreach($dates_list as $i => $one_date){
-			$dates_list[$i][] = $this->getWikiURLforDate($this->settings['scraper']['mainPage'], $one_date[0], $one_date[1]);
-		}
-		return $dates_list;
+		return $facts;
 	}
 	
-	function getWikiURLforDate($page, $y, $m){
-		if($m < 10) $m = "0".$m;
-		$history_url = $page . "?action=history&offset=".$y.$m."01";
-		curl_setopt($this->ch, CURLOPT_URL, $history_url);
-		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
-		$content = curl_exec($this->ch);
-		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-			return $this->failure_result("Failed to retrieve page $page history for year $y, month $m", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "warning");
-		}
-		//$matches = array();
-		preg_match("/oldid\=\d+/", $content, $matches);
-		if(count($matches) > 0){
-			echo "got a match ";
-			opr($matches);
-			return $page . "?". $matches[0];	
-		}
-		echo $history_url."<hr><p>".$content." bytes returned"."<hr><P>";
-		return false;
-	}
 	
 	/**
 	 * Produces a dump of the NGA / polity sets passed in
@@ -336,17 +435,14 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Dump Statistics - showing how many variables have been retrieved
 	 */
 	function statsToString($fact_list, $second_fl = false){
-		$html = "<table class='scraper-report'><tr><th>Vars</th><th>Errors</th><th>Empty</th><th>Data</th></tr>";
-		$html .= "<tr><td>". $fact_list['total_variables']."</td><td>".count($fact_list['errors'])."</td><td>".$fact_list['empty'];
-		$html .= "</td><td>".$fact_list['lines']."</td></tr>";
-		$html .= "</table>";
+		$html = "<table class='scraper-report scraper-update'><tr><td></td><th>Datapoints</th><th>Errors</th><th>Empty</th></tr>";
+		$html .= "<tr><td><td>". $fact_list['lines']."</td><td>".count($fact_list['errors'])."</td><td>".$fact_list['empty'];
+		$html .= "</td></tr>";
 		if($second_fl){
-			$html .= "<h4>totals</h4>";
-			$html .= "<table class='scraper-report'><tr><th>Vars</th><th>Errors</th><th>Empty</th><th>Data</th></tr>";
-			$html .= "<tr><td>". $second_fl['total_variables']."</td><td>".$second_fl['errors']."</td><td>".$second_fl['empty'];
-			$html .= "</td><td>".$second_fl['lines']."</td></tr>";
-			$html .= "</table>";
+			$html .= "<tr><td>Total</td><td>". $second_fl['lines']."</td><td>".$second_fl['errors']."</td><td>".$second_fl['empty'];
+			$html .= "</td></tr>";
 		}
+		$html .= "</table>";
 		return $html;
 	}
 	
@@ -359,149 +455,21 @@ class ScraperDacuraServer extends DacuraServer {
 		$stats['warnings'] += count($nfacts['warnings']);
 	}
 
-	/*
-	 * Functions for turning a seshat page into an array of facts...
-	 */
-	function getFactsFromURL($pageURL, $suppress_cache = false){
-		$content = false;
-		if($this->settings['scraper']['use_cache'] && !$suppress_cache){
-			$content = $this->fileman->decache("scraper", $pageURL, $this->ch);
-		}
-		if(!$content){
-			curl_setopt($this->ch, CURLOPT_URL, $pageURL);
-			$content = curl_exec($this->ch);
-			if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-				return $this->failure_result("Failed to retrieve url: $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "info");
-			}	
-			if($content && $this->settings['scraper']['use_cache']){
-				$config = $this->settings['scraper']['cache_config'];
-				$config["url"] = $pageURL;
-				$this->fileman->cache("scraper", $pageURL, $content, $config);
-			}
-		}
-		$facts = $this->getFactsFromPage($content);
-		return $facts;
+	function getEmptyFactList(){
+		$fact_list = array( "variables" => array(), "errors" => array(), "warnings" => array(),
+				"title" => "", "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0, "sections" => array());
+		return $fact_list;
 	}
 
-
-	/**
-	 *
-	 */
-	function generateSchema(){
-		curl_setopt($this->ch, CURLOPT_URL, $this->settings['scraper']['codeBook']);
-		$content = curl_exec($this->ch);
-		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-			return $this->failure_result("Failed to retrieve url: $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "info");
-		}
-		echo("#Main Variables (polity-based)\n");
-		$bits = explode("Main Variables (polity-based)", $content);
-		$content = $bits[count($bits)-1];//ditch the early bit;
-		$bits = explode("</dl>", $content);
-		array_pop($bits);
-		$content = implode("</dl>", $bits); 
-		$sections = explode("<h2>", $content);
-		foreach($sections as $sect){
-			$properties = array();
-			$sec_bits = explode("</span></h2>", $sect);
-			if(count($sec_bits) == 2){
-				$sec_title = substr($sec_bits[0], strrpos($sec_bits[0], ">")+1);
-				echo("#$sec_title");
-				mb_regex_encoding('UTF-8');
-				$pieces = mb_split('♠', $sec_bits[1]);
-				foreach($pieces as $piece){
-					$sub_pieces = mb_split("♣.*♥", $piece);
-					
-					$property_name = trim(strip_tags($sub_pieces[0]));
-					if($property_name){
-						$property_comment = trim(strip_tags($sub_pieces[1]));
-						$property_nam = str_replace(array("(", ")", "-"), " ", $property_name);
-						$names_pieces = preg_split("/\s+/", $property_nam);
-						//echo count($names_pieces);
-						$pname = "";
-						foreach($names_pieces as $np){
-							$pname .= ucfirst($np);
-						}
-						$domain = $this->mapVariableToDomain($pname);
-						if($domain){
-							$range = $this->mapVariableToRange($pname);
-							$prop_assertions = array();
-							$prop_assertions[] = 'seshat:'.$pname." a ".$range[0].";\n";
-							$prop_assertions[] = "\trdfs:label \"$property_name\";\n"; 
-							$prop_assertions[] = "\trdfs:domain $domain;\n";
-							$prop_assertions[] = "\trdfs:range  $range[1];\n";
-							if($this->allowsMultipleValues($pname) === false){
-								$prop_assertions[] = "\trdfs:subClassOf [ a owl:Restriction ;\n";
-								$prop_assertions[] = "\t\towl:maxCardinality 1 ;\n";
-								$prop_assertions[] = "\t\towl:onProperty sghd:$pname\n";
-								$prop_assertions[] = "\t\t] ;\n";
-							}
-							$prop_assertions[] = "\trdfs:comment \"$property_comment\" .\n\n";
-							opr($prop_assertions);
-							foreach($prop_assertions as $p){
-								//echo $p;
-							}
-						}
-					}
-				}
-				//get rid of all text up to first variable...
-			}		
-		}
-		//rdfs:subClassOf
-		//[ a       owl:Restriction ;
-		//owl:maxCardinality 1 ;
-		//owl:onProperty :hours
-		//] ;
-		
-		//$facts = $this->getFactsFromPage($content);
-		//mb_regex_encoding('UTF-8');
-		//$pieces = mb_split('♠', $content);
-		//get rid of all text up to first variable...
-		//array_shift($pieces);
-		//opr($pieces);
-		return true;
- 
-		//$cfacts = $this->getSchemaFromURL($this->settings['scraper']['codeBook']);
-	
-	}
-	
-	//The following 3 functions are mappings to rdf for each variable
-	
-	function allowsMultipleValues($property_name){
-		$map = array(
-			"AlternativeNames"	
-		);
-		return in_array($property_name, $map);
-	}
-	
-	function mapVariableToDomain($property_name, $context = ""){
-		$map = array(
-			"RA" => false, 
-			"Expert" => false,
-			"Duration" => "seshat:TemporalEntity"
-		);
-		if(isset($map[$property_name])) {
-			return $map[$property_name];
-		}
-		return "seshat:SocialOrganisation";
-	}
-	
-	function mapVariableToRange($property_name){
-		$map = array(
-			"Duration" => array("owl:ObjectProperty", "time:Interval"), 
-			"UTMZone" => array("owl:ObjectProperty", "tzont:TimeZone"),
-			"PeakDate" => array("owl:ObjectProperty", "time:TemporalEntity")
-		);
-		return (isset($map[$property_name])) ? $map[$property_name] : array("owl:DataProperty", "xsd:string");
-	}
-	
 	/*
 	 * Takes a seshat page and extracts all of the facts 
 	 * Takes the URL of the page
 	 * Returns a fact list object (associative array)
 	 */
 	function getFactsFromPage($content){
-		$fact_list = array( "variables" => array(), "errors" => array(), "warnings" => array(),
-				"title" => "", "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0, "sections" => array());
+		$fact_list = $this->getEmptyFactList();
+		//array( "variables" => array(), "errors" => array(), "warnings" => array(),
+		//	"title" => "", "total_variables" => 0, "empty" => 0, "complex" => 0, "lines" => 0, "sections" => array());
 		// strip out the non-content to minimise collision risk
 		/*$content_start_offset = strpos($content, $this->content_start_html);
 		$content_end_offset = strpos($content, $this->content_end_html);
@@ -1383,6 +1351,168 @@ class ScraperDacuraServer extends DacuraServer {
 		$this->timeEvent("Login Successful", "info");				
 		return true;
 	}
+	
+
+	/**
+	 * Produces a monthly series of historical dumps of the data in the wiki
+	 *
+	 */
+	function getHistory(){
+		$dates_list = array();
+		//$step_size = isset($date_info['step_size']) ? $date_info['step_size'] : "m";
+		//$sd = isset($date_info['start_date']) ? $date_info['start_date'] : false;
+		//$ed = isset($date_info['end_date']) ? $date_info['end_date'] : strtotimedate();
+		$current_year = date("Y");
+		$current_month = date("m");
+		$dates_list[] = array(2012, 09);
+		$dates_list[] = array(2012, 10);
+		$dates_list[] = array(2012, 11);
+		$dates_list[] = array(2012, 12);
+		for($j = 2013; $j < $current_year; $j++){
+			for($i = 1; $i < 13; $i++){
+				$dates_list[] = array($j, $i);
+			}
+		}
+		for($k = 1; $k < $current_month + 1; $k++){
+			$dates_list[] = array($current_year, $k);
+		}
+		foreach($dates_list as $i => $one_date){
+			$dates_list[$i][] = $this->getWikiURLforDate($this->settings['scraper']['mainPage'], $one_date[0], $one_date[1]);
+		}
+		return $dates_list;
+	}
+	
+	function getWikiURLforDate($page, $y, $m){
+		if($m < 10) $m = "0".$m;
+		$history_url = $page . "?action=history&offset=".$y.$m."01";
+		curl_setopt($this->ch, CURLOPT_URL, $history_url);
+		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
+		$content = curl_exec($this->ch);
+		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+			return $this->failure_result("Failed to retrieve page $page history for year $y, month $m", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "warning");
+		}
+		//$matches = array();
+		preg_match("/oldid\=\d+/", $content, $matches);
+		if(count($matches) > 0){
+			echo "got a match ";
+			opr($matches);
+			return $page . "?". $matches[0];
+		}
+		echo $history_url."<hr><p>".$content." bytes returned"."<hr><P>";
+		return false;
+	}
+	
+	/**
+	 *
+	 */
+	function generateSchema(){
+		curl_setopt($this->ch, CURLOPT_URL, $this->settings['scraper']['codeBook']);
+		$content = curl_exec($this->ch);
+		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+			return $this->failure_result("Failed to retrieve url: $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "info");
+		}
+		echo("#Main Variables (polity-based)\n");
+		$bits = explode("Main Variables (polity-based)", $content);
+		$content = $bits[count($bits)-1];//ditch the early bit;
+		$bits = explode("</dl>", $content);
+		array_pop($bits);
+		$content = implode("</dl>", $bits);
+		$sections = explode("<h2>", $content);
+		foreach($sections as $sect){
+			$properties = array();
+			$sec_bits = explode("</span></h2>", $sect);
+			if(count($sec_bits) == 2){
+				$sec_title = substr($sec_bits[0], strrpos($sec_bits[0], ">")+1);
+				echo("#$sec_title");
+				mb_regex_encoding('UTF-8');
+				$pieces = mb_split('♠', $sec_bits[1]);
+				foreach($pieces as $piece){
+					$sub_pieces = mb_split("♣.*♥", $piece);
+						
+					$property_name = trim(strip_tags($sub_pieces[0]));
+					if($property_name){
+						$property_comment = trim(strip_tags($sub_pieces[1]));
+						$property_nam = str_replace(array("(", ")", "-"), " ", $property_name);
+						$names_pieces = preg_split("/\s+/", $property_nam);
+						//echo count($names_pieces);
+						$pname = "";
+						foreach($names_pieces as $np){
+							$pname .= ucfirst($np);
+						}
+						$domain = $this->mapVariableToDomain($pname);
+						if($domain){
+							$range = $this->mapVariableToRange($pname);
+							$prop_assertions = array();
+							$prop_assertions[] = 'seshat:'.$pname." a ".$range[0].";\n";
+							$prop_assertions[] = "\trdfs:label \"$property_name\";\n";
+							$prop_assertions[] = "\trdfs:domain $domain;\n";
+							$prop_assertions[] = "\trdfs:range  $range[1];\n";
+							if($this->allowsMultipleValues($pname) === false){
+							$prop_assertions[] = "\trdfs:subClassOf [ a owl:Restriction ;\n";
+									$prop_assertions[] = "\t\towl:maxCardinality 1 ;\n";
+											$prop_assertions[] = "\t\towl:onProperty sghd:$pname\n";
+											$prop_assertions[] = "\t\t] ;\n";
+							}
+							$prop_assertions[] = "\trdfs:comment \"$property_comment\" .\n\n";
+							opr($prop_assertions);
+							foreach($prop_assertions as $p){
+								//echo $p;
+							}
+						}
+					}
+				}
+				//get rid of all text up to first variable...
+			}
+		}
+		//rdfs:subClassOf
+		//[ a       owl:Restriction ;
+		//owl:maxCardinality 1 ;
+		//owl:onProperty :hours
+		//] ;
+	
+		//$facts = $this->getFactsFromPage($content);
+		//mb_regex_encoding('UTF-8');
+		//$pieces = mb_split('♠', $content);
+		//get rid of all text up to first variable...
+		//array_shift($pieces);
+		//opr($pieces);
+		return true;
+	
+		//$cfacts = $this->getSchemaFromURL($this->settings['scraper']['codeBook']);
+	
+	}
+	
+	//The following 3 functions are mappings to rdf for each variable
+	
+	function allowsMultipleValues($property_name){
+		$map = array(
+				"AlternativeNames"
+		);
+		return in_array($property_name, $map);
+	}
+	
+	function mapVariableToDomain($property_name, $context = ""){
+		$map = array(
+				"RA" => false,
+				"Expert" => false,
+				"Duration" => "seshat:TemporalEntity"
+		);
+		if(isset($map[$property_name])) {
+			return $map[$property_name];
+		}
+		return "seshat:SocialOrganisation";
+	}
+	
+	function mapVariableToRange($property_name){
+		$map = array(
+				"Duration" => array("owl:ObjectProperty", "time:Interval"),
+				"UTMZone" => array("owl:ObjectProperty", "tzont:TimeZone"),
+				"PeakDate" => array("owl:ObjectProperty", "time:TemporalEntity")
+		);
+		return (isset($map[$property_name])) ? $map[$property_name] : array("owl:DataProperty", "xsd:string");
+	}
+	
+	
 
 	/*
 	 * Functions for making url names of pages readable

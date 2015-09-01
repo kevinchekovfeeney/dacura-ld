@@ -25,12 +25,13 @@ include_once("phplib/DacuraUser.php");
 session_start();
 
 $servman = new ServiceLoader($dacura_settings);
+
 $service = $servman->loadServiceFromURL($request_log);
 if($service){
 	$dacura_server = $service->loadServer();
 	if(!$dacura_server){
 		$servman->renderErrorPage("error", $service->errcode, $service->errmsg );
-		$request_log->setResult($service->errmsg , "Failed to load Dacura Server " . $dacura_server->errcode ." | " .$dacura_server->errmsg);
+		$request_log->setResult($service->errmsg , "Failed to load Dacura Server ");
 	}
 	elseif($dacura_server->userHasViewPagePermission()){
 		$service->renderFullPage($dacura_server);

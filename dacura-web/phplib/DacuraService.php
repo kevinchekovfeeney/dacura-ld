@@ -40,10 +40,6 @@ class DacuraService extends DacuraObject {
 		$this->settings = $settings;
 	}
 
-	function getIndexPath(){
-		return $this->mydir."index.php";
-	}
-	
 	function getCollectionID(){
 		return $this->collection_id;
 	}
@@ -159,26 +155,33 @@ class DacuraService extends DacuraObject {
 	}
 	
 	function renderToolHeader($option){
-		//options
-		$cls_str = "tool-header";
+		$params = array();
+		$params['title']= isset($option['title']) ? $option['title'] : "Dacura Tool";
+		if(isset($option['subtitle'])){
+			$params['subtitle'] = $option['subtitle'];
+		}
+		if(isset($option['description'])){
+			$params['description'] = $option['description'];
+		}
+		if(isset($option['image'])){
+			$params['image'] = $option['image'];
+		}
 		if(isset($option["css_class"]) && strlen(trim($option["css_class"])) > 1){
-			$cls_str .= " ".$option["css_class"];
+			$params['css_class'] = $option["css_class"];
 		}
-		$title = isset($option['title']) ? $option['title'] : "Dacura Tool";
-		if(isset($option['screen']) && $option['screen'] && $option['screen'] != "main"){
-			$title = "<a href='".$this->get_service_url()."'>".$title."</a> <span class='tool-subscreen'>".ucfirst($option['screen'])."</span>";
+		$params['init-msg'] = isset($option['msg']) ? $option['msg'] : "";
+		$params['close-msg'] = isset($option['close-tool-msg']) ? $option['close-tool-msg'] : "Close the tool and return to the main menu";
+		if(isset($option['breadcrumbs'])){
+			$params['breadcrumbs'] = '<div class="pcbreadcrumbs">'.$this->getBreadCrumbsHTML($option['breadcrumbs'][0], $option['breadcrumbs'][1])."</div>";			
 		}
-		$subtitle = isset($option['subtitle']) ? $option['subtitle'] : "Generic Dacura Data Curation Tool";
-		$init_msg = isset($option['msg']) ? $option['msg'] : "";
-		
-		$html = "<div class='$cls_str'><span class='tool-title'>$title</span>";
-		$html .= "<span class='tool-description'>$subtitle</span><span class='tool-close'></span></div><div id='scraper-info'>$init_msg</div>";
-		echo $html;
+		$service = &$this;
+		global $dacura_server;
+		include_once("phplib/snippets/toolheader.php");
 	}
-	
+			
 	function renderToolFooter($option){
+		include_once("phplib/snippets/toolfooter.php");
 	}
-	
 	
 	function renderFullPageHeader(){
 		$service = &$this;
@@ -194,6 +197,12 @@ class DacuraService extends DacuraObject {
 		$service = &$this;
 		global $dacura_server;
 		include_once("phplib/snippets/footer.php");
+	}
+	
+	function showLDEditor($params){
+		$service = $this;
+		$entity = isset($params['entity']) ? $params['entity'] : "Entity";
+		include_once("phplib/snippets/LDEditor.php");		
 	}
 	
 	function isPublicScreen(){
@@ -219,7 +228,7 @@ class DacuraService extends DacuraObject {
 		$this->handlePageLoad($dacura_server);
 		$this->renderFullPageFooter();	
 	}
-
+	
 	function handlePageLoad($dacura_server){
 		$this->renderScreen($this->screen, $this->args);
 	}
@@ -247,8 +256,20 @@ class DacuraService extends DacuraObject {
 		}
 		else {
 			$api_bit = ($interface == $this->settings['apistr'] ? $this->settings['apistr']."/" : "");
-			$col_bit = ($col_id ? $col_id : $this->collection_id)."/";
-			$ds_bit = ($ds_id ? $ds_id : $this->dataset_id)."/";
+			$col_id = $col_id ? $col_id : $this->collection_id;
+			if($col_id == "all"){
+				$col_bit = "";
+			}
+			else {
+				$col_bit = $col_id ."/";
+			}
+			$ds_id = $ds_id ? $ds_id : $this->dataset_id;
+			if($ds_id == "all"){
+				$ds_bit = "";
+			}
+			else {
+				$ds_bit = $ds_id."/";
+			}
 			return $this->settings['install_url'].$api_bit.$col_bit.$ds_bit.$servicen.$args_ext;
 		}
 	}
@@ -256,9 +277,9 @@ class DacuraService extends DacuraObject {
 	function get_service_breadcrumbs($top_level = "All Collections"){
 		$url = $this->settings['install_url'];
 		$path = array();
-		$path[] = array("url" => $this->settings['install_url']."all/all/".$this->servicename, "title" => $top_level);
+		$path[] = array("url" => $this->settings['install_url'].$this->servicename, "title" => $top_level);
 		if($this->getCollectionID() && $this->getCollectionID() != "all"){
-			$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/all/".$this->servicename, "title" => $this->getCollectionID());
+			$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/".$this->servicename, "title" => $this->getCollectionID());
 			if($this->getDatasetID() && $this->getDatasetID() != "all"){
 				$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/". $this->getDatasetID()."/".$this->servicename, "title" => $this->getDatasetID());
 			}
@@ -266,11 +287,13 @@ class DacuraService extends DacuraObject {
 		return $path;
 	}
 	
-	function getBreadCrumbsHTML($x = "", $append = ""){
+	function getBreadCrumbsHTML($x = array(), $append = array()){
 		$paths = $this->get_service_breadcrumbs();
 		$html = "<ul class='service-breadcrumbs'>";
+		$z = 20;
 		foreach($paths as $i => $path){
-			$n = count($path) - $i;
+			$n = $z--;
+			//$n = count($path) - $i;
 			if($i == 0){
 				$html .= "<li class='first'><a href='".$path['url']."' style='z-index:$n;'><span></span>".$path['title']."</a></li>";
 			}
@@ -278,11 +301,12 @@ class DacuraService extends DacuraObject {
 				$html .= "<li><a href='".$path['url']."' style='z-index:$n;'>".$path['title']."</a></li>";
 			}
 		}
-		if($x){
-			$html .= "<li><a href='' style='z-index:" . ($n+1). ";'>" .$x."</a></li>";				
+		foreach($x as $onex){
+			$n = $z--;
+			$html .= "<li><a href='".$onex[0]."' style='z-index:" . ($z++). ";'>" .$onex[1]."</a></li>";				
 		}
-		if($append){
-			$html .= "<li>$append</li>";
+		foreach($append as $app){
+			$html .= "<li>$app</li>";
 		}
 		$html .= "</ul>";
 		return $html;
@@ -313,7 +337,9 @@ class DacuraService extends DacuraObject {
 		
 	function my_url($interface = "html"){
 		$api_bit = ($interface == $this->settings['apistr'] ? $this->settings['apistr']."/" : "");
-		return $this->settings['install_url'].$api_bit.$this->collection_id."/".$this->dataset_id."/".$this->servicename;
+		$ext = $this->collection_id == "all" ? "" : $this->collection_id."/";
+		$ext .= $this->dataset_id == "all" ? "" : $this->dataset_id."/";
+		return $this->settings['install_url'].$api_bit.$ext.$this->servicename;
 	}
 	
 	//these are all html -> all api access is via services.

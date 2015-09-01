@@ -1,17 +1,276 @@
 <?php
 
-require_once("Candidate.php");
+class EntityUpdate extends DacuraObject{
+	var $id;
+	var $targetid;
+	var $status;
+	var $created;
+	var $modified;
+	var $forward;
+	var $backward;
+	var $from_version;
+	var $to_version = 0;
+	var $meta; //meta data about the update itself
+	var $cwurl;//closed world url of the entity being updated
+	var $nsres;//name space resolver
+	//complex objects - any of them can be calculated from 1.5. (original + delta.forward = changed) (changed + delta.backward = original)
+	var $original; //the original state of the target candidate
+	var $changed;	//the changed state of the target candidate (if the update request was to be accepted)
+	var $delta; // LDDelta object describing changes from old to new
+	
+	function __construct($id = false, &$original = false, $cwurl = false){
+		//parent::__construct($original->id);
+		$this->id = $id;
+		if($original) $this->setOriginal($original);
+		$this->cwurl = $cwurl;
+	}
+	
 
-class CandidateUpdateRequest extends Candidate {
-	var $original; //the current state of the target candidate
-	var $delta;	//the changed state of the target candidate (if the update request is accepted)
-	var $changes; // array describing changes from old to new
 
-	function applyUpdates(){
-		if($this->delta->update($this->contents) && $this->delta->compliant()){
-			return true;
+	//compare two update requests (for analysing updates to updates)
+	
+	function compare($other = false){
+		$results = array("meta" => array(), "add" => array(), "del" => array());
+		if(!$other){
+			$results['meta']['id'] = $this->id;
+			$results['meta']['targetid'] = $this->targetid;
+			$results['meta']['status'] = $this->status;
+			$results['meta']['from_version'] = $this->from_version;
+			$results['meta']['to_version'] = $this->to_version;
+			$results['add']['forward'] = $this->forward;
+			$results['add']['backward'] = $this->backward;
 		}
-		return $this->failure_result($this->delta->errmsg, $this->delta->errcode);			
+		else {
+			if($this->id != $other->id) $results['meta']['id'] = array($this->id, $other->id);
+			if($this->targetid != $other->targetid ) $results['meta']['targetid'] = array($this->targetid, $other->targetid);
+			if($this->status != $other->status) $results['meta']['status'] = array($this->status, $other->status);
+			if($this->from_version != $other->from_version) $results['meta']['from_version'] = array($this->from_version, $other->from_version);
+			if($this->to_version != $other->to_version) $results['meta']['to_version'] = array($this->to_version, $other->to_version);
+			$fdelta = compareLD($this->targetid, $this->forward, $other->forward, $this->cwurl);
+			$bdelta = compareLD($this->targetid, $this->backward, $other->backward, $this->cwurl);
+			$results['add']['forward'] = $fdelta->forward;
+			$results['add']['backward'] = $bdelta->forward;
+			$results['del']['forward'] = $fdelta->backward;
+			$results['del']['backward'] = $bdelta->backward;
+		}
+		return $results;
+	}
+	
+	function deltaAsNGQuads($other, $gname){
+		$added = $this->delta->getNamedGraphInsertQuads($gname);
+		$deleted = $this->delta->getNamedGraphDeleteQuads($gname);
+		$oadded = $other->delta->getNamedGraphInsertQuads($gname);
+		$odeleted = $other->delta->getNamedGraphDeleteQuads($gname);
+		return $this->consolidateTrips($added, $deleted, $oadded, $odeleted);
+	}
+	
+	function consolidateTrips($added, $deleted, $oadded, $odeleted){
+		foreach($added as $i => $trip){
+			foreach($oadded as $j => $otrip){
+				if(compareTrips($trip, $otrip)){
+					unset($added[$i]);
+					unset($oadded[$j]);
+					break;
+				}
+			}
+		}
+		foreach($deleted as $i => $trip){
+			foreach($odeleted as $j => $otrip){
+				if(compareTrips($trip, $otrip)){
+					unset($deleted[$i]);
+					unset($odeleted[$j]);
+					break;
+				}
+			}
+		}
+		$deleted = array_merge(array_values($deleted), array_values($oadded));
+		$added = array_merge(array_values($added), array_values($odeleted));
+		return array("add" => $added, "del" => $deleted);
+	}
+	
+	function deltaAsTriples($other){
+		$added = $this->addedCandidateTriples();
+		$deleted = $this->deletedCandidateTriples();
+		$oadded = $other->addedCandidateTriples();
+		$odeleted = $other->deletedCandidateTriples();
+		return $this->consolidateTrips($added, $deleted, $oadded, $odeleted);
+	}
+	
+	function getMetaUpdates(){
+		$meta = array();
+		if($this->original->id != $this->changed->id) $meta['id'] = array($this->original->id, $this->changed->id);
+		if($this->original->status != $this->changed->status) $meta['status'] = array($this->original->status, $this->changed->status);
+		if($this->original->type != $this->changed->type) $meta['type'] = array($this->original->type, $this->changed->type);
+		if($this->original->cid != $this->changed->cid) $meta['cid'] = array($this->original->cid, $this->changed->cid);
+		if($this->original->did != $this->changed->did) $meta['did'] = array($this->original->did, $this->changed->did);
+		return $meta;
+	}
+	
+	function published(){
+		return $this->get_status() == "accept";
+	}
+	
+	function originalPublished(){
+		if(!$this->original) return false;
+		return $this->original->get_status() == "accept";
+	}
+	
+	function changedPublished(){
+		if(!$this->changed) return false;
+		return $this->changed->get_status() == "accept";
+	}
+	
+	function bothPublished(){
+		return $this->changedPublished() && $this->originalPublished();
+	}
+	
+	function setOriginal(&$original){
+		$this->original = $original;
+		if(!(isset($this->targetid) and $this->targetid)){
+			$this->targetid = $original->id;
+		}
+		if(!(isset($this->cwurl) and $this->cwurl)){
+			$this->cwurl = $original->cwurl;
+		}
+		if(!(isset($this->nsres) and $this->nsres)){
+			$this->nsres = $original->nsres;
+		}
+		$this->from_version = $this->original->version();
+	}
+	
+	//whether the forward and backward fields of the object have been loaded
+	function FBLoaded(){
+		return isset($this->forward) && is_array($this->forward) && isset($this->backward) && is_array($this->backward);
+	}
+	
+	function FBChanges(){
+		return $this->FBLoaded() && (count($this->forward) > 0 && count($this->backward) > 0);
+	}
+	
+	
+	function initFromOriginal(){
+		$this->created = time();
+		$this->modified = time();
+		$this->from_version = $this->original->version();
+	}
+	
+	/*
+	 * Called by the state management system when update records are pulled from the DB
+	 */
+	function calculate($stored = false, $load_all = true, $validate_delta = true){
+		$this->expandNS();
+		if($stored){
+			$this->changed = $stored;
+			return (!$load_all or $this->calculateDelta($validate_delta));
+		}
+		return (!$load_all or $this->calculateChanged(array("force_inserts" => true, "calculate_delta" => true)));
+	}
+	
+	/*
+	 * Checks for illegal structures in the update command
+	 */
+	function validateCommand($obj, $in_embedded = false){
+		foreach($obj as $p => $v){
+			$pv = new LDPropertyValue($v, $this->cwurl);
+			if($pv->illegal()) return $this->failure_result("Update failed validation: ".$pv->errmsg, $pv->errcode);
+			if($pv->embeddedlist()){
+				$cwlinks = $pv->getupdates();
+				if(count($cwlinks) > 0 && $in_embedded){
+					return $this->failure_result("New embedded objects cannot have properties that update anything but themselves: $k "." closed world links ".$cwlinks[0], 400);
+				}
+				foreach($v as $id => $emb){
+					if(!$this->validateCommand($emb, $in_embedded)){
+						return false;
+					}
+				}
+			}
+			elseif($pv->embedded()){
+				if(count($v) == 1 && isset($v['@id'])){
+					return $this->failure_result("Embedded objects cannot have @id as their only property ($p).", 400);
+				}
+				if(!$this->validateCommand($v, true)){
+					return false;
+				}
+			}
+			elseif($pv->objectlist()){
+				foreach($v as $emb){
+					if(count($emb) == 1 && isset($emb['@id'])){
+						return $this->failure_result("Embedded objects cannot have @id as their only property ($p).", 400);
+					}
+					if(!$this->validateCommand($emb, true)){
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+	
+
+	function calculateChanged($opts = array()){
+		//options
+		$backward = (isset($opts['direction']) && $opts['direction'] == "backward") ? true : false;
+		$demand_id_allowed = isset($opts['demand_id_allowed']) && $opts['demand_id_allowed'];
+		$force_inserts = isset($opts['force_inserts']) && $opts['force_inserts'];
+		$calc_delta = isset($opts['calculate_delta']) && $opts['calculate_delta'];
+		$val_delta = isset($opts['validate_delta']) && $opts['validate_delta'];
+	
+		$this->changed = clone $this->original;
+		$this->changed->version = $this->to_version ? $this->to_version : 1 + $this->changed->latest_version;
+		if($this->changed->version > $this->changed->latest_version){
+			$this->changed->latest_version = $this->changed->version;
+		}	
+		$contents = ($backward) ? $this->backward : $this->forward;
+		if(!$this->changed->update($contents, $force_inserts, $demand_id_allowed) && $this->changed->compliant()){
+			return $this->failure_result($this->changed->errmsg, $this->changed->errcode);
+		}
+		$this->changed->readStateFromMeta();
+		if($calc_delta){
+			return $this->calculateDelta($val_delta);
+		}
+		return true;
+	}
+	
+	function calculateDelta($validate = false){
+		$this->delta = $this->original->compare($this->changed);
+		if($validate && $this->FBLoaded()){
+			$fdelta = compareLD($this->targetid, $this->delta->forward, $this->forward, $this->cwurl);
+			if($fdelta->containsChanges()){
+				return $this->failure_result("Update $this->id to $this->targetid: Mismatch between calculated changes and stored forward transition.", 400);
+			}
+			$bdelta = compareLD($this->targetid, $this->delta->backward, $this->backward, $this->cwurl);
+			if($bdelta->containsChanges()){
+				return $this->failure_result("Update $this->id to $this->targetid: Mismatch between calculated changes and stored backward transitions", 400);
+			}
+		}
+		$this->forward = $this->delta->forward;
+		$this->backward = $this->delta->backward;
+		return true;
+	}
+	
+	function compressNS(){
+		compressNamespaces($this->forward, $this->nsres, $this->cwurl);
+		compressNamespaces($this->backward, $this->nsres, $this->cwurl);
+		if($this->delta){
+			$this->delta->compressNS($this->nsres);
+		}
+		$this->original && $this->original->compressNS();
+		$this->changed && $this->changed->compressNS();
+	}
+	
+	function expandNS(){
+		expandNamespaces($this->forward, $this->nsres, $this->cwurl);
+		expandNamespaces($this->backward, $this->nsres, $this->cwurl);
+		if($this->delta){
+			$this->delta->expandNS($this->nsres);
+		}
+		$this->original && $this->original->expandNS();
+		$this->changed && $this->changed->expandNS();
+	}
+	
+
+	function get_status(){
+		return $this->status;
 	}
 	
 	/**
@@ -20,81 +279,519 @@ class CandidateUpdateRequest extends Candidate {
 	 * @param string $odid - candidate dataset id
 	 * @return boolean
 	 */
-	function contextEncompasses($ocid, $odid){
-		if($this->cid == "all" or ($this->did == "all" && $ocid != "all" && $ocid == $this->cid) 
-				or ($this->cid == $ocid) && $this->did == $odid){
+	function isLegalContext($cid, $did){
+		if($cid == "all" or ($did == "all" && $this->original->cid != "all" && $this->original->cid == $cid)
+				or ($cid == $this->original->cid) && $did == $this->original->did){
 			return true;
 		}
 		return false;
 	}
 	
-	function checkMissingLinks(){
-		//check the internal consistency of the delta?
-		$new_missing_links = $this->findInternalMissingLinks($this->delta->contents, array_keys($this->delta->index), $this->orig->id);
-		$old_missing_links = $this->findInternalMissingLinks($this->orig->contents, array_keys($this->orig->index), $this->orig->id);
-		foreach($new_missing_links as $i => $nml){
-			foreach($old_missing_links as $j => $oml){
-				if($oml[0] == $nml[0] && $oml[1] == $nml[1] && $oml[2] == $nml[2]){
-					unset($new_missing_links[$i]);
-					break;
+	function getChangeViewHTML(){
+		return $this->showChanges($this->changed->ldprops, $this->backward);
+	}
+	
+	function showChanges($props, $dprops){
+		$cprops = array();
+		foreach($props as $prop => $v){
+			$pv = new LDPropertyValue($v, $this->cwurl);
+			if($pv->illegal()){
+				return $this->failure_result($pv->errmsg, $pv->errcode);
+			}
+			if(!isset($dprops[$prop])){
+				$xprop = $this->applyLinkHTML($prop, "unchanged", true);
+				$cprops[$xprop] = $this->getUnchangedJSONHTML($v, $pv);
+				//ignore.
+			}
+			else {
+				$nv = $dprops[$prop];
+				$dpv = new LDPropertyValue($nv, $this->cwurl);
+				if($dpv->isempty()){
+					$xprop = $this->applyLinkHTML($prop, "added", true);
+					$cprops[$xprop] = $this->getAddedJSONHTML($v, $pv);
+				}
+				if(!$pv->sameLDType($dpv)){
+					$xprop = $this->applyLinkHTML($prop, "structural", true);
+					$cprops[$xprop] = $this->getAddedTypeJSONHTML($v, $pv);
+					$cprops[$xprop] = array_merge($cprops[$xprop], $this->getDeletedTypeJSONHTML($nv, $dpv));
+				}
+				else {
+					switch($pv->ldtype(true)){
+						case 'scalar':
+							if($v != $nv){
+								$xprop = $this->applyLinkHTML($prop, "updated", true);
+								$cprops[$xprop] = $this->getValueChangeHTML($v, $nv);
+							}
+							else {
+								$xprop = $this->applyLinkHTML($prop, "unchanged", true);
+								$cprops[$xprop] = $this->applyLiteralHTML($v, "unchanged");
+							}
+							break;
+						case 'valuelist':
+							$changed = false;
+							$entries = array();
+							foreach($v as $i => $val){
+								if(in_array($val, $nv)){
+									$entries[] = $this->applyLiteralHTML($val, "unchanged");
+								}
+								else {
+									$changed = true;
+									$entries[] = $this->applyLiteralHTML($val, "added");
+								}
+							}
+							foreach($nv as $j => $val2){
+								if(!in_array($val2, $v)){
+									$changed = true;
+									$entries[] = $this->applyLiteralHTML($val2, "deleted");
+								}
+							}
+							if($changed){
+								$xprop = $this->applyLinkHTML($prop, "changed", true);
+							}
+							else {
+								$xprop = $this->applyLinkHTML($prop, "unchanged", true);
+							}
+							$cprops[$xprop] = $entries;
+							break;
+						case 'embeddedobjectlist':
+							$xprop = $this->applyLinkHTML($prop, "unchanged", true);
+							$cprops[$xprop] = array();
+							foreach($v as $id => $obj){
+								if(!isset($nv[$id])){
+									$tprop = $this->applyLinkHTML($id, "unchanged");
+									$cprops[$xprop][$tprop] = $this->getUnchangedJSONHTML($v, $pv);
+								}
+								else {
+									$tprop = $this->applyLinkHTML($id, "unchanged");
+									$cprops[$xprop][$tprop]= $this->showChanges($obj, $nv[$id]);
+								}
+							}
+							foreach($nv as $nid => $nobj){
+								if(!isset($v[$nid])){
+									$tprop = $this->applyLinkHTML($nid, "deleted");
+									$cprops[$xprop][$tprop] = $this->getDeletedJSONHTML($v, $pv);
+								}
+							}
+							break;
+					}
 				}
 			}
 		}
-		return $new_missing_links;
+		foreach($dprops as $dprop => $dv){
+			$dpv = new LDPropertyValue($dv, $this->cwurl);
+			if(!isset($props[$dprop])){
+				$xprop = $this->applyLinkHTML($dprop, "deleted");
+				$cprops[$xprop] = $this->getDeletedJSONHTML($v, $pv);
+			}
+		}
+		return $cprops;
 	}
 	
-	function setOriginal($thing){
-		$this->original = $thing;
-		$this->delta = clone $this->original;
-		$this->delta->version++;
-		$this->delta->buildIndex();
+	function getValueChangeHTML($v, $nv){
+		return array($this->applyLiteralHTML($v, "updated added"), $this->applyLiteralHTML($nv, "updated deleted"));
 	}
 	
-	function loadFromAPI($obj){
-		$this->contents = $obj;
+	function getDeletedTypeJSONHTML($v, $pv){
+		return $this->getJSONHTML($v, "deleted structural", $pv);
 	}
 	
+	function getAddedTypeJSONHTML($v, $pv){
+		return $this->getJSONHTML($v, "added structural", $pv);
+	}
+	
+	function getAddedJSONHTML($v, $pv){
+		return $this->getJSONHTML($v, "added", $pv);
+	}
+	
+	function getDeletedJSONHTML($v, $pv){
+		return $this->getJSONHTML($v, "deleted", $pv);
+	}
+	
+	function getUnchangedJSONHTML($v, $pv){
+		return $this->getJSONHTML($v, "unchanged", $pv);
+	}
+	
+	function getJSONHTML($v, $t, $pv){
+		$nv = array();
+		if($pv->literal() or $pv->objectliteral()){
+			$nv = $this->applyLiteralHTML($v, $t);
+		}
+		elseif($pv->link()){
+			$nv = $this->applyLinkHTML($v, $t);
+		}
+		elseif($pv->objectliterallist()){
+			$nv = array();
+			foreach($v as $val){
+				$nv[] = $this->applyLiteralHTML($val, $t);
+			}
+		}
+		elseif($pv->valuelist()){
+			$nv = array();
+			foreach($v as $val){
+				if(isURL($val) || isNamespacedURL($val)){
+					$nv[] = $this->applyLinkHTML($val, $t);
+				}
+				else {
+					$nv[] = $this->applyLiteralHTML($val, $t);
+				}
+			}
+		}
+		elseif($pv->embeddedlist()){
+			$nv = array();
+			foreach($v as $id => $obj){
+				$nid = $this->applyLinkHTML($id, $t);
+				$nv[$nid] = array();
+				foreach($obj as $p2 => $val2){
+					$pv2 = new LDPropertyValue($val2, $this->cwurl);
+					$np2 = $this->applyLinkHTML($p2, $t, true);
+					$nv[$nid][$np2] = $this->getJSONHTML($val2, $t, $pv2);
+				}
+			}
+		}
+		return $nv;
+	}
+	
+	function applyLinkHTML($ln, $t, $is_prop = false){
+		if($is_prop){
+			$cls = "dacura-property $t";
+		}
+		else {
+			$cls = "dacura-property-value $t";
+		}
+		if(isURL($ln)){
+			if($this->original->isDocumentLocalLink($ln)){
+				$cls .= " document_local_link";
+				$lh = "<a class='$cls' href='$ln".$vstr."'>$ln</a>";
+			}
+			else {
+				$lh = "<a class='$cls' href='$ln'>$ln</a>";
+			}
+		}
+		elseif(isNamespacedURL($ln)){
+			if($this->original->isDocumentLocalLink($ln)){
+				$cls .= " document_local_link";
+				$expanded = $this->nsres->expand($ln);
+				if(!$expanded){
+					$lh = "<span class='$cls unknown-namespace' title='warning: unknown namespace'>$ln</span>";
+				}
+				else {
+					$lh = "<a class='$cls' href='$expanded".$vstr."'>$ln</a>";
+				}
+			}
+			else {
+				$expanded = $this->nsres->expand($ln);
+				if(!$expanded){
+					$lh = "<span class='$cls unknown-namespace'>$ln</span>";
+				}
+				else {
+					$lh = "<a class='$cls' href='$expanded'>$ln</a>";
+				}
+			}
+		}
+		else {
+			$lh = "<span class='$cls not-a-url'>$ln</span>";
+		}
+		return $lh;
+	}
+	
+	function applyLiteralHTML($ln, $tp){
+		return "<span class='dacura-property-value $tp dacura-literal'>$ln</span>";
+	}
 	
 
-	function analyse(){
-		if($this->original->compare($this->delta)){
-			$this->changes = $this->original->changes;
-			return true;
+	function deletedCandidateTriples(){
+		$ndelta = compareLD($this->targetid, $this->original->ldprops, $this->changed->ldprops, $this->cwurl);
+		return $ndelta->candidateDeletes(array($this->changed, "jazzUpTriples"));
+	}
+	
+	function addedCandidateTriples(){
+		$ndelta = compareLD($this->targetid, $this->original->ldprops, $this->changed->ldprops, $this->cwurl);
+		return $ndelta->candidateInserts(array($this->changed, "jazzUpTriples"));
+	}
+	
+	function sameAs($other){
+		if($this->from_version != $other->from_version){
+			return false;
 		}
-		return $this->failure_result($this->original->errmsg, $this->original->errcode);
-		//return $this->failure_result("")
-		//return false;
-		//if(!$this->changes){
-		//}
-		//return true;
-		/*$changes = array();
-		if(parent::analyseUpdate($this->id, $this->original->contents, $this->delta->contents, $changes)){
-			$changes["broken_links"] = $this->checkMissingLinks();
-			return $changes;
+		if($this->status != $other->status){
+			return false;
 		}
-		return false;*/
+		return json_encode($this->forward) == json_encode($other->forward);
+	}
+	
+	function nodelta(){
+		return !$this->delta or !$this->delta->containsChanges();
 	}
 	
 	/*
 	 * DB serialisation
 	 */
 	function from_version(){
-		return $this->original->version();
+		return $this->from_version;
 	}
 	
 	function to_version(){
-		return $this->delta->version();	
+		return $this->to_version;
 	}
 	
 	function get_forward_json(){
-		return json_encode($this->changes['forward']);
+		$cmd = $this->forward ? $this->forward : $this->delta->forward;
+		$x = json_encode($cmd);
+		return ($x) ? $x : "{}";
 	}
 	
 	function get_backward_json(){
-		return json_encode($this->changes['back']);
+		$cmd = $this->backward ? $this->backward : $this->delta->backward;
+		$x = json_encode($cmd);
+		return ($x) ? $x : "{}";
 	}
 	
-	function schema_version(){
-		return $this->original->get_class_version();
+	function get_meta_json(){
+		return $this->meta ? json_encode($this->meta): "{}";
 	}
+	
+	function reportString(){
+		return $this->delta ? $this->delta->reportString() : "No delta calculated - nothing to report";
+	}
+	
+	function set_status($v, $is_latest = false){
+		$this->status = $v;
+	}
+	
+	function showUpdateResult($format, $flags, $v, $dacura_server) {
+		if($dacura_server->isNativeFormat($format)){
+			if(in_array("ns", $flags)){
+				$this->compressNS(true);
+			}
+			if($format == "html"){
+				$this->displayHTML($flags, $v, $dacura_server);
+			}
+			elseif($format == "triples"){
+				$this->displayTriples($flags, $v, $dacura_server);
+			}
+			elseif($format == "quads"){
+				$this->displayQuads($flags, $v, $dacura_server);
+			}
+			else{
+				$this->displayJSON($flags, $v, $dacura_server);
+			}
+		}
+		else {
+			$this->displayExport($format, $flags, $v, $dacura_server);
+		}
+		return $this->getDisplayFormat();		
+	}
+	
+	function displayExport($format, $flags, $v, $srvr){
+		$vstr = (($v) ? "?version=".$v : "")."&format=".$format."&display=".implode("_", $flags);
+		$this->changed->displayExport($format, $flags, $vstr, $srvr);
+		$this->original->displayExport($format, $flags, $vstr, $srvr);
+		$temp = new LDDocument($this->id);
+		$temp->load($this->forward);
+		$exported = $temp->export($format, $this->nsres);
+		if($exported){
+			if($format != "svg" && $format != "dot" && $format != "png" && $format != "gif"){
+				$this->display = htmlspecialchars($exported);
+			}
+			else {
+				if($format == "png" or $format == "gif"){
+					$this->display = '<img src="data:image/png;base64,'.base64_encode ( $exported).'"/>';
+				}
+				else {
+					$this->display = $exported;
+				}
+			}
+		}
+		else {
+			$this->display = $this->getChangeViewHTML();		
+		}
+	}
+	
+	function displayJSON($flags, $v, $srvr){
+		$vstr = (($v) ? "?version=".$v : "")."&display=".implode("_", $flags);
+		$this->changed->display = $this->changed->ldprops;
+		$this->original->display = $this->original->ldprops;
+		$this->display = $this->forward;
+	}
+	
+	function displayHTML($flags, $v, $srvr){
+		$vstr = (($v) ? "?version=".$v : "")."&format=html&display=".implode("_", $flags);
+		$this->changed->displayHTML($flags, $vstr, $srvr);
+		$this->original->displayHTML($flags, $vstr, $srvr);
+		$this->display = $this->getChangeViewHTML();
+	}
+	
+	function displayTriples($flags, $v, $srvr){
+		$vstr = (($v) ? "?version=".$v : "")."&format=triples&display=".implode("_", $flags);
+		$this->changed->displayTriples($flags, $vstr, $srvr);
+		$this->original->displayTriples($flags, $vstr, $srvr);
+		$this->display = $this->deltaAsTriples($orig_upd);	
+	}
+
+	function displayQuads($flags, $vstr, $srvr){
+		$vstr = (($v) ? "?version=".$v : "")."&format=quads&display=".implode("_", $flags);
+		$this->changed->displayQuads($flags, $vstr, $srvr);
+		$this->original->displayQuads($flags, $vstr, $srvr);
+		$this->display = $this->deltaAsTriples();
+	}
+
+	function getDisplayFormat(){
+		$result = $this->changed;
+		$result->original = $this->original;
+		$delta = $this->delta->getDisplayFormat();
+		$delta->status = $this->status;
+		$delta->created = $this->created;
+		$delta->modified = $this->modified;
+		$delta->forward = $this->forward;
+		$delta->backward = $this->backward;
+		$delta->from_version = $this->from_version;
+		$delta->to_version = $this->to_version;
+		$delta->ldprops = $this->forward;
+		$result->delta = $delta;
+		return $result;
+	}
+	
+	/*
+	 * Called when a candidate update request is sent to the API
+	 * $obj is a LD candidate structure
+	 */
+	function loadFromAPI($obj){
+		$this->initFromOriginal();
+		$origmeta = &$this->original->getMeta();
+		if(!$this->validateCommand($obj)) return false;
+		$this->forward = $obj;
+		$this->expandNS();
+		//candidate and meta are unique properties per structure, so we allow use of them with and without the ld id...
+		//if they are passed as anonymous objects, we expand the structure and give them a blank node id.
+		$meta_id = $this->original->getMetaFragID();
+		if($origmeta && isset($this->forward['meta']) && !isset($this->forward['meta'][$meta_id])){
+			$this->forward['meta'] = array($meta_id => $this->forward['meta']);
+		}
+		elseif($origmeta === false && isset($this->forward['meta']) && count($this->forward['meta']) > 0){
+			$this->forward['meta'] = array("_:meta" => $this->forward['meta']);
+		}
+		return true;
+	}
+}
+
+
+class OntologyUpdateRequest extends EntityUpdate {
+
+	function loadFromAPI($obj){
+		$origmeta = &$this->original->getMeta();
+		if(!$this->validateCommand($obj)) return false;
+		$this->forward = $obj;
+		$this->expandNS();
+		return true;
+	}	
+	
+	function makeMetaChanges($stuff){
+		$changes = array();
+		if(isset($stuff['url']) && $stuff['url'] != $this->original->url){
+			$changes['url'] = array($this->original->url => $stuff['url']);
+			$this->changed->url = $stuff['url']; 
+		} 
+		if(isset($stuff['title']) && $stuff['title'] != $this->original->title){
+			$changes['title'] = array($this->original->title => $stuff['title']);
+			$this->changed->title = $stuff['title']; 
+		} 
+		if(isset($stuff['description']) && $stuff['description'] != $this->original->description){
+			$changes['description'] = array($this->original->description => $stuff['description']);
+			$this->changed->description = $stuff['description']; 
+		} 		
+		if(isset($stuff['real_version']) && $stuff['real_version'] != $this->original->real_version){
+			$changes['real_version'] = array($this->original->real_version => $stuff['real_version']);
+			$this->changed->real_version = $stuff['real_version']; 
+		}
+		if(isset($stuff['status']) && $stuff['status'] != $this->original->status){
+			$changes['status'] = array($this->original->status => $stuff['status']);
+			$this->changed->status = $stuff['status']; 
+		}
+		$this->changed->version++;
+		$this->changed->latest_version = $this->changed->version;
+		//opr($changes);
+		return $changes;
+	}
+	
+	function getLDForm(){
+		return $this->changed->store(true);
+	}
+}
+
+class GraphUpdateRequest extends EntityUpdate {
+
+}
+
+class SchemaUpdateRequest extends EntityUpdate {
+	
+
+}
+
+class CandidateUpdateRequest extends EntityUpdate {
+
+	/*
+	 * Called when a candidate update request is sent to the API
+	 * $obj is a LD candidate structure
+	 */
+	function loadFromAPI($obj){
+		if(!parent::loadFromAPI($obj)){
+			return false;
+		}
+		$props = array();
+		foreach($this->original->dacura_props as $p){
+			if(isset($obj[$p])){
+				$props[$p] = $obj[$p];
+			}
+		}
+		$this->forward = $props;
+		$this->expandNS();
+		$cand_id = $this->original->getCandidateFragID();
+		if(isset($this->forward['candidate']) && !isset($this->forward['candidate'][$cand_id])){
+			if(is_array($this->forward['candidate']) && count($this->forward['candidate']) > 0){
+				if($origcand){
+					$this->forward['candidate'] = array($cand_id => $this->forward['candidate']);
+				}
+				else {
+					$this->forward['candidate'] = array("_:candidate" => $this->forward['candidate']);						
+				}
+			}
+		}
+		return true;
+	}
+
+	function schema_version(){
+		return ($this->changed)? $this->changed->get_class_version() : $this->original->get_class_version();
+	}
+	
+	function prepareRestore($dacura_server, $version){
+		$changed = $dacura_server->getCandidate($this->targetid, false, $version);
+		if(!$changed){
+			return $this->failure_result($dacura_server->errmsg, $dacura_server->errcode);
+		}
+		$this->changed = $changed;
+		$this->changed->version = $this->to_version ? $this->to_version : 1 + $this->changed->latest_version;
+		if($this->changed->version > $this->changed->latest_version){
+			$this->changed->latest_version = $this->changed->version;
+		}
+		$this->calculateDelta(true);
+		return true;
+	}
+
+	/*
+	 * Transforms the changed candidate into the desired format for the consumer
+	 */
+	function showUpdateResult($format, $flags, $v, $dacura_server) {
+		$res = parent::showUpdateResult($format, $flags, $v, $dacura_server);
+		$res->history = $dacura_server->getCandidateHistory($res, $v);
+		$res->pending = $dacura_server->getCandidatePending($res, $v);
+		return $res;
+	}
+	
+	function getMetaUpdates(){
+		$meta = parent::getMetaUpdates();
+		if($this->original->type_version != $this->changed->type_version) $meta['type_version'] = array($this->original->type_version, $this->changed->type_version);
+		return $meta;
+	}
+	
+
 }

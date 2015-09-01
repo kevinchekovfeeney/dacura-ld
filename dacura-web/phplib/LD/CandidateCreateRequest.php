@@ -16,23 +16,53 @@ require_once("Candidate.php");
  */
 
 class CandidateCreateRequest extends Candidate {
-
 	
 	function __construct($id, $schema){
 		$this->version = 1;
-		parent::__construct($id, $schema);
+		parent::__construct($id);
+		$this->schema = $schema;
+		$this->cwurl = $this->schema->instance_prefix.$id;
 	}
 	
+	function loadFromAPI($obj){
+		$this->ldprops = array();
+		$this->type = $this->getObjectType($obj['candidate']);
+		if(!$this->type){
+			return $this->failure_result("No type found in create candidate - create requests must include an rdf:type", 400);
+		}
+		$this->type_version = $this->schema->getTypeVersion($this->type);
+		//massage the structure into the one that we want by adding in blank node ids for the parts of the message
+		$this->ldprops["candidate"] = array("_:candidate" => $obj['candidate']);
+		$met = isset($obj["meta"]) ? $obj["meta"] : array();
+		if($met && isset($met['status'])){
+			$this->metagraph = $met['status'];
+		}
+		else {
+			$this->metagraph = "candidate";//default 
+		}
+		$this->ldprops["meta"] = array("_:meta" => $met);
+		$this->ldprops["provenance"] = isset($obj['provenance']) ? $obj['provenance'] : array();
+		$this->ldprops["annotation"] = isset($obj['annotation']) ? $obj['annotation'] : array();
+		return true;
+	}	
+	
 	function validate($obj=false){
-		if($obj === false) $obj = $this->contents;
-		//just check to see that its a valid ccr
+		if($obj === false) $obj = $this->ldprops;
+		if(!is_array($obj)){
+			return $this->failure_result("Input is not an array object", 500);
+		}	
 		foreach($obj as $k => $v){
-			$pv = new LDPropertyValue($v);
-			if($pv->illegal()) return false;
+			$pv = new LDPropertyValue($v, $this->cwurl);
+			if($pv->illegal()) {
+				return $this->failure_result("Illegal JSON LD structure passed (property of $k) ".$pv->errmsg, $pv->errcode);
+			}
+			//elseif($pv->isempty()){
+			//	return $this->failure_result("Illegal JSON LD structure passed $k has an empty value - not supported in create requests", 400);				
+			//}
 			if($pv->embeddedlist()){
 				$cwlinks = $pv->getupdates();
 				if(count($cwlinks) > 0){
-					return $this->failure_result("New candidates cannot have properties that update anything but themselves", 400);
+					return $this->failure_result("New candidates cannot update anything but their own properties: $k has closed world links ".$cwlinks[0], 400);
 				}
 				foreach($v as $id => $emb){
 					if(!$this->validate($emb)){
@@ -41,12 +71,18 @@ class CandidateCreateRequest extends Candidate {
 				}
 			}
 			elseif($pv->embedded()){
+				if(count($v) == 1 && isset($v['@id'])){
+					return $this->failure_result("Embedded objects cannot have @id as their only property ($k).", 400);						
+				}
 				if(!$this->validate($v)){
 					return false;
 				}
 			}
 			elseif($pv->objectlist()){
 				foreach($v as $emb){
+					if(count($emb) == 1 && isset($emb['@id'])){
+						return $this->failure_result("Embedded objects cannot have @id as their only property ($k).", 400);						
+					}
 					if(!$this->validate($emb)){
 						return false;
 					}						
@@ -55,21 +91,11 @@ class CandidateCreateRequest extends Candidate {
 		}
 		return true;			
 	}
-
 	
-	function loadFromAPI($obj){
-		//parent::loadFromAPI($obj);
-		$this->contents = array();
-		if(!isset($obj['candidate']['rdf:type'])){
-			return $this->failure_result("No type found in create candidate - create requests must include an rdf:type", 400);
-		}
-		$this->type = $obj['candidate']['rdf:type'];
-		$this->type_version = "0.1.0";
-		//massage the structure into the one that we want by adding in blank node ids for the parts of the message
-		$this->contents["candidate"] = array("_:candidate" => $obj['candidate']);
-		$this->contents["provenance"] = $obj['provenance'];
-		$this->contents["annotation"] = $obj['annotation'];
-	}	
-
+	function showCreateResult(){
+		$other = clone($this);
+		unset($other->idmap);
+		return $other->getDisplayFormat();
+	}
 	
 }

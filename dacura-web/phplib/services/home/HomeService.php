@@ -19,7 +19,8 @@ class HomeService extends DacuraService {
 		$u = $server->getUser();
 		if($u) {
 			$cid = ($server->cid() == "all") ? $server->getUserHomeContext($u) : $server->cid();
-			$url = $this->get_service_url($server->getUserHomeService(), array(), "html", $cid, "all");
+			$did = ($server->did() == "all") ? "all" : $server->did();
+			$url = $this->get_service_url($server->getUserHomeService(), array(), "html", $cid, $did);
 		}
 		else {
 			$url = $this->get_service_url("login");

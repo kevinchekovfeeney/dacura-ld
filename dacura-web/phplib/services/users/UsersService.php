@@ -19,9 +19,15 @@ class UsersService extends DacuraService {
 	
 	function renderFullPageHeader(){
 		parent::renderFullPageHeader();
+		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css').'">';
 		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.users.js");
 		echo "<div id='pagecontent-container'>";
-		echo "<div id='pagecontent'>";
+		echo "<div id='pagecontent-nopad'>";
+	}
+	
+	function renderFullPageFooter(){
+		echo "</div></div>";
+		parent::renderFullPageFooter();
 	}
 	
 	/*
@@ -41,35 +47,16 @@ class UsersService extends DacuraService {
 	
 	function handlePageLoad($server){
 		$params = array("userid" => $this->args['userid'], "contexts" => $server->getUserAvailableContexts("admin", true));
-		//if($this->screen == "view"){
-			$params['role_options']	= $server->getRoleContextOptions($this->args['userid']);	
-		//}
+		$params['role_options']	= $server->getRoleContextOptions($this->args['userid']);	
+		$params["breadcrumbs"] = array(array(), array());
+		$params["title"] = "User Management Tool";
+		$params["subtitle"] = "Manage users and their roles in the system";
+			
+		$this->renderToolHeader($params);
 		$this->renderScreen($this->screen, $params);						
+		$this->renderToolFooter($params);		
 	}
 	
-	function getBreadCrumbsHTML($id = false, $append = ""){
-		$paths = $this->get_service_breadcrumbs("All Users");
-		$html = "<ul class='service-breadcrumbs'>";
-		foreach($paths as $i => $path){
-			$n = (count($path) - $i) + 1;
-			if($i == 0){
-				$html .= "<li class='first'><a href='".$path['url']."' style='z-index:$n;'><span></span>".$path['title']."</a></li>";
-			}
-			elseif(!$id && $i+1 == count($path)){
-				$html .= "<li><a href='".$path['url']."' style='z-index:$n;'>".$path['title']."</a></li>";
-			}
-			else {
-				$html .= "<li><a href='".$path['url']."' style='z-index:$n;'>".$path['title']."</a></li>";
-			}
-		}
-		if($id){
-			$html .= "<li><a href='#' style='z-index:0;'>User ".$id."</a></li>";
-		}
-		if($append){
-			$html .= "<li>$append</li>";	
-		}
-		$html .= "</ul>";
-		return $html;
-	}
+	
 	
 }

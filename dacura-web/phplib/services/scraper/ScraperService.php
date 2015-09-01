@@ -15,14 +15,14 @@ class ScraperService extends DacuraService {
 
 	var $default_screen = "main";
 	var $public_screens = array("test", "syntax");
-	var $protected_screens = array("export" => array("admin"), "main" => array("admin"));
+	var $protected_screens = array("export" => array("admin"), "status" => array("admin"), "main" => array("admin"));
 
 	function renderFullPageHeader(){
 		parent::renderFullPageHeader();
 		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.scraper.js");
 		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css').'">';
 		echo "<div id='pagecontent-container'>";
-		echo "<div id='pagecontent'>";
+		echo "<div id='pagecontent-nopad'>";
 	}
 	
 	function handlePageLoad($server){
@@ -35,6 +35,7 @@ class ScraperService extends DacuraService {
 		//}
 		$this->renderToolHeader($params);
 		$this->renderScreen($this->screen, $params);
+		$this->renderToolFooter($params);
 	}
 	
 	function renderFullPageFooter(){

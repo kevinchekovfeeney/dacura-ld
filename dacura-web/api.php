@@ -41,7 +41,12 @@ $servman = new ServiceLoader($dacura_settings);
 $service = $servman->loadServiceFromAPI($request_log);
 if($service){
 	$dacura_server = $service->loadServer();
-	if($dacura_server->contextIsValid() || $service->name() == "config" && isset($service->args[0]) && $service->args[0] == "create"){
+	if(!$dacura_server){
+		$msg = "Error loading server: ".$service->errmsg;
+		$request_log->setResult($service->errcode, $msg);
+		write_error($msg, $service->errcode);
+	}
+	elseif($dacura_server->contextIsValid() || $service->name() == "config" && isset($service->args[0]) && $service->args[0] == "create"){
 		$api_path = $service->settings['path_to_services'].$service->name()."/api.php";
 		if(file_exists($api_path)){
 			$rt = (count($service->args) > 0) ? "/".implode("/", $service->args) : "/";

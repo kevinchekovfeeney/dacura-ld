@@ -10,6 +10,7 @@
 }
 .json-editor .builder .key {
   font-weight: bold; 
+  margin-left: 10px;
 }
 
 .json-editor .builder .key .edit_field {
@@ -26,9 +27,8 @@
     clear: both;
     padding-left: 7px; }
   .json-editor div {
-    background-color: #ccf;
-    margin: 1px;
-    padding: 2px; }
+    background-color: #f0f0f8;
+    }
   .json-editor .val {
     font-style: italic; }
   .json-editor .key a, .json-editor .val a {
@@ -36,8 +36,25 @@
     text-decoration: none; }
   .json-editor .icon {
     display: block;
-    float: right;
+    float: left;
     text-decoration: none;
-    padding-left: 5px;
+    padding-left: 2px;
+    padding-right: 6px;
     border: 0 !important;
     color: blue; }
+    
+    .json-editor .icon img {
+        padding-top: 2px;
+    }
+
+.json-editor .function_buttons {
+	padding-left: 10px;
+	padding-bottom: 4px;
+	padding-top: 4px;
+}
+
+.json-editor .function_buttons a {
+	text-decoration: none;
+	font-size: 0.8em;
+	font-weight: bold;
+}

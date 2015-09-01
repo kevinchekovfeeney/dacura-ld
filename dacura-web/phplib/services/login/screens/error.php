@@ -1,4 +1,5 @@
-<div id='pagecontent' class='pagecontent-failure'>
-	<h1><?=$params['title']?></h1>
-	<p><?=$params['message']?></p>
+<div class='dacura-widget' id='dacura-widget-error'>	
+	<div class="dacura-widget-title"><?=$params['title']?></div>
+		<div class="dacura-widget-body"><?=$params['message']?></div>
+	</div>
 </div>

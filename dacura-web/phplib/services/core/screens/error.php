@@ -1,6 +1,8 @@
-<div id='pagecontent-container'>
-	<div id='pagecontent' class='pagecontent-failure'>
-		<h1>Error [<?=$params['title']?>]</h1>
-		<p><?=$params['message']?></p>
+<div class='fullpage-message-container'>
+	<div class='fullpage-message'>
+		<div class='dacura-user-message-box dacura-error'>
+			<div class='mtitle'>Error <?=$params['title']?></div>
+			<div class='mbody'><?=$params['message']?></div>
+		</div>
 	</div>
 </div>

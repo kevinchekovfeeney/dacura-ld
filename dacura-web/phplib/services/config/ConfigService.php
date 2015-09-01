@@ -17,9 +17,10 @@ class ConfigService extends DacuraService {
 	
 	function renderFullPageHeader(){
 		parent::renderFullPageHeader();
+		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css').'">';
 		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.config.js");
 		echo "<div id='pagecontent-container'>";
-		echo "<div id='pagecontent'>";
+		echo "<div id='pagecontent-nopad'>";
 	}
 	
 	function renderFullPageFooter(){
@@ -33,6 +34,11 @@ class ConfigService extends DacuraService {
 	 * else => view dataset
 	 */
 	function handlePageLoad($dacura_server){
+		$params = array();
+		$params["breadcrumbs"] = array(array(), array());
+		$params["title"] = "Configuration Management Tool";
+		$params["subtitle"] = "Manage the configuration of the system's dataset collections";
+		$this->renderToolHeader($params);
 		if($this->getCollectionID() == "all"){
 			$this->renderScreen("system", array());
 		}
@@ -42,6 +48,7 @@ class ConfigService extends DacuraService {
 		else {
 			$this->renderScreen("dataset", array("cid" => $this->getCollectionID(), "did" => $this->getDatasetID()));	
 		}
+		$this->renderToolFooter($params);
 	}
 	
 	

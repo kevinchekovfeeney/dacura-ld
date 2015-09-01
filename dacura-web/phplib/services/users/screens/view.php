@@ -1,19 +1,10 @@
-<style>
-.dch { display: none;}
-.users-result-message-holder { min-height: 40px; margin-top: -16px; }
-</style>
-<div id="pagecontent-nopadding">
-	<div class="pctitle">View User Service</div>
-	<div class="pcbreadcrumbs dch">
-		<div class="pccon">
-			<?php $service->renderScreen("available_context", array("type" => "admin"), "core");?>
-		</div>
-		<?php echo $service->getBreadCrumbsHTML($params['userid'] );?>
-	</div>
-	<div class="users-result-message-holder">
-		<div id="users-result-message"></div>
-	</div>
-	<div id="user-pane-holder">
+<script src='<?=$service->url("js", "jquery.dataTables.js")?>'></script>
+<script src='<?=$service->url("js", "dataTables.jqueryui.js")?>'></script>
+<script src='<?=$service->url("js", "jquery.json-editor.js")?>'></script>
+<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
+<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery.json-editor.css")?>" />
+
+<div id="user-pane-holder">
 	 <ul id="user-pane-list" class="dch">
 	 	<li><a href="#user-update">Details</a></li>
 	 	<li><a href="#user-roles">Roles</a></li>
@@ -21,83 +12,96 @@
 		<li><a href="#user-password">Password</a></li>
 		<li><a href="#user-history">History</a></li>
 	</ul>
-		<div id="user-roles" class="user-pane dch pcdatatables">
-			<div id="urolesmsg"></div>
-			<div id="roles-table-holder"></div>
-			<div id="user-role-add" class="pcsection pcbuttons">
-				<select id="rolecollectionip"></select>
-				<select id="roledatasetip"></select>
-				<select id="rolenameip">
-					<?php 
-					foreach($dacura_server->userman->getAvailableRoles("", "", "") as $rname){
-						echo "<option value='$rname'>$rname</option>\n";	
-					}
-					?>
-				</select>
-				<a class="button2" href="javascript:dacura.users.createRole()">Add New Role</a>
-			</div>			
-		</div>
-		
-		<div id="user-profile" class="user-pane dch pcdatatables">
-			<div id="uprofilemsg"></div><div class="pcbusy resultmsg"></div>
-			<div id='userconfig'></div>
-			<div id="user-profile-buttons" class="pcsection pcbuttons">
-				<a class="button2" href="javascript:dacura.users.updateProfile()">Update Profile</a>
+		<div id="roles-holder">
+			<div id="user-roles" class="user-pane dch">
+				<div class="tab-top-message-holder">
+					<div class="tool-tab-info" id="urolesmsg"></div>
+				</div>
+				<div id="roles-table-holder"></div>
+				<div id="user-role-add" class="pcsection pcbuttons">
+					<select id="rolecollectionip"></select>
+					<select id="roledatasetip"></select>
+					<select id="rolenameip">
+						<?php 
+						foreach($dacura_server->userman->getAvailableRoles("", "", "") as $rname){
+							echo "<option value='$rname'>$rname</option>\n";	
+						}
+						?>
+					</select>
+					<a class="button2" href="javascript:dacura.users.createRole()">Add New Role</a>
+				</div>			
 			</div>
 		</div>
-		
-		<div id="user-password" class="user-pane dch pcdatatables">
-			<div id="upasswordmsg"></div><div class="pcbusy resultmsg"></div>
-			<table class="dc-wizard" id="password_table">
-				<tbody>
-					<tr>
-						<th>New Password</th><td id='password1'><input type="password" id="password1ip" value=""></td>
-					</tr>
-					<tr>		
-						<th>Confirm New Password</th><td id='password2'><input type="password" id="password2ip" value=""></td>
-					</tr
-				</tbody>
-			</table>
-			<div id="user-profile-buttons" class="pcsection pcbuttons">
-				<a class="button2" href="javascript:dacura.users.updatePassword()">Update Password</a>
+		<div id="profile-holder">		
+			<div id="user-profile" class="user-pane dch">
+				<div class="tab-top-message-holder">
+					<div class="tool-tab-info" id="uprofilemsg"></div>
+				</div>
+				<div id='userconfig'></div>
+				<div id="user-profile-buttons" class="pcsection pcbuttons">
+					<a class="button2" href="javascript:dacura.users.updateProfile()">Update Profile</a>
+				</div>
 			</div>
 		</div>
-		
-		<div id="user-update" class="user-pane dch pcdatatables">
-			<div id="udetailsmsg"></div><div class="pcbusy resultmsg"></div>
-			<table class="dc-wizard" id="user_table">
-				<tbody>
-					<tr>
-						<th>Name</th><td id='username'><input id="usernameip" value=""></td>
-					</tr>
-					<tr>		
-						<th>Email</th><td id='useremail'><input id="useremailip" value=""></td>
-					</tr>
-					<tr>
-						<th>Status</th><td id='userstatus'><input id="userstatusip" value=""></td>
-					</tr>
-				</tbody>
-			</table>
-			<div id="updaterolesbuttons" class="pcsection pcbuttons">
-				<a class="button2" href="javascript:dacura.users.deleteUser()">Delete User</a>
-				<a class="button2" href="javascript:dacura.users.updateUserDetails()">Update User Details</a>
+		<div id="password-holder">		
+			<div id="user-password" class="user-pane dch">
+				<div class="tab-top-message-holder">
+					<div class="tool-tab-info" id="upasswordmsg"></div>
+				</div>
+				<table class="dc-wizard" id="password_table">
+					<thead><tr><th class='left'></th><th class='right'></th></tr></thead>				
+					<tbody>
+						<tr>
+							<th>New Password</th><td id='password1'><input type="password" id="password1ip" value=""></td>
+						</tr>
+						<tr>		
+							<th>Confirm New Password</th><td id='password2'><input type="password" id="password2ip" value=""></td>
+						</tr>
+					</tbody>
+				</table>
+				<div id="user-profile-buttons" class="pcsection pcbuttons">
+					<a class="button2" href="javascript:dacura.users.updatePassword()">Update Password</a>
+				</div>
 			</div>
-		
+		</div>	
+		<div id="update-holder">
+			<div id="user-update" class="user-pane dch pcdatatables">
+				<div class="tab-top-message-holder">
+					<div class="tool-tab-info" id="udetailsmsg"></div>
+				</div>
+				<table class="dc-wizard" id="user_table">
+					<thead><tr><th class='left'></th><th class='right'></th></tr></thead>				
+					<tbody>
+						<tr>
+							<th>Name</th><td id='username'><input id="usernameip" value=""></td>
+						</tr>
+						<tr>		
+							<th>Email</th><td id='useremail'><input id="useremailip" value=""></td>
+						</tr>
+						<tr>
+							<th>Status</th><td id='userstatus'><input id="userstatusip" value=""></td>
+						</tr>
+					</tbody>
+				</table>
+				<div id="updaterolesbuttons" class="pcsection pcbuttons">
+					<a class="button2" href="javascript:dacura.users.deleteUser()">Delete User</a>
+					<a class="button2" href="javascript:dacura.users.updateUserDetails()">Update User Details</a>
+				</div>
+			</div>
 		</div>
-		<div id="user-history" class="user-pane dch pcdatatables">
-			<div id="uhistorymsg"></div><div class="pcbusy resultmsg"></div>
-			<div id="history-table-holder"></div>
-		</div>
-		
+		<div id="history-holder">
+			<div id="user-history" class="user-pane dch">
+				<div class="tab-top-message-holder">
+					<div class="tool-tab-info" id="uhistorymsg"></div>
+				</div>
+				<div id="history-table-holder"></div>
+			</div>
+		</div>		
 	</div>
 </div>
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery.dataTables.css")?>" />
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery.json-editor.css")?>" />
 
-
-<script src='<?=$service->url("js", "jquery.dataTables.js")?>'></script>
-<script src='<?=$service->url("js", "jquery.json-editor.js")?>'></script>
 <script>
+
 dacura.users.writeBusyMessage  = function(msg) {
 	dacura.toolbox.writeBusyOverlay('#user-pane-holder', msg);
 }
@@ -180,7 +184,7 @@ dacura.users.drawUserView = function(data){
 }
 
 dacura.users.drawRoleTable = function(roles){
-	$('#roles-table-holder').html('<table id="roles_table"><thead><tr><th>Collection</th><th>Dataset</th><th>Role</th><th></th></tr></thead><tbody></tbody></table>');
+	$('#roles-table-holder').html('<table class="display" id="roles_table"><thead><tr><th>Collection</th><th>Dataset</th><th>Role</th><th></th></tr></thead><tbody></tbody></table>');
 	for (var i in roles) {
 		var obj = roles[i];
 		$('#roles_table tbody').append("<tr id='role_" + obj.id + "'	><td>" + obj.collection_id + "</td><td>" + obj.dataset_id + 
@@ -191,7 +195,7 @@ dacura.users.drawRoleTable = function(roles){
 };
 
 dacura.users.drawHistoryTable = function(ses){
-	$('#history-table-holder').html('<table id="history_table"><thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Service</th></tr></thead><tbody></tbody></table>');
+	$('#history-table-holder').html('<table class="display" id="history_table"><thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Service</th></tr></thead><tbody></tbody></table>');
 	for (var i=0; i<ses.length; i++) {
 		var obj = ses[i];
 		$('#history_table tbody').append("<tr id='session_" + obj.service + "_" + obj.start + "'>" + 
@@ -365,7 +369,11 @@ dacura.users.updateDatasetRoleOptions = function(isupdate){
 }
 
 $(function() {
-	$("#user-pane-holder").tabs();
+	$("#user-pane-holder").tabs( {
+        "activate": function(event, ui) {
+            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
+        }
+    });
 	$("#user-pane-list").show();
 	if(dacura.users.roleoptions){
 		$('#rolecollectionip').change(function(){

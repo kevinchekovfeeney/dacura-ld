@@ -108,11 +108,11 @@
 		dacura.scraper.testpage = function(){
 			$('#testpage-results').remove();
 			$("#tpaddmsg").html("");
-			var ajs = dacura.scraper.api.parsePage();
-			ajs.data.url = $('#parseurl').val();
-			if(!dacura.toolbox.validateURL(ajs.data.url)){
+			var page = $('#parseurl').val();
+			if(!dacura.toolbox.validateURL(page)){
 				return dacura.toolbox.writeErrorMessage("#tpaddmsg", "Error: " + ajs.data.url + " is not a valid url");					
 			}
+			var ajs = dacura.scraper.api.parsePage(page);
 			ajs.beforeSend = function(){
 				dacura.toolbox.writeBusyOverlay("#scraper-testpage", "Fetching " + ajs.data.url);
 			};

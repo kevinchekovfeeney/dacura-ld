@@ -5,7 +5,7 @@
 			<div class="dacura-button-title">Export Data</div>
 		</div>
 	</a>
-	<a href='javascript:updateWikiStatus()'>
+	<a href='<?=$service->get_service_url()?>/status'>
 			<div class='dacura-dashboard-button' id='dacura-sources-button' title="Get an up to date status of the wiki">
 			<img class='dacura-button-img' src="<?=$service->url("image", "buttons/status.png")?>">
 			<div class="dacura-button-title">Current State</div>
@@ -19,13 +19,13 @@
 	</a>
 	<a href='<?=$service->get_service_url()?>/test'>
 			<div class='dacura-dashboard-button' id='dacura-sources-button' title="Test exporting variables and pages">
-			<img class='dacura-button-img' src="<?=$service->url("image", "buttons/test.png")?>">
+			<img class='dacura-button-img' src="<?=$service->url("image", "buttons/syntax.png")?>">
 			<div class="dacura-button-title">Test Syntax</div>
 		</div>
 	</a>
 	<a href='<?=$service->get_service_url()?>/syntax'>
 			<div class='dacura-dashboard-button' id='dacura-sources-button' title="A guide to the syntax of Seshat Variables">
-			<img class='dacura-button-img' src="<?=$service->url("image", "buttons/syntax.png")?>">
+			<img class='dacura-button-img' src="<?=$service->url("image", "buttons/syntax2.png")?>">
 			<div class="dacura-button-title">Syntax Guide</div>
 		</div>
 	</a>

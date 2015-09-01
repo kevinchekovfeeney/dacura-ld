@@ -1,95 +1,101 @@
 <script src='<?=$service->url("js", "jquery.dataTables.js")?>'></script>
 <script src='<?=$service->url("js", "dataTables.jqueryui.js")?>'></script>
+<script src='<?=$service->url("js", "jquery.json-editor.js")?>'></script>
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
-<div id='pagecontent-container'>
-<div id='pagecontent'>
-<div id="pagecontent-nopadding">
-	<div class="pctitle">Users Service <span id="screen-context"></span></div>
-	<div class="pcbreadcrumbs">
-		<?php echo $service->getBreadCrumbsHTML(false, '<span id="bcstatus" class="bcstatus"></span>');?>
-		 
+<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery.json-editor.css")?>" />
+
+ <div id='tab-holder'>
+	 <ul id="candidate-pane-list" class="dch">
+	 	<li><a href="#candidate-list">Candidate Queue</a></li>
+	 	<li><a href="#update-list">Candidate Update Queue</a></li>
+	 	<li><a href="#create-candidate">Create Candidate</a></li>
+	 </ul>
+	<div id="create-holder" class="dch">
+		<div id="create-candidate">
+			<div class="tool-create-info tool-tab-info" id="create-msgs"></div>
+			<?php echo $service->showLDEditor($params);?>
+		</div>
 	</div>
-	<br>
-	<div id="candidate-list" class="pcdatatables">
+	<div id="candidate-holder" class="dch">
+		<div id="candidate-list">
 			<div class="tab-top-message-holder">
-				<div id="clistmsg"></div>
+				<div class="tool-tab-info" id="candidate-msgs"></div>
 			</div>
-			<table id="candidate_table" class="dch">
+			<table id="candidate_table" class="dcdt display">
 				<thead>
 				<tr>
 					<th>ID</th>
 					<th>Type</th>
 					<?php if (isset($params['show_collection']) && $params['show_collection']) echo "<th>Collection ID</th>"?>
-					<?php if (isset($params['show_dataset']) && $params['show_dataset']) echo "<th>Dataset ID</th>"?>
 					<th>Status</th>
 					<th>Version</th>
 					<th>Schema Version</th>
 					<th>Created</th>
+					<th>Sortable Created</th>
 					<th>Modified</th>
+					<th>Sortable Modified</th>
 				</tr>
 				</thead>
 				<tbody></tbody>
 			</table>
+		</div>
 	</div>
+	<div id="update-holder" class="dch">
+		<div id="update-list">
+			<div class="tab-top-message-holder">
+				<div class="tool-tab-info" id="update-msgs"></div>
+			</div>
+			<table id="update_table" class="dcdt display">
+				<thead>
+				<tr>
+					<th>ID</th>
+					<th>Candidate</th>
+					<?php if (isset($params['show_collection']) && $params['show_collection']) echo "<th>Collection ID</th>"?>
+					<th>Status</th>
+					<th>From Version</th>
+					<th>To Version</th>
+					<th>Schema Version</th>
+					<th>Created</th>
+					<th>Sortable Created</th>
+					<th>Modified</th>
+					<th>Sortable Modified</th>
+				</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</div>
+	</div>
+	<div id="blankplaceholder" style="height: 80px"></div>
 </div>
 
 <script>
-dacura.candidate.writeBusyMessage  = function(msg) {
-	dacura.toolbox.writeBusyOverlay('#candidate-list', msg);
+
+dacura.candidate.getCorrectedTableInitStrings = function(cands){
+	if(typeof cands == "undefined"){
+		var init = <?=$dacura_server->getServiceSetting('candidate_datatable_init_string', "{}");?>;
+	<?php if (isset($params['show_collection']) && $params['show_collection']){?>
+		init.aoColumns[5]["iDataSort"] = 7;	
+		init.aoColumns[7]["iDataSort"] = 9;
+		init.order[0] = 6;			
+		init.aoColumns.unshift(null);
+	<?php } ?>
+	} else {
+		var init = <?=$dacura_server->getServiceSetting('updates_datatable_init_string', "{}");?>;
+		<?php if (isset($params['show_collection']) && $params['show_collection']) {?>
+			init.aoColumns[6]["iDataSort"] = 8;	
+			init.aoColumns[8]["iDataSort"] = 10;
+			init.order[0] = 7;			
+			init.aoColumns.unshift(null);
+		<?php } ?>
+	}
+	return init;
 }
 
-dacura.candidate.clearBusyMessage = function(){
-	dacura.toolbox.removeBusyOverlay(false, 100);
-};
-
-dacura.candidate.writeSuccessMessage = function(msg){
-	$('#clistmsg').html("<div class='dacura-candidate-message-box dacura-success'>"+ msg + "</div>");
-	setTimeout(function(){$('#clistmsg').fadeOut(400)}, 3000);
-}
-
-dacura.candidate.writeErrorMessage = function(msg){
-	msg = "<div class='dacura-candidate-message-box dacura-error'>"+ msg + "</div>";
-	dacura.toolbox.removeBusyOverlay(msg, 2000);
-	$('#clistmsg').html(msg);
-}
-
-
-dacura.candidate.list = function(){
-		var ajs = dacura.candidate.api.list();
-		var self=this;
-		ajs.beforeSend = function(){
-			dacura.candidate.writeBusyMessage("Retrieving candidate list");
-		};
-		ajs.complete = function(){
-			dacura.candidate.clearBusyMessage();
-		};
-		$.ajax(ajs)
-			.done(function(data, textStatus, jqXHR) {
-				if(data.length > 0 ){
-					try {
-						dacura.candidate.drawListTable(JSON.parse(data));
-					}
-					catch(e){
-						dacura.candidate.writeErrorMessage("Error: " + e.message);
-						dacura.candidate.drawListTable();
-					}
-				}
-				else {
-					dacura.candidate.drawListTable();
-				}    	
-				$('#candidate_table').show();
-			})
-			.fail(function (jqXHR, textStatus){
-				dacura.candidate.writeErrorMessage("Error: " + jqXHR.responseText );
-			}
-		);	
-};
-
-dacura.candidate.drawListTable = function(data){		
-	$('.pctitle').html("Candidates").show();
+dacura.candidate.drawCandidateListTable = function(data){		
 	if(typeof data == "undefined"){
-		$('#candidate_table').dataTable(); 
-		dacura.toolbox.writeErrorMessage('.dataTables_empty', "No Candidates Found");		
+		$('#candidate-holder').show();	
+		$('#candidate_table').dataTable(dacura.candidate.getCorrectedTableInitStrings()).show(); 
+		dacura.system.writeErrorMessage("No Candidates Found", '.dataTables_empty');		
 	}
 	else {
 		$('#candidate_table tbody').html("");
@@ -103,9 +109,10 @@ dacura.candidate.drawListTable = function(data){
 			"<td>" + obj.status + "</td>" + 
 			"<td>" + obj.version + "</td>" + 
 			"<td>" + obj.schema_version + "</td>" + 
+			"<td>" + timeConverter(obj.createtime) + "</td>" + 
 			"<td>" + obj.createtime + "</td>" + 
-			"<td>" + obj.modtime + "</td>" + 
-			"</tr>");
+			"<td>" + timeConverter(obj.modtime) + "</td>" + 
+			"<td>" + obj.modtime + "</td>" + "</tr>");
 			$('#cand'+obj.id).hover(function(){
 				$(this).addClass('userhover');
 			}, function() {
@@ -115,13 +122,61 @@ dacura.candidate.drawListTable = function(data){
 				window.location.href = dacura.system.pageURL() + "/" + this.id.substr(4);
 		    }); 
 		}
-		$('#candidate_table').dataTable(<?=$dacura_server->getServiceSetting('candidate_datatable_init_string', "{}");?>).show();
+		$('#candidate-holder').show();	
+		$('#candidate_table').dataTable(dacura.candidate.getCorrectedTableInitStrings());
 	}
 }
-		
 
-	$(function() {
-		dacura.candidate.list();
-	});
-	</script>
+dacura.candidate.drawUpdateListTable = function(data){		
+	if(typeof data == "undefined"){
+		$('#update-holder').show();	
+		$('#update_table').dataTable(dacura.candidate.getCorrectedTableInitStrings(true)); 
+		dacura.system.writeErrorMessage("No Candidates Found", '.dataTables_empty');		
+	}
+	else {
+		$('#update_table tbody').html("");
+		for (var i in data) {
+			var obj = data[i];
+			$('#update_table tbody').append("<tr id='update" + obj.curid + "'>" + 
+			"<td>" + obj.curid + "</td>" + 
+			"<td>" + obj.targetid + "</td>" + 
+			<?php if (isset($params['show_collection']) && $params['show_collection']) echo '"<td>" + obj.collectionid + "</td>" + '?>
+			<?php if (isset($params['show_dataset']) && $params['show_dataset']) echo '"<td>" + obj.datasetid + "</td>" + '?>
+			"<td>" + obj.status + "</td>" + 
+			"<td>" + obj.from_version + "</td>" + 
+			"<td>" + obj.to_version + "</td>" + 
+			"<td>" + obj.schema_version + "</td>" + 
+			"<td>" + timeConverter(obj.createtime) + "</td>" + 
+			"<td>" + obj.createtime + "</td>" + 
+			"<td>" + timeConverter(obj.modtime) + "</td>" + 
+			"<td>" + obj.modtime + "</td>" + "</tr>");
+			$('#update'+obj.curid).hover(function(){
+				$(this).addClass('userhover');
+			}, function() {
+			    $(this).removeClass('userhover');
+			});
+			$('#update'+obj.curid).click( function (event){
+				window.location.href = dacura.system.pageURL() + "/update/" + this.id.substr(6);
+		    }); 
+		}	
+		$('#update-holder').show();	
+		$('#update_table').dataTable(dacura.candidate.getCorrectedTableInitStrings(true)).show();
+	}
+}
+
+$(function() {
+	dacura.system.init({"mode": "tool", "tabbed": true, "targets": {resultbox: "#create-msgs", errorbox: "#create-msgs", busybox: "#create-holder"}});
+	dacura.editor.init({"editorheight": "200px"});
+	dacura.editor.load(false, false, dacura.candidate.create);
+	$('#create-holder').show();
+	dacura.candidate.fetchupdatelist(); 
+	dacura.candidate.fetchcandidatelist();
+	$('#candidate-pane-list').show();
+	$("#tab-holder").tabs( {
+        "activate": function(event, ui) {
+            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
+        }
+    });
+});
+	
 </script>

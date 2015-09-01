@@ -22,7 +22,7 @@ class ServiceCall extends DacuraObject {
 	//collection_id/dataset_id/service/screen/args...
 	//          or
 	//system/service/screen/args -> for services accessed via no dataset / collection id
-	function parseURLInput(){
+	function parseURLInput($settings = false){
 		$this->rawpath = isset($_GET['path']) ? $_GET['path'] : "";
 		$path = (isset($_GET['path']) && $_GET['path']) ? explode("/", $_GET['path']) : array();
 		if(count($path) > 0 && $path[count($path) -1] == "") {
@@ -34,7 +34,7 @@ class ServiceCall extends DacuraObject {
 			$this->servicename = "";
 			$this->args = array();
 		}
-		elseif($path[0] == 'system' or $path[0] == 'login'){
+		elseif($path[0] == 'system' or isServiceName($path[0], $settings)){
 			if($path[0] == 'system') array_shift($path);
 			$this->collection_id = "all";
 			$this->dataset_id = "all";
@@ -42,15 +42,36 @@ class ServiceCall extends DacuraObject {
 			$this->args = $path;
 		}			
 		elseif(count($path) == 1){
-			$this->collection_id = array_shift($path);
+			$cs_id = array_shift($path);
+			if(isServiceName($cs_id, $settings)){
+				$this->collection_id = "all";
+				$this->servicename = $cs_id;
+			}
+			else {
+				$this->collection_id = $cs_id;
+				$this->servicename = "";
+			}		
 			$this->dataset_id = "all";
-			$this->servicename = '';
 			$this->args = array();
 		}
 		else {
-			$this->collection_id = array_shift($path);
-			$this->dataset_id = array_shift($path);
-			$this->servicename = isset($path[0]) ? array_shift($path) : "";
+			$cs_id = array_shift($path);
+			if(isServiceName($cs_id, $settings)){
+				$this->collection_id = "all";
+				$this->servicename = $cs_id;
+			}
+			else {
+				$this->collection_id = $cs_id;					
+				$ds_id = array_shift($path);
+				if(isServiceName($ds_id, $settings)){
+					$this->dataset_id = "all";
+					$this->servicename = $ds_id;
+				}
+				else {
+					$this->dataset_id = $ds_id;
+					$this->servicename = isset($path[0]) ? array_shift($path) : "";
+				}
+			}
 			$this->args = $path;
 		}
 	}

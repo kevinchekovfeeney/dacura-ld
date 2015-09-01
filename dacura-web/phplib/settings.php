@@ -27,6 +27,12 @@ $dacura_settings['path_to_collections'] = $dacura_settings['storage_base'] . "co
 //$dacura_settings['collections_url'] = $dacura_settings['install_url'] . $dacura_settings['path_to_collections'];
 $dacura_settings['path_to_services'] = "phplib/services/";
 $dacura_settings['services_url'] = $dacura_settings['install_url'].$dacura_settings['path_to_services'];
+$dacura_settings['dqs_service'] = array(
+		"instance" => $dacura_settings['dqs_url']."instance", 
+		"schema" => $dacura_settings['dqs_url']."schema", 
+		"schema_validate" => $dacura_settings['dqs_url']."schema_validate", 
+		"validate" => $dacura_settings['dqs_url']."validate"
+);
 
 /*
  * The file system paths where the various types of output produced by dacura are stored...

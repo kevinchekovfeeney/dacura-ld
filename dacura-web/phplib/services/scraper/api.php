@@ -2,7 +2,9 @@
 require_once("phplib/libs/epiphany/src/Epi.php");
 
 getRoute()->get('/nga', 'getngas');
+getRoute()->get('/status', 'getstatus');
 getRoute()->get('/schema', 'schema');
+getRoute()->post('/status', 'updatestatus');
 getRoute()->post('/polities', 'getpolities');
 getRoute()->post('/dump', 'dump');
 getRoute()->get('/view/(.+)', 'viewReport');
@@ -12,13 +14,46 @@ getRoute()->post('/parse', 'parseVariable');
 getRoute()->post('/validate', 'parseVariables');
 getRoute()->post('/parsepage', 'parsePage');
 
+function updatestatus(){
+	global $dacura_server;
+	set_time_limit(0);
+	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("updatestatus")){
+		$id = isset($_POST['nga']) ? $_POST['nga'] : false;
+		$suppress_cache = true;
+		$dacura_server->updateStatus($id);
+	}
+	else {
+		$dacura_server->write_comet_error();
+	}
+}
+
+
+function getstatus(){
+	global $dacura_server;
+	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("getstatus")){
+		$id = isset($_GET['id']) ? $_GET['id'] : false;
+		$suppress_cache = isset($_GET['refresh']);
+		$status = $dacura_server->getStatus($id);
+		if($status){
+			$dacura_server->write_json_result($status, "Returned status for $id");
+		}
+		else {
+			$dacura_server->write_http_error();		
+		}
+	}
+	else {
+		$dacura_server->write_http_error();
+	}
+}
+
 /*
  * The api calls which access the seshat wiki data are accesss controlled
  */
 function getngas(){
 	global $dacura_server;
 	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("getngas")){
-		$x = $dacura_server->getNGAList();
+		$suppress_cache = isset($_GET['refresh']);
+		$x = $dacura_server->getNGAList($suppress_cache);
 		if($x){
 			$dacura_server->write_json_result($x, "Returned list of ".count($x)." NGAs");
 		}
@@ -30,6 +65,7 @@ function getngas(){
 		$dacura_server->write_http_error();
 	}
 }
+
 
 /*
  * Generate a RDFS schema from the Seshat Codebook page
@@ -54,8 +90,9 @@ function schema(){
 function getpolities(){
 	global $dacura_server;
 	$nga = $_POST['nga'];
+	$suppress_cache = isset($_POST['refresh']);
 	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("getpolities", $nga)){
-		$x = $dacura_server->getPolities($nga);
+		$x = $dacura_server->getPolities($nga, $suppress_cache);
 		if($x){
 			$dacura_server->write_json_result($x, "Returned list of ".count($x)." Polities");
 		}
@@ -122,8 +159,9 @@ function viewReport($rep){
 function parsePage(){
 	global $dacura_server;
 	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("parsepage")){
+		$suppress_cache = isset($_POST['refresh']);
 		$url = $_POST["url"];
-		$facts = $dacura_server->getFactsFromURL($url, true);//don't get version from cache
+		$facts = $dacura_server->getFactsFromURL($url, $suppress_cache);
 		if($facts){
 			$rows = $dacura_server->factListToRows("NA", $dacura_server->formatNGAName($url), $facts, true);
 			$dacura_server->write_json_result($rows, "Returned list of ".count($facts)." Facts");				

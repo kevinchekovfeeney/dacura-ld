@@ -41,9 +41,7 @@ class DacuraServer extends DacuraObject {
 		}
 		$this->userman = new UserManager($this->dbman, $service);
 		$this->fileman = new FileManager($service);
-		if(!$this->loadContextConfiguration()){
-			return $this->failure_result('Context Loading Failed: ' . $this->errmsg, $this->errcode);				
-		}
+		$this->loadContextConfiguration();
 	}
 
 	/* 
@@ -97,7 +95,7 @@ class DacuraServer extends DacuraObject {
 				$this->config[$k] = $v;
 			}
 			if($this->did() != "all"){
-				return $this->loadDatasetConfiguration();
+				return $this->loadDatasetConfiguration($this->did());
 			}
 			else return true;
 		}
@@ -378,43 +376,38 @@ class DacuraServer extends DacuraObject {
 		return $this->ucontext->getServiceSetting($cname, $def);		
 	}
 	
-	
 	/*
-	 * Beneath here be dragons
-	 */
-	
-
-	
-	//$app = $ds->setUserContext($dcuser, $path);
-	function setUserContext(&$dcuser, $path){
-		$this->appcontext = $this->appman->getAppcontext($path);
-		$this->appman->acceptUser($this->appcontext, $dcuser);
-		return $this->appcontext;
-	}
-	
-	function renderUserActions($appcontext, $u){
-		if($u->isGod()){
-		echo "<a href='".$this->settings['install_url']."home/create/collection'><div class='dacura-dashboard-button' id='dacura-create-collection-button'>Create Collection</div></a>";
+	 * Methods for sending results to client
+	 */	
+	function write_decision($ar){
+		if($ar->is_error()){
+			http_response_code($ar->errcode);
+			$this->ucontext->logger->setResult($ar->errcode, $ar->decision." : ".$ar->action);
 		}
-		echo "<div class='dacura-dashboard-button' id='dacura-users-button'></div>";
-		echo "<div class='dacura-dashboard-button' id='dacura-datasets-button'></div>";
-		echo "<div class='dacura-dashboard-button' id='dacura-report-button'></div>";
+		elseif($ar->is_reject()){
+			http_response_code(401);
+			$this->ucontext->logger->setResult(401, $ar->decision." : ".$ar->action);
+		}
+		elseif($ar->is_confirm()){
+			http_response_code(428);
+			$this->ucontext->logger->setResult(428, $ar->decision." : ".$ar->action);
+		}
+		elseif($ar->is_pending()){
+			http_response_code(202);
+			$this->ucontext->logger->setResult(202, $ar->decision." : ".$ar->action);
+		}
+		else {
+			$this->ucontext->logger->setResult(200, $ar->decision, $ar->action);
+		}
+		echo json_encode($ar);
+		return true;
 	}
 	
-	function renderUserGraph($appcontext, $u){
-		echo "<hr style='clear: both'>";
+	function isDacuraBannedWord($word){
+		return strtolower($word) == "dacura";
 	}
 	
-	function renderUserStats($appcontext, $u){
+	function isDacuraBannedPhrase($title){
+		return false;
 	}
-	
-	function renderUserMenu($appcontext, $u){
-		echo "<UL class='dashboard-menu'><li class='dashboard-menu-selected'></li><li>Not selected</li></UL>";
-	}
-	
-	function renderUserErrorMessage($title, $msg){
-		echo "<div id='pagecontent-container'><div id='pagecontent' class='pagecontent-failure'>\n";
-		echo "<h1>$title</h1><p>$msg</p></div></div>";
-	}
-	
 }

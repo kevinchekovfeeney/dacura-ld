@@ -11,21 +11,44 @@ dacura.scraper = {}
 dacura.scraper.apiurl = dacura.system.apiURL();
 
 dacura.scraper.api = {};
-dacura.scraper.api.getngalist = function (xhr){
+dacura.scraper.api.getngalist = function (refresh, xhr){
 	if(typeof xhr == "undefined"){
 		xhr = {};
 		xhr.data ={};
 	}
 	xhr.url = dacura.scraper.apiurl + "/nga";
+	if(typeof refresh != "undefined" && refresh == true){
+		xhr.data["refresh"] = true;
+	}
 	return xhr;
 }
 
-dacura.scraper.api.getpolities = function (id, xhr){
+dacura.scraper.api.getstatus = function (refresh, xhr){
+	if(typeof xhr == "undefined"){
+		xhr = {};
+		xhr.data ={};
+	}
+	xhr.url = dacura.scraper.apiurl + "/status";
+	if(typeof refresh != "undefined" && refresh == true){
+		xhr.data["refresh"] = true;
+	}
+	return xhr;
+}
+
+dacura.scraper.api.updatestatus = function (nga, oncomp, onmessage, onerror){
+	args = {"nga" : nga};
+	dacura.toolbox.slowAjax(dacura.scraper.apiurl + "/status", "POST", args, oncomp, onmessage);
+}
+
+dacura.scraper.api.getpolities = function (id, refresh, xhr){
 	if(typeof xhr == "undefined"){
 		xhr = {};
 		xhr.data ={};
 	}
 	xhr.url = dacura.scraper.apiurl + "/polities";
+	if(typeof refresh != "undefined" && refresh == true){
+		xhr.data["refresh"] = true;
+	}
 	xhr.data.nga = id;
 	xhr.type = "POST";
 	return xhr;
@@ -43,14 +66,22 @@ dacura.scraper.api.getPolityData = function (nga, polity, xhr){
 	return xhr;
 }
 
-dacura.scraper.api.parsePage = function(data, xhr){
+dacura.scraper.api.parsePage = function(page, refresh, xhr){
 	if(typeof xhr == "undefined"){
 		xhr = {};
 		xhr.data ={};
 	}
+	if(typeof refresh != "undefined" && refresh == true){
+		xhr.data["refresh"] = true;
+	}
 	xhr.type = "POST";
+	xhr.data.url = page;
 	xhr.url = dacura.scraper.apiurl + "/parsepage";
 	return xhr;
+}
+
+dacura.scraper.abortrebuild = function(){
+	dacura.toolbox.abortSlowAjax();
 }
 
 dacura.scraper.abortdump = function(){
@@ -87,6 +118,9 @@ dacura.scraper.tidyNGAString = function(contents){
 }
 
 dacura.scraper.parsePolityString = function(str){
+	if(typeof(str) == "undefined"){
+		str = "";
+	}
 	p_details = {
 		url: str,
 		shorturl: str.substr(0,40),

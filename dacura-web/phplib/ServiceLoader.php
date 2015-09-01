@@ -27,7 +27,7 @@ class ServiceLoader extends DacuraObject {
 	 * Creates a service object from a browser page load 
 	 */
 	function loadServiceFromURL(&$logger){
-		$service_call = $this->parseServiceCall("html");
+		$service_call = $this->parseServiceCall("html", $this->settings);		
 		if($service_call){
 			return $this->loadServiceFromCall($service_call, $logger);
 		}
@@ -38,7 +38,7 @@ class ServiceLoader extends DacuraObject {
 	 * Creates a service object from an API invocation
 	 */
 	function loadServiceFromAPI(&$logger){
-		$service_call = $this->parseServiceCall("api");
+		$service_call = $this->parseServiceCall("api", $this->settings);
 		if($service_call){
 			return $this->loadServiceFromCall($service_call, $logger);	
 		}
@@ -94,9 +94,9 @@ class ServiceLoader extends DacuraObject {
 	/*
 	 * Creates a serviceCall object...
 	 */
-	function parseServiceCall($provenance){
+	function parseServiceCall($provenance, $settings){
 		$sc = new ServiceCall();
-		$sc->parseURLInput();
+		$sc->parseURLInput($settings);
 		$sc->provenance = $provenance;
 		if($provenance == "html" && !$sc->servicename){
 			//the home page (for the user or for collection_id, $dataset_id...

@@ -18,7 +18,7 @@ class DBManager extends DacuraObject {
 	
 	function __construct($h, $u, $p, $n){
 		$dsn = "mysql:host=$h;dbname=$n;charset=utf8";
-		$this->link = new PDO($dsn, $u, $p, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_SILENT));
+		$this->link = new PDO($dsn, $u, $p, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_WARNING));
 		//mysql_connect($h, $u, $p);
 	}
 	

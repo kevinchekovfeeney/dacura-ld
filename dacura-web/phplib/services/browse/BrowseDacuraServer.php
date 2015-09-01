@@ -13,10 +13,11 @@ class BrowseDacuraServer extends DacuraServer {
 				$context_hierarchy[] = array("id" => $cid, "link" => $this->getSystemSetting("install_url", "/").$cid."/all/", "selected" => ($cid == $mycid), "contents" => $details['title']);				
 			}
 		}
-		elseif($mydid == "all") { // collection context - show all 
-			$my_context = $contexts[$mycid];
-			foreach($my_context['datasets'] as $i => $ds){
-				$context_hierarchy[] = array("id" => $i, "link" => $this->getSystemSetting("install_url", "/").$mycid."/$i/", "selected" => ($i == $mydid), "contents" => $ds);				
+		if($mydid == "all") { // collection context - show all 
+			if(isset($my_context['datasets']) && count($my_context['datasets'] > 0)){
+				foreach($my_context['datasets'] as $i => $ds){
+					$context_hierarchy[] = array("id" => $i, "link" => $this->getSystemSetting("install_url", "/").$mycid."/$i/", "selected" => ($i == $mydid), "contents" => $ds);				
+				}
 			}
 		}
 		else {

@@ -40,11 +40,8 @@ class LoginDacuraServer extends DacuraServer {
 			include_once("screens/register_email.php");
 			$output = ob_get_contents();
 			ob_clean();
-			$params = array();
-			include_once("screens/register_underway.php");
-			$htmloutput = ob_get_contents();
-			ob_end_clean();
-			sendemail($u, $this->settings['login']['register_email_subject'], $output);
+			$htmloutput = $this->getRegisterUnderwayHTML($name);
+			sendemail($u, $this->settings['login']['register_email_subject'], $output, $this->settings['login']['headers']);
 			return $htmloutput;
 		}
 		else {
@@ -61,13 +58,11 @@ class LoginDacuraServer extends DacuraServer {
 			$address =  $this->settings['install_url']."system/login/lost/code/".$code;
 			$name = $u;
 			ob_start();
-			include_once("screens/lost_password.php");
+			include_once("screens/lost_password_email.php");
 			$output = ob_get_contents();
 			ob_clean();
-			include_once("screens/reset_success.php");
-			$htmloutput = ob_get_contents();
-			ob_end_clean();
-			sendemail($u, $this->settings['login']['lost_email_subject'], $output);
+			$htmloutput = $this->getLostUnderwayHTML($name);
+			sendemail($u, $this->settings['login']['lost_email_subject'], $output, $this->settings['login']['headers']);
 			return $htmloutput;
 		}
 		else {
@@ -77,7 +72,7 @@ class LoginDacuraServer extends DacuraServer {
 	
 	function resetpassword($uid, $p){
 		if($this->userman->resetPassword($uid, $p)){
-			return "Your password has been successfully reset";
+			return "Your password has been successfully reset. You may now log into the system.";
 		}
 		else {
 			return $this->failure_result("Failed to reset password: " . $this->userman->errmsg, 401);
@@ -92,6 +87,17 @@ class LoginDacuraServer extends DacuraServer {
 		else {
 			return $this->failure_result("Not logged in - Failed to logout", 401);
 		}
+	}
+	
+	function getLostUnderwayHTML($name){
+		$html ="<p>An email has been sent to <strong>$name</strong>. It contains instructions on how to complete the resetting of your password.</p>
+						<p>Complete the steps outlined in the email within the next 24 hours to reset your password.</p>";
+		return $html;
+	}
+	function getRegisterUnderwayHTML($name){
+		$html = '<P>An email has been sent to <strong>'.$name.'</strong></P>';
+		$html .= '<P>Please follow the instructions in that email to complete your registration. </P>';
+		return $html;	
 	}
 	
 }

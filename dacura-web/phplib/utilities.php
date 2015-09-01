@@ -16,6 +16,10 @@ function opr($s){
 	echo "</PRE>";
 }
 
+function randid(){
+	return uniqid_base36();
+}
+
 function uniqid_base36($more_entropy=false) {
 	$s = uniqid('', $more_entropy);
 	if (!$more_entropy)
@@ -34,37 +38,46 @@ function isAssoc($arr)
 function createRandomKey($length)
 {
 	$buffer = mcrypt_create_iv($length, MCRYPT_DEV_URANDOM);
-	$encodedBuffer = str_replace(array('+', '/'), array(',', '-'), base64_encode($buffer));
+	$encodedBuffer = str_replace(array('+', '/'), array('_', 'X'), base64_encode($buffer));
 	return substr($encodedBuffer, 0, $length);
 }
 
-function sendemail($recip, $subj, $text){
-	$headers = 'From: feeney.kdeg@gmail.com' . "\r\n" .
-			'Reply-To: feeney.kdeg@gmail.com' . "\r\n" .
+function sendemail($headers, $recip, $subj, $text){
+	if(!$headers){
+		$headers = 'From: dacura@cs.tcd.ie' . "\r\n" .
+			'Reply-To: dacura@cs.tcd.ie' . "\r\n" .
 			'X-Mailer: PHP/' . phpversion();
+	}
+	
 	if(mail( $recip, $subj, $text, $headers)){
 		return true;
 	}
 	return false;
 }
 
+function deepArrCopy($x){
+	$vals = array();
+	if(is_array($x)){
+		foreach($x as $i => $v){
+			if(is_array($v)){
+				$vals[$i] = deepArrCopy($v);
+			}
+			else {
+				$vals[$i] = $v;
+			}
+		}
+		return $vals;
+	}
+	return $x;
+}
+
+function isLiteral($x){
+	return (is_string($x) && !isURL($x) && !isNamespacedURL($x));
+}
+
 function isURL($str){
 	return (!filter_var($str, FILTER_VALIDATE_URL) === false);
 }
-
-function deepArrCopy($x){
-	$vals = array();
-	foreach($x as $i => $v){
-		if(is_array($v)){
-			$vals[$i] = deepArrCopy($v);
-		}
-		else {
-			$vals[$i] = $v;
-		}
-	}
-	return $vals;
-}
-
 function isNamespacedURL($x){
 	$bits = explode(":", $x);
 	return (!isURL($x) && count($bits) > 1 && strlen($bits[0]) <= 16 && strlen($bits[0]) >= 2 && !preg_match('/[^a-z0-9]/', $bits[0]));
@@ -77,4 +90,8 @@ function getNamespacePortion($str){
 
 function isBlankNode($str){
 	return (getNamespacePortion($str) == "_");
+}
+
+function isServiceName($servicename, $settings){
+	return file_exists($settings['path_to_services'].$servicename);
 }

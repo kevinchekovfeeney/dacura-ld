@@ -76,10 +76,13 @@ class FileManager extends DacuraObject {
 			if($modtime == $config['value']) return false;
 			
 		}
+		elseif($config['type'] == "constant"){
+			return false;
+		}
 		return true;
 	}
 	
-	function decache($cname, $oname, $ch=false){
+	function decache($cname, $oname, $ch=false, $return_stale = false){
 		$oname = $this->sanitise_file_name($oname);
 		$fpath = $this->service->settings['collections_base'];
 		if($this->service->getCollectionID()) $fpath .= $this->service->getCollectionID()."/";
@@ -88,6 +91,9 @@ class FileManager extends DacuraObject {
 		$full_name = $d_name."/".$oname.".cache";
 		if(!file_exists($full_name)){
 			return $this->failure_result("Cache file for $cname / $oname does not exist", 400);
+		}
+		if($return_stale){
+			return json_decode(file_get_contents($full_name), true);
 		}
 		$config = false;
 		$config_file = $d_name."/".$oname.".config";

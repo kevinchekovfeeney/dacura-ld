@@ -11,9 +11,10 @@ class LoginService extends DacuraService {
 	function renderFullPageHeader(){
 		parent::renderFullPageHeader();
 		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.login.js");
+		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css').'">';
 		echo "<div id='maincontrol'>";
 	}
-	
+
 	function renderFullPageFooter(){
 		echo "</div>";
 		parent::renderFullPageFooter();

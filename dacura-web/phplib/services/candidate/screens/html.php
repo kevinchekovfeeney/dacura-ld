@@ -11,6 +11,10 @@
 
 <?php }?>
 
+<div class='candidate-meta'>
+	<h2>Meta</h2>
+	<?php echo (isset($params['meta']) ? $params['meta'] : "~");?>
+</div>
 <div class='candidate-contents'>
 	<h2>Contents</h2>
 	<?php echo (isset($params['contents']) ? $params['contents'] : "~");?>

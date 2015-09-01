@@ -6,45 +6,57 @@
  * It contains functionality to build indexes and maps of documents and compare them to one another
  * The candidate class contains the mapping to system state (object type, version, etc)
  * 
- * Perhaps this is one class of indirection too much
- * 
  * Created By: Chekov
  * Creation Date: 20/11/2014
  * Contributors:
  * Modified:
  * Licence: GPL v2
  */
-
+include_once("phplib/libs/easyrdf-0.9.0/lib/EasyRdf.php");
 include_once("LDUtils.php");
 
 /*
  * maintains state about a particular LD object 
- * LD document has a schema
  */
 
 class LDDocument extends DacuraObject {
-	var $id;
-	var $contents; //associative array conforming to dacura internal object spec
-	var $index = false; //obj_id => &$obj
-	var $bad_links = array(); //different types of bad links in the document
+	var $id = false;
+	var $implicit_add_to_valuelist = false;//should we allow {p: scalar} to update {p: [scalar, array]} or overwrite it....
+	var $ldprops; //associative array in Dacura LD format
+	var $index = false; //obj_id => &$obj 
+	var $bad_links = array(); //bad links in various categories in the document
 	var $idmap = array(); //blank nodes that have been mapped to new names in the document
-	var $cwurl = "";
+	var $cwurl = "";//closed world URL of the document. If present, encapsulated entities will have ids that start with this.
+	var $compressed = false;
 	
 	function __construct($id){
 		$this->id = $id;
 	}
 	
 	function __clone(){
-		$this->contents = deepArrCopy($this->contents);
+		$this->ldprops = deepArrCopy($this->ldprops);
 		$this->index = false;
 		$this->bad_links = deepArrCopy($this->bad_links);
 	}
 
+	function load($arr){
+		$this->ldprops = $arr;
+	}
+	
 	function get_json($key = false){
 		if($key){
-			return json_encode($this->contents[$key]);
+			if(!isset($this->ldprops[$key])){
+				return "{}";
+			}
+			return json_encode($this->ldprops[$key]);
 		}
-		return json_encode($this->contents);
+		return json_encode($this->ldprops);
+	}
+	
+	function get_json_ld(){
+		$ld = $this->ldprops;
+		$ld["@id"] = $this->id;
+		return $ld;
 	}
 
 	function getFragment($fid){
@@ -56,33 +68,124 @@ class LDDocument extends DacuraObject {
 
 	function hasFragment($frag_id){
 		if($this->index === false){
-			$this->buildIndex($this->contents, $this->index);
+			$this->buildIndex($this->ldprops, $this->index);
 		}
 		return isset($this->index[$frag_id]);
 	}
-
-	function load($arr){
-		$this->contents = $arr;
+	
+	function isDocumentLocalLink($val){
+		return isInternalLink($val, $this->id, $this->cwurl);
 	}
-
+	
+	function getFragmentPaths($fid, $html = false){
+		$paths = getFragmentContext($fid, $this->ldprops, $this->cwurl);
+		return $paths;
+	}
+	
+	function setContentsToFragment($fragment_id){
+		$this->ldprops = getFragmentInContext($fragment_id, $this->ldprops, $this->cwurl);
+	}
+	
 	function buildIndex(){
 		$this->index = array();
-		indexLD($this->contents, $this->index, $this->cwurl);
+		indexLD($this->ldprops, $this->index, $this->cwurl);
 	}
-
-	function get_json_ld(){
-		$ld = $this->contents;
-		$ld["@id"] = $this->id;
-		return $ld;
+	
+	function typedTriples(){
+		return getObjectAsTypedTriples($this->id, $this->ldprops, $this->cwurl);
 	}
-
-	function expand(){
-		$rep = expandLD($this->id, $this->contents, $this->cwurl);
+	
+	function getNamespaces($nsobj){
+		$x = getNamespaces($this->ldprops, $nsobj, $this->cwurl, $this->compressed);
+		return $x;		
+	}
+	
+	function expandNamespaces($nsobj){
+		$this->compressed = false;
+		expandNamespaces($this->ldprops, $nsobj, $this->cwurl);
+	}
+	
+	function compressNamespaces($nsobj){
+		$this->compressed = true;
+		compressNamespaces($this->ldprops, $nsobj, $this->cwurl);
+	}
+	
+	function triples(){
+		return getObjectAsTriples($this->id, $this->ldprops, $this->cwurl);
+	}
+	
+	function turtle(){
+		return getObjectAsTurtle($this->id, $this->ldprops, $this->cwurl);
+	}
+	
+	function importERDF($type, $arg, $gurl = false, $format = false){
+		try {
+			if($type == "url"){
+				$graph = EasyRdf_Graph::newAndLoad($arg, $format);				
+			}
+			elseif($type == "text"){
+				$graph = new EasyRdf_Graph($gurl, $arg, $format);
+			}
+			elseif($type == "file"){
+				$graph = new EasyRdf_Graph($gurl);
+				$graph->parseFile($arg, $format);
+			}
+			if($graph->isEmpty()){
+				return $this->failure_result("Graph loaded from $type was empty.", 500);				
+			}
+			return $graph;
+		}
+		catch(Exception $e){
+			return $this->failure_result("Failed to load graph from $type. ".$e->getMessage(), $e->getCode());
+		}
+	}
+	
+	function import($type, $arg, $gurl = false, $format = false){
+		$graph = $this->importERDF($type, $arg, $gurl, $format);
+		$op = $graph->serialise("php");
+		$this->ldprops[$this->id] = importEasyRDFPHP($op);
+		$this->expand();
+		$errs = validLD($this->ldprops, $this->cwurl);
+		if(count($errs) > 0){
+			$msg = "<ul><li>".implode("<li>", $errs)."</ul>";
+			return $this->failure_result("Graph had ". count($errs)." errors. $msg", 400);				
+		}
+		return true;	
+	}
+	
+	function export($format, $nsobj = false){
+		$easy = exportEasyRDFPHP($this->id, $this->ldprops);
+		try{
+			$graph = new EasyRdf_Graph($this->id, $easy, "php");
+			if($graph->isEmpty()){
+				return $this->failure_result("Graph was empty.", 400);				
+			}
+			if($nsobj){
+				$nslist = $this->getNamespaces($nsobj);
+				if($nslist){
+				foreach($nslist as $prefix => $full){
+						EasyRdf_Namespace::set($prefix, $full);
+					}
+				}
+			}
+			$res = $graph->serialise($format);
+			if(!$res){
+				return $this->failure_result("failed to serialise graph", 500);
+			}
+			return $res;				
+		}
+		catch(Exception $e){
+			return $this->failure_result("Graph croaked on input. ".$e->getMessage(), $e->getCode());
+		}
+	}
+	
+	function expand($allow_demand_id = false){
+		$rep = expandLD($this->id, $this->ldprops, $this->cwurl, $allow_demand_id);
 		if($rep === false){
-			return false;
+			return $this->failure_result("Failed to expand blank nodes", 400);;
 		}
 		if(isset($rep["missing"])){
-			$this->bad_links['unresolved_local'] = $rep["missing"];
+			$this->bad_links = $rep["missing"];
 		}
 		$this->idmap = $rep['idmap'];
 		return true;
@@ -95,147 +198,101 @@ class LDDocument extends DacuraObject {
 		return false;
 	}
 	
-	function triples(){
-		return getObjectAsTriples($this->id, $this->contents, $this->cwurl);
-	}
-	
-	function turtle(){
-		return getObjectAsTurtle($this->id, $this->contents, $this->cwurl);
-	}
-	
-	function compliant(){
-		//return true;
-		return validLD($this->contents);
-	}
-	
-	function isDocumentLocalLink($v){
-		return (substr($v, 0, 6) == "local:" && substr($v, 6, strlen($this->id)) == $this->id) || (substr($v, 0, strlen($this->id)) == $this->id) || $this->cwurl.$this->id == substr($v, 0, strlen($this->cwurl.$this->id));
+	function missingLinks(){
+		if(isset($this->bad_links)){
+			return $this->bad_links;				
+		}
+		return $this->findMissingLinks();
 	}
 	
 	function findMissingLinks(){
 		if($this->index === false){
-			$this->buildIndex($this->contents, $this->index, $this->cwurl);
+			$this->buildIndex($this->ldprops, $this->index, $this->cwurl);
 		}
-		$ml = $this->findInternalMissingLinks($this->contents, array_keys($this->index), $this->id);
+		$ml = findInternalMissingLinks($this->ldprops, array_keys($this->index), $this->id, $this->cwurl);
 		$x = count($ml);
 		if($x > 0){ 
-			$this->bad_links['unresolved_local'] = $ml;
+			$this->bad_links = $ml;
 		}
-		return $x;
+		return $ml;
 	}
 	
-	/*
-	 * Calculates the transforms necessary to get other from current
-	 */
-	function compare($other){
-		$forward = array();
-		$backward = array();
-		$changes = $this->analyseUpdate($this->id, $this->contents, $other->contents, $forward, $backward);
-		if($changes){
-			$changes['back'] = $backward;
-			$changes['forward'] = $forward;
-			if(isset($changes['tc'])){
-				foreach($changes['tc'] as $tc){
-					$changes['back'] = array_merge($changes['back'], $tc['back'][$this->id]);
-					$changes['forward'] = array_merge($changes['forward'], $tc['forward'][$this->id]);
-				}
-			}	
-			$this->changes = $changes;
+	function compliant(){
+		$errs = validLD($this->ldprops, $this->cwurl);
+		if(count($errs) == 0){
 			return true;
 		}
 		else {
-			return false;	
+			$errmsg = "Errors in input formatting:<ol> ";
+			foreach($errs as $err){
+				$errmsg .= "<li>".$err[0]." ".$err[1];
+			}
+			$errmsg .= "</ol>";
+			return $this->failure_result($errmsg, 400);
 		}
 	}
-	
+		
 	/*
-	 * Functions for reverse engingeering embedded objects from triples
-	 * Not a general purpose solution!
+	 * Calculates the transforms necessary to get to current from other
 	 */
-	
-	function buildFromTriples($triples, $root_id){
-		$objects = array();
-		foreach($triples as $t){
-			if(!isset($objects[$t[0]])){
-				$objects[$t[0]] = array($t[1] => array($t[2]));
-			}
-			elseif(!isset($objects[$t[0]][$t[1]])){
-				$objects[$t[0]][$t[1]] = array($t[2]);
-			}
-			else {
-				$objects[$t[0]][$t[1]][] = $t[2];
-			}
+	function compare($other){
+		$delta = compareLD($this->id, $this->ldprops, $other->ldprops, $this->cwurl);
+		if($delta->containsChanges()){
+			$delta->setMissingLinks($this->missingLinks(), $other->missingLinks());
 		}
-		if(!isset($objects[$root_id])){
-			return $this->failure_result("Root id $root_id did not exist in the triples", 400);
-		}
-		$contents = $this->embedObjects($root_id, $objects);
-		if(count($objects) > 0){
-			return $this->failure_result("Triples contained some values that could not be embedded in an entity", 400);
-		}
-		return $contents;
+		return $delta; 
 	}
 	
-	function findInternalMissingLinks($props, $legal_vals, $id){
-		$missing = array();
-		foreach($props as $prop => $v){
-			$pv = new LDPropertyValue($v, $this->cwurl);
-			if($this->isDocumentLocalLink($v) && !in_array($v, $legal_vals)){
-				$missing[] = array($id, $prop, $v);
-			}
-			elseif($pv->valuelist()){
-				foreach($v as $val){
-					if($this->isDocumentLocalLink($val) && !in_array($val, $legal_vals)){
-						$missing[] = array($id, $prop, $val);
-					}
+	function update($update_obj, $is_force=false, $demand_id_allowed = false){
+		if($this->applyUpdates($update_obj, $this->ldprops, $this->idmap, $is_force, $demand_id_allowed)){
+			if(count($this->idmap) > 0){
+				$unresolved = updateBNReferences($this->ldprops, $this->idmap, $this->cwurl);
+				if($unresolved === false){
+					return false;
+				}
+				elseif(count($unresolved) > 0){
+					$this->bad_links = $unresolved;
 				}
 			}
-			elseif($pv->embedded()){
-				$id = isset($v['@id']) ? $v['@id'] : "_:";
-				$missing = array_merge($missing, $this->findInternalMissingLinks($props, $legal_vals, $id));
-			}
-			elseif($pv->objectlist()){
-				foreach($v as $obj){
-					$id = isset($obj['@id']) ? $obj['@id'] : "_:";
-					$missing = array_merge($missing, $this->findInternalMissingLinks($obj, $legal_vals, $id));
-				}
-			}
-			elseif($pv->embeddedlist()){
-				foreach($v as $id => $obj){
-					$missing = array_merge($missing, $this->findInternalMissingLinks($obj, $legal_vals, $id));
-				}
-			}
+			$this->buildIndex();
+			return true;
 		}
-		return $missing;
+		return false;
 	}
 	
-	function update($update_obj, $is_force=false){
-		//opr($update_obj);
-		$this->applyUpdates($update_obj, $this->contents, $this->idmap, $is_force);
-		if(count($this->idmap) > 0){
-			$unresolved = updateBNReferences($this->contents, $this->idmap, $this->cwurl);
-			if($unresolved === false){
-				return false;
-			}
-			elseif(count($unresolved) > 0){
-				$this->bad_links['unresolved_local'] = $unresolved;
-			}
+	function getPropertyAsQuads($prop, $gname){
+		if(!isset($this->ldprops[$prop])) return array();
+		$quads = array();
+		$trips = getEOLAsTypedTriples($this->ldprops[$prop], $this->cwurl);
+		foreach($trips as $trip){
+			$trip[] = $gname;
+			$quads[] = $trip;
 		}
-		$this->buildIndex();
-		return true;
+		return $quads;
 	}
+	
 	
 	/**
 	 * Apply changes specified in props to properties in dprops
 	 * Generates new ids for each blank node and returns mapping in idmap.
 	 *
-	 * @param array $props - the update properties
-	 * @param array $dprops - the properties to be updated
+	 * @param array $uprops - the update instructions
+	 * @param array $dprops - the properties to be updated (delta)
 	 * @param array $idmap - map of local ids to newly generated IDs
 	 * @return boolean
 	 */
-	function applyUpdates($uprops, &$dprops, &$idmap, $id_set_allowed = false){
+	function applyUpdates($uprops, &$dprops, &$idmap, $id_set_allowed = false, $demand_id_allowed = false, $implicit_add_to_valuelist = false){
+		//opr($uprops['http://localhost/dacura/schema/ontology/ONTevgdhlvxsw']['http://dacura.cs.tcd.ie/data/seshat#']);
+		//opr($dprops['http://localhost/dacura/schema/ontology/ONTevgdhlvxsw']['http://dacura.cs.tcd.ie/data/seshat#']);
+		//if(isset($uprops[http://localhost/dacura/schema/ontology/ONTevgdhlvxsw'])){
+		//	opr($uprops['http://localhost/dacura/schema/ontology/ONTevfuqe84sw']['http://www.w3.org/ns/oa#']['http://purl.org/dc/elements/1.1/title']);
+			//opr($dprops['http://localhost/dacura/schema/ontology/ONTevfuqe84sw']['http://www.w3.org/ns/oa#']['http://purl.org/dc/elements/1.1/title']);
+		//}
+		
 		foreach($uprops as $prop => $v){
+			//if($prop == "contents"){
+				//opr($v);
+			//}
 			if(!is_array($dprops)){
 				$dprops = array();
 			}
@@ -243,10 +300,22 @@ class LDDocument extends DacuraObject {
 			if($pv->illegal()){
 				return $this->failure_result($pv->errmsg, $pv->errcode);
 			}
-			elseif($pv->literal()){
-				$dprops[$prop] = $v;
+			elseif($pv->scalar() or $pv->objectliteral()){
+				//question as to whether we support updates that don't specify the entire output state....
+				if($implicit_add_to_valuelist && isset($dprops[$prop])){
+					$upv = new LDPropertyValue($dprops[$prop], $this->cwurl);
+					if($upv->scalar() or $upv->objectliteral()){
+						$dprops[$prop] = $v;
+					}
+					elseif($upv->valuelist() or $upv->objectliterallist()){
+						$dprops[$prop][] = $v;
+					}
+				}
+				else {
+					$dprops[$prop] = $v;						
+				}
 			}
-			elseif($pv->valuelist()){
+			elseif($pv->valuelist() or $pv->objectliterallist()){
 				$dprops[$prop] = $v;
 			}
 			elseif($pv->isempty()){ // delete property or complain
@@ -259,20 +328,16 @@ class LDDocument extends DacuraObject {
 			}
 			elseif($pv->objectlist()){ //list of new objects (may have @ids inside)
 				foreach($v as $obj){
-					addAnonObj($obj, $dprops, $prop, $idmap, $this->cwurl);
+					addAnonObj($this->id, $obj, $dprops, $prop, $idmap, $this->cwurl, $demand_id_allowed);
 				}
 			}
 			elseif($pv->embedded()){ //new object to add to the list - give him an id and insert him
-				//opr($v);
-				addAnonObj($v, $dprops, $prop, $idmap, $this->cwurl);
+				addAnonObj($this->id, $v, $dprops, $prop, $idmap, $this->cwurl, $demand_id_allowed);
 			}
 			elseif($pv->embeddedlist()){
-				//if(!isset($drops[$prop]) or !is_array($dprops[$prop])){
-				//	$dprops[$prop] = array();
-				//}
 				$bnids = $pv->getbnids();//new nodes
 				foreach($bnids as $bnid){
-					addAnonObj($v[$bnid], $dprops, $prop, $idmap, $this->cwurl, $bnid);
+					addAnonObj($this->id, $v[$bnid], $dprops, $prop, $idmap, $this->cwurl, $demand_id_allowed, $bnid);
 				}
 				$delids = $pv->getdelids();//delete nodes
 				foreach($delids as $did){
@@ -280,187 +345,44 @@ class LDDocument extends DacuraObject {
 						unset($dprops[$prop][$did]);
 					}
 					else {
-						return $this->failure_result("Attempted to remove non-existant property value", 404);
+						return $this->failure_result("Attempted to remove non-existant embedded object $did from $prop", 404);
 					}
 				}
 				$update_ids = $pv->getupdates();
 				foreach($update_ids as $uid){
+					if(!isset($dprops[$prop])){
+						$dprops[$prop] = array();
+					}
+					//echo "<h5>$prop $uid</h5>";
+					//opr($dprops[$prop]);	
 					if(!isset($dprops[$prop][$uid])){
+					//echo "<h1>$prop $uid</h1>";						
 						if($id_set_allowed){
-							$dprops[$prop] = array($uid => array());
+							$dprops[$prop][$uid] = array();
 						}
 						else {
-							return $this->failure_result("Attempted to update non-existant property value $uid", 404);
+							return $this->failure_result("Attempted to update property non existent $uid of property $prop", 404);
 						}
 					}
-					if(!$this->applyUpdates($uprops[$prop][$uid], $dprops[$prop][$uid], $idmap, $id_set_allowed)){
+					//opr($dprops[$prop][$uid]);
+					if(!$this->applyUpdates($uprops[$prop][$uid], $dprops[$prop][$uid], $idmap, $id_set_allowed, $demand_id_allowed)){
 						return false;
 					}
+					//opr($dprops[$prop][$uid]);						
 					if(isset($dprops[$prop][$uid]) && is_array($dprops[$prop][$uid]) and count($dprops[$prop][$uid]) == 0){
 						unset($dprops[$prop][$uid]);
 					}
 				}
 			}
+			if(isset($dprops[$prop]) && is_array($dprops[$prop]) && count($dprops[$prop])==0) {
+				unset($dprops[$prop]);
+			}
 		}
-		if(isset($dprops[$prop]) && is_array($dprops[$prop]) && count($dprops[$prop])==0) {
-			unset($dprops[$prop]);
-		}
+		//if(isset($uprops['http://localhost/dacura/schema/ontology/ONTevfuqe84sw'])){
+		//	opr($uprops['http://localhost/dacura/schema/ontology/ONTevfuqe84sw']['http://www.w3.org/ns/oa#']['http://purl.org/dc/elements/1.1/title']);
+		//	opr($dprops['http://localhost/dacura/schema/ontology/ONTevfuqe84sw']['http://www.w3.org/ns/oa#']['http://purl.org/dc/elements/1.1/title']);
+		//}
+		
 		return true;
-	}
-	
-	function analyseUpdate($frag_id, $orig, $upd, &$forward, &$back){
-		$st = array("add" => array(), "del" => array(), "upd" => array(), "rem" => array());
-		foreach($upd as $p => $v){
-			if(!isset($orig[$p])){
-				$forward[$p] = $v;
-				$back[$p] = array();
-				$st['add'] = array_merge($st['add'], getValueAsTriples($frag_id, $p, $v, $this->cwurl));
-			}
-		}
-		//now we go through the original properties and see which ones we need to update or delete..
-		foreach($orig as $p => $v){
-			if(!isset($upd[$p])){
-				$st['del'] = array_merge($st['del'], getValueAsTriples($frag_id, $p, $v, $this->cwurl));
-				$back[$p] = $v;
-				$forward[$p] = array();
-			}
-			else { //property exists in both new and old
-				$porig = new LDPropertyValue($orig[$p], $this->cwurl);
-				$pupd = new LDPropertyValue($upd[$p], $this->cwurl);
-				if($porig->sameLDType($pupd)){
-					if($porig->literal() && $v != $upd[$p]){
-						$st['upd'][] = array($frag_id, $p, $v, $upd[$p]);
-						$forward[$p] = $upd[$p];
-						$back[$p] = $v;
-					}
-					elseif($porig->valuelist()){
-						$change = false;
-						foreach($v as $val){
-							if(!in_array($val, $upd[$p])){
-								$st['del'] = array($frag_id, $p, $val);
-								$change = true;
-							}
-						}
-						foreach($upd as $val2){
-							if(!in_array($val2, $v)){
-								$st['add'] = array($frag_id, $p, $val2);
-								$change = true;
-							}
-						}
-						if($change){
-							$forward[$p] = $upd[$p];
-							$back[$p] = $v;
-						}
-					}
-					elseif($porig->embeddedlist()){
-						foreach($v as $id => $obj){
-							if(!isset($upd[$p][$id])){ //delete
-								$forward[$p] = array($id => array());
-								$back[$p] = array($id => $obj);
-								$st['del'] = array_merge($st['del'], getObjectAsTriples($id, $obj, $this->cwurl));
-							}
-							else {
-								$nforward = array();
-								$nback = array();
-								$embst = $this->analyseUpdate($id, $obj, $upd[$p][$id], $nforward, $nback);
-								if(!$embst){
-									return false;
-								}
-								if(count($nforward) > 0 or count($nback) > 0){
-									if(!isset($forward[$p])){
-										$forward[$p] = array();
-										$back[$p] = array();
-									}
-									$forward[$p][$id] = $nforward;
-									$back[$p][$id] = $nback;
-								}
-								$this->incorporateAnalysisResults($st, $embst, $p, $frag_id);
-							}
-						}
-						foreach($upd[$p] as $id => $obj){
-							if(!isset($orig[$p][$id])){
-								if(!isset($forward[$p])){
-									$forward[$p] = array();
-									$back[$p] = array();
-								}
-								$st['add'] = array_merge($st['add'], getObjectAsTriples($id, $obj, $this->cwurl));
-								$forward[$p][$id] = $obj;
-								$back[$p][$id] = array();
-							}
-						}
-					}
-					elseif(!$porig->literal()) {
-						return $this->failure_result("illegal update type", 400);
-					}
-				}
-				else {
-					$tc = $this->analyseValueTypeChange($frag_id, $p, $v, $porig, $upd[$p], $pupd);
-					$tc['forward'][$frag_id] = array($p => $upd[$p]);
-					$tc['back'][$frag_id] = array($p => $v);
-					$st['tc'][] = $tc;
-				}
-			}
-		}
-		$st["rem"] = array_merge($st["rem"], $this->removeOverwrites($st["add"], $st["del"]));
-		return $st;
-	}
-	
-	function incorporateAnalysisResults(&$container, $sub, $p, $f){
-		//figure out if there are any changes....
-		$container['add'] = array_merge($container['add'], $sub['add']);
-		$container['del'] = array_merge($container['del'], $sub['del']);
-		$container['upd'] = array_merge($container['upd'], $sub['upd']);
-		$container['rem'] = array_merge($container['rem'], $sub['rem']);
-		//$container['forward'] = array_merge($container['forward'], $sub['forward']);
-		//$container['back'] = array_merge($container['back'], $sub['back']);
-		if(isset($sub['tc']) && count($sub['tc']) > 0){
-			if(!isset($container['tc'])){
-				$container['tc'] = array();
-			}
-			foreach($sub['tc'] as $s){
-				$s['forward'] = array($f => array($p => $s['forward']));
-				$s['back'] = array($f => array($p => $s['back']));
-				$container['tc'][] = $s;
-			}
-			//$container['tc'] = array_merge($container['tc'], $sub['tc']);
-		}
-	}
-	
-	/*
-	 * remove any triples where we are adding and deleting the same triple
-	 * (when we have list overwrites...)
-	 */
-	function removeOverwrites(&$add, &$del){
-		$removed = array();
-		if(count($del) > 0){
-			foreach($del as $i => $d){
-				if(count($add) > 0){
-					foreach($add as $j => $a){
-						if($a[0] == $d[0] && $a[1] == $d[1] && $a[2] == $d[2]){
-							$removed[] = $a;
-							unset($add[$j]);
-							unset($del[$i]);
-						}
-					}
-				}
-			}
-			if(count($removed) > 0){
-				$add = array_values($add);
-				$del = array_values($del);
-			}
-		}
-		return $removed;
-	}
-	
-	function analyseValueTypeChange($frag_id, $p, $v, $t, $v2, $t2){
-		//$st['del'] = array($frag_id, $p, $val);
-		$del = $this->getValueAsTriples($frag_id, $p, $v, $this->cwurl);
-		$add = $this->getValueAsTriples($frag_id, $p, $v2, $this->cwurl);
-		//$this->getValueAsTriples($frag_id, $p, $v2);
-		if(isset($del) && isset($add)){
-			$rem = $this->removeOverwrites($del, $add);
-		}
-		return array("from" => $t->ldtype(), "to" => $t2->ldtype(), "del" => $del, "add" => $add, "rem" => $rem);
-	}
-	
+	}	
 }
