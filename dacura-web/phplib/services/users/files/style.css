@@ -1,0 +1,44 @@
+@CHARSET "ISO-8859-1";
+.pccon {
+	float: right;
+}
+
+
+#userview {
+	clear: both;
+	width: 100%;
+	margin-top: 8px;
+}
+
+#userview table.dc-wizard{
+	width: 100%;
+}
+
+#user-pane-holder {
+	font-family: 'Open Sans', Helvetica;
+	padding-top: 10px;
+	margin-top: 6px;
+}
+
+#user-pane-holder select, 
+#user-pane-holder input{ 
+  font-family: 'Open Sans', Helvetica;
+  font-weight: 400;
+}
+
+#users-holder {
+	margin-left: -12px;
+	margin-right: -12px;
+	margin-top: -14px;
+	font-size: 0.8em;	
+}	
+
+table.dc-wizard td input {
+	width: 300px;
+	color: #222;
+	font-size: 0.9em;
+	padding: 4px;
+	font-family: 'Open Sans', Helvetica;
+}
+
+.users-result-message-holder { min-height: 40px; margin-top: -16px; }

@@ -1,0 +1,391 @@
+@CHARSET "ISO-8859-1";
+  
+ 
+#update-body a {
+	text-decoration: none;
+}
+  
+  div#update-body, 
+  div#candidate-body {
+  	margin: 2px 8px;
+  }
+  
+  
+ #show-candidate {
+  	margin: 20px 10px;
+  	padding: 0px 0px 20px 0px;
+}
+  
+#candidate-updates,
+#candidate-history {
+  	font-size: 0.85em;
+  	margin: 20px 0px;
+}
+  
+.dacura-json-editor {
+	padding-top: 8px;
+} 
+ 
+
+#action-bar {
+  	width: 100%;
+	padding: 0;
+	font-size: 0.8em;
+	color: #222;
+    border-bottom: 1px solid #888;
+    border-left: 1px solid #aaa;
+    border-right: 1px solid #aaa;
+ }
+ 
+ 
+ #action-table {
+ 	border-collapse: collapse;
+ 	width: 100%;
+ 	border-bottom: 1px solid white;
+ 	border-top: 1px solid white;
+ }
+ 
+  #action-table td {
+ 	padding: 2px 4px; 
+ 	border: 0;
+ 	border-right: 1px dotted #eee;
+  }
+ 
+  #version-controls {
+    display: inline-block;
+    font-size: 0.7em;
+  }
+  
+  #fragment-data {
+  	width: 100%;
+  	background-color: #fafaff;
+  	margin: 0px 0 10px 0;
+  }
+  .fragment-title {
+  	font-weight: bold;
+  	margin-right: 20px;
+  }
+  
+  .fragment-paths {
+  	font-size: 0.65em;
+  }
+  
+  .fragment-path {
+  	display: block;
+  }
+  
+  .fragment-step {
+  	padding-left: 6px;
+  	padding-right: 6px;
+  	border-right: 1px solid #888;
+  }
+  
+  div#candidate-main-body {
+ 	border: 1px solid #aaa;
+ 	background-color: #fdfdfd;
+ 	margin-top: -1px;
+ 	width: 100%;
+  }  
+  
+  div#candidate-viewer {
+    	margin: 2px 8px;
+  }
+
+ .dacura-json-viewer {
+ 	white-space: pre;
+ 	unicode-bidi: embed;
+ 	font-size: 0.85em;
+ }
+
+.dacura-table-viewer {
+ 	unicode-bidi: embed;
+ 	font-size: 0.85em;
+ }
+
+ #version-label {
+  	font-size: 1.3em;
+  	font-weight: bold;
+ 	vertical-align: middle;
+ 	padding: 0px 4px;	
+}
+ 
+ #candidate-version {
+ 	font-size: 1.4em;
+ 	padding: 0px 6px;
+ 	vertical-align: middle;
+ }
+ 
+.version-meta {
+	padding: 6px 15px 8px 5px;
+	margin-bottom: 0px;
+	margin-right: -4px;
+	
+}
+
+#version-data dl,
+#version-data dt,
+#version-data dd {
+	display: inline;
+}
+
+#candidate-meta-details dt {
+	font-size: 14px;
+	padding-left: 4px;
+	padding-top: 2px;
+	font-weight: bold;
+
+}
+
+#candidate-meta-details dd {
+	font-size: 14px;
+	background-color: white;
+	padding: 2px 2px;
+	margin-left: 2px;
+	margin-right: 6px;
+}
+
+dl#candidate-meta-details {
+	width: 100%;
+	background-color: black;
+	margin-top: 0;
+}
+
+div#candidate-meta {
+	padding-top: 10px;
+}
+
+table.candidate-invariants {
+	margin-top: -8px;
+	margin-right: -12px;
+	margin-bottom: -2px;
+}
+
+table.candidate-invariants th {
+	font-size: 0.75em;
+	padding-left: 2px;
+	font-weight: normal;
+}
+
+table.candidate-invariants td {
+	font-size: 0.8em;
+	padding-top: 2px;
+	padding-bottom: 3px;
+	padding-right: 20px;
+	padding-left: 10px;
+	border-left: #888 solid 1px;
+	font-weight: bold;
+	color: #111;
+}
+
+
+.tool-tab-info {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
+span#edit-update-meta,
+span#edit-meta {
+	font-size: 12px;
+	padding-left: 4px;
+	padding-right: 4px;
+	font-weight: bold;
+	color: #eee;
+}
+
+span#edit-update-meta select,
+span#edit-meta select {
+	font-size: 12px;
+	padding-bottom: 4px;
+	padding-top: 2px;
+	color: #444;
+	background-color: #eee;
+}
+
+#create-holder {
+	font-family: 'Open Sans', Helvetica;
+	font-size: 0.9em;
+}
+
+#tab-holder {
+	font-family: 'Open Sans', Helvetica;
+	padding-top: 10px;
+	margin-top: 6px;
+}
+
+#update-holder,
+#candidate-holder {
+	margin-left: -12px;
+	margin-right: -12px;
+	margin-top: -14px;
+	font-size: 0.8em;	
+}
+
+.change-details {
+	font-size: 0.85em;
+	border-collapse: collapse;
+	width: 100%;
+	text-align: left;
+}
+.change-details td, 
+.change-details th {
+	padding: 1px 3px;
+	border: 1px solid #ccc;
+}
+
+.api-decision-title {
+	font-weight: bold;
+	font-size: 1.2em;
+	margin-right: 12px;
+}
+
+.api-msg-body,
+.api-decision-subtitle {
+	font-style: italic;
+}
+
+.api-decision-subtext {
+	font-size: 1.1em;
+}
+
+.api-msg-title {
+	margin-right: 12px;
+	
+}
+
+
+
+.confirm-restore-buttons {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
+.dacura-candidate-message-box {
+	padding: 0px;
+		
+}
+
+.dataTables_empty .dacura-user-message-box {
+	margin-top: 10px;
+	padding: 8px;
+}
+
+/*
+linked data properties from candidate table html view
+*/
+
+table.ld-properties td {
+	padding-left: 8px;
+}
+
+table.ld-properties {
+	border-left: 1px solid #aaa;
+	border-right: 1px solid #aaa;
+	border-bottom: 1px solid #aaa;
+	border-top: 1px solid #aaa;
+	width: 100%;
+	border-collapse: collapse;
+	background-color: white;
+}
+
+table.ld-properties tr.embedded-object td.container {
+	padding: 0 14px 14px 14px;
+}
+
+
+td.prop-pd {
+	padding: 2px 0;
+}
+
+td.pid-embedded {
+	padding-top: 4px;
+}
+
+.dacura-property {
+	font-weight: bold;
+}
+
+table.ld-properties a {
+	text-decoration: none;
+}
+
+.dacura-property-value {
+	text-decoration: italic;
+}
+
+.dacura-literal {
+	color: #393;
+}
+
+.not-a-url {
+	 font-weight: bold;
+	 color: #e66;
+}
+
+.unknown-namespace {
+	 font-weight: bold;
+	 color: #a88;
+}
+
+div.annotation-record,
+div.provenance-record {
+	background-color: #666;
+	color: white;
+	padding: 4px 8px;
+	font-weight: bold;
+}
+
+
+div.odd_depth {
+	background-color: #eeeeee;
+}
+
+div.even_depth {
+	background-color: white;
+}
+
+td.even_depth, 
+td.odd_depth {
+ 	padding-right: 22px;
+}
+
+td.prop-pd {
+	padding-left: 6px;	
+}
+
+tr.firstp td.odd_depth {
+	border-top: 1px solid #aaa;
+}
+
+table.even_depth {
+	background-color: #eeeeee;
+}
+
+
+div.even_depth, 
+div.odd_depth {
+	border: 1px solid #aaa;
+}
+
+.pidembedded {
+	margin-bottom: 2px;
+	margin-top: 3px;	
+	padding: 3px 0px 2px 6px;
+	width: 100%;
+}
+
+  .updated {
+  	color: #66c;
+  }
+
+  .unchanged {
+  	color: #ccc;
+  }
+
+  .deleted {
+  	color: #c44;
+  }
+
+  .added {
+  	color: #4b4;
+  }
+
