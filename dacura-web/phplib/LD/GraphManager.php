@@ -8,7 +8,7 @@ class GraphManager extends DacuraObject {
 	var $tests = "all";
 	var $errors;
 	var $warnings;
-	var $fake = true;
+	var $fake = false;
 
 	function __construct($settings){
 		$this->settings = $settings;
@@ -17,6 +17,10 @@ class GraphManager extends DacuraObject {
 	/* 
 	 * all of these are just convenience interfaces to invoke DQS...
 	 */
+	
+	function setTests($tests){
+		$this->tests = $tests;
+	}
 	
 	function test_update($itrips, $dtrips, $gname, $schema_gname){
 		return $this->update($itrips, $dtrips, $gname, $schema_gname, true);		
@@ -58,16 +62,12 @@ class GraphManager extends DacuraObject {
 			return $fakets->update($itrips, array(), false);				
 		}
 		else {
-			return $this->invokeDQS("schema", $schema_gname, false, $itrips);
+			return $this->invokeDQS("schema", $schema_gname, false, $itrips, false, false);
 		}
 	}
 	
 	function validateAll($gname, $schema_gname){
 		return $this->invokeDQS("validate", $schema_gname, $gname);		
-	}
-	
-	function setTests($tests){
-		$this->tests = $tests;	
 	}
 	
 	function invokeDQS($service, $schema_gname, $gname = false, $itrips = false, $dtrips = false, $test = false){
@@ -102,10 +102,30 @@ class GraphManager extends DacuraObject {
 		$qstr = "";
 		foreach($queries as $k => $v){
 			if(strlen($qstr) > 0) $qstr.= "&";
-			$qstr .= "$k=$v";
+			//$qstr .= "$k=$v";
+			$qstr .= $k."=".urlencode($v);
 		}
-		$qstr = str_replace(";", ".", $qstr);
-		file_put_contents("C:\\Temp\\lastdqs.json", $qstr);
+		//$qstr = str_replace(";", ".", $qstr);
+		//$qstr = urlencode($qstr);
+		$dumpstr = "Service: $service\n";
+		$dumpstr .= "Tests: ";
+		if(is_array($this->tests)){
+			$dumpstr .= implode(", \t", $this->tests)."\n";
+		}
+		else {
+			$dumpstr .= $this->tests."\n";
+		}
+		$dumpstr .= "Schema: ".$schema_gname." Instance: ".$gname."\n";
+		$dumpstr .= "Triples Added:\n";
+		foreach($itrips as $itrip){
+			$dumpstr .= json_encode($itrip)."\n";
+		}
+		$dumpstr .= "Triples Deleted:\n";
+		foreach($dtrips as $itrip){
+			$dumpstr .= json_encode($itrip)."\n";
+		}
+		$dumpstr .= "Query: $qstr";
+		file_put_contents("C:\\Temp\\lastdqs.json", $dumpstr);
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $this->settings["dqs_service"][$service]);
 		curl_setopt($ch, CURLOPT_POST, 1);

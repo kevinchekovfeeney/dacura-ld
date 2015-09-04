@@ -73,7 +73,7 @@ class Schema extends LDEntity {
 	}
 	
 	function hasOntology($ontid){
-		return (isset($this->ldprops['ontologies'][$ontid]));
+		return ($this->ldprops && isset($this->ldprops['ontologies']) && isset($this->ldprops['ontologies'][$ontid]));
 	}
 	
 	function getTypeVersion($t){

@@ -4,7 +4,7 @@
 
 <div id='tab-holder'>
 	 <ul id="schema-pane-list" class="dch">
-	 	<li><a href="#graph-summary">Summary</a></li>
+	 	<li><a href="#dqs-page">Quality Service</a></li>
 	 	<li><a href="#graphs-list">Graphs</a></li>
 	 	<li><a href="#namespaces-list">Namespaces</a></li>
 	 	<li><a href="#import-ontology">Import Ontology</a></li>
@@ -81,11 +81,19 @@
 			<div id='graphs-table-holder'></div>
 		</div>
 	</div>
-	<div id="graph-summary-holder">
-		<div id="graph-summary" class="dch">
+	<div id="dqs-page-holder">
+		<div id="dqs-page" class="dch">
 			<div class="tab-top-message-holder">
-				<div class="tool-tab-info" id="graph-summary-msgs"></div>
+				<div class="tool-tab-info" id="dqs-msgs"></div>
 			</div>
+			<div id='dqs-tests' class="">
+				<div id='dqsopts'>
+					<input type='checkbox' title='select all tests' id='dqs-all'><label for='dqs-qll'>All</label>
+					<?= $service->getDQSCheckboxes("schema"); ?>
+				</div>
+				<a class='button2' href='javascript:validateOntologies();'>Validate Ontologies</a>
+			</div>
+			<div id='dqs-table-holder'></div>
 		</div>
 	</div>
 	
@@ -98,7 +106,6 @@
 			<tr>
 				<th>ID</th>
 				<th>URL</th>
-				<th>Type</th>
 				<th>Title</th>
 				<th>Status</th>
 				<th>Version</th>
@@ -136,6 +143,33 @@
 
 dacura.schema.importFormat = "url";
 
+function validateOntologies(){
+	var onts = [];
+	for (index = 0; index < dqsids.length; ++index) {	
+		var full_id = dqsids[index];
+		if($('#dqsontology_' + index).is(":checked")){
+			onts.push(full_id);
+		}
+		else {
+		}
+	}
+	if(!($('input:checkbox#dqs-all').is(":checked"))){
+		var tests = [];
+		$('input:checkbox.dqsoption').each(function () {
+			if(this.checked){
+				tests.push($(this).val());
+			}
+		  });
+		var x = JSON.stringify(onts, 0, 4) + " " + JSON.stringify(tests, 0, 4);
+		alert(x);
+		dacura.schema.validateGraphOntologies(onts, tests);
+	}
+	else {
+		dacura.schema.validateGraphOntologies(onts);
+	}
+	//ids[this.id.substr(9)]
+}
+
 function drawOntologies(onts){
 	var k = $('#ontology-template').html();
 	$('#ontology-table-holder').html(k);
@@ -144,7 +178,7 @@ function drawOntologies(onts){
 	  	if (onts.hasOwnProperty(key)) {
 			if(!isEmpty(onts[key])){
 			 	$('#ontology-table-holder .ontology_table tbody').append("<tr class='ontology-list' id='ontology_" + ids.length + "'><td>" + onts[key]['id'] + "</td><td>" + 
-				  	onts[key]['url'] + "</td><td>" + onts[key]["title"] + "</td><td>" + onts[key]["type"] +
+				  	onts[key]['url'] + "</td><td>" + onts[key]["title"] +
 				  	"</td><td>" + onts[key]["status"] + "</td><td>" + onts[key]["version"] + "</td></tr>");
 			  	$('#ontology_' + ids.length).click( function (event){
 					window.location.href = ids[this.id.substr(9)];
@@ -159,9 +193,28 @@ function drawOntologies(onts){
 	}, function() {
 	    $(this).removeClass('userhover');
 	});
-	
 	$('#ontology-table-holder .ontology_table').dataTable({"jQueryUI": true, "searching": false, "info": false});
-		
+}
+
+var dqsids = [];
+
+function drawDQSPage(onts){
+	var k = $('#ontology-template').html();
+	$('#dqs-table-holder').html(k);
+	$('#dqs-table-holder thead tr').append("<th>Include</th>");
+	for (var key in onts) {
+	  	if (onts.hasOwnProperty(key)) {
+			if(!isEmpty(onts[key])){
+			 	$('#dqs-table-holder .ontology_table tbody').append("<tr><td>" + onts[key]['id'] + "</td><td>" + 
+				  	onts[key]['url'] + "</td><td>" + onts[key]["title"] +
+				  	"</td><td>" + onts[key]["status"] + "</td><td>" + onts[key]["version"] + "</td><td>" + 
+				  	"<input type='checkbox' + id='dqsontology_" + dqsids.length + "'" + "></td></tr>");
+			 	dqsids[dqsids.length] = onts[key].id;		  	 		  	
+				  	
+			}
+		}
+	}
+	$('#dqs-table-holder .ontology_table').dataTable({"jQueryUI": true, "searching": false, "info": false});
 }
 
 function drawNamespaces(prefixes){
@@ -226,6 +279,7 @@ var drawSchema = function(sch){
 	drawNamespaces(sch.namespaces);
 	drawGraphs(sch.graphs);
 	drawOntologies(sch.ontologies);
+	drawDQSPage(sch.ontologies);
 }
 
 function setImportFormat(format){
@@ -261,6 +315,11 @@ function initDecorations(){
 	$( "#checking-options" ).buttonset();
 	$( "#dqs" ).click(function(event){
 		clearResultMessage();
+	});
+	$( "#dqs-all" ).click(function(event){
+		$('input:checkbox.dqsoption').each(function () {
+			this.checked = true;
+		 });
 	});
 	//import button
 	$('.import-button').button().click(function (event){

@@ -10,6 +10,52 @@
 	font-family: 'Open Sans', Helvetica;	
 }
 
+div#dqs-tests {
+	margin-top: 16px;
+	margin-left: 10px;
+}
+
+.dqs-choose {
+	float: left;
+	font-size: 1.2em;
+	font-weight: bold;
+}
+
+
+
+div.ontology-type {
+	display: inline-block;
+	margin: 6px 0;
+	border: 1px solid #888;
+	padding: 4px;
+}
+
+div.dqs-category-title {
+	display: inline-block;
+	padding: 6px;
+	font-weight: bold;
+}
+
+div.dqs-button {
+	width: 100%;
+	text-align: right;
+}
+
+#dqsopts {
+	font-size: 0.8em;
+}
+
+div.all-constraints {
+	margin-top: 10px;
+}
+
+#page-holder {
+	padding-top: 10px;
+	margin-top: 6px;
+	padding-left: 10px;
+	padding-right: 10px;	
+}
+
   div#view-bar {
   	background-color: #d5f9e9;
   

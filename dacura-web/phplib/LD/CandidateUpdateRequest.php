@@ -748,12 +748,12 @@ class CandidateUpdateRequest extends EntityUpdate {
 		$cand_id = $this->original->getCandidateFragID();
 		if(isset($this->forward['candidate']) && !isset($this->forward['candidate'][$cand_id])){
 			if(is_array($this->forward['candidate']) && count($this->forward['candidate']) > 0){
-				if($origcand){
-					$this->forward['candidate'] = array($cand_id => $this->forward['candidate']);
-				}
-				else {
+				//if($origcand){
+			//		$this->forward['candidate'] = array($cand_id => $this->forward['candidate']);
+				//}
+				//else {
 					$this->forward['candidate'] = array("_:candidate" => $this->forward['candidate']);						
-				}
+				//}
 			}
 		}
 		return true;

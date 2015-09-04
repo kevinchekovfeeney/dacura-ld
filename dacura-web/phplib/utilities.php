@@ -72,7 +72,7 @@ function deepArrCopy($x){
 }
 
 function isLiteral($x){
-	return (is_string($x) && !isURL($x) && !isNamespacedURL($x));
+	return (is_string($x) && !isURL($x) && !isBlankNode($x) && !isNamespacedURL($x));
 }
 
 function isURL($str){

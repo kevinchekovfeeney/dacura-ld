@@ -5,6 +5,8 @@
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery.json-editor.css")?>" />
 
 <div id="page-holder">
+	<div id='graph-msgs'></div>
+
 	<div id='summary-status'><div id='graph-description'></div>
 		<table class='graph-summary'>
 			<tbody>
@@ -20,6 +22,21 @@
 			<?= $service->getCheckingOptions(); ?>
 		</select>
 		<a class="button2 dch" id='checking-enable' href='javascript:enableChecking()'>Enable</a>
+	</div>
+	<div id="ontology-list">
+		<table class="ontology_table display">
+			<thead>
+			<tr>
+				<th>ID</th>
+				<th>URL</th>
+				<th>Title</th>
+				<th>Status</th>
+				<th>Version</th>
+				<th>Include</th>
+			</tr>
+			</thead>
+			<tbody></tbody>
+		</table>
 	</div>
 	<div id='summary-dashboard' class="dacura-dashboard-panel">
 		<a href='<?=$service->get_service_url()?>/export'>
@@ -72,7 +89,23 @@ function drawCheckingStatusBox(graph){
 
 }
 
+var ids = [];
 
+function drawOntologies(onts){
+	for (var key in onts) {
+	  	if (onts.hasOwnProperty(key)) {
+			if(!isEmpty(onts[key])){
+			 	$('.ontology_table tbody').append("<tr class='ontology-list'><td>" + onts[key]['id'] + "</td><td>" + 
+				  	onts[key]['url'] + "</td><td>" + onts[key]["title"] +
+				  	"</td><td>" + onts[key]["status"] + "</td><td>" + onts[key]["version"] + "</td><td>" + 
+				  	"<input type='checkbox' + id='ontology_" + ids.length + "'" + "></td></tr>");
+			  	ids[ids.length] = onts[key].id;		  	 		  	
+				  	
+			}
+		}
+	}
+	$('.ontology_table').dataTable({"jQueryUI": true, "searching": false, "info": false});
+}
 
 var drawGraph = function(schema){
 	clearResultMessage();
@@ -81,6 +114,8 @@ var drawGraph = function(schema){
 			if((typeof schema.graphs[key].local_id != "undefined") && schema.graphs[key].local_id == '<?= $params['graphid'];?>'){
 				var graph = schema.graphs[key];
 				drawSummaryTable(graph);
+				drawOntologies(schema.ontologies);
+				
 			}
 			else {
 			}
@@ -88,18 +123,27 @@ var drawGraph = function(schema){
 	}
 };
 
+function enableChecking(){
+	var onts = [];
+	for (index = 0; index < ids.length; ++index) {	
+		var full_id = ids[index];
+		if($('#ontology_' + index).is(":checked")){
+			onts.push(full_id);
+		}
+		else {
+		}
+	}
+	dacura.schema.validateGraphOntologies(onts);
+	//ids[this.id.substr(9)]
+}
+
 function clearResultMessage(){
 	dacura.system.clearResultMessage();	
 }
 
 
 $(function() {
-	dacura.toolbox.initTool({});
-	dacura.system.setDisplayOptions({
-		"resultbox": '.tool-info',
-		"busybox": '#page-holder'	
-	});
-	
+	dacura.system.init({"mode": "tool", "targets": {resultbox: "#graph-msgs", errorbox: "#graph-msgs", busybox: "#page-holder"}});
 	dacura.schema.fetchSchema(drawGraph);
 });
 </script>

@@ -296,7 +296,6 @@ class CandidateDacuraServer extends LDDacuraServer {
 			return $this->updatedUpdate($ncur, $umode);
 		}
 	}
-	
 
 	function updatedUpdate($cur, $umode, $testflag = false){
 		if($cur->bothPublished()){

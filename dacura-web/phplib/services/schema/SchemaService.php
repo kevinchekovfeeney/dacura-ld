@@ -131,7 +131,7 @@ class SchemaService extends DacuraService {
 			if($this->getCollectionID() == "all"){
 				$params["subtitle"] = "Manage ontologies that are available system wide";
 				$this->renderToolHeader($params);
-				$this->renderScreen("schema", array("scope" => "system"));
+				$this->renderScreen("system", array("scope" => "system"));
 			}
 			elseif($this->getDatasetID() == "all") {
 				$params["subtitle"] = "Manage the structure of your datasets";
@@ -172,7 +172,7 @@ class SchemaService extends DacuraService {
 		}
 		$html = "";
 		foreach($boxes as $id => $entries){
-			$html .= "<div class='ontology-$id'><div class='dqs-category-title'>".ucfirst($id)." Constraints</div>".implode(" ", $entries)."</div>";
+			$html .= "<div class='ontology-type ontology-$id'><div class='dqs-category-title'>".ucfirst($id)." Constraints</div>".implode(" ", $entries)."</div>";
 		}
 		return $html;
 	}

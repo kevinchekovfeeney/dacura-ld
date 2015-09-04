@@ -1100,7 +1100,7 @@ function encodeScalar($s){
 }
 
 function addTypes($s, $p, $o, $t){
-	return array(array($s, $p, encodeScalar($o)));
+	return array(array($s, $p, encodeScalar($o, $t)));
 }
 
 function nop($s, $p, $o, $t){

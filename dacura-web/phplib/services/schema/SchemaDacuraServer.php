@@ -92,16 +92,16 @@ class SchemaDacuraServer extends LDDacuraServer {
 		return $format == "" or in_array($format, array("json", "html", "triples", "quads"));
 	}
 	
-	function validateOntology($id){
+	function validateOntology($local_id){
 		if(!$this->schema){
 			$this->loadSchema();
 		}
+		$id = $this->schema->getOntologyFullID($local_id);
 		$ont = $this->schema->loadOntology($id);
 		if($ont){
-			$full_id = $this->schema->cwurl."/ontology/".$id;				
-			$quads = $ont->getPropertyAsQuads($full_id, $id);
+			$quads = $ont->getPropertyAsQuads($id, $local_id);
 			if($quads){
-				$x = $this->graphman->validateSchema($id, $quads);
+				$x = $this->graphman->validateSchema($local_id, $quads);
 				if($x === false){
 					return $this->failure_result($this->graphman->errmsg, $this->graphman->errcode);
 				}
@@ -112,6 +112,36 @@ class SchemaDacuraServer extends LDDacuraServer {
 			}				
 		}
 		return $this->failure_result($this->schema->errmsg, $this->schema->errcode);
+	}
+	
+	function validateOntologies($ids, $tests){
+		if(!$this->schema){
+			$this->loadSchema();
+		}
+		$temp_graph_id = genid("", false, false);
+		$aquads = array();
+		foreach($ids as $id){
+			$ont = $this->schema->loadOntology($id);
+			if($ont){
+				$quads = $ont->getPropertyAsQuads($id, $temp_graph_id);
+				if($quads){
+					$aquads = array_merge($aquads, $quads);
+				}
+			}
+			else {
+				return $this->failure_result($this->schema->errmsg, $this->schema->errcode);				
+			}
+		}
+		//return $aquads;
+		$this->graphman->setTests($tests);
+		$x = $this->graphman->validateSchema($temp_graph_id, $aquads);
+		if($x === false){
+			return $this->failure_result($this->graphman->errmsg, $this->graphman->errcode);
+		}
+		elseif(is_array($x) && count($x) == 0){
+			return true;
+		}
+		return $x;				
 	}
 	
 	function getOntology($local_id, $version, $format, $display){

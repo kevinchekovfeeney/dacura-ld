@@ -62,6 +62,19 @@ dacura.schema.api.validate_ontology = function(n){
 	return xhr;
 }
 
+dacura.schema.api.validate_graph_ontologies = function(onts, tests){
+	if(typeof tests == "undefined"){
+		tests = "all";
+	}
+	var xhr = {};
+	var data = {"tests" : tests, "ontologies" : onts};
+	xhr.url = dacura.schema.apiurl + "/validate_ontologies/";
+	xhr.type = "POST";
+	xhr.contentType = 'application/json'; 
+	xhr.data = JSON.stringify(data);
+	xhr.dataType = "json";
+    return xhr;	
+}
 
 //signature of calls produced by the editor
 dacura.schema.fetchOntology = function(id, args, onwards, from){
@@ -92,6 +105,28 @@ dacura.schema.updateOntology = function(id, uobj, onwards, type, test){
 	ajs.handleResult = onwards;
 	ajs.handleJSONError = onwards;
 	dacura.system.invoke(ajs, msgs);
+}
+
+dacura.schema.validateGraphOntologies = function(onts, tests){
+	var ajs = dacura.schema.api.validate_graph_ontologies(onts, tests);
+	var msgs = { "busy": "validating graph ontologies", "fail": "Failed to validate ontologies for graph"};
+	ajs.handleTextResult = function(text){
+		var body = onts.length + " Ontologies";//
+		if(typeof tests == "object"){
+			body += " " + tests.length + " Tests";
+		}
+		else {
+			body += " All Tests";
+			tests = "all";
+		}
+		var extra = {"ontologies": onts, "tests": tests};
+		dacura.system.showSuccessResult(body, extra, text);
+	}
+	ajs.handleResult = function(json){
+		var body = json.length + " Errors identified";
+		dacura.system.showErrorResult(body, json, "Validation Failed");
+	};
+	dacura.system.invoke(ajs, msgs);	
 }
 
 
