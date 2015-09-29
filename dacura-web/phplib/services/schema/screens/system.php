@@ -28,18 +28,15 @@
 					</table>
 			</div>
 			<div class='import-content'>
-				<table class='dc-wizard'>
+				<table class='import-table dc-wizard'>
 					<thead><tr><th class="left"></th><th class="right"></th></tr></thead>
 					<tbody>
+						<tr class='id'><th id='entid'>ID</th><td id='id-input-cell'><input type="text" id='id-input'> (leave blank for auto-generated id)</td></tr>
 						<tr class='urlmode'><th>URL</th><td><input type="text" id='url-input'></td></tr>
 						<tr class='uploadmode'><th>Choose a file to upload</th><td><input type="file" name='fileup' id='file-input'></td></tr>
+						<tr class='textmode'><td colspan=2><div>Paste the ontology into the text box below</div><textarea id='tximp'></textarea></td></tr>
 					</tbody>
-				</table>
-				<div class='input-text textmode'>
-					<div class='input-text-title'>Paste the ontology into the text box below</div>
-					<textarea id='tximp'>
-					</textarea>
-				</div>
+				</table>			
 			</div>
 			<div class="tool-buttons">
 	   			<button class="dacura-button urlmode import-button" id="url-button">Import from URL</button>
@@ -87,7 +84,6 @@
 	</div>
 </div>
 <script>
-
 dacura.schema.importFormat = "url";
 var ontids = [];
 
@@ -118,18 +114,28 @@ function validateOntologies(){
 	//ids[this.id.substr(9)]
 }
 
+function getMetaProperty(meta, key, def){
+	if(typeof meta[key] == "undefined"){
+		return def;
+	}
+	return meta[key];
+}
+
 function drawOntologies(onts){
 	var k = $('#ontology-template').html();
 	$('#ontology-table-holder').html(k);
 	for (var key in onts) {
 	  	if (onts.hasOwnProperty(key)) {
 			if(!isEmpty(onts[key])){
-			 	$('#ontology-table-holder .ontology_table tbody').append("<tr class='ontology-list' id='ontology_" + ontids.length + "'><td>" + onts[key]['id'] + "</td><td>" + 
-				  	onts[key]['url'] + "</td><td class='ontology_" + ontids.length + "'>" + onts[key]["title"] +
-				  	"</td><td class='ontology_" + ontids.length + "'>" + onts[key]["status"] + "</td><td class='ontology_" + ontids.length + "'>" + onts[key]["version"] + "</td><td>" + 
+				var url = getMetaProperty(onts[key]["meta"], "url", "unknown");
+				var title = getMetaProperty(onts[key]["meta"], "title", "none");
+				var shorthand = getMetaProperty(onts[key]["meta"], "shorthand", "none");
+			 	$('#ontology-table-holder .ontology_table tbody').append("<tr class='ontology-list' id='ontology_" + ontids.length + "'><td class='ontology_" + ontids.length + "'>" + onts[key]['id'] + "</td><td>" + 
+				  	onts[key]['url'] + "</td><td class='ontology_" + ontids.length + "'>" + title +
+				  	"</td><td class='ontology_" + ontids.length + "'>" + onts[key].status + "</td><td class='ontology_" + ontids.length + "'>" + onts[key]["version"] + "</td><td>" + 
 				  	"<input type='checkbox' + id='dqsontology_" + ontids.length + "'" + "></td></tr>");
 			  	$('.ontology_' + ontids.length).click( function (event){
-					window.location.href = ontids[this.parentNode.id.substr(9)];
+				  	window.location.href = "schema/" + ontids[this.parentNode.id.substr(9)];
 			    });
 			  	ontids[ontids.length] = onts[key].id;		  	 		  	
 				  	
@@ -144,27 +150,21 @@ function drawOntologies(onts){
 	$('#ontology-table-holder .ontology_table').dataTable(<?=$dacura_server->getServiceSetting('ontology_datatable_init', "{}");?>);
 }
 
-var drawSchema = function(sch){
-	dacura.schema.currentschema = sch;
-	drawOntologies(sch.ontologies);
-}
+
 
 function setImportFormat(format){
 	dacura.schema.importFormat = format;
 	if(format == "upload"){
-		$('.dc-wizard').show();
 		$('.uploadmode').show();		
 		$('.urlmode').hide();
 		$('.textmode').hide();	
 	}
 	else if(format == "text"){
-		$('.dc-wizard').hide();
 		$('.textmode').show();
 		$('.uploadmode').hide();
 		$('.urlmode').hide();
 	}
 	else {
-		$('.dc-wizard').show();
 		$('.textmode').hide();
 		$('.uploadmode').hide();
 		$('.urlmode').show();
@@ -206,7 +206,8 @@ function initDecorations(){
 		else {
 			payload = document.getElementById('file-input').files[0];
 		}
-		dacura.schema.importOntology(dacura.schema.importFormat, false, payload);
+		var entid =  $('#id-input').val();
+		dacura.schema.importOntology(dacura.schema.importFormat, entid, payload);
 	});
 }
 
@@ -225,6 +226,6 @@ $(function() {
             clearResultMessage();
         }
     });
-    dacura.schema.fetchSchema(drawSchema);
+    dacura.schema.fetchSchema(drawOntologies);
 });
 </script>

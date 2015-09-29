@@ -1,11 +1,23 @@
 dacura.schema = {}
 dacura.schema.apiurl = dacura.system.apiURL();
-
 dacura.schema.api = {};
 
 dacura.schema.api.get = function(){
 	xhr = {};
-	xhr.url = dacura.schema.apiurl;
+	if(dacura.system.collectionid == "all" && dacura.system.datasetid == "all"){
+		xhr.data = {"entity_type": "ontology"};
+	}
+	else {
+		xhr.data = {"entity_type": "ontology"};	
+	}
+	xhr.url = dacura.system.serviceApiURL('ld');
+	return xhr;
+}
+
+dacura.schema.api.get_ontology = function(n, opts){
+	xhr = {data: opts};
+	//xhr.data.entity_type = "ontology";
+	xhr.url = dacura.system.serviceApiURL('ld') + "/" +  n;
 	return xhr;
 }
 
@@ -25,9 +37,9 @@ dacura.schema.api.update = function(sc){
     return xhr;
 }
 
-dacura.schema.api.import_ontology = function(format, dqs, payload){
+dacura.schema.api.import_ontology = function(format, entid, payload){
 	xhr = {};
-	xhr.url = dacura.schema.apiurl + "/import?dqs=" + dqs;
+	xhr.url = dacura.schema.apiurl + "/import?id=" + entid;
 	xhr.type = "POST";
 	if(format == 'upload'){
 		xhr.data = payload;
@@ -35,15 +47,9 @@ dacura.schema.api.import_ontology = function(format, dqs, payload){
 	    xhr.contentType = payload.type
 	}
 	else {
-		xhr.data ={ "format": format, "dqs": dqs, "payload": payload};		
+		xhr.data ={ "format": format, "id": entid, "payload": payload};		
 	}
 	return xhr;	
-}
-
-dacura.schema.api.get_ontology = function(n, opts){
-	xhr = {data: opts};
-	xhr.url = dacura.schema.apiurl + "/ontology/" + n;
-	return xhr;
 }
 
 dacura.schema.api.update_ontology = function(id, uobj){

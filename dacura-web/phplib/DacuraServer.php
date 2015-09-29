@@ -376,32 +376,7 @@ class DacuraServer extends DacuraObject {
 		return $this->ucontext->getServiceSetting($cname, $def);		
 	}
 	
-	/*
-	 * Methods for sending results to client
-	 */	
-	function write_decision($ar){
-		if($ar->is_error()){
-			http_response_code($ar->errcode);
-			$this->ucontext->logger->setResult($ar->errcode, $ar->decision." : ".$ar->action);
-		}
-		elseif($ar->is_reject()){
-			http_response_code(401);
-			$this->ucontext->logger->setResult(401, $ar->decision." : ".$ar->action);
-		}
-		elseif($ar->is_confirm()){
-			http_response_code(428);
-			$this->ucontext->logger->setResult(428, $ar->decision." : ".$ar->action);
-		}
-		elseif($ar->is_pending()){
-			http_response_code(202);
-			$this->ucontext->logger->setResult(202, $ar->decision." : ".$ar->action);
-		}
-		else {
-			$this->ucontext->logger->setResult(200, $ar->decision, $ar->action);
-		}
-		echo json_encode($ar);
-		return true;
-	}
+
 	
 	function isDacuraBannedWord($word){
 		return strtolower($word) == "dacura";

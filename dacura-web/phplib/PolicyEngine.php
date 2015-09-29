@@ -10,10 +10,10 @@ class PolicyEngine extends DacuraObject {
 		$ar->decision = "accept";
 		if($action == "create"){
 			//$ar->reject("Candidate Create Not Allowed", "You are a dirtbird and I'm not letting you");
-			//$ar->accept();
-			$ar->decision = 'pending';
+			$ar->accept();
+			//$ar->decision = 'pending';
 		}
-		elseif($action == "update candidate"){
+		elseif($action == "update"){
 			//$ar->reject("Update Candidate Not Allowed", "You are a dirtbird and I'm not letting you");
 			//$ar->accept();
 			$ar->decision = 'accept';

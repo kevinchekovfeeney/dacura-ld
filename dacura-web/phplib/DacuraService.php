@@ -178,7 +178,11 @@ class DacuraService extends DacuraObject {
 		global $dacura_server;
 		include_once("phplib/snippets/toolheader.php");
 	}
-			
+
+	function includeSnippet($sn){
+		include_once("phplib/snippets/$sn.php");
+	}
+	
 	function renderToolFooter($option){
 		include_once("phplib/snippets/toolfooter.php");
 	}

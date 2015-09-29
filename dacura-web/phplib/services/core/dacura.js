@@ -73,6 +73,13 @@ dacura.system.apiURL = function(c, d, s){
 	return url + this.getcds(c, d, s);
 };
 
+dacura.system.serviceApiURL = function(s){
+	c = dacura.system.pagecontext.collection_id;
+	d = dacura.system.pagecontext.dataset_id;
+	var url = "<?=$service->settings['ajaxurl']?>";
+	return url + this.getcds(c, d, s);
+}
+
 dacura.system.pageURL = function(c, d, s){
 	var url = "<?=$service->settings['install_url']?>";
 	return url + this.getcds(c, d, s);
@@ -289,7 +296,7 @@ dacura.system.writeResultMessage = function(type, title, jqueryid, msg, extra){
 	if(typeof msg != "undefined"){
 		contents += "<div class='mbody'>" + msg + "</div>";
 	}
-	if(typeof extra != "undefined"){
+	if(typeof extra != "undefined" && extra){
 		if(typeof extra == "object"){
 			extra = JSON.stringify(extra, 0, 4);
 		}
@@ -708,6 +715,31 @@ dacura.system.updateToolHeader = function(options){
 		this.setToolImage(options.image);
 	}
 }
+
+dacura.system.setLDEntityToolHeader = function(ent){
+	options = { subtitle: ent.id };
+	if(typeof ent.title != "undefined"){
+		options.subtitle = ent.title;
+	}
+	if(typeof ent.image != "undefined"){
+		options.image = ent.image;
+	}
+	options.description = $('#ldentity-header-template').html();
+	dacura.system.updateToolHeader(options);
+	if(typeof ent.metadetails != "undefined"){
+		metadetails = ent.metadetails;
+	}
+	else {
+		metadetails = timeConverter(ent.created);
+	}
+	$('.ent_type').html("<span class='entity-type'>" + ent.type + "</span>");
+	$('.ent_created').html("<span class='entity-details'>" + metadetails + "</span>");
+	$('.ent_status').html("<span class='entity-status entity-" + ent.latest_status + "'>" + ent.latest_status + "</span>");
+    dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + ent.id , options.subtitle);	
+}
+
+
+
 
 dacura.system.setToolSubtitle = function(msg){
 	$('.tool-subtitle').html(msg);

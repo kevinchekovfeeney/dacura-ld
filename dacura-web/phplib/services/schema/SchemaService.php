@@ -1,5 +1,6 @@
 <?php
 include_once("SchemaDacuraServer.php");
+include_once("phplib/services/ld/LDService.php");
 
 
 class SchemaService extends DacuraService {
@@ -93,16 +94,60 @@ class SchemaService extends DacuraService {
 				"type" => array("instance")
 			)			
 	);
-	
+
 	function renderFullPageHeader(){
 		parent::renderFullPageHeader();
-		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css').'">';
 		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.schema.js");
+		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css', "ld").'">';
+		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css').'">';
 		echo "<div id='pagecontent-container'>";
 		echo "<div id='pagecontent-nopad'>";
-	}	
-		
+	}
+	
+	function renderFullPageFooter(){
+		echo "</div></div>";
+		parent::renderFullPageFooter();
+	}
+	
 	function handlePageLoad($dacura_server){
+		//$this->renderScreen("system", array());
+		//opr($this);	
+		if($this->getCollectionID() == "all"){
+			if($this->screen && $this->screen != "view"){
+				$params["breadcrumbs"] = array(array(array("", ucfirst($this->screen)." Ontology")), array());
+				$params["title"] = "$this->screen Ontology Configuration";
+				$params["subtitle"] = "Analyse and manage your imported ontology";
+				$this->renderToolHeader($params);
+				if(isset($_GET['mode'])) $params['mode'] = $_GET['mode'];
+				if(isset($_GET['version'])) $params['version'] = $_GET['version'];
+				if(isset($_GET['format'])) $params['format'] = $_GET['format'];
+				if(isset($_GET['display'])) $params['display'] = $_GET['display'];
+				$this->renderScreen("ontology", array("id" => $this->screen));								
+			}
+			else {
+				$params["breadcrumbs"] = array(array(), array());
+				$params["title"] = "Imported Ontologies";
+				$params["subtitle"] = "Manage the set of external ontologies supported by the system.";
+				$this->renderToolHeader($params);
+				$this->renderScreen("system", array("scope" => "system"));
+			}
+		}
+		elseif($this->getDatasetID() == "all") {
+			$params["title"] = "Schema Management Service";				
+			$params["subtitle"] = "Manage the structure of your datasets";
+			$this->renderToolHeader($params);
+			$this->renderScreen("schema", array("scope" => "collection"));
+		}
+		else {
+			$params["title"] = "Schema Management Service";				
+			$params["subtitle"] = "Manage the structure of your dataset";
+			$this->renderToolHeader($params);
+			$this->renderScreen("schema", array("scope" => "dataset"));
+		}
+		$this->renderToolFooter($params);		
+	}
+		
+/*	function handlePageLoad($dacura_server){
 		$params = array();
 		if($this->screen == "test"){
 			$this->renderScreen("test", array());				
@@ -146,7 +191,7 @@ class SchemaService extends DacuraService {
 		}
 		$this->renderToolFooter($params);
 	}
-	
+	*/
 	function getDQSOptions($type){
 		$options = array();
 		foreach($this->dqs_options as $id => $props){
@@ -186,25 +231,11 @@ class SchemaService extends DacuraService {
 		return $html;
 	}
 	
-	function loadArgsFromBrowserURL($sections){
-		if(count($sections) > 0){
-			$this->screen = array_shift($sections);
-			$this->args = $sections;
-		}
-		else {
-			$this->screen = $this->default_screen;
-		}
-	}	
-	
 	function userCanViewScreen($user){
 		return true;
 	}
 	
 	
-	function renderFullPageFooter(){
-		echo "</div></div>";
-		parent::renderFullPageFooter();
-	}
 	
 	
 	

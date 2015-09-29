@@ -5,12 +5,4 @@ $settings = array(
 		"searching": false,
 		"jQueryUI": true,
 		"scrollX": true,
-		 "aoColumns": [
-          	{"bVisible": false},
-			null,
-			null,
-			null,
-			null,
-			null
-    	]
 	}');

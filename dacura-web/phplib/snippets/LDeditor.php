@@ -336,7 +336,9 @@ dacura.editor = {
 	editorheight: "400",
 	editorwidth: "100%",
 	entity_type: "candidate",
-
+	targets: dacura.system.targets,
+	
+	
 	decisionTexts: {
 		"create": {
 			"reject": "Your submission was not accepted by the System",		
@@ -350,6 +352,11 @@ dacura.editor = {
 			"pending": "Your update is awaiting approval",
 			"interpretation": "Your submission has been accepted as an interpretation by the system and added to the analysis base"				
 		}
+	},
+
+	clearMessages: function(){
+		$(dced.targets.resultbox).html("");	
+		$(dced.targets.errorbox).html("");	
 	},
 		
 	drawUpdateResult: function(res){
@@ -408,6 +415,9 @@ dacura.editor = {
 		if(typeof opts.entity_type != "undefined"){
 			dced.entity_type = opts.entity_type;
 		}
+		if(typeof opts.targets != "undefined"){
+			dced.targets = opts.targets;
+		}
 	},
 
 	display: function(){
@@ -446,7 +456,7 @@ dacura.editor = {
 			dced.currentID = i;
 			var opts = jQuery.extend({}, dced.options);
 			opts.display = dced.getDisplayFlagsAsString();
-			dced.fetch(i, opts, dced.loadEntity);
+			dced.fetch(i, opts, dced.loadEntity, dced.targets);
 		}
 	},
 	
@@ -459,33 +469,35 @@ dacura.editor = {
 	},
  	
 	submit: function(type, test){
-		dacura.system.clearMessages();
-		var uobj = $('#ldprops-input').val();
-		if(uobj.length < 2){
+		dced.clearMessages();
+		var contents = $('#ldprops-input').val();
+		var meta = $('#ldmeta-input').val();
+		if(contents.length < 2){
 			return dacura.system.showErrorResult("Textbox is empty! Please input some data before updating!", null, "No data entered");		
 		}
 		try {
-			uobj = JSON.parse(uobj);
+			uobj = {};
+			uobj.contents = JSON.parse(contents);
 			uobj.options = jQuery.extend({}, dced.options);
-			uobj.options.display = dced.getDisplayFlagsAsString();			
+			uobj.options.display = dced.getDisplayFlagsAsString();
+			uobj.meta = JSON.parse(meta);			
 			if(typeof test != "undefined"){
 				uobj.test = true;
-			}
-			if(dced.entity_type == "ontology"){
-
-			}
-			else if($('#set-status').val() != dced.currentEntity.status){
-				if(typeof uobj.meta == "undefined"){
-					uobj.meta = { "status": $('#set-status').val()};
-				}
-				else {
-					dacura.system.setLDSingleValue(uobj.meta, "status", $('#set-status').val());
-				}
 			}
 			if(typeof dced.currentEntity.delta != "undefined" && $('#set-update-status').val() != dced.currentEntity.delta.status){
 				uobj.updatemeta = { "status": $('#set-update-status').val() };
 			}
-			dced.update(dced.currentID, uobj, dced.drawUpdateResult, type, test); 
+			if(dced.mode == "edit new"){
+				var entity_type = $('#set-status').val();
+				uobj.type = entity_type;
+				dced.update(uobj, dced.drawUpdateResult, test, dced.targets);
+			}
+			else {
+				if($('#set-status').val() != dced.currentEntity.status){
+					uobj.meta.status = $('#set-status').val();
+				}
+				dced.update(dced.currentID, uobj, dced.drawUpdateResult, type, test, dced.targets);
+			} 
 		}
 		catch(e){
 			dacura.system.showErrorResult("JSON Parsing Error - your data has formatting errors.", e.message);
@@ -494,7 +506,7 @@ dacura.editor = {
 	},
  	
 	refresh: function(source){
-		dacura.system.clearMessages();
+		dced.clearMessages();
 		var opts = jQuery.extend({}, dced.options);
 		opts.display = dced.getDisplayFlagsAsString();
 		dced.fetch(dced.currentID, opts, dced.drawEntity, source);
@@ -868,14 +880,15 @@ dacura.editor = {
 		$('#set-update-status').hide();							
 		$('#ld-edit-page').show();
 		$('#ld-editor').append("<div class='dacura-json-editor'>" + 
+				"<textarea id='ldmeta-input'>{}</textarea>" + 
 				"<textarea id='ldprops-input'>{}</textarea>" + 
 				"<div class='dch' id='ld-experimental' contentEditable=true>{}</div>"); 
 		dced.jsoneditor = new JSONEditor($("#ldprops-input"), dced.editorwidth, dced.editorheight);
 		dced.jsoneditor.doTruncation(true);
 		dced.jsoneditor.showFunctionButtons();
 		$('.cancel_edit').hide();
-		$('.test_edit span').text("Test new candidate");
-		$('.save_edit span').text("Submit new candidate");	
+		$('.test_edit span').text("Test entity creation");
+		$('.save_edit span').text("Submit new entity");	
 	},
 
 	setMode: function(mode){
@@ -928,10 +941,12 @@ dacura.editor = {
 		}
 		else if(dced.mode.substring(0,4) == "edit"){
 			dced.editMode = dced.mode;
+			var meta = JSON.stringify(dced.currentEntity.meta, null, 4);
 			var content = JSON.stringify(dced.currentEntity.ldprops, null, 4);
 			$('#ld-view-page').hide();
 			$('#ld-edit-page').show();
 			$('#ld-editor').append("<div class='dacura-json-editor'>" + 
+					"<textarea id='ldmeta-input'>" + meta + "</textarea>" + 
 					"<textarea id='ldprops-input'>" +  content + "</textarea>" + 
 					"<div class='dch' id='ld-experimental' contentEditable=true>" + content + "</div>"); 
 			//dced.jsoneditor = new JSONEditor($("#ldprops-input"), dced.editorwidth, dced.editorheight);

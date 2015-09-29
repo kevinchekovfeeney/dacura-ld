@@ -19,7 +19,7 @@ require_once "LDDelta.php";
  */
 function expandLD($idbase, &$ldprops, $cwurl, $allow_demand_id = false){
 	$idmap = array();
-	generateBNIDS($idbase, $ldprops, $idmap, $cwurl, $allow_demand_id);
+	generateBNIDS($idbase, $ldprops, $idmap, $cwurl, $allow_demand_id, true);
 	if(count($idmap) > 0){
 		$missing_refs = updateBNReferences($ldprops, $idmap, $cwurl);
 		if($missing_refs === false){
@@ -34,9 +34,10 @@ function expandLD($idbase, &$ldprops, $cwurl, $allow_demand_id = false){
 
 /*
  * Generates ids for blank nodes and alters the structure
+ * We do not expand the meta field and do not generate BNIDs for the top level (graphname) indices.
  * to expand embedded objects and object lists with ld structure
  */
-function generateBNIDs($idbase, &$ldprops, &$idmap, $cwurl, $allow_demand_id = false){
+function generateBNIDs($idbase, &$ldprops, &$idmap, $cwurl, $allow_demand_id = false, $top_level = false){
 	$nprops = array();
 	if(!is_array($ldprops)){
 		return false;
@@ -44,8 +45,21 @@ function generateBNIDs($idbase, &$ldprops, &$idmap, $cwurl, $allow_demand_id = f
 	foreach($ldprops as $p => $v){
 		$pv = new LDPropertyValue($v, $cwurl);
 		if($pv->embedded()){
-			$new_id = addAnonObj($idbase, $v, $nprops, $p, $idmap, $cwurl, $allow_demand_id);
-			generateBNIDs($idbase, $nprops[$p][$new_id], $idmap, $cwurl, $allow_demand_id);
+			if(!$top_level){
+				$new_id = addAnonObj($idbase, $v, $nprops, $p, $idmap, $cwurl, $allow_demand_id);
+				generateBNIDs($idbase, $nprops[$p][$new_id], $idmap, $cwurl, $allow_demand_id);				
+			}
+			else {
+				if($p == "instance"){
+					$nprops[$p] = array($cwurl => $v);
+					generateBNIDs($idbase, $nprops[$p][$cwurl], $idmap, $cwurl, $allow_demand_id);
+				}
+				else 
+				{
+					$nprops[$p] = $v;
+					generateBNIDs($idbase, $nprops, $idmap, $cwurl, $allow_demand_id);
+				}				
+			}
 		}
 		elseif($pv->objectlist()){
 			foreach($ldprops[$p] as $obj){
@@ -883,8 +897,16 @@ function compareLDGraphs($id, $aprops, $bprops, $cwurl, $top_level = false){
 				$delta->addNamedGraphDelta($ndelta);
 			}
 			else {
-				$ndd = compareEOL($id, $gname, $eol, $bprops[$gname], $cwurl, $gname);
-				$delta->addNamedGraphDelta($ndd);
+				if($gname == 'meta'){
+					$ndd = compareLD($id, $eol, $bprops[$gname], $cwurl, $gname);
+					if($ndd->containsChanges()){
+						$delta->addNamedGraphDelta($ndd, $gname);
+					}
+				}
+				else {
+					$ndd = compareEOL($id, $gname, $eol, $bprops[$gname], $cwurl, $gname);
+					$delta->addNamedGraphDelta($ndd);
+				}
 			}
 		}
 	}
@@ -1008,6 +1030,11 @@ function compareLD($frag_id, $orig, $upd, $cwurl, $gname = false){
 	}
 	$delta->removeOverwrites();
 	return $delta;
+}
+
+function compareEO($frag_id, $vold, $vnew, $cwurl, $gname = false){
+	$delta = new LDDelta($cwurl, $gname);
+	$delta->addNamedGraphDelta($ndd);	
 }
 
 function compareEOL($frag_id, $p, $vold, $vnew, $cwurl, $gname = false){

@@ -5,6 +5,19 @@
 	font-size: 0.9em;
 }
 
+#tximp {
+	width: 100%;
+	height: 300px;
+}
+
+#id-input-cell {
+	min-width: 600px;
+}
+
+#id-input {
+	width: 100px;
+}
+
 #tab-holder input,
 #tab-holder select {
 	font-family: 'Open Sans', Helvetica;	

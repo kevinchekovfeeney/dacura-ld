@@ -1,13 +1,105 @@
 <?php
-include_once("phplib/LD/LDDacuraServer.php");
-include_once("phplib/LD/GraphManager.php");
-include_once("phplib/LD/Schema.php");
-include_once("phplib/LD/Ontology.php");
-include_once("phplib/db/LDDBManager.php");
+include_once("phplib/services/ld/LDDacuraServer.php");
 
 
 class SchemaDacuraServer extends LDDacuraServer {
-	var $schemadir;
+	
+	function getSchema($version = false){
+		if($this->cid() == "all"){
+			return $this->loadImportedOntologyList();
+		}
+		elseif($version !== false){
+			$schema = new Schema($this->cid(), $this->did(), $this->settings['install_url'], $this->schemadir);
+			if($this->dbman->load_schema($schema, $version)){
+				return $schema;
+			}
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+		}
+		else {
+			return $this->schema;
+		}
+	}
+	
+	function importOntology($format, $payload, $entid, $make_internal = false){
+		//check to see if entid is taken... if it is return a failure...
+		if($entid && $this->dbman->hasEntity($entid)){
+			return $this->failure_result("Dacura already has an entity with id $entid", 400);
+		}
+		elseif(!$entid){
+			$entid = "";//generate new entity id...
+		}
+		if($format == "url"){
+			//some data validation here -> ensure its a real url, etc, 
+			$ont = $this->downloadOntology($payload);
+		}
+		elseif($format == "text"){
+			$ont = $this->createOntologyFromString($payload);
+		}
+		else {
+			$ont = $this->uploadOntology($payload);
+		}
+		if(!$ont){
+			return false;
+		}
+		opr($ont);
+		//if($this->schema->hasOntology($ont)){
+		//	return $this->failure_result("Ontology ".$ont->getTitle() . " has already been imported into Dacura", 400);
+		//}
+		//else {
+		//	$ont->extractDetails();
+		//	$ont->status = "new";
+		//	$this->schema->addOntology($ont, $make_internal);
+		//	if($this->saveSchema()){
+		//		return $this->schema;
+		//	}
+		//	return false;
+		//}
+		//if($dqs){
+		//	$ar = $this->checkOntology($ont);
+		//}
+		//$ar = $this->checkOntology($ont);
+		//return $ar;
+		return $ont;
+	}
+	
+	function downloadOntology($url){
+		$fid = "ONT". randid();
+		$ontology = new Ontology($this->schema->cwurl."/ontology/".$fid);
+		if(!$ontology->import("url", $url)){
+			return $this->failure_result($ontology->errmsg, $ontology->errcode);
+		}
+		return $ontology;
+	}
+	
+	function uploadOntology($payload){
+		$fid = "ONT". randid();
+		$fname = $this->schemadir.$fid.".tmp";
+		if(!file_put_contents($fname, $payload)){
+			return $this->failure_result("Failed to save to $fname", 500);
+		}
+		$ontology = new Ontology($this->schema->cwurl."/ontology/".$fid);
+		if(!$ontology->import("file", $fname, $this->schema->cwurl."/ontology/".$fid)){
+			return $this->failure_result($ontology->errmsg, $ontology->errcode);
+		}
+		return $ontology;
+	}
+	
+	function createOntologyFromString($string){
+		$fid = "ONT". randid();
+		$ontology = new Ontology($this->schema->cwurl."/ontology/".$fid);
+		if(!$ontology->import("text", $string, $this->schema->cwurl."/ontology/".$fid)){
+			return $this->failure_result($ontology->errmsg, $ontology->errcode);
+		}
+		return $ontology;
+	}
+	
+	
+	function loadImportedOntologyList(){
+		$filter = "";
+		$onts = $this->getEntities($filter);
+	}
+	
+/*	var $schemadir;
 	var $schemafile;
 	var $schema = false;
 	var $schemaconfig = false;
@@ -132,7 +224,6 @@ class SchemaDacuraServer extends LDDacuraServer {
 				return $this->failure_result($this->schema->errmsg, $this->schema->errcode);				
 			}
 		}
-		//return $aquads;
 		$this->graphman->setTests($tests);
 		$x = $this->graphman->validateSchema($temp_graph_id, $aquads);
 		if($x === false){
@@ -240,11 +331,17 @@ class SchemaDacuraServer extends LDDacuraServer {
 		return $this->schema;
 	}
 	
-	function getSchema(){
-		if(!$this->schema){
-			$this->loadSchema();
+	function getSchema($version = false){
+		if($version !== false){
+			$schema = new Schema($this->cid(), $this->did(), $this->settings['install_url'], $this->schemadir);
+			if($this->dbman->load_schema($schema, $version)){
+				return $schema;
+			}
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 		}
-		return $this->schema;
+		else {
+			return $this->schema;
+		}
 	}
 	
 	function createSchema($obj, $options, $test_flag = false){
@@ -294,7 +391,7 @@ class SchemaDacuraServer extends LDDacuraServer {
 			if(!$this->saveSchemaConfig()){
 				return $this->failure_result("Failed to create new schema templates.", 500);
 			}
-		}*/
+		}
 		if(!$this->dbman->has_schema($this->cid(), $this->did())){
 			$schema = new Schema($this->cid(), $this->did(), $this->settings['install_url'], $this->schemadir);
 			$schema->loadDefaults();
@@ -387,5 +484,5 @@ class SchemaDacuraServer extends LDDacuraServer {
 	
 	function checkOntology($ont){
 		return $ont;
-	}
+	}*/
 }

@@ -8,7 +8,7 @@ class GraphManager extends DacuraObject {
 	var $tests = "all";
 	var $errors;
 	var $warnings;
-	var $fake = false;
+	var $fake = true;
 
 	function __construct($settings){
 		$this->settings = $settings;

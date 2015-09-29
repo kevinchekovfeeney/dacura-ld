@@ -185,9 +185,15 @@ class LDDelta extends DacuraObject {
 		}
 	}
 	
-	function addNamedGraphDelta($other){
-		$this->forward = array_merge($this->forward, $other->forward);
-		$this->backward = array_merge($this->backward, $other->backward);
+	function addNamedGraphDelta($other, $sub = false){
+		if($sub){
+			$this->forward[$sub] = $other->forward;	
+			$this->backward[$sub] = $other->backward;	
+		}
+		else {
+			$this->forward = array_merge($this->forward, $other->forward);
+			$this->backward = array_merge($this->backward, $other->backward);
+		}
 		$this->triples_added = array_merge($this->triples_added, $other->triples_added);
 		$this->triples_removed = array_merge($this->triples_removed, $other->triples_removed);
 		$this->triples_updated = array_merge($this->triples_updated, $other->triples_updated);
@@ -247,7 +253,6 @@ class LDDelta extends DacuraObject {
 			}
 		}
 	}
-	
 	
 	function updObjLiteralList($frag_id, $p, $ovals, $nvals){
 		$unchanged = false;

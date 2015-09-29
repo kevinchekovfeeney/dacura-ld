@@ -1,4 +1,6 @@
 <?php
+Epi::init('api');
+getApi()->get('/entities.json', array('Api', 'version'));
 getRoute()->get('/', 'get_schema');
 getRoute()->post('/', 'update_schema');
 getRoute()->get('/ontology/(\w+)', 'get_ontology');
@@ -9,15 +11,22 @@ getRoute()->post('/import', 'import_ontology');
 getRoute()->get('/(\w+)', 'get_graph');
 getRoute()->post('/(\w+)', 'update_graph');
 
-/*
- * post requests take input as a application/json
- */
-function get_schema(){
+function import_ontology(){
 	global $dacura_server;
-	$dacura_server->init("get_schema");
-	$schema = $dacura_server->getSchema();
-	if($schema){
-		return $dacura_server->write_json_result($schema->getDisplayFormat(), "Retrieved Schema");
+	$dacura_server->init("import_ontology");
+	if(!isset($_POST['format'])){
+		$payload = file_get_contents('php://input');
+		$format = "upload";
+		$entid = isset($_GET['id']) && $_GET['id'];
+	}
+	else {
+		$payload = isset($_POST['payload']) ? $_POST['payload'] : "";
+		$format = isset($_POST['format']) ? $_POST['format'] : "";
+		$entid = isset($_POST['id']) ? $_POST['id'] : "";
+	}
+	$ont = $dacura_server->importOntology($format, $payload, $entid);
+	if($ont){
+		return $dacura_server->write_json_result($ont, "Imported Ontology $ont->id");
 	}
 	$dacura_server->write_http_error();
 }
@@ -143,22 +152,4 @@ function update_schema(){
 	return $dacura_server->write_decision($ar);
 }
 
-function import_ontology(){
-	global $dacura_server;
-	$dacura_server->init("import_ontology");
-	if(!isset($_POST['format'])){
-		$payload = file_get_contents('php://input');
-		$format = "upload";
-		$dqs = isset($_GET['dqs']) && $_GET['dqs'];
-	}
-	else {
-		$payload = isset($_POST['payload']) ? $_POST['payload'] : "";
-		$format = isset($_POST['format']) ? $_POST['format'] : "";
-		$dqs = isset($_POST['dqs']) ? $_POST['dqs'] : "";
-	}
-	$ont = $dacura_server->importOntology($format, $payload, $dqs);
-	if($ont){
-		return $dacura_server->write_json_result($ont, "Imported Ontology");
-	}
-	$dacura_server->write_http_error();
-}
+

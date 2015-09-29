@@ -134,6 +134,7 @@ class Candidate extends LDEntity {
 		return $triples;
 	}
 	
+
 	function jazzUpTriples($s, $p, $o, $t, $g = false){
 		if($s == $this->id){
 			$s = "local:".$this->id;
@@ -159,10 +160,7 @@ class Candidate extends LDEntity {
 		return array(array($s, $p, $o));		
 	}
 	
-	function internalTriples(){
-		return getPropertiesAsArray($this->id, $this->ldprops, $this->cwurl, array($this, "jazzUpTriples"));
-	}
-	
+
 	function typedTriples($use_ns = false, $use_dacura_ns = true){
 		$triples = parent::typedTriples();
 		if($use_dacura_ns){
