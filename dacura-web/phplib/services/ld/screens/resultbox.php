@@ -1,4 +1,6 @@
+<h1>Resultbox</h1>
 
+<script>
 dacura.ldresult = {};
 
 dacura.ldresult.getDecisionBasicText = function (dcm, test, type){
@@ -119,7 +121,7 @@ dacura.ldresult.getUpdateDetailsHTML = function(dcm, test){
 	return html;			
 }
 
-dacura.candidate.getReportGraphUpdateHTML = function(rupdates, done){
+dacura.ldresult.getReportGraphUpdateHTML = function(rupdates, done){
 	var html ="<div class='api-graph-testresults report-graph'>";
 	if(rupdates.hypothetical || (rupdates.inserts.length == 0 && rupdates.deletes.length == 0)){
 		html += "<div class='title'>No changes to report graph</div>";		
@@ -164,7 +166,7 @@ dacura.candidate.getReportGraphUpdateHTML = function(rupdates, done){
 	}
 }
 
-dacura.candidate.getMetaUpdatesHTML = function(meta){
+dacura.ldresult.getMetaUpdatesHTML = function(meta){
 	var thtml = "";
 	for (var key in meta) {
 		  if (meta.hasOwnProperty(key)) {
@@ -183,7 +185,7 @@ dacura.candidate.getMetaUpdatesHTML = function(meta){
 	return thtml;	
 }
 
-dacura.candidate.getUpdateGraphUpdateHTML = function(cupdates, done){
+dacura.ldresult.getUpdateGraphUpdateHTML = function(cupdates, done){
 	var html ="<div class='api-graph-testresults update-graph'>";
 	if(typeof cupdates.meta != "undefined"){
 		html += this.getMetaUpdatesHTML(cupdates.meta);
@@ -321,7 +323,7 @@ dacura.ldresult.getGraphTestResultsHTML = function(res, dcm, type){
 		if(res.decision == "reject"){
 			html += "<div class='title'>Quality Control Problems</div>";		
 			html += "The " + type + " request would produce the following graph updates and errors: ";
-			html += dacura.candidate.getUpdateDetailsHTML(res, true); 
+			html += dacura.ldresult.getUpdateDetailsHTML(res, true); 
 			html += this.getErrorDetailsHTML(res);		
 		}
 		else {
@@ -341,7 +343,7 @@ dacura.ldresult.getGraphTestResultsHTML = function(res, dcm, type){
 				html += "<div class='title'>Editing Unpublished Candidate</div>";
 				html += "If the " + type + " request is accepted, it will have no impact on the graph. Below are the changes that would appear if the candidate is ever accepted";				
 			}
-			html += dacura.candidate.getUpdateDetailsHTML(res, true); 
+			html += dacura.ldresult.getUpdateDetailsHTML(res, true); 
 		}
 	}
 	else {
@@ -349,7 +351,7 @@ dacura.ldresult.getGraphTestResultsHTML = function(res, dcm, type){
 			html += "<div class='title'>Quality Tests Passed OK</div>";
 			if(res.deletes.length > 0 || res.inserts.length > 0){
 				html += "If the submitted candidate is accepted, it will produce the following updates ";
-				html += dacura.candidate.getUpdateDetailsHTML(res, true); 
+				html += dacura.ldresult.getUpdateDetailsHTML(res, true); 
 			}
 			else {
 				html += "If the submitted candidate is accepted, it will not produce any updates to the graph";
@@ -358,7 +360,7 @@ dacura.ldresult.getGraphTestResultsHTML = function(res, dcm, type){
 		else {
 			html += "<div class='title'>Cannot Currently Be Published due to Quality Control Problems</div>";
 			html += "The submitted candidate would produce the following graph updates: ";
-			html += dacura.candidate.getUpdateDetailsHTML(res, true); 
+			html += dacura.ldresult.getUpdateDetailsHTML(res, true); 
 			html += this.getErrorDetailsHTML(res);
 			//show errors in the graph test...
 		}
@@ -446,5 +448,10 @@ dacura.ldresult.showDecision = function(dcm, test, jq, type){
 			cls = "dacura-success";
 		}
 	}
+	dacura.system.writeResultMessage(this.getDecisionBasicText(dcm, test, type), jq, html, dcm);
+		
 	$(jq).html("<div class='dacura-user-message-box " + cls + "'>"+ html + "</div>").show();
 }
+
+
+</script>
