@@ -43,10 +43,10 @@ dacura.workflow.listworkflow = function(){
 	var ajs = dacura.workflow.api.listing();
 	var self=this;
 	ajs.beforeSend = function(){
-		dacura.toolbox.writeBusyMessage('.pcbusy', "Retrieving Workflow List");
+		dacura.system.showBusyMessage("Retrieving Workflow List", "", '.pcbusy');
 	};
 	ajs.complete = function(){
-		dacura.toolbox.clearBusyMessage('.pcbusy');
+		dacura.system.clearBusyMessage('.pcbusy');
 	};
 	$.ajax(ajs)
 		.done(function(data, textStatus, jqXHR) {
@@ -59,7 +59,7 @@ dacura.workflow.listworkflow = function(){
 			$('#workflowlisting').show();
 		})
 		.fail(function (jqXHR, textStatus){
-			dacura.toolbox.writeErrorMessage('#userhelp', "Error: " + jqXHR.responseText );
+			dacura.system.writeErrorMessage("", '#userhelp', "", "Error: " + jqXHR.responseText );
 		}
 	);	
 };
@@ -69,7 +69,7 @@ dacura.workflow.drawListTable = function(data){
 	$('.pcbreadcrumbs').show();
 	if(typeof data == "undefined"){
 		$('#workflow_table').hide(); 
-		dacura.toolbox.writeErrorMessage('.pcbusy', "No Workflow Processes Found");		
+		dacura.system.writeErrorMessage("", '.pcbusy', "", "No Workflow Processes Found");		
 	}
 	else {
 		$('#workflow_table tbody').html("");

@@ -166,11 +166,11 @@ dacura.login.lost = function(){
 	this.disablelost();
 	var self=this;
 	ajs.beforeSend = function(){
-		dacura.toolbox.writeBusyOverlay('.dacura-widget', "Requesting password reset...", {"makeweight" : false});
+		dacura.system.showBusyMessage("Requesting password reset...", {"makeweight" : false}, '.dacura-widget');
 	};
 	ajs.complete = function(){
 		self.enablelost();
-		dacura.toolbox.removeBusyOverlay("", 0);		
+		dacura.system.removeBusyOverlay();		
 	};
 	$.ajax(ajs)
 		.done(function(data, textStatus, jqXHR) {
@@ -179,11 +179,11 @@ dacura.login.lost = function(){
 				dacura.login.showSuccessPage("Password Rest Process Initiated", msg);				
 			}
 			catch(e){
-				dacura.toolbox.writeErrorMessage('#loginbox-status', "Error: " + e.message );
+				dacura.system.writeErrorMessage("", '#loginbox-status', "", "Error: " + e.message );
 			}
 		})
 		.fail(function (jqXHR, textStatus){
-			dacura.toolbox.writeErrorMessage('#loginbox-status', "Error: " + jqXHR.responseText );
+			dacura.system.writeErrorMessage("", '#loginbox-status', "", "Error: " + jqXHR.responseText );
 		}
 	);	
 };

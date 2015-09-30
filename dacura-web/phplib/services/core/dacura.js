@@ -226,7 +226,7 @@ dacura.system.showBusyMessage = function(msg, uopts, jqid){
 		dacura.system.showBusyOverlay(dacura.system.targets.busybox, msg, uopts);
 	}
 	else {
-		dacura.system.showBusyLoader(jqid, msg);
+		dacura.system.showBusyOverlay(jqid, msg);
 	}
 }
 

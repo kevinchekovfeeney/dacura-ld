@@ -16,6 +16,6 @@ var url = "http://localhost/dacura/rest/seshat/0/scraper/comet";
 //xhr.send(null);
 
 
-dacura.toolbox.modalSlowAjax(url, "testing slow ajax");
+dacura.system.modalSlowAjax(url, "", "", "testing slow ajax");
 
 </script>
