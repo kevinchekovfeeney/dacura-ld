@@ -2,7 +2,7 @@
 
 include_once("LDDacuraServer.php");
 
-class LDService extends DacuraService {
+class LdService extends DacuraService {
 	
 	var $public_screens = array("test");
 	var $default_screen = "list";
