@@ -103,11 +103,11 @@
 <script>
 
 dacura.users.writeBusyMessage  = function(msg) {
-	dacura.toolbox.writeBusyOverlay('#user-pane-holder', msg);
+	dacura.system.showBusyOverlay('#user-pane-holder', msg);
 }
 
 dacura.users.clearBusyMessage = function(){
-	dacura.toolbox.removeBusyOverlay(false, 100);
+	dacura.system.removeBusyOverlay();
 };
 
 dacura.users.writeSuccessMessage = function(msg){
@@ -227,11 +227,11 @@ dacura.users.updateUserDetails = function(){
 			dacura.users.writeSuccessMessage("Updated user " + dacura.users.currentuser);
 		}
 		catch(e){
-			dacura.toolbox.writeErrorMessage('#udetailsmsg', jqXHR.responseText + " " + e.message);
+			dacura.system.writeErrorMessage("", '#udetailsmsg', "", jqXHR.responseText + " " + e.message);
 		}
 	})
 	.fail(function (jqXHR, textStatus){
-		dacura.toolbox.writeErrorMessage('#udetailsmsg', textStatus + ":" + jqXHR.responseText );
+		dacura.system.writeErrorMessage("", '#udetailsmsg', "", textStatus + ":" + jqXHR.responseText );
 	});	
 }
 
@@ -252,7 +252,7 @@ dacura.users.updateProfile = function(){
 		dacura.users.writeSuccessMessage("Profile Updated Successfully");
 	})
 	.fail(function (jqXHR, textStatus){
-		dacura.toolbox.writeErrorMessage('#uprofilemsg', "Error: " + jqXHR.responseText );
+		dacura.system.writeErrorMessage("", '#uprofilemsg', "", "Error: " + jqXHR.responseText );
 	});	
 }
 
@@ -260,10 +260,10 @@ dacura.users.updatePassword = function(){
 	var pw1 = $('#password1ip').val();
 	var pw2 = $('#password2ip').val();
 	if(pw1 == "" || pw1.length < 3){
-		return dacura.toolbox.writeErrorMessage('#upasswordmsg', "Error: the password must be at least 3 characters long" );
+		return dacura.system.writeErrorMessage("", '#upasswordmsg', "", "Error: the password must be at least 3 characters long" );
 	}
 	if(pw1 != pw2){
-		return dacura.toolbox.writeErrorMessage('#upasswordmsg', "Error: the passwords do not match!");
+		return dacura.system.writeErrorMessage("", '#upasswordmsg', "", "Error: the passwords do not match!");
 	}
 	var ds = {};
 	ds.password = pw1;
@@ -281,7 +281,7 @@ dacura.users.updatePassword = function(){
 		dacura.users.writeSuccessMessage("Password Updated Successfully");
 	})
 	.fail(function (jqXHR, textStatus){
-		dacura.toolbox.writeErrorMessage('#upasswordmsg', "Error: " + jqXHR.responseText );
+		dacura.system.writeErrorMessage("", '#upasswordmsg', "", "Error: " + jqXHR.responseText );
 	});	
 };	
 
@@ -320,7 +320,7 @@ dacura.users.deleteRole = function(id){
 		self.showuser(dacura.users.currentuser);
 	})
 	.fail(function (jqXHR, textStatus){
-		dacura.toolbox.writeErrorMessage('#userhelp', "Error: " + jqXHR.responseText );
+		dacura.system.writeErrorMessage("", '#userhelp', "", "Error: " + jqXHR.responseText );
 	});	
 };
 
@@ -349,7 +349,7 @@ dacura.users.createRole = function(){
 		self.showuser(dacura.users.currentuser);
 	})
 	.fail(function (jqXHR, textStatus){
-		dacura.toolbox.writeErrorMessage('#userhelp', "Error: " + jqXHR.responseText );
+		dacura.system.writeErrorMessage("", '#userhelp', "", "Error: " + jqXHR.responseText );
 	});	
 };
 

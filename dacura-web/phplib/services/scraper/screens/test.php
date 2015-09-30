@@ -94,12 +94,12 @@
 					$('.sresults').html(html);
 				}
 				catch(e){
-					dacura.toolbox.writeErrorMessage("#saddmsg", "Error: " + e.message);
+					dacura.system.writeErrorMessage("", "#saddmsg", "", "Error: " + e.message);
 					
 				}
 			})
 			.fail(function (jqXHR, textStatus){
-				dacura.toolbox.writeErrorMessage("#saddmsg", "Error: " + jqXHR.responseText );
+				dacura.system.writeErrorMessage("", "#saddmsg", "", "Error: " + jqXHR.responseText );
 			}
 		);	
 	};
@@ -109,15 +109,15 @@
 			$('#testpage-results').remove();
 			$("#tpaddmsg").html("");
 			var page = $('#parseurl').val();
-			if(!dacura.toolbox.validateURL(page)){
-				return dacura.toolbox.writeErrorMessage("#tpaddmsg", "Error: " + ajs.data.url + " is not a valid url");					
+			if(!dacura.system.validateURL(page)){
+				return dacura.system.writeErrorMessage("", "#tpaddmsg", "", "Error: " + ajs.data.url + " is not a valid url");					
 			}
 			var ajs = dacura.scraper.api.parsePage(page);
 			ajs.beforeSend = function(){
-				dacura.toolbox.writeBusyOverlay("#scraper-testpage", "Fetching " + ajs.data.url);
+				dacura.system.showBusyOverlay("#scraper-testpage", "", "Fetching " + ajs.data.url);
 			};
 			ajs.complete = function(){
-				dacura.toolbox.removeBusyOverlay("#scraper-testpage");
+				dacura.system.removeBusyOverlay("#scraper-testpage");
 			};
 			$.ajax(ajs)
 				.done(function(data, textStatus, jqXHR) {
@@ -139,11 +139,11 @@
 						$('.tpresults').html(html);
 					}
 					catch(e){
-						dacura.toolbox.writeErrorMessage("#tpaddmsg", "Error: " + e.message);					
+						dacura.system.writeErrorMessage("", "#tpaddmsg", "", "Error: " + e.message);					
 					}
 				})
 				.fail(function (jqXHR, textStatus){
-					dacura.toolbox.writeErrorMessage("#tpaddmsg", "Error: " + jqXHR.responseText );
+					dacura.system.writeErrorMessage("", "#tpaddmsg", "", "Error: " + jqXHR.responseText );
 				});	
 		};
 	<?php } ?>

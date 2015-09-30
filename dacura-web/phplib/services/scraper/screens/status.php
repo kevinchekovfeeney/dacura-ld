@@ -137,15 +137,15 @@ function loadStatus(refresh, complete){
 	var ajs = dacura.scraper.api.getstatus(refresh);
 	var self=this;
 	ajs.beforeSend = function(){
-		dacura.toolbox.showModal("<p>Loading System Status</p><div class='indeterminate-progress'></div>");
+		dacura.system.showModal("<p>Loading System Status</p><div class='indeterminate-progress'></div>");
 		$('.indeterminate-progress').progressbar({
 			value: false
 		});
 	};
 	ajs.complete = function(){
-		dacura.toolbox.removeModal();
+		dacura.system.removeModal();
 	};
-	dacura.toolbox.setModalProperties({ 
+	dacura.system.setModalProperties({ 
 		"buttons": [
 			{
 				"text": "Cancel",
@@ -166,11 +166,11 @@ function loadStatus(refresh, complete){
 				complete();
 			}
 			catch(e){				
-				dacura.toolbox.writeErrorMessage('#tool-info', errintro + "Error - Could not interpret the server response " + e.message);
+				dacura.system.writeErrorMessage("", '#tool-info', "", errintro + "Error - Could not interpret the server response " + e.message);
 			}
 		})
 		.fail(function (jqXHR, textStatus){
-			dacura.toolbox.writeErrorMessage('#tool-info', errintro + jqXHR.responseText);
+			dacura.system.writeErrorMessage("", '#tool-info', "", errintro + jqXHR.responseText);
 		}
 	);
 };
@@ -185,13 +185,13 @@ function rebuild(complete, nga){
 	rebuildStatus.fail = 0;
 	rebuildStatus.error = 0;
 	var errintro = "<strong>Rebuilding datasets aborted by user</strong><br>";
-	dacura.toolbox.setModalProperties({ 
+	dacura.system.setModalProperties({ 
 		"width": 400,
 		"minHeight": 300,
 		"buttons": [{
 			"text": "Cancel",
 			"click": function() {
-				dacura.toolbox.writeErrorMessage('#tool-info', errintro + "A full dataset rebuild will be needed to avoid inconsistency");
+				dacura.system.writeErrorMessage("", '#tool-info', "", errintro + "A full dataset rebuild will be needed to avoid inconsistency");
 				dacura.scraper.abortrebuild();
 				aborted = true;
 				$( this ).dialog( "close" );
@@ -234,7 +234,7 @@ function rebuild(complete, nga){
 		try {
 			var pl = JSON.parse(res);
 			if(pl.status == "error"){
-				dacura.toolbox.writeErrorMessage('#tool-info', errintro + pl.payload);
+				dacura.system.writeErrorMessage("", '#tool-info', "", errintro + pl.payload);
 			}
 			else {
 				updateStatus(pl.payload); 
@@ -243,15 +243,15 @@ function rebuild(complete, nga){
 					msg = "Rebuilt dataset for NGA " + nga + ". ";
 				}
 				msg += rebuildStatus.success + " OK, " + rebuildStatus.fail + " FAIL, " + rebuildStatus.error + " Error";
-				dacura.toolbox.writeSuccessMessage('#tool-info', msg);
+				dacura.system.showSuccessResult(msg, "", "", '#tool-info');
 			}
 		}
 		catch(e){
-			dacura.toolbox.writeErrorMessage('#tool-info', e.message);
+			dacura.system.writeErrorMessage("", '#tool-info', "", e.message);
 		}						
-		dacura.toolbox.removeModal();
+		dacura.system.removeModal();
 	};
-	dacura.toolbox.showModal("<p class='updatestatus-head'>Rebuilding Datasets from Seshat Wiki</p><p class='phase'></p><div class='determinate-progress'></div><p class='data-got'></p>");
+	dacura.system.showModal("<p class='updatestatus-head'>Rebuilding Datasets from Seshat Wiki</p><p class='phase'></p><div class='determinate-progress'></div><p class='data-got'></p>");
 	$('.determinate-progress').progressbar({
 		value: false
 	});
@@ -265,15 +265,15 @@ function loadPage(page, refresh, draw){
 	ajs.data.url = page;
 	var self=this;
 	ajs.beforeSend = function(){
-		dacura.toolbox.showModal("<p>Extracting variables from page</p><div class='indeterminate-progress'></div>");
+		dacura.system.showModal("<p>Extracting variables from page</p><div class='indeterminate-progress'></div>");
 		$('.indeterminate-progress').progressbar({
 			value: false
 		});
 	};
 	ajs.complete = function(){
-		dacura.toolbox.removeModal();
+		dacura.system.removeModal();
 	};
-	dacura.toolbox.setModalProperties({ 
+	dacura.system.setModalProperties({ 
 		"buttons": [
 			{
 				"text": "Cancel",
@@ -296,11 +296,11 @@ function loadPage(page, refresh, draw){
 			}
 			catch(e) 
 			{
-				dacura.toolbox.writeErrorMessage('#tool-info', e.message);
+				dacura.system.writeErrorMessage("", '#tool-info', "", e.message);
 			}
 		})
 		.fail(function (jqXHR, textStatus){
-			dacura.toolbox.writeErrorMessage('#tool-info', "<strong>Retrieval of Page Failed</strong><br>" + jqXHR.responseText);
+			dacura.system.writeErrorMessage("", '#tool-info', "", "<strong>Retrieval of Page Failed</strong><br>" + jqXHR.responseText);
 		}
 	);
 }
@@ -332,7 +332,7 @@ var drawPolityList = function(nga){
 	var x = currentStatus["ngas"][nga][1];
 	if(x.length == 0){
 		$('#subnga').hide();
-		dacura.toolbox.writeWarningMessage('#nosubnga', "No polity or variable pages listed at " + nga);
+		dacura.system.showWarningResult("No polity or variable pages listed at " + nga, "", "", '#nosubnga');
 	}
 	else {
 		$('#nosubnga').html("");
@@ -363,7 +363,7 @@ var drawVariableList = function(x){
 	$('#polity-page tbody').html();
 	if(x.length == 0){
 		$('#subpolity').hide();
-		dacura.toolbox.writeWarningMessage('#nosubpolity', "No variables found in " + currentPage);
+		dacura.system.writeWarningMessage("No variables found in " + currentPage, "", "", '#nosubpolity');
 	}
 	else {
 		$('#nosubpolity').html("");
@@ -387,7 +387,7 @@ function showNGAList(){
 	$('#shownga').hide();
 	$('#tool-info').html("");
 	$('#showpolity').hide();
-	dacura.toolbox.setToolSubtitle("View the status of the dataset by NGA");
+	dacura.system.setToolSubtitle("View the status of the dataset by NGA");
 	drawNGAList();
 	$('#showmain').show();
 }
@@ -407,7 +407,7 @@ function showNGAPage(nga, refresh){
 	}
 	$('#showmain').hide();
 	$('#showpolity').hide();
-	dacura.toolbox.setToolSubtitle("View the Polities and other pages in the NGA");
+	dacura.system.setToolSubtitle("View the Polities and other pages in the NGA");
 	$('#shownga').show();
 }
 
@@ -438,7 +438,7 @@ function showPage(p, refresh){
 	$('#shownga').hide();
 	$('#tool-info').html("");
 	$('#showpolity').show();
-	dacura.toolbox.setToolSubtitle("View the extracted variables");
+	dacura.system.setToolSubtitle("View the extracted variables");
 }    
     
 

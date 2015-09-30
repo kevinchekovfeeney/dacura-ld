@@ -37,7 +37,7 @@ dacura.scraper.api.getstatus = function (refresh, xhr){
 
 dacura.scraper.api.updatestatus = function (nga, oncomp, onmessage, onerror){
 	args = {"nga" : nga};
-	dacura.toolbox.slowAjax(dacura.scraper.apiurl + "/status", "POST", args, oncomp, onmessage);
+	dacura.System.slowAjax(dacura.scraper.apiurl + "/status", "POST", args, oncomp, onmessage, onerror);
 }
 
 dacura.scraper.api.getpolities = function (id, refresh, xhr){
@@ -81,20 +81,20 @@ dacura.scraper.api.parsePage = function(page, refresh, xhr){
 }
 
 dacura.scraper.abortrebuild = function(){
-	dacura.toolbox.abortSlowAjax();
+	dacura.system.abortSlowAjax();
 }
 
 dacura.scraper.abortdump = function(){
-	dacura.toolbox.abortSlowAjax();
+	dacura.system.abortSlowAjax();
 }
 
 dacura.scraper.dump = function (args, oncomp, onmessage, onerror){
-	dacura.toolbox.slowAjax(dacura.scraper.apiurl + "/dump", "POST", args, oncomp, onmessage);
+	dacura.system.slowAjax(dacura.scraper.apiurl + "/dump", "POST", args, oncomp, onmessage, onerror);
 }
 
 dacura.scraper.status = function (args, oncomp, onmessage, onerror){
 	//alert("status");
-	dacura.toolbox.slowAjax(dacura.scraper.apiurl + "/status", "GET", args, oncomp, onmessage);
+	dacura.system.slowAjax(dacura.scraper.apiurl + "/status", "GET", args, oncomp, onmessage, onerror);
 }
 
 

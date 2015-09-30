@@ -148,15 +148,15 @@
 				var ajs = dacura.scraper.api.getngalist();
 				var self=this;
 				ajs.beforeSend = function(){
-					dacura.toolbox.showModal("<p>Retrieving NGA list from Seshat Wiki</p><div class='indeterminate-progress'></div>");
+					dacura.system.showModal("<p>Retrieving NGA list from Seshat Wiki</p><div class='indeterminate-progress'></div>");
 					$('.indeterminate-progress').progressbar({
 						value: false
 					});
 				};
 				ajs.complete = function(){
-					dacura.toolbox.removeModal();
+					dacura.system.removeModal();
 				};
-				dacura.toolbox.setModalProperties({ 
+				dacura.system.setModalProperties({ 
 					"buttons": [
 						{
 							"text": "Cancel",
@@ -227,7 +227,7 @@
 					var requests = [];
 					var NGAerrorCount = 0;
 					NGAsObtainedCount = 0;
-					dacura.toolbox.setModalProperties({ 
+					dacura.system.setModalProperties({ 
 						"width": 400,
 						"buttons": [
 							{
@@ -244,7 +244,7 @@
 							}
 						], 
 					});
-					dacura.toolbox.showModal("<p class='polity-head'>Getting polity lists for " + ngaCount + " " + nganm + "</p><p class='polity-got'></p><p class='polity-next'></p><div class='determinate-progress'></div>");
+					dacura.system.showModal("<p class='polity-head'>Getting polity lists for " + ngaCount + " " + nganm + "</p><p class='polity-got'></p><p class='polity-next'></p><div class='determinate-progress'></div>");
 					$('.determinate-progress').progressbar({
 						value: false
 					});
@@ -341,7 +341,7 @@
 						else {
 							if(NGAsObtainedCount == 0){
 								$('#history-info').append("<br><span class='seshat-error'><strong>Failed to load any polities</strong></span><br>" + polityStatus.message);
-								dacura.toolbox.removeModal();								
+								dacura.system.removeModal();								
 							}
 							else {		
 								polityStatus.failed = NGAerrorCount;
@@ -350,7 +350,7 @@
 								var fnm = ""; if(NGAerrorCount== 1) { fnm = "failure"; } else { fnm = "failures";}
 								polityStatus.message = "Retrieved polity lists for " + NGAsObtainedCount + " " + nganm + " (" + NGAerrorCount + " " + fnm + ") " + (Object.keys(polityList).length) + " polities in total.<br>";
 								$('#history-info').html(polityStatus.message);
-								dacura.toolbox.removeModal();
+								dacura.system.removeModal();
 								hideScraperScreen(2);
 								showScraperScreen(3);
 								divs += "</div>";
@@ -398,7 +398,7 @@
 					$('#history-info').html("");
 					var polities = [];
 					var ngas = [];
-					dacura.toolbox.setModalProperties({ 
+					dacura.system.setModalProperties({ 
 						"width": 400,
 						"minHeight": 400,
 						"buttons": [
@@ -475,11 +475,11 @@
 						catch(e){
 							$('#history-info').html("Failed to export data dump " + e.message);
 						}						
-						dacura.toolbox.removeModal();
+						dacura.system.removeModal();
 					};
 					dataStatus.message = "Retrieving data for " + polities.length + " polities in " + ngas.length + " NGAs";
 					$('#history-info').html(dataStatus.message);
-					dacura.toolbox.showModal("<p class='polity-head'>Retrieving variables from Seshat Wiki</p><p class='data-got'></p><div class='determinate-progress'></div>");
+					dacura.system.showModal("<p class='polity-head'>Retrieving variables from Seshat Wiki</p><p class='data-got'></p><div class='determinate-progress'></div>");
 					$('.determinate-progress').progressbar({
 						value: false
 					});

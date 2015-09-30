@@ -63,15 +63,15 @@
 
 <script>
 dacura.users.writeBusyMessage  = function(msg) {
-	dacura.toolbox.writeBusyOverlay('#user-pane-holder', msg);
+	dacura.system.showBusyOverlay('#user-pane-holder', msg);
 }
 
 dacura.users.clearBusyMessage = function(){
-	dacura.toolbox.removeBusyOverlay(false, 0);
+	dacura.system.removeBusyOverlay();
 };
 
 dacura.users.writeErrorMessage = function(jq, msg, extra){
-	dacura.toolbox.writeErrorMessage(jq, msg, extra);
+	dacura.system.writeErrorMessage("error", jq, msg, extra);
 }
 
 dacura.users.listusers = function(){
@@ -127,7 +127,7 @@ dacura.users.listusers = function(){
 				if(data.length > 0 ){
 					try {
 						var u = JSON.parse(data);
-						dacura.toolbox.updateBusyMessage("User created ok. Loading new user profile");
+						dacura.system.updateBusyMessage("User created ok. Loading new user profile");
 						window.location.href = dacura.system.pageURL() + "/" + u.id;
 					}
 					catch(e){
@@ -150,7 +150,7 @@ dacura.users.listusers = function(){
 	dacura.users.drawListTable = function(data){		
 		if(typeof data == "undefined" || data.length == 0){
 			$('#users_table').dataTable(); 
-			dacura.toolbox.writeErrorMessage('.dataTables_empty', "No Users Found");		
+			dacura.system.writeErrorMessage("No Users Found", "", '.dataTables_empty');		
 		}
 		else {
 			$('#users_table tbody').html("");
