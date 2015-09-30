@@ -1,9 +1,7 @@
 <script src='<?=$service->url("js", "jquery.dataTables.js")?>'></script>
 <script src='<?=$service->url("js", "dataTables.jqueryui.js")?>'></script>
-<script src='<?=$service->url("js", "jquery.json-editor.js")?>'></script>
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery.json-editor.css")?>" />
-
+<?php echo $service->showLDResultbox($params);?>
 <div id='tab-holder'>
 	 <ul id="graph-pane-list" class="dch">
 	 	<li><a href="#graph-contents">Local Ontology</a></li>
@@ -55,6 +53,7 @@
 	</div>
 </div>
 
+
 <script>
 ontids = [];
 
@@ -83,10 +82,11 @@ function getSelectedOntologies(){
 	return selected;		
 }
 
-function showImportResult(res){
+function showImportResult(res, test){
 	//dacura.system.showResult(res);
-	//$(import-msgs
-	if(res.decision == "reject" || res.errcode > 0){
+	//$(import-msg
+	dacura.ldresult.showDecision(res, test, '#import-msgs', "Import Ontologies");
+	/*if(res.decision == "reject" || res.errcode > 0){
 		dacura.system.showErrorResult(res.msg_body, res, res.decision, '#import-msgs');
 	}
 	else if(typeof res.warnings == "object" && res.warnings.length > 0){
@@ -94,7 +94,7 @@ function showImportResult(res){
 	}
 	else {
 		dacura.system.showSuccessResult(res.msg_body, res, res.decision, '#import-msgs');		
-	}
+	}*/
 	
 }
 

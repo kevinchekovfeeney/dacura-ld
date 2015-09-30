@@ -210,6 +210,14 @@ class DacuraService extends DacuraObject {
 		//include_once("phplib/snippets/LDEditor.php");		
 	}
 	
+	function showLDResultbox($params){
+		$service = $this;
+		$entity = isset($params['entity']) ? $params['entity'] : "Entity";
+		$this->renderScreen("resultbox", $params, "ld");
+		//include_once("phplib/snippets/LDEditor.php");
+	}
+	
+	
 	function isPublicScreen(){
 		if($this->screen == "") $this->screen = "home";
 		return in_array($this->screen, $this->public_screens); 

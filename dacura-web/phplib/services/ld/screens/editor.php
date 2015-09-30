@@ -1,4 +1,8 @@
 <?php $entity = isset($params['entity']) ? $params['entity'] : "Entity";?>
+<script src='<?=$service->url("js", "jquery.json-editor.js")?>'></script>
+<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery.json-editor.css")?>" />
+
+
 <div class='dacura-ld-editor dch'>
 	<div id='ld-view-page'>
 		<div class='ld-meta' id='ld-view-header'></div>
