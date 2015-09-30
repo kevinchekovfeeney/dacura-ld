@@ -46,15 +46,15 @@
 
 <script>
 	writeBusyMessage  = function(msg) {
-		dacura.toolbox.writeBusyOverlay('#collection-pane-holder', msg);
+		dacura.system.showBusyMessage(msg, "", '#collection-pane-holder');
 	}
 	
 	clearBusyMessage = function(){
-		dacura.toolbox.removeBusyOverlay(false, 100);
+		dacura.system.removeBusyOverlay();
 	};
 
 	function updateBusyMessage(msg){
-		dacura.toolbox.updateBusyMessage(msg);
+		dacura.system.updateBusyMessage(msg);
 	}
 	
 	dacura.config.listCollections = function(){
@@ -72,12 +72,12 @@
 					dacura.config.drawListTable(JSON.parse(data));
 				}
 				catch(e){
-					dacura.toolbox.writeErrorMessage('#clistmsg', "Error: " + e.message);
+					dacura.system.writeErrorMessage("", '#clistmsg', "", "Error: " + e.message);
 				}
 			})
 			.fail(function (jqXHR, textStatus){
 				clearBusyMessage();
-				dacura.toolbox.writeErrorMessage('#clistmsg', "Error: " + jqXHR.responseText );
+				dacura.system.writeErrorMessage("", '#clistmsg', "", "Error: " + jqXHR.responseText );
 				$('#collections_table').dataTable().show(); 
 			});	
 	};
@@ -112,7 +112,7 @@
 		ds.id = $('#collectionidip').val();
 		ds.title = $('#collectiontitleip').val();
 		if(ds.id.length < 2 || ds.title.length < 5){
-			return dacura.toolbox.writeErrorMessage('#caddmsg', "ID must be at least 2 characters and title must be at least 5.");
+			return dacura.system.writeErrorMessage("", '#caddmsg', "", "ID must be at least 2 characters and title must be at least 5.");
 		}
 		var ajs = dacura.config.api.createCollection(ds.id);
 		var self=this;
@@ -127,23 +127,23 @@
 				if(data.length > 0 ){
 					try {
 						var colid = JSON.parse(data);
-						dacura.toolbox.writeSuccessMessage('#caddmsg', "Created Collection " + colid);
+						dacura.system.showSuccessResult("Created Collection " + colid, "", "", '#caddmsg');
 						updateBusyMessage("Creating collection " + colid + " configuration");
 						dacura.system.switchContext(colid);
 					}
 					catch(e){
-						dacura.toolbox.writeErrorMessage('#caddmsg', "Error: " + e.message, jqXHR.responseText );
+						dacura.system.showErrorResult("Error: " + e.message, jqXHR.responseText, '#caddmsg');
 						clearBusyMessage();
 					}
 				}
 				else {
 					clearBusyMessage();
-					dacura.toolbox.writeErrorMessage('#caddmsg', "Error: server response was empty");
+					dacura.system.writeErrorMessage("Error: server response was empty", "", "", '#caddmsg');
 				}    	
 			})
 			.fail(function (jqXHR, textStatus){
 				clearBusyMessage();
-				dacura.toolbox.writeErrorMessage('#caddmsg', "Error: " + jqXHR.responseText );
+				dacura.system.writeErrorMessage("Error: " + jqXHR.responseText, "", "", '#caddmsg');
 			}
 		);	
 	};

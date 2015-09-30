@@ -12,7 +12,8 @@
 <div id="pagecontent-nopadding">
 	<div class="pctitle">Collection Configuration Service <span id="screen-context"></span></div>
 	<div class="pcbreadcrumbs">
-		<?php echo $service->getBreadCrumbsHTML(false, '<span id="bcstatus" class="bcstatus"></span>');?>
+		<?php //echo $service->getBreadCrumbsHTML(false, '<span id="bcstatus" class="bcstatus"></span>');
+			echo $service->getBreadCrumbsHTML();?>
 		 
 	</div>
 	<div class="user-message"></div>
@@ -69,11 +70,11 @@
 </div>
 <script>
 dacura.config.writeBusyMessage  = function(msg) {
-	dacura.toolbox.writeBusyOverlay('#collection-pane-holder', msg);
+	dacura.system.showBusyMessage(msg, "", '#collection-pane-holder');
 }
 
 dacura.config.clearBusyMessage = function(){
-	dacura.toolbox.removeBusyOverlay(false, 100);
+	dacura.system.removeBusyOverlay();
 };
 
 dacura.config.writeSuccessMessage = function(msg){
@@ -99,19 +100,19 @@ dacura.config.fetchCollection = function(cid){
 				
 			}
 			catch(e){
-				dacura.toolbox.writeErrorMessage("#bcstatus", "Error: " + e.message);
+				dacura.system.writeErrorMessage("", "#bcstatus", "", "Error: " + e.message);
 			}
 		})
 		.fail(function (jqXHR, textStatus){
 	     	dacura.config.clearBusyMessage();
-			dacura.toolbox.writeErrorMessage("#bcstatus", "Error: " + jqXHR.responseText );
+			dacura.system.writeErrorMessage("", "#bcstatus", "", "Error: " + jqXHR.responseText );
 		}
 	);	
 };
 
 dacura.config.drawCollection = function(data){		
 	if(typeof data == "undefined"){
-		dacura.toolbox.writeErrorMessage("#bcstatus", "Failed to load dataset");		
+		dacura.system.writeErrorMessage("", "#bcstatus", "", "Failed to load dataset");		
 	}
 	else {
 		$('.pctitle').html("Configuration for Collection " + data.name + " (ID: "+data.id + " - " + data.status + ")").show();
@@ -159,12 +160,12 @@ dacura.config.deleteCollection = function(){
 	};
 	$.ajax(ajs)
 	.done(function(data, textStatus, jqXHR) {
-		dacura.toolbox.writeSuccessMessage('#bcstatus', "Deleted Collection");
+		dacura.system.showSuccessResult("Deleted Collection", "", "", '#bcstatus');
 		dacura.system.switchContext("all");
 	})
 	.fail(function (jqXHR, textStatus){
 		dacura.config.clearBusyMessage();	
-		dacura.toolbox.writeErrorMessage("#bcstatus", "Error: " + jqXHR.responseText );
+		dacura.system.writeErrorMessage("", "#bcstatus", "", "Error: " + jqXHR.responseText );
 	});	
 }
 
@@ -191,12 +192,12 @@ dacura.config.updateCollection = function(){
 				
 			}
 			catch(e){
-				dacura.toolbox.writeErrorMessage("#bcstatus", "Error: " + e.message);
+				dacura.system.writeErrorMessage("", "#bcstatus", "", "Error: " + e.message);
 			}
 		})
 		.fail(function (jqXHR, textStatus){
 	     	dacura.config.clearBusyMessage();
-			dacura.toolbox.writeErrorMessage("#bcstatus", "Error: " + jqXHR.responseText );
+			dacura.system.writeErrorMessage("", "#bcstatus", "", "Error: " + jqXHR.responseText );
 		}
 	);	
 };
@@ -206,7 +207,7 @@ dacura.config.addDataset = function(){
 	ds.id = $('#datasetidip').val();
 	ds.title = $('#datasettitleip').val();
 	if(ds.id.length < 2 || ds.title.length < 5){
-		return dacura.toolbox.writeErrorMessage("#dsadd", "ID must be at least 2 characters and title must be at least 5.");
+		return dacura.system.writeErrorMessage("", "#dsadd", "", "ID must be at least 2 characters and title must be at least 5.");
 	}
 	var ajs = dacura.config.api.createDataset(dacura.config.current_collection.id, ds.id);
 	var self=this;
@@ -225,15 +226,15 @@ dacura.config.addDataset = function(){
 					dacura.system.switchContext(dacura.config.current_collection.id, dsid);
 				}
 				catch(e){
-					dacura.toolbox.writeErrorMessage("#dsadd", "Error: " + e.message);
+					dacura.system.writeErrorMessage("", "#dsadd", "", "Error: " + e.message);
 				}
 			}
 			else {
-				dacura.toolbox.writeErrorMessage("#dsadd", "Error: server response was empty");
+				dacura.system.writeErrorMessage("", "#dsadd", "", "Error: server response was empty");
 			}    	
 		})
 		.fail(function (jqXHR, textStatus){
-			dacura.toolbox.writeErrorMessage("#dsadd", "Error: " + jqXHR.responseText );
+			dacura.system.writeErrorMessage("", "#dsadd", "", "Error: " + jqXHR.responseText );
 		}
 	);	
 };

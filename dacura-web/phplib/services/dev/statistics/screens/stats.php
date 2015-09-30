@@ -91,10 +91,10 @@ dacura.statistics.showSessionLog = function(userId, startTimeStamp) {
 	var ajs = dacura.statistics.api.detailedUserSession(userId, startTimeStamp); 
 	var self=this;
 	ajs.beforeSend = function(){
-		dacura.toolbox.writeBusyMessage('.pcbusy', "Retrieving Session Log");
+		dacura.system.showBusyMessage("Retrieving Session Log", "", '.pcbusy');
 	};
 	ajs.complete = function(){
-		dacura.toolbox.clearBusyMessage('.pcbusy');
+		dacura.system.clearBusyMessage('.pcbusy');
 	};
 
 	$.ajax(ajs)
@@ -109,12 +109,12 @@ dacura.statistics.showSessionLog = function(userId, startTimeStamp) {
 			
 		}
 		else {
-			dacura.toolbox.writeErrorMessage('#userhelp', "Error: no data returned from api call");
+			dacura.system.writeErrorMessage("", '#userhelp', "", "Error: no data returned from api call");
 		}   
 		$('#generalstats').show();  //rename or create new html element
 	})
 	.fail(function (jqXHR, textStatus){
-		dacura.toolbox.writeErrorMessage('#userhelp', "Error: " + jqXHR.responseText );
+		dacura.system.writeErrorMessage("", '#userhelp', "", "Error: " + jqXHR.responseText );
 	});
 }
 
@@ -241,10 +241,10 @@ dacura.statistics.generalDatedStatistics = function(startDateString, endDateStri
 	var self=this;
 	
 	ajs.beforeSend = function() {
-		dacura.toolbox.writeBusyMessage('.pcbusy', "Retrieving Information...");
+		dacura.system.showBusyMessage("Retrieving Information...", "", '.pcbusy');
 	};
 	ajs.complete = function() {
-		dacura.toolbox.clearBusyMessage('.pcbusy');
+		dacura.system.clearBusyMessage('.pcbusy');
 	};
 	$.ajax(ajs) // ajs needs to be an object like: {url: "script.php", type: "GET"} , data: { ... }, dataType: "json"} ??
 		.done(function(data, textStatus, jqXHR) {
@@ -279,7 +279,7 @@ dacura.statistics.generalDatedStatistics = function(startDateString, endDateStri
 			$('.filter').show();
 		})
 		.fail(function (jqXHR, textStatus){
-			dacura.toolbox.writeErrorMessage('#userhelp', "Error: " + jqXHR.responseText );
+			dacura.system.writeErrorMessage("", '#userhelp', "", "Error: " + jqXHR.responseText );
 		}
 	);
 }
@@ -315,10 +315,10 @@ dacura.statistics.generalStatistics = function(userId) {
 	
 	var self=this;
 	ajs.beforeSend = function() {
-		dacura.toolbox.writeBusyMessage('.pcbusy', "Retrieving Information...");
+		dacura.system.showBusyMessage("Retrieving Information...", "", '.pcbusy');
 	};
 	ajs.complete = function() {
-		dacura.toolbox.clearBusyMessage('.pcbusy');
+		dacura.system.clearBusyMessage('.pcbusy');
 	};
 	$.ajax(ajs) // ajs needs to be an object like: {url: "script.php", type: "GET"} , data: { ... }, dataType: "json"} ??
 		.done(function(data, textStatus, jqXHR) {
@@ -352,7 +352,7 @@ dacura.statistics.generalStatistics = function(userId) {
 			
 		})
 		.fail(function (jqXHR, textStatus){
-			dacura.toolbox.writeErrorMessage('#userhelp', "Error: " + jqXHR.responseText );
+			dacura.system.writeErrorMessage("", '#userhelp', "", "Error: " + jqXHR.responseText );
 		});
 }
 

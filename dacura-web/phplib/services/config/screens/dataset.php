@@ -12,7 +12,8 @@
 <div id="pagecontent-nopadding">
 	<div class="pctitle">Dataset Configuration Service <span id="screen-context"></span></div>
 	<div class="pcbreadcrumbs">
-		<?php echo $service->getBreadCrumbsHTML(false, '<span id="bcstatus" class="bcstatus"></span>');?>
+		<?php //echo $service->getBreadCrumbsHTML(false, '<span id="bcstatus" class="bcstatus"></span>');
+			echo $service->getBreadCrumbsHTML();?>
 	</div>
 	<div class="user-message"></div>
 	<br>
@@ -65,11 +66,11 @@
 </div>
 <script>
 dacura.config.writeBusyMessage  = function(msg) {
-	dacura.toolbox.writeBusyOverlay('#dataset-pane-holder', msg);
+	dacura.system.showBusyMessage(msg, "", '#dataset-pane-holder');
 }
 
 dacura.config.clearBusyMessage = function(){
-	dacura.toolbox.removeBusyOverlay(false, 100);
+	dacura.system.removeBusyOverlay();
 };
 
 dacura.config.writeSuccessMessage = function(msg){
@@ -94,19 +95,19 @@ dacura.config.fetchDataset = function(cid, did){
 				dacura.config.writeSuccessMessage("Retrieved dataset details");			
 			}
 			catch(e){
-				dacura.toolbox.writeErrorMessage("#bcstatus", "Error: " + e.message);
+				dacura.system.writeErrorMessage("", "#bcstatus", "", "Error: " + e.message);
 			}
 		})
 		.fail(function (jqXHR, textStatus){
 	     	dacura.config.clearBusyMessage();
-			dacura.toolbox.writeErrorMessage("#bcstatus", "Error: " + jqXHR.responseText );
+			dacura.system.writeErrorMessage("", "#bcstatus", "", "Error: " + jqXHR.responseText );
 		}
 	);	
 };
 
 dacura.config.drawDataset = function(data){		
 	if(typeof data == "undefined"){
-		dacura.toolbox.writeErrorMessage("#bcstatus", "Failed to load dataset");		
+		dacura.system.writeErrorMessage("", "#bcstatus", "", "Failed to load dataset");		
 	}
 	else {
 		$('.pctitle').html("Dataset Configuration for " + data.name + " (ID: "+data.id + " - " + data.status + ")").show();
@@ -196,12 +197,12 @@ dacura.config.updateDataset = function(obj){
 				dacura.config.writeSuccessMessage("Updated dataset " + dacura.config.current_dataset.id);
 			}
 			catch(e){
-				dacura.toolbox.writeErrorMessage(".user-message", "Error. Update failed " + e.message);
+				dacura.system.writeErrorMessage("", ".user-message", "", "Error. Update failed " + e.message);
 			}
 		})
 		.fail(function (jqXHR, textStatus){
 	     	dacura.config.clearBusyMessage();
-			dacura.toolbox.writeErrorMessage(".user-message", "Error. Update Failed " + jqXHR.responseText );
+			dacura.system.writeErrorMessage("", ".user-message", "", "Error. Update Failed " + jqXHR.responseText );
 		}
 	);	
 };
@@ -222,7 +223,7 @@ dacura.config.deleteDataset = function(){
 	})
 	.fail(function (jqXHR, textStatus){
 		dacura.config.clearBusyMessage();	
-		dacura.toolbox.writeErrorMessage("Error. Failed to delete dataset " + jqXHR.responseText );
+		dacura.system.writeErrorMessage("", "", "", "Error. Failed to delete dataset " + jqXHR.responseText );
 	});	
 };
 

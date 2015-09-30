@@ -21,11 +21,11 @@ dacura.login.resetpassword = function(){
 	var pass = $('#dacura-login-password').val();
 	var cpass = $('#dacura-login-password-confirm').val();
 	if(cpass != pass){
-		dacura.toolbox.writeErrorMessage('#resetbox-status', "Error: passwords do not match");	
+		dacura.system.writeErrorMessage("", '#resetbox-status', "", "Error: passwords do not match");	
 		return;
 	}
 	if(!this.isvalidp(pass)){
-		dacura.toolbox.writeErrorMessage('#resetbox-status', "Error: password is invalid");	
+		dacura.system.writeErrorMessage("", '#resetbox-status', "", "Error: password is invalid");	
 		return;
 	}
 	ajs.data['userid'] = "<?=$params['userid']?>";
@@ -33,10 +33,10 @@ dacura.login.resetpassword = function(){
 	this.disablereset();
 	var self=this;
 	ajs.beforeSend = function(){
-		dacura.toolbox.writeBusyOverlay('.dacura-widget', "Updating Password...", {"makeweight" : false});
+		dacura.system.showBusyMessage("Updating Password...", {"makeweight" : false}, '.dacura-widget');
 	};
 	ajs.complete = function(){
-		dacura.toolbox.removeBusyOverlay("", 0);		
+		dacura.system.removeBusyOverlay();		
 		self.enablereset();
 	};
 	$.ajax(ajs)
@@ -49,11 +49,11 @@ dacura.login.resetpassword = function(){
 				showSuccessPage("Password Successfully Reset", msg);
 			}
 			catch(e){
-				dacura.toolbox.writeErrorMessage('#resetbox-status', "Error: " + e.message );
+				dacura.system.writeErrorMessage("", '#resetbox-status', "", "Error: " + e.message );
 			}
 		})
 		.fail(function (jqXHR, textStatus){
-			dacura.toolbox.writeErrorMessage('#resetbox-status', "Error: " + jqXHR.responseText );
+			dacura.system.writeErrorMessage("", '#resetbox-status', "", "Error: " + jqXHR.responseText );
 		}
 	);	
 };
