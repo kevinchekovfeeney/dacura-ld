@@ -1,5 +1,3 @@
-<h1>Resultbox</h1>
-
 <script>
 dacura.ldresult = {};
 

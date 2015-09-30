@@ -5,7 +5,7 @@ require_once("FakeTripleStore.php");
 class GraphManager extends DacuraObject {
 
 	var $settings;
-	var $tests = "all";
+	var $tests = array();//"all";//array("domainNotSubsumedSC");
 	var $errors;
 	var $warnings;
 	var $fake = false;
