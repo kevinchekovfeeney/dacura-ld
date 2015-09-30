@@ -36,6 +36,15 @@ class OntologyUpdateRequest extends EntityUpdate {
 		//opr($changes);
 		return $changes;
 	}
+	
+	function validateCommand($obj, $in_embedded = false){
+		foreach($obj as $p => $v){
+			$pv = new LDPropertyValue($v, $this->cwurl);
+			if($pv->illegal()) return $this->failure_result("Update failed validation: ".$pv->errmsg, $pv->errcode);
+		}
+		return true;
+	}
+	
 
 	function getLDForm(){
 		return $this->changed->store(true);

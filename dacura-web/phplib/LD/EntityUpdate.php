@@ -186,7 +186,7 @@ class EntityUpdate extends DacuraObject{
 			if($pv->embeddedlist()){
 				$cwlinks = $pv->getupdates();
 				if(count($cwlinks) > 0 && $in_embedded){
-					return $this->failure_result("New embedded objects cannot have properties that update anything but themselves: $k "." closed world links ".$cwlinks[0], 400);
+					return $this->failure_result("New embedded objects cannot have properties that update anything but themselves: $p "." closed world links ".$cwlinks[0], 400);
 				}
 				foreach($v as $id => $emb){
 					if(!$this->validateCommand($emb, $in_embedded)){

@@ -4,11 +4,11 @@ dacura.schema.api = {};
 
 dacura.schema.api.get = function(){
 	xhr = {};
-	if(dacura.system.collectionid == "all" && dacura.system.datasetid == "all"){
+	if(dacura.system.pagecontext.collection_id == "all"){
 		xhr.data = {"entity_type": "ontology"};
 	}
 	else {
-		xhr.data = {"entity_type": "ontology"};	
+		xhr.data = {"entity_type": "graph"};	
 	}
 	xhr.url = dacura.system.serviceApiURL('ld');
 	return xhr;
@@ -16,26 +16,58 @@ dacura.schema.api.get = function(){
 
 dacura.schema.api.get_ontology = function(n, opts){
 	xhr = {data: opts};
-	//xhr.data.entity_type = "ontology";
+	xhr.data.entity_type = "ontology";
 	xhr.url = dacura.system.serviceApiURL('ld') + "/" +  n;
 	return xhr;
 }
 
-dacura.schema.api.get_graph = function(n){
-	xhr = {};
-	xhr.url = dacura.schema.apiurl + "/" + n;
+dacura.schema.api.get_graph = function(n, opts){
+	xhr = {data: opts};
+	xhr.data.entity_type = "graph";
+	xhr.url = dacura.system.serviceApiURL('ld') + "/" +  n;
 	return xhr;
 }
 
-dacura.schema.api.update = function(sc){
-	var xhr = {};
-	xhr.url = dacura.schema.apiurl;
+dacura.schema.api.create_graph = function(data, test){
 	xhr.type = "POST";
 	xhr.contentType = 'application/json'; 
-	xhr.data = JSON.stringify(sc);
-    xhr.dataType = "json";
-    return xhr;
+	if(typeof test != "undefined"){
+		data.test = true;
+	}
+	xhr.data = JSON.stringify(data);
+	xhr.dataType = "json";
+	xhr.url = dacura.system.serviceApiURL('ld');
+	return xhr;	
 }
+
+dacura.schema.api.update_ontology = function(id, uobj, test){
+	var xhr = {};
+	xhr.type = "POST";
+	xhr.contentType = 'application/json';
+	uobj.type = "ontology";
+	if(typeof test != "undefined"){
+		uobj.test = true;
+	}
+	xhr.data = JSON.stringify(uobj);
+	xhr.dataType = "json";
+	xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
+    return xhr;	
+};
+
+dacura.schema.api.update_graph = function(id, uobj, test){
+	var xhr = {};
+	xhr.type = "POST";
+	xhr.contentType = 'application/json';
+	uobj.type = "graph";
+	if(typeof test != "undefined"){
+		uobj.test = true;
+	}
+	xhr.data = JSON.stringify(uobj);
+	xhr.dataType = "json";
+	xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
+    return xhr;	
+};
+
 
 dacura.schema.api.import_ontology = function(format, entid, payload){
 	xhr = {};
@@ -52,15 +84,13 @@ dacura.schema.api.import_ontology = function(format, entid, payload){
 	return xhr;	
 }
 
-dacura.schema.api.update_ontology = function(id, uobj){
-	var xhr = {};
-	xhr.url = dacura.schema.apiurl + "/ontology/" + id;
+dacura.schema.api.calculateDependencies = function(entid){
+	xhr = {};
+	xhr.url = dacura.schema.apiurl + "/" + entid + "/dependencies";
 	xhr.type = "POST";
-	xhr.contentType = 'application/json'; 
-	xhr.data = JSON.stringify(uobj);
-	xhr.dataType = "json";
-    return xhr;	
-};
+	return xhr;
+}
+
 
 dacura.schema.api.validate_ontology = function(n){
 	xhr = {};
@@ -80,6 +110,37 @@ dacura.schema.api.validate_graph_ontologies = function(onts, tests){
 	xhr.data = JSON.stringify(data);
 	xhr.dataType = "json";
     return xhr;	
+}
+
+dacura.schema.calculateDependencies = function(id, ownwards){
+	var ajs = dacura.schema.api.calculateDependencies(id);
+	var msgs = { "busy": "Calculating Ontology " + id + " Dependencies from Server", "fail": "Failed to calculate dependencies for " + id};
+	ajs.handleResult = function(obj){
+		dacura.schema.showDependencies(obj);
+		if(typeof onwards != "undefined"){
+			onwards(obj);
+		}
+	}
+	dacura.system.invoke(ajs, msgs);
+}
+
+dacura.schema.fetchGraph = function(id, args, onwards, from){
+	var ajs = dacura.schema.api.get_graph(id, args);
+	var msgs = { "busy": "Fetching graph " + id + " from Server", "fail": "Failed to retrieve graph " + id};
+	if(typeof from != "undefined"){
+		if(from){
+			msgs.busy += ": " + from;
+			msgs.success += ": " + from;
+		}	
+	}
+	ajs.handleResult = function(obj){
+		dacura.schema.showGraph(obj);
+		if(typeof onwards != "undefined"){
+			onwards(obj);
+		}
+	}
+	ajs.handleJSONError = dacura.editor.drawUpdateResult;
+	dacura.system.invoke(ajs, msgs);	
 }
 
 //signature of calls produced by the editor
@@ -106,7 +167,16 @@ dacura.schema.fetchOntology = function(id, args, onwards, from){
 dacura.schema.updateOntology = function(id, uobj, onwards, type, test){
 	var data = dacura.schema.gatherOntologyDetails();
 	uobj.details = data;
-	var ajs = dacura.schema.api.update_ontology(id, uobj);
+	var ajs = dacura.schema.api.update_ontology(id, uobj, test);
+	var msgs = { "busy": "Updating ontology " + id + "", "fail": "Failed to update ontology " + id};
+	ajs.handleResult = onwards;
+	ajs.handleJSONError = onwards;
+	dacura.system.invoke(ajs, msgs);
+}
+
+
+dacura.schema.updateGraph = function(id, uobj, onwards, type, test){
+	var ajs = dacura.schema.api.update_graph(id, uobj, test);
 	var msgs = { "busy": "Updating ontology " + id + "", "fail": "Failed to update ontology " + id};
 	ajs.handleResult = onwards;
 	ajs.handleJSONError = onwards;
@@ -164,5 +234,10 @@ dacura.schema.importOntology = function(format, dqs, payload){
 	dacura.system.invoke(ajs, msgs);
 };
 
-
+dacura.schema.createGraph = function(name){
+	var data = {"type": "graph", "meta" : {"@id": name}};
+	var ajs = dacura.schema.api.create_graph(data);
+	var msgs = { "busy": "Creating new graph", "fail": "Failed to create new graph", "success": "graph successfully created"};
+	dacura.system.invoke(ajs, msgs);	
+}
 

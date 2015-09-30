@@ -167,6 +167,7 @@ div#ld-editor textarea {
 
 <div class='dacura-ld-editor dch'>
 	<div id='ld-view-page'>
+		<div class='ld-meta' id='ld-view-header'>
 		<div class='ld-bar' id='ld-view-header'>
 			<div id='ld-view-bar'>
 				<table class='ld-bar'>
@@ -493,7 +494,7 @@ dacura.editor = {
 				dced.update(uobj, dced.drawUpdateResult, test, dced.targets);
 			}
 			else {
-				if($('#set-status').val() != dced.currentEntity.status){
+				if($('#set-status').val() && $('#set-status').val() != dced.currentEntity.status){
 					uobj.meta.status = $('#set-status').val();
 				}
 				dced.update(dced.currentID, uobj, dced.drawUpdateResult, type, test, dced.targets);

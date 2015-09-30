@@ -1,13 +1,12 @@
 <?php
-Epi::init('api');
-getApi()->get('/entities.json', array('Api', 'version'));
 getRoute()->get('/', 'get_schema');
-getRoute()->post('/', 'update_schema');
+getRoute()->post('/import', 'import_ontology');
+getRoute()->post('/(\w+)/dependencies', 'calculate_dependencies');
+getRoute()->post('/ontology/(\w+)', 'update_ontology');
 getRoute()->get('/ontology/(\w+)', 'get_ontology');
 getRoute()->post('/ontology/(\w+)', 'update_ontology');
 getRoute()->get('/validate/(\w+)', 'validate_ontology');
 getRoute()->post('/validate_ontologies', 'validate_ontologies');
-getRoute()->post('/import', 'import_ontology');
 getRoute()->get('/(\w+)', 'get_graph');
 getRoute()->post('/(\w+)', 'update_graph');
 
@@ -17,18 +16,29 @@ function import_ontology(){
 	if(!isset($_POST['format'])){
 		$payload = file_get_contents('php://input');
 		$format = "upload";
-		$entid = isset($_GET['id']) && $_GET['id'];
+		$entid = (isset($_GET['id']) && $_GET['id']) ? $_GET['id']: "";
 	}
 	else {
 		$payload = isset($_POST['payload']) ? $_POST['payload'] : "";
 		$format = isset($_POST['format']) ? $_POST['format'] : "";
 		$entid = isset($_POST['id']) ? $_POST['id'] : "";
 	}
-	$ont = $dacura_server->importOntology($format, $payload, $entid);
-	if($ont){
-		return $dacura_server->write_json_result($ont, "Imported Ontology $ont->id");
+	$ar = $dacura_server->importOntology($format, $payload, $entid);
+	if($ar){
+		return $dacura_server->writeDecision($ar);
+		//return $dacura_server->write_json_result($ont, "Imported Ontology $ont->id");
 	}
 	$dacura_server->write_http_error();
+}
+
+function calculate_dependencies($ontid){
+	global $dacura_server;
+	$ar = $dacura_server->calculateOntologyDependencies($ontid);
+	if($ar){
+		//return $dacura_server->writeDecision($ar);
+		return $dacura_server->write_json_result($ar, "Calculated dependencies of $ontid");
+	}
+	$dacura_server->write_http_error();	
 }
 
 /*

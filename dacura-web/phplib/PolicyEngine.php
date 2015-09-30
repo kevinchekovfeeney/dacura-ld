@@ -31,6 +31,9 @@ class PolicyEngine extends DacuraObject {
 			//$ar->decision = 'confirm';
 			//$ar->reject("View update Not Allowed", "You are a dirtbird and I'm not letting you");
 		}
+		else {
+			$ar->accept();
+		}
 		return $ar;
 	}
 

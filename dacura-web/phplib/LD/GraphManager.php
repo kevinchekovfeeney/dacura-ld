@@ -5,10 +5,10 @@ require_once("FakeTripleStore.php");
 class GraphManager extends DacuraObject {
 
 	var $settings;
-	var $tests = "all";
+	var $tests = array();//"all";
 	var $errors;
 	var $warnings;
-	var $fake = true;
+	var $fake = false;
 
 	function __construct($settings){
 		$this->settings = $settings;

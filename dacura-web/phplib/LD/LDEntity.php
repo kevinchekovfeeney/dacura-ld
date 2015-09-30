@@ -140,7 +140,6 @@ class LDEntity extends DacuraObject {
 	function setNamespaces($nsres){
 		$this->nsres = $nsres;
 	}
-	
 
 	/*
 	 * Calculates the transforms necessary to get to current from other
@@ -356,8 +355,13 @@ class LDEntity extends DacuraObject {
 			return $graph;
 		}
 		catch(Exception $e){
+			opr($graph);
 			return $this->failure_result("Failed to load graph from $type. ".$e->getMessage(), $e->getCode());
 		}
+	}
+	
+	function getERDFSupportedNamespaces(){
+		return EasyRdf_Namespace::namespaces();		
 	}
 	
 	function import($type, $arg, $gurl = false, $format = false){
@@ -381,7 +385,7 @@ class LDEntity extends DacuraObject {
 				return $this->failure_result("Graph was empty.", 400);
 			}
 			if($nsobj){
-				$nslist = $this->getNamespaces($nsobj);
+				$nslist = $this->getNS($nsobj);
 				if($nslist){
 					foreach($nslist as $prefix => $full){
 						EasyRdf_Namespace::set($prefix, $full);

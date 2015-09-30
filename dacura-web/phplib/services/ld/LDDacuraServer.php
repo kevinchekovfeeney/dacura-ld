@@ -4,8 +4,9 @@ include_once("phplib/LD/EntityCreateRequest.php");
 include_once("phplib/LD/EntityUpdate.php");
 include_once("phplib/LD/OntologyCreateRequest.php");
 include_once("phplib/LD/OntologyUpdateRequest.php");
-include_once("phplib/LD/SchemaUpdateRequest.php");
-include_once("phplib/LD/Schema.php");
+include_once("phplib/LD/GraphUpdateRequest.php");
+include_once("phplib/LD/GraphCreateRequest.php");
+include_once("phplib/LD/Graph.php");
 include_once("phplib/LD/Candidate.php");
 include_once("phplib/LD/CandidateCreateRequest.php");
 include_once("phplib/LD/CandidateUpdateRequest.php");
@@ -294,6 +295,9 @@ class LDDacuraServer extends DacuraServer {
 		elseif($type == "ontology"){
 			$obj = new OntologyCreateRequest($id);		
 		}
+		elseif($type == "graph"){
+			$obj = new GraphCreateRequest($id);		
+		}
 		else {
 			$schema = new Schema($this->cid(), $this->did(), $this->settings['install_url']);
 			$obj = new CandidateCreateRequest($id, $schema);
@@ -317,7 +321,7 @@ class LDDacuraServer extends DacuraServer {
 		$uent = new $uclass(false, $oent);
 		//is this entity being accessed through a legal collection / dataset context?
 		if(!$uent->isLegalContext($this->cid(), $this->did())){
-			return $ar->failure(403, "Access Denied", "Cannot update $this->entity_type $oent->id through context ".$this->cid()."/".$this->did());
+			return $ar->failure(403, "Access Denied", "Cannot update $oent->id through context ".$this->cid()."/".$this->did());
 		}
 		elseif(!$uent->loadFromAPI($obj)){
 			return $ar->failure($uent->errcode, "Protocol Error", "Failed to load the update candidate from the API. ".$uent->errmsg);
@@ -596,6 +600,36 @@ class LDDacuraServer extends DacuraServer {
 		}
 		elseif($uent->isOntology()){
 			$gu = new GraphAnalysisResults("Ontology update...");				
+		}
+		elseif($uent->isGraph()){
+			$gu = new GraphAnalysisResults("Publishing to Graph");
+			if($is_test){
+				$aquads = array();
+				if($uent->importsChanged()){
+					foreach($uent->changed->meta['imports'] as $ontid){
+						$ont = $this->loadEntity($ontid);
+						if($ont){
+							$quads = $ont->getPropertyAsQuads($ontid, $uent->targetid."_schema");
+							if($quads){
+								$aquads = array_merge($aquads, $quads);
+							}
+						}
+						else {
+							return $this->failure_result($this->schema->errmsg, $this->schema->errcode);
+						}
+					}
+				}
+				$aquads = array_merge($aquads, $uent->changed->getPropertyAsQuads($uent->targetid, $uent->targetid."_schema"));
+				$errs = $this->graphman->validateSchema($uent->targetid."_schema", $aquads);
+				if($errs === false){
+					$gu->addOneGraphTestFail($uent->targetid, $aquads, array(), $this->graphman->errcode, $this->graphman->errmsg);
+				}
+				else {
+					$gu->addOneGraphTestResult($uent->targetid, $aquads, array(), $errs);
+				}
+			}
+			else {
+			}			
 		}
 		return $gu;
 	}

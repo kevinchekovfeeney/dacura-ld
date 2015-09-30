@@ -159,7 +159,7 @@ function updateBNReferences(&$ldprops, $idmap, $cwurl){
 /*
  * Basic validity check on a LD structure
  */
-function validLD($ldprops, $cwurl){
+function validLD($ldprops, $cwurl = false){
 	$errs = array();
 	foreach($ldprops as $p => $v){
 		$pv = new LDPropertyValue($v, $cwurl);

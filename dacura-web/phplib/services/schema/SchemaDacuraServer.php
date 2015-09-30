@@ -4,6 +4,18 @@ include_once("phplib/services/ld/LDDacuraServer.php");
 
 class SchemaDacuraServer extends LDDacuraServer {
 	
+	var $schemadir;
+	var $schemaconfig = false;
+	var $graphman;
+	
+	function __construct($s){
+		parent::__construct($s);
+		$this->schemadir = $this->settings['path_to_collections'].$this->cid();
+		if($this->did() != "all") $this->schemadir.= "/".$this->did();
+		$this->schemadir.= "/schema/";
+		$this->graphman = new GraphManager($this->settings);
+	}
+	
 	function getSchema($version = false){
 		if($this->cid() == "all"){
 			return $this->loadImportedOntologyList();
@@ -20,74 +32,55 @@ class SchemaDacuraServer extends LDDacuraServer {
 		}
 	}
 	
-	function importOntology($format, $payload, $entid, $make_internal = false){
+	function importOntology($format, $payload, $entid, $make_internal = false, $test_flag = false){
 		//check to see if entid is taken... if it is return a failure...
 		if($entid && $this->dbman->hasEntity($entid)){
 			return $this->failure_result("Dacura already has an entity with id $entid", 400);
 		}
-		elseif(!$entid){
-			$entid = "";//generate new entity id...
+		else {
+			$entid = $this->generateNewEntityID("ontology", $entid);
 		}
 		if($format == "url"){
 			//some data validation here -> ensure its a real url, etc, 
-			$ont = $this->downloadOntology($payload);
+			$ont = $this->downloadOntology($payload, $entid);
 		}
 		elseif($format == "text"){
-			$ont = $this->createOntologyFromString($payload);
+			$ont = $this->createOntologyFromString($payload, $entid);
 		}
 		else {
-			$ont = $this->uploadOntology($payload);
+			$ont = $this->uploadOntology($payload, $entid);
 		}
 		if(!$ont){
 			return false;
 		}
-		opr($ont);
-		//if($this->schema->hasOntology($ont)){
-		//	return $this->failure_result("Ontology ".$ont->getTitle() . " has already been imported into Dacura", 400);
-		//}
-		//else {
-		//	$ont->extractDetails();
-		//	$ont->status = "new";
-		//	$this->schema->addOntology($ont, $make_internal);
-		//	if($this->saveSchema()){
-		//		return $this->schema;
-		//	}
-		//	return false;
-		//}
-		//if($dqs){
-		//	$ar = $this->checkOntology($ont);
-		//}
-		//$ar = $this->checkOntology($ont);
-		//return $ar;
-		return $ont;
+		$create_obj = array("meta" => $ont->meta, "contents" => $ont->ldprops);
+		$ar = $this->createEntity("ontology", $create_obj, $entid, array(), $test_flag);
+		return $ar;		
 	}
 	
-	function downloadOntology($url){
-		$fid = "ONT". randid();
-		$ontology = new Ontology($this->schema->cwurl."/ontology/".$fid);
+	function downloadOntology($url, $entid){
+		$ontology = new Ontology($entid);
 		if(!$ontology->import("url", $url)){
 			return $this->failure_result($ontology->errmsg, $ontology->errcode);
 		}
 		return $ontology;
 	}
 	
-	function uploadOntology($payload){
-		$fid = "ONT". randid();
-		$fname = $this->schemadir.$fid.".tmp";
+	function uploadOntology($payload, $entid){
+		$fname = $this->schemadir.$entid.".ont";
 		if(!file_put_contents($fname, $payload)){
 			return $this->failure_result("Failed to save to $fname", 500);
 		}
-		$ontology = new Ontology($this->schema->cwurl."/ontology/".$fid);
-		if(!$ontology->import("file", $fname, $this->schema->cwurl."/ontology/".$fid)){
+		$ontology = new Ontology($entid);
+		if(!$ontology->import("file", $fname, $entid)){
 			return $this->failure_result($ontology->errmsg, $ontology->errcode);
 		}
 		return $ontology;
 	}
 	
-	function createOntologyFromString($string){
-		$fid = "ONT". randid();
-		$ontology = new Ontology($this->schema->cwurl."/ontology/".$fid);
-		if(!$ontology->import("text", $string, $this->schema->cwurl."/ontology/".$fid)){
+	function createOntologyFromString($string, $entid){
+		$ontology = new Ontology($this->schema->cwurl."/ontology/".$entid);
+		if(!$ontology->import("text", $string, $entid)){
 			return $this->failure_result($ontology->errmsg, $ontology->errcode);
 		}
 		return $ontology;
@@ -95,9 +88,23 @@ class SchemaDacuraServer extends LDDacuraServer {
 	
 	
 	function loadImportedOntologyList(){
-		$filter = "";
+		$filter = array("type" => "ontology");
 		$onts = $this->getEntities($filter);
+		return $onts;
 	}
+	
+	function calculateOntologyDependencies($id){
+		$ent = $this->loadEntity($id);
+		if(!$ent->isOntology()){
+			return $this->failure_result("$id is not an ontology - cant calculate dependencies", 400);
+		}
+		else {
+			$deps = $ent->generateDependencies();
+			return $deps;
+		}
+	}
+	
+	
 	
 /*	var $schemadir;
 	var $schemafile;

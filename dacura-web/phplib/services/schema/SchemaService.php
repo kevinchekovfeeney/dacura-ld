@@ -129,20 +129,24 @@ class SchemaService extends DacuraService {
 				$params["title"] = "Imported Ontologies";
 				$params["subtitle"] = "Manage the set of external ontologies supported by the system.";
 				$this->renderToolHeader($params);
-				$this->renderScreen("system", array("scope" => "system"));
+				$this->renderScreen("system", array());
 			}
 		}
-		elseif($this->getDatasetID() == "all") {
-			$params["title"] = "Schema Management Service";				
-			$params["subtitle"] = "Manage the structure of your datasets";
-			$this->renderToolHeader($params);
-			$this->renderScreen("schema", array("scope" => "collection"));
-		}
 		else {
-			$params["title"] = "Schema Management Service";				
-			$params["subtitle"] = "Manage the structure of your dataset";
-			$this->renderToolHeader($params);
-			$this->renderScreen("schema", array("scope" => "dataset"));
+			if($this->screen && $this->screen != "view"){
+				$params["title"] = "Graph Management Service";				
+				$params["subtitle"] = "Manage the graphs schema";
+				$this->renderToolHeader($params);
+				$params['id'] = $this->screen;
+				$params['ontologies'] = $dacura_server->loadImportedOntologyList();
+				$this->renderScreen("graph", $params);
+			}
+			else {
+				$params["title"] = "Schema Management Service";
+				$params["subtitle"] = "Manage the structure of your dataset";
+				$this->renderToolHeader($params);
+				$this->renderScreen("schema", array());				
+			}
 		}
 		$this->renderToolFooter($params);		
 	}

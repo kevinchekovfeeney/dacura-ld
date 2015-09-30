@@ -285,6 +285,10 @@ dacura.system.writeErrorMessage = function(title, jqid, msg, extra){
 	dacura.system.writeResultMessage("error", title, jqid, msg, extra);
 }
 
+dacura.system.writeWarningMessage = function(title, jqid, msg, extra){
+	dacura.system.writeResultMessage("warning", title, jqid, msg, extra);	
+}	
+
 dacura.system.writeInfoMessage = function(title, jqid, msg, extra){
 	dacura.system.writeResultMessage("info", title, jqid, msg, extra);	
 }	
@@ -735,7 +739,6 @@ dacura.system.setLDEntityToolHeader = function(ent){
 	$('.ent_type').html("<span class='entity-type'>" + ent.type + "</span>");
 	$('.ent_created').html("<span class='entity-details'>" + metadetails + "</span>");
 	$('.ent_status').html("<span class='entity-status entity-" + ent.latest_status + "'>" + ent.latest_status + "</span>");
-    dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + ent.id , options.subtitle);	
 }
 
 

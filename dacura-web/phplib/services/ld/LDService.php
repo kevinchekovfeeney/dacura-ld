@@ -45,7 +45,7 @@ class LDService extends DacuraService {
 
 	function getCreateStatusOptions(){
 		$opts = array(
-				"candidate", "report", "interpretation", "ontology", "schema"
+			"candidate", "report", "interpretation", "ontology", "graph"
 		);
 		$html = "";
 		foreach($opts as $o){

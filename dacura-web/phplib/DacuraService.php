@@ -206,7 +206,8 @@ class DacuraService extends DacuraObject {
 	function showLDEditor($params){
 		$service = $this;
 		$entity = isset($params['entity']) ? $params['entity'] : "Entity";
-		include_once("phplib/snippets/LDEditor.php");		
+		$this->renderScreen("editor", $params, "ld");
+		//include_once("phplib/snippets/LDEditor.php");		
 	}
 	
 	function isPublicScreen(){
