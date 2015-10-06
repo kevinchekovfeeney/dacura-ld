@@ -1,12 +1,10 @@
 <?php
-include_once("phplib/LD/LDDacuraServer.php");
+include_once("phplib/services/ld/LDDacuraServer.php");
 
 class CandidateDacuraServer extends LDDacuraServer {
 
 	function __construct($service){
 		parent::__construct($service);
-		$this->entity_type = "candidate";
-		$this->loadSchema();
 		$this->cwurlbase = $service->my_url();
 	}
 	
@@ -18,7 +16,7 @@ class CandidateDacuraServer extends LDDacuraServer {
 	 * Get Candidate -> retrieve a candidate record
 	 * Get Update -> retrieve an update record
 	 */
-	
+	/*
 	function createCandidate($obj, $demand_id, $options, $test_flag = false){
 		$ar = $this->checkCreateRequest($obj, $demand_id);
 		if($ar->is_reject()){
@@ -254,10 +252,10 @@ class CandidateDacuraServer extends LDDacuraServer {
 		}
 		return $ncur;
 	}
-
+*/
 	/*
 	 * Methods for interactions with the Quality Service / Graph Manager
-	 */
+	 *
 		
 	function testUpdates($ucand){
 		if($ucand->bothPublished()){
@@ -473,7 +471,7 @@ class CandidateDacuraServer extends LDDacuraServer {
 	
 	/*
 	 * Methods dealing with lists of candidates (very primitive)
-	 */
+	 *
 	function getCandidates(){
 		return ($data = $this->dbman->get_candidate_list()) ? $data : $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 	}
@@ -488,7 +486,7 @@ class CandidateDacuraServer extends LDDacuraServer {
 
 	/*
 	 * Methods dealing with Candidate ID generation
-	 */
+	 *
 	
 	function generateNewEntityID($demand = false){
 		if($demand && ctype_alnum($demand) && strlen($demand) > 1 && strlen($demand) < 40 && $this->policy->demandIDAllowed("create")){
@@ -532,6 +530,6 @@ class CandidateDacuraServer extends LDDacuraServer {
 					"forward" => "create"
 			);
 		}
-	}
+	}*/
 }
 
