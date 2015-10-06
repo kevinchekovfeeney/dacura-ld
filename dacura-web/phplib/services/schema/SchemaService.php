@@ -205,7 +205,7 @@ class SchemaService extends DacuraService {
 			}
 		}
 		return $options;
-		//“checkInstanceClass”, “checkPropertyRange”, “checkPropertyDomain”
+		//ï¿½checkInstanceClassï¿½, ï¿½checkPropertyRangeï¿½, ï¿½checkPropertyDomainï¿½
 		//"classCycles", "propertyCycles",  "duplicateClasses",  "duplicateProperties",  "orphanSubClasses",  "orphanSubProperties",  "orphanInstance",  "orphanProperties",  "blankNode",  "invalidRange",  "invalidDomain",  "invalidInstanceRange",  "invalidInstanceDomain"
 		
 	}
