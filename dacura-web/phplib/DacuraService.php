@@ -217,6 +217,11 @@ class DacuraService extends DacuraObject {
 		//include_once("phplib/snippets/LDEditor.php");
 	}
 	
+	function showDQSControls($graph, $set_tests){
+		$params = array("graph" => $graph, "tests" => $set_tests);
+		$this->renderScreen("dqs", $params, "ld");		
+	}
+	
 	
 	function isPublicScreen(){
 		if($this->screen == "") $this->screen = "home";

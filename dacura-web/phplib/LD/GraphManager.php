@@ -18,59 +18,62 @@ class GraphManager extends DacuraObject {
 	 * all of these are just convenience interfaces to invoke DQS...
 	 */
 	
-	function setTests($tests){
-		$this->tests = $tests;
-	}
 	
-	function test_update($itrips, $dtrips, $gname, $schema_gname){
+	function test_update($itrips, $dtrips, $gname, $schema_gname, $tests = "all"){
 		return $this->update($itrips, $dtrips, $gname, $schema_gname, true);		
 	}
 
-	function test_create($itrips, $gname, $schema_gname){
-		return $this->create($itrips, $gname, $schema_gname, true);
+	function test_create($itrips, $gname, $schema_gname, $tests = all){
+		return $this->create($itrips, $gname, $schema_gname, true, $tests);
 	}
 	
-	function create($itrips, $gname, $schema_gname, $test = false){
-		return $this->update($itrips, array(), $gname, $schema_gname, $test);
+	function create($itrips, $gname, $schema_gname, $test = false, $tests = "all"){
+		return $this->update($itrips, array(), $gname, $schema_gname, $test, $tests);
 	}
 	
-	function test_delete($dtrips, $gname, $schema_gname){
-		return $this->delete($dtrips, $gname, $schema_gname, true);
+	function test_delete($dtrips, $gname, $schema_gname, $tests = "all"){
+		return $this->delete($dtrips, $gname, $schema_gname, true, $tests);
 	}
 	
-	function delete($dtrips, $gname, $schema_gname, $test = false){
-		return $this->update(array(), $dtrips, $gname, $schema_gname, $test);
+	function delete($dtrips, $gname, $schema_gname, $test = false, $tests = "all"){
+		return $this->update(array(), $dtrips, $gname, $schema_gname, $test, $tests);
 	}
 	
-	function update($itrips, $dtrips, $gname, $schema_gname, $test = false){
+	function update($itrips, $dtrips, $gname, $schema_gname, $test = false, $tests = "all"){
 		if($this->fake){
 			$fakets = new FakeTripleStore("C:\\Temp\\fakets.json");
 			return $fakets->update($itrips, $dtrips, $test);
 		}
 		else {
-			return $this->invokeDQS("instance", $schema_gname, $gname, $itrips, $dtrips, $test);
+			return $this->invokeDQS("instance", $schema_gname, $gname, $itrips, $dtrips, $test, $tests);
 		}
 	}
 		
-	function updateSchema($itrips, $dtrips, $schema_gname, $gname, $test = false){
-		return $this->invokeDQS("schema", $schema_gname, $gname, $itrips, $dtrips, $test);
-	}
-	
-	function validateSchema($schema_gname, $itrips){
+	function updateSchema($itrips, $dtrips, $gname, $schema_gname, $test = false, $tests = "all"){
 		if($this->fake){
-			$fakets = new FakeTripleStore("C:\\Temp\\fakets.json");
-			return $fakets->update($itrips, array(), false);				
+			return $fakets->update($itrips, $dtrips, false);				
 		}
 		else {
-			return $this->invokeDQS("schema", $schema_gname, false, $itrips, false, false);
+			return $this->invokeDQS("schema", $schema_gname, $gname, $itrips, $dtrips, $test, $tests);
 		}
 	}
+
+	function validateSchema($schema_gname, $itrips, $tests){
+		if($this->fake){
+			$fakets = new FakeTripleStore("C:\\Temp\\fakets.json");
+			return $fakets->update($itrips, array(), false);
+		}
+		else {
+			return $this->invokeDQS("schema", $schema_gname, false, $itrips, false, true, $tests);
+		}
+	}
+	
 	
 	function validateAll($gname, $schema_gname){
 		return $this->invokeDQS("validate", $schema_gname, $gname);		
 	}
 	
-	function invokeDQS($service, $schema_gname, $gname = false, $itrips = false, $dtrips = false, $test = false){
+	function invokeDQS($service, $schema_gname, $gname = false, $itrips = false, $dtrips = false, $test = false, $tests = "all"){
 		$queries = array();
 		$itrips = $itrips ? $itrips : array();
 		$dtrips = $dtrips ? $dtrips : array();
@@ -82,7 +85,7 @@ class GraphManager extends DacuraObject {
 			$queries['update'] = $update_ip;
 			$commit = $test ? "false" : "true";		
 			$pragma_ip = json_encode(array(
-					"tests" 	=>	$this->tests,
+					"tests" 	=>	$tests,
 					"commit" 	=> 	$commit,
 					"schema" 	=> 	$schema_gname,
 					"instance" 	=> 	$gname
@@ -91,7 +94,7 @@ class GraphManager extends DacuraObject {
 		}
 		else {
 			$prag = array(
-					"tests" => $this->tests,
+					"tests" => $tests,
 					"schema" => $schema_gname
 			);
 			if($gname != false){
@@ -109,11 +112,11 @@ class GraphManager extends DacuraObject {
 		//$qstr = urlencode($qstr);
 		$dumpstr = "Service: $service\n";
 		$dumpstr .= "Tests: ";
-		if(is_array($this->tests)){
-			$dumpstr .= implode(", \t", $this->tests)."\n";
+		if(is_array($tests)){
+			$dumpstr .= implode(", ", $tests)."\n";
 		}
 		else {
-			$dumpstr .= $this->tests."\n";
+			$dumpstr .= $tests."\n";
 		}
 		$dumpstr .= "Schema: ".$schema_gname." Instance: ".$gname."\n";
 		$dumpstr .= "Triples Added:\n";

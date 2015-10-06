@@ -253,6 +253,10 @@ class LDEntity extends DacuraObject {
 				}
 				$update_ids = $pv->getupdates();
 				foreach($update_ids as $uid){
+					if($uid == "http://purl.org/dc/terms/type"){
+						echo "$uid: ".opr($uprops[$prop][$uid]);
+						opr($dprops[$prop][$uid]);
+					}
 					if(!isset($dprops[$prop])){
 						$dprops[$prop] = array();
 					}
@@ -340,13 +344,14 @@ class LDEntity extends DacuraObject {
 	function importERDF($type, $arg, $gurl = false, $format = false){
 		try {
 			if($type == "url"){
-				$graph = EasyRdf_Graph::newAndLoad($arg, $format);
+				$graph = EasyRdf_Graph::newAndLoad($arg, $format, $this->id);
 			}
 			elseif($type == "text"){
-				$graph = new EasyRdf_Graph($gurl, $arg, $format);
+				$graph = new EasyRdf_Graph($gurl, $arg, $format, $this->id);
 			}
 			elseif($type == "file"){
 				$graph = new EasyRdf_Graph($gurl);
+				$graph->genid = $this->id;
 				$graph->parseFile($arg, $format);
 			}
 			if($graph->isEmpty()){
@@ -380,7 +385,7 @@ class LDEntity extends DacuraObject {
 	function export($format, $nsobj = false){
 		$easy = exportEasyRDFPHP($this->id, $this->ldprops);
 		try{
-			$graph = new EasyRdf_Graph($this->id, $easy, "php");
+			$graph = new EasyRdf_Graph($this->id, $easy, "php", $this->id);
 			if($graph->isEmpty()){
 				return $this->failure_result("Graph was empty.", 400);
 			}

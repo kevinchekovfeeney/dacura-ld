@@ -287,6 +287,13 @@ dacura.editor = {
 			dced.update = u;
 			$('.dacura-ld-editor').show();		
 		}
+		else if(i == false){
+			$('.dacura-ld-editor').show();		
+			dced.fetch = f;
+			dced.update = u;
+			dced.mode = "edit new";
+			dced.fetch(dced.setCreateMode, dced.targets);			
+		}
 		else {
 			dced.fetch = f;
 			dced.update = u;
@@ -295,6 +302,11 @@ dacura.editor = {
 			opts.display = dced.getDisplayFlagsAsString();
 			dced.fetch(i, opts, dced.loadEntity, dced.targets);
 		}
+	},
+
+	loadSkeleton: function(obj){
+		dced.drawBody(obj.display); 
+		dced.display();
 	},
 	
 	fetch: function(){
@@ -711,15 +723,23 @@ dacura.editor = {
 		}
 	},
 
-	setCreateMode: function(){
+	setCreateMode: function(obj){
 		$('#ld-view-page').hide();
 		$(".view-update-stage").hide();		
 		$('#set-update-status').hide();							
 		$('#ld-edit-page').show();
-		$('#ld-editor').append("<div class='dacura-json-editor'>" + 
+		if(typeof obj != "undefined"){
+			$('#ld-editor').append("<div class='dacura-json-editor'>" + 
+					"<textarea id='ldmeta-input'>" + JSON.stringify(obj.meta) + "</textarea>" + 
+					"<textarea id='ldprops-input'>" + JSON.stringify(obj.ldprops) + "</textarea>" + 
+			"<div class='dch' id='ld-experimental' contentEditable=true>{}</div>"); 
+		}
+		else {
+			$('#ld-editor').append("<div class='dacura-json-editor'>" + 
 				"<textarea id='ldmeta-input'>{}</textarea>" + 
 				"<textarea id='ldprops-input'>{}</textarea>" + 
 				"<div class='dch' id='ld-experimental' contentEditable=true>{}</div>"); 
+		}
 		dced.jsoneditor = new JSONEditor($("#ldprops-input"), dced.editorwidth, dced.editorheight);
 		dced.jsoneditor.doTruncation(true);
 		dced.jsoneditor.showFunctionButtons();

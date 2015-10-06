@@ -8,6 +8,17 @@ class CandidateDacuraServer extends LDDacuraServer {
 		$this->cwurlbase = $service->my_url();
 	}
 	
+	function getNGSkeleton(){
+		$filter = array("type" => "graph", "collectionid" => $this->cid(), "datasetid" => $this->did());
+		$ents = $this->getEntities($filter);
+		$skel = array("ldprops" => array(), "meta" => array());
+		foreach($ents as $ent){
+			$skel["ldprops"][$ent["id"]] = array(); 
+		}
+		$skel['display'] = $skel['ldprops'];
+		return $skel;
+	}
+	
 	/*
 	 * There are five major interfaces to the world
 	 * Create Candidate -> create a new entity of some class

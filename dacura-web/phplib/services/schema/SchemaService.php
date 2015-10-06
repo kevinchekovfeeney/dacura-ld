@@ -135,10 +135,11 @@ class SchemaService extends DacuraService {
 		else {
 			if($this->screen && $this->screen != "view"){
 				$params["title"] = "Graph Management Service";				
-				$params["subtitle"] = "Manage the graphs schema";
+				$params["subtitle"] = "Manage the schema of $this->screen graph";
 				$this->renderToolHeader($params);
 				$params['id'] = $this->screen;
 				$params['ontologies'] = $dacura_server->loadImportedOntologyList();
+				
 				$this->renderScreen("graph", $params);
 			}
 			else {

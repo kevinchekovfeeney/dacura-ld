@@ -62,7 +62,7 @@ class EasyRdf_Graph
 
     private $maxRedirects = 10;
 
-
+	public $genid = "genid";
     /**
      * Constructor
      *
@@ -79,8 +79,9 @@ class EasyRdf_Graph
      * @param  string  $format  The document type of the data (e.g. rdfxml)
      * @return object EasyRdf_Graph
      */
-    public function __construct($uri = null, $data = null, $format = null)
+    public function __construct($uri = null, $data = null, $format = null, $genid = false)
     {
+    	if($genid) $this->genid= $genid;
         $this->checkResourceParam($uri, true);
 
         if ($uri) {
@@ -106,12 +107,14 @@ class EasyRdf_Graph
      * @param  string  $format  Optional format of the data (eg. rdfxml)
      * @return object EasyRdf_Graph    The new the graph object
      */
-    public static function newAndLoad($uri, $format = null)
+    public static function newAndLoad($uri, $format = null, $genid = false)
     {
         $graph = new self($uri);
+        if($genid) $graph->genid = $genid;
         $graph->load($uri, $format);
         return $graph;
     }
+    
 
     /** Get or create a resource stored in a graph
      *
@@ -202,7 +205,8 @@ class EasyRdf_Graph
      */
     public function newBNodeId()
     {
-        return "_:genid".(++$this->bNodeCount);
+    	return "_:".$this->genid.(++$this->bNodeCount);
+        //return "_:genid".(++$this->bNodeCount);
     }
 
     /**

@@ -79,7 +79,10 @@ class LDPropertyValue extends DacuraObject {
 				if(!is_array($val) or !isAssoc($val)){
 					$p++;
 				}
-				else{
+				elseif(is_array($val) && count($val) == 0){
+					$ids["DEL"][] = $id;						
+				}
+				else {	
 					$ids["UPD"][] = $id;
 				}
 			}

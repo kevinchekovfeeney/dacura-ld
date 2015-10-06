@@ -11,31 +11,34 @@
 		<div id="graph-imports">
 			<div id='import-msgs'></div>
 				<div id='ont-list'>
-				<?php if(isset($params['ontologies'])) {?>
-					<table class="ontology_table display">
-						<thead>
-						<tr>
-							<th>ID</th>
-							<th>Status</th>
-							<th>Version</th>
-							<th>Import</th>
-						</tr>
-						</thead>
-						<tbody>
-						<?php foreach($params['ontologies'] as $id => $body){ ?>
-							<tr class='ontology-list'>
-								<td><?=$body['id']?></td>
-								<td><?=$body['status']?></td>
-								<td><?=$body['version']?></td>
-								<td><input type='checkbox' class='ontologies-selected' id='<?=$body['id']?>'></td></tr>
-						<?php } ?>
-						</tbody>
-					</table>
-				<?php } ?>
+					<?php if(isset($params['ontologies'])) {?>
+						<table class="ontology_table display">
+							<thead>
+							<tr>
+								<th>ID</th>
+								<th>Status</th>
+								<th>Version</th>
+								<th>Import</th>
+							</tr>
+							</thead>
+							<tbody>
+							<?php foreach($params['ontologies'] as $id => $body){ ?>
+								<tr class='ontology-list'>
+									<td><?=$body['id']?></td>
+									<td><?=$body['status']?></td>
+									<td><?=$body['version']?></td>
+									<td><input type='checkbox' class='ontologies-selected' id='<?=$body['id']?>'></td></tr>
+							<?php } ?>
+							</tbody>
+						</table>
+					<?php } ?>
 				</div>
-			<div class="tool-buttons">
-	   			<button class="dacura-button test-imports" id="test-imports">Test Importing Ontologies</button>
-	   			<button class="dacura-button deploy-imports" id="deploy-imports">Deploy Imported Ontologies</button>
+				<div class='dqs-embed'>
+					<?= $service->showDQSControls("both", array()); ?>
+				</div>
+				<div class="tool-buttons">
+	   			<button class="dacura-button test-imports" id="test-imports">Test Graph Configuration</button>
+	   			<button class="dacura-button deploy-imports" id="deploy-imports">Deploy Graph Configuration</button>
 	   		</div>
 		</div>
 	</div>
@@ -65,13 +68,24 @@ dacura.schema.showImportedOntologies = function(imports){
 	}
 };
 
+dacura.schema.showSelectedDQS = function(schema, instance){
+	for(var i = 0; i < schema.length; i++){
+		$('#' + schema[i]).prop('checked', true).button("refresh");
+	}
+	for(var i = 0; i < instance.length; i++){
+		$('#' + instance[i]).prop('checked', true).button("refresh");
+	}
+};
+
 
 dacura.schema.showGraph = function(obj){
 	dacura.system.setLDEntityToolHeader(obj);
 	if(typeof obj.meta.imports != "undefined"){
 		dacura.schema.showImportedOntologies(obj.meta.imports);	
 	}
-	
+	if(typeof obj.meta.schema_dqs != "undefined"){
+		dacura.schema.showSelectedDQS(obj.meta.schema_dqs, obj.meta.instance_dqs);	
+	}
 }
 
 function getSelectedOntologies(){
@@ -81,6 +95,12 @@ function getSelectedOntologies(){
 	});
 	return selected;		
 }
+
+function getSelectedDQS(){
+	var dqs = { "schema_dqs": dacura.dqs.getSelection("schema"), "instance_dqs" : dacura.dqs.getSelection("instance")};
+	return dqs;		
+}
+
 
 function showImportResult(res, test){
 	//dacura.system.showResult(res);
@@ -105,13 +125,16 @@ function initDecorations(){
 		//get ids of selected ones...
 		//
 		var onts = getSelectedOntologies();
-		var updateobj = {"meta": {"imports" : onts}};
+		var dqs = getSelectedDQS();
+		var updateobj = {"meta": dqs};
+		updateobj.meta.imports = onts;
 		dacura.schema.updateGraph("<?=$params['id']?>", updateobj, showImportResult, "import", true);				
     });
 	$('#deploy-imports').button().click(function(event){
 		var onts = getSelectedOntologies();
-		var updateobj = {"meta": {"imports" : onts}};
-		dacura.schema.updateGraph("<?=$params['id']?>", updateobj, showImportResult, "import");				
+		var dqs = getSelectedDQS();
+		var updateobj = {"meta": dqs};
+		updateobj.meta.imports = onts;		dacura.schema.updateGraph("<?=$params['id']?>", updateobj, showImportResult, "import");				
 	});	
 }
 

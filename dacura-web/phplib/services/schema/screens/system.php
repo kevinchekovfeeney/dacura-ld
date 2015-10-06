@@ -7,7 +7,7 @@
 	 	<li><a href="#ontology-list">Ontologies</a></li>
 	 	<li><a href="#import-ontology">Import New Ontology</a></li>
 	 </ul>
-	<div id="ontology-holder">
+	<div id="import-holder">
 		<div id="import-ontology" class="dch">
 			<div class="tool-import-info tool-tab-info" id="import-msgs"></div>
 				<div id='view-bar'>
@@ -52,13 +52,12 @@
 			</div>
 			<div id='ontology-table-holder'></div>
 			<div id='dqs-tests'>
-				<div class='dqs-choose dch'>Choose the constraints to apply</div>
 				<div class='dqs-button'>
-					<input type='checkbox' checked="checked" title='select all tests' id='dqs-all' value="all"><label for='dqs-all'>Apply all Constraints</label>
-					<a class='button2' href='javascript:validateOntologies();'>Validate Ontologies</a>
+					<a class='button2' href='javascript:validateOntologies();'>Validate Selected Ontologies</a>
 				</div>
-				<div id='dqsopts' class='dch'>
-					<?= $service->getDQSCheckboxes("schema"); ?>
+				</div>
+				<div class='dqs-embed'>
+					<?= $service->showDQSControls("schema", "all"); ?>
 					<div style='clear: both'></div>
 				</div>
 			</div>
@@ -97,21 +96,8 @@ function validateOntologies(){
 		else {
 		}
 	}
-	if(!($('input:checkbox#dqs-all').is(":checked"))){
-		var tests = [];
-		$('input:checkbox.dqsoption').each(function () {
-			if(this.checked){
-				tests.push($(this).val());
-			}
-		  });
-		var x = JSON.stringify(onts, 0, 4) + " " + JSON.stringify(tests, 0, 4);
-		alert(x);
-		dacura.schema.validateGraphOntologies(onts, tests);
-	}
-	else {
-		dacura.schema.validateGraphOntologies(onts);
-	}
-	//ids[this.id.substr(9)]
+	var tests = dacura.dqs.getSelection("schema");
+	dacura.schema.validateGraphOntologies(onts, tests);
 }
 
 function getMetaProperty(meta, key, def){
@@ -178,20 +164,7 @@ function initDecorations(){
 		clearResultMessage();
 		setImportFormat(event.target.id.substring(7));
     });
-	//quality check choices
-	$('.dqsoption').button();
-	$( "#dqs-all" ).button().click(function(event){
-		if($('#dqs-all').is(":checked")){
-			$("input:checkbox.dqsoption").prop('checked', true).button("refresh").button("disable");
-			$('#dqsopts').hide();
-			$('.dqs-choose').hide();
-		}
-		else {
-			$("input:checkbox.dqsoption").button("enable");		
-			$('#dqsopts').show();
-			$('.dqs-choose').show();
-		}					
-	});
+	
 	//import button
 	$('.import-button').button().click(function (event){
 		clearResultMessage();

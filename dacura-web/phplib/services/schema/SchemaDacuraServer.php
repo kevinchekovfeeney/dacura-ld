@@ -104,7 +104,30 @@ class SchemaDacuraServer extends LDDacuraServer {
 		}
 	}
 	
-	
+	function validateOntologies($ids, $tests){
+		$temp_graph_id = genid("", false, false);
+		$aquads = array();
+		foreach($ids as $id){
+			$ont = $this->loadEntity($id);
+			if($ont){
+				$quads = $ont->getPropertyAsQuads($id, $temp_graph_id);
+				if($quads){
+					$aquads = array_merge($aquads, $quads);
+				}
+			}
+			else {
+				return false;
+			}
+		}
+		$x = $this->graphman->validateSchema($temp_graph_id, $aquads, $tests);
+		if($x === false){
+			return $this->failure_result($this->graphman->errmsg, $this->graphman->errcode);
+		}
+		elseif(is_array($x) && count($x) == 0){
+			return true;
+		}
+		return $x;
+	}
 	
 /*	var $schemadir;
 	var $schemafile;
