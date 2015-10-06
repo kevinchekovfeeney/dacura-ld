@@ -11,6 +11,7 @@ class CandidateService extends DacuraService {
 	function renderFullPageHeader(){
 		parent::renderFullPageHeader();
 		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.candidate.js");
+		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css', "ld").'">';
 		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css').'">';
 		echo "<div id='pagecontent-container'>";
 		echo "<div id='pagecontent-nopad'>";
@@ -109,13 +110,8 @@ class CandidateService extends DacuraService {
 			if(isset($_GET['version'])) $params['version'] = $_GET['version']; 
 			if(isset($_GET['format'])) $params['format'] = $_GET['format']; 
 			if(isset($_GET['display'])) $params['display'] = $_GET['display']; 
-			if(isset($_GET['old'])){
-				$this->renderScreen("nview", $params);	
-			}
-			else {
-				$params["entity"] = "Candidate";
-				$this->renderScreen("xview", $params);
-			}
+			$params["entity"] = "Candidate";
+			$this->renderScreen("view", $params);
 		}
 		$this->renderToolFooter($params);
 	}

@@ -451,6 +451,15 @@ dacura.editor = {
 			dced.update = u;
 			$('.dacura-ld-editor').show();		
 		}
+		else if(i == false) {
+			dced.mode = "edit new";
+			dced.update = u;
+			dced.setCreateMode();
+			dced.fetch = f;
+			dced.fetch(dced.loadEntity, dced.targets);
+			alert("here");
+			//$('.dacura-ld-editor').show();				
+		}
 		else {
 			dced.fetch = f;
 			dced.update = u;

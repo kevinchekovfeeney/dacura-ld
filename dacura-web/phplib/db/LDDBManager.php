@@ -64,11 +64,37 @@ class LDDBManager extends UsersDBManager {
 	}
 	
 	function loadUpdatesList($filter){
-		try {
-			$stmt = $this->link->prepare("SELECT eurid, targetid, collectionid, datasetid, entity_update_requests.status, from_version, to_version,
+		$wheres = array();
+		$params = array();
+		if(isset($filter['type'])){
+			$wheres['type'] = $filter['type'];
+		}
+		if(isset($filter['collectionid'])){
+			$wheres['collectionid'] = $filter['collectionid'];
+		}
+		if(isset($filter['entityid'])){
+			$wheres['ld_entities.id'] = $filter['entityid'];
+		}
+		if(isset($filter['datasetid'])){
+			$wheres['datasetid'] = $filter['datasetid'];
+		}
+		if(isset($filter['status'])){
+			$wheres['status'] = $filter['status'];
+		}
+		$sql = "SELECT eurid, targetid, collectionid, datasetid, entity_update_requests.status, from_version, to_version,
 				entity_update_requests.createtime, entity_update_requests.modtime
-				FROM entity_update_requests, ld_entities WHERE entity_update_requests.targetid = ld_entities.id");
-			$stmt->execute(array());
+				FROM entity_update_requests, ld_entities WHERE entity_update_requests.targetid = ld_entities.id";
+		if(count($wheres) > 0){
+			foreach($wheres as $p => $v){
+				$sql .= " AND ";
+				$sql .= "$p=?";
+				$params[] = $v;
+			}
+		}
+		
+		try {
+			$stmt = $this->link->prepare($sql);
+			$stmt->execute($params);
 			$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			if($rows){
 				return $rows;

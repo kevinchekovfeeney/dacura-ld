@@ -1,6 +1,6 @@
 <?php
 include_once("SchemaDacuraServer.php");
-include_once("phplib/services/ld/LDService.php");
+include_once("phplib/services/ld/LdService.php");
 
 
 class SchemaService extends DacuraService {
@@ -135,10 +135,11 @@ class SchemaService extends DacuraService {
 		else {
 			if($this->screen && $this->screen != "view"){
 				$params["title"] = "Graph Management Service";				
-				$params["subtitle"] = "Manage the graphs schema";
+				$params["subtitle"] = "Manage the schema of $this->screen graph";
 				$this->renderToolHeader($params);
 				$params['id'] = $this->screen;
 				$params['ontologies'] = $dacura_server->loadImportedOntologyList();
+				
 				$this->renderScreen("graph", $params);
 			}
 			else {
@@ -204,7 +205,7 @@ class SchemaService extends DacuraService {
 			}
 		}
 		return $options;
-		//“checkInstanceClass”, “checkPropertyRange”, “checkPropertyDomain”
+		//ï¿½checkInstanceClassï¿½, ï¿½checkPropertyRangeï¿½, ï¿½checkPropertyDomainï¿½
 		//"classCycles", "propertyCycles",  "duplicateClasses",  "duplicateProperties",  "orphanSubClasses",  "orphanSubProperties",  "orphanInstance",  "orphanProperties",  "blankNode",  "invalidRange",  "invalidDomain",  "invalidInstanceRange",  "invalidInstanceDomain"
 		
 	}

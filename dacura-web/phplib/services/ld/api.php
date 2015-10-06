@@ -14,6 +14,7 @@ getRoute()->post('/(\w+)', 'update_entity');//no frag id
 getRoute()->delete('/(\w+)/(\w+)', 'delete_entity');//with fragment id
 getRoute()->delete('/(\w+)', 'delete_entity');//no fragment id
 getRoute()->delete('/update/(\w+)', 'delete_update');//no fragment id
+set_time_limit (0);
 
 
 function list_entities(){
@@ -83,7 +84,8 @@ function create_entity(){
 	$json = file_get_contents('php://input');
 	$obj = json_decode($json, true);
 	if(!$obj){
-		$ar->failure(400, "Communication Error", "$type create request must have a json encoded body");
+		$ar->failure(400, "Communication Error", "create request does not have a valid json encoded body");
+		return $dacura_server->writeDecision($ar);
 	}
 	$type = (isset($obj['type'])) ? strtolower($obj['type']) : "candidate";
 	$options = (isset($obj['options'])) ? $obj['options'] : array();

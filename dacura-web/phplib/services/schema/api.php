@@ -10,6 +10,8 @@ getRoute()->post('/validate_ontologies', 'validate_ontologies');
 getRoute()->get('/(\w+)', 'get_graph');
 getRoute()->post('/(\w+)', 'update_graph');
 
+set_time_limit (0);
+
 function import_ontology(){
 	global $dacura_server;
 	$dacura_server->init("import_ontology");
@@ -112,7 +114,7 @@ function validate_ontologies(){
 	else {
 		$res = $dacura_server->validateOntologies($obj['ontologies'], $obj['tests']);
 		if($res === true){
-			return $dacura_server->write_json_result("Ontology validated OK", "Validated Ontology");
+			return $dacura_server->write_json_result("Ontologies validated OK", "Validated Ontologies");
 		}
 		else if(is_array($res)){
 			return $dacura_server->write_json_result($res, "Validated Ontologies");

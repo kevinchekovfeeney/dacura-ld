@@ -138,7 +138,7 @@ dacura.candidate.drawUpdateListTable = function(data){
 		for (var i in data) {
 			var obj = data[i];
 			$('#update_table tbody').append("<tr id='update" + obj.curid + "'>" + 
-			"<td>" + obj.curid + "</td>" + 
+			"<td>" + obj.eurid + "</td>" + 
 			"<td>" + obj.targetid + "</td>" + 
 			<?php if (isset($params['show_collection']) && $params['show_collection']) echo '"<td>" + obj.collectionid + "</td>" + '?>
 			<?php if (isset($params['show_dataset']) && $params['show_dataset']) echo '"<td>" + obj.datasetid + "</td>" + '?>
@@ -167,7 +167,7 @@ dacura.candidate.drawUpdateListTable = function(data){
 $(function() {
 	dacura.system.init({"mode": "tool", "tabbed": true, "targets": {resultbox: "#create-msgs", errorbox: "#create-msgs", busybox: "#create-holder"}});
 	dacura.editor.init({"editorheight": "200px"});
-	dacura.editor.load(false, false, dacura.candidate.create);
+	dacura.editor.load(false, dacura.candidate.fetchNGSkeleton, dacura.candidate.create);
 	$('#create-holder').show();
 	dacura.candidate.fetchupdatelist(); 
 	dacura.candidate.fetchcandidatelist();

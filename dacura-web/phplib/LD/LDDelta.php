@@ -328,11 +328,12 @@ class LDDelta extends DacuraObject {
 		}
 	}
 
-	function getNamedGraphDeleteQuads($gname){
+	function getNamedGraphDeleteQuads($gname, $ogname = false){
+		if(!$ogname) $ogname = $gname;
 		$dels = array();
 		if(isset($this->triples_removed[$gname])){
 			foreach($this->triples_removed[$gname] as $trip){
-				$trip[] = $gname;
+				$trip[] = $ogname;
 				$dels[] = $trip;
 			}
 		}
@@ -340,11 +341,12 @@ class LDDelta extends DacuraObject {
 	}
 	
 	
-	function getNamedGraphInsertQuads($gname){
+	function getNamedGraphInsertQuads($gname, $ogname = false){
+		if(!$ogname) $ogname = $gname;
 		$adds = array();
 		if(isset($this->triples_added[$gname])){
 			foreach($this->triples_added[$gname] as $trip){
-				$trip[] = $gname;
+				$trip[] = $ogname;
 				$adds[] = $trip;
 			}
 		}
