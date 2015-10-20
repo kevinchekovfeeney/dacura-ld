@@ -12,8 +12,7 @@
 <div id="pagecontent-nopadding">
 	<div class="pctitle">Dataset Configuration Service <span id="screen-context"></span></div>
 	<div class="pcbreadcrumbs">
-		<?php //echo $service->getBreadCrumbsHTML(false, '<span id="bcstatus" class="bcstatus"></span>');
-			echo $service->getBreadCrumbsHTML();?>
+		<?php echo $service->getBreadCrumbsHTML();?>
 	</div>
 	<div class="user-message"></div>
 	<br>
