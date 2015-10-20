@@ -206,20 +206,20 @@ class DacuraService extends DacuraObject {
 	function showLDEditor($params){
 		$service = $this;
 		$entity = isset($params['entity']) ? $params['entity'] : "Entity";
-		$this->renderScreen("editor", $params, "Ld");
+		$this->renderScreen("editor", $params, "ld");
 		//include_once("phplib/snippets/LDEditor.php");		
 	}
 	
 	function showLDResultbox($params){
 		$service = $this;
 		$entity = isset($params['entity']) ? $params['entity'] : "Entity";
-		$this->renderScreen("resultbox", $params, "Ld");
+		$this->renderScreen("resultbox", $params, "ld");
 		//include_once("phplib/snippets/LDEditor.php");
 	}
 	
 	function showDQSControls($graph, $set_tests){
 		$params = array("graph" => $graph, "tests" => $set_tests);
-		$this->renderScreen("dqs", $params, "Ld");		
+		$this->renderScreen("dqs", $params, "ld");		
 	}
 	
 	

@@ -1,6 +1,6 @@
 <?php
 include_once("SchemaDacuraServer.php");
-include_once("phplib/services/Ld/LdService.php");
+include_once("phplib/services/ld/LdService.php");
 
 
 class SchemaService extends DacuraService {
