@@ -61,7 +61,7 @@ function validate_ontologies(){
 	}
 }
 
-include_once "phplib/services/ld/api.php";
+include_once "phplib/services/Ld/api.php";
 
 /*
 getRoute()->get('/', 'get_schema');
