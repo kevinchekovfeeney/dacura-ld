@@ -1,5 +1,5 @@
 <?php
-include_once("phplib/services/Ld/LDDacuraServer.php");
+include_once("phplib/services/Ld/LdDacuraServer.php");
 
 
 class SchemaDacuraServer extends LdDacuraServer {
