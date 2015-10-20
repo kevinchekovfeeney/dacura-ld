@@ -25,7 +25,7 @@ include_once("phplib/PolicyEngine.php");
  * This file contains those methods that they share
  */
 
-class LDDacuraServer extends DacuraServer {
+class LdDacuraServer extends DacuraServer {
 
 	var $dbclass = "LDDBManager";
 	var $policy; //policy engine to decide what to do with incoming requests

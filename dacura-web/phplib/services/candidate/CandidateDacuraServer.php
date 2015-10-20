@@ -1,7 +1,7 @@
 <?php
-include_once("phplib/services/ld/LDDacuraServer.php");
+include_once("phplib/services/Ld/LdDacuraServer.php");
 
-class CandidateDacuraServer extends LDDacuraServer {
+class CandidateDacuraServer extends LdDacuraServer {
 	
 	var $schema;
 

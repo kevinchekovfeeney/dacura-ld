@@ -1,6 +1,6 @@
 <?php
 
-include_once("LDDacuraServer.php");
+include_once("LdDacuraServer.php");
 
 class LdService extends DacuraService {
 	
