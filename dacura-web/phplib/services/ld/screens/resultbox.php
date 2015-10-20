@@ -96,18 +96,19 @@ background-color: #FFBABA;
 
 <script>
 dacura.ldresult = {};
-dacura.jq = null;
-dacura.decision = "";
-dacura.errors = "";
-dacura.numerrors = 0;
-dacura.warnings = "";
-dacura.numwarnings = 0;
-dacura.meta = "";
-dacura.candidate = "";
-dacura.report = "";
-dacura.numtriples = 0;
-dacura.cls = "";
-dacura.graph = "";
+dacura.ldresult.jq = null;
+dacura.ldresult.decision = "";
+dacura.ldresult.msg_body = "";
+dacura.ldresult.errors = "";
+dacura.ldresult.numerrors = 0;
+dacura.ldresult.warnings = "";
+dacura.ldresult.numwarnings = 0;
+dacura.ldresult.meta = "";
+dacura.ldresult.candidate = "";
+dacura.ldresult.report = "";
+dacura.ldresult.numtriples = 0;
+dacura.ldresult.cls = "";
+dacura.ldresult.graph = "";
 
 dacura.ldresult.getDecisionBasicText = function (dcm, test, type){
 	var dtxt = "<div class='decision-basic-text'>";
@@ -157,7 +158,7 @@ dacura.ldresult.getErrorDetailsHTML = function(errors){
 	if(typeof errors != "undefined"){
 		var errhtml = "<h3>Errors</h3><table class='api-error-table'><tr><td>#</td><td>Error</td><td>Property</td><td>Message</td></tr>";
 		for (var key in errors) {
-			dacura.numerrors++;
+			dacura.ldresult.numerrors++;
 			  if (errors.hasOwnProperty(key)) {
 					//errhtml += "<tr><td>" + key + "</td><td>" + JSON.stringify(errors[key], 0, 4) + "</td></tr>";
 					errhtml += "<tr><td>"+key+"</td><td>"+errors[key].error+"</td><td>"+errors[key].property+"</td><td>"+errors[key].message+"</td></tr>";
@@ -174,7 +175,7 @@ dacura.ldresult.getWarningsHTML = function(dcm){
 	if(typeof dcm.warnings != "undefined" && dcm.warnings.length > 0){
 		var errhtml = "";
 		for(var i = 0; i < dcm.warnings.length; i++){
-			dacura.numwarnings++;
+			dacura.ldresult.numwarnings++;
 			errhtml += "<div class='warning'>Warning: <span class='action'>" + dcm.warnings[i].action +
 				"</span><span class='title'>" + dcm.warnings[i].msg_title + "</span><span class='body'>" + 
 				dcm.warnings[i].msg_body + "</span></div>";
@@ -410,7 +411,7 @@ dacura.ldresult.getTripleTableHTML = function(trips, tit, isquads, cls){
 		}
 		html += "</tr></thead><tbody>";
 		for(var i = 0; i < trips.length; i++){
-			dacura.numtriples++;
+			dacura.ldresult.numtriples++;
 			if(typeof trips[i][2] == "object"){
 				trips[i][2] = JSON.stringify(trips[i][2]);
 			}
@@ -493,8 +494,9 @@ dacura.ldresult.showDecision = function(dcm, test, jq, type){
 	document.getElementById('report').type="button";
 	document.getElementById('graph').type="button";
 	
-	dacura.decision = this.getDecisionBasicText(dcm, test, type);
-	dacura.jq = jq;
+	dacura.ldresult.decision = this.getDecisionBasicText(dcm, test, type);
+	dacura.ldresult.msg_body = dcm.msg_body;
+	dacura.ldresult.jq = jq;
 // 	if(typeof dcm.msg_title != "undefined" && dcm.msg_title != null && dcm.msg_title.length > 0) {
 // 		subhtml = "<span class='api-msg-title'>" + dcm.msg_title + "</span>";
 // 	}
@@ -504,24 +506,25 @@ dacura.ldresult.showDecision = function(dcm, test, jq, type){
 // 	if(subhtml.length > 0){
 // 		html += "<div class='api-decision-subtext'>" + subhtml + "</div>";
 // 	}
- 	for (var name in dcm.report_graph_update.errors) {
- 		if(typeof dcm.report_graph_update.errors[name] != "undefined" && dcm.report_graph_update.errors[name].length > 0){
- 	 		dacura.errors = this.getErrorDetailsHTML(dcm.report_graph_update.errors[name], type);
- 	 	}
- 	}
- 	
+	if(typeof(dcm.report_graph_update) != "undefined" && dcm.report_graph_update != null){
+	 	for (var name in dcm.report_graph_update.errors) {
+	 		if(typeof dcm.report_graph_update.errors[name] != "undefined" && dcm.report_graph_update.errors[name].length > 0){
+	 	 		dacura.ldresult.errors = this.getErrorDetailsHTML(dcm.report_graph_update.errors[name], type);
+	 	 	}
+	 	}
+	} 	
  	if(typeof dcm.warnings != "undefined" && dcm.warnings.length > 0){
- 		dacura.warnings = this.getWarningsHTML(dcm, type);	
+ 		dacura.ldresult.warnings = this.getWarningsHTML(dcm, type);	
  	}
  	if(typeof dcm.update_graph_update != "undefined" && dcm.update_graph_update != null){
- 		dacura.meta = this.getUpdateGraphUpdateHTML(dcm.update_graph_update, !test && (dcm.decision == "accept" || dcm.decision == "pending"));
+ 		dacura.ldresult.meta = this.getUpdateGraphUpdateHTML(dcm.update_graph_update, !test && (dcm.decision == "accept" || dcm.decision == "pending"));
  	}
  	if(typeof dcm.candidate_graph_update != "undefined" && dcm.candidate_graph_update != null){
- 		dacura.candidate = this.getCandidateGraphUpdateHTML(dcm.candidate_graph_update, !test && (dcm.decision == "accept" || dcm.decision == "pending"));
-		if(dacura.candidate == null){dacura.candidate="";}
+ 		dacura.ldresult.candidate = this.getCandidateGraphUpdateHTML(dcm.candidate_graph_update, !test && (dcm.decision == "accept" || dcm.decision == "pending"));
+		if(dacura.ldresult.candidate == null){dacura.ldresult.candidate="";}
  	 }
  	if(typeof dcm.report_graph_update != "undefined" && dcm.report_graph_update != null){
- 		dacura.report = this.getReportGraphUpdateHTML(dcm.report_graph_update, !test && dcm.decision == "accept");
+ 		dacura.ldresult.report = this.getReportGraphUpdateHTML(dcm.report_graph_update, !test && dcm.decision == "accept");
  	}
 	
 	if(type == "Update Candidate"){
@@ -534,60 +537,60 @@ dacura.ldresult.showDecision = function(dcm, test, jq, type){
 	}
 
  	if(dcm.decision == 	'reject'){
- 		dacura.cls = "error";
+ 		dacura.ldresult.cls = "error";
  	}
  	else if(dcm.errcode > 200){
- 		dacura.cls = "error";
+ 		dacura.ldresult.cls = "error";
  	}
  	else if(dcm.decision == 'pending'){
  		if(dcm.warnings.length > 0){
- 			dacura.cls = "warning";
+ 			dacura.ldresult.cls = "warning";
  		}
  		else {
- 			dacura.cls = "warning";
+ 			dacura.ldresult.cls = "warning";
  		}
  		if(typeof dcm.graph_test != "undefined") {
- 			dacura.graph = this.getGraphTestResultsHTML(dcm.graph_test, dcm, type);
+ 			dacura.ldresult.graph = this.getGraphTestResultsHTML(dcm.graph_test, dcm, type);
  		}
  	}
  	else if(dcm.decision == 'confirm'){
  		if(dcm.warnings.length > 0){
- 			dacura.cls = "success";
+ 			dacura.ldresult.cls = "success";
  		}
  		else {
- 			dacura.cls = "success";
+ 			dacura.ldresult.cls = "success";
  		}
  	}
  	else if(dcm.decision == 'accept'){
  		if(dcm.warnings.length > 0){
- 			dacura.cls = "success";
+ 			dacura.ldresult.cls = "success";
  		}
  		else {
- 			dacura.cls = "success";
+ 			dacura.ldresult.cls = "success";
  		}
  	}
 // 	dacura.system.writeResultMessage(this.getDecisionBasicText(dcm, test, type), jq, html, dcm);
 		
 // 	$(jq).html("<div class='dacura-user-message-box " + cls + "'>"+ html + "</div>").show();
 
-	document.getElementById('warnings').value="warnings ("+dacura.numwarnings+")";
-	document.getElementById('errors').value="errors ("+dacura.numerrors+")";
-	document.getElementById('report').value="report ("+dacura.numtriples+" triples)";
+	document.getElementById('warnings').value="warnings ("+dacura.ldresult.numwarnings+")";
+	document.getElementById('errors').value="errors ("+dacura.ldresult.numerrors+")";
+	document.getElementById('report').value="report ("+dacura.ldresult.numtriples+" triples)";
 
-	if(dacura.errors == "") {document.getElementById('errors').disabled=true;}
-	if(dacura.warnings == "") {document.getElementById('warnings').disabled=true;}
-	if(dacura.meta == "") {document.getElementById('meta').disabled=true;}
-	if(dacura.candidate == "") {document.getElementById('candidate').disabled=true;}
-	if(dacura.report == "") {document.getElementById('report').disabled=true;}
-	if(dacura.graph == "") {document.getElementById('graph').disabled=true;}
+	if(dacura.ldresult.errors == "") {document.getElementById('errors').disabled=true;}
+	if(dacura.ldresult.warnings == "") {document.getElementById('warnings').disabled=true;}
+	if(dacura.ldresult.meta == "") {document.getElementById('meta').disabled=true;}
+	if(dacura.ldresult.candidate == "") {document.getElementById('candidate').disabled=true;}
+	if(dacura.ldresult.report == "") {document.getElementById('report').disabled=true;}
+	if(dacura.ldresult.graph == "") {document.getElementById('graph').disabled=true;}
 	dacura.ldresult.showBasicDecision();
 }
 
-dacura.ldresult.showBasicDecision = function(){$(dacura.jq).html("<div class='" + dacura.cls + "'>" + dacura.decision + "</div>").show();}
-dacura.ldresult.showErrors = function(){$(dacura.jq).html("<div class='error'>" + dacura.errors + "</div>").show();}
-dacura.ldresult.showWarnings = function(){$(dacura.jq).html("<div class='warning'>" + dacura.warnings + "</div>").show();}
-dacura.ldresult.showMeta = function(){$(dacura.jq).html(dacura.meta).show();}
-dacura.ldresult.showCandidate = function(){$(dacura.jq).html(dacura.candidate).show();}
-dacura.ldresult.showReport = function(){$(dacura.jq).html(dacura.report).show();}
-dacura.ldresult.showGraph = function(){$(dacura.jq).html(dacura.graph).show();}
+dacura.ldresult.showBasicDecision = function(){$(dacura.ldresult.jq).html("<div class='" + dacura.ldresult.cls + "'>" + dacura.ldresult.decision + "<br>" + dacura.ldresult.msg_body + "</div>").show();}
+dacura.ldresult.showErrors = function(){$(dacura.ldresult.jq).html("<div class='error'>" + dacura.ldresult.errors + "</div>").show();}
+dacura.ldresult.showWarnings = function(){$(dacura.ldresult.jq).html("<div class='warning'>" + dacura.ldresult.warnings + "</div>").show();}
+dacura.ldresult.showMeta = function(){$(dacura.ldresult.jq).html(dacura.ldresult.meta).show();}
+dacura.ldresult.showCandidate = function(){$(dacura.ldresult.jq).html(dacura.ldresult.candidate).show();}
+dacura.ldresult.showReport = function(){$(dacura.ldresult.jq).html(dacura.ldresult.report).show();}
+dacura.ldresult.showGraph = function(){$(dacura.ldresult.jq).html(dacura.ldresult.graph).show();}
 </script>

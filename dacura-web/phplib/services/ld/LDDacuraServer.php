@@ -30,12 +30,24 @@ class LDDacuraServer extends DacuraServer {
 	var $dbclass = "LDDBManager";
 	var $policy; //policy engine to decide what to do with incoming requests
 	var $graphman; //graph manager object
+	var $nsres; //the namespace resolving service - system wide
 	var $cwurlbase = false;
 
 	function __construct($service){
 		parent::__construct($service);
 		$this->policy = new PolicyEngine();
 		$this->graphman = new GraphManager($this->settings);
+		$this->loadNamespaces();
+	}
+	
+	function loadNamespaces(){
+		$onts = $this->getEntities(array("type" => "ontology", "status" => "accept"));
+		$this->nsres = new NSResolver();
+		foreach($onts as $i => $ont){
+			if(isset($ont['id']) && $ont['id'] && isset($ont['meta']['url']) && $ont['meta']['url']){
+				$this->nsres->prefixes[$ont['id']] = $ont['meta']['url'];
+			}
+		}
 	}
 	
 	function getEntities($filter){
@@ -80,6 +92,7 @@ class LDDacuraServer extends DacuraServer {
 		if(!$ent){
 			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 		}
+		$ent->nsres = $this->nsres;
 		if($version && $ent->version() > $version){
 			if(!$this->rollBackEntity($ent, $version)){
 				return false;
@@ -225,7 +238,7 @@ class LDDacuraServer extends DacuraServer {
 		else {
 			$id = $this->generateNewEntityID($type);
 		}
-		$nent = $this->createNewEntityObject($type, $id);
+		$nent = $this->createNewEntityObject($id, $type);
 		if(!$nent){
 			return $ar->failure($this->errcode, "Request Create Error", "New $type object sent to API had formatting errors. ".$this->errmsg);				
 		}
@@ -288,7 +301,7 @@ class LDDacuraServer extends DacuraServer {
 		return uniqid_base36(true);
 	}
 	
-	function createNewEntityObject($type, $id){
+/*	function createNewEntityObject($id, $type){
 		if($type == "schema"){
 			return $this->failure_result("Dacura API does not support creation of schema", 400);
 		}
@@ -299,12 +312,13 @@ class LDDacuraServer extends DacuraServer {
 			$obj = new GraphCreateRequest($id);		
 		}
 		else {
-			$schema = new Schema($this->cid(), $this->did(), $this->settings['install_url']);
-			$obj = new CandidateCreateRequest($id, $schema);
+			$obj = new CandidateCreateRequest($id);
 		}
+		$nsres = new NSResolver();
+		$obj->setNamespaces($nsres);
 		$obj->type = $type;
 		return $obj;
-	}
+	}*/
 	
 	function updateEntity($target_id, $obj, $fragment_id, $options = array(), $test_flag = false){
 		$ar = new RequestAnalysisResults("Update $target_id");
@@ -319,6 +333,9 @@ class LDDacuraServer extends DacuraServer {
 		}
 		$uclass = get_class($oent)."UpdateRequest";
 		$uent = new $uclass(false, $oent);
+		$nsres = new NSResolver();
+		$uent->setNamespaces($nsres);
+		
 		//is this entity being accessed through a legal collection / dataset context?
 		if(!$uent->isLegalContext($this->cid(), $this->did())){
 			return $ar->failure(403, "Access Denied", "Cannot update $oent->id through context ".$this->cid()."/".$this->did());
@@ -327,7 +344,13 @@ class LDDacuraServer extends DacuraServer {
 			return $ar->failure($uent->errcode, "Protocol Error", "Failed to load the update candidate from the API. ".$uent->errmsg);
 		}
 		else {
-			if(!$uent->calculateChanged(array("demand_id_allowed" => $this->policy->demandIDAllowed("update", get_class($uent), $uent)))){
+			if($uent->isOntology()){
+				$opts = array("force_inserts" => true, "demand_id_allowed" => $this->policy->demandIDAllowed("update", get_class($uent), $uent));
+			}
+			else {
+				$opts = array("demand_id_allowed" => $this->policy->demandIDAllowed("update", get_class($uent), $uent));
+			}
+			if(!$uent->calculateChanged($opts)){
 				return $ar->failure($uent->errcode, "Update Error", "Failed to apply updates ".$uent->errmsg);
 			}
 		}
@@ -575,8 +598,6 @@ class LDDacuraServer extends DacuraServer {
 			return $ar;
 		}
 	}
-	
-	
 	
 	/*
 	 * Methods for interactions with the Quality Service / Graph Manager

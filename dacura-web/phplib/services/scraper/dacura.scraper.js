@@ -37,7 +37,7 @@ dacura.scraper.api.getstatus = function (refresh, xhr){
 
 dacura.scraper.api.updatestatus = function (nga, oncomp, onmessage, onerror){
 	args = {"nga" : nga};
-	dacura.System.slowAjax(dacura.scraper.apiurl + "/status", "POST", args, oncomp, onmessage, onerror);
+	dacura.system.slowAjax(dacura.scraper.apiurl + "/status", "POST", args, oncomp, onmessage, onerror);
 }
 
 dacura.scraper.api.getpolities = function (id, refresh, xhr){

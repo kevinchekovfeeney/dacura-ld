@@ -10,12 +10,7 @@ class Candidate extends LDEntity {
 	//maps to candidates db structure
 	var $type;
 	var $type_version;
-	var $metagraph;//candidate,report,interpretation??
 	var $replaced; //when this version was replaced
-	var $schema;
-	var $dacura_props = array("provenance", "annotation", "candidate", "meta"); //the internal dacura properties
-	
-	
 
 	/*
 	 * Called to hide whatever internal parts of the object we do not wish to send as json through the api
@@ -29,91 +24,25 @@ class Candidate extends LDEntity {
 		$other->label = $other->getLabel() ? $other->getLabel() : $other->id;
 		return $other;
 	}
-	
-	/**
-	 * Called when the object is loaded from the database
-	 * @param unknown $cand
-	 * @param string $source
-	 * @param string $note
-	 * @return mixed
-	 */
-	function loadFromJSON($cand, $source = false, $note = false, $meta = false){
-		$this->ldprops['provenance'] = $source ? json_decode($source, true) : array();
-		$this->ldprops['annotation'] = $note ? json_decode($note, true) : array();
-		$this->ldprops['meta'] = $meta ? json_decode($meta, true) : array();
-		$this->ldprops['candidate'] = $cand ? json_decode($cand, true) : array();
-		return true;
-	}
-		
-	function setSchema($schema){
-		$this->schema = $schema;
-		$this->nsres = $schema->getNSResolver();
-		$this->cwurl = $this->schema->instance_prefix.$this->id;
-	}
 		
 	function getObjectType($obj){
-		if(!isset($obj['rdf:type']) and !isset($obj[$this->schema->getURL("rdf")])){
+		if(!isset($obj['rdf:type']) and !isset($obj[$this->nsres->getURL("rdf")])){
 			return false;
 		}
-		return isset($obj['rdf:type']) ? $obj['rdf:type'] : $obj[$this->schema->getURL("rdf")];
-	}
-
-	function getCandidateFragID(){
-		return $this->getFragIDForExtension("candidate", "candidate");
+		return isset($obj['rdf:type']) ? $obj['rdf:type'] : $obj[$this->nsres->getURL("rdf")];
 	}
 	
-	function &getCandidateMeta(){
-		$fid = $this->getMetaFragID();
-		if($fid){
-			return $this->ldprops['meta'][$fid];			
-		}
-		return $fid;
-	}
-		
-	function &getCandidateContents(){
-		$fid = $this->getCandidateFragID();
-		if($fid){
-			return $this->ldprops['candidate'][$fid];
-		}
-		return $fid;
-	}
-		
-
-	function get_class(){
-		if(is_array($this->type)){
-			return $this->type[0];
-		}
-		return $this->type;
-	}
-		
 	function get_class_version(){
 		return $this->type_version;
-	}
-	
-	function get_metagraph(){
-		return $this->metagraph;
-	}
-	
-	function setAnnotation($an){
-		$this->ldprops['annotation'] = $an;
-	}
-
-	function setProvenance($s){
-		$this->ldprops['provenance'] = $s;
 	}
 	
 	function reportString(){
 		return "Not yet implemented";
 	}
 	
-
 	function set_class($c, $v){
 		$this->type = $c;
 		$this->type_version = $v;
-	}
-	
-	function set_metagraph($r){
-		$this->metagraph = $r;
 	}
 	
 	
@@ -126,9 +55,6 @@ class Candidate extends LDEntity {
 		foreach($triples as $i => $trip){
 			if($trip[0] == $this->id){
 				$triples[$i][0] = ($use_ns) ? "local:".$this->id : $this->cwurl;
-			}
-			if(in_array($trip[1], $this->dacura_props)){
-				$triples[$i][1] = ($use_ns) ? "dacura:". $trip[1] : $this->schema->getURL("dacura").$trip[1];
 			}
 		}
 		return $triples;
@@ -167,9 +93,6 @@ class Candidate extends LDEntity {
 			foreach($triples as $i => $trip){
 				if($trip[0] == $this->id){
 					$triples[$i][0] = ($use_ns) ? "local:".$this->id : $this->cwurl;
-				}
-				if(in_array($trip[1], $this->dacura_props)){
-					$triples[$i][1] = ($use_ns) ? "dacura:". $trip[1] : $this->nsres->getURL("dacura").$trip[1];
 				}
 			}
 		}

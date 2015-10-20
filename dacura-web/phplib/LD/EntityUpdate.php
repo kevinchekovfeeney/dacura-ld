@@ -25,6 +25,10 @@ class EntityUpdate extends DacuraObject{
 		$this->cwurl = $cwurl;
 	}
 
+	function setNamespaces($nsres){
+		$this->nsres = $nsres;
+	}
+	
 	function loadFromDBRow($row){
 		$this->targetid = $row['targetid'];
 		$this->status = $row['status'];
@@ -181,6 +185,7 @@ class EntityUpdate extends DacuraObject{
 	 */
 	function validateCommand($obj, $in_embedded = false){
 		foreach($obj as $p => $v){
+			//opr($v);
 			$pv = new LDPropertyValue($v, $this->cwurl);
 			if($pv->illegal()) return $this->failure_result("Update failed validation: ".$pv->errmsg, $pv->errcode);
 			if($pv->embeddedlist()){

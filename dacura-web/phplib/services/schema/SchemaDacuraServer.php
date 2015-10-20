@@ -60,6 +60,7 @@ class SchemaDacuraServer extends LDDacuraServer {
 	
 	function downloadOntology($url, $entid){
 		$ontology = new Ontology($entid);
+		$ontology->nsres = $this->nsres;
 		if(!$ontology->import("url", $url)){
 			return $this->failure_result($ontology->errmsg, $ontology->errcode);
 		}
@@ -72,6 +73,7 @@ class SchemaDacuraServer extends LDDacuraServer {
 			return $this->failure_result("Failed to save to $fname", 500);
 		}
 		$ontology = new Ontology($entid);
+		$ontology->nsres = $this->nsres;
 		if(!$ontology->import("file", $fname, $entid)){
 			return $this->failure_result($ontology->errmsg, $ontology->errcode);
 		}
@@ -80,6 +82,7 @@ class SchemaDacuraServer extends LDDacuraServer {
 	
 	function createOntologyFromString($string, $entid){
 		$ontology = new Ontology($this->schema->cwurl."/ontology/".$entid);
+		$ontology->nsres = $this->nsres;
 		if(!$ontology->import("text", $string, $entid)){
 			return $this->failure_result($ontology->errmsg, $ontology->errcode);
 		}
@@ -94,14 +97,41 @@ class SchemaDacuraServer extends LDDacuraServer {
 	}
 	
 	function calculateOntologyDependencies($id){
+		//opr($this->nsres);
 		$ent = $this->loadEntity($id);
 		if(!$ent->isOntology()){
 			return $this->failure_result("$id is not an ontology - cant calculate dependencies", 400);
 		}
 		else {
-			$deps = $ent->generateDependencies();
+			$deps = $ent->generateDependencies($this->nsres);
+			$incs = array($id, "fix");
+			$deps['include_tree'] = array($id => $this->getOntologyIncludes($id, $incs));
+			$deps['includes'] = $incs;
 			return $deps;
 		}
+	}
+	
+	function getOntologyIncludes($id, &$included){
+		$tree = array();
+		$ent = $this->loadEntity($id);
+		if(!$ent){
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+		}
+		if(!$ent->isOntology()){
+			return $this->failure_result("$id is not an ontology - cant calculate dependencies", 400);
+		}
+		$incs = $ent->getIncludedOntologies($this->nsres);
+		$onwards = array();
+		foreach($incs as $inc){
+			if(!in_array($inc, $included) && $inc != $id && !$this->nsres->isStructuralNamespace($inc)){
+				$onwards[] = $inc;
+				$included[] = $inc;
+			}
+		}
+		foreach($onwards as $onw){
+			$tree[$onw] = $this->getOntologyIncludes($onw, $included);
+		}
+		return $tree;
 	}
 	
 	function validateOntologies($ids, $tests){
@@ -128,6 +158,24 @@ class SchemaDacuraServer extends LDDacuraServer {
 		}
 		return $x;
 	}
+	
+	function createNewEntityObject($id, $type){
+		if($type == "ontology"){
+			$obj = new OntologyCreateRequest($id);
+		}
+		elseif($type == "graph"){
+			$obj = new GraphCreateRequest($id);
+		}
+		else {
+			return $this->failure_result("Dacura API does not support creation of schema", 400);
+		}
+		//$nsres = new NSResolver();
+		$obj->setNamespaces($this->nsres);
+		$obj->type = $type;
+		return $obj;
+	}
+	
+	
 	
 /*	var $schemadir;
 	var $schemafile;

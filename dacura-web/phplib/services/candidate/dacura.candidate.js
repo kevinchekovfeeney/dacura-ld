@@ -6,7 +6,8 @@ dacura.candidate.api = {};
 
 dacura.candidate.api.create = function (data, test){
 	var xhr = {};
-	xhr.url = dacura.system.serviceApiURL('ld');
+	xhr.url = dacura.candidate.apiurl 
+	//xhr.url = dacura.system.serviceApiURL('ld');
 	xhr.type = "POST";
 	xhr.contentType = 'application/json'; 
 	if(typeof test != "undefined"){
@@ -21,7 +22,8 @@ dacura.candidate.api.create = function (data, test){
 
 dacura.candidate.api.update = function (id, data){
 	var xhr = {};
-	xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
+	//xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
+	xhr.url = dacura.candidate.apiurl + "/" + id;
 	xhr.type = "POST";
 	xhr.contentType = 'application/json'; 
 	xhr.data = JSON.stringify(data);
@@ -31,14 +33,17 @@ dacura.candidate.api.update = function (id, data){
 
 dacura.candidate.api.viewUpdate = function(id, args){
 	xhr = args;
-	xhr.url =dacura.system.serviceApiURL('ld') + "/" + id;
+	xhr.url = dacura.candidate.apiurl + "/" + id;
+	//xhr.url =dacura.system.serviceApiURL('ld') + "/" + id;
 	return xhr;
 }
 
 dacura.candidate.api.del = function (id){
 	xhr = {};
 	xhr.data ={};
-	xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
+	//xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
+	xhr.url = dacura.candidate.apiurl + "/" + id;
+
 	xhr.type = "DELETE";
 	return xhr;
 }
@@ -46,7 +51,9 @@ dacura.candidate.api.del = function (id){
 dacura.candidate.api.view = function (id, args){
 	xhr = {data: args};
 	xhr.data.entity_type = "candidate";
-	xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
+	//xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
+	xhr.url = dacura.candidate.apiurl + "/" + id;
+
 	return xhr;
 }
 
@@ -61,8 +68,8 @@ dacura.candidate.api.list = function (x){
 		xhr.data.type = "candidates";		
 	}
 	xhr.data.entity_type = "candidate";
-	xhr.url = dacura.system.serviceApiURL('ld');
-	//xhr.url = dacura.candidate.apiurl;
+	//xhr.url = dacura.system.serviceApiURL('ld');
+	xhr.url = dacura.candidate.apiurl;
 	return xhr;
 }
 

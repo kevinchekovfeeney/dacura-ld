@@ -130,6 +130,9 @@ class GraphManager extends DacuraObject {
 		$dumpstr .= "Query: $qstr";
 		file_put_contents("C:\\Temp\\lastdqs.json", $dumpstr);
 		$ch = curl_init();
+		//if(isset ($this->settings['http_proxy']) && $this->settings['http_proxy']){
+		//	curl_setopt($ch, CURLOPT_PROXY, $this->settings['http_proxy']);
+		//}
 		curl_setopt($ch, CURLOPT_URL, $this->settings["dqs_service"][$service]);
 		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $qstr);

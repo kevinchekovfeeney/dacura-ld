@@ -22,7 +22,8 @@
 </div>			
 
 <div class="dch" id="show-candidate">
-	<?php echo $service->showLDEditor($params);?>
+<?php echo $service->showLDResultbox($params);?>
+<?php echo $service->showLDEditor($params);?>
 	<div id="candidate-sub-sections" >
 		<div id="history-section" class="dch">
 			<div class="tool-section-header">
@@ -167,5 +168,4 @@ $('document').ready(function(){
 	$('#show-candidate').show();
 });
 </script>
-
 

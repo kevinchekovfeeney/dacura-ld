@@ -197,32 +197,37 @@ dacura.editor = {
 	},
 		
 	drawUpdateResult: function(res){
-		function getHeader(res, msgs, imgs){
-			var t = $($('#header-template').html().trim());
-			$(t).addClass("decision-" + res.decision);
-			//$(t).find('.capi-decision').html(imgs[res.decision]);
-			$(t).find('.capi-action').html(res.action).attr("title", msgs[res.decision]);
-			if(typeof res.msg_title == "undefined"){
-				res.msg_title = dacura.system.msgs.fail;
+		if(typeof(dacura.ldresult) != "undefined"){
+			dacura.ldresult.showDecision(res, false, dced.targets.resultbox, "Update Candidate");			
+		}
+		else {
+			function getHeader(res, msgs, imgs){
+				var t = $($('#header-template').html().trim());
+				$(t).addClass("decision-" + res.decision);
+				//$(t).find('.capi-decision').html(imgs[res.decision]);
+				$(t).find('.capi-action').html(res.action).attr("title", msgs[res.decision]);
+				if(typeof res.msg_title == "undefined"){
+					res.msg_title = dacura.system.msgs.fail;
+				}
+				$(t).find('.capi-title').html(res.msg_title);
+				return $('<div>').append($(t).clone()).html(); 
 			}
-			$(t).find('.capi-title').html(res.msg_title);
-			return $('<div>').append($(t).clone()).html(); 
-		}
-		if(dced.mode == "edit new"){
-			msgs = dced.decisionTexts.create;
-		}
-		else {
-			msgs = dced.decisionTexts.update;
-		}
-		var tit = getHeader(res, msgs);
-		if(res.decision == "reject" || res.errcode > 0){
-			dacura.system.showErrorResult(res.msg_body, res, tit);
-		}
-		else if(typeof res.warnings == "object" && res.warnings.length > 0){
-			dacura.system.showWarningResult(res.msg_body, res, tit);		
-		}
-		else {
-			dacura.system.showSuccessResult(res.msg_body, res, tit);		
+			if(dced.mode == "edit new"){
+				msgs = dced.decisionTexts.create;
+			}
+			else {
+				msgs = dced.decisionTexts.update;
+			}
+			var tit = getHeader(res, msgs);
+			if(res.decision == "reject" || res.errcode > 0){
+				dacura.system.showErrorResult(res.msg_body, res, tit, dced.targets.errorbox);
+			}
+			else if(typeof res.warnings == "object" && res.warnings.length > 0){
+				dacura.system.showWarningResult(res.msg_body, res, tit, dced.targets.resultbox);		
+			}
+			else {
+				dacura.system.showSuccessResult(res.msg_body, res, tit, dced.targets.resultbox);		
+			}
 		}
 	},
 	

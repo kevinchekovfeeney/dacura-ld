@@ -8,10 +8,39 @@ class NSResolver extends DacuraObject {
 		"rdf" => "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
 		"rdfs" => "http://www.w3.org/2000/01/rdf-schema#",
 		"xsd" => "http://www.w3.org/2001/XMLSchema#",
-		"owl" => "http://www.w3.org/2002/07/owl#",
-		"prov" => "http://www.w3.org/ns/prov#",
-		"oa" => "http://www.w3.org/ns/oa#",
+		"owl" => "http://www.w3.org/2002/07/owl#"
 	);
+	
+	var $structural_predicates = array(
+		"rdf" => array("type"),
+		"rdfs" => array("range", "domain", "subPropertyOf", "subClassOf", "member"),
+		"owl" => array("inverseOf", "unionOf", "complementOf", 
+					"intersectionOf", "oneOf", "dataRange", "disjointWith", "imports", "sameAs", "differentFrom",
+				"allValuesFrom", "someValuesFrom")  
+			
+	);
+	
+	var $url_mappings = array(
+		"http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#" => "http://swat.cse.lehigh.edu/onto/univ-bench.owl#",
+		"http://www.w3.org/2008/05/skos#" => "http://www.w3.org/2004/02/skos/core#",
+		"http://web.resource.org/cc/" => "http://creativecommons.org/ns#"	
+	);
+	
+	function mapURL($url){
+		foreach($this->url_mappings as $uk => $uv){
+			if(substr($url, 0, strlen($uk)) == $uk){
+				return $uv.substr($url, strlen($uk));
+			}
+		}
+		return $url;
+	}
+	
+	function isStructuralNamespace($ns){
+		if(in_array($ns, array_keys($this->default_prefixes))) return true;
+		if($ns == "_") return true;
+		if($ns == "unknown") return true;
+		return false;
+	}
 
 	function __construct($dacura_url = false, $local_url = false, $set_defaults = true){
 		if($set_defaults){
@@ -23,6 +52,17 @@ class NSResolver extends DacuraObject {
 		if($local_url){
 			$this->prefixes['local'] = $local_url;
 		}
+	}
+	
+	function isStructuralPredicate($url){
+		foreach($this->structural_predicates as $sh => $preds){
+			foreach($preds as $pred){
+				if($this->match($url, $sh, $pred)){
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 	
 	function setPrefixMap($pmap){

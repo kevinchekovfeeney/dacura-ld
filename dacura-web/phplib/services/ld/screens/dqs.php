@@ -253,6 +253,7 @@ function getDQSCheckboxes($dqs, $graph){
 </table>
 <?php } else {?>
 <div class='dqsopts'>
+	<input type='checkbox' id='dqs-all'> <label for='dqs-all'>Select All</label>
 	<?php echo getDQSCheckboxes($dqs, $params['graph']);?>
 </div>
 <?php } ?>
@@ -278,14 +279,10 @@ dacura.dqs.getSelection = function(graph){
 $('.dqsoption').button();
 $( "#dqs-all" ).button().click(function(event){
 	if($('#dqs-all').is(":checked")){
-		$("input:checkbox.dqsoption").prop('checked', true).button("refresh").button("disable");
-		$('#dqsopts').hide();
-		$('.dqs-choose').hide();
+		$("input:checkbox.dqsoption").prop('checked', true).button("refresh");
 	}
 	else {
-		$("input:checkbox.dqsoption").button("enable");		
-		$('#dqsopts').show();
-		$('.dqs-choose').show();
+		$("input:checkbox.dqsoption").prop('checked', false).button("refresh");
 	}					
 });
 

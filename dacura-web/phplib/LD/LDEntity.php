@@ -233,9 +233,16 @@ class LDEntity extends DacuraObject {
 					addAnonObj($this->id, $obj, $dprops, $prop, $idmap, $this->cwurl, $demand_id_allowed);
 				}
 			}
-			elseif($pv->embedded()){ //new object to add to the list - give him an id and insert him
-				//echo "<P>$this->id</p>";
-				addAnonObj($this->id, $v, $dprops, $prop, $idmap, $this->cwurl, $demand_id_allowed);
+			elseif($pv->embedded()){ //new object to add to the list - give her an id and insert her
+				$rep = expandLD($this->id, $v, $this->cwurl, $demand_id_allowed);
+				if($rep === false){
+					return $this->failure_result("Failed to expand blank nodes", 400);
+				}
+				if(isset($rep["missing"])){
+					$this->bad_links = array_merge($this->bad_links, $rep["missing"]);
+				}
+				$idmap = array_merge($idmap, $rep['idmap']);
+				addAnonObj($this->id, $v, $dprops, $prop, $idmap, $this->cwurl, $demand_id_allowed);				
 			}
 			elseif($pv->embeddedlist()){
 				$bnids = $pv->getbnids();//new nodes
@@ -253,10 +260,6 @@ class LDEntity extends DacuraObject {
 				}
 				$update_ids = $pv->getupdates();
 				foreach($update_ids as $uid){
-					if($uid == "http://purl.org/dc/terms/type"){
-						echo "$uid: ".opr($uprops[$prop][$uid]);
-						opr($dprops[$prop][$uid]);
-					}
 					if(!isset($dprops[$prop])){
 						$dprops[$prop] = array();
 					}
@@ -360,7 +363,7 @@ class LDEntity extends DacuraObject {
 			return $graph;
 		}
 		catch(Exception $e){
-			opr($graph);
+			//opr($graph);
 			return $this->failure_result("Failed to load graph from $type. ".$e->getMessage(), $e->getCode());
 		}
 	}
@@ -411,7 +414,7 @@ class LDEntity extends DacuraObject {
 	function expand($allow_demand_id = false){
 		$rep = expandLD($this->id, $this->ldprops, $this->cwurl, $allow_demand_id);
 		if($rep === false){
-			return $this->failure_result("Failed to expand blank nodes", 400);;
+			return $this->failure_result("Failed to expand blank nodes", 400);
 		}
 		if(isset($rep["missing"])){
 			$this->bad_links = $rep["missing"];
@@ -501,7 +504,7 @@ class LDEntity extends DacuraObject {
 	}
 	
 	function displayTriples($flags, $vstr, $srvr){
-		$this->display = "<h2>need to write display triples</h2>";
+		$this->display = $this->typedTriples();
 	}
 	
 	function displayQuads($flags, $vstr, $srvr){
@@ -509,7 +512,7 @@ class LDEntity extends DacuraObject {
 	}
 	
 	function displayHTML($flags, $vstr, $srvr){
-		$this->display = "<h2>need to write display HTML</h2>";
+		$this->display = $this->getPropertiesAsHTMLTable($vstr, $this->ldprops);//"<h2>need to write display HTML</h2>";
 	}
 	
 	function displayJSON($flags, $vstr, $srvr){
@@ -657,15 +660,15 @@ class LDEntity extends DacuraObject {
 				$html .= "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>$nv</td></tr>";
 			}
 			elseif($pv->objectliteral()){
-				$nv = $this->applyLiteralHTML($v);
+				$nv = $this->applyObjectLiteralHTML($v);
 				$html .= "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>$nv</td></tr>";
 			}
 			elseif($pv->objectliterallist()){
 				$nv = array();
 				foreach($v as $val){
-					$nv[] = $this->applyLiteralHTML($val, $vstr);
+					$nv[] = $this->applyObjectLiteralHTML($val, $vstr);
 				}
-				$html .= "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>".explode(", ", $nv)."</td></tr>";
+				$html .= "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>".implode("<br>", $nv)."</td></tr>";
 			}
 			elseif($pv->valuelist()){
 				$nv = array();
@@ -676,7 +679,7 @@ class LDEntity extends DacuraObject {
 					else {
 						$nv[] = $this->applyLiteralHTML($val, $vstr);
 					}
-					$html .= "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>".explode(", ", $nv)."</td></tr>";
+					$html .= "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>".implode("<br>", $nv)."</td></tr>";
 				}
 			}
 			elseif($pv->embeddedlist()){
@@ -698,6 +701,12 @@ class LDEntity extends DacuraObject {
 					$html .= "</tr>";
 				}
 			}
+			elseif($pv->objectlist()){
+				//opr($v);
+			}
+			elseif($pv->embedded()){
+				//opr($v);	
+			}
 		}
 		$html .= "</table>";
 		return $html;
@@ -715,6 +724,19 @@ class LDEntity extends DacuraObject {
 			$html = "<span class='dacura-property-value dacura-literal'>$ln</span>";
 		}
 		return $html;
+	}
+	
+	function applyObjectLiteralHTML($olit){
+		$data = "<input value='".$olit['data']."'><button class='update-html-literal'>Update Value</button>";
+		$html = "<span class='dacura-property-value dacura-objectliteral'>";
+		if(isset($olit['type'])){
+			$html .= "<span class='dacura-objectliteral-index>".$olit['type']."</span> <input type='text' class='dacura-objectliteral-value'>$data</span>";
+		}
+		else {
+			$html .= "<span class='dacura-objectliteral-index>".$olit['lang']."</span> <input type='text' class='dacura-objectliteral-value'>$data</span>";				
+		}
+		return $html;
+		//opr($olit);
 	}
 
 	function linkifyTriples(&$trips, $alink, $vstr){

@@ -2,22 +2,156 @@
 include_once("phplib/services/ld/LDDacuraServer.php");
 
 class CandidateDacuraServer extends LDDacuraServer {
+	
+	var $schema;
 
 	function __construct($service){
 		parent::__construct($service);
 		$this->cwurlbase = $service->my_url();
+		$this->schema = $this->loadSchemaFromContext();
 	}
 	
 	function getNGSkeleton(){
+		return $this->schema->getNGSkeleton();
+	}
+	
+	function loadSchemaFromContext(){
 		$filter = array("type" => "graph", "collectionid" => $this->cid(), "datasetid" => $this->did());
 		$ents = $this->getEntities($filter);
-		$skel = array("ldprops" => array(), "meta" => array());
-		foreach($ents as $ent){
-			$skel["ldprops"][$ent["id"]] = array(); 
-		}
-		$skel['display'] = $skel['ldprops'];
-		return $skel;
+		$sc = new Schema($this->cid(), $this->did(), $this->settings['install_url']);
+		$sc->load($ents);
+		return $sc;
 	}
+
+	function createNewEntityObject($id, $type){
+		$obj = new CandidateCreateRequest($id);
+		$obj->cwurl = $this->schema->instance_prefix."/".$id;
+		//$nsres = new NSResolver();
+		//$obj->setNamespaces($nsres);
+		$obj->type = $type;
+		return $obj;
+	}
+	
+	function loadEntity($entity_id, $fragment_id = false, $version = false, $options = array()){
+		$ent = parent::loadEntity($entity_id, $fragment_id, $version, $options);
+		if($ent){
+			$ent->cwurl = $this->schema->instance_prefix."/".$ent->id;
+		}
+		return $ent;
+	}
+	/*
+	 * Methods for interactions with the Quality Service / Graph Manager
+	 */
+	function publishUpdateToGraph($uent, $decision, $is_test){
+		if($uent->bothPublished()){
+			$gu = $this->updateEntityInGraph($uent, $is_test);
+		}
+		elseif($uent->originalPublished()){
+			$gu = $this->deleteEntityFromGraph($uent->original, $is_test);
+		}
+		else {
+			if($is_test || $uent->changedPublished()){
+				$gu = $this->publishEntityToGraph($uent->changed, $decision, $is_test);
+			}
+			else {
+				$gu = new GraphAnalysisResults("Nothing to save to graph");
+			}
+		}
+		return $gu;
+	}
+	
+	function publishEntityToGraph($nent, $status, $is_test=false){
+		$ar = new GraphAnalysisResults("Publishing to Graph");
+		$dont_publish = ($is_test || $status != "accept");
+		foreach($nent->ldprops as $k => $props){
+			$quads = $nent->getPropertyAsQuads($k, $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k));
+			if($quads){
+				$gobj = $this->loadEntity($k);
+				$tests = $gobj->meta['instance_dqs'];
+				$errs = $this->graphman->create($quads, $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k), $dont_publish, $tests);
+			}
+			if($errs === false){
+				$ar->addOneGraphTestFail($k, $quads, array(), $this->graphman->errcode, $this->graphman->errmsg);
+			}
+			else {
+				$ar->addOneGraphTestResult($k, $quads, array(), $errs);
+			}
+		}
+		return $ar;
+	}
+	
+	function updateEntityInGraph($ent, $is_test = false){
+		$ar = new GraphAnalysisResults("Updating Report in Graph", $is_test);
+		foreach($ent->changed->ldprops as $k => $props){
+			$gobj = $this->loadEntity($k);
+			$tests = $gobj->meta['instance_dqs'];
+			$iquads = $ent->delta->getNamedGraphInsertQuads($k, $this->getInstanceGraph($k));
+			$dquads = $ent->delta->getNamedGraphDeleteQuads($k, $this->getInstanceGraph($k));
+			if(count($iquads) > 0 or count($dquads) > 0){
+				$errs = $this->graphman->update($iquads, $dquads, $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k), $is_test, $tests);
+				if($errs === false){
+					$ar->addOneGraphTestFail($k, $iquads, $dquads, $this->graphman->errcode, $this->graphman->errmsg);
+				}
+				else {
+					$ar->addOneGraphTestResult($k, $iquads, $dquads, $errs);
+				}
+			}
+		}
+		return $ar;
+	}
+	
+	function deleteEntityFromGraph($ent, $is_test = false){
+		$ar = new GraphAnalysisResults("Removing Entity from Graph", $is_test);
+		foreach($ent->ldprops as $k => $props){
+			$quads = $ent->getPropertyAsQuads($k, $this->getInstanceGraph($k));
+			if($quads){
+				$errs = $this->graphman->delete($quads, $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k), $is_test);
+				if($errs === false){
+					$ar->addOneGraphTestFail($k, array(), $quads, $this->graphman->errcode, $this->graphman->errmsg);
+				}
+				else {
+					$ar->addOneGraphTestResult($k, array(), $quads, $errs);
+				}
+			}
+		}
+		return $ar;
+	}
+	
+	function undoEntityUpdate($ent, $is_test = false){
+		$ar = new GraphAnalysisResults("Undoing Report Update in Graph");
+		foreach($ent->original->ldprops as $k => $props){
+			$dquads = $ent->delta->getNamedGraphInsertQuads($k, $this->getInstanceGraph($k));
+			$iquads = $ent->delta->getNamedGraphDeleteQuads($k, $this->getInstanceGraph($k));
+			if(count($iquads) > 0 or count($dquads) > 0){
+				$errs = $this->graphman->update($iquads, $dquads, $this->getInstanceGraph($k),$this->getGraphSchemaGraph($k), $is_test);
+				if($errs === false){
+					$ar->addOneGraphTestFail($k, $iquads, $dquads, $this->graphman->errcode, $this->graphman->errmsg);
+				}
+				else {
+					$ar->addOneGraphTestResult($k, $iquads, $dquads, $errs);
+				}
+			}
+		}
+		return $ar;
+	}
+	
+	function updatePublishedUpdate($cand, $ocand, $is_test = false){
+		$ar = new GraphAnalysisResults("Updating Report in Graph", $is_test);
+		foreach($cand->original->dacura_props as $k){
+			$quads = $cand->deltaAsNGQuads($ocand, $this->getInstanceGraph($k));
+			if(count($quads['add']) > 0 or count($quads['del']) > 0){
+				$errs = $this->graphman->update($quads['add'], $quads['del'], $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k), $is_test);
+				if($errs === false){
+					$ar->addOneGraphTestFail($k, $quads['add'], $quads['del'], $this->graphman->errcode, $this->graphman->errmsg);
+				}
+				else {
+					$ar->addOneGraphTestResult($k, $quads['add'], $quads['del'], $errs);
+				}
+			}
+		}
+		return $ar;
+	}
+	
 	
 	/*
 	 * There are five major interfaces to the world

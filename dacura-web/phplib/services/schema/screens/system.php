@@ -117,7 +117,7 @@ function drawOntologies(onts){
 				var title = getMetaProperty(onts[key]["meta"], "title", "none");
 				var shorthand = getMetaProperty(onts[key]["meta"], "shorthand", "none");
 			 	$('#ontology-table-holder .ontology_table tbody').append("<tr class='ontology-list' id='ontology_" + ontids.length + "'><td class='ontology_" + ontids.length + "'>" + onts[key]['id'] + "</td><td>" + 
-				  	onts[key]['url'] + "</td><td class='ontology_" + ontids.length + "'>" + title +
+				  	url + "</td><td class='ontology_" + ontids.length + "'>" + title +
 				  	"</td><td class='ontology_" + ontids.length + "'>" + onts[key].status + "</td><td class='ontology_" + ontids.length + "'>" + onts[key]["version"] + "</td><td>" + 
 				  	"<input type='checkbox' + id='dqsontology_" + ontids.length + "'" + "></td></tr>");
 			  	$('.ontology_' + ontids.length).click( function (event){

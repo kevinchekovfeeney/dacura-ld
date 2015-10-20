@@ -14,6 +14,7 @@ getRoute()->post('/(\w+)', 'update_entity');//no frag id
 getRoute()->delete('/(\w+)/(\w+)', 'delete_entity');//with fragment id
 getRoute()->delete('/(\w+)', 'delete_entity');//no fragment id
 getRoute()->delete('/update/(\w+)', 'delete_update');//no fragment id
+
 set_time_limit (0);
 
 

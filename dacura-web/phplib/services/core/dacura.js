@@ -788,7 +788,6 @@ dacura.system.setLDSingleValue = function(obj, key, val){
 }
 
 
-
 /*
  * Then just a few utility functions
  */
@@ -796,6 +795,14 @@ dacura.system.setLDSingleValue = function(obj, key, val){
 function validateURL(url){
 	return /^(https|http):/.test(url);
 };
+
+function getMetaProperty(meta, key, def){
+	if(typeof meta[key] == "undefined"){
+		return def;
+	}
+	return meta[key];
+}
+
 
 
 function timeConverter(UNIX_timestamp){

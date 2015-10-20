@@ -101,14 +101,16 @@ dacura.candidate.drawCandidateListTable = function(data){
 		$('#candidate_table tbody').html("");
 		for (var i in data) {
 			var obj = data[i];
+			var type = getMetaProperty(obj.meta, "type", "unknown");
+			
 			$('#candidate_table tbody').append("<tr id='cand" + obj.id + "'>" + 
 			"<td>" + obj.id + "</td>" + 
-			"<td>" + obj.candidate_class + "</td>" + 
+			"<td>" + type + "</td>" + 
 			<?php if (isset($params['show_collection']) && $params['show_collection']) echo '"<td>" + obj.collectionid + "</td>" + '?>
 			<?php if (isset($params['show_dataset']) && $params['show_dataset']) echo '"<td>" + obj.datasetid + "</td>" + '?>
 			"<td>" + obj.status + "</td>" + 
 			"<td>" + obj.version + "</td>" + 
-			"<td>" + obj.schema_version + "</td>" + 
+			"<td>1</td>" + 
 			"<td>" + timeConverter(obj.createtime) + "</td>" + 
 			"<td>" + obj.createtime + "</td>" + 
 			"<td>" + timeConverter(obj.modtime) + "</td>" + 

@@ -186,7 +186,7 @@ class LDDBManager extends UsersDBManager {
 					time()
 			);
 			$res = $stmt->execute($x);
-			//opr($x);
+			//opr(strlen($x[5]));
 			return true;
 		}
 		catch(PDOException $e){

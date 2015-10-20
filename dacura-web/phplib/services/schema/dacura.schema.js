@@ -10,21 +10,24 @@ dacura.schema.api.get = function(){
 	else {
 		xhr.data = {"entity_type": "graph"};	
 	}
-	xhr.url = dacura.system.serviceApiURL('ld');
+	//xhr.url = dacura.system.serviceApiURL('ld');
+	xhr.url = dacura.schema.apiurl;
 	return xhr;
 }
 
 dacura.schema.api.get_ontology = function(n, opts){
 	xhr = {data: opts};
 	xhr.data.entity_type = "ontology";
-	xhr.url = dacura.system.serviceApiURL('ld') + "/" +  n;
-	return xhr;
+	//xhr.url = dacura.system.serviceApiURL('ld') + "/" +  n;
+	xhr.url = dacura.schema.apiurl + "/" +  n;
+	return xhr ;
 }
 
 dacura.schema.api.get_graph = function(n, opts){
 	xhr = {data: opts};
 	xhr.data.entity_type = "graph";
-	xhr.url = dacura.system.serviceApiURL('ld') + "/" +  n;
+	xhr.url = dacura.schema.apiurl + "/" +  n;
+	//xhr.url = dacura.system.serviceApiURL('ld') + "/" +  n;
 	return xhr;
 }
 
@@ -36,7 +39,8 @@ dacura.schema.api.create_graph = function(data, test){
 	}
 	xhr.data = JSON.stringify(data);
 	xhr.dataType = "json";
-	xhr.url = dacura.system.serviceApiURL('ld');
+	//xhr.url = dacura.system.serviceApiURL('ld');
+	xhr.url = dacura.schema.apiurl;
 	return xhr;	
 }
 
@@ -50,7 +54,8 @@ dacura.schema.api.update_ontology = function(id, uobj, test){
 	}
 	xhr.data = JSON.stringify(uobj);
 	xhr.dataType = "json";
-	xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
+//	xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
+	xhr.url = dacura.schema.apiurl + "/" +  id;
     return xhr;	
 };
 
@@ -64,7 +69,8 @@ dacura.schema.api.update_graph = function(id, uobj, test){
 	}
 	xhr.data = JSON.stringify(uobj);
 	xhr.dataType = "json";
-	xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
+//	xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
+	xhr.url = dacura.schema.apiurl + "/" +  id;
     return xhr;	
 };
 
@@ -87,7 +93,7 @@ dacura.schema.api.import_ontology = function(format, entid, payload){
 dacura.schema.api.calculateDependencies = function(entid){
 	xhr = {};
 	xhr.url = dacura.schema.apiurl + "/" + entid + "/dependencies";
-	xhr.type = "POST";
+	//xhr.type = "POST";
 	return xhr;
 }
 

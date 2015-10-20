@@ -78,12 +78,20 @@ function isLiteral($x){
 function isURL($str){
 	return (!filter_var($str, FILTER_VALIDATE_URL) === false);
 }
+
 function isNamespacedURL($x){
-	$bits = explode(":", $x);
-	return (!isURL($x) && count($bits) > 1 && strlen($bits[0]) <= 16 && strlen($bits[0]) >= 2 && !preg_match('/[^a-z0-9]/', $bits[0]));
+	if(is_array($x)){
+		//pr($x);
+		return false;
+	}
+	else {
+		$bits = explode(":", $x);
+		return (!isURL($x) && count($bits) > 1 && strlen($bits[0]) <= 16 && strlen($bits[0]) >= 1 && !preg_match('/[^a-z0-9]/', $bits[0]));		
+	}
 }
 
 function getNamespacePortion($str){
+	if(is_array($str)) return false;
 	$bits = explode(":", $str);
 	return (count($bits) > 1) ? $bits[0]: false;
 }

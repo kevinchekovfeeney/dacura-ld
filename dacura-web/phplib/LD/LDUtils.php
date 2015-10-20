@@ -13,7 +13,6 @@
 require_once "LDPropertyValue.php";
 require_once "LDDelta.php";
 
-
 /*
  * Expand the structure, generate real ids for blank nodes and update any references to the blank nodes to the new ids
  */
@@ -50,7 +49,7 @@ function generateBNIDs($idbase, &$ldprops, &$idmap, $cwurl, $allow_demand_id = f
 				generateBNIDs($idbase, $nprops[$p][$new_id], $idmap, $cwurl, $allow_demand_id);				
 			}
 			else {
-				if($p == "instance"){
+				if($p == "main"){
 					$nprops[$p] = array($cwurl => $v);
 					generateBNIDs($idbase, $nprops[$p][$cwurl], $idmap, $cwurl, $allow_demand_id);
 				}
@@ -598,6 +597,7 @@ function addAnonObj($idbase, $obj, &$prop, $p, &$idmap, $cwurl, $allow_demand_id
 	if($bnid && $bnid != $new_id){
 		$idmap[$bnid] = $new_id;
 	}
+	
 	$prop[$p][$new_id] = $obj;
 	return $new_id;
 }
@@ -723,12 +723,125 @@ function getNamespaceUtilisation($ldprops, $schema, $cwurl, $type = "all"){
 	return $ns;
 }
 
+function addPropertyToNSUtilisation(&$ns, $prop, $schema){
+	$parts = deconstructURL($prop, $schema);
+	if(!$parts) return false;
+	if(!isset($ns[$parts[0]])){
+		$ns[$parts[0]] = array("properties" => array(), "structural" => array(), "object" => array(), "subject" => array());
+	}
+	$p = $schema->compress($parts[1]);
+	$p = $p ? $p : $parts[1];
+	if(!isset($ns[$parts[0]]["properties"][$p])){
+		$ns[$parts[0]]["properties"][$p] = 1;
+	}
+	else {
+		$ns[$parts[0]]["properties"][$p]++;
+	}
+	return $parts;	
+}
+
+function compressTriple($s, $p, $o, $schema){
+	$ss = $schema->compress($s);
+	$ss = $ss ? $ss : $s;
+	$sp = $schema->compress($p);
+	$sp = $sp ? $sp : $p;
+	$so = $schema->compress($o);
+	$so = $so ? $so : $o;
+	return array($ss, $sp, $so);
+}
+
+function addSubjectToNSUtilisation(&$ns, $sid, $schema){
+	$parts = deconstructURL($sid, $schema);
+	if(!$parts) return false;
+	if(!isset($ns[$parts[0]])){
+		$ns[$parts[0]] = array("properties" => array(), "structural" => array(), "object" => array(), "subject" => array());
+	}
+	$s = $schema->compress($parts[1]);
+	$s = $s ? $s : $parts[1];
+	if(isset($ns[$parts[0]]["subject"][$s])){
+		$ns[$parts[0]]["subject"][$s]++;
+	}
+	else {
+		$ns[$parts[0]]["subject"][$s] = 1;
+	}
+	return $parts;
+}
+
+function addObjectToNSUtilisation(&$ns, $oid, $sid, $prop, $schema){
+	$parts = deconstructURL($oid, $schema);
+	if(!$parts) return false;
+	if(!isset($ns[$parts[0]])){
+		$ns[$parts[0]] = array("properties" => array(), "structural" => array(), "object" => array(), "subject" => array());
+	}
+	if($schema->isStructuralPredicate($prop)){
+		$ns[$parts[0]]["structural"][] = compressTriple($sid, $prop, $parts[1], $schema);
+	}
+	else {
+		$ns[$parts[0]]["object"][] = compressTriple($sid, $prop, $parts[1], $schema);
+	}
+	return $parts;	
+}
+
+
+function getDeepNamespaceUtilisation($eid, $ldprops, $schema, $cwurl, &$ns){
+	addSubjectToNSUtilisation($ns, $eid, $schema);
+	foreach($ldprops as $p => $v){
+		$pv = new LDPropertyValue($v, $cwurl);
+		if($pv->embeddedlist()){
+			foreach($v as $i => $obj){
+				addPropertyToNSUtilisation($ns, $p, $schema);
+				addObjectToNSUtilisation($ns, $i, $eid, $p, $schema);
+			}
+		}
+		elseif($pv->embedded()){
+			addPropertyToNSUtilisation($ns, $p, $schema);
+			getDeepNamespaceUtilisation($eid, $v, $schema, $cwurl, $ns);
+		}
+		elseif($pv->objectlist()){
+			foreach($v as $i => $obj){
+				addPropertyToNSUtilisation($ns, $p, $schema);
+				getDeepNamespaceUtilisation($eid, $obj, $schema, $cwurl, $ns);
+			}
+		}
+		else{
+			if($pv->valuelist() or $pv->objectliterallist()){
+				foreach($v as $val){
+					addPropertyToNSUtilisation($ns, $p, $schema);
+					if($pv->valuelist()){
+						addObjectToNSUtilisation($ns, $val, $eid, $p, $schema);
+					}
+					elseif(isset($val['type']) && $val['type'] == "uri"){
+						addObjectToNSUtilisation($ns, $val['value'], $eid, $p, $schema);
+					}
+				}
+			}
+			elseif($pv->link()){
+				addPropertyToNSUtilisation($ns, $p, $schema);				
+				addObjectToNSUtilisation($ns, $v, $eid, $p, $schema);
+			}
+			elseif($pv->objectliteral()){
+				addPropertyToNSUtilisation($ns, $p, $schema);				
+				if(isset($v['type']) && $v['type'] == "uri"){
+					addObjectToNSUtilisation($ns, $v['value'], $eid, $p, $schema);
+				}
+			}
+		}
+	}
+	return $ns;
+}
+
 /*
  * Helper for above
  */
 function addToNSList(&$ns, $p, $schema){
 	if(!$p) return;
-	if(isNamespacedURL($p)){
+	if(isBlankNode($p)){
+		if(!isset($ns["_"])){
+			$ns["_"] = array();
+		}
+		$ns["_"][] = $p;
+	}
+	elseif(isNamespacedURL($p)){
 		$pre = getNamespacePortion($p);
 		if($url = $schema->expand($p)){
 			if(!isset($ns[$pre])){
@@ -737,6 +850,7 @@ function addToNSList(&$ns, $p, $schema){
 			$ns[$pre][] = $url;
 		}
 		else {
+			
 			if(!isset($ns["unknown"])){
 				$ns["unknown"] = array();
 			}
@@ -750,10 +864,47 @@ function addToNSList(&$ns, $p, $schema){
 				$ns[$pre] = array();
 			}
 			$ns[$pre][] = $p;
+		}
+		else {
+			if(!isset($ns["unknown"])){
+				$ns["unknown"] = array();
+			}
+			$ns["unknown"][] = $p;
 		}	
 	}
 }
 
+function deconstructURL($p, $schema){
+	if(is_array($p)){
+		//opr($p);
+		return false;
+	}
+	$p = $schema->mapURL($p);
+	if(isBlankNode($p)){
+		return array("_", $p);
+	}
+	elseif(isNamespacedURL($p)){
+		$pre = getNamespacePortion($p);
+		if($url = $schema->expand($p)){
+			return array($pre, $url);
+		}
+		else {
+			return array("unknown", $p);
+		}
+	}
+	elseif(isURL($p)){
+		if($short = $schema->compress($p)){
+			$pre = getNamespacePortion($short);
+			return array($pre, $p);
+		}
+		else {
+			return array("unknown", $p);
+		}
+	}
+	else {
+		return array("unknown", $p);
+	}
+}
 
 
 function compressNamespaces(&$ldprops, $schema, $cwurl){
