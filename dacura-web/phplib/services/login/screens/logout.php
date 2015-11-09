@@ -19,7 +19,7 @@ dacura.login.logout = function(){
 		dacura.login.enablelogout();
 	};
 	ajs.done = function(data, textStatus, jqXHR) {
-   		//window.location.replace("<?=$service->get_service_url("login")?>");
+   		window.location.replace("<?=$service->get_service_url("login")?>");
 	};
 	ajs.fail = function (jqXHR, textStatus){
 		dacura.system.showErrorResult("Failed to log out", jqXHR.responseText );
