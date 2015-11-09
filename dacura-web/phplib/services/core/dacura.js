@@ -22,7 +22,7 @@ dacura = {
 			"resultbox": '.tool-info', 
 			"errorbox": '.tool-info', 
 			"infobox": '.tool-info', 
-			"busybox": '#page-content'	
+			"busybox": '.tool-body'	
 		},
 		msgs: {
 			"busy" : "Submitting request to Dacura Server",
@@ -707,16 +707,21 @@ dacura.system.initTool = function(options){
 
 dacura.system.updateToolHeader = function(options){
 	if(typeof options.title != "undefined"){
-		this.setToolTitle(options.title);
+		$('.tool-title').html(options.title);
+		//dacura.system.setToolTitle(options.title);
 	}
 	if(typeof options.subtitle != "undefined"){
-		this.setToolSubtitle(options.subtitle);
+		$('.tool-subtitle').html(options.subtitle);
+		//dacura.system.setToolSubtitle(options.subtitle);
 	}
 	if(typeof options.description != "undefined"){
-		this.setToolDescription(options.description);
+		$('.tool-description').html(options.description);
+		//dacura.system.setToolDescription(options.description);
 	}
 	if(typeof options.image != "undefined"){
-		this.setToolImage(options.image);
+		$('.tool-image').html("<img class='tool-header-image' src='" + options.image + "' title='"+ options.title + "' />");
+
+		dacura.system.setToolImage(options.image);
 	}
 }
 

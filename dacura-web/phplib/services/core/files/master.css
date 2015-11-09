@@ -332,7 +332,7 @@ Standard Page Layout
 #pagecontent-nopad {
 	margin: 50px auto 25px auto;
 	width: 1000px;
-	background: rgba(255, 255, 255, .9);
+	background: rgba(255, 255, 255, .95);
 	border-radius: 3px;
 	padding: 0px;
 }
@@ -464,7 +464,12 @@ Modal message box - generaal form
 /*
 Breadcrumbs to show context within services
 */
-ul.service-breadcrumbs {margin-left: -27px; margin-top: -10px}
+div.pcbreadcrumbs {
+	height: 29px;
+	font-size: 0.8em;
+}
+
+ul.service-breadcrumbs {margin-left: -27px; margin-top: -1px}
 .service-breadcrumbs { display: block;}  
 .service-breadcrumbs li {  display: inline; }  
 .service-breadcrumbs li.first { margin-left: -10px; padding-left: 0px;}  
@@ -476,7 +481,7 @@ ul.service-breadcrumbs {margin-left: -27px; margin-top: -10px}
     float: left;  
     font-size: 12px;  
     margin-left: -13px;  
-    padding: 7px 17px 11px 25px;  
+    padding: 5px 17px 7px 20px;  
     position: relative;  
     text-decoration: none;  
 }  
@@ -533,6 +538,8 @@ Firt comes the ones to do with layout of the box itself
 	clear: both;
 	margin-right: 50px;
 	margin-left: 50px;	
+	margin-top: 20px;
+	margin-bottom: 20px;
 }
 
 
@@ -919,7 +926,7 @@ Formatting for a tool style page of a service
 */
 .tool-header {
 	border-bottom: 1px #888 solid;
-	margin-bottom: 10px;
+	margin-bottom: 0px;
 	text-align: left;
 	padding: 10px;
 	background-color: #ccc;
@@ -965,7 +972,25 @@ div.tool-close a {
 }
 
 .tool-body {
+	font-size: 0.9em;
 	padding-bottom: 6px;
+}
+.tool-contents {
+	min-height: 100px;
+}
+
+.tool-header-image {
+	height: 32px;
+	float: left;
+	margin-right: 8px;
+}
+
+#tab-holder {
+	background-color: #fff;
+	margin-top: 0px !important;	
+	border-top: 0px !important;
+	border-top-left-radius:0em !important;
+	border-top-right-radius:0em !important;	
 }
 
 .tool-section-header {

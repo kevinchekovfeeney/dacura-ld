@@ -25,6 +25,13 @@
 .dacura-json-editor {
 	padding-top: 8px;
 } 
+
+div#version-header {
+	font-size: 0.8em;
+	float: right;
+	margin-top: -22px;
+	padding-right: 8px;
+}
  
 
 #action-bar {
@@ -545,3 +552,28 @@ div#ld-editor textarea {
  }
  
  
+   
+  input#url-input, 
+  input#title-input {
+  	width: 400px;
+  	font-size: 15px;
+  	padding: 2px 4px;
+  }
+  
+  div.input-text-title {
+  	padding-top: 10px;
+  	margin-bottom: 4px;
+  	color: #444;
+  }
+  
+  div.input-text {
+  	margin: 10px;
+  	margin-top: 20px;
+  }
+  
+  
+  #tximp {
+  	width: 100%;
+  	height: 200px;
+  }
+  

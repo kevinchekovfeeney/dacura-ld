@@ -10,13 +10,17 @@ function import_ontology(){
 		$payload = file_get_contents('php://input');
 		$format = "upload";
 		$entid = (isset($_GET['id']) && $_GET['id']) ? $_GET['id']: "";
+		$enttitle = (isset($_GET['title']) && $_GET['title']) ? $_GET['title']: "";
+		$enturl = (isset($_GET['url']) && $_GET['url']) ? $_GET['url']: "";
 	}
 	else {
 		$payload = isset($_POST['payload']) ? $_POST['payload'] : "";
 		$format = isset($_POST['format']) ? $_POST['format'] : "";
 		$entid = isset($_POST['id']) ? $_POST['id'] : "";
+		$enturl = isset($_POST['url']) ? $_POST['url'] : "";
+		$enttitle = isset($_POST['title']) ? $_POST['title'] : "";
 	}
-	$ar = $dacura_server->importOntology($format, $payload, $entid);
+	$ar = $dacura_server->importOntology($format, $payload, $entid, $enttitle, $enturl);
 	if($ar){
 		return $dacura_server->writeDecision($ar);
 		//return $dacura_server->write_json_result($ont, "Imported Ontology $ont->id");
@@ -61,6 +65,12 @@ function validate_ontologies(){
 	}
 }
 
+if($dacura_server->cid() == "all"){
+	$entity_type = "ontology";
+}
+else {
+	$entity_type = "graph";
+}
 include_once "phplib/services/ld/api.php";
 
 /*

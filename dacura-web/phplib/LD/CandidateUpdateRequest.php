@@ -27,13 +27,13 @@ class CandidateUpdateRequest extends EntityUpdate {
 
 	/*
 	 * Transforms the changed candidate into the desired format for the consumer
-	 */
 	function showUpdateResult($format, $flags, $v, $dacura_server) {
 		$res = parent::showUpdateResult($format, $flags, $v, $dacura_server);
-		$res->history = $dacura_server->getEntityHistory($res, $v);
+		//$res->history = $dacura_server->getEntityHistory($res, $v);
 		//$res->pending = $dacura_server->getEntityPending($res, $v);
 		return $res;
 	}
+	 */
 	
 	function getMetaUpdates(){
 		$meta = parent::getMetaUpdates();

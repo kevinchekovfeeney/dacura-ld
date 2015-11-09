@@ -18,6 +18,7 @@
 							<span class='view-options'>
 								<span class='view-options-native'>
 								    <input type="radio" class='noption foption' checked="checked" id="format_json" name="nformat"><label title="Native Dacura JSON Linked Data Format" for="format_json">JSON</label>
+									<input type="radio" class="noption foption" id="format_jsonld" name="nformat"><label title="JSON-LD" for="format_jsonld">JSON-LD</label>
 								    <input type="radio" class='noption foption' id="format_triples" name="nformat"><label title="Simple Triple Export: [Subject - Predicate - Object]" for="format_triples">Triples</label>
 									<input type="radio" class='noption foption' id="format_quads" name="nformat"><label title="Triples with named graphs: [Subject - Predicate - Object - Graph]" for="format_quads">Quads</label>
 								    <input type="radio" class='noption foption' id="format_html" name="nformat"><label title="Dacura's Generated HTML views" for="format_html">HTML</label>
@@ -26,7 +27,6 @@
 								    <input type="radio" class='eoption foption' checked="checked" id="format_turtle" name="eformat"><label title="Turtle terse RDF triple language" for="format_turtle">Turtle</label>
 									<input type="radio" class="eoption foption" id='format_ntriples' name="eformat"><label title="N-triples format" for="format_ntriples">N-Triples</label>
 									<input type="radio" class="eoption foption" id="format_rdfxml" name="eformat"><label title="RDF/XML serialisation" for="format_rdfxml">XML</label>
-									<input type="radio" class="eoption foption" id="format_jsonld" name="eformat"><label title="JSON-LD" for="format_jsonld">JSON-LD</label>
 									<input type="radio" class="eoption foption" id="format_dot" name="eformat"><label title="Graphviz graphic visualisation" for="format_dot">Graphviz</label>
 									<input type="radio" class="eoption foption" id="format_n3" name="eformat"><label title="Notation 3" for="format_n3">N3</label>
 									<input type="radio" class="eoption foption" id="format_gif" name="eformat"><label title="Graphic Interchange Format" for="format_gif">Gif</label>
@@ -285,7 +285,7 @@ dacura.editor = {
 		return "?version=" + dced.options.version + "&format=" + dced.options.format + "&display=" + dced.getDisplayFlagsAsString(); 
 	},
 
-	load: function(i, f, u){
+	load: function(i, f, u, prefetch){
 		if(i == false && f == false){
 			dced.mode = "edit new";
 			dced.setCreateMode();
@@ -305,7 +305,12 @@ dacura.editor = {
 			dced.currentID = i;
 			var opts = jQuery.extend({}, dced.options);
 			opts.display = dced.getDisplayFlagsAsString();
-			dced.fetch(i, opts, dced.loadEntity, dced.targets);
+			if(typeof prefetch == "undefined"){
+				dced.fetch(i, opts, dced.loadEntity, dced.targets);
+			}
+			else {
+				dced.loadEntity(prefetch);
+			}
 		}
 	},
 
@@ -382,7 +387,7 @@ dacura.editor = {
 	},
 
 	drawBody: function(contents){
-		if(dced.options.format == "json"){
+		if(dced.options.format == "json" || dced.options.format == "jsonld"){
 			$('#ld-viewer').html("<div class='dacura-json-viewer'>" + JSON.stringify(contents, null, 4) + "</div>");
 		}
 		else if(dced.options.format == "triples"){
@@ -694,7 +699,7 @@ dacura.editor = {
 
 	setFormatOption: function(opt){
 		$("#format_" + opt).prop('checked', true).button("refresh");					
-		if(opt == "json" || opt == "triples" || opt == "quads" || opt == "html"){
+		if(opt == "jsonld" || opt == "json" || opt == "triples" || opt == "quads" || opt == "html"){
 			dced.setFormatSubOptions("native");
 			$("#format_native").prop('checked', true).button("refresh");					
 			dced.nformat = opt;

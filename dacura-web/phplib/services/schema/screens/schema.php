@@ -8,7 +8,7 @@
 	 	<li><a href="#create-graph">Create Graph</a></li>
 	 </ul>
 	<div id="graphs-holder">
-		<div id="graphs-list">
+		<div id="graphs-list" class="dch">
 			<div class="tab-top-message-holder">
 				<div class="tool-tab-info" id="graphs-msgs"></div>
 			</div>
@@ -16,7 +16,7 @@
 		</div>
 	</div>
 	<div id="create-graph-holder">
-		<div id="create-graph">
+		<div id="create-graph" class="dch">
 		
 			<div class="tab-top-message-holder">
 				<div class="tool-tab-info" id="create-msgs"></div>

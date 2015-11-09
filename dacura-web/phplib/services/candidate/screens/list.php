@@ -91,6 +91,9 @@ dacura.candidate.getCorrectedTableInitStrings = function(cands){
 	return init;
 }
 
+var cand_urls = [];
+
+
 dacura.candidate.drawCandidateListTable = function(data){		
 	if(typeof data == "undefined"){
 		$('#candidate-holder').show();	
@@ -99,11 +102,12 @@ dacura.candidate.drawCandidateListTable = function(data){
 	}
 	else {
 		$('#candidate_table tbody').html("");
+		cand_urls = [];
+		
 		for (var i in data) {
 			var obj = data[i];
 			var type = getMetaProperty(obj.meta, "type", "unknown");
-			
-			$('#candidate_table tbody').append("<tr id='cand" + obj.id + "'>" + 
+			$('#candidate_table tbody').append("<tr class='candrow' id='can_" + cand_urls.length + "'>" + 
 			"<td>" + obj.id + "</td>" + 
 			"<td>" + type + "</td>" + 
 			<?php if (isset($params['show_collection']) && $params['show_collection']) echo '"<td>" + obj.collectionid + "</td>" + '?>
@@ -114,16 +118,17 @@ dacura.candidate.drawCandidateListTable = function(data){
 			"<td>" + timeConverter(obj.createtime) + "</td>" + 
 			"<td>" + obj.createtime + "</td>" + 
 			"<td>" + timeConverter(obj.modtime) + "</td>" + 
-			"<td>" + obj.modtime + "</td>" + "</tr>");
-			$('#cand'+obj.id).hover(function(){
-				$(this).addClass('userhover');
-			}, function() {
-			    $(this).removeClass('userhover');
-			});
-			$('#cand'+obj.id).click( function (event){
-				window.location.href = dacura.system.pageURL() + "/" + this.id.substr(4);
-		    }); 
+			"<td>" + obj.modtime + "</td>" + "</tr>");	
+			cand_urls[cand_urls.length] = dacura.system.pageURL(obj.collectionid, obj.datasetid, "candidate") + "/" + obj.id;					
 		}
+		$('.candrow').hover(function(){
+			$(this).addClass('userhover');
+		}, function() {
+		    $(this).removeClass('userhover');
+		});
+		$('.candrow').click( function (event){
+			window.location.href = cand_urls[this.id.substr(4)]		
+	    }); 
 		$('#candidate-holder').show();	
 		$('#candidate_table').dataTable(dacura.candidate.getCorrectedTableInitStrings());
 	}

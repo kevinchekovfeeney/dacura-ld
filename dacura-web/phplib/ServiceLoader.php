@@ -102,6 +102,9 @@ class ServiceLoader extends DacuraObject {
 			//the home page (for the user or for collection_id, $dataset_id...
 			$sc->servicename = "home";
 		}
+		if($sc->servicename == "report"){
+			$sc->servicename = "candidate";
+		}
 		if($this->serviceExists($sc->servicename)){
 			return $sc;
 		}

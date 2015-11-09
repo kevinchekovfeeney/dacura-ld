@@ -115,7 +115,5 @@ class LdService extends DacuraService {
 			$this->screen = $this->default_screen;
 		}
 	}
-	function isPublicScreen(){
-		return true;
-	}
+	
 }

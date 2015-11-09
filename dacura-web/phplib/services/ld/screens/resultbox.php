@@ -1,8 +1,12 @@
 <style>
-input[type=button] {padding:5px 15px; background:#ccc; border:0 none;
-cursor:pointer;
--webkit-border-radius: 5px;
-border-radius: 5px; }
+input.rbbutton {
+	padding:5px 15px; 
+	background:#ccc; 
+	border:0 none;
+	cursor:pointer;
+	-webkit-border-radius: 5px;
+	border-radius: 5px; 
+}
 
 *, *:before, *:after {
   -moz-box-sizing: border-box;
@@ -10,89 +14,66 @@ border-radius: 5px; }
   box-sizing: border-box;
 }
 
-body {
+div.rbdecision {
   font-family: 'Nunito', sans-serif;
   color: #384047;
 }
 
-table {
+table.rbtable {
   max-width: 960px;
   margin: 10px auto;
 }
 
-caption {
+table.rbtable caption {
   font-size: 1.6em;
   font-weight: 400;
   padding: 10px 0;
 }
 
-thead th {
+table.rbtable thead th {
   font-weight: 400;
   background: #8a97a0;
   color: #FFF;
 }
 
-tr {
+table.rbtable tr {
   background: #f4f7f8;
   border-bottom: 1px solid #FFF;
   margin-bottom: 5px;
 }
 
-tr:nth-child(even) {
+table.rbtable tr:nth-child(even) {
   background: #e8eeef;
 }
 
-th, td {
+table.rbtable th, table.rbtable td {
   text-align: left;
   padding: 10px;
   font-weight: 300;
 }
 
-tfoot tr {
+table.rbtable tfoot tr {
   background: none;
 }
 
-tfoot td {
+table.rbtable tfoot td {
   padding: 10px 2px;
   font-size: 0.8em;
   font-style: italic;
   color: #8a97a0;
 }
 
-.info, .success, .warning, .error, .validation {
-border: 1px solid;
-margin: 10px 0px;
-padding:15px 10px 15px 50px;
-background-repeat: no-repeat;
-background-position: 10px center;
-}
-.info {
-color: #00529B;
-background-color: #BDE5F8;
-}
-.success {
-color: #4F8A10;
-background-color: #DFF2BF;
-}
-.warning {
-color: #9F6000;
-background-color: #FEEFB3;
-}
-.error {
-color: #D8000C;
-background-color: #FFBABA;
-}
 
 </style>
 
 
-<input id="decision" type="hidden" onclick="dacura.ldresult.showBasicDecision()" value="decision" visibility="hidden">
-<input id="errors" type="hidden" onclick="dacura.ldresult.showErrors()" value="errors" visibility="hidden">
-<input id="warnings" type="hidden" onclick="dacura.ldresult.showWarnings()" value="warnings" visibility="hidden">
-<input id="meta" type="hidden" onclick="dacura.ldresult.showMeta()" value="meta" visibility="hidden">
-<input id="candidate" type="hidden" onclick="dacura.ldresult.showCandidate()" value="candidate" visibility="hidden">
-<input id="report" type="hidden" onclick="dacura.ldresult.showReport()" value="report" visibility="hidden">
-<input id="graph" type="hidden" onclick="dacura.ldresult.showGraph()" value="graph" visibility="hidden">
+<input class='rbbutton' id="decision" type="hidden" onclick="dacura.ldresult.showBasicDecision()" value="decision" visibility="hidden">
+<input class='rbbutton' id="errors" type="hidden" onclick="dacura.ldresult.showErrors()" value="errors" visibility="hidden">
+<input class='rbbutton' id="warnings" type="hidden" onclick="dacura.ldresult.showWarnings()" value="warnings" visibility="hidden">
+<input class='rbbutton' id="meta" type="hidden" onclick="dacura.ldresult.showMeta()" value="meta" visibility="hidden">
+<input class='rbbutton' id="candidate" type="hidden" onclick="dacura.ldresult.showCandidate()" value="candidate" visibility="hidden">
+<input class='rbbutton' id="report" type="hidden" onclick="dacura.ldresult.showReport()" value="report" visibility="hidden">
+<input class='rbbutton' id="graph" type="hidden" onclick="dacura.ldresult.showGraph()" value="graph" visibility="hidden">
 
 <script>
 dacura.ldresult = {};
@@ -156,7 +137,7 @@ dacura.ldresult.getDecisionBasicText = function (dcm, test, type){
 dacura.ldresult.getErrorDetailsHTML = function(errors){
 	var html = "<div class='error-details'>";
 	if(typeof errors != "undefined"){
-		var errhtml = "<h3>Errors</h3><table class='api-error-table'><tr><td>#</td><td>Error</td><td>Property</td><td>Message</td></tr>";
+		var errhtml = "<h3>Errors</h3><table class='rbtable api-error-table'><tr><td>#</td><td>Error</td><td>Property</td><td>Message</td></tr>";
 		for (var key in errors) {
 			dacura.ldresult.numerrors++;
 			  if (errors.hasOwnProperty(key)) {
@@ -176,7 +157,7 @@ dacura.ldresult.getWarningsHTML = function(dcm){
 		var errhtml = "";
 		for(var i = 0; i < dcm.warnings.length; i++){
 			dacura.ldresult.numwarnings++;
-			errhtml += "<div class='warning'>Warning: <span class='action'>" + dcm.warnings[i].action +
+			errhtml += "<div class='rbwarning'>Warning: <span class='action'>" + dcm.warnings[i].action +
 				"</span><span class='title'>" + dcm.warnings[i].msg_title + "</span><span class='body'>" + 
 				dcm.warnings[i].msg_body + "</span></div>";
 		}
@@ -196,7 +177,7 @@ dacura.ldresult.getUpdateDetailsHTML = function(dcm, test){
 		else {
 			html += "<h3>" + dcm.inserts.length + " triples were added</h3>";	
 		}
-		html += "<table id='change-add'>";
+		html += "<table class='rbtable' id='change-add'>";
 		html += "<tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Graph</th></tr>";
 		for(var i = 0; i< dcm.inserts.length; i++){
 			if(typeof dcm.inserts[i][2] == "object"){
@@ -214,7 +195,7 @@ dacura.ldresult.getUpdateDetailsHTML = function(dcm, test){
 		else {
 			html += "<h3>" + dcm.deletes.length + " triples were deleted</h3>";	
 		}
-		html += "<table id='change-del'>";
+		html += "<table class='rbtable' id='change-del'>";
 		html += "<tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Graph</th></tr>";
 		for(var i = 0; i<dcm.deletes.length; i++){
 			if(typeof dcm.deletes[i][2] == "object"){
@@ -288,7 +269,7 @@ dacura.ldresult.getMetaUpdatesHTML = function(meta){
 		  }
 	}
 	if(thtml.length > 0){
-		thtml = "<div class='info'><h3>State</h3>" + thtml + "</div>";
+		thtml = "<div class='rbdecision info'><h3>State</h3>" + thtml + "</div>";
 	}
 	return thtml;	
 }
@@ -404,7 +385,7 @@ dacura.ldresult.getTripleTableHTML = function(trips, tit, isquads, cls){
 	var html = "";
 	if(trips.length > 0){
 		html += "<div class='api-triplestable-title cls'>" + tit + "</div>";
-		html += "<table>";
+		html += "<table class='rbtable'>";
 		html += "<thead><tr><th>Subject</th><th>Predicate</th><th>Object</th>";
 		if(isquads){
 			html += "<th>Graph</th>";
@@ -586,9 +567,9 @@ dacura.ldresult.showDecision = function(dcm, test, jq, type){
 	dacura.ldresult.showBasicDecision();
 }
 
-dacura.ldresult.showBasicDecision = function(){$(dacura.ldresult.jq).html("<div class='" + dacura.ldresult.cls + "'>" + dacura.ldresult.decision + "<br>" + dacura.ldresult.msg_body + "</div>").show();}
-dacura.ldresult.showErrors = function(){$(dacura.ldresult.jq).html("<div class='error'>" + dacura.ldresult.errors + "</div>").show();}
-dacura.ldresult.showWarnings = function(){$(dacura.ldresult.jq).html("<div class='warning'>" + dacura.ldresult.warnings + "</div>").show();}
+dacura.ldresult.showBasicDecision = function(){$(dacura.ldresult.jq).html("<div class='rbdecision " + dacura.ldresult.cls + "'>" + dacura.ldresult.decision + "<br>" + dacura.ldresult.msg_body + "</div>").show();}
+dacura.ldresult.showErrors = function(){$(dacura.ldresult.jq).html("<div class='rbdecision error'>" + dacura.ldresult.errors + "</div>").show();}
+dacura.ldresult.showWarnings = function(){$(dacura.ldresult.jq).html("<div class='rbdecision warning'>" + dacura.ldresult.warnings + "</div>").show();}
 dacura.ldresult.showMeta = function(){$(dacura.ldresult.jq).html(dacura.ldresult.meta).show();}
 dacura.ldresult.showCandidate = function(){$(dacura.ldresult.jq).html(dacura.ldresult.candidate).show();}
 dacura.ldresult.showReport = function(){$(dacura.ldresult.jq).html(dacura.ldresult.report).show();}

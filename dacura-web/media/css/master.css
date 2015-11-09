@@ -151,16 +151,16 @@ img { border: 0;}
 
 
 #dashboard-tasks h4{
-        text-align: left;
-        padding: 0;
-        margin: 0;
+    text-align: left;
+    padding: 0;
+    margin: 0;
 }
 
 .dacura-welcome {
-        text-align: left;
-        border-bottom: 1px solid #333;
-        padding-bottom: 3px;
-        margin-bottom: 10px;
+    text-align: left;
+    border-bottom: 1px solid #333;
+    padding-bottom: 3px;
+    margin-bottom: 10px;
 }
 
 
@@ -205,8 +205,7 @@ ul.dashboard-menu li a {
 	background-color: #FBFAF9;
 }
 
-div.dacura-dashboard-task-button 
-{
+div.dacura-dashboard-task-button {
 	  float: left;
 	  width: 220px;
 	  height: 138px;
@@ -219,8 +218,7 @@ div.dacura-dashboard-panel {
 }
 
 
-div.dacura-dashboard-button 
-{
+div.dacura-dashboard-button {
 	  float: left;
 	  width: 138px;
 	  height: 138px;
@@ -229,8 +227,7 @@ div.dacura-dashboard-button
   	  background-size:130px 130px;
 }
 
-div.dacura-dashboard-button-wide 
-{
+div.dacura-dashboard-button-wide {
 	  float: left;
 	  width: 180px;
 	  height: 138px;
@@ -250,12 +247,12 @@ img.dacura-task-button-img{
 	margin: 0 0 10px 0;
 }
 
-img.dacura-button-img{
+img.dacura-button-img {
 	width: 86px;
 	margin: 10px auto 0px auto;
 }
 
-div.dacura-button-title{
+div.dacura-button-title {
 	font-family: Helvetica, sans;
 	font-size: 14px;
 	color: #342323;
@@ -317,14 +314,15 @@ div.dacura-button-title{
 	margin: -8px -8px 12px -8px;
 	font-weight: bold;
 	border-radius: 3px 3px 0px 0px;
-	
 }
 
 .modal-message .ui-dialog-titlebar-close {
 	display: none;
 }
 
-.modal-message .ui-dialog-titlebar {display:none}
+.modal-message .ui-dialog-titlebar {
+	display:none;
+}
 
 .pcsection {
 	clear: both;
@@ -406,7 +404,8 @@ ul.service-breadcrumbs {margin-left: -27px; margin-top: -10px}
     padding: 7px 17px 11px 25px;  
     position: relative;  
     text-decoration: none;  
-}  
+} 
+ 
 .service-breadcrumbs li a {  
     background-image: url('../images/bg-crumbs.png');  
     background-repeat: no-repeat;  
@@ -533,11 +532,21 @@ table.dc-wizard td.input-help {
 	padding: 4px 20px;
 }
 
+
 .dacura-user-message-box {
-	margin: 2px;
 	font-size: 0.9em;	
 	border-radius: 4px;
 }
+
+
+.tool-info .dacura-user-message-box {
+	padding-top: 10px;
+	padding-bottom: 10px;
+	margin-right: 50px;
+	margin-left: 50px;	
+	margin-top: 50px;	
+}
+
 
 #aboutcontent h1{
 	color: yellow;
@@ -868,10 +877,6 @@ span.bcstatus{
 	padding-bottom: 6px;
 }
 
-.tool-info {
-
-}
-
 #toggle_extra_message {
 	color: blue;
 	display: inline;
@@ -885,15 +890,6 @@ div.message-extra {
 	padding: 4px;
 	background-color: white;
 	border: 1px solid #888;
-}
-
-.tool-info .dacura-user-message-box {
-	padding-top: 10px;
-	padding-bottom: 10px;
-	clear: both;
-	margin-right: 50px;
-	margin-left: 50px;	
-	text-align: center;
 }
 
 .tool-header span.tool-title {

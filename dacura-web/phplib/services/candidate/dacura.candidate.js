@@ -61,13 +61,8 @@ dacura.candidate.api.list = function (x){
 	xhr = {};
 	xhr.data = {};
 	if(typeof x != "undefined"){
-	
 		xhr.data.type = "updates";
 	}
-	else {
-		xhr.data.type = "candidates";		
-	}
-	xhr.data.entity_type = "candidate";
 	//xhr.url = dacura.system.serviceApiURL('ld');
 	xhr.url = dacura.candidate.apiurl;
 	return xhr;
@@ -93,7 +88,7 @@ dacura.candidate.fetchNGSkeleton = function(onwards, targets){
 
 dacura.candidate.fetch = function(id, args, onwards, from){
 	var ajs = dacura.candidate.api.view(id, args);
-	var msgs = { "busy": "Fetching entity " + id + " from Server", "fail": "Failed to retrieve entity " + id};
+	var msgs = { "busy": "Fetching candidate " + id + " from Server", "fail": "Failed to retrieve candidate " + id};
 	if(typeof from != "undefined"){
 		if(from){
 			msgs.busy += ": " + from;
@@ -101,9 +96,7 @@ dacura.candidate.fetch = function(id, args, onwards, from){
 		}	
 	}
 	ajs.handleResult = function(obj){
-		if(typeof(from) == "undefined"){//only call this on the first time it is invoked
-			dacura.candidate.showHeader(obj);
-		}
+		dacura.candidate.showHeader(obj);
 		if(typeof onwards != "undefined"){
 			onwards(obj);
 		}

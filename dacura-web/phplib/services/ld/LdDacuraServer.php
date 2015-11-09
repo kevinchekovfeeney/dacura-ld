@@ -69,13 +69,13 @@ class LdDacuraServer extends DacuraServer {
 	/*
 	 * the getEntity version returns a AR object to support direct API access
 	 */
-	function getEntity($entity_id, $fragment_id = false, $version = false, $options = array()){
+	function getEntity($entity_id, $type, $fragment_id = false, $version = false, $options = array()){
 		$action = "Fetching " . ($fragment_id ? "fragment $fragment_id from " : "");
-		$action .= "entity $entity_id". ($version ? " version $version" : "");
-		$ar = new RequestAnalysisResults($action);
-		$ent = $this->loadEntity($entity_id, $fragment_id, $version, $options);
+		$action .= "$type $entity_id". ($version ? " version $version" : "");
+		$ar = new SimpleRequestResults($action);
+		$ent = $this->loadEntity($entity_id, $type, $this->cid(), $this->did(), $fragment_id, $version, $options);
 		if(!$ent){
-			return $ar->failure($this->errcode, "Error loading entity $entity_id", $this->errmsg);
+			return $ar->failure($this->errcode, "Error loading $type $entity_id", $this->errmsg);
 		}
 		$ar->add($this->getPolicyDecision("view", get_class($ent), $ent));
 		if($ar->is_accept()){
@@ -87,8 +87,8 @@ class LdDacuraServer extends DacuraServer {
 	/*
 	 * the load Entity version returns the normal dacura error codes...
 	 */
-	function loadEntity($entity_id, $fragment_id = false, $version = false, $options = array()){
-		$ent = $this->dbman->loadEntity($entity_id, $options);
+	function loadEntity($entity_id, $type, $cid, $did, $fragment_id = false, $version = false, $options = array()){
+		$ent = $this->dbman->loadEntity($entity_id, $type, $cid, $did, $options);
 		if(!$ent){
 			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 		}
@@ -102,7 +102,7 @@ class LdDacuraServer extends DacuraServer {
 			$show_context = true;//should be in options
 			$ent->buildIndex();
 			if($this->cwurlbase){
-				$fid = $this->cwurlbase.$entity_id."/".$fragment_id;
+				$fid = $this->cwurlbase."/".$entity_id."/".$fragment_id;
 			}
 			else {
 				$fid = $fragment_id;
@@ -145,7 +145,7 @@ class LdDacuraServer extends DacuraServer {
 			$ent->version = $old['from_version'];
 			$ent->version_created = $old['modtime'];
 			if($i == 0){
-				$ent->version_replaced = 0;
+				$ent->version_replaced = $ent->modified;
 			}
 			else {
 				$ent->version_replaced = $history[$i-1]['modtime'];
@@ -195,20 +195,20 @@ class LdDacuraServer extends DacuraServer {
 		$eur = $this->dbman->loadEntityUpdateRequest($id, $options);
 		$vto = $vto ? $vto : $eur->to_version();
 		$vfrom = $vfrom ? $vfrom : $eur->from_version();
-		$orig = $this->loadEntity($eur->targetid, false, $vfrom, $options);
+		$orig = $this->loadEntity($eur->targetid, $eur->type, $eur->cid, $eur->did, false, $vfrom, $options);
 		if(!$orig){
 			return $this->failure_result("Failed to load Update $id - could not load original " .$this->errmsg, $this->errcode);
 		}
 		$eur->setOriginal($orig);
 		$changed = false;
 		if($vto > 0){
-			$changed = $this->loadEntity($eur->targetid, false, $vto, $options);
+			$changed = $this->loadEntity($eur->targetid, $eur->type, $eur->cid, $eur->did, false, $vto, $options);
 			if(!$changed){
 				return $this->failure_result("Loading of $this->entity_type update $id failed - could not load changed ".$this->errmsg, $this->errcode);
 			}
 		}
 		if(!$eur->calculate($changed)){
-			return $this->failure_result($cur->errmsg, $eur->errcode);
+			return $this->failure_result($eur->errmsg, $eur->errcode);
 		}
 		return $eur;
 	}
@@ -280,6 +280,7 @@ class LdDacuraServer extends DacuraServer {
 			$disaster = new AnalysisResults("Database Synchronisation");
 			$disaster->failure($this->dbman->errcode, "Internal Error", "Failed to create database candidate record ". $this->dbman->errmsg);
 			$ar->add($disaster);
+			//opr($ar);
 			if($ar->includesGraphChanges()){
 				$recovery = $this->deleteEntityFromGraph($nent);
 				$ar->undoReportGraphResult($recovery);
@@ -320,9 +321,9 @@ class LdDacuraServer extends DacuraServer {
 		return $obj;
 	}*/
 	
-	function updateEntity($target_id, $obj, $fragment_id, $options = array(), $test_flag = false){
+	function updateEntity($target_id, $type, $obj, $fragment_id, $options = array(), $test_flag = false){
 		$ar = new RequestAnalysisResults("Update $target_id");
-		$oent = $this->loadEntity($target_id, $fragment_id);
+		$oent = $this->loadEntity($target_id, $type, $this->cid(), $this->did(), $fragment_id);
 		if(!$oent){
 			if($this->errcode){
 				return $ar->failure($this->errcode, "Failed to load $this->entity_type $target_id", $this->errmsg);
@@ -651,7 +652,7 @@ class LdDacuraServer extends DacuraServer {
 			$quads = $nent->getPropertyAsQuads($k, $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k));
 			if($quads){
 				if($nent->isCandidate()){
-					$gobj = $this->loadEntity($k);
+					$gobj = $this->loadEntity($k, "candidate", $nent->cid, $nent->did);
 					$tests = $gobj->meta['instance_dqs'];
 					$errs = $this->graphman->create($quads, $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k), $dont_publish, $tests);
 				}
@@ -748,7 +749,7 @@ class LdDacuraServer extends DacuraServer {
 		if($uent->importsChanged()){
 			$adds = $uent->importsAdded();
 			foreach($adds as $ontid){
-				$ont = $this->loadEntity($ontid);
+				$ont = $this->loadEntity($ontid, "graph", $this->cid(), $this->did());
 				if($ont){
 					$quads = $ont->getPropertyAsQuads($ontid, $uent->targetid."_schema");
 					if($quads){
@@ -761,7 +762,7 @@ class LdDacuraServer extends DacuraServer {
 			}
 			$dels = $uent->importsDeleted();
 			foreach($dels as $ontid){
-				$ont = $this->loadEntity($ontid);
+				$ont = $this->loadEntity($ontid, "graph", $this->cid(), $this->did());
 				if($ont){
 					$quads = $ont->getPropertyAsQuads($ontid, $uent->targetid."_schema");
 					if($quads){
@@ -834,11 +835,12 @@ class LdDacuraServer extends DacuraServer {
 	
 	function sendUpdate($update, $format, $display, $version = false){
 		$flags = $this->parseDisplayFlags($display);
-		return $this->write_json_result($update->showUpdateResult($format, $flags, $display, $this), "update ".$update->id." dispatched");		
+		$ar = $update->showUpdateResult($format, $flags, $display, $this);
+		return $this->write_json_result($ar, "update ".$update->id." dispatched");		
 	}
 	
 	function isNativeFormat($format){
-		return $format == "" or in_array($format, array("json", "html", "triples", "quads"));
+		return $format == "" or in_array($format, array("json", "html", "triples", "quads", "jsonld"));
 	}
 	
 	function sendEntity($ent, $format, $display, $version){
@@ -846,7 +848,7 @@ class LdDacuraServer extends DacuraServer {
 		$opts = $this->parseDisplayFlags($display);
 		if($this->isNativeFormat($format)){
 			if(in_array('ns', $opts)) {
-				//$ent->compressNS();
+				$ent->compressNS();
 			}
 			if($format == "html"){
 				$ent->displayHTML($opts, $vstr, $this);
@@ -858,13 +860,13 @@ class LdDacuraServer extends DacuraServer {
 				$ent->displayQuads($opts, $vstr, $this);				
 			}
 			else{
-				$ent->displayJSON($opts, $vstr, $this);
+				$ent->displayJSON($opts, $vstr, $this, $format=="jsonld");
 			}
 		}
 		else {
 			$ent->displayExport($format, $opts, $vstr, $this);
 		}
-		return $this->write_json_result($ent, "Sent the candidate");
+		return $this->write_json_result($ent->forAPI(), "Sent the candidate");
 	}
 	
 	/*
@@ -890,8 +892,17 @@ class LdDacuraServer extends DacuraServer {
 		else {
 			$this->ucontext->logger->setResult(200, $ar->decision, $ar->action);
 		}
-		echo json_encode($ar);
-		return true;
+		$json = json_encode($ar);
+		if($json){
+			echo $json;
+			return true;
+		}
+		else {
+			http_response_code(500);
+			$ar->result = json_last_error() . " " . json_last_error_msg();
+			echo json_encode($ar);
+			return false;
+		}
 	}
 	
 	/*
@@ -909,7 +920,7 @@ class LdDacuraServer extends DacuraServer {
 		if(!(ctype_alnum($demand) && strlen($demand) > 1 && strlen($demand) <= 40 )){
 			return $this->failure_result("Candidate IDs must be between 2 and 40 alphanumeric characters", 400);
 		}
-		if($this->dbman->hasEntity($demand)){
+		if($this->dbman->hasEntity($demand, $type, $this->cid(), $this->did())){
 			return $this->failure_result("Candidate ID $demand exists already in the dataset", 400);
 		}
 		elseif($this->dbman->errcode){

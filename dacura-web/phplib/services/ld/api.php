@@ -4,30 +4,35 @@
  * this is just an api - it has no associated pages. 
  */
 getRoute()->get('/', 'list_entities');//list the entities of a certain type
-getRoute()->get('/update/(\w+)', 'get_update');
+getRoute()->get('/(\w+)/update/(\w+)', 'get_update');
 getRoute()->get('/(\w+)/(\w+)', 'get_entity');//with fragment id
 getRoute()->get('/(\w+)', 'get_entity');//no fragment id
-getRoute()->post('/update/(\w+)', 'update_update');
+getRoute()->post('/(\w+)/update/(\w+)', 'update_update');
 getRoute()->post('/(\w+)/(\w+)', 'update_entity');//with frag id
 getRoute()->post('/', 'create_entity');//create a new entity of a given type
 getRoute()->post('/(\w+)', 'update_entity');//no frag id
 getRoute()->delete('/(\w+)/(\w+)', 'delete_entity');//with fragment id
 getRoute()->delete('/(\w+)', 'delete_entity');//no fragment id
-getRoute()->delete('/update/(\w+)', 'delete_update');//no fragment id
+getRoute()->delete('/(\w+)/update/(\w+)', 'delete_update');//no fragment id
 
 set_time_limit (0);
 
-
 function list_entities(){
 	//probably want to do a bunch of lookups to 'get variables etc, but for now we're gonna do a quick and dirty one.
-	global $dacura_server;
+	global $dacura_server, $entity_type;
 	$dt_options = array();
-	if(isset($_GET['entity_type'])){
-		$dt_options["type"] = $_GET['entity_type'];
-		$type = $dt_options['type'];
+	if($entity_type){
+		$dt_options['type'] = $entity_type;
+		$type = $entity_type;
 	}
 	else {
 		$type = "entity";
+	}
+	if($dacura_server->cid() != "all"){
+		$dt_options['collectionid'] = $dacura_server->cid();
+	}
+	if($dacura_server->did() != "all"){
+		$dt_options['datasetid'] = $dacura_server->did();
 	}
 	$options = isset($_GET['options']) ? $_GET['options'] : false;
 	isset($_GET['draw']) && $dt_options['draw'] = $_GET['draw'];
@@ -54,17 +59,17 @@ function list_entities(){
 }
 
 function get_entity($entity_id, $fragment_id = false){
-	global $dacura_server;
+	global $dacura_server, $entity_type;
 	$options = isset($_GET['options']) ? $_GET['options'] : false;
 	$version = isset($_GET['version']) ? $_GET['version'] : false;
 	$format = isset($_GET['format']) ? $_GET['format'] : false;
 	$display = isset($_GET['display']) ? $_GET['display'] : false;
 	$dacura_server->init("get", $entity_id, $fragment_id);
-	$ar = $dacura_server->getEntity($entity_id, $fragment_id, $version, $options);
+	$ar = $dacura_server->getEntity($entity_id, $entity_type,$fragment_id, $version, $options);
 	return $dacura_server->sendRetrievedEntity($ar, $format, $display, $options, $version);
 }
 
-function get_update($update_id){
+function get_update($entity_id, $update_id){
 	global $dacura_server;
 	$options = isset($_GET['options']) ? $_GET['options'] : array();
 	$version = isset($_GET['version']) ? $_GET['version'] : false;
@@ -138,7 +143,7 @@ function update_entity($target_id, $fragment_id = false){
 	return $dacura_server->writeDecision($ar);
 }
 
-function update_update($upd_id){
+function update_update($entity_id, $upd_id){
 	global $dacura_server;
 	$json = file_get_contents('php://input');
 	$ar = new AnalysisResults("Update Update");
@@ -170,7 +175,7 @@ function delete_entity($entid, $fragment_id = false){
 	return $dacura_server->write_decision($ar);
 }
 
-function delete_update($updid){
+function delete_update($entity_id, $updid){
 	$dacura_server->init("delete update $updid");
 	$ar = new AnalysisResults("Delete update $updid");
 	$options = (isset($_GET['options'])) ? $_GET['options'] : array();

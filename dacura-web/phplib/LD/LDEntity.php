@@ -8,7 +8,6 @@ include_once("LDUtils.php");
  */
 class LDEntity extends DacuraObject {
 	var $id = false;
-	var $implicit_add_to_valuelist = false;//should we allow {p: scalar} to update {p: [scalar, array]} or overwrite it....
 	var $index = false; //obj_id => &$obj
 	var $bad_links = array(); //bad links in various categories in the document
 	var $idmap = array(); //blank nodes that have been mapped to new names in the document
@@ -27,8 +26,9 @@ class LDEntity extends DacuraObject {
 	var $nsres;
 	var $ldprops; //associative array in Dacura LD format
 	var $meta;
+	var $logger;//shortcut to logger object
 	
-	function __construct($id, $cwbase = false){
+	function __construct($id, $cwbase = false, $logger = false){
 		$this->id = $id;
 		$this->created = time();
 		$this->modified = time();
@@ -38,6 +38,7 @@ class LDEntity extends DacuraObject {
 		else {
 			$this->cwurl = false;
 		}
+		$this->logger = $logger;
 	}
 	
 	function loadFromDBRow($row, $latest = true){
@@ -356,6 +357,7 @@ class LDEntity extends DacuraObject {
 				$graph = new EasyRdf_Graph($gurl);
 				$graph->genid = $this->id;
 				$graph->parseFile($arg, $format);
+				$this->logger && $this->logger->timeEvent("Load Graph", "debug");
 			}
 			if($graph->isEmpty()){
 				return $this->failure_result("Graph loaded from $type was empty.", 500);
@@ -504,7 +506,7 @@ class LDEntity extends DacuraObject {
 	}
 	
 	function displayTriples($flags, $vstr, $srvr){
-		$this->display = $this->typedTriples();
+		$this->display = $this->typedTriples($flags, $vstr);
 	}
 	
 	function displayQuads($flags, $vstr, $srvr){
@@ -515,8 +517,17 @@ class LDEntity extends DacuraObject {
 		$this->display = $this->getPropertiesAsHTMLTable($vstr, $this->ldprops);//"<h2>need to write display HTML</h2>";
 	}
 	
-	function displayJSON($flags, $vstr, $srvr){
-		$this->display = $this->ldprops;
+	function displayJSON($flags, $vstr, $srvr, $jsonld = false){
+		$base = $this->ldprops;
+		if($jsonld){
+			$base = toJSONLD($base, $this->cwurl);			
+		}
+		if(in_array("links", $flags)){
+			$this->display = $this->linkify($vstr, $base);				
+		}
+		else {
+			$this->display = $base;				
+		}
 	}
 	
 	function displayExport($format, $flags, $vstr, $srvr){
@@ -535,6 +546,15 @@ class LDEntity extends DacuraObject {
 				$this->display = $exported;
 			}
 		}
+	}
+	
+	function forAPI(){
+		$other = clone $this;
+		unset($other->index);
+		unset($other->nsres);
+		unset($other->idmap);
+		unset($other->bad_links);
+		return $other;
 	}
 	
 	function decorated(){
@@ -607,7 +627,7 @@ class LDEntity extends DacuraObject {
 		elseif(isNamespacedURL($ln)){
 			if($this->isDocumentLocalLink($ln)){
 				$cls .= " document_local_link";
-				$expanded = $this->schema->expand($ln);
+				$expanded = $this->nsres->expand($ln);
 				if(!$expanded){
 					$lh = "<span class='$cls unknown-namespace' title='warning: unknown namespace'>$ln</span>";
 				}
@@ -616,7 +636,7 @@ class LDEntity extends DacuraObject {
 				}
 			}
 			else {
-				$expanded = $this->schema->expand($ln);
+				$expanded = $this->nsres->expand($ln);
 				if(!$expanded){
 					$lh = "<span class='$cls unknown-namespace'>$ln</span>";
 				}

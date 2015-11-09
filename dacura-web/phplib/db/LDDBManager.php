@@ -55,7 +55,7 @@ class LDDBManager extends UsersDBManager {
 				return $rows;
 			}
 			else {
-				return $this->failure_result("No entityis found in system", 404);
+				return $this->failure_result("No entities found in system", 404);
 			}
 		}
 		catch(PDOException $e){
@@ -81,17 +81,22 @@ class LDDBManager extends UsersDBManager {
 		if(isset($filter['status'])){
 			$wheres['status'] = $filter['status'];
 		}
-		$sql = "SELECT eurid, targetid, collectionid, datasetid, entity_update_requests.status, from_version, to_version,
-				entity_update_requests.createtime, entity_update_requests.modtime
-				FROM entity_update_requests, ld_entities WHERE entity_update_requests.targetid = ld_entities.id";
+		$sql = "SELECT eurid, targetid, type, collectionid, datasetid, status, from_version, to_version,
+				createtime, modtime	FROM entity_update_requests";
 		if(count($wheres) > 0){
+			$first = true;
 			foreach($wheres as $p => $v){
-				$sql .= " AND ";
+				if($first){
+					$sql .= " WHERE ";
+					$first = false;
+				}
+				else {
+					$sql .= " AND ";						
+				}
 				$sql .= "$p=?";
 				$params[] = $v;
 			}
-		}
-		
+		}	
 		try {
 			$stmt = $this->link->prepare($sql);
 			$stmt->execute($params);
@@ -108,10 +113,10 @@ class LDDBManager extends UsersDBManager {
 		}
 	}
 	
-	function loadEntity($entid, $options){
+	function loadEntity($entid, $type, $cid, $did, $options){
 		try {
-			$stmt = $this->link->prepare("SELECT collectionid, datasetid, version, type, contents, meta, status, createtime, modtime FROM ld_entities where id=?");
-			$stmt->execute(array($entid));
+			$stmt = $this->link->prepare("SELECT collectionid, datasetid, version, type, contents, meta, status, createtime, modtime FROM ld_entities where id=? and collectionid=? and datasetid=? and type=?");
+			$stmt->execute(array($entid, $cid, $did, $type));
 			$row = $stmt->fetch(PDO::FETCH_ASSOC);
 			if($row){
 				$ctype = ucfirst($row['type']);
@@ -119,7 +124,7 @@ class LDDBManager extends UsersDBManager {
 				$ent->loadFromDBRow($row);
 			}
 			else {
-				return $this->failure_result("No entity with id $entid in system", 404);
+				return $this->failure_result("No $type with id $entid in $cid/$did", 404);
 			}
 		}
 		catch(PDOException $e){
@@ -143,7 +148,7 @@ class LDDBManager extends UsersDBManager {
 	
 	function loadEntityUpdateRequest($id, $options){
 		try {
-			$stmt = $this->link->prepare("SELECT ld_entities.type, eurid, targetid, from_version, to_version, forward, backward, entity_update_requests.meta, entity_update_requests.status, entity_update_requests.createtime, entity_update_requests.modtime FROM entity_update_requests, ld_entities where targetid = ld_entities.id AND eurid=?");
+			$stmt = $this->link->prepare("SELECT type, eurid, targetid, from_version, to_version, forward, backward, meta, collectionid, datasetid, status, createtime, modtime FROM entity_update_requests where eurid=?");
 			$stmt->execute(array($id));
 			$row = $stmt->fetch(PDO::FETCH_ASSOC);
 			if($row){
@@ -168,18 +173,28 @@ class LDDBManager extends UsersDBManager {
 		}
 	}
 	
+	/*
+	 * load Entity
+	 * eur->load from db row
+	 */
+	
+	
 	function createEntity($ent, $type){
 		try {
 			$stmt = $this->link->prepare("INSERT INTO ld_entities
 				(id, collectionid, datasetid, type, version, contents, meta, status, createtime, modtime)
 				VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+			$ld = json_encode($ent->ldprops);
+			if(!$ld){
+				return $this->failure_result("JSON encoding error: ".json_last_error() . " " . json_last_error_msg(), 500);
+			}
 			$x = array(
 					$ent->id,
 					$ent->cid,
 					$ent->did,
 					$type,
 					$ent->version(),
-					json_encode($ent->ldprops),
+					$ld,
 					json_encode($ent->meta),
 					$ent->get_status(),
 					time(),
@@ -242,7 +257,7 @@ class LDDBManager extends UsersDBManager {
 	function insertEntityUpdate($uent){
 		try {
 			$stmt = $this->link->prepare("INSERT INTO entity_update_requests
-						(targetid, from_version, to_version, forward, backward, meta, createtime, modtime, status)
+						(targetid, from_version, to_version, forward, backward, meta, createtime, modtime, status, type, collectionid, datasetid)
 						VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			$res = $stmt->execute(array(
 					$uent->targetid,
@@ -253,7 +268,10 @@ class LDDBManager extends UsersDBManager {
 					$uent->get_meta_json(),
 					$uent->created,
 					$uent->modified,
-					$uent->get_status()
+					$uent->get_status(),
+					$uent->type,
+					$uent->cid,
+					$uent->did
 			));
 			$id = $this->link->lastInsertId();
 			return $id;
@@ -349,10 +367,10 @@ class LDDBManager extends UsersDBManager {
 		}	
 	}
 	
-	function hasEntity($id){
+	function hasEntity($id, $type, $cid, $did){
 		try {
-			$stmt = $this->link->prepare("SELECT id FROM ld_entities where id=?");
-			$stmt->execute(array($id));
+			$stmt = $this->link->prepare("SELECT id FROM ld_entities where id=? and type=? and collectionid=? and datasetid=?");
+			$stmt->execute(array($id, $type, $cid, $did));
 			if($stmt->rowCount()) {
 				return true;
 			}		

@@ -53,9 +53,6 @@ dacura.ld.api.list = function (type, x){
 	if(typeof x != "undefined"){
 		xhr.data.type = "updates";
 	}
-	else {
-		xhr.data.type = "entities";		
-	}
 	xhr.url = dacura.ld.apiurl;
 	return xhr;
 }

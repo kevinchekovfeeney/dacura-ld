@@ -1,6 +1,9 @@
 <?php
 class EntityUpdate extends DacuraObject{
 	var $id;
+	var $cid;
+	var $did;
+	var $type;
 	var $targetid;
 	var $status;
 	var $created;
@@ -25,6 +28,15 @@ class EntityUpdate extends DacuraObject{
 		$this->cwurl = $cwurl;
 	}
 
+	function __clone(){
+		$this->original = deepArrCopy($this->original);
+		$this->changed = deepArrCopy($this->changed);
+		$this->delta = deepArrCopy($this->delta);
+		$this->meta = deepArrCopy($this->meta);
+		$this->forward = deepArrCopy($this->forward);
+		$this->backward = deepArrCopy($this->backward);
+	}
+	
 	function setNamespaces($nsres){
 		$this->nsres = $nsres;
 	}
@@ -32,6 +44,9 @@ class EntityUpdate extends DacuraObject{
 	function loadFromDBRow($row){
 		$this->targetid = $row['targetid'];
 		$this->status = $row['status'];
+		$this->type = $row['type'];
+		$this->cid = $row['collectionid'];
+		$this->did = $row['datasetid'];
 		$this->created = $row['createtime'];
 		$this->modified = $row['modtime'];
 		$this->from_version = $row['from_version'];
@@ -48,6 +63,7 @@ class EntityUpdate extends DacuraObject{
 		$results = array("meta" => array(), "add" => array(), "del" => array());
 		if(!$other){
 			$results['meta']['id'] = $this->id;
+			$results['meta']['type'] = $this->type;
 			$results['meta']['targetid'] = $this->targetid;
 			$results['meta']['status'] = $this->status;
 			$results['meta']['from_version'] = $this->from_version;
@@ -57,6 +73,7 @@ class EntityUpdate extends DacuraObject{
 		}
 		else {
 			if($this->id != $other->id) $results['meta']['id'] = array($this->id, $other->id);
+			if($this->type != $other->type ) $results['meta']['type'] = array($this->type, $other->type);
 			if($this->targetid != $other->targetid ) $results['meta']['targetid'] = array($this->targetid, $other->targetid);
 			if($this->status != $other->status) $results['meta']['status'] = array($this->status, $other->status);
 			if($this->from_version != $other->from_version) $results['meta']['from_version'] = array($this->from_version, $other->from_version);
@@ -166,6 +183,8 @@ class EntityUpdate extends DacuraObject{
 		$this->created = time();
 		$this->modified = time();
 		$this->from_version = $this->original->version();
+		$this->cid = $this->original->cid;
+		$this->did = $this->original->did;
 	}
 
 	/*
@@ -250,6 +269,8 @@ class EntityUpdate extends DacuraObject{
 		if($validate && $this->FBLoaded()){
 			$fdelta = compareLD($this->targetid, $this->delta->forward, $this->forward, $this->cwurl);
 			if($fdelta->containsChanges()){
+				//opr($fdelta);
+				//opr($this);
 				return $this->failure_result("Update $this->id to $this->targetid: Mismatch between calculated changes and stored forward transition.", 400);
 			}
 			$bdelta = compareLD($this->targetid, $this->delta->backward, $this->backward, $this->cwurl);
@@ -649,19 +670,11 @@ class EntityUpdate extends DacuraObject{
 	}
 
 	function getDisplayFormat(){
-		$result = $this->changed;
-		$result->original = $this->original;
-		$delta = $this->delta->getDisplayFormat();
-		$delta->status = $this->status;
-		$delta->created = $this->created;
-		$delta->modified = $this->modified;
-		$delta->forward = $this->forward;
-		$delta->backward = $this->backward;
-		$delta->from_version = $this->from_version;
-		$delta->to_version = $this->to_version;
-		$delta->ldprops = $this->forward;
-		$result->delta = $delta;
-		return $result;
+		//$result = $this->changed;
+		//$result->original = $this->original;
+		$other = clone $this;
+		unset($other->nsres);
+		return $other;
 	}
 
 	/*

@@ -8,7 +8,9 @@ class CandidateDacuraServer extends LdDacuraServer {
 	function __construct($service){
 		parent::__construct($service);
 		$this->cwurlbase = $service->my_url();
-		$this->schema = $this->loadSchemaFromContext();
+		if($this->cid() != "all"){
+			$this->schema = $this->loadSchemaFromContext();
+		}
 	}
 	
 	function getNGSkeleton(){
@@ -32,8 +34,8 @@ class CandidateDacuraServer extends LdDacuraServer {
 		return $obj;
 	}
 	
-	function loadEntity($entity_id, $fragment_id = false, $version = false, $options = array()){
-		$ent = parent::loadEntity($entity_id, $fragment_id, $version, $options);
+	function loadEntity($entity_id, $type, $cid, $did, $fragment_id = false, $version = false, $options = array()){
+		$ent = parent::loadEntity($entity_id, $type, $cid, $did, $fragment_id, $version, $options);
 		if($ent){
 			$ent->cwurl = $this->schema->instance_prefix."/".$ent->id;
 		}

@@ -26,7 +26,7 @@
 				<tr>
 					<th>ID</th>
 					<th>Type</th>
-					<th>Collection ID</th>
+					<th>Collection</th>
 					<th>Dataset ID</th>
 					<th>Status</th>
 					<th>Version</th>
@@ -49,9 +49,10 @@
 				<thead>
 				<tr>
 					<th>ID</th>
-					<th>Candidate</th>
-					<th>Collection ID</th>
-					<th>Dataset ID</th>
+					<th>Target</th>
+					<th>Type</th>
+					<th>Collection</th>
+					<th>Dataset</th>
 					<th>Status</th>
 					<th>From Version</th>
 					<th>To Version</th>
@@ -70,7 +71,7 @@
 
 <script>
 
-dacura.ld.getCorrectedTableInitStrings = function(cands){
+dacura.ld.getTableInitStrings = function(cands){
 	if(typeof cands == "undefined"){
 		var init = <?=$dacura_server->getServiceSetting('ld_datatable_init_string', "{}");?>;
 	} else {
@@ -79,17 +80,21 @@ dacura.ld.getCorrectedTableInitStrings = function(cands){
 	return init;
 }
 
+var entity_urls = [];
+var update_urls = [];
+
 dacura.ld.drawEntityListTable = function(data){		
 	if(typeof data == "undefined"){
 		$('#ld-holder').show();	
-		$('#ld_table').dataTable(dacura.ld.getCorrectedTableInitStrings()).show(); 
+		$('#ld_table').dataTable(dacura.ld.getTableInitStrings()).show(); 
 		dacura.system.writeErrorMessage("No Entities Found", '.dataTables_empty');		
 	}
 	else {
 		$('#ld_table tbody').html("");
+		entity_urls = [];
 		for (var i in data) {
 			var obj = data[i];
-			$('#ld_table tbody').append("<tr id='cand" + obj.id + "'>" + 
+			$('#ld_table tbody').append("<tr class='entityrow' id='ent_" + entity_urls.length + "'>" + 
 			"<td>" + obj.id + "</td>" + 
 			"<td>" + obj.type + "</td>" + 
 			"<td>" + obj.collectionid + "</td>" + 
@@ -100,33 +105,45 @@ dacura.ld.drawEntityListTable = function(data){
 			"<td>" + obj.createtime + "</td>" + 
 			"<td>" + timeConverter(obj.modtime) + "</td>" + 
 			"<td>" + obj.modtime + "</td>" + "</tr>");
-			$('#cand'+obj.id).hover(function(){
-				$(this).addClass('userhover');
-			}, function() {
-			    $(this).removeClass('userhover');
-			});
-			$('#cand'+obj.id).click( function (event){
-				window.location.href = dacura.system.pageURL() + "/" + this.id.substr(4);
-		    }); 
+			if(obj.type == "candidate"){
+				s = obj.type;
+			}	
+			else if(obj.type == "graph" || obj.type == "ontology"){
+				s = "schema";
+			}
+			else {
+				s = "ld";
+			}
+			entity_urls[entity_urls.length] = dacura.system.pageURL(obj.collectionid, obj.datasetid, s) + "/" + obj.id;
 		}
+		$('.entityrow').hover(function(){
+			$(this).addClass('userhover');
+		}, function() {
+		    $(this).removeClass('userhover');
+		});
+		$('.entityrow').click( function (event){
+			window.location.href = entity_urls[this.id.substr(4)]
+	    }); 		
 		$('#ld-holder').show();	
-		$('#ld_table').dataTable(dacura.ld.getCorrectedTableInitStrings());
+		$('#ld_table').dataTable(dacura.ld.getTableInitStrings());
 	}
 }
 
 dacura.ld.drawUpdateListTable = function(data){		
 	if(typeof data == "undefined"){
 		$('#update-holder').show();	
-		$('#update_table').dataTable(dacura.ld.getCorrectedTableInitStrings(true)); 
+		$('#update_table').dataTable(dacura.ld.getTableInitStrings(true)); 
 		dacura.system.writeErrorMessage("No Updates Found", '.dataTables_empty');		
 	}
 	else {
 		$('#update_table tbody').html("");
+		update_urls = [];
 		for (var i in data) {
 			var obj = data[i];
-			$('#update_table tbody').append("<tr id='update" + obj.eurid + "'>" + 
+			$('#update_table tbody').append("<tr class='updaterow' id='update_" + update_urls.length + "'>" + 
 			"<td>" + obj.eurid + "</td>" + 
 			"<td>" + obj.targetid + "</td>" + 
+			"<td>" + obj.type + "</td>" + 
 			"<td>" + obj.collectionid + "</td>" + 
 			"<td>" + obj.datasetid + "</td>" + 
 			"<td>" + obj.status + "</td>" + 
@@ -136,17 +153,27 @@ dacura.ld.drawUpdateListTable = function(data){
 			"<td>" + obj.createtime + "</td>" + 
 			"<td>" + timeConverter(obj.modtime) + "</td>" + 
 			"<td>" + obj.modtime + "</td>" + "</tr>");
-			$('#update'+obj.eurid).hover(function(){
-				$(this).addClass('userhover');
-			}, function() {
-			    $(this).removeClass('userhover');
-			});
-			$('#update'+obj.eurid).click( function (event){
-				window.location.href = dacura.system.pageURL() + "/update/" + this.id.substr(6);
-		    }); 
-		}	
+			if(obj.type == "candidate"){
+				s = obj.type;
+			}	
+			else if(obj.type == "graph" || obj.type == "ontology"){
+				s = "schema";
+			}
+			else {
+				s = "ld";
+			}
+			update_urls[update_urls.length] = dacura.system.pageURL(obj.collectionid, obj.datasetid, s) + "/" + obj.targetid + "/update/" + obj.eurid;			
+		}
+		$('.updaterow').hover(function(){
+			$(this).addClass('userhover');
+		}, function() {
+		    $(this).removeClass('userhover');
+		});
+		$('.updaterow').click( function (event){
+			window.location.href = update_urls[this.id.substr(7)]
+	    }); 
 		$('#update-holder').show();	
-		$('#update_table').dataTable(dacura.ld.getCorrectedTableInitStrings(true)).show();
+		$('#update_table').dataTable(dacura.ld.getTableInitStrings(true)).show();
 	}
 }
 

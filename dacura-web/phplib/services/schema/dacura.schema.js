@@ -4,13 +4,6 @@ dacura.schema.api = {};
 
 dacura.schema.api.get = function(){
 	xhr = {};
-	if(dacura.system.pagecontext.collection_id == "all"){
-		xhr.data = {"entity_type": "ontology"};
-	}
-	else {
-		xhr.data = {"entity_type": "graph"};	
-	}
-	//xhr.url = dacura.system.serviceApiURL('ld');
 	xhr.url = dacura.schema.apiurl;
 	return xhr;
 }
@@ -75,17 +68,18 @@ dacura.schema.api.update_graph = function(id, uobj, test){
 };
 
 
-dacura.schema.api.import_ontology = function(format, entid, payload){
+dacura.schema.api.import_ontology = function(format, entid, title, url, payload){
 	xhr = {};
-	xhr.url = dacura.schema.apiurl + "/import?id=" + entid;
+	xhr.url = dacura.schema.apiurl + "/import";
 	xhr.type = "POST";
 	if(format == 'upload'){
+		xhr.url += "?id=" + encodeURIComponent(entid) + "&title=" + encodeURIComponent(title) + "&url=" + encodeURIComponent(url);
 		xhr.data = payload;
 		xhr.processData= false;
 	    xhr.contentType = payload.type
 	}
 	else {
-		xhr.data ={ "format": format, "id": entid, "payload": payload};		
+		xhr.data ={ "format": format, "id": entid, "payload": payload, "title" : title, "url": url};		
 	}
 	return xhr;	
 }
@@ -145,7 +139,7 @@ dacura.schema.fetchGraph = function(id, args, onwards, from){
 			onwards(obj);
 		}
 	}
-	ajs.handleJSONError = dacura.editor.drawUpdateResult;
+	//ajs.handleJSONError = dacura.editor.drawUpdateResult;
 	dacura.system.invoke(ajs, msgs);	
 }
 
@@ -165,9 +159,24 @@ dacura.schema.fetchOntology = function(id, args, onwards, from){
 			onwards(obj);
 		}
 	}
-	ajs.handleJSONError = dacura.editor.drawUpdateResult;
 	dacura.system.invoke(ajs, msgs);
 }
+
+dacura.schema.drawVersionHeader = function(data){
+	$('.version-title').html("version " + data.version);
+	createtxt = "created " + timeConverter(data.version_created);
+	$('.version-created').html(	createtxt);
+	if(data.version_replaced > 0){	
+		repltxt = "replaced " + timeConverter(data.version_replaced); 	
+		$('.version-replaced').html(repltxt);
+	}
+	else {
+		$('.version-replaced').html("");	
+	}
+	$('#version-header').show();
+}
+
+
 
 //signature of calls produced by the editor
 dacura.schema.updateOntology = function(id, uobj, onwards, type, test){
@@ -234,9 +243,13 @@ dacura.schema.updateSchema = function(onwards){
 	dacura.system.invoke(ajs, msgs);
 }
 
-dacura.schema.importOntology = function(format, dqs, payload){
-	var ajs = dacura.schema.api.import_ontology(format, dqs, payload);
+dacura.schema.importOntology = function(format, entid, enttitle, enturl, payload){
+	var ajs = dacura.schema.api.import_ontology(format, entid, enttitle, enturl, payload);
 	var msgs = { "busy": "Importing new ontology.", "fail": "Failed to import Ontology", "success": "Ontology successfully imported"};
+	ajs.handleResult = function(obj){
+		dacura.system.showSuccessResult();
+		window.location.href = dacura.system.pageURL() + "/" + obj.result.id;
+	}	
 	dacura.system.invoke(ajs, msgs);
 };
 

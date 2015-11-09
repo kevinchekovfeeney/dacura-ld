@@ -310,6 +310,34 @@ function exportEasyRDFPHP($id, $ldprops){
 	return $exported;
 }
 
+function toJSONLD($props, $cwurl){
+	$nprops = array();
+	foreach($props as $p => $v){
+		$pv = new LDPropertyValue($v, $cwurl);
+		if($pv->embedded()){
+			$nprops[$p] = toJSONLD($props[$p], $cwurl);
+		}
+		elseif($pv->objectlist()){
+			$nprops[$p] = array();
+			foreach($v as $obj){
+				$nprops[$p][] = toJSONLD($obj, $cwurl);
+			}
+		}
+		elseif($pv->embeddedlist()){
+			$nprops[$p] = array();
+			foreach($v as $id => $obj){
+				$nobj = toJSONLD($obj, $cwurl);
+				$nobj["@id"] = $id;
+				$nprops[$p][] = $nobj;
+			}
+		}
+		else {
+			$nprops[$p] = $v;
+		}
+	}
+	return $nprops;
+}
+
 /*
  * Generate an ID for a new LD fragment
  * We give the core dacura structures their own non randomly generated ids

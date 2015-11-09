@@ -8,9 +8,6 @@ require_once("LDEntity.php");
 
 class Candidate extends LDEntity {
 	//maps to candidates db structure
-	var $type;
-	var $type_version;
-	var $replaced; //when this version was replaced
 
 	/*
 	 * Called to hide whatever internal parts of the object we do not wish to send as json through the api
@@ -18,8 +15,6 @@ class Candidate extends LDEntity {
 	function getDisplayFormat() {
 		$other = clone($this);
 		unset($other->index);
-		unset($other->dacura_props);
-		unset($other->implicit_add_to_valuelist);
 		unset($other->errmsg);
 		$other->label = $other->getLabel() ? $other->getLabel() : $other->id;
 		return $other;

@@ -1,6 +1,9 @@
 <?php
 getRoute()->get('/ngskeleton', 'get_ngskeleton');
 
+$entity_type = "candidate";
+
+
 function get_ngskeleton(){
 	global $dacura_server;
 	$dacura_server->init("getngskeleton");

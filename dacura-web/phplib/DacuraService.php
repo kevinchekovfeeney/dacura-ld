@@ -170,12 +170,15 @@ class DacuraService extends DacuraObject {
 			$params['css_class'] = $option["css_class"];
 		}
 		$params['init-msg'] = isset($option['msg']) ? $option['msg'] : "";
+		$tl = isset($option['topbreadcrumb']) ? $option['topbreadcrumb'] : false;
+		$tx = isset($option['collectionbreadcrumb']) ? $option['collectionbreadcrumb'] : false;
 		$params['close-msg'] = isset($option['close-tool-msg']) ? $option['close-tool-msg'] : "Close the tool and return to the main menu";
 		if(isset($option['breadcrumbs'])){
-			$params['breadcrumbs'] = '<div class="pcbreadcrumbs">'.$this->getBreadCrumbsHTML($option['breadcrumbs'][0], $option['breadcrumbs'][1])."</div>";			
+			$params['breadcrumbs'] = $this->getBreadCrumbsHTML($option['breadcrumbs'][0], $option['breadcrumbs'][1], $tl, $tx);			
 		}
 		$service = &$this;
 		global $dacura_server;
+		$params['close-link'] = $this->get_cds_url("", $this->collection_id, $this->dataset_id);
 		include_once("phplib/snippets/toolheader.php");
 	}
 
@@ -292,21 +295,35 @@ class DacuraService extends DacuraObject {
 		}
 	}
 	
-	function get_service_breadcrumbs($top_level = "All Collections"){
-		$url = $this->settings['install_url'];
+	function get_service_breadcrumbs($top_level = "", $collection = ""){
 		$path = array();
-		$path[] = array("url" => $this->settings['install_url'].$this->servicename, "title" => $top_level);
-		if($this->getCollectionID() && $this->getCollectionID() != "all"){
-			$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/".$this->servicename, "title" => $this->getCollectionID());
-			if($this->getDatasetID() && $this->getDatasetID() != "all"){
-				$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/". $this->getDatasetID()."/".$this->servicename, "title" => $this->getDatasetID());
+		if($top_level){
+			$url = $this->settings['install_url'];
+			$path = array();
+			$path[] = array("url" => $this->settings['install_url'].$this->servicename, "title" => $top_level);
+			if($this->getCollectionID() && $this->getCollectionID() != "all"){
+				$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/".$this->servicename, "title" => $this->getCollectionID());
+				if($this->getDatasetID() && $this->getDatasetID() != "all"){
+					$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/". $this->getDatasetID()."/".$this->servicename, "title" => $this->getDatasetID());
+				}
+			}
+		}
+		else {
+			if($this->getCollectionID() && $this->getCollectionID() != "all"){
+				if($this->getDatasetID() && $this->getDatasetID() != "all"){
+					$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/".$this->servicename, "title" => $this->getCollectionID());
+					$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/". $this->getDatasetID()."/".$this->servicename, "title" => $this->getDatasetID(). " " . $collection);
+				}
+				else {
+					$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/".$this->servicename, "title" => $this->getCollectionID()." " . $collection);
+				}
 			}
 		}
 		return $path;
 	}
 	
-	function getBreadCrumbsHTML($x = array(), $append = array()){
-		$paths = $this->get_service_breadcrumbs();
+	function getBreadCrumbsHTML($x = array(), $append = array(), $top_level = "", $collection = ""){
+		$paths = $this->get_service_breadcrumbs($top_level, $collection);
 		$html = "<ul class='service-breadcrumbs'>";
 		$z = 20;
 		foreach($paths as $i => $path){
@@ -334,7 +351,7 @@ class DacuraService extends DacuraObject {
 	function get_cds_url($fname, $col_id = false, $ds_id = false){
 		$col_bit = ($col_id ? $col_id : $this->collection_id)."/";
 		$ds_bit = ($ds_id ? $ds_id : $this->dataset_id)."/";
-		return $this->settings['collections_url'].$col_bit.$ds_bit.$fname;
+		return $this->settings['install_url'].$col_bit.$ds_bit.$fname;
 	}
 	
 	//url associated with a file in the local service (http)

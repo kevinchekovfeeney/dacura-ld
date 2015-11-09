@@ -46,7 +46,7 @@ $settings = array(
 		]						
 	}',	
 	"ld_datatable_init_string" => '{
-		"order": [7, "desc"],
+		"order": [8, "desc"],
 		"info": true,
 		"jQueryUI": true,
 		"scrollX": true,
@@ -59,15 +59,15 @@ $settings = array(
 			null,
 			null,
 			null,
-			{"iDataSort": 6},
+			{"iDataSort": 7},
           	{"bVisible": false},
-          	{"iDataSort": 8},
+          	{"iDataSort": 9},
           	{"bVisible": false}
     	]
 	}',
 		
 	"updates_datatable_init_string" => '{
-		"order": [7, "desc"],
+		"order": [10, "desc"],
 		"info": true,
 		"jQueryUI": true,
 		 "scrollX": true,
@@ -77,13 +77,14 @@ $settings = array(
           		null,
 				null,
 			 	null,
+			 	null,
 				null,
 				null,
 				null,
 				null,
-				{"iDataSort": 7},
+				{"iDataSort": 9},
                 {"bVisible": false},
-                {"iDataSort": 9},
+                {"iDataSort": 11},
                 {"bVisible": false}
          ]
 

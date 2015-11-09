@@ -1,11 +1,7 @@
 <?php
-class RequestAnalysisResults extends AnalysisResults {
-	var $candidate_graph_update;
-	var $report_graph_update;
-	var $update_graph_update;
-	var $sub_analyses = array();//only for testing...
-	var $result;//candidate object / update request
 
+class SimpleRequestResults extends AnalysisResults {
+	var $result;//candidate object / update request
 	function accept($res = false){
 		if($res){
 			$this->set_result($res);
@@ -13,6 +9,21 @@ class RequestAnalysisResults extends AnalysisResults {
 		$this->decision = "accept";
 		return $this;
 	}
+	
+	function set_result($obj){
+		$this->result = $obj;
+		return $this;
+	}
+	
+}
+
+class RequestAnalysisResults extends SimpleRequestResults {
+	var $candidate_graph_update;
+	var $report_graph_update;
+	var $update_graph_update;
+	var $sub_analyses = array();//only for testing...
+	var $result;//candidate object / update request
+
 
 	function add($other, $chain = true){
 		$this->sub_analyses[] = $other;
@@ -80,11 +91,6 @@ class RequestAnalysisResults extends AnalysisResults {
 		if($meta){
 			$this->candidate_graph_update->setMeta($meta);
 		}
-	}
-
-	function set_result($obj){
-		$this->result = $obj;
-		return $this;
 	}
 
 	function includesGraphChanges(){

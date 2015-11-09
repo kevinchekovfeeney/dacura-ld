@@ -80,11 +80,14 @@ div.all-constraints {
 	padding: 2px 0;
   }
   
-  input#url-input {
+  input#url-input, 
+  input#title-input {
   	width: 400px;
   	font-size: 15px;
   	padding: 2px 4px;
   }
+  
+  
   
   div.input-text-title {
   	padding-top: 10px;
@@ -97,7 +100,7 @@ div.all-constraints {
   	margin-top: 20px;
   }
   
-  div.input-text textarea {
+  #tximp {
   	width: 100%;
   	height: 200px;
   }

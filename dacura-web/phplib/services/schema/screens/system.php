@@ -32,7 +32,8 @@
 					<thead><tr><th class="left"></th><th class="right"></th></tr></thead>
 					<tbody>
 						<tr class='id'><th id='entid'>ID</th><td id='id-input-cell'><input type="text" id='id-input'> (leave blank for auto-generated id)</td></tr>
-						<tr class='urlmode'><th>URL</th><td><input type="text" id='url-input'></td></tr>
+						<tr class='title'><th id='entid'>Title</th><td id='id-input-cell'><input type="text" id='title-input'></td></tr>
+						<tr><th>URL</th><td><input type="text" id='url-input'></td></tr>
 						<tr class='uploadmode'><th>Choose a file to upload</th><td><input type="file" name='fileup' id='file-input'></td></tr>
 						<tr class='textmode'><td colspan=2><div>Paste the ontology into the text box below</div><textarea id='tximp'></textarea></td></tr>
 					</tbody>
@@ -116,8 +117,8 @@ function drawOntologies(onts){
 				var url = getMetaProperty(onts[key]["meta"], "url", "unknown");
 				var title = getMetaProperty(onts[key]["meta"], "title", "none");
 				var shorthand = getMetaProperty(onts[key]["meta"], "shorthand", "none");
-			 	$('#ontology-table-holder .ontology_table tbody').append("<tr class='ontology-list' id='ontology_" + ontids.length + "'><td class='ontology_" + ontids.length + "'>" + onts[key]['id'] + "</td><td>" + 
-				  	url + "</td><td class='ontology_" + ontids.length + "'>" + title +
+			 	$('#ontology-table-holder .ontology_table tbody').append("<tr class='ontology-list' id='ontology_" + ontids.length + "'><td class='ontology_" + ontids.length + "'>" + 
+					 	onts[key]['id'] + "</td><td class='ontology_" + ontids.length + "'>" + url + "</td><td class='ontology_" + ontids.length + "'>" + title +
 				  	"</td><td class='ontology_" + ontids.length + "'>" + onts[key].status + "</td><td class='ontology_" + ontids.length + "'>" + onts[key]["version"] + "</td><td>" + 
 				  	"<input type='checkbox' + id='dqsontology_" + ontids.length + "'" + "></td></tr>");
 			  	$('.ontology_' + ontids.length).click( function (event){
@@ -171,16 +172,15 @@ function initDecorations(){
 		var payload = false;
 		if(dacura.schema.importFormat == "text"){
 			payload = $('#tximp').val();
-			alert(payload);
+			
 		}
-		else if(dacura.schema.importFormat == "url"){
-			payload = $('#url-input').val();
-		}
-		else {
+		else if(dacura.schema.importFormat != "url"){
 			payload = document.getElementById('file-input').files[0];
 		}
 		var entid =  $('#id-input').val();
-		dacura.schema.importOntology(dacura.schema.importFormat, entid, payload);
+		var enttitle = $('#title-input').val();
+		var enturl = $('#url-input').val();
+		dacura.schema.importOntology(dacura.schema.importFormat, entid, enttitle, enturl, payload);
 	});
 }
 

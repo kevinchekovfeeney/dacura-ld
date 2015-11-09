@@ -43,6 +43,7 @@ if($service){
 	}
 }
 else {
+	
 	$servman->renderErrorPage("error", $servman->errcode, $servman->errmsg );
 	$request_log->setResult( 400, "Failed to load service: $servman->errcode|$servman->errmsg" );
 }

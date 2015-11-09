@@ -2,13 +2,22 @@
 <script src='<?=$service->url("js", "dataTables.jqueryui.js")?>'></script>
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
 <?php echo $service->showLDResultbox($params);?>
+
+<div id='version-header' class="dch">
+	<span class='vc version-title'></span>
+	<span class='vc version-created'></span>
+	<span class='vc version-replaced'></span>
+	<span class='vc version-details'></span>
+</div>	
+
+
 <div id='tab-holder'>
 	 <ul id="graph-pane-list" class="dch">
 	 	<li><a href="#graph-contents">Local Ontology</a></li>
 	 	<li><a href="#graph-imports">Imported Ontologies</a></li>
 	 </ul>
 	<div id="imports-holder">
-		<div id="graph-imports">
+		<div id="graph-imports" class="dch">
 			<div id='import-msgs'></div>
 				<div id='ont-list'>
 					<?php if(isset($params['ontologies'])) {?>
@@ -43,7 +52,7 @@
 		</div>
 	</div>
  	<div id="contents-holder">
-		<div id='graph-contents'>
+		<div id='graph-contents' class="dch">
 			<div id='graph-msgs'></div>
 			<div id='viewont'>
 				<?php echo $service->showLDEditor($params);?>
@@ -54,10 +63,45 @@
 <div id="tabletemplates" style="display:none">
 	<div id="ontology-template">
 	</div>
+	<div id="toolheader-template">
+		<table class='ld-invariants'>
+			<thead>
+				<tr>
+					<th>URL</th>
+					<th>Status</th>
+					<th>Created</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td class='graph_uri'></td>
+					<td class='graph_status'></td>
+					<td class='graph_created'></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	
 </div>
 
 
 <script>
+
+dacura.schema.showGraphHeader = function(gra){
+	options = { title: gra.id + " graph" };
+	if(typeof gra.image != "undefined"){
+		options.image = gra.image;
+	}
+	///gra.subtitle = ont.meta.title;
+	options.description = $('#toolheader-template').html();
+	dacura.system.updateToolHeader(options);
+	metadetails = timeConverter(gra.created);
+	$('.graph_uri').html("<span class='graph-uri'>" + gra.meta.url + "</span>");
+	$('.graph_created').html("<span class='graph-details'>" + metadetails + "</span>");
+	$('.graph_status').html("<span class='graph-status graph-" + gra.latest_status + "'>" + gra.latest_status + "</span>");
+    dacura.schema.drawVersionHeader(gra);	    
+}
+
 ontids = [];
 
 
@@ -79,7 +123,7 @@ dacura.schema.showSelectedDQS = function(schema, instance){
 
 
 dacura.schema.showGraph = function(obj){
-	dacura.system.setLDEntityToolHeader(obj);
+	dacura.schema.showGraphHeader(obj);
 	if(typeof obj.meta.imports != "undefined"){
 		dacura.schema.showImportedOntologies(obj.meta.imports);	
 	}
@@ -95,6 +139,8 @@ function getSelectedOntologies(){
 	});
 	return selected;		
 }
+
+
 
 function getSelectedDQS(){
 	var dqs = { "schema_dqs": dacura.dqs.getSelection("schema"), "instance_dqs" : dacura.dqs.getSelection("instance")};
@@ -121,6 +167,11 @@ function showImportResult(res, test){
 function initDecorations(){
 	//view format choices
 	//quality check choices
+	$("#tab-holder").tabs( {
+        "activate": function(event, ui) {
+            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
+        }
+    });
 	$('#test-imports').button().click(function(event){
 		//get ids of selected ones...
 		//
@@ -142,13 +193,11 @@ $(function() {
 	initDecorations();
 	dacura.system.init({"mode": "tool", "targets": {resultbox: "#graph-msgs", errorbox: "#graph-msgs", busybox: "#tab-holder"}});
 	dacura.editor.init({"entity_type": "ontology"});
-	dacura.editor.load("<?=$params['id']?>", dacura.schema.fetchGraph, dacura.schema.updateGraph);
-	$("#tab-holder").tabs( {
-        "activate": function(event, ui) {
-            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
-        }
-    });
-    $('#graph-pane-list').show();
-    //dacura.schema.fetchSchema(dacura.schema.showImportedOntologies);	
+	var onw = function (obj){
+		dacura.editor.load("<?=$params['id']?>", dacura.schema.fetchGraph, dacura.schema.updateGraph, obj);
+		dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);	
+	    $('#graph-pane-list').show();
+	};
+	dacura.schema.fetchGraph("<?=$params['id']?>", [], onw);
 });
 </script>

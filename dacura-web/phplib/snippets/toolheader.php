@@ -14,14 +14,14 @@ $inm = isset($params['init-msg']) ? $params['init-msg'] : "";
 		<a href='<?=$clk?>' title='Close <?=$tit?> - <?=$clk?>'>
 		<?=$clm?></a>
 	</div>
+	<span class='tool-image'>
+		<?php if(isset($params['image']) && $params['image']){?>
+		<img class='tool-header-image' src="<?=$params['image']?>" title="<?=$tit?>" />
+		<?php }?>
+	</span>
 	<span class='tool-title'><?=$tit?></span>
 	<span class='tool-subtitle'><?=$sub?></span>
 	<span class='tool-description'><?=$des?></span>
-	<span class='tool-image'>
-		<?php if(isset($params['image'])){?>
-		<img class='tool-header-image' url="<?=$params['image']['url']?>" title="<?=$params['image']['title']?>" />
-<?php }?>
-	</span>
 </div>
 <?php if(isset($params['breadcrumbs'])){?>
 	<div class="pcbreadcrumbs"><?=$params['breadcrumbs']?></div>
