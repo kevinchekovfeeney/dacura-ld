@@ -239,7 +239,7 @@ function isUpdateID(id){
 }
 
 function setStyleMisc(){
-	dacura.system.styleJSONLD('.rawjsonu');
+	dacura.system.styleJSONLD('.rawjson');
 }
 
 
