@@ -49,7 +49,7 @@ $settings = array(
 		"order": [8, "desc"],
 		"info": true,
 		"jQueryUI": true,
-		"scrollX": true,
+		"scrollX": false,
 	 	"pageLength": 20,
 	    "lengthMenu": [ 10, 20, 50, 75, 100 ],
 		"aoColumns": [

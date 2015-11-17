@@ -1,13 +1,17 @@
-dacura.candidate = {}
-dacura.candidate.apiurl = dacura.system.apiURL();
+dacura.candidate = dacura.ld;
+dacura.candidate.entity_type = "candidate";
+dacura.ld.plurals.candidate = "candidates";
+dacura.candidate.fetchcandidatelist = dacura.ld.fetchentitylist;
 
+
+/*{}
+dacura.candidate.apiurl = dacura.system.apiURL();
 dacura.candidate.api = {};
 
 
 dacura.candidate.api.create = function (data, test){
 	var xhr = {};
 	xhr.url = dacura.candidate.apiurl 
-	//xhr.url = dacura.system.serviceApiURL('ld');
 	xhr.type = "POST";
 	xhr.contentType = 'application/json'; 
 	if(typeof test != "undefined"){
@@ -22,7 +26,6 @@ dacura.candidate.api.create = function (data, test){
 
 dacura.candidate.api.update = function (id, data){
 	var xhr = {};
-	//xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
 	xhr.url = dacura.candidate.apiurl + "/" + id;
 	xhr.type = "POST";
 	xhr.contentType = 'application/json'; 
@@ -31,29 +34,17 @@ dacura.candidate.api.update = function (id, data){
     return xhr;	
 }
 
-dacura.candidate.api.viewUpdate = function(id, args){
-	xhr = args;
-	xhr.url = dacura.candidate.apiurl + "/" + id;
-	//xhr.url =dacura.system.serviceApiURL('ld') + "/" + id;
-	return xhr;
-}
-
 dacura.candidate.api.del = function (id){
 	xhr = {};
 	xhr.data ={};
-	//xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
 	xhr.url = dacura.candidate.apiurl + "/" + id;
-
 	xhr.type = "DELETE";
 	return xhr;
 }
 
 dacura.candidate.api.view = function (id, args){
 	xhr = {data: args};
-	xhr.data.entity_type = "candidate";
-	//xhr.url = dacura.system.serviceApiURL('ld') + "/" + id;
 	xhr.url = dacura.candidate.apiurl + "/" + id;
-
 	return xhr;
 }
 
@@ -63,7 +54,6 @@ dacura.candidate.api.list = function (x){
 	if(typeof x != "undefined"){
 		xhr.data.type = "updates";
 	}
-	//xhr.url = dacura.system.serviceApiURL('ld');
 	xhr.url = dacura.candidate.apiurl;
 	return xhr;
 }
@@ -83,10 +73,10 @@ dacura.candidate.fetchNGSkeleton = function(onwards, targets){
 			onwards(obj);
 		}
 	}
-	dacura.system.invoke(ajs, msgs);
+	dacura.system.invoke(ajs, msgs, targets);
 }
 
-dacura.candidate.fetch = function(id, args, onwards, from){
+dacura.candidate.fetch = function(id, args, onwards, targets, from){
 	var ajs = dacura.candidate.api.view(id, args);
 	var msgs = { "busy": "Fetching candidate " + id + " from Server", "fail": "Failed to retrieve candidate " + id};
 	if(typeof from != "undefined"){
@@ -96,29 +86,49 @@ dacura.candidate.fetch = function(id, args, onwards, from){
 		}	
 	}
 	ajs.handleResult = function(obj){
-		dacura.candidate.showHeader(obj);
-		if(typeof onwards != "undefined"){
-			onwards(obj);
+		if(typeof obj.decision != "undefined" && obj.decision != 'accept'){
+			ajs.handleJSONError(obj); 
+		}
+		else {
+			dacura.candidate.showHeader(obj);
+			if(typeof onwards != "undefined"){
+				onwards(obj);
+			}
 		}
 	}
-	dacura.system.invoke(ajs, msgs);
+	ajs.handleJSONError = function(json){
+		if(typeof targets == "undefined" || typeof targets.resultbox == "undefined" || !targets.resultbox ){
+			targets = {resultbox: dacura.system.targets.resultbox};
+		}
+		if(typeof(dacura.ldresult) != "undefined"){
+			dacura.ldresult.update_type = "view";
+			var cancel = function(){
+				$(targets.resultbox).html("");
+			};
+			dacura.ldresult.showDecision(json, targets.resultbox, cancel);			
+		}
+		else {
+			ajs.showJSONErrorResult(json); 	
+		}
+	}
+	dacura.system.invoke(ajs, msgs, targets);
 }
 
-dacura.candidate.fetchupdatelist = function(onwards){
+dacura.candidate.fetchupdatelist = function(onwards, targets){
 	var ajs = dacura.candidate.api.list("updates");
 	var msgs = { "busy": "Retrieving candidate update list from server", "fail": "Failed to retrieve candidate update list"};
-	ajs.handleResult = dacura.candidate.drawUpdateListTable;
-	dacura.system.invoke(ajs, msgs);
+	ajs.handleResult = onwards;
+	dacura.system.invoke(ajs, msgs, targets);
 }
 
-dacura.candidate.fetchcandidatelist = function(){
+dacura.candidate.fetchcandidatelist = function(onwards, targets){
 	var ajs = dacura.candidate.api.list();
 	var msgs = { "busy": "Retrieving candidate list from server", "fail": "Failed to retrieve candidate list"};
-	ajs.handleResult = dacura.candidate.drawCandidateListTable;
-	dacura.system.invoke(ajs, msgs);
+	ajs.handleResult = onwards
+	dacura.system.invoke(ajs, msgs, targets);
 };
 
-dacura.candidate.update = function(id, uobj, onwards, type, test){
+dacura.candidate.update = function(id, uobj, onwards, type, targets, test){
 	var ajs = dacura.candidate.api.update(id, uobj);
 	if(typeof test != "undefined" && test){
 		msgs = { "busy": "Testing update of " + id + " with Dacura Quality Service", "fail": "Server communication failure in testing update of " + id};
@@ -128,10 +138,10 @@ dacura.candidate.update = function(id, uobj, onwards, type, test){
 	}
 	ajs.handleResult = onwards;
 	ajs.handleJSONError = onwards;
-	dacura.system.invoke(ajs, msgs);
+	dacura.system.invoke(ajs, msgs, targets);
 }
 
-dacura.candidate.create = function(data, onwards, istest, targets){
+dacura.candidate.create = function(data, onwards, targets, istest){
 	var ajs = dacura.candidate.api.create(data, istest);
 	msgs = { "busy": "Submitting new candidate to Dacura API", "fail": "Candidate Submission was unsuccessful"};
 	ajs.handleResult = onwards;
@@ -139,4 +149,4 @@ dacura.candidate.create = function(data, onwards, istest, targets){
 	dacura.system.invoke(ajs, msgs, targets);
 }
 
-
+*/

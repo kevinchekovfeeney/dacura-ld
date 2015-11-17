@@ -1,7 +1,5 @@
 <?php
 
-require_once("LDEntity.php");
-
 class Ontology extends LDEntity {
 	//var $url; //the id is the local id, this is the official id
 	//var $title;
@@ -11,10 +9,6 @@ class Ontology extends LDEntity {
 	
 	function __construct($id, $logger = false){
 		parent::__construct($id, false, $logger);
-	}
-	
-	function isOntology(){
-		return true;
 	}
 	
 	function import($type, $arg, $gurl = false, $format = false, $novel = false){
@@ -28,8 +22,10 @@ class Ontology extends LDEntity {
 			$this->url = $arg;
 		}
 		$op = $egraph->toRdfPhp();//$this->egraph->serialise("php");
+		$this->logger->timeEvent("Exported to php form", "debug");
 		$this->ldprops[$this->id] = importEasyRDFPHP($op);
-		$this->meta = array();//$this->extractMeta($egraph, $novel, $this->nsres);
+		$this->logger->timeEvent("Reimported for us", "debug");
+		$this->meta = array();
 		$errs = validLD($this->ldprops);
 		if(count($errs) > 0){
 			$msg = "<ul><li>".implode("<li>", $errs)."</ul>";
@@ -114,12 +110,6 @@ class Ontology extends LDEntity {
 		return $deps;
 	}
 	
-	function extractMeta($egraph, $novel = false, $nsres){
-		$meta = array("dependencies" => $this->generateDependencies($nsres));
-		return $meta;
-	}
-	
-	
 	function genFname(){
 		$fid = "ONT". randid();
 		return $fid;
@@ -137,6 +127,8 @@ class Ontology extends LDEntity {
 		return $this->description;
 	}
 	
-
+	function displayQuads($flags, $vstr, $srvr){
+		$this->display = $this->getPropertyAsQuads($this->id, $this->id);
+	}
 	
 }

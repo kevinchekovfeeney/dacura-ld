@@ -29,26 +29,49 @@
 	 </ul>
 	<div id="contents-holder">
 	 	<div id="cand-contents" class='dch'>
+	 		<div id='editor-msgs'></div>
 			<?php echo $service->showLDResultbox($params);?>
 			<?php echo $service->showLDEditor($params);?>
 		</div>	
 	</div>
-	<div id="history-holder">
-	 	<div id="cand-history" class='dch'>
-			<div class="tool-section-header">
-				<span class="section-title">Candidate History</span>
-			</div>	 	
-		</div>	
+ 	<div id="cand-history">
+		<div id="history-holder" class='ld-list dch'>
+			<table class="history_table display">
+				<thead>
+					<tr>
+						<th>Version</th>
+						<th>Status</th>
+						<th>Created</th>
+						<th>Sortable Created</th>
+						<th>Changed From</th>
+						<th>Changed To</th>
+					</tr>
+				</thead>
+				<tbody>
+				</tbody>
+			</table>		
+		</div>
 	</div>
-	<div id="updates-holder">
-	 	<div id="cand-updates" class='dch'>
-			<div id="pending-section">
-				<div class="tool-section-header">
-					<span class="section-title">Candidate Update Queue</span>
-				</div>
-			</div>
-		</div>	
-	</div>
+ 	<div id="cand-updates">
+		<div id="update-holder" class='ld-list dch'>
+			<table class="updates_table display">
+				<thead>
+				<tr>
+					<th>ID</th>
+					<th>Status</th>
+					<th>From Version</th>
+					<th>To Version</th>
+					<th>Created</th>
+					<th>Sortable Created</th>
+					<th>Updated</th>
+					<th>Sortable Updated</th>
+					<th>Change Command</th>
+					<th>Rollback Command</th>
+				</tr>
+				</thead>
+				<tbody></tbody>
+			</table>					
+		</div>
 	</div>
 </div>
 	
@@ -73,40 +96,6 @@
 			</tbody>
 		</table>
 	</div>
-	<div id="history-template">
-		<table class="history_table display">
-			<thead>
-				<tr>
-					<th>Version</th>
-					<th>Schema Version</th>
-					<th>Created</th>
-					<th>Sortable Created</th>
-					<th>Changed From</th>
-					<th>Changed To</th>
-				</tr>
-			</thead>
-			<tbody>
-			</tbody>
-		</table>		
-	</div>
-	<div id="updates-template">
-		<table class="updates_table display">
-			<thead>
-			<tr>
-				<th>Status</th>
-				<th>From Version</th>
-				<th>To Version</th>
-				<th>Created</th>
-				<th>Sortable Created</th>
-				<th>Updated</th>
-				<th>Sortable Updated</th>
-				<th>Change From</th>
-				<th>Change To</th>
-			</tr>
-			</thead>
-			<tbody></tbody>
-		</table>			
-	</div>	
 </div>
 <script>
 
@@ -140,27 +129,89 @@ dacura.candidate.showHeader = function(cand){
 	$('.cand_created').html("<span class='candidate-details'>" + metadetails + "</span>");
 	$('.cand_status').html("<span class='candidate-status candidate-" + cand.latest_status + "'>" + cand.latest_status + "</span>");
 	//alert("adding service breadcrumb");
-    drawVersionHeader(cand);
-    	
+    dacura.candidate.drawVersionHeader(cand);
 }
 
-
-function drawVersionHeader(data){
-	$('.version-title').html("version " + data.version);
-	createtxt = "created " + timeConverter(data.version_created);
-	$('.version-created').html(	createtxt);
-	if(data.version_replaced > 0){	
-		repltxt = "replaced " + timeConverter(data.version_replaced); 	
-		$('.version-replaced').html(repltxt);
-	}
-	else {
-		$('.version-replaced').html("");	
-	}
-	$('#version-header').show();
-}
 
 
 function drawUpdateHeader(data){
+	if(typeof data == "undefined" || data.length == 0){
+		$('#update-holder').show();	
+		$('#update_table').dataTable(dacura.candidate.getTableInitStrings(true)); 
+		dacura.system.writeErrorMessage("No Updates Found", '#update_table .dataTables_empty');		
+	}	
+}
+
+function drawUpdateListTable (data){		
+	if(typeof data == "undefined" || data == null || data.length == 0){
+		$('#update-holder').show();	
+		$('.updates_table').dataTable(<?=$dacura_server->getServiceSetting('pending_datatable_init_string', "{}");?>); 
+		dacura.system.writeErrorMessage("No Updates Found", '.updates_table .dataTables_empty');		
+	}
+	else {
+		$('.updates_table tbody').html("");
+		update_urls = [];
+		for (var i in data) {
+			var obj = data[i];
+			$('.updates_table tbody').append("<tr class='updaterow' id='update_" + update_urls.length + "'>" + 
+			"<td>" + obj.eurid + "</td>" + 
+			"<td>" + obj.status + "</td>" + 
+			"<td>" + obj.from_version + "</td>" + 
+			"<td>" + obj.to_version + "</td>" + 
+			"<td>" + timeConverter(obj.createtime) + "</td>" + 
+			"<td>" + obj.createtime + "</td>" + 
+			"<td>" + timeConverter(obj.modtime) + "</td>" + 
+			"<td>" + obj.modtime + "</td>" + 
+			"<td class='rawjsonu'>" + obj.forward + "</td>" + 
+			"<td class='rawjsonu'>" + obj.backward + "</td>" + "</tr>");
+			update_urls[update_urls.length] = dacura.system.pageURL() + "/" + obj.targetid + "/update/" + obj.eurid;			
+		}
+		$('.updaterow').hover(function(){
+			$(this).addClass('userhover');
+		}, function() {
+		    $(this).removeClass('userhover');
+		});
+		$('.updaterow').click( function (event){
+			window.location.href = update_urls[this.id.substr(7)]
+	    }); 
+		$('#update-holder').show();	
+		$('.updates_table').dataTable(<?=$dacura_server->getServiceSetting('pending_datatable_init_string', "{}");?>).show();
+	}
+}
+
+function drawHistorySection(data){
+	if(typeof data == "undefined" || data == null || data.length == 0){
+		$('#history-holder').show();	
+		$('.history_table').dataTable(<?=$dacura_server->getServiceSetting('history_datatable_init_string', "{}");?>); 
+		dacura.system.writeErrorMessage("No history information found", '.history_table .dataTables_empty');		
+	}
+	else {
+		$('.history_table tbody').html("");
+		history_urls = [];
+		for (var i in data) {
+			var obj = data[i];
+			$('.history_table tbody').append("<tr class='history' id='history_" + history_urls.length + "'>" + 
+				"<td>" + obj.version + "</td>" + 
+				"<td>" + obj.status + "</td>" + 
+				"<td>at " + timeConverter(obj.createtime) + " by update " + obj.created_by + "</td>" + 
+				"<td>" + obj.createtime + "</td>" + 
+				"<td class='rawjson'>" + obj.backward + "</td>" +
+				"<td class='rawjson'>" + obj.forward + "</td>" + 
+			+ "</tr>");
+			history_urls[history_urls.length] = dacura.system.pageURL() + "/<?=$params['id']?>?version="+obj.version;			
+		}
+		$('.history').hover(function(){
+			$(this).addClass('userhover');
+		}, function() {
+		    $(this).removeClass('userhover');
+		});
+		$('.history').click( function (event){
+			window.location.href = history_urls[this.id.substr(8)]
+	    }); 
+		$('#history-holder').show();	
+		$('.history_table').dataTable(<?=$dacura_server->getServiceSetting('history_datatable_init_string', "{}");?>).show();
+	}
+	
 	
 }
 
@@ -187,6 +238,11 @@ function isUpdateID(id){
 	return id.substr(0,7) == "update/";
 }
 
+function setStyleMisc(){
+	dacura.system.styleJSONLD('.rawjsonu');
+}
+
+
 $('document').ready(function(){
 	$("#tab-holder").tabs( {
         "activate": function(event, ui) {
@@ -194,14 +250,50 @@ $('document').ready(function(){
         }
     });
 	dacura.system.init({"mode": "tabbed"});
-	dacura.editor.init();
+	dacura.editor.init({"targets": { resultbox: "#editor-msgs", errorbox: "#editor-msgs", busybox: '#cand-contents'}, 
+		"args": <?=json_encode($params['args']);?>});
+	dacura.editor.getMetaEditHTML = function(meta){
+		/*if(dacura.editor.options.format == "json"){
+			var html = "<textarea id='ldmeta-input'>";
+			if(typeof meta == 'undefined'){
+				meta = {};
+			} 
+			$('#meta-edit-table').hide();
+			html += JSON.stringify(meta, null, 4) + "</textarea>";
+			return html; 				
+		}
+		else {*/
+			$('#entstatus').val(meta.status);	
+			$('#meta-edit-table').show();
+			//$('#entstatus').val(meta.status);	
+			return "";
+		//}
+	
+
+	};
+
+	dacura.editor.getInputMeta = function(){
+		var meta = {"status": $('#entstatus').val()};
+		return meta;
+	};
+	
 	var onw = function (obj){
+		//here's where we load the history and the update list...
+		if(typeof(obj.history) != "undefined" && obj.history.length > 0){
+			drawHistorySection(obj.history);
+			$('#history-holder').show();
+		}
+		if(typeof obj.updates != "undefined" && obj.updates.length > 0){
+			drawUpdateListTable(obj.updates);
+			$('#update-holder').show();
+		}
+		setStyleMisc();
 		dacura.editor.load("<?=$params['id']?>", dacura.candidate.fetch, dacura.candidate.update, obj);
 		dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);
 		
 		$('#cand-pane-list').show();
 	};
-	dacura.candidate.fetch("<?=$params['id']?>", [], onw);
+	dacura.candidate.fetch("<?=$params['id']?>", <?=json_encode($params['args']);?>, onw, { resultbox: "#editor-msgs", errorbox: "#editor-msgs", busybox: '#cand-contents'});
 });
 </script>
 

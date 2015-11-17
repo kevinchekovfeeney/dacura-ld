@@ -326,8 +326,10 @@ class DacuraService extends DacuraObject {
 		$paths = $this->get_service_breadcrumbs($top_level, $collection);
 		$html = "<ul class='service-breadcrumbs'>";
 		$z = 20;
+		$tot = 0;
 		foreach($paths as $i => $path){
 			$n = $z--;
+			$tot++;
 			//$n = count($path) - $i;
 			if($i == 0){
 				$html .= "<li class='first'><a href='".$path['url']."' style='z-index:$n;'><span></span>".$path['title']."</a></li>";
@@ -337,13 +339,18 @@ class DacuraService extends DacuraObject {
 			}
 		}
 		foreach($x as $onex){
+			$tot++;
 			$n = $z--;
 			$html .= "<li><a href='".$onex[0]."' style='z-index:" . ($z++). ";'>" .$onex[1]."</a></li>";				
 		}
 		foreach($append as $app){
+			$tot++;
 			$html .= "<li>$app</li>";
 		}
 		$html .= "</ul>";
+		if($tot > 0){
+			$html .= "<script>$('.pcbreadcrumbs').css('height', '29px')</script>";
+		}
 		return $html;
 	}
 	

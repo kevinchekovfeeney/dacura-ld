@@ -13,14 +13,16 @@
 	<div id="create-holder" class="dch">
 		<div id="create-candidate">
 			<div class="tool-create-info tool-tab-info" id="create-msgs"></div>
+			<?php echo $service->showLDResultbox($params);?>
 			<?php echo $service->showLDEditor($params);?>
+			
 		</div>
 	</div>
-	<div id="candidate-holder" class="dch">
-		<div id="candidate-list">
-			<div class="tab-top-message-holder">
-				<div class="tool-tab-info" id="candidate-msgs"></div>
-			</div>
+	<div id="candidate-list">
+		<div class="tab-top-message-holder">
+			<div class="tool-tab-info" id="candidate-msgs"></div>
+		</div>
+		<div class='ld-list dch' id='candidate-holder' class='dch'>
 			<table id="candidate_table" class="dcdt display">
 				<thead>
 				<tr>
@@ -40,11 +42,11 @@
 			</table>
 		</div>
 	</div>
-	<div id="update-holder" class="dch">
-		<div id="update-list">
-			<div class="tab-top-message-holder">
-				<div class="tool-tab-info" id="update-msgs"></div>
-			</div>
+	<div id="update-list">
+		<div class="tab-top-message-holder">
+			<div class="tool-tab-info" id="update-msgs"></div>
+		</div>
+		<div class='ld-list dch' id='update-holder'>
 			<table id="update_table" class="dcdt display">
 				<thead>
 				<tr>
@@ -65,7 +67,6 @@
 			</table>
 		</div>
 	</div>
-	<div id="blankplaceholder" style="height: 80px"></div>
 </div>
 
 <script>
@@ -95,10 +96,10 @@ var cand_urls = [];
 
 
 dacura.candidate.drawCandidateListTable = function(data){		
-	if(typeof data == "undefined"){
+	if(typeof data == "undefined" || data.length == 0){
 		$('#candidate-holder').show();	
 		$('#candidate_table').dataTable(dacura.candidate.getCorrectedTableInitStrings()).show(); 
-		dacura.system.writeErrorMessage("No Candidates Found", '.dataTables_empty');		
+		dacura.system.writeErrorMessage("No Candidates Found", '#candidate_table .dataTables_empty');		
 	}
 	else {
 		$('#candidate_table tbody').html("");
@@ -134,11 +135,11 @@ dacura.candidate.drawCandidateListTable = function(data){
 	}
 }
 
-dacura.candidate.drawUpdateListTable = function(data){		
-	if(typeof data == "undefined"){
+dacura.candidate.drawUpdateListTable = function(data){
+	if(typeof data == "undefined" || data.length == 0){
 		$('#update-holder').show();	
 		$('#update_table').dataTable(dacura.candidate.getCorrectedTableInitStrings(true)); 
-		dacura.system.writeErrorMessage("No Candidates Found", '.dataTables_empty');		
+		dacura.system.writeErrorMessage("No Updates Found", '#update_table .dataTables_empty');		
 	}
 	else {
 		$('#update_table tbody').html("");
@@ -172,18 +173,30 @@ dacura.candidate.drawUpdateListTable = function(data){
 }
 
 $(function() {
-	dacura.system.init({"mode": "tool", "tabbed": true, "targets": {resultbox: "#create-msgs", errorbox: "#create-msgs", busybox: "#create-holder"}});
-	dacura.editor.init({"editorheight": "200px"});
-	dacura.editor.load(false, dacura.candidate.fetchNGSkeleton, dacura.candidate.create);
-	$('#create-holder').show();
-	dacura.candidate.fetchupdatelist(); 
-	dacura.candidate.fetchcandidatelist();
-	$('#candidate-pane-list').show();
+	dacura.system.init({"mode": "tool", "tabbed": true, "targets": {resultbox: "#create-msgs", errorbox: "#create-msgs", busybox: "#tab-holder"}});
+	dacura.candidate.fetchupdatelist(dacura.candidate.drawUpdateListTable, {resultbox: "#update-msgs", errorbox: "#update-msgs", busybox: "#update-holder"}); 
+	dacura.candidate.fetchcandidatelist(dacura.candidate.drawCandidateListTable, {resultbox: "#candidate-msgs", errorbox: "#candidate-msgs", busybox: "#candidate-holder"});
 	$("#tab-holder").tabs( {
         "activate": function(event, ui) {
             $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
         }
     });
+	dacura.editor.init({"editorheight": "400px", "targets": { resultbox: "#create-msgs", errorbox: "#create-msgs", busybox: '#create-holder'}, 
+		"args": <?=json_encode($params['args']);?>});
+
+	dacura.editor.getMetaEditHTML = function(meta){
+		$('#meta-edit-table').show();
+		return "";
+	};
+	dacura.editor.getInputMeta = function(){
+		var meta = {"status": $('#entstatus').val()};
+		return meta;
+	};
+	dacura.editor.load(false, false, dacura.candidate.create);
+	$('#create-holder').show();
+	$('#candidate-pane-list').show();
+		
+    
 });
 	
 </script>

@@ -3,6 +3,7 @@
 <script src='<?=$service->url("js", "jquery.json-editor.js")?>'></script>
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery.json-editor.css")?>" />
+
 <script>
 function showDQSOptions(){
 	$('#dqsopts').show();	
@@ -43,13 +44,13 @@ $(function() {
 			<div id='dacura-problems'></div>
 			<div id='test-includes'></div>
 			<div id='dqs-options'>
-				<div class='dqs-button'>
-					<a class='button2' href='javascript:validateOntologies();'>Validate Selected Ontologies</a>
-				</div>
 				<div class='dqs-embed'>
 					<?= $service->showDQSControls("schema", "all"); ?>
 					<div style='clear: both'></div>
 				</div>
+				<div class='dqs-button'>
+					<a class='button2' href='javascript:validateOntologies();'>Validate Selected Ontologies</a>
+				</div>				
 			</div>
 		</div>
 	 </div>
@@ -57,7 +58,7 @@ $(function() {
 		<div id='ontology-meta' class="dch">
 			<div id='deps-msgs'></div>
 			<div id="ontology-dependencies">
-				<div id='deptable'>
+				<div id='deptable' class='ld-list'>
 				</div>
 				<div id='included_onts'>
 				</div>
@@ -66,9 +67,10 @@ $(function() {
 		      	</div>
 			</div>
 			<div id='singleont-dependencies' class='dch'>
+		   		<button class="dacura-button showlist-button" style="float:right">Return to dependency listing</button>
 				<div id='singleont-table'></div>
 				<div class="tool-buttons">
-		   			<button class="dacura-button showlist-button" id="showlist-button">Return to dependency listing</button>
+		   			<button class="dacura-button showlist-button">Return to dependency listing</button>
 		      	</div>
 			
 			</div>
@@ -78,6 +80,7 @@ $(function() {
 		<div id='ontology-contents' class="dch" >
 			<div id='lded-msgs'></div>
 			<div id='viewont'>
+				<?php echo $service->showLDResultbox($params);?>
 				<?php echo $service->showLDEditor($params);?>
 			</div>
 		</div>
@@ -103,9 +106,9 @@ $(function() {
 		</table>
 	</div>
 	<div id="subject-template">
-	 	<table class='subject-depend'>
+	 	<table class='subject-depend ont-depend'>
 			<thead>
-				<tr><th rowspan='2'>Subjects of assertions</th></tr>
+				<tr><th colspan='2'>Subjects of assertions</th></tr>
 			</thead>
 			<tbody>
 				<tr>
@@ -116,9 +119,9 @@ $(function() {
 		</table>
 	</div>
 	<div id="property-template">
-	 	<table class='property-depend'>
+	 	<table class='property-depend ont-depend'>
 			<thead>
-				<tr><th rowspan='2'>Properties Used</th></tr>
+				<tr><th colspan='2'>Properties Used</th></tr>
 			</thead>
 			<tbody>
 				<tr>
@@ -129,9 +132,9 @@ $(function() {
 		</table>
 	</div>
 	<div id="structural-template">
-	 	<table class='structural-depend'>
+	 	<table class='structural-depend ont-depend'>
 			<thead>
-				<tr><th rowspan='3'>Structural Links</th></tr>
+				<tr><th colspan='3'>Structural Links</th></tr>
 			</thead>
 			<tbody>
 				<tr>
@@ -143,9 +146,9 @@ $(function() {
 		</table>
 	</div>
 	<div id="object-template">
-	 	<table class='object-depend'>
+	 	<table class='object-depend ont-depend'>
 			<thead>
-				<tr><th rowspan='3'>Values Used</th></tr>
+				<tr><th colspan='3'>Values Used</th></tr>
 			</thead>
 			<tbody>
 				<tr>
@@ -178,7 +181,7 @@ $(function() {
 </div>
 
 <script>
-dacura.schema.showOntologyHeader = function(ont){
+dacura.schema.showHeader = function(ont){
 	options = { title: ont.id + " ontology" };
 	if(typeof ont.image != "undefined"){
 		options.image = ont.image;
@@ -193,10 +196,13 @@ dacura.schema.showOntologyHeader = function(ont){
     dacura.schema.drawVersionHeader(ont);	
 }
 
-
-
-dacura.schema.showOntology = function(obj){
-	dacura.schema.showOntologyHeader(obj);
+function setStyleMisc(){
+	$('.rawjson').each(function(){
+	    var text = $(this).html();
+	    $(this).html(text.substring(0, 50) + "...");
+	    text = JSON.stringify(JSON.parse(text), 0, 4);
+	    $(this).attr("title", text);
+	});
 }
 
 var depids = [];
@@ -214,7 +220,7 @@ function validateOntologies(){
 		}
 	}
 	var tests = dacura.dqs.getSelection("schema");
-	dacura.schema.validateGraphOntologies(onts, tests);
+	dacura.schema.validateGraphOntologies(onts, tests, { resultbox: "#dep-msgs", errorbox: "#dep-msgs", busybox: "#ontology-test", scrollto: "#dep-msgs"});
 }
 
 function getDepRow(dep, id, key, isauto){
@@ -381,16 +387,16 @@ function getTreeAsTable(tree){
 }
 
 dacura.schema.showIncludeTree = function(flat, tree){
-	$('#included_onts').html("<div class='include_summary'>" + flat.length + " included ontologies</div>");
-	$('#included_onts').append("<div class='include_list'>" + flat.join(", ") + "</div>");
-	$('#included_onts').append(getTreeAsTable(tree['<?=$params['id']?>']));
+	$('#included_onts').html(getTreeAsTable(tree['<?=$params['id']?>']));
+	$('#included_onts').append("<div class='include_summary'>" + flat.length + " included ontologies</div>");
+	$('#included_onts').append("<div class='include_list'><span class='ontlabel'>" + flat.join("</span><span class='ontlabel'>") + "</span></div>");
 	$('.include-treelist').menu();
 }
 
 
 dacura.schema.showNSDependencies = function(ns){
 	var dep = deps[ns];
-	$('#singleont-table').html("");
+	$('#singleont-table').html("<h3>Dependencies of <?=$params['id']?> on " + ns + "</h3>");
 	var hassubj = false;
 	for (var key in dep.subject) {
 	  	if (dep.subject.hasOwnProperty(key)) {
@@ -431,33 +437,22 @@ dacura.schema.showNSDependencies = function(ns){
 	}
 }
 
-dacura.schema.gatherOntologyDetails = function(){
-	var details = {};
-	//details.url = $('#onturl').val();
-	//details.title = $('#onttitle').val();
-	//details.status = $('#ontstatus').val();
-	//details.description = $('#ontdescr').val();
-	//details.real_version = $('#ontversion').val();
-	return details;
-}
-
-
 function clearResultMessage(){
 	dacura.system.clearResultMessage();	
 }
+
 function initDecorations(){
 	//view format choices
 	$("#tab-holder").tabs( {
         "activate": function(event, ui) {
             $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
-            clearResultMessage();
         }
     });
 	
 	$('#depend-button').button().click(function(event){
 		dacura.schema.calculateDependencies("<?=$params['id']?>");
     });
-	$('#showlist-button').button().click(function(event){
+	$('.showlist-button').button().click(function(event){
   		$('#ontology-dependencies').show();
   		$('#singleont-dependencies').hide();
 	});
@@ -466,16 +461,39 @@ function initDecorations(){
 
 $(function() {
 	initDecorations();
-	//dacura.system.init({"mode": "tool", "tabbed": true, "targets": {resultbox: "#dep-msgs", errorbox: "#dep-msgs", busybox: "#tab-holder"}});
+	dacura.schema.entity_type = "ontology";
 	dacura.system.init({"mode": "tool"});
-	dacura.editor.init({"entity_type": "ontology", "targets": {resultbox: "#lded-msgs", errorbox: "#lded-msgs"}});
-	var onw = function (obj){
-		dacura.editor.load("<?=$params['id']?>", dacura.schema.fetchOntology, dacura.schema.updateOntology, obj);
-	    dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);
-		$('#ontology-pane-list').show();
-		dacura.schema.calculateDependencies("<?=$params['id']?>");		
+	dacura.editor.init({"entity_type": "ontology", 
+		"targets": {resultbox: "#lded-msgs", errorbox: "#lded-msgs"}, 
+		"args": <?=json_encode($params['args']);?>});
+
+	dacura.editor.getMetaEditHTML = function(meta){
+		$('#meta-edit-table').html("");
+		$('#meta-edit-table').append("<li><span class='meta-label'>Status</span><span class='meta-value'>" + 
+			"<select id='entstatus'><?php echo $service->getEntityStatusOptions();?></select></span></li>");
+		$('#entstatus').val(meta.status);	
+		$('#meta-edit-table').append("<li><span class='meta-label'>URL</span><span class='meta-value'>" + 
+				"<input type='text' id='enturl' value='" + meta.url + "'></span></li>");	
+		$('#meta-edit-table').append("<li><span class='meta-label'>Title</span><span class='meta-value'>" + 
+				"<input type='text' id='enttitle' value='" + meta.title + "'></span></li>");	
+		$('#meta-edit-table').show();
+		return "";
 	};
-	dacura.schema.fetchOntology("<?=$params['id']?>", [], onw);
+
+	dacura.editor.getInputMeta = function(){
+		var meta = {"status": $('#entstatus').val(), "title": $('#enttitle').val(), "url": $('#enturl').val()};
+		return meta;
+	};
+	
+	var onw = function (obj){
+		dacura.editor.load("<?=$params['id']?>", dacura.schema.fetch, dacura.schema.update, obj);
+	    dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);
+	    dacura.system.styleJSONLD();
+	    $('#ontology-pane-list').show();
+		dacura.schema.calculateDependencies("<?=$params['id']?>", {resultbox: "#deps-msgs", errorbox: "#deps-msgs", busybox: "#ontology-meta"});		
+	};
+	var args = <?=json_encode($params['args']);?>;
+	dacura.schema.fetch("<?=$params['id']?>", args, onw);
 	
 });
 </script>

@@ -1,7 +1,6 @@
 <script src='<?=$service->url("js", "jquery.dataTables.js")?>'></script>
 <script src='<?=$service->url("js", "dataTables.jqueryui.js")?>'></script>
 <link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
-<?php echo $service->showLDResultbox($params);?>
 
 <div id='version-header' class="dch">
 	<span class='vc version-title'></span>
@@ -21,29 +20,35 @@
 			<div id='import-msgs'></div>
 				<div id='ont-list'>
 					<?php if(isset($params['ontologies'])) {?>
-						<table class="ontology_table display">
-							<thead>
-							<tr>
-								<th>ID</th>
-								<th>Status</th>
-								<th>Version</th>
-								<th>Import</th>
-							</tr>
-							</thead>
-							<tbody>
-							<?php foreach($params['ontologies'] as $id => $body){ ?>
-								<tr class='ontology-list'>
-									<td><?=$body['id']?></td>
-									<td><?=$body['status']?></td>
-									<td><?=$body['version']?></td>
-									<td><input type='checkbox' class='ontologies-selected' id='<?=$body['id']?>'></td></tr>
+						<div class='ont-title'>Ontologies available for import
+							<span class='ont-select-all'><input type='checkbox' id='ont-select-all'><label for='ont-select-all'>Select All</label></span>						
+						</div>
+						<div class='ont-import-list'>
+						<?php foreach($params['ontologies'] as $id => $body){ 
+								$title = "Status: ".$body['status'] . "\nVersion: ". $body['version'];
+								if(isset($body['meta'])){
+									if(isset($body['meta']['title'])){
+										$title .= "\nTitle: ".$body['meta']['title'];
+									}
+									if(isset($body['meta']['url'])){
+										$title .= "\nURL: ".$body['meta']['url'];
+									}											
+								}
+						?>
+							<span class='ontoption'>
+								<input title='<?=$title?>' type='checkbox' class='ontologies-selected' id='<?=$body['id']?>'> 
+								<label title='<?=$title?>' for='<?= $body['id']?>'><?=$body['id']?></label></span>
 							<?php } ?>
-							</tbody>
-						</table>
 					<?php } ?>
+					</div>
 				</div>
-				<div class='dqs-embed'>
-					<?= $service->showDQSControls("both", array()); ?>
+				<div class='dqs-options'>
+					<div class='ont-title'>Quality Service constraints to enforce
+						<span class='dqs-select-all'><input type='checkbox' id='dqs-all'><label for='dqs-all'>Select All</label></span>
+					</div>
+					<div class='dqs-embed'>
+						<?= $service->showDQSControls("both", array()); ?>
+					</div>
 				</div>
 				<div class="tool-buttons">
 	   			<button class="dacura-button test-imports" id="test-imports">Test Graph Configuration</button>
@@ -55,6 +60,7 @@
 		<div id='graph-contents' class="dch">
 			<div id='graph-msgs'></div>
 			<div id='viewont'>
+				<?php echo $service->showLDResultbox($params);?>
 				<?php echo $service->showLDEditor($params);?>
 			</div>
 		</div>
@@ -87,7 +93,7 @@
 
 <script>
 
-dacura.schema.showGraphHeader = function(gra){
+dacura.schema.showHeader = function(gra){
 	options = { title: gra.id + " graph" };
 	if(typeof gra.image != "undefined"){
 		options.image = gra.image;
@@ -123,7 +129,6 @@ dacura.schema.showSelectedDQS = function(schema, instance){
 
 
 dacura.schema.showGraph = function(obj){
-	dacura.schema.showGraphHeader(obj);
 	if(typeof obj.meta.imports != "undefined"){
 		dacura.schema.showImportedOntologies(obj.meta.imports);	
 	}
@@ -134,7 +139,7 @@ dacura.schema.showGraph = function(obj){
 
 function getSelectedOntologies(){
 	selected = [];
-	$('.ontology_table input:checked').each(function() {
+	$('.ont-import-list input:checked').each(function() {
 	    selected.push($(this).attr('id'));
 	});
 	return selected;		
@@ -148,20 +153,17 @@ function getSelectedDQS(){
 }
 
 
-function showImportResult(res, test){
-	//dacura.system.showResult(res);
-	//$(import-msg
-	dacura.ldresult.showDecision(res, test, '#import-msgs', "Import Ontologies");
-	/*if(res.decision == "reject" || res.errcode > 0){
-		dacura.system.showErrorResult(res.msg_body, res, res.decision, '#import-msgs');
-	}
-	else if(typeof res.warnings == "object" && res.warnings.length > 0){
-		dacura.system.showWarningResult(res.msg_body, res, res.decision, '#import-msgs');		
-	}
-	else {
-		dacura.system.showSuccessResult(res.msg_body, res, res.decision, '#import-msgs');		
-	}*/
+function showImportResult(res){
+	var imptargets = { resultbox: '#import-msgs', errorbox: '#import-msgs', busybox: "#graph-imports", scrollto:'#import-msgs'};
+	var cancel = function(){
+		$(imptargets.resultbox).html("");
+	};
+	var upd = function(){
+		dacura.schema.update("<?=$params['id']?>", dacura.schema.lastUpdateObject, showImportResult, "import", imptargets);				
+	};
+	res.format = "json";
 	
+	dacura.ldresult.showDecision(res, imptargets.resultbox, cancel, upd);			
 }
 
 function initDecorations(){
@@ -172,6 +174,15 @@ function initDecorations(){
             $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
         }
     });
+	$( "#ont-select-all" ).button().click(function(event){
+		if($('#ont-select-all').is(":checked")){
+			$("input:checkbox.ontologies-selected").prop('checked', true).button("refresh");
+		}
+		else {
+			$("input:checkbox.ontologies-selected").prop('checked', false).button("refresh");
+		}					
+	});
+	var imptargets = {resultbox: "#import-msgs", errorbox: "#import-msgs", busybox: "#graph-imports", scrollto: "#import-msgs"};
 	$('#test-imports').button().click(function(event){
 		//get ids of selected ones...
 		//
@@ -179,25 +190,48 @@ function initDecorations(){
 		var dqs = getSelectedDQS();
 		var updateobj = {"meta": dqs};
 		updateobj.meta.imports = onts;
-		dacura.schema.updateGraph("<?=$params['id']?>", updateobj, showImportResult, "import", true);				
+		dacura.schema.lastUpdateObject = updateobj;
+		dacura.schema.update("<?=$params['id']?>", updateobj, showImportResult, "import", imptargets, true);				
     });
 	$('#deploy-imports').button().click(function(event){
 		var onts = getSelectedOntologies();
 		var dqs = getSelectedDQS();
 		var updateobj = {"meta": dqs};
-		updateobj.meta.imports = onts;		dacura.schema.updateGraph("<?=$params['id']?>", updateobj, showImportResult, "import");				
+		updateobj.meta.imports = onts;		
+		dacura.schema.lastUpdateObject = updateobj;
+		dacura.schema.update("<?=$params['id']?>", updateobj, showImportResult, "import", imptargets);				
 	});	
 }
 
 $(function() {
+	dacura.schema.lastUpdateObject = false;
+	dacura.schema.entity_type = "graph";
 	initDecorations();
-	dacura.system.init({"mode": "tool", "targets": {resultbox: "#graph-msgs", errorbox: "#graph-msgs", busybox: "#tab-holder"}});
-	dacura.editor.init({"entity_type": "ontology"});
+	dacura.system.init({"mode": "tool", "targets": { resultbox: '#import-msgs', errorbox: '#import-msgs', busybox: "#graph-imports", scrollto:'#import-msgs'}});
+	dacura.editor.init({"entity_type": "ontology", "targets": {resultbox: "#graph-msgs", errorbox: "#graph-msgs", busybox: "#graph-contents", scrollto: "#graph-msgs"},		
+		"args": <?=json_encode($params['args']);?>});
+	dacura.editor.getMetaEditHTML = function(meta){
+		$('#meta-edit-table').html("");
+		$('#meta-edit-table').append("<li><span class='meta-label'>Status</span><span class='meta-value'>" + 
+			"<select id='entstatus'><?php echo $service->getEntityStatusOptions();?></select></span></li>");
+		$('#entstatus').val(meta.status);	
+		$('#meta-edit-table').append("<li><span class='meta-label'>URL</span><span class='meta-value'>" + 
+				"<input type='text' id='enturl' value='" + meta.url + "'></span></li>");	
+		$('#meta-edit-table').show();
+		return "";
+	};
+
+	dacura.editor.getInputMeta = function(){
+		var meta = {"status": $('#entstatus').val(), "url": $('#enturl').val()};
+		return meta;
+	};
+	
 	var onw = function (obj){
 		dacura.editor.load("<?=$params['id']?>", dacura.schema.fetchGraph, dacura.schema.updateGraph, obj);
 		dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);	
 	    $('#graph-pane-list').show();
 	};
-	dacura.schema.fetchGraph("<?=$params['id']?>", [], onw);
+	var args = <?=json_encode($params['args']);?>;
+	dacura.schema.fetch("<?=$params['id']?>", args, onw, {resultbox: "#graph-msgs", errorbox: "#graph-msgs", busybox: "#graph-contents"});
 });
 </script>

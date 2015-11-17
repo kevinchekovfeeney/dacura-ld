@@ -4,6 +4,7 @@ require_once("GraphAnalysisResults.php");
 
 class AnalysisResults {
 	var $action;
+	var $test = false;
 	var $msg_title = "";//for error messages or special messages
 	var $msg_body = "";//same
 	var $decision; //reject,confirm,pending,accept
@@ -11,8 +12,9 @@ class AnalysisResults {
 	var $errors = array();
 	var $warnings = array();
 
-	function __construct($action){
+	function __construct($action, $test = false){
 		$this->action = $action;
+		$this->test = $test;
 	}
 	
 	function ok(){

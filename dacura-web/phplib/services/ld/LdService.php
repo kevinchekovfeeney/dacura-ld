@@ -10,10 +10,12 @@ class LdService extends DacuraService {
 	
 	function renderFullPageHeader(){
 		parent::renderFullPageHeader();
-		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.ld.js");
-		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css').'">';
+		//use explicit path as this is called in multiple contexts
+		$ldscript = $this->settings['path_to_services']."ld/dacura.ld.js";
+		$this->writeIncludedInterpolatedScripts($ldscript);
+		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css', "ld").'">';
 		echo "<div id='pagecontent-container'>";
-		echo "<div id='pagecontent-nopad'>";
+		echo "<div id='pagecontent-nopad'>";		
 	}
 	
 	function renderFullPageFooter(){
@@ -32,7 +34,7 @@ class LdService extends DacuraService {
 		return $html;	
 	}
 	
-	function getCandidateStatusOptions(){
+	function getEntityStatusOptions(){
 		$opts = array(
 			"pending", "accept", "reject", "deleted"
 		);
@@ -54,6 +56,31 @@ class LdService extends DacuraService {
 		return $html;
 	}
 	
+	function getOptionalArgs(){
+		$args = array();
+		if(isset($_GET['version'])) $args['version'] = $_GET['version'];
+		if(isset($_GET['mode'])){
+			$args['mode'] = $_GET['mode'];
+		}
+		else {
+			$args['mode'] = "view";
+		}
+		if(isset($_GET['format'])){
+			$args['format'] = $_GET['format'];
+		}
+		else {
+			$args['format'] = "json";
+		}
+		if(isset($_GET['display'])) {
+			$args['display'] = $_GET['display'];
+		}
+		else {
+			$args['display'] = "ns_links_typed_problems";
+		}
+		$args['options'] = array("history");
+		return $args;		
+	}
+	
 	
 	function handlePageLoad($dacura_server){
 		if($this->screen == "list"){
@@ -71,7 +98,6 @@ class LdService extends DacuraService {
 				$params['show_dataset'] = false;				
 			}
 			$params['status_options'] = $this->getCreateStatusOptions();
-			$entity = "entity";
 			$this->renderScreen("list", $params);
 		}
 		else {
@@ -94,7 +120,7 @@ class LdService extends DacuraService {
 				$params['status_options'] = $this->getUpdateStatusOptions();
 			}
 			else {
-				$params['status_options'] = $this->getCandidateStatusOptions();				
+				$params['status_options'] = $this->getEntityStatusOptions();				
 			}
 			$this->renderToolHeader($params);
 			if(isset($_GET['mode'])) $params['mode'] = $_GET['mode'];				

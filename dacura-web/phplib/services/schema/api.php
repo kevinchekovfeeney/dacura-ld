@@ -3,6 +3,10 @@ getRoute()->post('/import', 'import_ontology');
 getRoute()->get('/(\w+)/dependencies', 'calculate_dependencies');
 getRoute()->post('/validate_ontologies', 'validate_ontologies');
 
+getRoute()->get('/structure', 'get_entity_classes');
+getRoute()->get('/structure/(\w+)', 'get_entity_classes');//with graph id
+getRoute()->get('/structure/(\w+)/(\w+)', 'get_class_properties');//with graph id
+
 function import_ontology(){
 	global $dacura_server;
 	$dacura_server->init("import_ontology");
@@ -64,6 +68,28 @@ function validate_ontologies(){
 		}
 	}
 }
+
+function get_entity_classes($graphid = false){
+	global $dacura_server;
+	if(!$dacura_server->schema){
+		return $dacura_server->write_http_error(400, "Get entity classes can only be called in a collection context");		
+	}
+	$res = $dacura_server->getEntityClasses($graphid);
+	if($res){
+		return $dacura_server->write_json_result($res, "Returned entity classes");		
+	}
+	else {
+		$dacura_server->write_http_error();
+	}
+}
+
+function get_class_template($classname, $graphid = false){
+	global $dacura_server;
+	if(!$dacura_server->schema){
+		return $dacura_server->write_http_error(400, "Get entity classes can only be called in a collection context");		
+	}
+}
+
 
 if($dacura_server->cid() == "all"){
 	$entity_type = "ontology";

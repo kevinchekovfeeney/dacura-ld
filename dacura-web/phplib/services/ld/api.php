@@ -52,6 +52,10 @@ function list_entities(){
 		$dacura_server->init("list_".$type);
 		$ents = $dacura_server->getEntities($dt_options);
 		if($ents){
+			foreach($ents as $i => $row){
+				if(isset($row['meta']) && $row['meta']) $ents[$i]['meta'] = json_decode($row['meta'], true);
+				if(isset($row['contents']) && $row['contents']) $ents[$i]['contents'] = json_decode($row['contents'], true);
+			}
 			return $dacura_server->write_json_result($ents, "Returned " . count($ents) . " " . $type. "s");
 		}
 	}
@@ -70,7 +74,7 @@ function get_entity($entity_id, $fragment_id = false){
 }
 
 function get_update($entity_id, $update_id){
-	global $dacura_server;
+	global $dacura_server, $entity_type;
 	$options = isset($_GET['options']) ? $_GET['options'] : array();
 	$version = isset($_GET['version']) ? $_GET['version'] : false;
 	$format = isset($_GET['format']) ? $_GET['format'] : false;
@@ -84,7 +88,7 @@ function get_update($entity_id, $update_id){
  * post requests take input as a application/json
  */
 function create_entity(){
-	global $dacura_server;
+	global $dacura_server, $entity_type;
 	$dacura_server->init("create");
 	$ar = new AnalysisResults("Create");
 	$json = file_get_contents('php://input');
@@ -93,7 +97,7 @@ function create_entity(){
 		$ar->failure(400, "Communication Error", "create request does not have a valid json encoded body");
 		return $dacura_server->writeDecision($ar);
 	}
-	$type = (isset($obj['type'])) ? strtolower($obj['type']) : "candidate";
+	$type = (isset($obj['type'])) ? strtolower($obj['type']) : $entity_type;
 	$options = (isset($obj['options'])) ? $obj['options'] : array();
 	$create_obj = array();
 	if(isset($obj['contents'])) $create_obj['contents'] = $obj['contents'];
@@ -118,7 +122,7 @@ function create_entity(){
  *
  */
 function update_entity($target_id, $fragment_id = false){
-	global $dacura_server;
+	global $dacura_server, $entity_type;
 	$ar = new AnalysisResults("Update $target_id $fragment_id");
 	$json = file_get_contents('php://input');
 	$obj = json_decode($json, true);
@@ -134,10 +138,10 @@ function update_entity($target_id, $fragment_id = false){
 			$ar->failure(400, "Format Error", "Update Request must have at least one of a meta or a contents property");				
 		}
 		else {
-			if(isset($obj['contents'])) $upd_obj = $obj['contents'];
-			if(isset($obj['meta'])) $upd_obj['meta'] = $obj['meta'];
+			$cnt = isset($obj['contents']) ? $obj['contents'] : "";
+			$meta = isset($obj['meta']) ? $obj['meta'] : "";
 			$options = (isset($obj['options'])) ? $obj['options'] : array();
-			$ar = $dacura_server->updateEntity($target_id, $upd_obj, $fragment_id, $options, isset($obj['test']));
+			$ar = $dacura_server->updateEntity($target_id, $entity_type, $cnt, $meta, $fragment_id, $options, isset($obj['test']));
 		}
 	}
 	return $dacura_server->writeDecision($ar);

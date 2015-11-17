@@ -41,6 +41,16 @@ class LDEntity extends DacuraObject {
 		$this->logger = $logger;
 	}
 	
+	function copyBasics($other){
+		$this->cid = $other->cid;
+		$this->did = $other->did;
+		$this->version = $other->version;
+		$this->created = $other->created;
+		$this->status = $other->status;
+		$this->modified = $other->modified;
+	}
+	
+	
 	function loadFromDBRow($row, $latest = true){
 		$this->setContext($row['collectionid'], $row['datasetid']);
 		$this->version = $row['version'];
@@ -50,6 +60,9 @@ class LDEntity extends DacuraObject {
 		$this->status = $row['status'];
 		if(!isset($this->meta['status'])){
 			$this->meta['status'] = $this->status;
+		}
+		else {
+			$this->status = $this->meta['status'];
 		}
 		$this->modified = $row['modtime'];
 		if($latest){
@@ -305,10 +318,18 @@ class LDEntity extends DacuraObject {
 		return false;
 	}
 	
-	function getFragment($fid){
+	function getFragment($fid, $merge = false){
 		if($this->index === false){
 			$this->buildIndex();
 		}
+		if($merge){
+			$merged = array();
+			foreach($this->index[$fid] as $i => $frag){
+				//$this->
+			}
+		}
+		//echo "<P>$fid is the fragment id</p>";
+		//opr($this->index[$fid]);
 		return isset($this->index[$fid]) ? $this->index[$fid] : false;
 	}
 	
@@ -356,7 +377,7 @@ class LDEntity extends DacuraObject {
 			elseif($type == "file"){
 				$graph = new EasyRdf_Graph($gurl);
 				$graph->genid = $this->id;
-				$graph->parseFile($arg, $format);
+				$graph->parseFile($arg, $format);//the slow one
 				$this->logger && $this->logger->timeEvent("Load Graph", "debug");
 			}
 			if($graph->isEmpty()){
@@ -390,6 +411,10 @@ class LDEntity extends DacuraObject {
 	function export($format, $nsobj = false){
 		$easy = exportEasyRDFPHP($this->id, $this->ldprops);
 		try{
+			foreach($this->nsres->prefixes as $id => $url){
+				EasyRdf_Namespace::set($id, $url);
+			}
+				
 			$graph = new EasyRdf_Graph($this->id, $easy, "php", $this->id);
 			if($graph->isEmpty()){
 				return $this->failure_result("Graph was empty.", 400);
@@ -474,10 +499,6 @@ class LDEntity extends DacuraObject {
 		return getObjectAsTriples($this->id, $this->ldprops, $this->cwurl);
 	}
 	
-	function turtle(){
-		return getObjectAsTurtle($this->id, $this->ldprops, $this->cwurl);
-	}
-	
 	function internalTriples(){
 		return getPropertiesAsArray($this->id, $this->ldprops, $this->cwurl, array($this, "showTriples"));
 	}
@@ -514,7 +535,12 @@ class LDEntity extends DacuraObject {
 	}
 	
 	function displayHTML($flags, $vstr, $srvr){
-		$this->display = $this->getPropertiesAsHTMLTable($vstr, $this->ldprops);//"<h2>need to write display HTML</h2>";
+		$allsubjs = $this->ldprops[$this->id];
+		$html = "";
+		foreach($allsubjs as $k => $v){
+			$html .= "<h3>$k</h3>".$this->getPropertiesAsHTMLTable($vstr, $v);
+		}
+		$this->display = $html;
 	}
 	
 	function displayJSON($flags, $vstr, $srvr, $jsonld = false){
@@ -663,9 +689,10 @@ class LDEntity extends DacuraObject {
 			return "$props is not an array of properties";
 		}
 		$html = "<table class='ld-properties emb-$depth $cls_extra'>";
-		if($depth == 0) $html .= "<tr class='$cls_extra'><th class='prop-ph $cls_extra'>Property</th><th class='prop-vh $cls_extra'>Value</th></tr>";
+		//if($depth == 0) $html .= "<tr class='$cls_extra'><th class='prop-ph $cls_extra'>Property</th><th class='prop-vh $cls_extra'>Value</th></tr>";
 		$depth = $depth+1;
 		$pcount = 0;
+		$props_html = array();
 		foreach($props as $p => $v){
 			$pcount++;
 			$np = $this->applyLinkHTML($p, $vstr, true);
@@ -677,18 +704,22 @@ class LDEntity extends DacuraObject {
 				else {
 					$nv = $this->applyLiteralHTML($v);
 				}
-				$html .= "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>$nv</td></tr>";
+				array_unshift($props_html, "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>$nv</td></tr>");
+			}
+			elseif($pv->link()){
+				$nv = $this->applyLinkHTML($v, $vstr);				
+				array_unshift($props_html, "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>$nv</td></tr>");
 			}
 			elseif($pv->objectliteral()){
 				$nv = $this->applyObjectLiteralHTML($v);
-				$html .= "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>$nv</td></tr>";
+				array_unshift($props_html, "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>$nv</td></tr>");
 			}
 			elseif($pv->objectliterallist()){
 				$nv = array();
 				foreach($v as $val){
 					$nv[] = $this->applyObjectLiteralHTML($val, $vstr);
 				}
-				$html .= "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>".implode("<br>", $nv)."</td></tr>";
+				array_unshift($props_html, "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>".implode("<br>", $nv)."</td></tr>");
 			}
 			elseif($pv->valuelist()){
 				$nv = array();
@@ -699,7 +730,7 @@ class LDEntity extends DacuraObject {
 					else {
 						$nv[] = $this->applyLiteralHTML($val, $vstr);
 					}
-					$html .= "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>".implode("<br>", $nv)."</td></tr>";
+					array_unshift($props_html, "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>".implode("<br>", $nv)."</td></tr>");
 				}
 			}
 			elseif($pv->embeddedlist()){
@@ -707,18 +738,29 @@ class LDEntity extends DacuraObject {
 				foreach($v as $id => $obj){
 					$nid = $this->applyLinkHTML($id, $vstr);
 					$obj_id = $obj_id_prefix."_".$depth."_".$pcount."_".$count;
+					$rdft = $this->extractTypeFromProps($obj);
+					if($rdft){
+						if(is_array($rdft)) {
+							$np .= " " . implode(", ", $rdft);
+						}
+						else {
+							$np .= " " . $rdft;
+						}
+						unset($obj['rdf:type']);
+					}
+						
 					if($count == 0){
-						$html .= "<tr class='firstp'><td class='prop-pd p-embedded $cls_extra'>$np</td><td class='prop-pv $cls_extra'><div id='$obj_id' class='pidembedded embobj_id $cls_extra'>$nid</div></td></tr>";
+						$props_html[] = "<tr class='firstp'><td class='prop-pd p-embedded $cls_extra'>$np</td><td class='prop-pv $cls_extra'><div id='$obj_id' class='dch pidembedded embobj_id $cls_extra'>$nid</div></td></tr>";
 					}
 					else {
-						$html .= "<tr><td class='prop-pd prop-empty $cls_extra'>&nbsp;</td><td class='prop-pv prop-embedded $cls_extra'><div  id='$obj_id' class='pidembedded $cls_extra'>";
+						$props_html[] = "<tr><td class='prop-pd prop-empty $cls_extra'>&nbsp;</td><td class='prop-pv prop-embedded $cls_extra'><div  id='$obj_id' class='dch pidembedded $cls_extra'>";
 						//ids should always be URLs or namespaced URLs
-						$html .= $nid."</div></td></tr>";
+						$props_html[] .= $nid."</div></td></tr>";
 					}
 					$count++;
-					$html .= "<tr id='$obj_id"."_objrow' class='embedded-object'><td class='container' colspan='2'>";
-					$html .= $this->getPropertiesAsHTMLTable($vstr, $obj, $depth, $obj_id_prefix);
-					$html .= "</tr>";
+					$props_html[] = "<tr id='$obj_id"."_objrow' class='embedded-object'><td class='container' colspan='2'>";
+					$props_html[] = $this->getPropertiesAsHTMLTable($vstr, $obj, $depth, $obj_id_prefix);
+					$props_html[] = "</tr>";
 				}
 			}
 			elseif($pv->objectlist()){
@@ -728,8 +770,17 @@ class LDEntity extends DacuraObject {
 				//opr($v);	
 			}
 		}
+		$html = "<table class='ld-properties emb-$depth $cls_extra'>";
+		$html .= implode("", $props_html);
 		$html .= "</table>";
 		return $html;
+	}
+	
+	function extractTypeFromProps($props){
+		if(isset($props['rdf:type'])){
+			return $props['rdf:type'];
+		}
+		return false;
 	}
 	
 	function applyLiteralHTML($ln){
@@ -793,6 +844,29 @@ class LDEntity extends DacuraObject {
 		}
 		return array(array($s, $p, $o));
 	}
+	
+	/*
+	 * For specifiying dqs configs
+	 */
+	function dqsSpecified(){
+		return isset($this->meta['imports']) && is_array($this->meta['imports']) &&
+		(isset($this->meta['schema_dqs']) || isset($this->meta['instance_dqs']));
+	}
+	
+	function getDQSTests($which){
+		if(isset($this->meta[$which.'_dqs'])){
+			return $this->meta[$which.'_dqs'];
+		}
+		return false;
+	}
+	
+	function getImportedOntologies(){
+		if(isset($this->meta['imports'])){
+			return $this->meta['imports'];
+		}
+		return false;
+	}
+	
 	
 	
 }

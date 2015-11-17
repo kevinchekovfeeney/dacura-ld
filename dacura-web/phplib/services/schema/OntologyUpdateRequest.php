@@ -1,14 +1,7 @@
 <?php
 
-require_once("EntityUpdate.php");
-
-
-
 class OntologyUpdateRequest extends EntityUpdate {
-	function isOntology(){
-		return true;
-	}
-
+	
 	function makeMetaChanges($stuff){
 		$changes = array();
 		if(isset($stuff['url']) && $stuff['url'] != $this->original->url){

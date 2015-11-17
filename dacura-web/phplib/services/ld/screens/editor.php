@@ -11,37 +11,23 @@
 				<table class='ld-bar'>
 					<tr>
 						<td class='ld-bar ld-bar-left' id="ld-view-bar-left">
-							<span class='view-native-export'>
-							    <input type="radio" class='neoption' id="format_native" checked="checked" value='native' name="neformat"><label title="Native Dacura Linked Data Formats" for="format_native">Native</label>
-							    <input type="radio" class='neoption' id="format_export" value='export' name="neformat"><label title="Public formats for data export" for="format_export">External</label>
-							</span>
 							<span class='view-options'>
-								<span class='view-options-native'>
-								    <input type="radio" class='noption foption' checked="checked" id="format_json" name="nformat"><label title="Native Dacura JSON Linked Data Format" for="format_json">JSON</label>
+								    <input type="radio" class='noption foption' checked="checked" id="format_json" name="nformat"><label title="Native Dacura JSON Linked Data Format" for="format_json">Native</label>
 									<input type="radio" class="noption foption" id="format_jsonld" name="nformat"><label title="JSON-LD" for="format_jsonld">JSON-LD</label>
-								    <input type="radio" class='noption foption' id="format_triples" name="nformat"><label title="Simple Triple Export: [Subject - Predicate - Object]" for="format_triples">Triples</label>
+									<input type="radio" class="noption foption" id="format_turtle" name="nformat"><label title="Turtle" for="format_turtle">Turtle</label>
 									<input type="radio" class='noption foption' id="format_quads" name="nformat"><label title="Triples with named graphs: [Subject - Predicate - Object - Graph]" for="format_quads">Quads</label>
 								    <input type="radio" class='noption foption' id="format_html" name="nformat"><label title="Dacura's Generated HTML views" for="format_html">HTML</label>
-								</span>
-								<span class='view-options-export'>
-								    <input type="radio" class='eoption foption' checked="checked" id="format_turtle" name="eformat"><label title="Turtle terse RDF triple language" for="format_turtle">Turtle</label>
-									<input type="radio" class="eoption foption" id='format_ntriples' name="eformat"><label title="N-triples format" for="format_ntriples">N-Triples</label>
-									<input type="radio" class="eoption foption" id="format_rdfxml" name="eformat"><label title="RDF/XML serialisation" for="format_rdfxml">XML</label>
-									<input type="radio" class="eoption foption" id="format_dot" name="eformat"><label title="Graphviz graphic visualisation" for="format_dot">Graphviz</label>
-									<input type="radio" class="eoption foption" id="format_n3" name="eformat"><label title="Notation 3" for="format_n3">N3</label>
-									<input type="radio" class="eoption foption" id="format_gif" name="eformat"><label title="Graphic Interchange Format" for="format_gif">Gif</label>
-									<input type="radio" class="eoption foption" id="format_png" name="eformat"><label title="Portable Network Graphics" for="format_png">PNG</label>
-									<input type="radio" class="eoption foption" id="format_svg" name="eformat"><label title="Scalable Vector Graphics" for="format_svg">SVG</label>
-								</span>
+									<input type="radio" class="noption foption" id='format_ntriples' name="nformat"><label title="N-triples format" for="format_ntriples">N-Triples</label>
+									<input type="radio" class="noption foption" id="format_rdfxml" name="nformat"><label title="RDF/XML serialisation" for="format_rdfxml">XML</label>
+									<input type="radio" class="noption foption" id="format_dot" name="nformat"><label title="Graphviz graphic visualisation" for="format_dot">Graphviz</label>
+									<input type="radio" class="noption foption" id="format_n3" name="nformat"><label title="Notation 3" for="format_n3">N3</label>
+									<input type="radio" class="noption foption" id="format_gif" name="nformat"><label title="Graphic Interchange Format" for="format_gif">Gif</label>
+									<input type="radio" class="noption foption" id="format_png" name="nformat"><label title="Portable Network Graphics" for="format_png">PNG</label>
+									<input type="radio" class="noption foption" id="format_svg" name="nformat"><label title="Scalable Vector Graphics" for="format_svg">SVG</label>
 							</span>
 						</td>
 						<td class='ld-bar ld-bar-centre' id="ld-view-bar-centre">
-							<span class="native-suboptions">
-								<input type="checkbox" class='doption' id="display_typed" name="display"><label title="Include type information for literals" for="display_typed">Types</label>
-								<input type="checkbox" class="doption" id="display_ns" checked="checked" name="display"><label title="Use namespace prefixes to shorten URLs" for="display_ns">Namespaces</label>
-							    <input type="checkbox" class="doption" id="display_links" name="display"><label title="Display URLs as links" for="display_links">Links</label>
-							    <input type="checkbox" class="doption" id="display_problems" checked="checked" name="display"><label title="Highlight problems with your data" for="display_problems">Problems</label>
-							</span>
+							
 						</td>					
 						<td class='ld-bar ld-bar-right' id="ld-view-bar-right">
 							<span class='ld-update-actions'>
@@ -104,13 +90,17 @@
 			<table class='ld-bar' id='ld-edit-table'>
 				<tr>
 					<td class='ld-bar ld-bar-left' id='ld-edit-bar-left'>
-						<span id="ld-edit-meta">
-							<select id='set-status'><?=$params['status_options']?></select>						
+						<span class='edit-options'>
+						    <input type="radio" class='eoption' checked="checked" id="input_json" name="eformat"><label title="Native Dacura JSON Linked Data Format" for="input_json">Native</label>
+						    <input type="radio" class='eoption' id="input_jsonld" name="eformat"><label title="JSON Linked Data Format" for="input_jsonld">JSON-LD</label>
+						    <input type="radio" class='eoption' id="input_rdfxml" name="eformat"><label title="RDF/XML" for="input_rdfxml">XML</label>
+						    <input type="radio" class='eoption' id="input_turtle" name="eformat"><label title="Turtle Terse RDF Language" for="input_turtle">Turtle</label>
+						    <input type="radio" class='eoption' id="input_html" name="eformat"><label title="HTML" for="input_html">HTML</label>
 						</span>
 					</td>
 					<td class='ld-bar ld-bar-centre' id='ld-edit-bar-centre'>
 						<span id="ld-edit-update-meta">
-							<select id='set-update-status'><?=$params['update_status_options']?></select>
+									
 						</span>
 					</td>
 					<td class='ld-bar ld-bar-right' id='ld-edit-bar-right'>
@@ -123,7 +113,12 @@
 			<span class="browsermax editor-max ui-icon ui-icon-arrow-4-diag"></span>				
 			<span class="browsermin editor-min dch ui-icon ui-icon-closethick"></span>				
 		</div>	
-		<div class="ld-main-body">
+		<div class="ld-meta-bar">
+			<ul id='meta-edit-table' class='dch'>
+				<li><span class='meta-label'>Status</span><span class='meta-value'>
+					<select id='entstatus'><?php echo $service->getEntityStatusOptions();?></select>
+				</span></li> 
+				</ul>			
 			<div id="ld-editor"></div>
 		</div>
 	
@@ -149,23 +144,16 @@
 
 	</div>
 </div>
-<div id="decisiontemplates" class='dacura-templates'>
-	<div id='header-template'>
-		<div class="decision-header">
-			<span class="capi-decision"></span>
-			<span class="capi-action"></span>
-			<span class="capi-title"></span>
-		</div>
-	</div>	
-</div>
+
 <script>
 
 dacura.editor = {
 	viewMode: "view",
-	editMode: "edit",	
+	editMode: "edit",
+	testMode: false,
 	nformat : "html", //for saving last setting of native format
 	eformat : "turtle", //... of export format
-	mode: "<?= isset($params['mode'])? $params['mode'] : "view" ?>",
+	mode: "view",
 	currentID: 	"<?=isset($params['id'])? $params['id'] : "" ?>",
 	currentEntity: {},
 	stage : "",
@@ -198,35 +186,29 @@ dacura.editor = {
 		
 	drawUpdateResult: function(res){
 		if(typeof(dacura.ldresult) != "undefined"){
-			dacura.ldresult.showDecision(res, false, dced.targets.resultbox, "Update Candidate");			
+			var cancel = function(){
+				$('.dacura-ld-editor').show();
+				$(dced.targets.resultbox).html("");
+			};
+			
+			var upd = function(){
+				dced.submit(res.action);
+			};
+
+			res.format = dced.options.format;
+			
+			dacura.ldresult.showDecision(res, dced.targets.resultbox, cancel, upd);			
+			$('.dacura-ld-editor').hide();
 		}
 		else {
-			function getHeader(res, msgs, imgs){
-				var t = $($('#header-template').html().trim());
-				$(t).addClass("decision-" + res.decision);
-				//$(t).find('.capi-decision').html(imgs[res.decision]);
-				$(t).find('.capi-action').html(res.action).attr("title", msgs[res.decision]);
-				if(typeof res.msg_title == "undefined"){
-					res.msg_title = dacura.system.msgs.fail;
-				}
-				$(t).find('.capi-title').html(res.msg_title);
-				return $('<div>').append($(t).clone()).html(); 
-			}
-			if(dced.mode == "edit new"){
-				msgs = dced.decisionTexts.create;
-			}
-			else {
-				msgs = dced.decisionTexts.update;
-			}
-			var tit = getHeader(res, msgs);
 			if(res.decision == "reject" || res.errcode > 0){
-				dacura.system.showErrorResult(res.msg_body, res, tit, dced.targets.errorbox);
+				dacura.system.showErrorResult(res.msg_body, res, res.decision, dced.targets.errorbox);
 			}
 			else if(typeof res.warnings == "object" && res.warnings.length > 0){
-				dacura.system.showWarningResult(res.msg_body, res, tit, dced.targets.resultbox);		
+				dacura.system.showWarningResult(res.msg_body, res, res.decision, dced.targets.resultbox);		
 			}
 			else {
-				dacura.system.showSuccessResult(res.msg_body, res, tit, dced.targets.resultbox);		
+				dacura.system.showSuccessResult(res.msg_body, res, res.decision, dced.targets.resultbox);		
 			}
 		}
 	},
@@ -234,19 +216,34 @@ dacura.editor = {
 	//the next two are options for sending to the API
 	
 	options: {
-		version: <?=isset($params['version'])? $params['version'] : 0; ?>,
-		format: "<?=isset($params['format'])? $params['format'] : "json"; ?>",
+		version: 0,
+		format: "json",
+		flags: {
+			ns: true,
+			problems: true,
+			links: true,
+			typed: true
+	 	}
  	},
- 	flags: {
-		ns: <?=isset($params['ns']) ? $params['ns'] : "true";?>,
-		problems: <?=isset($params['problems'])? $params['problems'] : "true";?>,
-		links: <?=isset($params['links'])? $params['links'] : "false";?>,
-		typed: <?=isset($params['typed'])? $params['typed'] : "true"?>
- 	},
-
+ 	
+	setViewArgs: function(args){
+		if(typeof args.version != "undefined"){
+			dced.options.version = args.version;
+		}
+		if(typeof args.format != "undefined"){
+			dced.options.format = args.format;
+		}
+		if(typeof args.mode != "undefined"){
+			dced.mode = args.mode;
+		}
+		if(typeof args.flags != "undefined"){
+			dced.mode.flags = args.flags;
+		}
+	},
+ 	
  	setEditorOptions: function(opts){
-		if(typeof opts.mode != "undefined"){
-			dced.mode = opts.mode;
+		if(typeof opts.args != "undefined"){
+			dced.setViewArgs(opts.args);
 		}
 		if(typeof opts.editorheight != "undefined"){
 			dced.editorheight = opts.editorheight ;
@@ -263,21 +260,16 @@ dacura.editor = {
 	},
 
 	display: function(){
-		dced.setMode();
 		dced.setFormatOption(dced.options.format);
-		$("#display_ns").prop('checked', dced.flags.ns).button("refresh");					
-		$("#display_problems").prop('checked', dced.flags.problems).button("refresh");					
-		$("#display_links").prop('checked', dced.flags.links).button("refresh");					
-		$("#display_typed").prop('checked', dced.flags.typed).button("refresh");	
 		$('.dacura-ld-editor').show();		
 	},
 
 	getDisplayFlagsAsString: function(){
 		var display = [];
-		if(dced.flags.ns) display[display.length] = "ns";
-		if(dced.flags.problems) display[display.length] = "problems";
-		if(dced.flags.links) display[display.length] = "links";
-		if(dced.flags.typed) display[display.length] = "typed";
+		if(dced.options.flags.ns) display[display.length] = "ns";
+		if(dced.options.flags.problems) display[display.length] = "problems";
+		if(dced.options.flags.links) display[display.length] = "links";
+		if(dced.options.flags.typed) display[display.length] = "typed";
 		return display.join("_");
 	},
 
@@ -291,13 +283,6 @@ dacura.editor = {
 			dced.setCreateMode();
 			dced.update = u;
 			$('.dacura-ld-editor').show();		
-		}
-		else if(i == false){
-			$('.dacura-ld-editor').show();		
-			dced.fetch = f;
-			dced.update = u;
-			dced.mode = "edit new";
-			dced.fetch(dced.setCreateMode, dced.targets);			
 		}
 		else {
 			dced.fetch = f;
@@ -326,22 +311,97 @@ dacura.editor = {
 	update: function(){
 		alert("No update function defined " + dced.getQueryString());			
 	},
+
+	readInputObject: function(){
+		try {
+			uobj = {};
+			uobj.meta = dced.getInputMeta();
+			uobj.contents = dced.getInputContents();
+			if(dced.options.format == "json"){
+				uobj.contents = JSON.parse(uobj.contents);				
+			}
+			else {
+				//alert(dced.options.format); 
+			}
+			return uobj;
+		}
+		catch(e){
+			dacura.system.showErrorResult("JSON Parsing Error - your input data has json formatting errors.", e.message);
+			return;
+		}	
+	},
+
+
+	getMetaEditHTML: function(meta){
+		if(dced.options.format == "json"){
+			var html = "<textarea id='ldmeta-input'>";
+			if(typeof meta == 'undefined'){
+				meta = {};
+			} 
+			$('#meta-edit-table').hide();
+			html += JSON.stringify(meta, null, 4) + "</textarea>";
+			return html; 				
+		}
+		else {
+			$('#meta-edit-table').html("");
+			$('#meta-edit-table').append("<li><span class='meta-label'>Status</span><span class='meta-value'>" + 
+				"<select id='entstatus'><?php echo $service->getEntityStatusOptions();?></select></span></li>");
+			if(typeof meta != "undefined" && typeof meta.status != "undefined"){
+				$('#entstatus').val(meta.status);	
+			}
+			$('#meta-edit-table').show();
+			//$('#entstatus').val(meta.status);	
+			return "";
+		}
+	},	
+
+	getBodyEditHTML: function(obj){
+		var html = "<textarea id='ldprops-input'>";
+		if(dced.options.format == "json" || dced.options.format == "jsonld"){
+			if(typeof obj == 'undefined'){
+				bd = {};
+			} 
+			else {
+				bd = obj.ldprops;
+			}
+			html += JSON.stringify(bd, null, 4); 			
+		} 
+		else {
+			html += obj.display;
+		}
+		html += "</textarea>";
+		return html; 	
+	},
+
+	drawMeta: function(ent){
+		$('#entstatus').val(ent.status);	
+	},
+	
+
+	getInputMeta: function(){
+		if(dced.options.format == "json"){
+			return 	JSON.parse($('#ldmeta-input').val());
+		}
+		else {
+			var meta = {"status": $('#entstatus').val()};
+			return meta;
+		}		
+	},
+	
+	getInputContents: function(){
+		return 	$('#ldprops-input').val();		
+	},
  	
 	submit: function(type, test){
 		dced.clearMessages();
-		var contents = $('#ldprops-input').val();
-		var meta = $('#ldmeta-input').val();
-		if(contents.length < 2){
-			return dacura.system.showErrorResult("Textbox is empty! Please input some data before updating!", null, "No data entered");		
-		}
-		try {
-			uobj = {};
-			uobj.contents = JSON.parse(contents);
-			uobj.options = jQuery.extend({}, dced.options);
-			uobj.options.display = dced.getDisplayFlagsAsString();
-			uobj.meta = JSON.parse(meta);			
+		var uobj = dced.readInputObject();
+		if(typeof uobj != "undefined"){
+			uobj.options = {"format": dced.options.format };
 			if(typeof test != "undefined"){
 				uobj.test = true;
+			}
+			else if(typeof uobj.test != "undefined") {
+				delete uobj.test;
 			}
 			if(typeof dced.currentEntity.delta != "undefined" && $('#set-update-status').val() != dced.currentEntity.delta.status){
 				uobj.updatemeta = { "status": $('#set-update-status').val() };
@@ -349,26 +409,22 @@ dacura.editor = {
 			if(dced.mode == "edit new"){
 				var entity_type = $('#set-status').val();
 				uobj.type = entity_type;
-				dced.update(uobj, dced.drawUpdateResult, test, dced.targets);
+				dced.update(uobj, dced.drawUpdateResult, dced.targets, test);
 			}
 			else {
-				if($('#set-status').val() && $('#set-status').val() != dced.currentEntity.status){
-					uobj.meta.status = $('#set-status').val();
-				}
-				dced.update(dced.currentID, uobj, dced.drawUpdateResult, type, test, dced.targets);
+				//if($('#set-status').val() && $('#set-status').val() != dced.currentEntity.status){
+				//	uobj.meta.status = $('#set-status').val();
+				//}
+				dced.update(dced.currentID, uobj, dced.drawUpdateResult, type, dced.targets, test);
 			} 
 		}
-		catch(e){
-			dacura.system.showErrorResult("JSON Parsing Error - your data has formatting errors.", e.message);
-			return;
-		}		
 	},
  	
 	refresh: function(source){
 		dced.clearMessages();
 		var opts = jQuery.extend({}, dced.options);
 		opts.display = dced.getDisplayFlagsAsString();
-		dced.fetch(dced.currentID, opts, dced.drawEntity, source);
+		dced.fetch(dced.currentID, opts, dced.drawEntity, dced.targets, source);
 	},
 
 	//called first time the entity is loaded - hides display until everything is ready
@@ -381,8 +437,9 @@ dacura.editor = {
 		dced.currentEntity = ent;
 		dced.options.version = ent.version;
 		dced.setVersion(ent.version, ent.latest_version);
-		$('#set-status').val(ent.status);
-		dced.setMode(dced.viewMode);
+		dced.drawMeta(ent);
+		$('#ld-editor').html("<div class='dacura-json-editor'>" + dced.getMetaEditHTML(dced.currentEntity.meta) + dced.getBodyEditHTML(dced.currentEntity) + "</div>");
+		dced.setMode();
 		dced.drawBody(ent.display); 
 	},
 
@@ -391,17 +448,17 @@ dacura.editor = {
 			$('#ld-viewer').html("<div class='dacura-json-viewer'>" + JSON.stringify(contents, null, 4) + "</div>");
 		}
 		else if(dced.options.format == "triples"){
-			var html = "<div class='ld-table-viewer'><table class='ld-triples-viewer'><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr>";
+			var html = "<div class='ld-table-viewer'><table class='ld-triples-viewer'><thead><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr></thead><tbody>";
 			for (var i in contents) {
 				var row = "<tr><td>" + contents[i][0] + "</td>";
 				row += "<td>" + contents[i][1] + "</td>";
-				row += "<td>" + contents[i][2] + contents[i][3] + "</td></tr>";
+				row += "<td>" + contents[i][2] + "</td></tr>";
 				html += row;
 			}
-			$('#ld-viewer').html(html + "</table></div>");	
+			$('#ld-viewer').html(html + "</tbody></table></div>");	
 		}
 		else if(dced.options.format == "quads"){
-			var html = "<div class='ld-table-viewer'><table class='ld-triples-viewer'><tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Graph</th></tr>";
+			var html = "<div class='ld-table-viewer'><table class='ld-triples-viewer'><thead><tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Graph</th></tr><thead><tbody>";
 			for (var i in contents) {
 				var row = "<tr><td>" + contents[i][0] + "</td>";
 				row += "<td>" + contents[i][1] + "</td>";
@@ -409,7 +466,7 @@ dacura.editor = {
 				row += "<td>" + contents[i][3] + "</td></tr>";
 				html += row;
 			}
-			$('#ld-viewer').html(html + "</table></div>");	
+			$('#ld-viewer').html(html + "</tbody></table></div>");	
 		}
 		else if(dced.options.format == "html"){
 				var html = "<div class='dacura-html-viewer'>";
@@ -596,28 +653,24 @@ dacura.editor = {
 
 		function initFormatButtons(){ 			
 			//view format choices
-			$( ".view-native-export" ).buttonset().click(function(event){
-				if($('#format_native').is(":checked")){
-					dced.setFormatSubOptions("native");
-				}
-				else {
-					dced.setFormatSubOptions("export");				
-				}
-			});
-			$( ".view-options-native" ).buttonset();
-			$( ".view-options-export" ).buttonset();
-			$( ".native-suboptions" ).buttonset();
+			$(".edit-options").buttonset();
+			$( ".view-options" ).buttonset();
 			$( ".foption" ).click(function(event){
 				dced.options.format = event.target.id.substr(7);
 				dced.setFormatOption(event.target.id.substr(7));
 				dced.refresh("loading " + event.target.id.substr(7) + " format");
 		    });
-			$( ".ifoption" ).click(function(event){
+			$( ".eoption" ).click(function(event){
+				dced.options.format = event.target.id.substr(6);
+				dced.setFormatOption(event.target.id.substr(6));
+				dced.refresh("loading " + event.target.id.substr(6) + " edit format");
+		    });
+		    $( ".ifoption" ).click(function(event){
 				dced.options.stage = event.target.id.substr(7);
 				dced.refresh("stage");
 			});
 			$( ".doption" ).click(function(event){
-				dced.flags[event.target.id.substr(8)] = $('#'+event.target.id).is(":checked");
+				dced.options.flags[event.target.id.substr(8)] = $('#'+event.target.id).is(":checked");
 				dced.refresh("highlight");
 			});
 		}
@@ -678,12 +731,12 @@ dacura.editor = {
 				dced.submit("restore");
 			});	
 			$('.editor-max').click(function(){
-				dacura.system.goFullBrowser();
+				dacura.system.goFullBrowser(dced.targets.busybox);
 				$('.browsermin').show();
 				$('.browsermax').hide();
 			});			  
 			$('.editor-min').click(function(){
-				dacura.system.leaveFullBrowser();
+				dacura.system.leaveFullBrowser(dced.targets.busybox);
 				$('.browsermax').show();
 				$('.browsermin').hide();
 			});			  
@@ -699,60 +752,24 @@ dacura.editor = {
 
 	setFormatOption: function(opt){
 		$("#format_" + opt).prop('checked', true).button("refresh");					
-		if(opt == "jsonld" || opt == "json" || opt == "triples" || opt == "quads" || opt == "html"){
-			dced.setFormatSubOptions("native");
-			$("#format_native").prop('checked', true).button("refresh");					
-			dced.nformat = opt;
-			if(opt != "html"){
-				$('.native-suboptions').show();
-			}
-			else {
-				$('.native-suboptions').hide();						
-			}
-		}
-		else {
-			dced.setFormatSubOptions("export");
-			$("#format_export").prop('checked', true).button("refresh");					
-			dced.eformat = opt;
-			$('.native-suboptions').hide();			
-		}
-	},
-	
-	setFormatSubOptions: function(setting){
-		if(setting == "export") {
-		 	$(".view-options-native").hide();
-		 	$(".view-options-export").show();
-		 	$(".native-suboptions").hide();
-		}
-		else {
-		 	$(".view-options-native").show();
-		 	$(".view-options-export").hide();
-		 	if(dced.nformat != "html"){
-			 	$(".native-suboptions").show();
-		 	}
-		}
 	},
 
+
+	
 	setCreateMode: function(obj){
 		$('#ld-view-page').hide();
 		$(".view-update-stage").hide();		
 		$('#set-update-status').hide();							
 		$('#ld-edit-page').show();
 		if(typeof obj != "undefined"){
-			$('#ld-editor').append("<div class='dacura-json-editor'>" + 
-					"<textarea id='ldmeta-input'>" + JSON.stringify(obj.meta) + "</textarea>" + 
-					"<textarea id='ldprops-input'>" + JSON.stringify(obj.ldprops) + "</textarea>" + 
-			"<div class='dch' id='ld-experimental' contentEditable=true>{}</div>"); 
+			$('#ld-editor').append("<div class='dacura-json-editor'>" + this.getMetaEditHTML(obj.meta) + this.getBodyEditHTML(obj) + "</div>");
 		}
 		else {
-			$('#ld-editor').append("<div class='dacura-json-editor'>" + 
-				"<textarea id='ldmeta-input'>{}</textarea>" + 
-				"<textarea id='ldprops-input'>{}</textarea>" + 
-				"<div class='dch' id='ld-experimental' contentEditable=true>{}</div>"); 
+			$('#ld-editor').append("<div class='dacura-json-editor'>" + this.getMetaEditHTML() + this.getBodyEditHTML() + "</div>");
 		}
-		dced.jsoneditor = new JSONEditor($("#ldprops-input"), dced.editorwidth, dced.editorheight);
-		dced.jsoneditor.doTruncation(true);
-		dced.jsoneditor.showFunctionButtons();
+		//dced.jsoneditor = new JSONEditor($("#ldprops-input"), dced.editorwidth, dced.editorheight);
+		//dced.jsoneditor.doTruncation(true);
+		//dced.jsoneditor.showFunctionButtons();
 		$('.cancel_edit').hide();
 		$('.test_edit span').text("Test entity creation");
 		$('.save_edit span').text("Submit new entity");	
@@ -762,6 +779,7 @@ dacura.editor = {
 		if(typeof mode != "undefined"){
 			dced.mode = mode;					
 		}
+
 		if(dced.mode.substring(0,4) == "view"){
 			$('.dacura-json-editor').remove();
 			dced.viewMode = dced.mode;
@@ -808,23 +826,14 @@ dacura.editor = {
 		}
 		else if(dced.mode.substring(0,4) == "edit"){
 			dced.editMode = dced.mode;
-			var meta = JSON.stringify(dced.currentEntity.meta, null, 4);
-			var content = JSON.stringify(dced.currentEntity.ldprops, null, 4);
+			//var meta = JSON.stringify(dced.currentEntity.meta, null, 4);
+			//var content = JSON.stringify(dced.currentEntity.ldprops, null, 4);
+			$('#ld-editor').html("<div class='dacura-json-editor'>" + dced.getMetaEditHTML(dced.currentEntity.meta) + dced.getBodyEditHTML(dced.currentEntity) + "</div>");
 			$('#ld-edit-page').show();
 			$('#ld-view-page').hide();
-			$('#ld-editor').append("<div class='dacura-json-editor'>" + 
-					"<textarea id='ldmeta-input'>" + meta + "</textarea>" + 
-					"<textarea id='ldprops-input'>" +  content + "</textarea>" + 
-					"<div class='dch' id='ld-experimental' contentEditable=true>" + content + "</div>"); 
 			//dced.jsoneditor = new JSONEditor($("#ldprops-input"), dced.editorwidth, dced.editorheight);
 			//dced.jsoneditor.doTruncation(true);
 			//dced.jsoneditor.showFunctionButtons();
-			if(mode == "edit"){
-				$('#set-update-status').hide();				
-			}
-			else if(mode == "edit_update"){
-				$('#set-update-status').show();							
-			}
 		}	
 	},
 	

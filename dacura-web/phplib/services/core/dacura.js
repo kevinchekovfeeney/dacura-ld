@@ -22,7 +22,8 @@ dacura = {
 			"resultbox": '.tool-info', 
 			"errorbox": '.tool-info', 
 			"infobox": '.tool-info', 
-			"busybox": '.tool-body'	
+			"busybox": '.tool-body',
+			"scrollto": false
 		},
 		msgs: {
 			"busy" : "Submitting request to Dacura Server",
@@ -107,6 +108,9 @@ dacura.system.setMessageTargets = function (targets){
 		if(typeof targets.busybox != "undefined"){
 			dacura.system.targets.busybox = targets.busybox;
 		}
+		if(typeof targets.scrollto != "undefined"){
+			dacura.system.targets.scrollto = targets.scrollto;
+		}
 	}
 }
 
@@ -171,22 +175,27 @@ dacura.system.showErrorResult = function(msg, extra, title, jqid){
 	dacura.system.writeResultMessage("error", title, jqid, msg, extra);
 }
 
-dacura.system.showJSONErrorResult = function(json){
+dacura.system.showJSONErrorResult = function(json, jqid, tit){
 	var tit = "";
-	if(typeof json.msg_title != "undefined"){
-		tit = json.action + ": " + json.msg_title;
-	} 
-	else {
-		tit = json.action + " Unsuccessful";
-	}
 	var body = "";
+	if(typeof tit != "undefined"){
+		if(typeof json.msg_title != "undefined"){
+			tit = json.action + ": " + json.msg_title;
+		} 
+		else if(typeof json.action == "undefined"){
+			tit = "Server Error";
+		}
+		else {
+			tit = json.action + " Failed";
+		}
+	}
 	if(typeof json.msg_body != "undefined"){
 		body = json.msg_body;
 	}
 	else {
-		body = "";
+		body = "JSON Error message returned";
 	}
-	dacura.system.showErrorResult(body, json, tit);
+	dacura.system.showErrorResult(body, json, tit, jqid);
 }
 
 dacura.system.showErrorMessage = function(msg, extra, title, jqid){
@@ -257,8 +266,8 @@ dacura.system.showBusyOverlay = function(jqueryid, msg, uopts){
 	if(typeof uopts != "undefined" && typeof uopts.loaderoptions != undefined){
 		//loaderoptions = uopts.loaderoptions;
 	}
-	$('#busy-overlay').remove();
-	$("<div class='busy-overlay' id='busy-overlay' />").css({
+	$(jqueryid + ' .busy-overlay').remove();
+	$("<div class='busy-overlay'/>").css({
 	    position: "absolute",
 	    width: "100%",
 	    height: "100%",
@@ -270,8 +279,11 @@ dacura.system.showBusyOverlay = function(jqueryid, msg, uopts){
 	
 	var html = "<div class='progress-container " + busyclass + "'><div class='" + loaderclass + "'></div></div>";
 	html += "<div class='dacura-busy-message'>"+ msg + "</div></div>"; 
-	$('#busy-overlay').html(html);
-	$('.'+loaderclass).progressbar(loaderoptions);
+	$(jqueryid + ' .busy-overlay').html(html);
+	if($(jqueryid).height() < 100){
+		$(jqueryid).css("min-height", "100px");
+	}
+	$(jqueryid + ' .'+loaderclass).progressbar(loaderoptions);
 };
 
 /*
@@ -304,7 +316,6 @@ dacura.system.writeResultMessage = function(type, title, jqueryid, msg, extra){
 		if(typeof extra == "object"){
 			extra = JSON.stringify(extra, 0, 4);
 		}
-		self.extrashown = false;
 		self.isAnimating = false;
 		var toggle_id = self.lasttoggleid++;
 		contents += "<div id='toggle_extra_" + toggle_id + "' class='toggle_extra_message'>Show More Details</div>";
@@ -312,21 +323,21 @@ dacura.system.writeResultMessage = function(type, title, jqueryid, msg, extra){
 		var html = "<div class='dacura-user-message-box " + cls + "'>" + contents + "</div>";
 		$(jqueryid).html(html);
 		var tgid = '#toggle_extra_' + toggle_id;
-		$('.toggle_extra_message').click(function(event) {
+		$(tgid).click(function(event) {
 			if(!self.isAnimating) {
 				self.isAnimating = true;
-		        setTimeout("dacura.system.isAnimating = false", 1000); 
-				$('.message_extra').toggle( "slow", function() {
-					self.extrashown = !self.extrashown;
-					if(self.extrashown ){
-						$(".toggle_extra_message").text("Hide details");
+		        setTimeout("dacura.system.isAnimating = false", 400); 
+				$("#message_extra_" + toggle_id).toggle( "slow", function() {
+					if($('#message_extra_' + toggle_id).is(":visible")) {
+						$(tgid).text("Hide details");
 					}
 					else {
-						$(".toggle_extra_message").text("Show details");				
+						$(tgid).text("Show details");				
 					}
 				});
 		    } 
 			else {
+				alert("animating");
 		        event.preventDefault();
 		    }
 		});
@@ -373,17 +384,18 @@ dacura.system.clearInfoMessage = function(jqid){
 }
 
 dacura.system.clearBusyMessage = function(jqid){
-	if(typeof jqid == "undefined"){
-		dacura.system.removeBusyOverlay();
-	}
-	else {
-		$(jqid).remove();
-	}
+	//alert("clear busy " +  jqid);
+	dacura.system.removeBusyOverlay(jqid);
 }
 
-dacura.system.removeBusyOverlay = function(){
-	$('#busy-overlay').remove();	
-	$('#overlaymakeweight').remove();		
+dacura.system.removeBusyOverlay = function(jqid){
+	if(typeof jqid == "undefined"){
+		$(".busy-overlay").remove();
+	}
+	else {
+		$(jqid).css("min-height", "0px");
+		$(jqid + " .busy-overlay").remove();	
+	}
 };
 
 /*
@@ -405,6 +417,7 @@ dacura.system.goFullBrowser = function(jqid){
 		background: "rgba(255, 255, 255, .9)"
 	}).appendTo($('#content-container').css("position", "relative"));
 	$("#full-browser-overlay").append($(jqid).contents());
+	$('#dacura-header').hide();
 	this.goTo("#full-browser-overlay");
 }
 
@@ -415,6 +428,8 @@ dacura.system.leaveFullBrowser = function(jqid){
 	var working = $("#full-browser-overlay").contents();
 	$(jqid).append(working);
 	$("#full-browser-overlay").remove();	
+	$('#dacura-header').show();
+	this.goTo(jqid);
 }
 
 dacura.system.goTo = function (jqid){
@@ -442,11 +457,6 @@ dacura.system.default_update = function(msgs){
 }
 
 
-dacura.system.default_always = function(data_or_jqXHR, textStatus, jqXHR_or_errorThrown){
-	dacura.system.clearBusyMessage();
-	dacura.system.goTo();	
-};
-
 
 dacura.system.invoke = function(ajs, msgs, targets){
 	if(typeof ajs == "undefined"){
@@ -456,9 +466,25 @@ dacura.system.invoke = function(ajs, msgs, targets){
 	self.setMessages(msgs);
 	self.setMessageTargets(targets); 
 	if(typeof ajs.beforeSend == "undefined"){
+		var bb = self.targets.busybox;
 		ajs.beforeSend = function(){
-			self.showBusyMessage();
-		};		
+			self.showBusyMessage(self.msgs.busy, "", bb);
+		};	
+	}
+	if(typeof ajs.always == "undefined"){
+		var x = self.targets.busybox;
+		var y = self.targets.resultbox;
+		var gotobox = self.targets.scrollto;
+		always = function(data_or_jqXHR, textStatus, jqXHR_or_errorThrown){
+			dacura.system.clearBusyMessage(x);
+			if(gotobox){
+				dacura.system.goTo(gotobox);
+			}
+		};
+	}
+	else {
+		always = ajs.always;
+		delete(ajs.always);
 	}
 	if(typeof ajs.handleResult == "undefined"){
 		ajs.handleResult = function(json){
@@ -466,34 +492,33 @@ dacura.system.invoke = function(ajs, msgs, targets){
 		}
 	}
 	if(typeof ajs.handleTextResult == "undefined" ){
+		var rb = self.targets.resultbox;
 		ajs.handleTextResult = function(text){ 
-			self.showErrorResult(text, null, self.msgs.notjson);
+			self.showErrorResult(text, null, self.msgs.notjson, rb);
 		}
 	}
 	if(typeof ajs.handleJSONError == "undefined" ){
-		ajs.handleJSONError = self.showJSONErrorResult; 
-	}
-	dacura.system.default_handle_json_error
-	if(typeof ajs.always == "undefined"){
-		always = self.default_always;
-	}
-	else {
-		always = ajs.always;
-		delete(ajs.always);
+		var fl = self.msgs.fail;
+		var eb = self.targets.errorbox;
+		ajs.handleJSONError = function(json){
+			self.showJSONErrorResult(json, eb, fl); 	
+		}
 	}
 	if(typeof ajs.fail == "undefined"){
+		var rb = self.targets.resultbox;
+		var fl = self.msgs.fail;
 		fail = function (jqXHR, textStatus, errorThrown){
 			if(jqXHR.responseText && jqXHR.responseText.length > 0){
 				try{
 					jsonerror = JSON.parse(jqXHR.responseText);
 				}
 				catch(e){
-					return dacura.system.showErrorResult(jqXHR.responseText);										
+					return dacura.system.showErrorResult(jqXHR.responseText, null, fl, rb);										
 				}
 				ajs.handleJSONError(jsonerror, textStatus);
 			}
 			else {
-				dacura.system.showErrorResult(self.msgs.nodata, jqXHR);						
+				dacura.system.showErrorResult(self.msgs.nodata, jqXHR, fl, rb);						
 			}
 		};
 	}
@@ -502,6 +527,8 @@ dacura.system.invoke = function(ajs, msgs, targets){
 		delete(ajs.fail);
 	}
 	if(typeof ajs.done == "undefined"){
+		var rb = self.targets.resultbox;
+		var fl = self.msgs.fail;
 		done = function(data, textStatus, jqXHR){
 			if(data){ //sometimes jquery automatically gives us json
 				var lastresult;
@@ -519,7 +546,7 @@ dacura.system.invoke = function(ajs, msgs, targets){
 				ajs.handleResult(json);
 			}
 			else {
-				self.showErrorResult(self.msgs.nodata, jqXHR);										
+				self.showErrorResult(self.msgs.nodata, jqXHR, fl, rb);										
 			}
 		};
 	}
@@ -792,7 +819,33 @@ dacura.system.setLDSingleValue = function(obj, key, val){
 	}
 }
 
-
+dacura.system.styleJSONLD = function(jqid) {
+	if(typeof jqid == "undefined"){
+		jqid = ".rawjson";
+	}
+	$(jqid).each(function(){
+	    var text = $(this).html();
+	    if(text){
+	    	if(text.length > 50){
+	    		presentation = text.substring(0, 50) + "...";
+	    	}
+	    	else {
+	    		presentation = text;
+	    	}
+		    $(this).html(presentation);
+	    	try {
+	    		var t = JSON.parse(text);
+	    		if(t){
+	    			t = JSON.stringify(t, 0, 4);
+	    		    $(this).attr("title", t);
+	    		}
+	    	}
+	    	catch (e){
+    		    $(this).attr("title", "Failure: " + e.message);	    		
+	    	}
+	    }
+	});
+}
 /*
  * Then just a few utility functions
  */

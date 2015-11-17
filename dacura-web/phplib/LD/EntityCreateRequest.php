@@ -24,8 +24,11 @@ class EntityCreateRequest extends LDEntity {
 	}
 
 	function loadFromAPI($obj){
-		$this->ldprops = $obj['contents'];
-		$this->meta = $obj['meta'];
+		if(!isset($obj['contents']) && !isset($obj['meta'])){
+			return $this->failure_result("Create Object was malformed : both meta and contents are missing", 400);
+		}
+		$this->ldprops = isset($obj['contents']) ? $obj['contents'] : array();
+		$this->meta = isset($obj['meta']) ? $obj['meta'] : array();
 		$this->version = 1;
 		return true;
 	}

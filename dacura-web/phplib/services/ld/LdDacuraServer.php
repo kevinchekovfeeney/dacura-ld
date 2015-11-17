@@ -2,18 +2,13 @@
 include_once("phplib/db/LDDBManager.php");
 include_once("phplib/LD/EntityCreateRequest.php");
 include_once("phplib/LD/EntityUpdate.php");
-include_once("phplib/LD/OntologyCreateRequest.php");
-include_once("phplib/LD/OntologyUpdateRequest.php");
-include_once("phplib/LD/GraphUpdateRequest.php");
-include_once("phplib/LD/GraphCreateRequest.php");
-include_once("phplib/LD/Graph.php");
-include_once("phplib/LD/Candidate.php");
-include_once("phplib/LD/CandidateCreateRequest.php");
-include_once("phplib/LD/CandidateUpdateRequest.php");
+include_once("phplib/LD/LDEntity.php");
+include_once("phplib/LD/Schema.php");
 include_once("phplib/LD/GraphManager.php");
 require_once("phplib/LD/AnalysisResults.php");
 require_once("phplib/LD/NSResolver.php");
 include_once("phplib/PolicyEngine.php");
+require_once("LdService.php");
 
 
 /*
@@ -32,6 +27,8 @@ class LdDacuraServer extends DacuraServer {
 	var $graphman; //graph manager object
 	var $nsres; //the namespace resolving service - system wide
 	var $cwurlbase = false;
+	var $graphbase = false;
+	var $schema = false;
 
 	function __construct($service){
 		parent::__construct($service);
@@ -41,15 +38,101 @@ class LdDacuraServer extends DacuraServer {
 	}
 	
 	function loadNamespaces(){
-		$onts = $this->getEntities(array("type" => "ontology", "status" => "accept"));
+		$onts = $this->getEntities(array("type" => "ontology"));
+		//$onts = $this->getEntities(array("type" => "ontology", "status" => "accept"));//introduces bug of missing url in dependency listing.
 		$this->nsres = new NSResolver();
 		foreach($onts as $i => $ont){
+			$ont['meta'] = json_decode($ont['meta'], true);
 			if(isset($ont['id']) && $ont['id'] && isset($ont['meta']['url']) && $ont['meta']['url']){
 				$this->nsres->prefixes[$ont['id']] = $ont['meta']['url'];
 			}
 		}
 	}
 	
+	function getEntityTypeFromClassname(){
+		$cname = get_class($this);
+		return substr($cname, -(strlen("DacuraServer")));
+	}
+	
+	
+	function createNewEntityObject($id, $type){
+	 	$this->update_type = $type;
+	 	$cname = ucfirst($type)."CreateRequest";
+	 	$obj = new $cname($id);
+	 	$obj->setNamespaces($this->nsres);
+	 	return $obj; 
+	}
+	
+	function createNewEntityUpdateObject($oent, $type){
+	 	$this->update_type = $type;
+		$uclass = ucfirst($type)."UpdateRequest";
+		$uent = new $uclass(false, $oent);
+		return $uent;
+	}
+	
+	function loadSchemaFromContext(){
+		$filter = array("type" => "graph", "collectionid" => $this->cid(), "datasetid" => $this->did(), "include_all" => true);
+		$ents = $this->getEntities($filter);
+		$sc = new Schema($this->cid(), $this->did(), $this->settings['install_url']);
+		$sc->load($ents);
+		$sc->nsres = $this->nsres;
+		return $sc;
+	}
+	
+	function getPolicyDecision($action, $args){
+		return $this->policy->getPolicyDecision($action, $this->update_type, $args);
+	}
+	
+	
+	/*
+	 * This is the LD Quality control interface
+	 * All of these methods return a graph analysis results object
+	 */
+	/*
+	 * Called when an entity's state changes to 'accept' 
+	 * It is then 'published' (what that means exactly depends on the type of the entity)
+	 * Takes a LdEntity object
+	 */
+	function publishEntityToGraph($ent, $is_test=false){
+		$ar = new GraphAnalysisResults("entity $ent->id published (test: $is_test)");
+		return $ar->accept();
+	}
+	
+	function deleteEntityFromGraph($ent, $is_test = false){
+		$ar = new GraphAnalysisResults("entity $ent->id removed (test: $is_test)");
+		return $ar->accept();
+	}
+	
+	/*
+	 * Take EntityUpdateRequest Object
+	 */
+	
+	/*
+	 * Called when an entity is updated 
+	 * The updates are then published 
+	 */
+	function updateEntityInGraph($uent, $is_test = false){
+		$ar = new GraphAnalysisResults("entity " . $uent->original->id." updated (test: $is_test)");
+		return $ar->accept();
+	}
+	
+	function undoEntityUpdate($uent, $is_test = false){
+		$ar = new GraphAnalysisResults("rolling back update $ent->id to entity ".$uent->original->id." (test: $is_test)");
+		return $ar->accept();		
+	}
+	
+	/*
+	 * Called to update an existing update (e.g. to make minor corrections to an update without creating a new revision.
+	 */
+	function updatePublishedUpdate($uenta, $uentb, $is_test = false){
+		$ar = new GraphAnalysisResults("update update $uenta->id to entity ".$uenta->original->id." (test: $is_test)");
+		return $ar->accept();		
+	}
+	
+
+	/*
+	 * Loading lists of entities and updates
+	 */
 	function getEntities($filter){
 		$data = $this->dbman->loadEntityList($filter);
 		if(!$data){
@@ -68,16 +151,18 @@ class LdDacuraServer extends DacuraServer {
 
 	/*
 	 * the getEntity version returns a AR object to support direct API access
+	 * also loads things like history and updates -> for UI 
 	 */
 	function getEntity($entity_id, $type, $fragment_id = false, $version = false, $options = array()){
 		$action = "Fetching " . ($fragment_id ? "fragment $fragment_id from " : "");
+		$this->update_type = $type;
 		$action .= "$type $entity_id". ($version ? " version $version" : "");
 		$ar = new SimpleRequestResults($action);
 		$ent = $this->loadEntity($entity_id, $type, $this->cid(), $this->did(), $fragment_id, $version, $options);
 		if(!$ent){
 			return $ar->failure($this->errcode, "Error loading $type $entity_id", $this->errmsg);
 		}
-		$ar->add($this->getPolicyDecision("view", get_class($ent), $ent));
+		$ar->add($this->getPolicyDecision("view", $ent));
 		if($ar->is_accept()){
 			$ar->set_result($ent);
 		}
@@ -91,6 +176,11 @@ class LdDacuraServer extends DacuraServer {
 		$ent = $this->dbman->loadEntity($entity_id, $type, $cid, $did, $options);
 		if(!$ent){
 			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+		}
+		if($options && in_array('history', $options)){
+			$ent->history = $this->loadHistoricalRecord($ent);
+			$updopts = array("include_all" => true, 'type' => $type, "collectionid" => $this->cid(), "datasetid" => $this->did(), "entityid" => $entity_id);
+			$ent->updates = $this->getUpdates($updopts);
 		}
 		$ent->nsres = $this->nsres;
 		if($version && $ent->version() > $version){
@@ -131,7 +221,41 @@ class LdDacuraServer extends DacuraServer {
 		}
 		return $ent;
 	}
+
+	function loadHistoricalRecord($oent, $from_version = 0, $to_version = 1){
+		$ent = clone $oent;
+		$histrecord = array(array(
+			'status' => $ent->status,
+			'version' => $ent->version,
+			'version_replaced' => 0				
+		));
+		$history = $this->getEntityHistory($ent, $to_version);
+		foreach($history as $i => $old){
+			$histrecord[count($histrecord) -1]['created_by'] = $old['eurid'];
+			$histrecord[count($histrecord) -1]['forward'] = $old['forward'];
+			$histrecord[count($histrecord) -1]['backward'] = $old['backward'];
+			$back_command = json_decode($old['backward'], true);
+			if(!$ent->update($back_command, true)){
+				return $this->failure_result($ent->errmsg, $ent->errcode);
+			}
+			$histrecord[count($histrecord) -1]['createtime'] = $old['modtime'];
+			$histrecord[] = array(
+				'status' => isset($ent->meta['status']) ? $ent->meta['status'] : $ent->status, 
+				"version" => $old['from_version'],
+				"version_replaced" => $old['modtime']
+			);
+		}
+		$histrecord[count($histrecord) -1]['forward'] = json_encode($ent->ldprops);
+		$histrecord[count($histrecord) -1]['backward'] = json_encode(array());
+		$histrecord[count($histrecord) -1]['createtime'] = $ent->created;
+		$histrecord[count($histrecord) -1]['created_by'] = 0;
+		//$histrecord[] 
+		return $histrecord;
+	}
 	
+	/*
+	 * Rolls an entity back to some particular version
+	 */
 	function rollBackEntity(&$ent, $version){
 		$history = $this->getEntityHistory($ent, $version);
 		foreach($history as $i => $old){
@@ -142,6 +266,7 @@ class LdDacuraServer extends DacuraServer {
 			if(!$ent->update($back_command, true)){
 				return $this->failure_result($ent->errmsg, $ent->errcode);
 			}
+			$ent->status = isset($ent->meta['status']) ? $ent->meta['status'] : $ent->status;
 			$ent->version = $old['from_version'];
 			$ent->version_created = $old['modtime'];
 			if($i == 0){
@@ -154,22 +279,14 @@ class LdDacuraServer extends DacuraServer {
 		return $ent;
 	}
 	
+	/*
+	 * Returns a list of all the updates to an entity that have been accepted, organised in order of last to first...
+	 */
 	function getEntityHistory($ent, $version){
 		$history = $this->dbman->loadEntityUpdateHistory($ent, $version);
 		if($history === false){
 			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 		}
-/*		if($version == 1 && count($history) > 0){
-			//$initial_cand = $this->rollBackCandidate($cand, 1);
-			$history[] = array(
-					'from_version' => 0,
-					"to_version" => 1,
-					"modtime" => $ent->created,
-					"createtime" => $ent->created,
-					"backward" => "{}",
-					"forward" => "create"
-			);
-		}*/
 		return $history;
 	}
 	
@@ -177,14 +294,13 @@ class LdDacuraServer extends DacuraServer {
 	/*
 	 * Same pattern applies for retreiving updates
 	 */
-	
 	function getUpdate($id, $options = array()){
-		$ar = new RequestAnalysisResults("Loading Update Request $id from DB", false);
+		$ar = new SimpleRequestResults("Loading Update Request $id from DB", false);
 		$ur = $this->loadUpdate($id, $options);
 		if(!$ur){
 			return $ar->failure($this->errcode, "Failed to load Update $id", $this->errmsg);
 		}
-		$ar->add($this->getPolicyDecision("view", get_class($ur), $ur));
+		$ar->add($this->getPolicyDecision("view update", $ur));
 		if($ar->is_accept()){
 			$ar->set_result($ur);
 		}
@@ -212,9 +328,9 @@ class LdDacuraServer extends DacuraServer {
 		}
 		return $eur;
 	}
-	
+		
 	function createEntity($type, $create_obj, $demand_id, $options, $test_flag = false){
-		$ar = new RequestAnalysisResults("Creating $type");
+		$ar = new UpdateAnalysisResults("Creating $type", $test_flag);
 		if($demand_id){
 			if($this->demandIDValid($demand_id, $type)){
 				$id = $this->generateNewEntityID($type, $demand_id);
@@ -223,16 +339,7 @@ class LdDacuraServer extends DacuraServer {
 				$id = $this->generateNewEntityID($type);
 			}
 			if($id != $demand_id){
-				$txt = "Requested ID $demand_id could not be granted (".$this->errmsg.").";
-				$extra = "";
-				if($test_flag){
-					$txt = "An ID will be randomly generated when the $type is created.";
-					$extra = "$id is an example of a randomly generated ID, it will be replaced by another if the $type is created";
-				}
-				else {
-					$txt = "The $this->entity_type was allocated a randomly generated ID: $id";
-				}
-				$ar->addWarning("Generating id", $txt, $extra);
+				$this->addIDAllocationWarning($ar, $type, $test_flag, $id);
 			}
 		}
 		else {
@@ -253,47 +360,47 @@ class LdDacuraServer extends DacuraServer {
 			return $ar->failure($nent->errcode, "Invalid Create Request", $nent->errmsg);
 		}
 		$nent->expandNS();//use fully expanded urls internally - support prefixes in input
-		$ar->add($this->getPolicyDecision("create", $type, $nent));
-		if(!$ar->is_reject()){
-			$gu = $this->publishEntityToGraph($nent, $ar->decision, $test_flag);
-			if($gu->is_reject() && $ar->is_accept() && $this->policy->rollbackToPending("create", $type, $nent)){
-				$ar->addWarning("Publication", "Rejected by Graph Management Service", "State changed from accept to pending");
-				$nent->set_status("pending");
-				$gu = $this->publishEntityToGraph($nent, "pending", $test_flag);
-				$ar->setReportGraphResult($gu, true);
-				$ar->decision = "pending";
-			}
-			else {
-				$ar->setReportGraphResult($gu);
-			}
+		$ar->add($this->getPolicyDecision("create", $nent));
+		if($ar->is_reject()){
 			$nent->set_status($ar->decision);
-			//opr($nent);
-			$ar->setCandidateGraphResult($nent->internalTriples());
-		}
-		else {
-			$nent->set_status($ar->decision);
-		}
-		if($test_flag || $ar->is_confirm() || ($ar->is_reject() && !$this->policy->storeRejected($type, $nent))){
+			if($this->policy->storeRejected($type, $nent) && !$test_flag){
+				if(!$this->dbman->createEntity($nent, $type)){
+					$ar->addError($this->dbman->errcode, "Usage Monitoring", "Failed to store copy of rejected create of $type.", $this->dbman->errmsg);
+				}
+			}
 			return $ar;
 		}
-		if(!$this->dbman->createEntity($nent, $type)){
-			$disaster = new AnalysisResults("Database Synchronisation");
-			$disaster->failure($this->dbman->errcode, "Internal Error", "Failed to create database candidate record ". $this->dbman->errmsg);
-			$ar->add($disaster);
-			//opr($ar);
-			if($ar->includesGraphChanges()){
-				$recovery = $this->deleteEntityFromGraph($nent);
-				$ar->undoReportGraphResult($recovery);
+		$gu = $this->publishEntityToGraph($nent, $ar->decision, $test_flag);
+		if($gu->is_reject() && $ar->is_accept() && $this->policy->rollbackToPending("create", $type, $nent)){
+			$ar->addWarning("Publication", "Rejected by Graph Management Service", "State changed from accept to pending");
+			$nent->set_status("pending");
+			$gu = $this->publishEntityToGraph($nent, "pending", $test_flag);
+			$ar->setReportGraphResult($gu, true);
+			$ar->decision = "pending";
+		}
+		else {
+			$ar->setReportGraphResult($gu);
+		}
+		$nent->set_status($ar->decision);
+		//$ar->setCandidateGraphResult($nent->internalTriples());
+		$ar->setCandidateGraphResult($nent->triples());
+		if(!($test_flag || $ar->is_confirm())){
+			if(!$this->dbman->createEntity($nent, $type)){
+				$disaster = new AnalysisResults("Database Synchronisation");
+				$disaster->failure($this->dbman->errcode, "Internal Error", "Failed to create database candidate record ". $this->dbman->errmsg);
+				$ar->add($disaster);
+				if($ar->includesGraphChanges()){
+					$recovery = $this->deleteEntityFromGraph($nent);
+					$ar->undoReportGraphResult($recovery);
+				}
 			}
 		}
-		if(!$ar->is_reject()){
-			$ar->set_result($nent->getDisplayFormat());
-		}
+		$ar->set_result($nent->getDisplayFormat());
 		return $ar;
 	}
 
 	/*
-	 * Methods dealing with Candidate ID generation
+	 * Methods dealing with Entity ID generation
 	 */	
 	function generateNewEntityID($type, $demand = false){
 		if($demand){
@@ -302,70 +409,82 @@ class LdDacuraServer extends DacuraServer {
 		return uniqid_base36(true);
 	}
 	
-/*	function createNewEntityObject($id, $type){
-		if($type == "schema"){
-			return $this->failure_result("Dacura API does not support creation of schema", 400);
-		}
-		elseif($type == "ontology"){
-			$obj = new OntologyCreateRequest($id);		
-		}
-		elseif($type == "graph"){
-			$obj = new GraphCreateRequest($id);		
+	function addIDAllocationWarning(&$ar, $type, $test_flag, $id){
+		$txt = "Requested ID could not be granted (".$this->errmsg.").";
+		$extra = "";
+		if($test_flag){
+			$txt = "An ID will be randomly generated when the $type is created.";
+			$extra = "$id is an example of a randomly generated ID, it will be replaced by another if the $type is created";
 		}
 		else {
-			$obj = new CandidateCreateRequest($id);
+			$txt = "The $type was allocated a randomly generated ID: $id";
 		}
-		$nsres = new NSResolver();
-		$obj->setNamespaces($nsres);
-		$obj->type = $type;
-		return $obj;
-	}*/
+		$ar->addWarning("Generating id", $txt, $extra);
+	}
 	
-	function updateEntity($target_id, $type, $obj, $fragment_id, $options = array(), $test_flag = false){
-		$ar = new RequestAnalysisResults("Update $target_id");
+	function updateEntity($target_id, $type, $cnt, $meta, $fragment_id, $options = array(), $test_flag = false){
+		$ar = new UpdateAnalysisResults("Update $target_id", $test_flag);
 		$oent = $this->loadEntity($target_id, $type, $this->cid(), $this->did(), $fragment_id);
 		if(!$oent){
 			if($this->errcode){
-				return $ar->failure($this->errcode, "Failed to load $this->entity_type $target_id", $this->errmsg);
+				return $ar->failure($this->errcode, "Failed to load $target_id", $this->errmsg);
 			}
 			else {
 				return $ar->failure(404, "No such $this->entity_type", "$target_id does not exist.");
 			}
 		}
-		$uclass = get_class($oent)."UpdateRequest";
-		$uent = new $uclass(false, $oent);
-		$nsres = new NSResolver();
-		$uent->setNamespaces($nsres);
-		
+		$uent = $this->createNewEntityUpdateObject($oent, $type);
+		if(!$uent){
+			return $ar->failure(403, "Update Failed", "Cant create update object for $oent->id");				
+		}
+		$uent->setNamespaces($this->nsres);	
+		$form = isset($options['format']) ? $options['format'] : "json";
 		//is this entity being accessed through a legal collection / dataset context?
 		if(!$uent->isLegalContext($this->cid(), $this->did())){
 			return $ar->failure(403, "Access Denied", "Cannot update $oent->id through context ".$this->cid()."/".$this->did());
 		}
-		elseif(!$uent->loadFromAPI($obj)){
-			return $ar->failure($uent->errcode, "Protocol Error", "Failed to load the update candidate from the API. ".$uent->errmsg);
+		elseif(!$uent->loadFromAPI($cnt, $meta, $form)){
+			return $ar->failure($uent->errcode, "Protocol Error", "Failed to load the update candidate from the API. ", $uent->errmsg);
 		}
-		else {
-			if($uent->isOntology()){
-				$opts = array("force_inserts" => true, "demand_id_allowed" => $this->policy->demandIDAllowed("update", get_class($uent), $uent));
+		if($uent->nodelta()){
+			return $ar->reject("No Changes", "The submitted version is identical to the current version.");
+		}
+		$ar->add($this->getPolicyDecision("update", $uent));
+		if($ar->is_reject()){
+			$uent->set_status($ar->decision);
+			if($this->policy->storeRejected("update ".$type, $uent) && !$test_flag){
+				if(!$this->dbman->updateEntity($uent, $ar->decision)){
+					$ar->addError($this->dbman->errcode, "Usage Monitoring", "Failed to store copy of rejected update.", $this->dbman->errmsg);
+				}
 			}
-			else {
-				$opts = array("demand_id_allowed" => $this->policy->demandIDAllowed("update", get_class($uent), $uent));
-			}
-			if(!$uent->calculateChanged($opts)){
-				return $ar->failure($uent->errcode, "Update Error", "Failed to apply updates ".$uent->errmsg);
+			return $ar;
+		}
+		
+		$this->checkUpdate($ar, $uent, $test_flag);
+		if(($ar->is_accept() or $ar->is_pending()) && !$test_flag){
+			if(!$this->dbman->updateEntity($uent, $ar->decision)){
+				$disaster = new AnalysisResults("Database Synchronisation");
+				$disaster->failure($this->dbman->errcode, "Internal Error", "Failed to update database candidate record ". $this->dbman->errmsg);
+				$ar->add($disaster);
+				$this->rollBackUpdate($ar, $uent);
 			}
 		}
-		if($uent->calculateDelta()){
-			if($uent->nodelta()){
-				return $ar->reject("No Changes", "The submitted version is identical to the current version.");
-			}
+		//get stuff out of options...
+		$format = isset($options['format']) ? $options['format'] : false;
+		$ar->set_result($uent->showUpdateResult($format, $this));
+		return $ar;
+	}
+	
+	function rollbackUpdate(&$ar, &$uent){
+		if($ar->includesGraphChanges()){
+			$recovery = $this->undoUpdatesToGraph($uent);
+			$ar->undoReportGraphResult($recovery);
 		}
-		else {
-			return $ar->reject($uent->errcode, "Error in calculating change", $uent->errmsg);
-		}
-		$ar->add($this->getPolicyDecision("update", get_class($uent), $uent));
+	}
+	
+	function checkUpdate(&$ar, &$uent, $test_flag){
 		if($ar->is_accept() or $ar->is_confirm()){
-			//unless the status of the candidate is accept, the change to the report graph is hypothetical
+			//unless the status of the candidate was accept, before or after, the change to the report graph is hypothetical
 			$hypo = !($uent->changedPublished() || $uent->originalPublished());
 			$gu = $this->publishUpdateToGraph($uent, $ar->decision, $hypo || $test_flag);
 			if($ar->is_accept() && $uent->changedPublished() && $gu->is_reject()
@@ -383,43 +502,18 @@ class LdDacuraServer extends DacuraServer {
 			$ar->setReportGraphResult($gu, true);
 		}
 		$uent->set_status($ar->decision);
-		if($ar->is_reject()){
-			if($this->policy->storeRejected("update", $uent) && !$test_flag){
-				if(!$this->dbman->updateEntity($uent, $ar->decision)){
-					$ar->addError($this->dbman->errcode, "Usage Monitoring", "Failed to store copy of rejected update.", $this->dbman->errmsg);
-				}
-			}
-			return $ar;
-		}
 		$ar->setUpdateGraphResult($uent->compare());
 		$meta_delta = $uent->getMetaUpdates();
 		$ar->setCandidateGraphResult($uent->addedCandidateTriples(), $uent->deletedCandidateTriples(), !($ar->is_accept() || $ar->is_confirm()), $meta_delta);
-		if(($ar->is_accept() or $ar->is_pending()) && !$test_flag){
-			if(!$this->dbman->updateEntity($uent, $ar->decision)){
-				$disaster = new AnalysisResults("Database Synchronisation");
-				$disaster->failure($this->dbman->errcode, "Internal Error", "Failed to update database candidate record ". $this->dbman->errmsg);
-				$ar->add($disaster);
-				if($ar->includesGraphChanges()){
-					$recovery = $this->undoUpdatesToGraph($uent);
-					$ar->undoReportGraphResult($recovery);
-				}
-			}
-		}
-		//get stuff out of options...
-		$format = isset($options['format']) ? $options['format'] : false;
-		$flags = isset($options['display']) ? $this->parseDisplayFlags($options['display']) : array();
-		$version = isset($options['version']) ? $options['version'] : false;
-		$ar->set_result($uent->showUpdateResult($format, $flags, $version, $this));
-		return $ar;
 	}
 	
 	function updateUpdate($id, $obj, $meta, $options, $test_flag = false){
-		$ar = new RequestAnalysisResults("Update Update $id");
+		$ar = new UpdateAnalysisResults("Update $this->update_type $id", $test_flag);
 		$orig_upd = $this->loadUpdate($id);
 		if(!$orig_upd){
 			return $ar->failure($this->errcode, "Failed to load Update $id", $this->errmsg);
 		}
-		$new_upd = $this->loadUpdatedUpdate($orig_upd, $obj, $meta);
+		$new_upd = $this->loadUpdatedUpdate($orig_upd, $obj, $meta, $options);
 		if(!$new_upd){
 			return $ar->failure($this->errcode, "Failed to load updated version of $id", $this->errmsg);
 		}
@@ -432,7 +526,7 @@ class LdDacuraServer extends DacuraServer {
 		if($new_upd->nodelta()){
 			return $ar->reject("No changes", "The submitted version removes all changes from the update - it has no effect.");
 		}
-		$ar->add($this->getPolicyDecision("update update", "candidate", array($orig_upd, $new_upd)));
+		$ar->add($this->getPolicyDecision("update update", array($orig_upd, $new_upd)));
 		if($ar->is_reject()){
 			return $ar;
 		}
@@ -458,7 +552,7 @@ class LdDacuraServer extends DacuraServer {
 		elseif($orig_upd->published()){ //unpublish update
 			$umode = "rollback";
 			//check here to see if there are any pending updates that are hanging off the latest version....
-			if($this->dbman->pendingUpdatesExist($orig_upd->targetid, $orig_upd->to_version()) || $this->dbman->errcode){
+			if($this->dbman->pendingUpdatesExist($orig_upd->targetid, $this->update_type, $this->cid(), $this->did(), $orig_upd->to_version()) || $this->dbman->errcode){
 				if($this->dbman->errcode){
 					return $ar->failure($this->dbman->errcode, "Unpublishing of update $orig_upd->id failed", "Failed to check for pending updates to current version of candidate");
 				}
@@ -514,15 +608,15 @@ class LdDacuraServer extends DacuraServer {
 		return $ar;
 	}
 	
-	function loadUpdatedUpdate($orig_upd, $obj, $meta){
+	function loadUpdatedUpdate($orig_upd, $obj, $meta, $options = array()){
 		if(isset($meta['from_version']) && $meta['from_version'] && $meta['from_version'] != $orig_upd->original->get_version()){
-			$norig = $this->loadCandidateFromDB($orig_upd->targetid, false, $meta['version']);
+			$norig = $this->loadEntity($orig_upd->targetid, $this->update_type, $this->cid(), $this->did(), false, $meta['version']);
 			if(!$norig)	return false;
 		}
 		else {
 			$norig = clone $orig_upd->original;
 		}
-		$ncur = new CandidateUpdateRequest($orig_upd->id, $norig);
+		$ncur = $this->createNewEntityUpdateObject($norig, $this->update_type);
 		$ncur->to_version = $orig_upd->to_version;
 		if(isset($meta['status'])){
 			$ncur->set_status($meta['status']);
@@ -530,16 +624,14 @@ class LdDacuraServer extends DacuraServer {
 		else {
 			$ncur->set_status($orig_upd->get_status());
 		}
-		if(!$ncur->loadFromAPI($obj)){
-			return $this->failure_result($ncur->errmsg, $ncur->errcode);
-		}
+		$form = isset($options['format']) ? $options['format'] : "json";
 		$opts = array(
-				"demand_id_allowed" => $this->policy->demandIDAllowed("update", $ncur),
+				"demand_id_allowed" => $this->policy->demandIDAllowed("update $this->update_type", $ncur),
 				"force_inserts" => true,
 				"calculate_delta" => true,
 				"validate_delta" => true
 		);
-		if(!$ncur->calculateChanged($opts)){
+		if(!$ncur->loadFromAPI($obj, $meta, $form, $opts)){
 			return $this->failure_result($ncur->errmsg, $ncur->errcode);
 		}
 		return $ncur;
@@ -572,26 +664,28 @@ class LdDacuraServer extends DacuraServer {
 	function updatedUpdate($cur, $umode, $testflag = false){
 		if($cur->bothPublished()){
 			if($umode == "rollback"){
-				return $this->undoReportUpdate($cur, $testflag);
+				return $this->undoEntityUpdate($cur, $testflag);
 			}
 			else {
-				return $this->updateReport($cur, $testflag);
+				return $this->updateEntityInGraph($cur, $testflag);
 			}
 		}
 		elseif($cur->originalPublished()){
 			if($umode == "rollback"){
-				return $this->deleteReport($cur->original, $testflag);
+				return $this->deleteEntityFromGraph($cur->original, $testflag);
 			}
 			else {
-				return $this->deleteReport($cur->changed, $testflag);
+				return $this->deleteEntityFromGraph($cur->changed, $testflag);
 			}
 		}
-		elseif($cur->changedPublished() or $test_flag) {
+		elseif($cur->changedPublished() or $testflag) {
 			if($umode == "rollback"){
-				return $this->writeReport($cur->original, $testflag);
+				$dont_publish = ($testflag || $cur->original->status != "accept");
+				return $this->publishEntityToGraph($cur->original, $dont_publish);
 			}
 			else {
-				return $this->writeReport($cur->changed, $testflag);
+				$dont_publish = ($testflag || $cur->changed->status != "accept");
+				return $this->publishEntityToGraph($cur->changed, $dont_publish);
 			}
 		}
 		else {
@@ -603,194 +697,47 @@ class LdDacuraServer extends DacuraServer {
 	/*
 	 * Methods for interactions with the Quality Service / Graph Manager
 	 */
-	function publishUpdateToGraph($uent, $decision, $is_test){
-		if($uent->isCandidate()){
-			if($uent->bothPublished()){
-				$gu = $this->updateEntityInGraph($uent, $decision, $is_test);
-			}
-			elseif($uent->originalPublished()){
-				$gu = $this->deleteEntityFromGraph($uent->original, $is_test);
+	function publishUpdateToGraph($uent, $decision, $testflag ){
+		if($uent->bothPublished()){
+			$gu = $this->updateEntityInGraph($uent, $testflag );
+		}
+		elseif($uent->originalPublished()){
+			$gu = $this->deleteEntityFromGraph($uent->original, $testflag);
+		}
+		else {
+			if($is_test || $uent->changedPublished()){
+				$dont_publish = ($testflag || $decision != "accept");
+				$gu = $this->publishEntityToGraph($uent->changed, $dont_publish);
 			}
 			else {
-				if($is_test || $uent->changedPublished()){
-					$gu = $this->publishEntityToGraph($uent->changed, $decision, $is_test);				
-				}
-				else {
-					$gu = new GraphAnalysisResults("Nothing to save to graph");
-				}
+				$gu = new GraphAnalysisResults("Nothing to save to graph");
 			}
-		}
-		elseif($uent->isOntology()){
-			$gu = new GraphAnalysisResults("Ontology updates are not tested against graph...");				
-		}
-		elseif($uent->isGraph()){
-			$gu = $this->publishSchemaUpdate($uent, $decision, $is_test);
 		}
 		return $gu;
 	}
-	
-	
-
+		
 	function undoUpdatesToGraph($uent){
 		if($uent->bothPublished()){
 			return $this->undoEntityUpdate($uent, false);
 		}
 		elseif($uent->originalPublished()){
-			return $this->publishEntityToGraph($uent->original, $uent->original->status, false);//dr
+			return $this->publishEntityToGraph($uent->original);//dr
 		}
 		elseif($uent->changedPublished()){
-			return $this->deleteEntityFromGraph($uent->changed, false);//wr
+			return $this->deleteEntityFromGraph($uent->changed);//wr
 		}
 		$ar = new GraphAnalysisResults("Nothing to undo in report graph");
 		return $ar;
 	}
 	
-	function publishEntityToGraph($nent, $status, $is_test=false){
-		$ar = new GraphAnalysisResults("Publishing to Graph");
-		$dont_publish = ($is_test || $status != "accept");
-		foreach($nent->ldprops as $k => $props){
-			$quads = $nent->getPropertyAsQuads($k, $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k));
-			if($quads){
-				if($nent->isCandidate()){
-					$gobj = $this->loadEntity($k, "candidate", $nent->cid, $nent->did);
-					$tests = $gobj->meta['instance_dqs'];
-					$errs = $this->graphman->create($quads, $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k), $dont_publish, $tests);
-				}
-				else {
-					$errs = array();
-				}
-				if($errs === false){
-					$ar->addOneGraphTestFail($k, $quads, array(), $this->graphman->errcode, $this->graphman->errmsg);
-				}
-				else {
-					$ar->addOneGraphTestResult($k, $quads, array(), $errs);
-				}
-			}
-		}
-		return $ar;
-	}
-	
-	function updateEntityInGraph($ent, $is_test = false){
-		$ar = new GraphAnalysisResults("Updating Report in Graph", $is_test);
-		foreach($ent->original->ldprops as $k => $props){
-			$iquads = $ent->delta->getNamedGraphInsertQuads($k, $this->getInstanceGraph($k));
-			$dquads = $ent->delta->getNamedGraphDeleteQuads($k, $this->getInstanceGraph($k));
-			if(count($iquads) > 0 or count($dquads) > 0){
-				$errs = $this->graphman->update($iquads, $dquads, $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k), $is_test);
-				if($errs === false){
-					$ar->addOneGraphTestFail($k, $iquads, $dquads, $this->graphman->errcode, $this->graphman->errmsg);
-				}
-				else {
-					$ar->addOneGraphTestResult($k, $iquads, $dquads, $errs);
-				}
-			}
-		}
-		return $ar;
-	}	
-	
-	function deleteEntityFromGraph($ent, $is_test = false){
-		$ar = new GraphAnalysisResults("Removing Entity from Graph", $is_test);
-		foreach($ent->ldprops as $k => $props){
-			$quads = $ent->getPropertyAsQuads($k, $this->getInstanceGraph($k));
-			if($quads){
-				$errs = $this->graphman->delete($quads, $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k), $is_test);
-				if($errs === false){
-					$ar->addOneGraphTestFail($k, array(), $quads, $this->graphman->errcode, $this->graphman->errmsg);
-				}
-				else {
-					$ar->addOneGraphTestResult($k, array(), $quads, $errs);
-				}
-			}
-		}
-		return $ar;
-	}
-
-	function undoEntityUpdate($ent, $is_test = false){
-		$ar = new GraphAnalysisResults("Undoing Report Update in Graph");
-		foreach($ent->original->ldprops as $k => $props){
-			$dquads = $ent->delta->getNamedGraphInsertQuads($k, $this->getInstanceGraph($k));
-			$iquads = $ent->delta->getNamedGraphDeleteQuads($k, $this->getInstanceGraph($k));
-			if(count($iquads) > 0 or count($dquads) > 0){
-				$errs = $this->graphman->update($iquads, $dquads, $this->getInstanceGraph($k),$this->getGraphSchemaGraph($k), $is_test);
-				if($errs === false){
-					$ar->addOneGraphTestFail($k, $iquads, $dquads, $this->graphman->errcode, $this->graphman->errmsg);
-				}
-				else {
-					$ar->addOneGraphTestResult($k, $iquads, $dquads, $errs);
-				}
-			}
-		}
-		return $ar;
-	}	
-	
-	function updatePublishedUpdate($cand, $ocand, $is_test = false){
-		$ar = new GraphAnalysisResults("Updating Report in Graph", $is_test);
-		foreach($cand->original->dacura_props as $k){
-			$quads = $cand->deltaAsNGQuads($ocand, $this->getInstanceGraph($k));
-			if(count($quads['add']) > 0 or count($quads['del']) > 0){
-				$errs = $this->graphman->update($quads['add'], $quads['del'], $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k), $is_test);
-				if($errs === false){
-					$ar->addOneGraphTestFail($k, $quads['add'], $quads['del'], $this->graphman->errcode, $this->graphman->errmsg);
-				}
-				else {
-					$ar->addOneGraphTestResult($k, $quads['add'], $quads['del'], $errs);
-				}
-			}
-		}
-		return $ar;
-	}
-	
-	function publishSchemaUpdate($uent, $decision, $is_test){
-		$gu = new GraphAnalysisResults("Publishing Update to Graph $uent->targetid Schema");
-		$sgname = $uent->targetid."_schema";
-		$igname = $uent->targetid."_instance";
-		$aquads = $uent->delta->getNamedGraphInsertQuads($uent->targetid, $igname);
-		$dquads = $uent->delta->getNamedGraphDeleteQuads($uent->targetid, $igname);
-		if($uent->importsChanged()){
-			$adds = $uent->importsAdded();
-			foreach($adds as $ontid){
-				$ont = $this->loadEntity($ontid, "graph", $this->cid(), $this->did());
-				if($ont){
-					$quads = $ont->getPropertyAsQuads($ontid, $uent->targetid."_schema");
-					if($quads){
-						$aquads = array_merge($aquads, $quads);
-					}
-				}
-				else {
-					return false;
-				}
-			}
-			$dels = $uent->importsDeleted();
-			foreach($dels as $ontid){
-				$ont = $this->loadEntity($ontid, "graph", $this->cid(), $this->did());
-				if($ont){
-					$quads = $ont->getPropertyAsQuads($ontid, $uent->targetid."_schema");
-					if($quads){
-						$dquads = array_merge($dquads, $quads);
-					}
-				}
-				else {
-					return false;
-				}
-			}
-		}
-		$tests = $uent->getDQSTests();
-	
-		$errs = $this->graphman->updateSchema($aquads, $dquads, $igname, $sgname, $is_test, $tests);
-		if($errs === false){
-			$gu->addOneGraphTestFail($uent->targetid, $aquads, $dquads, $this->graphman->errcode, $this->graphman->errmsg);
-		}
-		else {
-			$gu->addOneGraphTestResult($uent->targetid, $aquads, $dquads, $errs);
-		}
-		return $gu;
-	}
 	
 	function getInstanceGraph($graphname){
+		if($this->graphbase) return $this->graphbase ."/". $graphname."_instance";
 		return $graphname."_instance";
 	}
 	
 	function getGraphSchemaGraph($graphname){
+		if($this->graphbase) return $this->graphbase ."/". $graphname."_schema";
 		return $graphname."_schema";
 	}
 	
@@ -799,13 +746,7 @@ class LdDacuraServer extends DacuraServer {
 		return $updates ? $updates : $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 	}
 	
-	/*
-	 * Helper for policy object
-	 */
-	function getPolicyDecision($action, $ent_type, $args){
-		return $this->policy->getPolicyDecision($action, $ent_type, $args);
-	}
-	
+
 	/*
 	 * Output
 	 */
@@ -899,9 +840,7 @@ class LdDacuraServer extends DacuraServer {
 		}
 		else {
 			http_response_code(500);
-			$ar->result = json_last_error() . " " . json_last_error_msg();
-			echo json_encode($ar);
-			return false;
+			echo "JSON error: ".json_last_error() . " " . json_last_error_msg();
 		}
 	}
 	

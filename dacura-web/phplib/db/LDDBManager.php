@@ -11,9 +11,6 @@
  */
 
 include_once("UsersDBManager.php");
-include_once("phplib/LD/Candidate.php");
-include_once("phplib/LD/Schema.php");
-include_once("phplib/LD/Ontology.php");
 
 class LDDBManager extends UsersDBManager {
 	
@@ -33,8 +30,14 @@ class LDDBManager extends UsersDBManager {
 		if(isset($filter['status'])){
 			$wheres['status'] = $filter['status'];				
 		}
+		if(isset($filter['include_all'])){
+			$fields = ", contents";
+		}
+		else {
+			$fields = "";
+		}
 		
-		$sql = "SELECT id, collectionid, datasetid, version, type, status, createtime, modtime, meta FROM ld_entities";
+		$sql = "SELECT id, collectionid, datasetid, version, type, status, createtime, modtime, meta". $fields." FROM ld_entities";
 		if(count($wheres) > 0){
 			$i = 0;
 			$sql .= " WHERE ";
@@ -49,9 +52,6 @@ class LDDBManager extends UsersDBManager {
 			$stmt->execute($params);
 			$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			if($rows){
-				foreach($rows as $i => $row){
-					if($row['meta']) $rows[$i]['meta'] = json_decode($row['meta'], true);
-				}
 				return $rows;
 			}
 			else {
@@ -73,7 +73,7 @@ class LDDBManager extends UsersDBManager {
 			$wheres['collectionid'] = $filter['collectionid'];
 		}
 		if(isset($filter['entityid'])){
-			$wheres['ld_entities.id'] = $filter['entityid'];
+			$wheres['targetid'] = $filter['entityid'];
 		}
 		if(isset($filter['datasetid'])){
 			$wheres['datasetid'] = $filter['datasetid'];
@@ -81,8 +81,14 @@ class LDDBManager extends UsersDBManager {
 		if(isset($filter['status'])){
 			$wheres['status'] = $filter['status'];
 		}
+		if(isset($filter['include_all'])){
+			$fields = ", meta, forward, backward";
+		}
+		else {
+			$fields = "";
+		}
 		$sql = "SELECT eurid, targetid, type, collectionid, datasetid, status, from_version, to_version,
-				createtime, modtime	FROM entity_update_requests";
+				createtime, modtime	$fields FROM entity_update_requests";
 		if(count($wheres) > 0){
 			$first = true;
 			foreach($wheres as $p => $v){
@@ -152,15 +158,8 @@ class LDDBManager extends UsersDBManager {
 			$stmt->execute(array($id));
 			$row = $stmt->fetch(PDO::FETCH_ASSOC);
 			if($row){
-				if($row['type'] == "ontology"){
-					$eur = new OntologyUpdateRequest($id);
-				}
-				elseif($row['type'] == "schema"){
-					$eur = new SchemaUpdateRequest($id);
-				}
-				else {
-					$eur = new CandidateUpdateRequest($id);
-				}
+				$cname = $row['type']."UpdateRequest";
+				$eur = new $cname(id);
 				$eur->loadFromDBRow($row);			
 				return $eur;
 			}
@@ -258,7 +257,7 @@ class LDDBManager extends UsersDBManager {
 		try {
 			$stmt = $this->link->prepare("INSERT INTO entity_update_requests
 						(targetid, from_version, to_version, forward, backward, meta, createtime, modtime, status, type, collectionid, datasetid)
-						VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+						VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			$res = $stmt->execute(array(
 					$uent->targetid,
 					$uent->from_version(),
@@ -329,10 +328,12 @@ class LDDBManager extends UsersDBManager {
 	}
 	
 
-	function pendingUpdatesExist($targetid, $entversion){
+	function pendingUpdatesExist($targetid, $type, $cid, $did, $entversion){
 		try {
-			$stmt = $this->link->prepare("SELECT eurid FROM ld_entities, entity_update_requests where ld_entities.id = ? AND ld_entities.id = entity_update_requests.targetid AND entity_update_request.status = 'pending' and entity_update_requests.from_version = ?");
-			$stmt->execute(array($targetid, $entversion));
+			$stmt = $this->link->prepare("SELECT eurid FROM ld_entities, entity_update_requests where ld_entities.id = ? AND ld_entities.id = entity_update_requests.targetid AND 
+					entity_update_request.status = 'pending' AND entity_update_requests.from_version = ? AND ld_entities.collectionid = ? AND
+					ld_entities.datasetid = ? AND ld_entities.collectionid = entity_update_requests.collectionid AND ld_entities.type = ?");
+			$stmt->execute(array($targetid, $entversion, $cid, $did, $type));
 			$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			if($rows && count($rows) > 0){
 				return $rows;

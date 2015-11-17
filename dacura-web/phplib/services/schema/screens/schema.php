@@ -7,20 +7,19 @@
 	 	<li><a href="#graphs-list">Graphs</a></li>
 	 	<li><a href="#create-graph">Create Graph</a></li>
 	 </ul>
-	<div id="graphs-holder">
-		<div id="graphs-list" class="dch">
-			<div class="tab-top-message-holder">
-				<div class="tool-tab-info" id="graphs-msgs"></div>
-			</div>
-			<div id='graphs-table-holder'></div>
+	<div id="graphs-list">
+		<div class="tab-top-message-holder">
+			<div class="tool-tab-info" id="graphs-msgs"></div>
 		</div>
+		<div id='graphs-table-holder' class='dch'></div>
 	</div>
-	<div id="create-graph-holder">
-		<div id="create-graph" class="dch">
-		
-			<div class="tab-top-message-holder">
-				<div class="tool-tab-info" id="create-msgs"></div>
+	<div id="create-graph">
+		<div class="tab-top-message-holder">
+			<div class="tool-tab-info" id="create-msgs">
+				<?php echo $service->showLDResultbox($params);?>
 			</div>
+		</div>
+		<div id='create-holder' class='dch'>
 			<table class='dc-wizard'>
 				<tr><th></th><td></td></tr>
 				<tr><th>Graph Name</th><td><input type='text' id='graphname'></td></tr>
@@ -75,7 +74,11 @@ function drawGraphs(graphs){
 	}, function() {
 	    $(this).removeClass('userhover');
 	});
+	$('#graphs-table-holder').show();
 	$('#graphs-table-holder .graphs_table').dataTable({"jQueryUI": true, "searching": false, "info": false});
+	if(ids.length == 0){
+		dacura.system.writeErrorMessage("No Graphs Found", '#graphs-table-holder .dataTables_empty');		
+	}
 }
 
 var drawGraph = function(graph){
@@ -86,7 +89,7 @@ var drawGraph = function(graph){
 function initDecorations(){
 	//view format choices
 	$('#create-button').button().click(function (event){
-		dacura.schema.createGraph($('#graphname').val());
+		dacura.schema.createGraph($('#graphname').val(), {scrollto: '#create-msgs', resultbox: '#create-msgs', errorbox: '#create-msgs', busybox: '#create-graph'});
 	});
 }
 
@@ -105,9 +108,10 @@ $(function() {
 	$("#tab-holder").tabs( {
         "activate": function(event, ui) {
             $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
-            clearResultMessage();
         }
     });
-	 dacura.schema.fetchSchema(drawGraphs);
+	$('#create-holder').show();
+	dacura.schema.entity_type = "graph";
+	dacura.schema.fetchentitylist(drawGraphs, {resultbox: '#graphs-msgs', errorbox: '#graphs-msgs', busybox: '#graphs-lists'});
 });
 </script>

@@ -1,10 +1,6 @@
 <?php
-require_once("EntityUpdate.php");
 
 class GraphUpdateRequest extends EntityUpdate {
-	function isGraph(){
-		return true;
-	}
 	
 	function importsChanged(){
 		$a = $this->importsAdded();
@@ -37,16 +33,4 @@ class GraphUpdateRequest extends EntityUpdate {
 		return $dels;
 	}
 
-	function getDQSTests($type = false){
-		$itests = $this->changed->meta['instance_dqs'];
-		if($type == "instance"){
-			return $itests;
-		}
-		$stests = $this->changed->meta['schema_dqs'];
-		if($type == "instance"){
-			return $stests;
-		}
-		return array_merge($stests, $itests);
-	}
-	
 }

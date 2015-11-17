@@ -7,25 +7,27 @@
 	 	<li><a href="#ontology-list">Ontologies</a></li>
 	 	<li><a href="#import-ontology">Import New Ontology</a></li>
 	 </ul>
-	<div id="import-holder">
-		<div id="import-ontology" class="dch">
+	<div id="import-ontology">
+		<div class="tab-top-message-holder">
 			<div class="tool-import-info tool-tab-info" id="import-msgs"></div>
-				<div id='view-bar'>
-					<table>
-						<tr>
-							<td id="view-bar-left">
-								<span class='view-option view-mode' id="import-format">
-								    <input type="radio" class='foption' id="import-url" name="format" checked="checked"><label for="import-url">URL</label>
-								    <input type="radio" class='foption' id="import-upload" name="format"><label for="import-upload">File Upload</label>
-								    <input type="radio" class='foption' id="import-text" name="format"><label for="import-text">Text</label>
-						    	</span>
-							</td>
-							<td id="view-bar-centre">
-							</td>
-							<td id="view-bar-right">
-							</td>
-						</tr>	
-					</table>
+		</div>
+		<div id="import-holder" class='dch'>
+			<div id='view-bar'>
+				<table>
+					<tr>
+						<td id="view-bar-left">
+							<span class='view-option view-mode' id="import-format">
+							    <input type="radio" class='foption' id="import-url" name="format" checked="checked"><label for="import-url">URL</label>
+							    <input type="radio" class='foption' id="import-upload" name="format"><label for="import-upload">File Upload</label>
+							    <input type="radio" class='foption' id="import-text" name="format"><label for="import-text">Text</label>
+					    	</span>
+						</td>
+						<td id="view-bar-centre">
+						</td>
+						<td id="view-bar-right">
+						</td>
+					</tr>	
+				</table>
 			</div>
 			<div class='import-content'>
 				<table class='import-table dc-wizard'>
@@ -46,16 +48,19 @@
 	      	</div>
 		</div>
 	</div>
-	<div id="ontology-holder">
-		<div id="ontology-list" class="dch">
-			<div class="tab-top-message-holder">
-				<div class="tool-tab-info" id="ontology-msgs"></div>
+	<div id="ontology-list">
+		<div class="tab-top-message-holder">
+			<div class="tool-tab-info" id="ontology-msgs"></div>
+			
+		</div>
+		<div id='ontology-list-holder' class='dch'>
+			<div id='ontology-table-holder' class='ld-list'></div>
+			<div id='ontology-tests-messages'>
+				<?php echo $service->showLDResultbox($params);?>
 			</div>
-			<div id='ontology-table-holder'></div>
-			<div id='dqs-tests'>
+			<div id='dqs-ontology-tests' class='dqs-validator'>
 				<div class='dqs-button'>
 					<a class='button2' href='javascript:validateOntologies();'>Validate Selected Ontologies</a>
-				</div>
 				</div>
 				<div class='dqs-embed'>
 					<?= $service->showDQSControls("schema", "all"); ?>
@@ -94,11 +99,9 @@ function validateOntologies(){
 		if($('#dqsontology_' + index).is(":checked")){
 			onts.push(full_id);
 		}
-		else {
-		}
 	}
 	var tests = dacura.dqs.getSelection("schema");
-	dacura.schema.validateGraphOntologies(onts, tests);
+	dacura.schema.validateGraphOntologies(onts, tests, {scrollto: "#ontology-tests-messages", resultbox: "#ontology-tests-messages", errorbox: "#ontology-tests-messages", busybox: "#ontology-list"});
 }
 
 function getMetaProperty(meta, key, def){
@@ -125,7 +128,6 @@ function drawOntologies(onts){
 				  	window.location.href = "schema/" + ontids[this.parentNode.id.substr(9)];
 			    });
 			  	ontids[ontids.length] = onts[key].id;		  	 		  	
-				  	
 			}
 		}
 	}
@@ -134,10 +136,18 @@ function drawOntologies(onts){
 	}, function() {
 	    $(this).removeClass('userhover');
 	});
-	$('#ontology-table-holder .ontology_table').dataTable(<?=$dacura_server->getServiceSetting('ontology_datatable_init', "{}");?>);
+	if(ontids.length == 0){
+		$('#ontology-list-holder').show();
+		$('#dqs-ontology-tests').hide();
+		$('#ontology-table-holder .ontology_table').dataTable(<?=$dacura_server->getServiceSetting('ontology_datatable_init', "{}");?>);
+		$('#update_table').dataTable(<?=$dacura_server->getServiceSetting('ontology_datatable_init', "{}");?>);	
+		dacura.system.writeErrorMessage("No Ontologies Found", '#ontology-table-holder .dataTables_empty');		
+	}	
+	else {
+		$('#ontology-list-holder').show();
+		$('#ontology-table-holder .ontology_table').dataTable(<?=$dacura_server->getServiceSetting('ontology_datatable_init', "{}");?>);
+	}
 }
-
-
 
 function setImportFormat(format){
 	dacura.schema.importFormat = format;
@@ -180,7 +190,7 @@ function initDecorations(){
 		var entid =  $('#id-input').val();
 		var enttitle = $('#title-input').val();
 		var enturl = $('#url-input').val();
-		dacura.schema.importOntology(dacura.schema.importFormat, entid, enttitle, enturl, payload);
+		dacura.schema.importOntology(dacura.schema.importFormat, entid, enttitle, enturl, payload, {resultbox: "#import-msgs", errorbox: "#import-msgs", busybox: "#import-holder"});
 	});
 }
 
@@ -196,9 +206,10 @@ $(function() {
 	$("#tab-holder").tabs( {
         "activate": function(event, ui) {
             $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
-            clearResultMessage();
         }
     });
-    dacura.schema.fetchSchema(drawOntologies);
+	$('#import-holder').show();
+	dacura.schema.entity_type = "ontology";
+	dacura.schema.fetchentitylist(drawOntologies, {resultbox: "#ontology-msgs", errorbox: "#ontology-msgs", busybox: "#ontology-list"}); 
 });
 </script>

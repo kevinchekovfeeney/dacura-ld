@@ -192,7 +192,8 @@ class LDPropertyValue extends DacuraObject {
 	
 	function isCWLink($v){
 		if(!$this->cwurl) return false;
-		return substr($v, 0, 6) == "local:" || substr($v, 0, strlen($this->cwurl)) == $this->cwurl;
+		$id = substr($this->cwurl, strrpos($this->cwurl, '/') + 1);
+		return ((substr($v, 0, 6) == "local:") || (substr($v, 0, strlen($id) + 1) == $id.":") || (substr($v, 0, strlen($this->cwurl)) == $this->cwurl));
 	}
 
 	function sameLDType($other){

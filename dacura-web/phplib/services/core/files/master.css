@@ -125,7 +125,6 @@ Menu bar at the top of pages
 
 #utopbar-context li a:hover {
   	background: rgba(28, 16, 19, 1.0);
-  	font-weight: bold;	
 }
 
 #utopbar-context li {
@@ -133,7 +132,7 @@ Menu bar at the top of pages
 	padding-left: 24px;
 	padding-top: 6px;
 	margin-right: 10px;
-	background-image: url("abracket-small.gif");
+	//background-image: url("abracket-small.gif");
 	background-repeat: no-repeat;
     background-position: 0% 90%;
 }
@@ -465,7 +464,6 @@ Modal message box - generaal form
 Breadcrumbs to show context within services
 */
 div.pcbreadcrumbs {
-	height: 29px;
 	font-size: 0.8em;
 }
 
@@ -565,7 +563,7 @@ Message box itself
 }
 .dacura-user-message-box .mbody {
 	background: rgba(255, 255, 255, .3);
-	padding: 10px 140px 10px 10px;
+	padding: 10px 10px 10px 10px;
 }
 
 .dacura-user-message-box.dacura-error {
@@ -623,6 +621,7 @@ div.message_extra {
 	white-space: pre;
  	unicode-bidi: embed;
  	font-size: 0.85em;
+ 	overflow: auto;
 }
 
 .progress-container {

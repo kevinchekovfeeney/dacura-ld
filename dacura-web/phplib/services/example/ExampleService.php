@@ -105,16 +105,4 @@ class ExampleService extends DacuraService {
 		$this->renderToolFooter($params);
 	}
 	
-	function loadArgsFromBrowserURL($sections){
-		if(count($sections) > 0){
-			$this->screen = array_shift($sections);
-			$this->args = $sections;
-		}
-		else {
-			$this->screen = $this->default_screen;
-		}
-	}
-	function isPublicScreen(){
-		return true;
-	}
 }

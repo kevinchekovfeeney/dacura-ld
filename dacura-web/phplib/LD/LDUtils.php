@@ -1064,6 +1064,18 @@ function findInternalMissingLinks($ldprops, $legal_vals, $id, $cwurl){
 }
 
 /*
+ * Combining lists of properties about same subject into single property list
+ */
+function combineProperties(&$target, $nprops){
+	foreach($nprops as $prop => $val){
+		if(!isset($target[$prop])){
+			
+		}
+	}
+}
+
+
+/*
  * assumes props are arranged as [graphname => [embedded object list]]
  */
 function compareLDGraphs($id, $aprops, $bprops, $cwurl, $top_level = false){
@@ -1305,8 +1317,21 @@ function encodeScalar($s){
 	return $s;
 }
 
+function encodeObject($o, $t){
+	if($t == "literal"){
+		return $o;
+	}
+	elseif($t == "objectliteral"){
+		return json_encode($o);
+	}
+	else {
+		return $o;
+	}
+	
+}
+
 function addTypes($s, $p, $o, $t){
-	return array(array($s, $p, encodeScalar($o, $t)));
+	return array(array($s, $p, encodeObject($o, $t)));
 }
 
 function nop($s, $p, $o, $t){
@@ -1387,93 +1412,6 @@ function compareTrips($a, $b){
  }
  
 */
- 
-
-/*
- * Produces a turtle encoding of an LD structure
- */
-function getObjectAsTurtle($id, $ldprops, $cwurl){
-	$lines = array();
-	if($ldprops && is_array($ldprops)){
-		$sublines = array();
-		foreach($ldprops as $p => $v){
-			if(count($lines) > 0){
-				$nline= array("", $p);
-			}
-			else {
-				$nline= array($id, $p);
-			}
-			$pv = new LDPropertyValue($v, $cwurl);
-			if($pv->literal()){
-				$nline[] = '"'.$v.'"';
-				$lines[] = $nline;
-			}
-			elseif($pv->link()){
-				$nline[] = $v;
-				$lines[] = $nline;
-			}
-			elseif($pv->valuelist()){
-				$xline = $nline;
-				foreach($v as $val){
-					if(isLiteral($val)){
-						$xline[] = '"'.$val.'"';
-					}
-					else {
-						$xline[] = $val;
-					}
-					$lines[] = $xline;
-					$xline = array("", "");
-				}
-			}
-			elseif($pv->embeddedlist()){
-				$llines = 0;
-				foreach($v as $oid => $eobj){
-					if($llines == 0){
-						if(count($lines) > 0){
-							$eline= array("", $p);
-						}
-						else {
-							$eline= array($id, $p);
-						}
-						$eline[] = $oid;
-						$llines = 1;
-					}
-					else {
-						$eline = array("", "", $oid);
-					}
-					$lines[] = $eline;
-					$sublines = array_merge($sublines, getObjectAsTurtle($oid, $eobj, $cwurl));
-				}
-			}
-			elseif($pv->embedded()){
-				$emline = $nline;
-				$emline[] = "[";
-				$lines[] = $emline;
-				$sublines = array_merge($lines, getObjectAsTurtle("", $v, $cwurl));
-				$sublines[] = array("]", ".");
-			}
-			elseif($pv->objectlist()){
-				$lines[] = array("error", "objectlist", "no turtle form");
-			}
-		}
-		foreach($lines as $i => $line){
-			if($id && $i == count($lines) - 1){
-				$lines[$i][]=".";
-			}
-			elseif(isset($lines[$i+1]) && $lines[$i+1][0] == "" && (!isset($lines[$i+1][1]) or $lines[$i+1][1] == "")){
-				$lines[$i][]=",";
-			}
-			elseif(isset($lines[$i+1]) && $lines[$i+1][0] == ""){
-				$lines[$i][]=";";
-			}
-			else {
-				$lines[$i][]=".";
-			}
-		}
-		$lines = array_merge($lines, $sublines);
-	}
-	return $lines;
-}
 
 
 

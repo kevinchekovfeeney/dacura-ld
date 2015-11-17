@@ -229,7 +229,7 @@ function getDQSCheckboxes($dqs, $graph){
 	$boxes = array();
 	$options = getDQSOptions($dqs, $graph);
 	foreach($options as $id => $props){
-		$html = "<input type='checkbox' class='dqsoption dqsoption-$graph' id='$id' value='$id' title='" . $props['text'] . "'><label for='$id'>".$props['name']."</label>";
+		$html = "<span class='dqs-input-field'><input type='checkbox' class='dqsoption dqsoption-$graph' id='$id' value='$id' title='" . $props['text'] . "'><label for='$id'>".$props['name']."</label></span>";
 		$boxes[$props['type']][] = $html;
 	}
 	$html = "";
@@ -243,17 +243,19 @@ function getDQSCheckboxes($dqs, $graph){
 <?php if ($params['graph'] == "both"){?>
 <table class='dqs-config'>
 	<tr>
-		<th>Schema Graph</th>
+		<th>Schema Graph <span class='dqs-schema-all'><input type='checkbox' id='dqs-schema-all'><label for='dqs-schema-all'>Select All</label></span>
+		</th>
 		<td><?= getDQSCheckboxes($dqs, "schema");  ?></td>
 	</tr>
 	<tr>
-		<th>Instance Graph</th>
+		<th>Instance Graph <span class='dqs-instance-all'><input type='checkbox' id='dqs-instance-all'><label for='dqs-instance-all'>Select All</label></span></th>
 		<td><?= getDQSCheckboxes($dqs, "instance");  ?></td>
 	</tr>
 </table>
 <?php } else {?>
 <div class='dqsopts'>
-	<input type='checkbox' id='dqs-all'> <label for='dqs-all'>Select All</label>
+	<div class='dqs-opts-title'>Choose which constraints to apply</div>
+	<span class='dqs-all'><input type='checkbox' id='dqs-all'> <label for='dqs-all'>Select All</label></span>
 	<?php echo getDQSCheckboxes($dqs, $params['graph']);?>
 </div>
 <?php } ?>
@@ -262,29 +264,45 @@ function getDQSCheckboxes($dqs, $graph){
 <script>
 dacura.dqs = {}
 dacura.dqs.getSelection = function(graph){
-	if(!($('input:checkbox#dqs-'+ graph + '-all').is(":checked"))){
-		var tests = [];
-		$('input:checkbox.dqsoption-' + graph).each(function () {
-			if(this.checked){
-				tests.push($(this).val());
-			}
-	    });
-	}
-	else {
-		var tests = "all";
-	}
+	var tests = [];
+	$('input:checkbox.dqsoption-' + graph).each(function () {
+		if(this.checked){
+			tests.push($(this).val());
+		}
+    });
 	return tests;
 };
 
 $('.dqsoption').button();
 $( "#dqs-all" ).button().click(function(event){
 	if($('#dqs-all').is(":checked")){
+		$("#dqs-instance-all").prop('checked', true).button("refresh");
+		$("#dqs-schema-all").prop('checked', true).button("refresh");
 		$("input:checkbox.dqsoption").prop('checked', true).button("refresh");
 	}
 	else {
+		$("#dqs-instance-all").prop('checked', false).button("refresh");
+		$("#dqs-schema-all").prop('checked', false).button("refresh");
 		$("input:checkbox.dqsoption").prop('checked', false).button("refresh");
 	}					
 });
+$( "#dqs-instance-all" ).button().click(function(event){
+	if($('#dqs-instance-all').is(":checked")){
+		$("input:checkbox.dqsoption-instance").prop('checked', true).button("refresh");
+	}
+	else {
+		$("input:checkbox.dqsoption-instance").prop('checked', false).button("refresh");
+	}					
+});
+$( "#dqs-schema-all" ).button().click(function(event){
+	if($('#dqs-schema-all').is(":checked")){
+		$("input:checkbox.dqsoption-schema").prop('checked', true).button("refresh");
+	}
+	else {
+		$("input:checkbox.dqsoption-schema").prop('checked', false).button("refresh");
+	}					
+});
+
 
 </script>
 

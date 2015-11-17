@@ -6,10 +6,10 @@ class PolicyEngine extends DacuraObject {
 
 
 	function getPolicyDecision($action, $type, $context){
-		$ar = new AnalysisResults("System Policy for $action");
+		$ar = new AnalysisResults("System policy for $action");
 		$ar->decision = "accept";
 		if($action == "create"){
-			//$ar->reject("Candidate Create Not Allowed", "You are a dirtbird and I'm not letting you");
+			//$ar->reject("Ontology Create Not Allowed", "You are a dirtbird and I'm not letting you");
 			$ar->accept();
 			//$ar->decision = 'pending';
 		}
@@ -21,10 +21,23 @@ class PolicyEngine extends DacuraObject {
 		elseif($action == "update update"){
 			return $this->updateUpdate($context[0], $context[1], $ar);
 		}
-		elseif($action == "view candidate"){
-			$ar->accept();
-			//$ar->decision = 'pending';
-			//$ar->reject("View Candidate not allowed", "You are a dirtbird and I'm not letting you");
+		elseif($action == "view"){
+			//$ar->accept();
+			if($type == "candidate"){
+				//$ar->reject("View Candidate not allowed", "You are a dirtbird and I'm not letting you");
+				$ar->decision = 'pending';
+				$ar->accept();
+			}
+			elseif($type == "ontology"){
+				$ar->accept();
+								
+				//$ar->reject("View Ontology not allowed", "You are a dirtbird and I'm not letting you");
+			}
+			elseif($type == "graph"){
+				//$ar->reject("View Graph not allowed", "You are a dirtbird and I'm not letting you");
+				$ar->accept();
+			}
+				
 		}
 		elseif($action == "view update"){
 			$ar->accept();

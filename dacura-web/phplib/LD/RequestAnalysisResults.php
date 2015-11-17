@@ -17,7 +17,7 @@ class SimpleRequestResults extends AnalysisResults {
 	
 }
 
-class RequestAnalysisResults extends SimpleRequestResults {
+class UpdateAnalysisResults extends SimpleRequestResults {
 	var $candidate_graph_update;
 	var $report_graph_update;
 	var $update_graph_update;

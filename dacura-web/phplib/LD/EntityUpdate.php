@@ -1,4 +1,8 @@
 <?php
+
+include_once("phplib/libs/easyrdf-0.9.0/lib/EasyRdf.php");
+include_once("LDUtils.php");
+
 class EntityUpdate extends DacuraObject{
 	var $id;
 	var $cid;
@@ -262,6 +266,72 @@ class EntityUpdate extends DacuraObject{
 			return $this->calculateDelta($val_delta);
 		}
 		return true;
+	}
+
+	function getUpdateOptions(){
+		$opts = array(
+			"demand_id_allowed" => true,
+			"force_inserts" => true,
+			'calculate_delta' => true,
+			'validate_delta' => false,				
+		);
+		return $opts;
+	}
+	
+	function updateImportedProps($contents){
+		$this->changed->ldprops = array($this->original->id => $contents);		
+	}
+	
+	function calculateImported($meta, $contents){
+		$this->changed = clone $this->original;
+		$this->changed->version = $this->to_version ? $this->to_version : 1 + $this->changed->latest_version;
+		if($this->changed->version > $this->changed->latest_version){
+			$this->changed->latest_version = $this->changed->version;
+		}
+		$this->updateImportedProps($contents);
+		if($meta){
+			if(!$this->changed->update(array("meta" => $meta), true, true)){
+				return $this->failure_result($this->changed->errmsg, $this->changed->errcode);
+			}				
+		}
+		$this->changed->readStateFromMeta();
+		return $this->calculateDelta();
+	}	
+	
+	/*
+	 * Called when a candidate update request is sent to the API
+	 * $obj is a LD candidate structure
+	 */
+	function loadFromAPI($cnt, $meta, $format, $opts = false){
+		if($opts == false) $opts = $this->getUpdateOptions();
+		$this->initFromOriginal();
+		$cmd = array();
+		if($format == "json"){ //native format
+			$cmd = $cnt;
+			if($meta){
+				$cmd['meta'] = $meta;
+			}
+			$this->forward = $cmd;
+			$this->expandNS();
+			$opts = $this->getUpdateOptions();
+			if(!$this->calculateChanged($opts)){
+				return false;
+			}
+		}
+		else {
+			$imported = $this->import($format, $cnt);
+			if(!$this->calculateImported($meta, $imported)){
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	function import($format, $txt){
+		$graph = new EasyRdf_Graph($this->original->id, $txt, $format, $this->original->id);
+		$op = $graph->serialise("php");
+		$ld = importEasyRDFPHP($op);
+		return $ld;
 	}
 
 	function calculateDelta($validate = false){
@@ -592,78 +662,79 @@ class EntityUpdate extends DacuraObject{
 		$this->status = $v;
 	}
 
-	function showUpdateResult($format, $flags, $v, $dacura_server) {
+	function showUpdateResult($format, $dacura_server) {
 		if($dacura_server->isNativeFormat($format)){
-			if(in_array("ns", $flags)){
-				//$this->compressNS(true);
-			}
 			if($format == "html"){
-				$this->displayHTML($flags, $v, $dacura_server);
+				$this->displayHTML($dacura_server);
 			}
 			elseif($format == "triples"){
-				$this->displayTriples($flags, $v, $dacura_server);
+				$this->displayTriples($dacura_server);
 			}
 			elseif($format == "quads"){
-				$this->displayQuads($flags, $v, $dacura_server);
+				$this->displayQuads($dacura_server);
 			}
 			else{
-				$this->displayJSON($flags, $v, $dacura_server);
+				$this->displayJSON($dacura_server);
 			}
 		}
 		else {
-			$this->displayExport($format, $flags, $v, $dacura_server);
+			$this->displayExport($format, $dacura_server);
 		}
 		return $this->getDisplayFormat();
 	}
 
-	function displayExport($format, $flags, $v, $srvr){
-		$vstr = (($v) ? "?version=".$v : "")."&format=".$format."&display=".implode("_", $flags);
+	function displayExport($format, $srvr){
+		$vstr = "?format=".$format;
+		$flags = array("ns", "links", "problems", "typed");
 		$this->changed->displayExport($format, $flags, $vstr, $srvr);
 		$this->original->displayExport($format, $flags, $vstr, $srvr);
-		$temp = new LDDocument($this->id);
-		$temp->load($this->forward);
-		$exported = $temp->export($format, $this->nsres);
-		if($exported){
-			if($format != "svg" && $format != "dot" && $format != "png" && $format != "gif"){
-				$this->display = htmlspecialchars($exported);
-			}
-			else {
-				if($format == "png" or $format == "gif"){
-					$this->display = '<img src="data:image/png;base64,'.base64_encode ( $exported).'"/>';
-				}
-				else {
-					$this->display = $exported;
-				}
-			}
-		}
-		else {
-			$this->display = $this->getChangeViewHTML();
-		}
+		//$temp = new LDDocument($this->id);
+		//$temp->load($this->forward);
+		//$exported = $temp->export($format, $this->nsres);
+		//if($exported){
+		//	if($format != "svg" && $format != "dot" && $format != "png" && $format != "gif"){
+		//		$this->display = htmlspecialchars($exported);
+		//	}
+		//	else {
+		//		if($format == "png" or $format == "gif"){
+		//			$this->display = '<img src="data:image/png;base64,'.base64_encode ( $exported).'"/>';
+			//	}
+				//else {
+				//	$this->display = $exported;
+				//}
+			//}
+		//}
+		//else {
+		//	$this->display = $this->getChangeViewHTML();
+		//}
 	}
 
-	function displayJSON($flags, $v, $srvr){
-		$vstr = (($v) ? "?version=".$v : "")."&display=".implode("_", $flags);
+	function displayJSON($srvr){
+		$vstr = "?format=json";
 		$this->changed->display = $this->changed->ldprops;
 		$this->original->display = $this->original->ldprops;
 		$this->display = $this->forward;
 	}
 
-	function displayHTML($flags, $v, $srvr){
-		$vstr = (($v) ? "?version=".$v : "")."&format=html&display=".implode("_", $flags);
+	function displayHTML($srvr){
+		$vstr = "?format=html";
+		$flags = array("ns", "links");
 		$this->changed->displayHTML($flags, $vstr, $srvr);
 		$this->original->displayHTML($flags, $vstr, $srvr);
 		$this->display = $this->getChangeViewHTML();
 	}
 
-	function displayTriples($flags, $v, $srvr){
-		$vstr = (($v) ? "?version=".$v : "")."&format=triples&display=".implode("_", $flags);
+	function displayTriples($srvr){
+		$vstr = "?format=triples";
+		$flags = array("ns", "links");
 		$this->changed->displayTriples($flags, $vstr, $srvr);
 		$this->original->displayTriples($flags, $vstr, $srvr);
 		$this->display = $this->deltaAsTriples($orig_upd);
 	}
 
-	function displayQuads($flags, $vstr, $srvr){
-		$vstr = (($v) ? "?version=".$v : "")."&format=quads&display=".implode("_", $flags);
+	function displayQuads($srvr){
+		$vstr = "?format=quads";
+		$flags = array("ns", "links");
 		$this->changed->displayQuads($flags, $vstr, $srvr);
 		$this->original->displayQuads($flags, $vstr, $srvr);
 		$this->display = $this->deltaAsTriples();
@@ -677,17 +748,25 @@ class EntityUpdate extends DacuraObject{
 		return $other;
 	}
 
-	/*
-	 * Called when a candidate update request is sent to the API
-	 * $obj is a LD candidate structure
-	 */
-	function loadFromAPI($obj){
-		$this->initFromOriginal();
-		if(!$this->validateCommand($obj)) return false;
-		$this->forward = $obj;
-		$this->expandNS();
-		return true;
+	function getDQSTests($type = false){
+		$itests = array();
+		if(isset($this->changed->meta['instance_dqs'])){
+			$itests = $this->changed->meta['instance_dqs'];
+			if($type == "instance"){
+				return $itests;
+			}
+		}
+		if(isset($this->changed->meta['schema_dqs'])){
+			$stests = $this->changed->meta['schema_dqs'];
+			if($type == "schema"){
+				return $stests;
+			}
+			return array_merge($stests, $itests);
+		}
+		return false;
 	}
+	
+	
 
 	function isCandidate(){
 		return false;

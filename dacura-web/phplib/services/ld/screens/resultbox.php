@@ -1,224 +1,388 @@
-<style>
-input.rbbutton {
-	padding:5px 15px; 
-	background:#ccc; 
-	border:0 none;
-	cursor:pointer;
-	-webkit-border-radius: 5px;
-	border-radius: 5px; 
-}
+<div id='ld-resultbox' class='dch'>
+	<div class='ld-resultbox dacura-user-message-box'>
+		<div class='mtitle'>
+			<span class="result-icon"></span><span class="result-title"></span>
+		</div>
+		<div class="mbody"></div>
+		<div class="mbuttons">
+			<button class='cancel-update'>Return To Editor</button>
+			<button class='confirm-update'>Confirm Update</button>
+		</div>
+	</div>
 
-*, *:before, *:after {
-  -moz-box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-  box-sizing: border-box;
-}
-
-div.rbdecision {
-  font-family: 'Nunito', sans-serif;
-  color: #384047;
-}
-
-table.rbtable {
-  max-width: 960px;
-  margin: 10px auto;
-}
-
-table.rbtable caption {
-  font-size: 1.6em;
-  font-weight: 400;
-  padding: 10px 0;
-}
-
-table.rbtable thead th {
-  font-weight: 400;
-  background: #8a97a0;
-  color: #FFF;
-}
-
-table.rbtable tr {
-  background: #f4f7f8;
-  border-bottom: 1px solid #FFF;
-  margin-bottom: 5px;
-}
-
-table.rbtable tr:nth-child(even) {
-  background: #e8eeef;
-}
-
-table.rbtable th, table.rbtable td {
-  text-align: left;
-  padding: 10px;
-  font-weight: 300;
-}
-
-table.rbtable tfoot tr {
-  background: none;
-}
-
-table.rbtable tfoot td {
-  padding: 10px 2px;
-  font-size: 0.8em;
-  font-style: italic;
-  color: #8a97a0;
-}
-
-
-</style>
-
-
-<input class='rbbutton' id="decision" type="hidden" onclick="dacura.ldresult.showBasicDecision()" value="decision" visibility="hidden">
-<input class='rbbutton' id="errors" type="hidden" onclick="dacura.ldresult.showErrors()" value="errors" visibility="hidden">
-<input class='rbbutton' id="warnings" type="hidden" onclick="dacura.ldresult.showWarnings()" value="warnings" visibility="hidden">
-<input class='rbbutton' id="meta" type="hidden" onclick="dacura.ldresult.showMeta()" value="meta" visibility="hidden">
-<input class='rbbutton' id="candidate" type="hidden" onclick="dacura.ldresult.showCandidate()" value="candidate" visibility="hidden">
-<input class='rbbutton' id="report" type="hidden" onclick="dacura.ldresult.showReport()" value="report" visibility="hidden">
-<input class='rbbutton' id="graph" type="hidden" onclick="dacura.ldresult.showGraph()" value="graph" visibility="hidden">
-
+	<div class='ld-resultbox-extra dch'>
+		<div class='ld-resultbox-title'>
+			<h2 class='ld-extra ld-forward'>Change command</h2>
+			<h2 class='ld-extra ld-backward'>Rollback command</h2>
+			<h2 class='ld-extra ld-before'>State Before Update</h2>
+			<h2 class='ld-extra ld-after'>State After Update</h2>
+			<h2 class='ld-extra ld-change'>Changes Highlighted</h2>
+			<h2 class='ld-extra ld-candidate'>Updates to the candidate / linked data graph</h2>
+			<h2 class='ld-extra ld-report'>Updates to the report / triple-store graph</h2>
+			<h2 class='ld-extra ld-updates'>Updates to the update graph</h2>
+			<h2 class='ld-extra ld-dqs'>Dacura Quality Service Violations</h2>
+		</div>
+		
+		<div class='ld-resultbox-options'>
+			<span class='rb-options'>
+			    <input type="radio" class='resoption roption' id="show_forward" name="rformat"><label class='resoption' title="Show forward delta to <?php echo $params['entity_type']?>" for="show_forward">Forward</label>
+				<input type="radio" class='resoption roption' id="show_backward" name="rformat"><label class='resoption' title="Show backward delta for rolling back update to <?php echo $params['entity_type']?>" for="show_backward">Backward</label>
+				<input type="radio" class='resoption roption' id="show_before" name="rformat"><label class='resoption' title="Show <?php echo $params['entity_type']?> before update" for="show_before">Before</label>
+				<input type="radio" class='resoption roption' id="show_after" name="rformat"><label class='resoption' title="Show <?php echo $params['entity_type']?> after update" for="show_after">After</label>
+				<input type="radio" class='resoption roption' checked="checked" id="show_change" name="rformat"><label class='resoption' title="Show what has changed in the <?php echo $params['entity_type']?>" for="show_change">Change</label>
+				<input type="radio" class='candoption roption' id="show_candidate" name="rformat"><label class='candoption' title="Show updates to stored linked data version of <?php echo $params['entity_type']?> " for="show_candidate">Linked Data Updates</label>
+				<input type="radio" class='metaoption roption' id="show_meta" name="rformat"><label class='metaoption' title="Show updates to <?php echo $params['entity_type']?> status" for="show_meta">Meta Updates</label>
+				<input type="radio" class='repoption roption' id="show_report" name="rformat"><label class='repoption' title="Show updates to triple-store graph of <?php echo $params['entity_type']?> " for="show_report">Triplestore Updates</label>
+				<input type="radio" class='updoptoin roption' id="show_updates" name="rformat"><label class='updoption' title="Show updates to triple-store graph of <?php echo $params['entity_type']?> " for="show_updates">Pending Updates</label>
+				<input type="radio" class='dqs roption' id="show_dqs" name="rformat"><label class='dqs' title="Show results of Data Quality Service <?php echo $params['entity_type']?> Checks" for="show_dqs">Quality Violations</label>
+			</span>
+		</div>
+	
+		<div class='ld-resultbox-content'>
+			<div class='ld-extra ld-forward'>
+			</div>
+			<div class='ld-extra ld-backward'>
+			</div>
+			<div class='ld-extra ld-before'>
+			</div>
+			<div class='ld-extra ld-after'>
+			</div>
+			<div class='ld-extra ld-change'>
+			</div>
+			<div class='ld-extra ld-candidate'>
+			</div>
+			<div class='ld-extra ld-report'>
+			</div>
+			<div class='ld-extra ld-updates'>
+			</div>
+			<div class='ld-extra ld-dqs error-details'>
+				<table class='rbtable dqs-error-table'>
+					<thead>
+						<tr><td>#</td><td>Error</td><td>Property</td><td>Message</td></tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
 <script>
-dacura.ldresult = {};
-dacura.ldresult.jq = null;
-dacura.ldresult.decision = "";
-dacura.ldresult.msg_body = "";
-dacura.ldresult.errors = "";
-dacura.ldresult.numerrors = 0;
-dacura.ldresult.warnings = "";
-dacura.ldresult.numwarnings = 0;
-dacura.ldresult.meta = "";
-dacura.ldresult.candidate = "";
-dacura.ldresult.report = "";
-dacura.ldresult.numtriples = 0;
-dacura.ldresult.cls = "";
-dacura.ldresult.graph = "";
 
-dacura.ldresult.getDecisionBasicText = function (dcm, test, type){
-	var dtxt = "<div class='decision-basic-text'>";
-	var dtit = "";
-	var dsubtit = "";
-	var did = "";
-	if(dcm.decision == "accept"){
-		if(test){
-			dtit = "<h3>" + type + " Approved</h3>";
-			dsubtit = "<p>If this " + type + " request is submitted, it will be accepted and published.</p>";
+dacura.ldresult = {
+	update_type: "update",
+	counts: { "errors" : 0, "warnings": 0, "dqs_errors": 0, "candidate_updates": 0, "report_updates": 0, "meta_updates": 0}	
+};
+
+dacura.ldresult.showDecision = function(dcm, jq, cancel, confirm, shortmode){
+	dacura.ldresult.counts = { "errors" : 0, "warnings": 0, "dqs_errors": 0, "candidate_updates": 0, "report_updates": 0, "meta_updates": 0}
+	var hasdepth = false;
+	var hasextra = false;
+	$(jq).html($('#ld-resultbox').html());
+	$(jq + ' .result-title').html(this.getDecisionTitle(dcm));
+	var cls = dacura.ldresult.getResultClass(dcm);
+	$(jq + ' .result-icon').addClass("result-" + cls);
+	$(jq + ' .result-icon').html(dacura.system.resulticons[cls]);	
+	var msg = dacura.ldresult.getResultMessage(dcm, dacura.ldresult.update_type);
+	$(jq + ' .ld-resultbox .mbody').html(msg);
+	$(jq + ' .ld-resultbox').addClass("dacura-" + cls);
+	$(jq + ' .ld-resultbox').show();
+	if(typeof confirm != "undefined"){
+		$(jq + ' .mbuttons button.confirm-update').button().click(confirm).show();
+	}
+	else {
+		$(jq + ' .mbuttons button.confirm-update').hide();
+	}
+	if(typeof cancel != "undefined"){
+		$(jq + ' .mbuttons button.cancel-update').button().click(cancel).show;
+	}
+	else {
+		$(jq + ' .mbuttons button.cancel-update').hide();
+	}
+	$(jq + ' .mbuttons').show();
+	
+	if(dcm.result){
+		hasdepth = true;
+		hasextra = true;
+		if(typeof dcm.result.forward != "undefined"){
+			$(jq + ' div.ld-forward').append("<div class='rb-json-result dacura-json-viewer'>" + JSON.stringify(dcm.result.forward, false, 4) + "</div>");
+			$(jq + ' div.ld-backward').append("<div class='rb-json-result dacura-json-viewer'>" + JSON.stringify(dcm.result.backward, false, 4)+ "</div>");
+			if(dcm.format == "json" || dcm.format == "jsonld"){
+				$(jq + ' div.ld-before').append("<div class='rb-json-result dacura-json-viewer'>" + JSON.stringify(dcm.result.original.display, null, 4) + "</div>");
+				$(jq + ' div.ld-after').append("<div class='rb-json-result dacura-json-viewer'>" + JSON.stringify(dcm.result.changed.display, null, 4) + "</div>");
+				$(jq + ' div.ld-change').append("<div class='rb-json-result dacura-json-viewer'>" + JSON.stringify(dcm.result.display) + "</div>");
+			}
+			else if(dcm.format == 'html'){
+				$(jq + ' div.ld-before').append("<div class='rb-html-result dacura-html-viewer'>" + dcm.result.original.display + "</div>");		
+				$(jq + ' div.ld-after').append("<div class='rb-html-result dacura-html-viewer'>" + dcm.result.changed.display + "</div>");		
+				$(jq + ' div.ld-change').append("<div class='rb-html-result dacura-html-viewer'>" + dcm.result.display + "</div>");			
+			}
+			else {
+				$(jq + ' div.ld-before').append("<div class='rb-text-result dacura-text-viewer'>" + dcm.result.original.display + "</div>");		
+				$(jq + ' div.ld-after').append("<div class='rb-text-result dacura-text-viewer'>" + dcm.result.changed.display + "</div>");		
+				$(jq + ' div.ld-change').append("<div class='rb-text-result dacura-text-viewer'>" + dcm.result.display + "</div>");		
+			}
 		}
 		else {
-			dtit = "<h3>" + type + " Successful</h3>";	
-			dsubtit = "<p>The " + type + " request has been accepted and published.</p>";
-			did = dcm.result.id;
-			durl = dcm.result.cwurl;
+			if(dcm.format == "json" || dcm.format == "jsonld"){
+				$(jq + ' div.ld-change').append("<div class='rb-json-result dacura-json-viewer'>" + JSON.stringify(dcm.result.display) + "</div>");
+			}
+			else if(dcm.format == 'html'){
+				$(jq + ' div.ld-change').append("<div class='rb-html-result dacura-html-viewer'>" + dcm.result.display + "</div>");			
+			}
+			else {
+				$(jq + ' div.ld-change').append("<div class='rb-text-result dacura-text-viewer'>" + dcm.result.display + "</div>");		
+			}
 		}
 	}
-	else if(dcm.decision == "pending"){
-		if(test){
-			dtit = "<h3>" + type + " requires approval</h3>";
-			dsubtit = "If submitted, this " + type + " request will be scheduled for approval by the data-set managers.<br><br>";
+	else {
+		$(jq + ' .resoption').hide();
+	}
+	if(typeof(dcm.report_graph_update) != "undefined" && dcm.report_graph_update != null){
+	 	for (var name in dcm.report_graph_update.errors) {
+	 		if(typeof dcm.report_graph_update.errors[name] != "undefined" && dcm.report_graph_update.errors[name].length > 0){
+	 			$(jq + " .dqs-error-table tbody").append(this.getErrorDetailsHTML(dcm.report_graph_update.errors[name], dcm.action));
+	 	 	}
+	 	}
+	 	if(dacura.ldresult.counts.dqs_errors > 0){
+		 	hasextra = true;
+			$(jq + ' label.dqs').html(dacura.ldresult.counts.dqs_errors + " Quality Violations"); 	
+	 	}
+	 	else {
+			$(jq + ' .dqs').hide(); 		 	
+		 }	 	
+	}
+	else {
+		$(jq + ' .dqs').hide(); 	
+	} 	
+	if(typeof dcm.update_graph_update != "undefined" && dcm.update_graph_update != null){
+		var x = this.getUpdateGraphUpdateHTML(dcm);
+		if(x != ""){
+	 		$(jq + ' div.ld-updates').append(x);
+	 		hasextra = true;
+		}
+ 		else {
+ 			$(jq + ' .updoption').hide(); 	 		
+ 	 	} 	
+	}
+ 	else {
+		$(jq + ' .updoption').hide(); 	
+ 	}
+ 	if(typeof dcm.candidate_graph_update != "undefined" && dcm.candidate_graph_update != null){
+ 		$(jq + ' div.ld-candidate').append(this.getCandidateGraphUpdateHTML(dcm));
+ 		if(dacura.ldresult.counts.candidate_updates > 0){
+			$(jq + ' label.candoption').html(dacura.ldresult.counts.candidate_updates + " Linked Data Updates"); 
+			hasextra = true;
+ 		}
+ 		else {
+ 			$(jq + ' .candoption').hide(); 		
+ 	 	}		
+ 	}
+ 	else {
+		$(jq + ' .candoption').hide(); 	
+ 	}
+ 	if(typeof dcm.report_graph_update != "undefined" && dcm.report_graph_update != null){
+ 		$(jq + ' div.ld-report').append(this.getReportGraphUpdateHTML(dcm));
+ 		if(dacura.ldresult.counts.report_updates > 0){
+			$(jq + ' label.repoption').html(dacura.ldresult.counts.report_updates + " Triplestore Updates"); 
+			hasextra = true;
+ 		}
+ 		else {
+ 			$(jq + ' .repoption').hide(); 	
+ 	 	}			
+	}
+ 	else {
+		$(jq + ' .repoption').hide(); 	
+ 	}
+	$(jq + ' .metaoption').hide(); 	
+	$(jq + " .ld-extra").hide();
+	if(dacura.ldresult.counts.dqs_errors > 0){
+		$(jq + ' #show_dqs').attr("checked", "checked");		
+		$(jq + ' .ld-dqs').show(); 
+	}
+	else if(hasdepth){
+		$(jq + ' #show-change').attr("checked", "checked"); 		
+		$(jq + ' .ld-change').show(); 
+	}
+	if(hasextra){
+		$(jq + ' .ld-resultbox-extra').show(); 	
+	 	$(jq + " .rb-options").buttonset();
+		$(jq + " .roption").button().click(function(event){
+			$(jq + " .ld-extra").hide();	
+			$(jq + " .ld-" + this.id.substring(5)).show();				
+		});			
+	}
+	$(jq).show();	
+}
+
+
+dacura.ldresult.getDecisionTitle = function (dcm){
+	if(dcm.decision == "accept"){
+		if(dcm.test){
+			return dcm.msg_title + " " + dcm.action + " was tested and approved ";
 		}
 		else {
-			dtit = "<h3>" + type + " successfully submitted for approval</h3>";
-			dsubtit = "The " + type + " request has been successfully submitted to the dataset managers.<br><br>";
-			did = dcm.result.id;
-			durl = dcm.result.cwurl;
+			return dcm.msg_title + " " + dcm.action + " was accepted and published";
+		}	
+	}	
+	else if(dcm.decision == "pending"){
+		if(dcm.test){
+			return dcm.msg_title + " " + dcm.action + " will require approval";
+		}
+		else {
+			return dcm.msg_title + " " + dcm.action + " was submitted for approval";
 		}	
 	}
 	else if(dcm.decision == "reject"){
-		dtit = "<h3>" + type + " rejected</h3>";
-		dsubtit = "The " + type + " request was not accepted by the Dacura API<br><br>";		
+		if(dcm.test){
+			return "Test " + dcm.action + " - " + dcm.msg_title;
+		}
+		else {
+			return dcm.action + " - " + dcm.msg_title;
+		}
 	}
-	dtxt += "<span class='api-decision-title'>" + dtit + "</span>" + 
-		"<span class='api-decision-subtitle'>" + dsubtit + "</span>";
-	if(did.length > 0){
-		dtxt +="<span class='api-decision-id'>ID: <a href='"+ durl + "'>" + did + "</a><br></span>";
-		dtxt +="<span class='api-decision-url'>URL: <a href='"+ durl + "'>" + durl + "</a><br></span>";
+	else {
+		return dcm.msg_title + " (? " + dcm.decision + " ?)";
 	}
-	dtxt += "</div>";
-	return dtxt;
 }
 
-dacura.ldresult.getErrorDetailsHTML = function(errors){
-	var html = "<div class='error-details'>";
-	if(typeof errors != "undefined"){
-		var errhtml = "<h3>Errors</h3><table class='rbtable api-error-table'><tr><td>#</td><td>Error</td><td>Property</td><td>Message</td></tr>";
-		for (var key in errors) {
-			dacura.ldresult.numerrors++;
-			  if (errors.hasOwnProperty(key)) {
-					//errhtml += "<tr><td>" + key + "</td><td>" + JSON.stringify(errors[key], 0, 4) + "</td></tr>";
-					errhtml += "<tr><td>"+key+"</td><td>"+errors[key].error+"</td><td>"+errors[key].property+"</td><td>"+errors[key].message+"</td></tr>";
-			  }
-		}
-		html += errhtml + "</table>";
+dacura.ldresult.getResultClass = function (dcm){
+	if(dcm.decision == 	'reject'){
+		return "error";
 	}
-	html += "</div>";
-	return html;
+	else if(dcm.errcode > 200){
+		return "error";
+	}
+	else if(dcm.decision == 'pending'){
+		return "warning";
+	}
+	else if(dcm.decision == 'confirm'){
+		return "success";
+	}
+	else if(dcm.decision == 'accept'){
+		return "success";
+	}
+};
+
+
+dacura.ldresult.getResultMessage = function (dcm, update_type){
+	if(typeof update_type == "undefined"){
+		update_type = "update";
+	}
+	if(typeof(dcm.msg_body) != "undefined" && dcm.msg_body != ""){
+		msg = dcm.msg_body;
+	}
+	else if(dcm.decision == "reject"){
+		if(dcm.test){
+			msg = "This " + update_type + " would not be permitted. ";
+		}
+		else {	
+			msg = "This " + update_type + " is not permitted. ";
+		}
+	}
+	else {
+		if((dcm.test && dcm.decision == "accept") || dcm.decision == "confirm"){
+			msg = "This " + update_type + " will be accepted if confirmed";
+		}
+		else if(dcm.test && dcm.decision == "pending"){
+			msg = "This " + update_type + " would need to be approved";			
+		}
+		else if(dcm.decision == "pending"){
+			msg = "The " + update_type + " is awaiting approval";
+		}
+		else if(dcm.decision == "accept"){
+			msg = "The  " + update_type + " has been accepted.";
+		}	
+		else {
+			msg = "Accessing Unknown thing(*^&(^";
+		}
+	}
+	msg += dacura.ldresult.getErrorsHTML(dcm);	
+	msg += dacura.ldresult.getWarningsHTML(dcm);
+	msg += dacura.ldresult.getStatusChangeWarningsHTML(dcm);
+	return msg;
 }	
+
+dacura.ldresult.getStatusChangeWarningsHTML = function(dcm){
+	var html = "";
+	if(typeof dcm.candidate_graph_update != "undefined" && dcm.candidate_graph_update != null && typeof dcm.candidate_graph_update.meta != "undefined"){
+		html = "<div class='rb-status-change'>";
+		for (var key in dcm.candidate_graph_update.meta) {
+			html += "<span class='rb-status-key'>" + key + " changed </span>" + 
+				"<span class='rb-status-orig'>from " + dcm.candidate_graph_update.meta[key][0] + "</span>" + 
+				"<span class='rb-status-changed'>to " + dcm.candidate_graph_update.meta[key][1] + "</span>";
+		}	
+		html += "</div>";
+	}
+	return html;
+}
 
 dacura.ldresult.getWarningsHTML = function(dcm){
 	var html = "";
 	if(typeof dcm.warnings != "undefined" && dcm.warnings.length > 0){
 		var errhtml = "";
 		for(var i = 0; i < dcm.warnings.length; i++){
-			dacura.ldresult.numwarnings++;
+			dacura.ldresult.counts.warnings++;
 			errhtml += "<div class='rbwarning'>Warning: <span class='action'>" + dcm.warnings[i].action +
 				"</span><span class='title'>" + dcm.warnings[i].msg_title + "</span><span class='body'>" + 
 				dcm.warnings[i].msg_body + "</span></div>";
 		}
 		if(errhtml.length > 0){
-			html = "<h3>Warnings</h3><div class='api-warning-details'>" + errhtml + "</div>";
+			html = "<div class='api-warning-details'>" + errhtml + "</div>";
 		}	
 	}
 	return html;	
 }
 
-dacura.ldresult.getUpdateDetailsHTML = function(dcm, test){
-	var html = "<div class='api-decision-triples'>";
-	if(dcm.inserts.length > 0){
-		if(typeof test != "undefined" && test){
-			html += "<h3>" + dcm.inserts.length + " triples will be added</h3>"; 
+dacura.ldresult.getErrorsHTML = function(dcm){
+	var html = "";
+	if(typeof dcm.errors != "undefined" && dcm.errors.length > 0){
+		var errhtml = "";
+		for(var i = 0; i < dcm.errors.length; i++){
+			dacura.ldresult.counts.errors++;
+			errhtml += "<div class='rberror'>Error: <span class='action'>" + dcm.errors[i].action +
+				"</span><span class='title'>" + dcm.errors[i].msg_title + "</span><span class='body'>" + 
+				dcm.errors[i].msg_body + "</span></div>";
 		}
-		else {
-			html += "<h3>" + dcm.inserts.length + " triples were added</h3>";	
-		}
-		html += "<table class='rbtable' id='change-add'>";
-		html += "<tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Graph</th></tr>";
-		for(var i = 0; i< dcm.inserts.length; i++){
-			if(typeof dcm.inserts[i][2] == "object"){
-				dcm.inserts[i][2] = JSON.stringify(dcm.inserts[i][2]);
-			}
-			html += "<tr><td>" + dcm.inserts[i][0] + "</td><td>" + dcm.inserts[i][1] + "</td><td>" + 
-			dcm.inserts[i][2] + "</td><td>" + dcm.inserts[i][3] + "</td></tr>";
-		}
-		html += "</table>";
+		if(errhtml.length > 0){
+			html = "<div class='api-warning-details'>" + errhtml + "</div>";
+		}	
 	}
-	if(dcm.deletes.length > 0){
-		if(typeof test != "undefined" && test){
-			html += "<h3>" + dcm.deletes.length + " triples will be deleted</h3>"; 
-		}
-		else {
-			html += "<h3>" + dcm.deletes.length + " triples were deleted</h3>";	
-		}
-		html += "<table class='rbtable' id='change-del'>";
-		html += "<tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Graph</th></tr>";
-		for(var i = 0; i<dcm.deletes.length; i++){
-			if(typeof dcm.deletes[i][2] == "object"){
-				dcm.deletes[i][2] = JSON.stringify(dcm.deletes[i][2]);
-			}
-			html += "<tr><td>" + dcm.deletes[i][0] + "</td><td>" + dcm.deletes[i][1] + "</td><td>" +
-			 dcm.deletes[i][2] + "</td><td>" + dcm.deletes[i][3] +"</td></tr>";
-		}
-		html += "</table>";
-	}
-	html += "</div>";
-	return html;			
+	return html;	
 }
 
-dacura.ldresult.getReportGraphUpdateHTML = function(rupdates, done){
+dacura.ldresult.getErrorDetailsTable = function(errors){
+	var html = "<table class='rbtable dqs-error-table'><thead><tr><th>#</th><th>Error</th><th>Property</th><th>Message</th><th>Raw</th></tr></thead></tbody>";
+	html += this.getErrorDetailsHTML(errors);
+	html += "</tbody></table>";
+	return html;
+}
+
+dacura.ldresult.getErrorDetailsHTML = function(errors){
+	if(typeof errors != "undefined"){
+		var errhtml = "";
+		for (var key in errors) {
+			dacura.ldresult.counts.dqs_errors++;
+			  if (errors.hasOwnProperty(key)) {
+					//errhtml += "<tr><td>" + key + "</td><td>" + JSON.stringify(errors[key], 0, 4) + "</td></tr>";
+					errhtml += "<tr><td>"+key+"</td><td>"+errors[key].error+"</td><td>"+errors[key].property+"</td><td>"+errors[key].message+"</td><td class='rawjson'>" + JSON.stringify(errors[key], 0, 4) + "</td></tr>";
+			  }
+		}
+	}
+	return errhtml;
+}	
+
+dacura.ldresult.getReportGraphUpdateHTML = function(dcm){
+	var rupdates = dcm.report_graph_update;
 	var html ="<div class='api-graph-testresults report-graph'>";
 	if(rupdates.hypothetical || (rupdates.inserts.length == 0 && rupdates.deletes.length == 0)){
 		html += "<div class='info'>No changes to report graph</div>";		
 	}
 	if((rupdates.inserts.length > 0 || rupdates.deletes.length > 0)){
+		dacura.ldresult.counts.report_updates = rupdates.inserts.length + rupdates.deletes.length; 
 		var insword = "inserted";
 		var delword = "deleted"
-		if(!done){
+		if(dcm.test || dcm.decision != "accept"){
 			if(rupdates.hypothetical){
 				insphrase = "would be " + insword;
 				delphrase = "would be " + delword;
@@ -255,80 +419,26 @@ dacura.ldresult.getReportGraphUpdateHTML = function(rupdates, done){
 	}
 }
 
-dacura.ldresult.getMetaUpdatesHTML = function(meta){
-	var thtml = "";
-	for (var key in meta) {
-		  if (meta.hasOwnProperty(key)) {
-			  thtml += key + ": "; 
-			  if(typeof meta[key] == "object"){
-				  thtml += meta[key][0] + " " + meta[key][1] + "<br>";
-			  }
-			  else {
-				  thtml += meta[key] + "<br>";					  
-			  }
-		  }
-	}
-	if(thtml.length > 0){
-		thtml = "<div class='rbdecision info'><h3>State</h3>" + thtml + "</div>";
-	}
-	return thtml;	
-}
-
-dacura.ldresult.getUpdateGraphUpdateHTML = function(cupdates, done){
+dacura.ldresult.getUpdateGraphUpdateHTML = function(dcm){
 	var html ="<div class='api-graph-testresults update-graph'>";
-	if(typeof cupdates.meta != "undefined"){
-		html += this.getMetaUpdatesHTML(cupdates.meta);
-	}
-	if((typeof cupdates.inserts.forward == "undefined" || cupdates.inserts.forward == "") &&
-		(typeof cupdates.inserts.backward == "undefined" || cupdates.inserts.backward == "") && 
-		(typeof cupdates.deletes.forward == "undefined" || cupdates.deletes.forward == "") &&
-		(typeof cupdates.deletes.backward == "undefined" || cupdates.deletes.backward == "")){
-		html += "<div class='info'>No changes to update graph</div>";		
+	//if(typeof dcm.update_graph_update.meta != "undefined"){
+	//	html += this.getMetaUpdatesHTML(dcm.update_graph_update.meta);
+	//}
+	if((typeof dcm.update_graph_update.inserts.forward == "undefined" || dcm.update_graph_update.inserts.forward == "") &&
+		(typeof dcm.update_graph_update.inserts.backward == "undefined" || dcm.update_graph_update.inserts.backward == "") && 
+		(typeof dcm.update_graph_update.deletes.forward == "undefined" || dcm.update_graph_update.deletes.forward == "") &&
+		(typeof dcm.update_graph_update.deletes.backward == "undefined" || dcm.update_graph_update.deletes.backward == "")){
+		return "";		
 	}
 	else {
 		html += "<div class='info'>Changes to update graph</div>";		
-		html += getJSONUpdateTableHTML(cupdates);
+		html += getJSONUpdateTableHTML(dcm.update_graph_update);
 	}	
 	return html + "</div>";
-}
+};
 
-function getJSONUpdateTableHTML(cupdates){
-	var af = "";
-	if(typeof cupdates.inserts.forward != "undefined" && cupdates.inserts.forward != ""){
-		af = JSON.stringify(cupdates.inserts.forward);
-	}
-	var ab = "";
-	if(typeof cupdates.inserts.backward != "undefined" && cupdates.inserts.backward != ""){
-		ab = JSON.stringify(cupdates.inserts.backward);
-	}
-	var df = "";
-	if(typeof cupdates.deletes.forward != "undefined" && cupdates.deletes.forward != ""){
-		df = JSON.stringify(cupdates.deletes.forward);
-	}
-	var db = "";
-	if(typeof cupdates.deletes.backward != "undefined" && cupdates.deletes.backward != ""){
-		db = JSON.stringify(cupdates.deletes.backward);
-	}
-	html = "<div class='info'>";
-	if(af != "" || ab != "" || df != "" || db != ""){
-		//html += "<div class='info'><thead><tr><th></th><th>Forward Graph</th><th>Backward Graph</th></tr></thead><tbody>";
-		if(af != "" || ab != ""){
-			html += "Added: <td class='json-frag'>" + af + " (Forward Graph) - " + ab + " (Backward Graph)";
-		}
-		if(df != "" || db != ""){
-				html += "Deleted: <td class='json-frag'>" + df + " (Forward Graph)" + db + " (Backward Graph)";
-		}
-		html += "</div>";
-	}
-	return html;
-}
-
-dacura.ldresult.getJSONFragmentHTML = function(frag, title){
-	html = "<div class='json-fragment-title'>"+ title + "</div><div class='dacura-json-viewer'>" + JSON.stringify(frag, 0, 4) + "</div>";
-	return html;
-}
-
-dacura.ldresult.getCandidateGraphUpdateHTML = function(cupdates, done){
+dacura.ldresult.getCandidateGraphUpdateHTML = function(dcm){
+	var cupdates = dcm.candidate_graph_update;
 	var html ="<div class='api-graph-testresults candidate-graph'>";
 	if(cupdates.hypothetical || (cupdates.inserts.length == 0 && cupdates.deletes.length == 0)){
 		html += "<div class='title'>No changes to candidate graph</div>";		
@@ -342,11 +452,11 @@ dacura.ldresult.getCandidateGraphUpdateHTML = function(cupdates, done){
 			html += "<div class='api-candidate-meta'>" + mhtml + "</div>";			
 		}
 	}
-	
 	if(!(cupdates.inserts.length == 0 && cupdates.deletes.length == 0)){
+		dacura.ldresult.counts.candidate_updates = cupdates.inserts.length + cupdates.deletes.length; 
 		var insword = "inserted";
 		var delword = "deleted"
-		if(!done){
+		if(dcm.test || dcm.decision != "accept"){
 			if(cupdates.hypothetical){
 				insphrase = "would be " + insword;
 				delphrase = "would be " + delword;
@@ -379,7 +489,31 @@ dacura.ldresult.getCandidateGraphUpdateHTML = function(cupdates, done){
 		}
 		return html + "</div>";
 	}
+	else {
+		return html + "</div>";	
+	}
 }
+
+dacura.ldresult.getMetaUpdatesHTML = function(meta){
+	var thtml = "";
+	for (var key in meta) {
+		  if (meta.hasOwnProperty(key)) {
+			  dacura.ldresult.counts.meta_updates++; 
+			  thtml += key + ": "; 
+			  if(typeof meta[key] == "object" && meta[key] != null){
+				  thtml += meta[key][0] + " " + meta[key][1] + "<br>";
+			  }
+			  else {
+				  thtml += meta[key] + "<br>";					  
+			  }
+		  }
+	}
+	if(thtml.length > 0){
+		thtml = "<div class='rbdecision info'><h3>State</h3>" + thtml + "</div>";
+	}
+	return thtml;	
+}
+
 
 dacura.ldresult.getTripleTableHTML = function(trips, tit, isquads, cls){
 	var html = "";
@@ -407,171 +541,36 @@ dacura.ldresult.getTripleTableHTML = function(trips, tit, isquads, cls){
 	return html;
 } 
 
-dacura.ldresult.getGraphTestResultsHTML = function(res, dcm, type){
-	var html ="<div class='api-graph-testresults'>";
-	if(type == "Update Candidate" && typeof dcm.result != "undefined" && dcm.result != null){
-		if(res.decision == "reject"){
-			html += "<div class='title'>Quality Control Problems</div>";		
-			html += "The " + type + " request would produce the following graph updates and errors: ";
-			html += dacura.ldresult.getUpdateDetailsHTML(res, true); 
-			html += this.getErrorDetailsHTML(res);		
-		}
-		else {
-			if(dcm.result.status == "accept" && dcm.result.original.status == "accept"){
-				html += "<div class='title'>Updating Published Report</div>";		
-				html += "If the " + type + " request is accepted, it will produce the following updates to the graph:";
-			}
-			else if(dcm.result.status == "accept"){
-				html += "<div class='title'>Publishing New Report</div>";
-				html += "If the " + type + " request is accepted, it will cause a new report to be published, consisting of the following graph updates:";		
-			}
-			else if(dcm.result.original.status == "accept"){
-				html += "<div class='title'>Removing Published Report</div>";
-				html += "If the " + type + " request is accepted, it will cause the report to be unpublished, consisting of the following graph updates:";		
-			}
-			else {
-				html += "<div class='title'>Editing Unpublished Candidate</div>";
-				html += "If the " + type + " request is accepted, it will have no impact on the graph. Below are the changes that would appear if the candidate is ever accepted";				
-			}
-			html += dacura.ldresult.getUpdateDetailsHTML(res, true); 
-		}
+function getJSONUpdateTableHTML(cupdates){
+	var af = "";
+	if(typeof cupdates.inserts.forward != "undefined" && cupdates.inserts.forward != ""){
+		af = JSON.stringify(cupdates.inserts.forward);
 	}
-	else {
-		if(res.decision != "reject"){
-			html += "<div class='title'>Quality Tests Passed OK</div>";
-			if(res.deletes.length > 0 || res.inserts.length > 0){
-				html += "If the submitted candidate is accepted, it will produce the following updates ";
-				html += dacura.ldresult.getUpdateDetailsHTML(res, true); 
-			}
-			else {
-				html += "If the submitted candidate is accepted, it will not produce any updates to the graph";
-			}
+	var ab = "";
+	if(typeof cupdates.inserts.backward != "undefined" && cupdates.inserts.backward != ""){
+		ab = JSON.stringify(cupdates.inserts.backward);
+	}
+	var df = "";
+	if(typeof cupdates.deletes.forward != "undefined" && cupdates.deletes.forward != ""){
+		df = JSON.stringify(cupdates.deletes.forward);
+	}
+	var db = "";
+	if(typeof cupdates.deletes.backward != "undefined" && cupdates.deletes.backward != ""){
+		db = JSON.stringify(cupdates.deletes.backward);
+	}
+	var html = "";
+	if(af != "" || ab != "" || df != "" || db != ""){
+		html = "<div class='info'>";
+		if(af != "" || ab != ""){
+			html += "Added: <td class='json-frag'>" + af + " (Forward Graph) - " + ab + " (Backward Graph)";
 		}
-		else {
-			html += "<div class='title'>Cannot Currently Be Published due to Quality Control Problems</div>";
-			html += "The submitted candidate would produce the following graph updates: ";
-			html += dacura.ldresult.getUpdateDetailsHTML(res, true); 
-			html += this.getErrorDetailsHTML(res);
-			//show errors in the graph test...
+		if(df != "" || db != ""){
+				html += "Deleted: <td class='json-frag'>" + df + " (Forward Graph)" + db + " (Backward Graph)";
 		}
+		html += "</div>";
 	}
 	return html;
 }
 
-dacura.ldresult.showUpdateDecision = function(dcm, test, jq){
-	return this.showDecision(dcm, test, jq, "Update Candidate");
-}
 
-dacura.ldresult.showCreateDecision = function(dcm, test, jq){
-	return this.showDecision(dcm, test, jq, "Create Candidate");
-}
-
-dacura.ldresult.showDecision = function(dcm, test, jq, type){
-	document.getElementById('decision').type="button";
-	document.getElementById('errors').type="button";
-	document.getElementById('warnings').type="button";
-	document.getElementById('meta').type="button";
-	document.getElementById('candidate').type="button";
-	document.getElementById('report').type="button";
-	document.getElementById('graph').type="button";
-	
-	dacura.ldresult.decision = this.getDecisionBasicText(dcm, test, type);
-	dacura.ldresult.msg_body = dcm.msg_body;
-	dacura.ldresult.jq = jq;
-// 	if(typeof dcm.msg_title != "undefined" && dcm.msg_title != null && dcm.msg_title.length > 0) {
-// 		subhtml = "<span class='api-msg-title'>" + dcm.msg_title + "</span>";
-// 	}
-// 	if(typeof dcm.msg_body != "undefined" && dcm.msg_body.length > 0){
-// 		subhtml += "<span class='api-msg-body'>" + dcm.msg_body + "</span>";
-// 	}
-// 	if(subhtml.length > 0){
-// 		html += "<div class='api-decision-subtext'>" + subhtml + "</div>";
-// 	}
-	if(typeof(dcm.report_graph_update) != "undefined" && dcm.report_graph_update != null){
-	 	for (var name in dcm.report_graph_update.errors) {
-	 		if(typeof dcm.report_graph_update.errors[name] != "undefined" && dcm.report_graph_update.errors[name].length > 0){
-	 	 		dacura.ldresult.errors = this.getErrorDetailsHTML(dcm.report_graph_update.errors[name], type);
-	 	 	}
-	 	}
-	} 	
- 	if(typeof dcm.warnings != "undefined" && dcm.warnings.length > 0){
- 		dacura.ldresult.warnings = this.getWarningsHTML(dcm, type);	
- 	}
- 	if(typeof dcm.update_graph_update != "undefined" && dcm.update_graph_update != null){
- 		dacura.ldresult.meta = this.getUpdateGraphUpdateHTML(dcm.update_graph_update, !test && (dcm.decision == "accept" || dcm.decision == "pending"));
- 	}
- 	if(typeof dcm.candidate_graph_update != "undefined" && dcm.candidate_graph_update != null){
- 		dacura.ldresult.candidate = this.getCandidateGraphUpdateHTML(dcm.candidate_graph_update, !test && (dcm.decision == "accept" || dcm.decision == "pending"));
-		if(dacura.ldresult.candidate == null){dacura.ldresult.candidate="";}
- 	 }
- 	if(typeof dcm.report_graph_update != "undefined" && dcm.report_graph_update != null){
- 		dacura.ldresult.report = this.getReportGraphUpdateHTML(dcm.report_graph_update, !test && dcm.decision == "accept");
- 	}
-	
-	if(type == "Update Candidate"){
-		if(typeof dcm.result != "undefined" && dcm.result != null){
-			if(dcm.result.status != dcm.result.original.status){
-				html += "<div class='api-decision-statechange'>Candidate Status changed from " + dcm.result.original.status +
-				" to " + dcm.result.status + "</div>";			
-			}
-		}
-	}
-
- 	if(dcm.decision == 	'reject'){
- 		dacura.ldresult.cls = "error";
- 	}
- 	else if(dcm.errcode > 200){
- 		dacura.ldresult.cls = "error";
- 	}
- 	else if(dcm.decision == 'pending'){
- 		if(dcm.warnings.length > 0){
- 			dacura.ldresult.cls = "warning";
- 		}
- 		else {
- 			dacura.ldresult.cls = "warning";
- 		}
- 		if(typeof dcm.graph_test != "undefined") {
- 			dacura.ldresult.graph = this.getGraphTestResultsHTML(dcm.graph_test, dcm, type);
- 		}
- 	}
- 	else if(dcm.decision == 'confirm'){
- 		if(dcm.warnings.length > 0){
- 			dacura.ldresult.cls = "success";
- 		}
- 		else {
- 			dacura.ldresult.cls = "success";
- 		}
- 	}
- 	else if(dcm.decision == 'accept'){
- 		if(dcm.warnings.length > 0){
- 			dacura.ldresult.cls = "success";
- 		}
- 		else {
- 			dacura.ldresult.cls = "success";
- 		}
- 	}
-// 	dacura.system.writeResultMessage(this.getDecisionBasicText(dcm, test, type), jq, html, dcm);
-		
-// 	$(jq).html("<div class='dacura-user-message-box " + cls + "'>"+ html + "</div>").show();
-
-	document.getElementById('warnings').value="warnings ("+dacura.ldresult.numwarnings+")";
-	document.getElementById('errors').value="errors ("+dacura.ldresult.numerrors+")";
-	document.getElementById('report').value="report ("+dacura.ldresult.numtriples+" triples)";
-
-	if(dacura.ldresult.errors == "") {document.getElementById('errors').disabled=true;}
-	if(dacura.ldresult.warnings == "") {document.getElementById('warnings').disabled=true;}
-	if(dacura.ldresult.meta == "") {document.getElementById('meta').disabled=true;}
-	if(dacura.ldresult.candidate == "") {document.getElementById('candidate').disabled=true;}
-	if(dacura.ldresult.report == "") {document.getElementById('report').disabled=true;}
-	if(dacura.ldresult.graph == "") {document.getElementById('graph').disabled=true;}
-	dacura.ldresult.showBasicDecision();
-}
-
-dacura.ldresult.showBasicDecision = function(){$(dacura.ldresult.jq).html("<div class='rbdecision " + dacura.ldresult.cls + "'>" + dacura.ldresult.decision + "<br>" + dacura.ldresult.msg_body + "</div>").show();}
-dacura.ldresult.showErrors = function(){$(dacura.ldresult.jq).html("<div class='rbdecision error'>" + dacura.ldresult.errors + "</div>").show();}
-dacura.ldresult.showWarnings = function(){$(dacura.ldresult.jq).html("<div class='rbdecision warning'>" + dacura.ldresult.warnings + "</div>").show();}
-dacura.ldresult.showMeta = function(){$(dacura.ldresult.jq).html(dacura.ldresult.meta).show();}
-dacura.ldresult.showCandidate = function(){$(dacura.ldresult.jq).html(dacura.ldresult.candidate).show();}
-dacura.ldresult.showReport = function(){$(dacura.ldresult.jq).html(dacura.ldresult.report).show();}
-dacura.ldresult.showGraph = function(){$(dacura.ldresult.jq).html(dacura.ldresult.graph).show();}
 </script>

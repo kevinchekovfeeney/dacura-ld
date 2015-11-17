@@ -1,9 +1,7 @@
 <?php
 include_once("SchemaDacuraServer.php");
-include_once("phplib/services/ld/LdService.php");
 
-
-class SchemaService extends DacuraService {
+class SchemaService extends LdService {
 	
 	var $default_screen = "view";
 	var $protected_screens = array("view" => array("admin"));
@@ -98,15 +96,6 @@ class SchemaService extends DacuraService {
 	function renderFullPageHeader(){
 		parent::renderFullPageHeader();
 		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.schema.js");
-		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css', "ld").'">';
-		//echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css').'">';
-		echo "<div id='pagecontent-container'>";
-		echo "<div id='pagecontent-nopad'>";
-	}
-	
-	function renderFullPageFooter(){
-		echo "</div></div>";
-		parent::renderFullPageFooter();
 	}
 	
 	function handlePageLoad($dacura_server){
@@ -119,14 +108,14 @@ class SchemaService extends DacuraService {
 			if($this->screen && $this->screen != "view"){
 				$params["breadcrumbs"] = array(array(), array());
 				$this->renderToolHeader($params);
-				if(isset($_GET['mode'])) $params['mode'] = $_GET['mode'];
-				if(isset($_GET['version'])) $params['version'] = $_GET['version'];
-				if(isset($_GET['format'])) $params['format'] = $_GET['format'];
-				if(isset($_GET['display'])) $params['display'] = $_GET['display'];
-				$this->renderScreen("ontology", array("id" => $this->screen));								
+				$params['args'] = $this->getOptionalArgs();
+				$params["entity_type"] = "ontology";
+				$params['id'] = $this->screen;
+				$this->renderScreen("ontology", $params);								
 			}
 			else {
 				$params["title"] = "Imported Ontologies";
+				$params["entity_type"] = "ontology";
 				$this->renderToolHeader($params);
 				$this->renderScreen("system", array());
 			}
@@ -139,9 +128,12 @@ class SchemaService extends DacuraService {
 				$this->renderToolHeader($params);
 				$params['id'] = $this->screen;
 				$params['ontologies'] = $dacura_server->loadImportedOntologyList();
+				$params['args'] = $this->getOptionalArgs();
+				$params["entity_type"] = "graph";
 				$this->renderScreen("graph", $params);
 			}
 			else {
+				$params["entity_type"] = "graph";
 				$params["title"] = "Schema Management";
 				$params["subtitle"] = "Manage the graphs where instance data is stored";
 				$this->renderToolHeader($params);

@@ -1,10 +1,4 @@
 <?php
-require_once("LDEntity.php");
-
-/*
- * A candidate is basically an ld document with a schema and 
- * a bunch of dacura state management information tagged on
- */
 
 class Candidate extends LDEntity {
 	//maps to candidates db structure
@@ -16,7 +10,6 @@ class Candidate extends LDEntity {
 		$other = clone($this);
 		unset($other->index);
 		unset($other->errmsg);
-		$other->label = $other->getLabel() ? $other->getLabel() : $other->id;
 		return $other;
 	}
 		
@@ -94,44 +87,33 @@ class Candidate extends LDEntity {
 		return $triples;
 	}
 	
-		
-	function html($service, $vstr){
-		$params = array();
-		$params['id'] = $this->applyLinkHTML($this->cwurl, $vstr);
-		$params['type'] = $this->applyLinkHTML($this->type, $vstr);
-		$params['label'] = $this->getLabel();
-		$cnts = $this->getCandidateContents();
-		$params['contents'] = $cnts ? $this->getPropertiesAsHTMLTable($vstr, $cnts) : "";
-		$meta = &$this->getCandidateMeta();
-		$params['meta'] = $meta ? $this->getPropertiesAsHTMLTable($vstr, $meta) : "";
-		$params['provenance'] = "";
-		$params['annotation'] = "";
-		$c = 0;
-		if(isset($this->ldprops['provenance'])){
-			foreach($this->ldprops['provenance'] as $id => $prov){
-				$params['provenance'] .= "<div class='provenance-record'>Provenance record $id</div>";
-				$params['provenance'] .= $this->getPropertiesAsHTMLTable($vstr, $this->ldprops['provenance'][$id], 0, "p".$c++);
+	function displayHTML($flags, $vstr, $srvr){
+		$this->display = "";
+		foreach($this->ldprops as $g => $ldprops){
+			$this->display .= "<h2>Graph $g</h2>";
+			foreach($ldprops as $sub => $props){
+				$rdft = $this->extractTypeFromProps($props);
+				if($rdft){
+					if(is_array($rdft)) {
+						$sub .= " " . implode(", ", $rdft);
+					}
+					else {
+						$sub .= " " . $rdft;
+					}
+					unset($props['rdf:type']);
+				}
+				$this->display .= "<h3>$sub</h3>".$this->getPropertiesAsHTMLTable($vstr, $props);				
 			}
 		}
-		$c = 0;
-		if(isset($this->ldprops['annotation'])){
-			foreach($this->ldprops['annotation'] as $id => $ann){
-				$params['annotation'] .= "<div class='annotation-record'>Annotation record $id</div>";
-				$params['annotation'] .= $this->getPropertiesAsHTMLTable($vstr, $this->ldprops['annotation'][$id], 0, "a".$c++);
-			}
-		}
-		return $service->renderScreenAsString("html", $params);
 	}
 	
-	function getLabel(){
-		$props = $this->getCandidateContents();
-		if(!$props) return false;
-		foreach($props as $p => $v){
-			if($this->nsres->match($p, "rdfs", "label") or $this->nsres->match($p, "dc", "title")){
-				return $v;
-			}
+	function displayQuads($flags, $vstr, $srvr){
+		$quads = array();
+		foreach($this->ldprops as $g => $props){
+			$quads = array_merge($this->getPropertyAsQuads($g, $g));
 		}
-		return false;
+		$this->display = $quads;
 	}
+	
 }
 
