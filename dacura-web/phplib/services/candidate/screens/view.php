@@ -162,8 +162,8 @@ function drawUpdateListTable (data){
 			"<td>" + obj.createtime + "</td>" + 
 			"<td>" + timeConverter(obj.modtime) + "</td>" + 
 			"<td>" + obj.modtime + "</td>" + 
-			"<td class='rawjsonu'>" + obj.forward + "</td>" + 
-			"<td class='rawjsonu'>" + obj.backward + "</td>" + "</tr>");
+			"<td class='rawjson'>" + obj.forward + "</td>" + 
+			"<td class='rawjson'>" + obj.backward + "</td>" + "</tr>");
 			update_urls[update_urls.length] = dacura.system.pageURL() + "/" + obj.targetid + "/update/" + obj.eurid;			
 		}
 		$('.updaterow').hover(function(){
@@ -238,11 +238,6 @@ function isUpdateID(id){
 	return id.substr(0,7) == "update/";
 }
 
-function setStyleMisc(){
-	dacura.system.styleJSONLD('.rawjson');
-}
-
-
 $('document').ready(function(){
 	$("#tab-holder").tabs( {
         "activate": function(event, ui) {
@@ -287,10 +282,9 @@ $('document').ready(function(){
 			drawUpdateListTable(obj.updates);
 			$('#update-holder').show();
 		}
-		setStyleMisc();
 		dacura.editor.load("<?=$params['id']?>", dacura.candidate.fetch, dacura.candidate.update, obj);
 		dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);
-		
+		dacura.system.styleJSONLD();		
 		$('#cand-pane-list').show();
 	};
 	dacura.candidate.fetch("<?=$params['id']?>", <?=json_encode($params['args']);?>, onw, { resultbox: "#editor-msgs", errorbox: "#editor-msgs", busybox: '#cand-contents'});

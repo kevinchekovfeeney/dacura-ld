@@ -56,13 +56,6 @@
 			<div class='ld-extra ld-updates'>
 			</div>
 			<div class='ld-extra ld-dqs error-details'>
-				<table class='rbtable dqs-error-table'>
-					<thead>
-						<tr><td>#</td><td>Error</td><td>Property</td><td>Message</td></tr>
-					</thead>
-					<tbody>
-					</tbody>
-				</table>
 			</div>
 		</div>
 	</div>
@@ -141,7 +134,8 @@ dacura.ldresult.showDecision = function(dcm, jq, cancel, confirm, shortmode){
 	if(typeof(dcm.report_graph_update) != "undefined" && dcm.report_graph_update != null){
 	 	for (var name in dcm.report_graph_update.errors) {
 	 		if(typeof dcm.report_graph_update.errors[name] != "undefined" && dcm.report_graph_update.errors[name].length > 0){
-	 			$(jq + " .dqs-error-table tbody").append(this.getErrorDetailsHTML(dcm.report_graph_update.errors[name], dcm.action));
+	 			$(jq + ' .error-details').append(this.getErrorDetailsTable(dcm.report_graph_update.errors[name]));
+	 			dacura.system.styleJSONLD();
 	 	 	}
 	 	}
 	 	if(dacura.ldresult.counts.dqs_errors > 0){
@@ -352,7 +346,8 @@ dacura.ldresult.getErrorsHTML = function(dcm){
 }
 
 dacura.ldresult.getErrorDetailsTable = function(errors){
-	var html = "<table class='rbtable dqs-error-table'><thead><tr><th>#</th><th>Error</th><th>Property</th><th>Message</th><th>Raw</th></tr></thead></tbody>";
+	var html = "<table class='rbtable dqs-error-table'><thead><tr>" + 
+		"<th>Error</th><th>Message</th><th>Attributes</th></thead><tbody>";
 	html += this.getErrorDetailsHTML(errors);
 	html += "</tbody></table>";
 	return html;
@@ -365,7 +360,10 @@ dacura.ldresult.getErrorDetailsHTML = function(errors){
 			dacura.ldresult.counts.dqs_errors++;
 			  if (errors.hasOwnProperty(key)) {
 					//errhtml += "<tr><td>" + key + "</td><td>" + JSON.stringify(errors[key], 0, 4) + "</td></tr>";
-					errhtml += "<tr><td>"+key+"</td><td>"+errors[key].error+"</td><td>"+errors[key].property+"</td><td>"+errors[key].message+"</td><td class='rawjson'>" + JSON.stringify(errors[key], 0, 4) + "</td></tr>";
+					errhtml += "<tr><td>"+errors[key].error+"</td><td>"+errors[key].message +"</td><td class='rawjson'>";
+					delete(errors[key].message);
+					delete(errors[key].error);
+					errhtml += JSON.stringify(errors[key], 0, 4) + "</td></tr>";
 			  }
 		}
 	}
