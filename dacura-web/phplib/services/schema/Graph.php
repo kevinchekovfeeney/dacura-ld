@@ -12,6 +12,7 @@ class Graph extends LDEntity {
 		$local_ont->ldprops = array($id => $this->ldprops[$this->id]);
 		$local_ont->meta = array("url" => $url, "title" => $title);
 		$local_ont->copyBasics($this);
+		$local_ont->nsres = $this->nsres;
 		return $local_ont;
 	}
 

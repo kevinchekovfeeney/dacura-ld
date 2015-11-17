@@ -5,7 +5,7 @@ getRoute()->post('/validate_ontologies', 'validate_ontologies');
 
 getRoute()->get('/structure', 'get_entity_classes');
 getRoute()->get('/structure/(\w+)', 'get_entity_classes');//with graph id
-getRoute()->get('/structure/(\w+)/(\w+)', 'get_class_properties');//with graph id
+getRoute()->get('/structure/(\w+)/(.+)', 'get_class_template');//with graph id
 
 function import_ontology(){
 	global $dacura_server;
@@ -83,11 +83,18 @@ function get_entity_classes($graphid = false){
 	}
 }
 
-function get_class_template($classname, $graphid = false){
+function get_class_template($graphid, $classname){
 	global $dacura_server;
 	if(!$dacura_server->schema){
 		return $dacura_server->write_http_error(400, "Get entity classes can only be called in a collection context");		
 	}
+	$res = $dacura_server->getClassTemplate($graphid, $classname);
+	if($res){
+		return $dacura_server->write_json_result($res, "Returned classe template");
+	}
+	else {
+		$dacura_server->write_http_error();
+	}	
 }
 
 

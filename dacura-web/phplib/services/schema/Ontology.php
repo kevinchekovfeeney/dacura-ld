@@ -110,6 +110,53 @@ class Ontology extends LDEntity {
 		return $deps;
 	}
 	
+	function getClassHierarchy(){
+		$subtypes = array();
+		$parents = array();
+		$children = array();
+		$this->compressNS();
+		foreach($this->ldprops[$this->id] as $id => $props){
+			if(isset($props['rdfs:subClassOf'])){
+				if(!in_array($id, $children)) $children[] = $id;
+				$pts = is_array($props['rdfs:subClassOf']) ? $props['rdfs:subClassOf'] : array($props['rdfs:subClassOf']);
+				foreach($pts as $parent){
+					if(!in_array($parent, $parents)){
+						$parents[] = $parent;
+					}
+					if(!isset($subtypes[$parent])){
+						$subtypes[$parent] = array($id);
+					}
+					else {
+						if(!in_array($id, $subtypes[$parent])){
+							$subtypes[$parent][] = $id;
+						}
+					}						
+				}
+			}
+		}
+		$hierarchy = array();
+		foreach($parents as $parent){
+			if(!in_array($parent, $children)){
+				$hierarchy[$parent] = array("children" => array());
+				foreach($subtypes[$parent] as $st){
+					$hierarchy[$parent]['children'] = $this->getHierarchy($st, $subtypes);
+				}				
+			}			
+		}
+		return $hierarchy;		
+	}
+	
+	function getHierarchy($cls, $subtypes){
+		$hierarchy = array($cls => array());
+		if(isset($subtypes[$cls])){
+			foreach($subtypes[$cls] as $st){
+				$hierarchy[$cls]['children'] = $this->getHierarchy($st, $subtypes);
+			}				
+		}
+		return $hierarchy;
+	}	
+
+	
 	function genFname(){
 		$fid = "ONT". randid();
 		return $fid;

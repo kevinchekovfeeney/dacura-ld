@@ -93,7 +93,29 @@ class Schema extends DacuraObject {
 				}
 			}
 		}
-		return $results;
+		$simple = array();
+		foreach($results as $gid => $clist){
+			$simple[$gid] = array();
+			foreach($clist as $cls => $frags){
+				$scls = array("name" => $cls);
+				foreach($frags as $i => $frag){
+					if(isset($frag['rdfs:label'])){
+						$scls['label'] = decodeScalar($frag['rdfs:label']);
+					}
+					if(isset($frag['rdf:type'])){
+						$scls['type'] = $frag['rdf:type'];
+					}
+					if(isset($frag['rdfs:subClassOf'])){
+						$scls['subclass'] = $frag['rdfs:subClassOf'];
+					}
+					if(isset($frag['rdfs:comment'])){
+						$scls['comment'] = decodeScalar($frag['rdfs:comment']);
+					}
+				}
+				$simple[$gid][] = $scls;
+			}
+		}
+		return $simple;		
 	}
 	
 	function adornClass($cls){
@@ -109,10 +131,10 @@ class Schema extends DacuraObject {
 			return $this->failure_result("Ontology $ns not loaded for class $cls", 400);				
 		}
 		$ont = $this->ontologies[$ns];
-		$ont->expandNS();
+		$ont->compressNS();
 		$expanded = $this->nsres->expand($cls);
 		if($expanded){
-			$fragment = $ont->getFragment($expanded);
+			$fragment = $ont->getFragment($cls);
 			if($fragment) return $fragment;
 			return $this->failure_result("Class $cls not found in ".$ont->id, 404); 				
 		}

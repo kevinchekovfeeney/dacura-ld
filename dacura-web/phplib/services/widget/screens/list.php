@@ -15,22 +15,7 @@
 		<div id="create-holder" class="dch">
 			<div id='entity-graphs'>
 			</div>
-			<div id='entity-classes' class='ld-list dch'>
-				<table id="entity-class-table" class="dcdt display">
-					<thead>
-					<tr>
-						<th>Name</th>
-						<th>Label</th>
-						<th>Properties</th>
-						<th>Version</th>
-						<th>Created</th>
-						<th>Sortable Created</th>
-						<th>Modified</th>
-						<th>Sortable Modified</th>
-					</tr>
-					</thead>
-					<tbody></tbody>
-				</table>
+			<div id='entity-classes' class='dch'>				
 			</div>
 			<div id='class-properties' class='ld-list dch'>
 				<table id="entity-property-table" class="dcdt display">
@@ -99,8 +84,23 @@
 		</div>
 	</div>
 </div>
-
+<div class='dch'>
+	<div id="class-template">
+		<table class="class-table display">
+			<thead>
+			<tr>
+				<th>Name</th>
+				<th>Label</th>
+				<th>Type</th>
+				<th>Parent</th>
+				<th>Select</th>
+			</tr>
+			</thead>
+			<tbody></tbody>
+		</table>
+	</div>
 <script>
+
 
 dacura.widget.getTableInitStrings = function(cands){
 	if(typeof cands == "undefined"){
@@ -113,6 +113,39 @@ dacura.widget.getTableInitStrings = function(cands){
 
 var entity_urls = [];
 var update_urls = [];
+var entity_classes = [];
+
+dacura.widget.drawEntityClassTable = function(data){
+	for (var g in data){
+		var obj = data[g];
+		var tjqid = "graph-table-" + g;
+		var djqid = "graph-" + g;
+		$('#entity-classes').append("<div class='graph-classes-list' id='" + djqid + "'><h3>Graph " + g + "</h3>"
+			+ "<div id='" + tjqid + "'></div></div>");
+		dacura.widget.drawClassTable("#" + tjqid, obj, g); 
+	}
+	$('.select-class').button().click( function(event){
+		var rec = entity_classes[this.id.substring(7)];
+		dacura.widget.fetchClassProperties(rec.graph, rec.name, dacura.widget.drawClassPropertyTable, {resultbox: "#create-msgs", errorbox: "#create-msgs", busybox: "#create-widget"});
+	});
+	$('#entity-classes').show();
+}
+
+dacura.widget.drawClassTable = function(jqid, data, g){
+	$(jqid).html($('#class-template').html());
+	for (var i in data) {
+		var obj = data[i];
+		$(jqid + " .class-table tbody").append("<tr>" +
+			"<td>" + obj.name + "</td>" + 
+			"<td>" + obj.label + "</td>" + 
+			"<td>" + obj.type + "</td>" + 
+			"<td>" + obj.subclass + "</td>" + 
+			"<td><input type='checkbox' class='select-class' id='entity_" + entity_classes.length + "'><label for='entity_" + entity_classes.length + "'>Select</label></td>" +
+			"</tr>");
+		entity_classes[entity_classes.length] = { graph: g, name: obj.name};
+	}
+}
+
 
 dacura.widget.drawEntityListTable = function(data){		
 	if(typeof data == "undefined" || data.length == 0){

@@ -498,6 +498,22 @@ class SchemaDacuraServer extends LdDacuraServer {
 		//return $entclasses;
 	}
 	
+	//get class hierarchy...
+	//go through entire graphs ontology and pull out all subclass of relationships
+	
+	function getClassTemplate($graphid, $classname){
+		$graph = $this->schema->getGraph($graphid);
+		if($graph){
+			$this->schema->loadOntologies($this, "accept", $graphid);
+			$ch = array();
+			foreach($this->schema->ontologies as $oid => $ont){
+				$ch[$oid] = $ont->getClassHierarchy();
+			}
+			return $ch;
+		}
+		return $this->failure_result("failed to load graph ".$this->schema->errmsg, $this->schema->errcode);
+	}
+	
 	
 	
 	//extra ontology is for when we want to use a 'live' version of an ontology for checking rather than the stored one...

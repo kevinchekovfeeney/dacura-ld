@@ -25,7 +25,7 @@ dacura.ld.api.create = function (data, test){
 
 dacura.ld.api.update = function (id, data, test){
 	var xhr = {};
-	xhr.url = dacura.ld.apiurl + "/" + id;
+	xhr.url = dacura.ld.apiurl + "/" + encodeURIComponent(id);
 	xhr.type = "POST";
 	xhr.contentType = 'application/json'; 
 	if(typeof test != "undefined"){
@@ -39,14 +39,14 @@ dacura.ld.api.update = function (id, data, test){
 dacura.ld.api.del = function (id){
 	xhr = {};
 	xhr.data ={};
-	xhr.url = dacura.ld.apiurl + "/" + id;
+	xhr.url = dacura.ld.apiurl + "/" + encodeURIComponent(id);
 	xhr.type = "DELETE";
 	return xhr;
 }
 
 dacura.ld.api.view = function (id, args){
 	xhr = {data: args};
-	xhr.url = dacura.ld.apiurl + "/" + id;
+	xhr.url = dacura.ld.apiurl + "/" + encodeURIComponent(id);
 	return xhr;
 }
 

@@ -1069,6 +1069,9 @@ function findInternalMissingLinks($ldprops, $legal_vals, $id, $cwurl){
 function combineProperties(&$target, $nprops){
 	foreach($nprops as $prop => $val){
 		if(!isset($target[$prop])){
+			$target[$prop] = $val;		
+		}
+		else {
 			
 		}
 	}
@@ -1288,33 +1291,24 @@ function removeOverwrites(&$add, &$del){
 	return $removed;
 }
 
-function compareObjLiterals($a, $b){
-	foreach($a as $k => $v){
-		if(!isset($b[$k])){
-			return false;
-		}
-		if($b[$k] != $v){
-			$x = json_encode($b[$k]);
-			$y = json_encode($v);
-			//echo "<p>$x " . $b[$k]." b: ".mb_strlen($x);
-			//echo "<p>$y $v a: ".mb_strlen($y);
-				
-			return false;
-		}
-	}
-	foreach($b as $k => $v){
-		if(!isset($a[$k])){
-			return false;
-		}
-	}
-	return true;
-}
-
 function encodeScalar($s){
 	if(isLiteral($s)){
 		return array('data' => $s, "lang" => "en");
 	}
 	return $s;
+}
+
+function decodeScalar($s){
+	if(isLiteral($s)){
+		return $s;
+	}
+	if(isset($s['data'])){
+		return $s['data'];
+	}
+	if(isset($s['value'])){
+		return $s['value'];
+	}
+	return "";
 }
 
 function encodeObject($o, $t){
