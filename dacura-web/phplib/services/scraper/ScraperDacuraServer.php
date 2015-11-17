@@ -389,7 +389,7 @@ class ScraperDacuraServer extends DacuraServer {
 	}
 	
 	function getReport($repname){
-		$fpath = $this->ucontext->settings['collections_base'];
+		$fpath = $this->ucontext->settings['path_to_collections'];
 		if($this->cid()) $fpath .= $this->cid()."/";
 		$fpath .= $this->settings['dump_directory'];
 		$fname = $fpath . $repname;

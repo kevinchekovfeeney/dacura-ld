@@ -430,16 +430,14 @@ class SchemaDacuraServer extends LdDacuraServer {
 	function calculateOntologyDependencies($id){
 		//opr($this->nsres);
 		$ent = $this->loadEntity($id, "ontology", $this->cid(), $this->did());
-		if(!$ent->isOntology()){
-			return $this->failure_result("$id is not an ontology - cant calculate dependencies", 400);
+		if(!$ent){
+			return false;
 		}
-		else {
-			$deps = $ent->generateDependencies($this->nsres);
-			$incs = array($id, "fix");
-			$deps['include_tree'] = array($id => $this->getOntologyIncludes($id, $incs));
-			$deps['includes'] = $incs;
-			return $deps;
-		}
+		$deps = $ent->generateDependencies($this->nsres);
+		$incs = array($id, "fix");
+		$deps['include_tree'] = array($id => $this->getOntologyIncludes($id, $incs));
+		$deps['includes'] = $incs;
+		return $deps;
 	}
 	
 	function getOntologyIncludes($id, &$included){

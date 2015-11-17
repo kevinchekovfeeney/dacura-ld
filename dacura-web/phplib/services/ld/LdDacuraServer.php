@@ -705,7 +705,7 @@ class LdDacuraServer extends DacuraServer {
 			$gu = $this->deleteEntityFromGraph($uent->original, $testflag);
 		}
 		else {
-			if($is_test || $uent->changedPublished()){
+			if($testflag || $uent->changedPublished()){
 				$dont_publish = ($testflag || $decision != "accept");
 				$gu = $this->publishEntityToGraph($uent->changed, $dont_publish);
 			}

@@ -23,7 +23,7 @@ class FileManager extends DacuraObject {
 	
 	function cache($cname, $oname, $data, $config = false){
 		$oname = $this->sanitise_file_name($oname);
-		$fpath = $this->service->settings['collections_base'];
+		$fpath = $this->service->settings['path_to_collections'];
 		if($this->service->getCollectionID()) $fpath .= $this->service->getCollectionID()."/";
 		$fpath .= $this->service->settings['cache_directory'];
 		$d_name = $fpath.$cname;
@@ -84,7 +84,7 @@ class FileManager extends DacuraObject {
 	
 	function decache($cname, $oname, $ch=false, $return_stale = false){
 		$oname = $this->sanitise_file_name($oname);
-		$fpath = $this->service->settings['collections_base'];
+		$fpath = $this->service->settings['path_to_collections'];
 		if($this->service->getCollectionID()) $fpath .= $this->service->getCollectionID()."/";
 		$fpath .= $this->service->settings['cache_directory'];
 		$d_name = $fpath.$cname;
@@ -116,7 +116,7 @@ class FileManager extends DacuraObject {
 	}
 	
 	function startServiceDump($sname, $dname, $extension = "txt", $avoid_overwrite = true, $prepend_date = false){
-		$fpath = $this->service->settings['collections_base'];
+		$fpath = $this->service->settings['path_to_collections'];
 		if($this->service->getCollectionID()) $fpath .= $this->service->getCollectionID()."/";
 		$fpath .= $this->service->settings['dump_directory'];
 		if($prepend_date){

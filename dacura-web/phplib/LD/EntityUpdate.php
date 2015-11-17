@@ -765,17 +765,5 @@ class EntityUpdate extends DacuraObject{
 		}
 		return false;
 	}
-	
-	
-
-	function isCandidate(){
-		return false;
-	}
-	function isOntology(){
-		return false;
-	}
-	function isSchema(){
-		return false;
-	}
 }
 

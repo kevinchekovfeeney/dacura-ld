@@ -33,16 +33,6 @@ class EntityCreateRequest extends LDEntity {
 		return true;
 	}
 
-	function isCandidate(){
-		return false;
-	}
-	function isSchema(){
-		return false;
-	}
-	function isOntology(){
-		return false;
-	}
-
 	/*
 	 * Called to hide whatever internal parts of the object we do not wish to send as json through the api
 	 */

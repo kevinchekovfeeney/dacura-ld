@@ -5,7 +5,7 @@ require_once("FakeTripleStore.php");
 class GraphManager extends DacuraObject {
 
 	var $settings;
-	var $tests = "all";//array("domainNotSubsumedSC");
+	var $tests = "all";
 	var $errors;
 	var $warnings;
 	var $fake = false;
@@ -70,8 +70,8 @@ class GraphManager extends DacuraObject {
 	}
 	
 	function update($itrips, $dtrips, $gname, $schema_gname, $test = false, $tests = "all"){
-		if($this->fake){
-			$fakets = new FakeTripleStore("C:\\Temp\\fakets.json");
+		if($this->fake&& $this->settings['dqs_service']['fakets']){
+			$fakets = new FakeTripleStore($this->settings['dqs_service']['fakets']);
 			return $fakets->update($itrips, $dtrips, $test);
 		}
 		else {
@@ -89,8 +89,8 @@ class GraphManager extends DacuraObject {
 	}
 
 	function validateSchema($schema_gname, $itrips, $tests){
-		if($this->fake){
-			$fakets = new FakeTripleStore("C:\\Temp\\fakets.json");
+		if($this->fake && $this->settings['dqs_service']['fakets']){
+			$fakets = new FakeTripleStore($this->settings['dqs_service']['fakets']);
 			return $fakets->update($itrips, array(), false);
 		}
 		else {
@@ -138,8 +138,32 @@ class GraphManager extends DacuraObject {
 			//$qstr .= "$k=$v";
 			$qstr .= $k."=".urlencode($v);
 		}
-		//$qstr = str_replace(";", ".", $qstr);
-		//$qstr = urlencode($qstr);
+		if($this->settings['dqs_service']['dumplast']){
+			$this->dumpDQSRequest($this->settings['dqs_service']['dumplast'], $service, $tests, $schema_gname, $gname, $itrips, $dtrips, $qstr);
+		}
+		$ch = curl_init();
+		//if(isset ($this->settings['http_proxy']) && $this->settings['http_proxy']){
+		//	curl_setopt($ch, CURLOPT_PROXY, $this->settings['http_proxy']);
+		//} TCD's proxy doesnt see the dqs
+		curl_setopt($ch, CURLOPT_URL, $this->settings["dqs_service"][$service]);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $qstr);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		$content = curl_exec($ch);
+		if(curl_getinfo($ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+			$errcode = (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200) ? 500 : curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			return $this->failure_result("Failed to analyse $service - service call failed: $content", $errcode);
+		}
+		$content = json_decode($content, true);
+		if(is_array($content)){
+			return $content;
+		}
+		else {
+			return $this->failure_result("Dacura Quality Service returned illegal type (not an array): $content", 500);
+		}		
+	}
+	
+	function dumpDQSRequest($fname, $service, $tests, $schema_gname, $gname, $itrips, $dtrips, $qstr){
 		$dumpstr = "Service: $service\n";
 		$dumpstr .= "Tests: ";
 		if(is_array($tests)){
@@ -158,26 +182,6 @@ class GraphManager extends DacuraObject {
 			$dumpstr .= json_encode($itrip)."\n";
 		}
 		$dumpstr .= "Query: $qstr";
-		file_put_contents("C:\\Temp\\lastdqs.json", $dumpstr);
-		$ch = curl_init();
-		//if(isset ($this->settings['http_proxy']) && $this->settings['http_proxy']){
-		//	curl_setopt($ch, CURLOPT_PROXY, $this->settings['http_proxy']);
-		//}
-		curl_setopt($ch, CURLOPT_URL, $this->settings["dqs_service"][$service]);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $qstr);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		$content = curl_exec($ch);
-		if(curl_getinfo($ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-			$errcode = (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200) ? 500 : curl_getinfo($ch, CURLINFO_HTTP_CODE);
-			return $this->failure_result("Failed to analyse $service - service call failed: $content", $errcode);
-		}
-		$content = json_decode($content, true);
-		if(is_array($content)){
-			return $content;
-		}
-		else {
-			return $this->failure_result("Dacura Quality Service returned illegal type (not an array): $content", 500);
-		}		
+		file_put_contents($fname, $dumpstr);
 	}
 }

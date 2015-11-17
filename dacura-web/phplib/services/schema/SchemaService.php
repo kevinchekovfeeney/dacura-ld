@@ -117,7 +117,7 @@ class SchemaService extends LdService {
 				$params["title"] = "Imported Ontologies";
 				$params["entity_type"] = "ontology";
 				$this->renderToolHeader($params);
-				$this->renderScreen("system", array());
+				$this->renderScreen("system", $params);
 			}
 		}
 		else {
