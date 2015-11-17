@@ -14,7 +14,7 @@ function get_ngskeleton(){
 	$dacura_server->write_http_error();
 }
 
-include_once "phplib/services/Ld/api.php";
+include_once "phplib/services/ld/api.php";
 
 
 
