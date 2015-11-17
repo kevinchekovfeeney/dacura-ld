@@ -1311,6 +1311,10 @@ function decodeScalar($s){
 	return "";
 }
 
+function compareObjLiterals($a, $b){
+	return $a == $b;
+}
+
 function encodeObject($o, $t){
 	if($t == "literal"){
 		return $o;
