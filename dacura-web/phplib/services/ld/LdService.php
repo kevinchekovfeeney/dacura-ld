@@ -83,12 +83,11 @@ class LdService extends DacuraService {
 	
 	
 	function handlePageLoad($dacura_server){
+		$params = array("image" => $this->url("image", "buttons/knowledge.png"));
 		if($this->screen == "list"){
-			$params = array(
-				"breadcrumbs" => array(array(), array()),
-				"title" => "Entity Data",
-				"subtitle" => "A list of the managed entities in the system",
-			);
+			$params["breadcrumbs"] = array(array(), array());
+			$params["title"] = "Entity Data";
+			$params["subtitle"] = "A list of the managed entities in the system";
 			$this->renderToolHeader($params);	
 			if($this->collection_id == "all"){
 				$params['show_collection'] = true;

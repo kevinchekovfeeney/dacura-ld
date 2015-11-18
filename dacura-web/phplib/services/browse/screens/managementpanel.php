@@ -8,7 +8,7 @@
 <div class="dacura-dashboard-panel" id="management-panel">
 	<a href='<?=$service->get_service_url("config")?>'>
 			<div class='dacura-dashboard-button' id='dacura-sources-button' title="config management">
-			<img class='dacura-button-img' src="<?=$service->url("image", "buttons/sources.png")?>">
+			<img class='dacura-button-img' src="<?=$service->url("image", "buttons/workflow.png")?>">
 			<div class="dacura-button-title">Config</div>
 		</div>
 	<a href='<?=$service->get_service_url("users")?>'>
@@ -21,7 +21,7 @@
 	</a>				
 	<a href='<?=$service->get_service_url("candidate")?>'>
 			<div class='dacura-dashboard-button' id='dacura-candidates-button' title="candidate management">
-			<img class='dacura-button-img' src="<?=$service->url("image", "buttons/publishing.png")?>">
+			<img class='dacura-button-img' src="<?=$service->url("image", "buttons/reports.png")?>">
 			<div class="dacura-button-title">Instance Data</div>
 		</div>
 	</a>

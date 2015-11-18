@@ -20,11 +20,10 @@ class WidgetService extends LdService {
 	}
 	
 	function handlePageLoad($dacura_server){
+		$params = array("image" => $this->url("image", "buttons/widget.png"));
 		if($this->screen == "list"){
-			$params = array(
-					"title" => "User Interface Widgets",
-					"subtitle" => "Forms which allow people to view and update the data",
-			);
+			$params["title"] = "User Interface Widgets";
+			$params["subtitle"] = "Forms which allow people to view and update the data";
 			$this->renderToolHeader($params);
 			$params['status_options'] = $this->getCreateStatusOptions();
 			$this->renderScreen("list", $params);
@@ -39,12 +38,11 @@ class WidgetService extends LdService {
 			else {
 				$id = $this->screen;
 			}
-			$params = array("id" => $id,
-					"title" => "Entity Data",
-					"subtitle" => "Entity View",
-					"breadcrumbs" => array(array(), array()),
-					"description" => "Navigate, view and update your managed entities"
-			);
+			$params["id"] = $id;
+			$params["title"] = "Entity Data";
+			$params["subtitle"] = "Entity View";
+			$params["breadcrumbs"] = array(array(), array());
+			$params["description"] = "Navigate, view and update your managed entities";
 			if($this->screen == 'update'){
 				$params['status_options'] = $this->getUpdateStatusOptions();
 			}

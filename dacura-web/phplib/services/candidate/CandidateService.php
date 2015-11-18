@@ -28,7 +28,7 @@ class CandidateService extends LdService {
 		$params['topbreadcrumb'] = "All Instance Data";
 		$params['collectionbreadcrumb'] = "instance data";
 		$params["title"] = "Instance Data Viewer";
-		$params["image"] = $this->url("image", "buttons/publishing.png");
+		$params["image"] = $this->url("image", "buttons/reports.png");
 		
 		if($this->screen == "list"){		
 			if($this->collection_id == "all"){
