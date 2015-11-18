@@ -268,7 +268,7 @@ class LDDBManager extends UsersDBManager {
 					$uent->created,
 					$uent->modified,
 					$uent->get_status(),
-					$uent->type,
+					$uent->getEntityType(),
 					$uent->cid,
 					$uent->did
 			));

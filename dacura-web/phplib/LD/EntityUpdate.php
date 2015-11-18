@@ -59,6 +59,11 @@ class EntityUpdate extends DacuraObject{
 		$this->backward = json_decode($row['backward'], true);
 		$this->meta = json_decode($row['meta'], true);
 	}
+	
+	function getEntityType(){
+		if($this->type) return $this->type;
+		return strtolower(substr(get_class($this), 0, strlen(get_class($this)) - strlen("UpdateRequest")));
+	}
 
 
 	//compare two update requests (for analysing updates to updates)

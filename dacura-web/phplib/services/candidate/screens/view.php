@@ -142,7 +142,7 @@ function drawUpdateHeader(data){
 	}	
 }
 
-function drawUpdateListTable (data){		
+function drawUpdateListTable (data){	
 	if(typeof data == "undefined" || data == null || data.length == 0){
 		$('#update-holder').show();	
 		$('.updates_table').dataTable(<?=$dacura_server->getServiceSetting('pending_datatable_init_string', "{}");?>); 

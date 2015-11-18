@@ -12,13 +12,6 @@ class Candidate extends LDEntity {
 		unset($other->errmsg);
 		return $other;
 	}
-		
-	function getObjectType($obj){
-		if(!isset($obj['rdf:type']) and !isset($obj[$this->nsres->getURL("rdf")])){
-			return false;
-		}
-		return isset($obj['rdf:type']) ? $obj['rdf:type'] : $obj[$this->nsres->getURL("rdf")];
-	}
 	
 	function get_class_version(){
 		return $this->type_version;

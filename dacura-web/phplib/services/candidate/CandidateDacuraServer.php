@@ -31,6 +31,7 @@ class CandidateDacuraServer extends LdDacuraServer {
 			return $this->failure_result("Cannot create new candidates outside of a schema", 400);
 		}
 		$obj->cwurl = $this->schema->instance_prefix."/".$obj->id;
+		$obj->schema = $this->schema;
 		return $obj;
 	}
 	

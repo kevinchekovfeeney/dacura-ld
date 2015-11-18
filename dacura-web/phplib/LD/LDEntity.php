@@ -347,6 +347,14 @@ class LDEntity extends DacuraObject {
 		$this->index = array();
 		indexLD($this->ldprops, $this->index, $this->cwurl);
 	}
+	
+
+	function getObjectType($obj){
+		if(!isset($obj['rdf:type']) and !isset($obj[$this->nsres->getURL("rdf")])){
+			return false;
+		}
+		return isset($obj['rdf:type']) ? $obj['rdf:type'] : $obj[$this->nsres->getURL("rdf")];
+	}
 
 	/*
 	 * Some state may be duplicated between the meta ld field and the object properties
