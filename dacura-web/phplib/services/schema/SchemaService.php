@@ -137,7 +137,7 @@ class SchemaService extends LdService {
 				$params["title"] = "Schema Management";
 				$params["subtitle"] = "Manage the graphs where instance data is stored";
 				$this->renderToolHeader($params);
-				$this->renderScreen("schema", array());				
+				$this->renderScreen("schema", $params);				
 			}
 		}
 		$this->renderToolFooter($params);		
