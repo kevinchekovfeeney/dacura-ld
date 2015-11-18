@@ -52,13 +52,13 @@ class CandidateDacuraServer extends LdDacuraServer {
 				$gobj = $this->loadEntity($k, "graph", $this->cid(), $this->did());
 				$tests = isset($gobj->meta['instance_dqs']) ? $gobj->meta['instance_dqs'] : array();
 				$errs = $this->graphman->create($quads, $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k), $is_test, $tests);
-			}
-			if($errs === false){
-				$ar->addOneGraphTestFail($k, $quads, array(), $this->graphman->errcode, $this->graphman->errmsg);
-			}
-			else {
-				$ar->addOneGraphTestResult($k, $quads, array(), $errs);
-			}
+				if($errs === false){
+					$ar->addOneGraphTestFail($k, $quads, array(), $this->graphman->errcode, $this->graphman->errmsg);
+				}
+				else {
+					$ar->addOneGraphTestResult($k, $quads, array(), $errs);
+				}
+			}			
 		}
 		return $ar;
 	}
