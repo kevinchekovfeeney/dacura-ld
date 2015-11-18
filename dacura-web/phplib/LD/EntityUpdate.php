@@ -300,7 +300,7 @@ class EntityUpdate extends DacuraObject{
 	
 	/*
 	 * Called when a candidate update request is sent to the API
-	 * $obj is a LD candidate structure
+	 * $obj is a LD property structure
 	 */
 	function loadFromAPI($cnt, $meta, $format, $opts = false){
 		if($opts == false) $opts = $this->getUpdateOptions();

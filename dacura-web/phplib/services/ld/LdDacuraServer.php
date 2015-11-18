@@ -74,7 +74,12 @@ class LdDacuraServer extends DacuraServer {
 		$filter = array("type" => "graph", "collectionid" => $this->cid(), "datasetid" => $this->did(), "include_all" => true);
 		$ents = $this->getEntities($filter);
 		$sc = new Schema($this->cid(), $this->did(), $this->settings['install_url']);
-		$sc->load($ents);
+		if($ents){
+			$sc->load($ents);
+		}
+		elseif($this->errcode != 404){
+			return false;
+		}
 		$sc->nsres = $this->nsres;
 		return $sc;
 	}
@@ -370,7 +375,8 @@ class LdDacuraServer extends DacuraServer {
 			}
 			return $ar;
 		}
-		$gu = $this->publishEntityToGraph($nent, $ar->decision, $test_flag);
+		$dont_publish = $ar->decision != "accept" || $test_flag;
+		$gu = $this->publishEntityToGraph($nent, $dont_publish);
 		if($gu->is_reject() && $ar->is_accept() && $this->policy->rollbackToPending("create", $type, $nent)){
 			$ar->addWarning("Publication", "Rejected by Graph Management Service", "State changed from accept to pending");
 			$nent->set_status("pending");
@@ -444,7 +450,7 @@ class LdDacuraServer extends DacuraServer {
 			return $ar->failure(403, "Access Denied", "Cannot update $oent->id through context ".$this->cid()."/".$this->did());
 		}
 		elseif(!$uent->loadFromAPI($cnt, $meta, $form)){
-			return $ar->failure($uent->errcode, "Protocol Error", "Failed to load the update candidate from the API. ", $uent->errmsg);
+			return $ar->failure($uent->errcode, "Protocol Error", "Failed to load the update command from the API. ", $uent->errmsg);
 		}
 		if($uent->nodelta()){
 			return $ar->reject("No Changes", "The submitted version is identical to the current version.");

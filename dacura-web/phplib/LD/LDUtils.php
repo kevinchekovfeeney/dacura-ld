@@ -160,6 +160,7 @@ function updateBNReferences(&$ldprops, $idmap, $cwurl){
  */
 function validLD($ldprops, $cwurl = false){
 	$errs = array();
+	if(!$ldprops or !is_array($ldprops)) return true;
 	foreach($ldprops as $p => $v){
 		$pv = new LDPropertyValue($v, $cwurl);
 		if($pv->illegal()){
@@ -358,8 +359,8 @@ function genid($idbase, $bn = false, $allow_demand_id = false){
 		return $idbase."/".$bn;
 	}
 	elseif($bn){
-		if($bn == "_:candidate"){
-			return $idbase."/candidate";
+		if($bn == "_:entity"){
+			return $idbase;
 		}
 		elseif($bn == "_:meta"){
 			return $idbase."/meta";
@@ -1121,6 +1122,9 @@ function compareLDGraphs($id, $aprops, $bprops, $cwurl, $top_level = false){
  */
 function compareLD($frag_id, $orig, $upd, $cwurl, $gname = false){
 	$delta = new LDDelta($cwurl, $gname);
+	if(!$upd or !is_array($upd)){ 
+		return $delta;
+	}
 	//go through updated properties to pull out properties that are not in original which we will need to add
 	foreach($upd as $p => $v){
 		$pupd = new LDPropertyValue($v, $cwurl);

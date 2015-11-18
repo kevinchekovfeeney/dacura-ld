@@ -159,6 +159,7 @@ function showImportResult(res){
 		$(imptargets.resultbox).html("");
 	};
 	var upd = function(){
+		delete(dacura.schema.lastUpdateObject["test"]);
 		dacura.schema.update("<?=$params['id']?>", dacura.schema.lastUpdateObject, showImportResult, "import", imptargets);				
 	};
 	res.format = "json";
@@ -194,7 +195,7 @@ function initDecorations(){
 		dacura.schema.update("<?=$params['id']?>", updateobj, showImportResult, "import", imptargets, true);				
     });
 	$('#deploy-imports').button().click(function(event){
-		var onts = getSelectedOntologies();
+	    var onts = getSelectedOntologies();
 		var dqs = getSelectedDQS();
 		var updateobj = {"meta": dqs};
 		updateobj.meta.imports = onts;		
@@ -229,6 +230,7 @@ $(function() {
 	var onw = function (obj){
 		dacura.editor.load("<?=$params['id']?>", dacura.schema.fetchGraph, dacura.schema.updateGraph, obj);
 		dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);	
+		dacura.schema.showGraph(obj);
 	    $('#graph-pane-list').show();
 	};
 	var args = <?=json_encode($params['args']);?>;

@@ -30,8 +30,6 @@ class SchemaDacuraServer extends LdDacuraServer {
 		$this->graphman = new GraphManager($this->settings);
 	}
 	
-
-
 	function createNewEntityObject($id, $type){
 		$this->update_type = $type;
 		if($type == "ontology"){

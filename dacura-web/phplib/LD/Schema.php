@@ -29,17 +29,18 @@ class Schema extends DacuraObject {
 		else {
 			$this->idbase = $base_url.$cid."/".$did."/";
 		}
-		$this->instance_prefix = $this->idbase."report";
+		$this->instance_prefix = $this->idbase."candidate";
 		$this->ns_prefix = $this->idbase."ns#";
 	}
 	
 	function load($graphrecords){
-		foreach($graphrecords as $row){
-			$graph = new Graph($row["id"]);
-			$graph->loadFromDBRow($row);
-			$this->graphs[$row["id"]] = $graph;
+		if($graphrecords && is_array($graphrecords)){
+			foreach($graphrecords as $row){
+				$graph = new Graph($row["id"]);
+				$graph->loadFromDBRow($row);
+				$this->graphs[$row["id"]] = $graph;
+			}
 		}
-		
 	}
 	
 	function loadOntologies(&$srvr, $status = false, $graphid= false){

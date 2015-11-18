@@ -81,15 +81,23 @@ function drawGraphs(graphs){
 	}
 }
 
-var drawGraph = function(graph){
-	clearResultMessage();
-	alert(JSON.stringify(graph));
+function showCreateResult(obj){
+	if(typeof(dacura.ldresult) != "undefined"){
+		dacura.ldresult.update_type = "create";
+		var cancel = function(){
+			$('#create-msgs').html("");
+		};
+		dacura.ldresult.showDecision(json, '#create-msgs', cancel);			
+	}
+	else {
+		dacura.system.showJSONErrorResult(json, '#create-msgs'); 	
+	}
 }
 
 function initDecorations(){
 	//view format choices
 	$('#create-button').button().click(function (event){
-		dacura.schema.createGraph($('#graphname').val(), {scrollto: '#create-msgs', resultbox: '#create-msgs', errorbox: '#create-msgs', busybox: '#create-graph'});
+		dacura.schema.createGraph($('#graphname').val(), {scrollto: '#create-msgs', resultbox: '#create-msgs', errorbox: '#create-msgs', busybox: '#create-graph'}, showCreateResult);
 	});
 }
 

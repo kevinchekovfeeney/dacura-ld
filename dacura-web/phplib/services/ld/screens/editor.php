@@ -326,7 +326,7 @@ dacura.editor = {
 			return uobj;
 		}
 		catch(e){
-			dacura.system.showErrorResult("JSON Parsing Error - your input data has json formatting errors.", e.message);
+			dacura.system.showErrorResult("your input data has json formatting errors.", e.message, "JSON Parsing Error", dced.targets.errorbox);
 			return;
 		}	
 	},

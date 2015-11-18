@@ -39,7 +39,6 @@ class EntityCreateRequest extends LDEntity {
 	function getDisplayFormat() {
 		$other = clone($this);
 		unset($other->index);
-		unset($other->implicit_add_to_valuelist);
 		unset($other->errmsg);
 		return $other;
 	}

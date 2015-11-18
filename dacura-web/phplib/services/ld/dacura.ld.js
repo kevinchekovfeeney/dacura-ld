@@ -28,7 +28,7 @@ dacura.ld.api.update = function (id, data, test){
 	xhr.url = dacura.ld.apiurl + "/" + encodeURIComponent(id);
 	xhr.type = "POST";
 	xhr.contentType = 'application/json'; 
-	if(typeof test != "undefined"){
+	if(typeof test != "undefined" && test !== false){
 		data.test = true;
 	}
 	xhr.data = JSON.stringify(data);
@@ -166,7 +166,7 @@ dacura.ld.create = function(data, onwards, targets, istest){
 }
 
 dacura.ld.update = function(id, uobj, onwards, type, targets, istest){
-	var ajs = dacura.ld.api.update(id, uobj);
+	var ajs = dacura.ld.api.update(id, uobj, istest);
 	var msgs = dacura.ld.msg.update(id, istest, this.entity_type);
 	ajs.handleResult = onwards;
 	ajs.handleJSONError = onwards;

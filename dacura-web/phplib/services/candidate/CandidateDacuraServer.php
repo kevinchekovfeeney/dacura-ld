@@ -49,7 +49,7 @@ class CandidateDacuraServer extends LdDacuraServer {
 			$quads = $nent->getPropertyAsQuads($k, $this->getInstanceGraph($k));
 			if($quads){
 				$gobj = $this->loadEntity($k, "graph", $this->cid(), $this->did());
-				$tests = $gobj->meta['instance_dqs'];
+				$tests = isset($gobj->meta['instance_dqs']) ? $gobj->meta['instance_dqs'] : array();
 				$errs = $this->graphman->create($quads, $this->getInstanceGraph($k), $this->getGraphSchemaGraph($k), $is_test, $tests);
 			}
 			if($errs === false){

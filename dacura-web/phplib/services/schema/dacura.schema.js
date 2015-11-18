@@ -112,9 +112,9 @@ dacura.schema.validateGraphOntologies = function(onts, tests, targets){
 	dacura.system.invoke(ajs, msgs, targets);	
 };
 
-dacura.schema.createGraph = function(name, targets){
+dacura.schema.createGraph = function(name, targets, onwards){
 	var data = {"type": "graph", "meta" : {"@id": name}};
-	this.create(data, ajs.handleJSONError, targets);
+	this.create(data, onwards, targets);
 }
 
 

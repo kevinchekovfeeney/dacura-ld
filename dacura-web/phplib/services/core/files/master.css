@@ -556,6 +556,7 @@ Message box itself
 .dacura-user-message-box {
 	border-radius: 4px;
 	font-size: 0.9em;
+	margin-bottom: 10px;
 }
 .dacura-user-message-box .mtitle {
 	padding: 10px 10px 6px 10px;

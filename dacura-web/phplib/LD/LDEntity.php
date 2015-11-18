@@ -181,7 +181,7 @@ class LDEntity extends DacuraObject {
 			$umeta = false;
 		}
 		if($this->applyUpdates($update_obj, $this->ldprops, $this->idmap, $is_force, $demand_id_allowed)){
-			if($umeta === false || $this->applyUpdates($umeta, $this->meta, $this->idmap, true, false)){
+			if($umeta === false || $this->applyUpdates($umeta, $this->meta, $this->idmap, true, false, true)){
 				if(count($this->idmap) > 0){
 					$unresolved = updateBNReferences($this->ldprops, $this->idmap, $this->cwurl);
 					if($unresolved === false){
@@ -207,7 +207,7 @@ class LDEntity extends DacuraObject {
 	 * @param array $idmap - map of local ids to newly generated IDs
 	 * @return boolean
 	 */
-	function applyUpdates($uprops, &$dprops, &$idmap, $id_set_allowed = false, $demand_id_allowed = false, $implicit_add_to_valuelist = false){
+	function applyUpdates($uprops, &$dprops, &$idmap, $id_set_allowed = false, $demand_id_allowed = false, $ignore_bad_deletes = false){
 		foreach($uprops as $prop => $v){
 			if(!is_array($dprops)){
 				$dprops = array();
@@ -217,19 +217,7 @@ class LDEntity extends DacuraObject {
 				return $this->failure_result($pv->errmsg, $pv->errcode);
 			}
 			elseif($pv->scalar() or $pv->objectliteral()){
-				/*question as to whether we support updates that don't specify the entire output state....
-				if($implicit_add_to_valuelist && isset($dprops[$prop])){
-					$upv = new LDPropertyValue($dprops[$prop], $this->cwurl);
-					if($upv->scalar() or $upv->objectliteral()){
-						$dprops[$prop] = $v;
-					}
-					elseif($upv->valuelist() or $upv->objectliterallist()){
-						$dprops[$prop][] = $v;
-					}
-				}
-				else {*/
-					$dprops[$prop] = $v;
-				//}
+				$dprops[$prop] = $v;
 			}
 			elseif($pv->valuelist() or $pv->objectliterallist()){
 				$dprops[$prop] = $v;
@@ -238,7 +226,7 @@ class LDEntity extends DacuraObject {
 				if(isset($dprops[$prop])){
 					unset($dprops[$prop]);
 				}
-				else {
+				elseif(!$ignore_bad_deletes) {
 					return $this->failure_result("Attempted to remove non-existant property $prop", 404);
 				}
 			}
@@ -269,7 +257,9 @@ class LDEntity extends DacuraObject {
 						unset($dprops[$prop][$did]);
 					}
 					else {
-						return $this->failure_result("Attempted to remove non-existant embedded object $did from $prop", 404);
+						if(!$ignore_bad_deletes){
+							return $this->failure_result("Attempted to remove non-existant embedded object $did from $prop", 404);
+						}
 					}
 				}
 				$update_ids = $pv->getupdates();
@@ -289,7 +279,7 @@ class LDEntity extends DacuraObject {
 						}
 					}
 					//opr($dprops[$prop][$uid]);
-					if(!$this->applyUpdates($uprops[$prop][$uid], $dprops[$prop][$uid], $idmap, $id_set_allowed, $demand_id_allowed)){
+					if(!$this->applyUpdates($uprops[$prop][$uid], $dprops[$prop][$uid], $idmap, $id_set_allowed, $demand_id_allowed, $ignore_bad_deletes)){
 						return false;
 					}
 					//opr($dprops[$prop][$uid]);
@@ -596,39 +586,41 @@ class LDEntity extends DacuraObject {
 			$props = $this->ldprops;
 		}
 		$nprops = array();
-		foreach($props as $p => $v){
-			//properties should always be URLs or namespaced URLs
-			$np = $this->applyLinkHTML($p, $vstr, true);
-			$pv = new LDPropertyValue($v, $this->cwurl);
-			if($pv->literal() or $pv->objectliteral()){
-				$nv = $this->applyLiteralHTML($v);
-			}
-			elseif($pv->link()){
-				$nv = $this->applyLinkHTML($v, $vstr);
-			}
-			elseif($pv->valuelist() or $pv->objectliterallist()){
-				$nv = array();
-				foreach($v as $val){
-					if(isURL($val) || isNamespacedURL($val)){
-						$nv[] = $this->applyLinkHTML($val, $vstr);
-					}
-					else {
-						$nv[] = $this->applyLiteralHTML($val);
+		if($props && is_array($props)) {
+			foreach($props as $p => $v){
+				//properties should always be URLs or namespaced URLs
+				$np = $this->applyLinkHTML($p, $vstr, true);
+				$pv = new LDPropertyValue($v, $this->cwurl);
+				if($pv->literal() or $pv->objectliteral()){
+					$nv = $this->applyLiteralHTML($v);
+				}
+				elseif($pv->link()){
+					$nv = $this->applyLinkHTML($v, $vstr);
+				}
+				elseif($pv->valuelist() or $pv->objectliterallist()){
+					$nv = array();
+					foreach($v as $val){
+						if(isURL($val) || isNamespacedURL($val)){
+							$nv[] = $this->applyLinkHTML($val, $vstr);
+						}
+						else {
+							$nv[] = $this->applyLiteralHTML($val);
+						}
 					}
 				}
-			}
-			elseif($pv->embeddedlist()){
-				$nv = array();
-				foreach($v as $id => $obj){
-					//ids should always be URLs or namespaced URLs
-					$nid = $this->applyLinkHTML($id, $vstr);
-					$nv[$nid] = $this->linkify($vstr, $obj);
+				elseif($pv->embeddedlist()){
+					$nv = array();
+					foreach($v as $id => $obj){
+						//ids should always be URLs or namespaced URLs
+						$nid = $this->applyLinkHTML($id, $vstr);
+						$nv[$nid] = $this->linkify($vstr, $obj);
+					}
 				}
+				else {
+					$nv = $v;
+				}
+				$nprops[$np] = $nv;
 			}
-			else {
-				$nv = $v;
-			}
-			$nprops[$np] = $nv;
 		}
 		return $nprops;
 	}
