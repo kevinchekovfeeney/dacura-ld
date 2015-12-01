@@ -22,6 +22,7 @@ $request_log = new RequestLog($dacura_settings, "web");
 include_once("phplib/DacuraObject.php");
 include_once("phplib/ServiceLoader.php");
 include_once("phplib/DacuraUser.php");
+include_once("phplib/DacuraForm.php");
 session_start();
 
 $servman = new ServiceLoader($dacura_settings);
@@ -30,7 +31,7 @@ $service = $servman->loadServiceFromURL($request_log);
 if($service){
 	$dacura_server = $service->loadServer();
 	if(!$dacura_server){
-		$servman->renderErrorPage("error", $service->errcode, $service->errmsg );
+		$service->renderScreen("error", array("title" => $service->errcode, "message" => $service->errmsg ), "core");
 		$request_log->setResult($service->errmsg , "Failed to load Dacura Server ");
 	}
 	elseif($dacura_server->userHasViewPagePermission()){
@@ -38,13 +39,13 @@ if($service){
 		$request_log->setResult(200, "Page rendered");
 	}
 	else {
-		$servman->renderErrorPage("denied", $dacura_server->errcode, $dacura_server->errmsg );
+		$service->renderScreen("denied", array("title" => "Access Denied " .$dacura_server->errcode, "message" => $dacura_server->errmsg ), "core");
 		$request_log->setResult(401, "Access Denied: $dacura_server->errcode | $dacura_server->errmsg");
 	}
 }
 else {
-	
-	$servman->renderErrorPage("error", $servman->errcode, $servman->errmsg );
+	$service = new DacuraService($dacura_settings);
+	$service->renderScreen("error", array("title" => "Error retrieving page" .$servman->errcode, "message" => $servman->errmsg ), "core");
 	$request_log->setResult( 400, "Failed to load service: $servman->errcode|$servman->errmsg" );
 }
 

@@ -15,6 +15,15 @@ class UserRole extends DacuraObject {
 	var $dataset_id;
 	var $role;
 	var $level;
+	public static $dacura_roles = array(
+			"user" => "Dataset User",
+			"harvester" => "Data Harvester", 
+			"expert" => "Domain Expert", 
+			"architect" => "Schema Architect",  
+			"admin" => "Administrator", 
+			"nobody" => "No access",
+			"god" => "Deity",
+	);
 	
 	function __construct($id, $cid, $dsid, $role, $level){
 		$this->id = $id;

@@ -33,10 +33,6 @@ dacura.login.isvalidup = function(u, p){
 };
 
 dacura.login.isvalidp = function(p){
-	if(p.length < 3){
-		dacura.system.writeErrorMessage("Invalid password entered. Your password must be at least 8 characters long", '#loginbox-status');
-		return false;
-	}
 	return true;
 };
 
@@ -98,6 +94,9 @@ dacura.login.api.reset = function (xhr){
 	return xhr;
 }
 
+var ltargets = {busybox: '.dacura-widget', resultbox: '#loginbox-status'};
+
+
 dacura.login.login = function(){
 	$('#loginbox-status').html("").hide();
 	var uname = $('#dacura-login-email').val();
@@ -108,11 +107,7 @@ dacura.login.login = function(){
 	var ajs = dacura.login.api.login();
 	ajs.data['login-email'] = uname;
 	ajs.data['login-password'] = pass;
-	dacura.login.disablelogin();
 	var msgs = {"busy": "Checking credentials", "fail": "Failed to login"};
-	ajs.always = function(){
-		dacura.login.enablelogin();
-	};
 	ajs.handleResult = function(url){
 		if(url != ""){
 			window.location.replace(url);
@@ -121,11 +116,7 @@ dacura.login.login = function(){
      		window.location.replace("<?=$service->settings['install_url']?>");
 		}		
 	}
-	ajs.fail = function (jqXHR, textStatus){
-		dacura.system.showErrorResult(jqXHR.responseText );
-		dacura.system.clearBusyMessage();
-	};
-	dacura.system.invoke(ajs, msgs);
+	dacura.system.invoke(ajs, msgs, ltargets);
 };
 
 dacura.login.register = function(){
@@ -143,16 +134,11 @@ dacura.login.register = function(){
 	var ajs = dacura.login.api.register();
 	ajs.data['login-email'] = uname;
 	ajs.data['login-password'] = pass;
-	ajs.handleResult = function(obj){
+	ajs.handleResult = function(obj, targets){
 		dacura.login.showSuccessPage("Registration successfully initiated", obj);		
 	};
-	ajs.always = function(){
-		dacura.system.clearBusyMessage();
-		dacura.login.disableregister();
-	};
 	var msgs = { "busy": "Registering new account...", "fail": "Registration failed"};
-	var targets = {busybox: '.dacura-widget', errorbox: '#loginbox-status', resultbox: '#loginbox-status'};
-	dacura.system.invoke(ajs, msgs, targets);
+	dacura.system.invoke(ajs, msgs, ltargets);
 };
 
 dacura.login.lost = function(){
@@ -163,29 +149,12 @@ dacura.login.lost = function(){
 	}
 	var ajs = dacura.login.api.lost();
 	ajs.data['login-email'] = uname;
-	this.disablelost();
-	var self=this;
-	ajs.beforeSend = function(){
-		dacura.system.showBusyMessage("Requesting password reset...", {"makeweight" : false}, '.dacura-widget');
+	var msgs = { "busy": "Requesting password reset...", "fail": "Password reset request failed"};
+	ajs.handleResult = function(obj, targets){
+		var msg = JSON.parse(jqXHR.responseText);
+		dacura.login.showSuccessPage("Password Rest Process Initiated", msg);				
 	};
-	ajs.complete = function(){
-		self.enablelost();
-		dacura.system.removeBusyOverlay();		
-	};
-	$.ajax(ajs)
-		.done(function(data, textStatus, jqXHR) {
-			try {
-				var msg = JSON.parse(jqXHR.responseText);
-				dacura.login.showSuccessPage("Password Rest Process Initiated", msg);				
-			}
-			catch(e){
-				dacura.system.writeErrorMessage("", '#loginbox-status', "", "Error: " + e.message );
-			}
-		})
-		.fail(function (jqXHR, textStatus){
-			dacura.system.writeErrorMessage("", '#loginbox-status', "", "Error: " + jqXHR.responseText );
-		}
-	);	
+	dacura.system.invoke(ajs, msgs, ltargets);
 };
 
 

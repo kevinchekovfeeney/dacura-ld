@@ -18,6 +18,7 @@ class DacuraUser extends DacuraObject {
 	var $id;
 	var $email;
 	var $name;
+	var $handle;
 	var $status;
 	var $profile;
 	var $session_dump;	//directory where my sessions live.
@@ -31,6 +32,7 @@ class DacuraUser extends DacuraObject {
 		$this->name = $n;
 		$this->status = $status;
 		$this->profile = $prof;
+		$this->handle = ($this->name) ? $this->name : $this->email;
 	}
 	
 	/*

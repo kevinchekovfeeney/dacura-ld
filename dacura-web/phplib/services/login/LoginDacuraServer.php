@@ -34,14 +34,14 @@ class LoginDacuraServer extends DacuraServer {
 	function register($u, $p){
 		$code = $this->userman->register($u, $p);
 		if($code){
-			$address =  $this->settings['install_url']."system/login/register/code/".$code;
+			$address =  $this->durl()."system/login/register/code/".$code;
 			$name = $u;
 			ob_start();
 			include_once("screens/register_email.php");
 			$output = ob_get_contents();
 			ob_clean();
 			$htmloutput = $this->getRegisterUnderwayHTML($name);
-			sendemail($u, $this->settings['login']['register_email_subject'], $output, $this->settings['login']['headers']);
+			sendemail($u, $this->getServiceSetting('register_email_subject', "Dacura registration"), $output, $this->getSystemSetting('mail_headers',""));
 			return $htmloutput;
 		}
 		else {
@@ -55,14 +55,14 @@ class LoginDacuraServer extends DacuraServer {
 	function lostpassword($u){
 		$code = $this->userman->requestResetPassword($u);
 		if($code){
-			$address =  $this->settings['install_url']."system/login/lost/code/".$code;
+			$address =  $this->durl()."system/login/lost/code/".$code;
 			$name = $u;
 			ob_start();
 			include_once("screens/lost_password_email.php");
 			$output = ob_get_contents();
 			ob_clean();
 			$htmloutput = $this->getLostUnderwayHTML($name);
-			sendemail($u, $this->settings['login']['lost_email_subject'], $output, $this->settings['login']['headers']);
+			sendemail($u, $this->getServiceSetting('lost_email_subject', "Lost password notification"), $output, $this->getSystemSetting('mail_headers',""));
 			return $htmloutput;
 		}
 		else {

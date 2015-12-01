@@ -1,1 +1,0 @@
-<hr style='clear: both'>

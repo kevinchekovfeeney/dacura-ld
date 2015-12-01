@@ -100,7 +100,13 @@ class UserManager extends DacuraObject {
 		if(!$email or !$p){
 			return $this->failure_result("Attempt to add user with no email and password", 400);
 		}
-		!$prof && $prof = '{"dacurahome" : "'.$this->service->settings['install_url'].'seshat/0/welcome"}';
+		if(!isValidEmail($email)){
+			return $this->failure_result("Invalid email address: you must enter a working email address to allow communication with the user.", 401);
+		}
+		if(!$this->isValidPassword($p)){
+			return $this->failure_result("Password is invalid: passwords must be at least six characters long", 400);
+		}
+		!$prof && $prof = '{}';
 		$nu = $this->dbman->addUser($email, $n, $p, $status, $prof);
 		if($nu){
 			$nu->setSessionDirectory($this->user_dir.$nu->id);
@@ -151,14 +157,69 @@ class UserManager extends DacuraObject {
 		$u->endLiveSessions("logout");
 		unset($_SESSION[$this->user_var]);
 	}
-	
-	
 
-	function register($email, $p){
-		//if the user is unconfirmed, send them a fresh notification...
+	function inviteToCollection($email, $role, $cid, $did){
+		$eu = $this->loadUserbyEmail($email);
+		if(!$eu){
+			return $this->failure_result("user $email is unknown cannot be invited to collection", 404);
+		}
+		return $this->createUserRole($eu->id, $cid, $did, $role, 0);
+	}	
+	
+	function invite($email, $role, $cid, $did){
+		//if the user is pending, send them a fresh notification...
 		$eu = $this->loadUserbyEmail($email);
 		if($eu){
-			if($eu->status == "unconfirmed"){
+			if($eu->status == "pending"){
+				$code = $this->dbman->getUserConfirmCode($eu->id, "invite");
+				if($code){
+					$eu->recordAction("invite", "reinvite", true);
+					return $code;
+				}
+				else {
+					$code = $this->dbman->generateUserConfirmCode($eu->id, "invite");
+					if($code){
+						$eu->recordAction("invite", "regenerate_confirm", true);
+						return $code;
+					}
+					else {
+						return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+					}
+				}
+			}
+			else {
+				return $this->failure_result("User with email $email already exists on the system (status: $eu->status) - cannot register", 401);
+			}
+		}
+		else {
+			if(!isValidEmail($email)){
+				return $this->failure_result("Invalid email address: you must enter a working email address to receive account confirmation", 401);
+			}
+			//give them a randomly generated password - will need to change it when they accept the invite...
+			$nu = $this->addUser($email, "", "user". uniqid_base36(false), "pending");
+			if($nu){
+				$role = $this->createUserRole($nu->id, $cid, $did, $role, 0);
+				if(!$role){
+					return false;
+				}
+				$code = $this->dbman->generateUserConfirmCode($nu->id, "invite");
+				if($code){
+					$nu->recordAction("invite", "invite", true);
+					return $code;
+				}
+				else {
+					return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+				}
+			}
+		}
+		return false;	
+	}	
+
+	function register($email, $p){
+		//if the user is pending, send them a fresh notification...
+		$eu = $this->loadUserbyEmail($email);
+		if($eu){
+			if($eu->status == "pending"){
 				$code = $this->dbman->getUserConfirmCode($eu->id, "register");
 				if($code){
 					$eu->recordAction("register", "reregister", true);
@@ -180,7 +241,13 @@ class UserManager extends DacuraObject {
 			}
 		}
 		else {
-			$nu = $this->addUser($email, "", $p, "unconfirmed");
+			if(!isValidEmail($email)){
+				return $this->failure_result("Invalid email address: you must enter a working email address to receive account confirmation", 401);				
+			}
+			if(!$this->isValidPassword($p)){
+				return $this->failure_result("Password is invalid: passwords must be at least six characters long", 400);
+			}
+			$nu = $this->addUser($email, "", $p, "pending");
 			if($nu){
 				$code = $this->dbman->generateUserConfirmCode($nu->id, "register");
 				if($code){
@@ -206,10 +273,10 @@ class UserManager extends DacuraObject {
 		if(!$du){
 			return false;				
 		}
-		if($du->status != "unconfirmed"){
+		if($du->status != "pending"){
 			return $this->failure_result("This confirmation code is no longer valid", 401);
 		}
-		$du->setStatus("new");
+		$du->setStatus("accept");
 		$du->recordAction("register", "confirm_register", true);
 		if($this->saveUser($du)){
 			return $du;	
@@ -219,6 +286,9 @@ class UserManager extends DacuraObject {
 
 
 	function updatePassword($uid, $p){
+		if(!$this->isValidPassword($p)){
+			return $this->failure_result("Password is invalid: passwords must be at least six characters long", 400);
+		}
 		if($this->dbman->updatePassword($uid, $p)){
 			$u = $this->loadUser($uid);
 			if(!$u){
@@ -232,6 +302,9 @@ class UserManager extends DacuraObject {
 	
 	
 	function resetPassword($uid, $p){
+		if(!$this->isValidPassword($p)){
+			return $this->failure_result("Password is invalid: passwords must be at least six characters long", 400);
+		}
 		$code = $this->dbman->getUserConfirmCode($uid, "lost");
 		if($code){
 			if($this->dbman->updatePassword($uid, $p, true)){
@@ -256,7 +329,7 @@ class UserManager extends DacuraObject {
 		if(!$du){
 			return false;
 		}
-		if($du->status == "unconfirmed" or $du->status == "suspended" or $du->status == "deleted"){
+		if($du->status != "accept"){
 			return $this->failure_result("This confirmation code is no longer valid $du->email is no longer active", 401);
 		}
 		$du->recordAction("register", "confirm_lost", true);
@@ -268,11 +341,11 @@ class UserManager extends DacuraObject {
 		if(!$u){
 			return false;
 		}
-		if($u->status == "unconfirmed"){
+		if($u->status == "pending"){
 			$u->recordAction("register", "lost_password_failed", true);
 			return $this->failure_result("You must confirm your account before you can reset the password.", 401);
 		}
-		elseif($u->status == "suspended"){
+		elseif($u->status == "reject"){
 			$u->recordAction("register", "lost_password_failed", true);
 			return $this->failure_result("The account $u has been suspended, you cannot reset the password while suspended.", 401);
 		}
@@ -357,13 +430,10 @@ class UserManager extends DacuraObject {
 			if(!$this->dbman->updateUserRoles($u)){
 				return $this->failure_result("Failed to create new roles for $id collection", 500);
 			}
+			$u->roles = $this->dbman->loadUserRoles($uid);
 			return $u;
 		}
 		return $this->failure_result("Could not create role for user $uid." . " " . $this->errmsg, $this->errcode);
-	}
-	
-	function getAvailableRoles($uid, $cid, $did){
-		return array("admin", "architect", "harvester", "expert", "user");
 	}
 	
 	/*
@@ -412,17 +482,56 @@ class UserManager extends DacuraObject {
 		if(!$u){
 			return $this->failure_result("User $uid does not exist", 404);
 		}
-		$covering_role = new UserRole(0, $cid, $did, "admin", "");
+		$covering_role = new UserRole(0, $cid, $did, "god", "");
+		$nroles = array();
 		foreach($u->roles as $i => $r){
 			if(!$covering_role->coversRole($r) || ($cid !="all" && $r->collection_id == "all") ||
 					($did != "all" && $r->dataset_id == "all")){
-				unset($u->roles[$i]);
+				//unset($u->roles[$i]);
+			}
+			else {
+				$nroles[] = $r;
 			}
 		}
+		$u->roles = $nroles;
 		$this->loadUserHistory($u);
 		unset($u->session_dump);
 		//unset($u->sessions);
 		return $u;
+	}
+	
+	/*
+	 * Returns the list of roles that a use may delegate in a given context
+	 * Only admin and god can give out access roles.
+	 * All users can give out nobody roles
+	 */
+	function getAvailableRoles($cid = "all", $did = "all", $uid = 0){
+		$u = $this->getUser($uid);
+		if(!$u){
+			return false;
+		}
+		$top_role = "nobody";
+		$covered_role = new UserRole(0, $cid, $did, "nobody", "");
+		$all_roles = UserRole::$dacura_roles;
+		foreach($u->roles as $i => $r){
+			if($r->coversRole($covered_role)){
+				if($r->role == "god"){
+					return $all_roles;
+				}
+				elseif($r->role == "admin"){
+					$top_role = "admin";
+				}
+				elseif($r->role != "nobody" && $top_role != "admin"){
+					$top_role = "user";
+				}		
+			}
+		}
+		if($top_role == 'nobody') return array();
+		if($top_role == 'user') return array("nobody" => $all_roles['nobody']);
+		if($top_role == 'admin'){
+			unset($all_roles['god']);
+			return $all_roles;
+		}
 	}
 	
 	function loadUserHistory(&$u){
@@ -469,5 +578,10 @@ class UserManager extends DacuraObject {
 		$this->service->logger->logEvent($level, $code, $msg);
 	}
 
+	
+	function isValidPassword($pword){
+		return strlen($pword) > 5;
+	}
+	
 }
 

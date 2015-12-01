@@ -1,128 +1,121 @@
 <?php
 /*
  * API for config service - viewing and updating configuration details
- * The arguments are passed as context.
  * Created By: Chekov
  * Contributors:
  * Creation Date: 12/01/2015
  * Licence: GPL v2
  */
-
-getRoute()->get('/', 'view');
-getRoute()->post('/create', 'create');
-getRoute()->post('/', 'update');
-getRoute()->delete('/', 'delete');
+if($dacura_server->userHasRole("admin", "all")){
+	getRoute()->post('/create', 'create');
+	getRoute()->delete('/', 'delete');
+	getRoute()->get('/logs', 'showLogs');
+}
+if($dacura_server->userHasRole("admin")){//only publish the API endpoints that the user has permission to see
+	getRoute()->get('/', 'view');
+	getRoute()->post('/files', 'upload');
+	getRoute()->post('/', 'update');
+}
 
 function view(){
 	global $dacura_server;
 	$dacura_server->init("viewconfig");
-	$c_id = $dacura_server->ucontext->getCollectionID(); 
-	$d_id = $dacura_server->ucontext->getDatasetID();
-	if($dacura_server->userHasRole("admin")){
-		if($c_id == "all"){
-			$collobj = $dacura_server->getCollectionList();				
-		}
-		elseif($d_id == "all"){
-			$collobj = $dacura_server->getCollection($c_id);
-		}		
-		else {
-			$collobj = $dacura_server->getDatasetConfig($c_id, $d_id);
-		}
-		if($collobj){
-			return $dacura_server->write_json_result($collobj, "Retrieved configuration listing for ".$dacura_server->contextStr());
-		}
+	if($dacura_server->cid() == "all"){
+		$collobj = array_values($dacura_server->getCollectionList());	
+	}
+	elseif($dacura_server->did() == "all"){
+		$collobj = $dacura_server->getCollection();
+	}		
+	else {
+		return $dacura_server->write_http_error(400, "Dataset management API is not operational");
+	}
+	if($collobj){
+		return $dacura_server->write_json_result($collobj, "Retrieved configuration listing for ".$dacura_server->contextStr());
 	}
 	$dacura_server->write_http_error();
 }
 
 function create(){
 	global $dacura_server;
-	$c_id = $dacura_server->ucontext->getCollectionID(); 
-	$d_id = $dacura_server->ucontext->getDatasetID();
 	$title = isset($_POST['title']) ? $_POST['title'] : "";
-	if($d_id == "all"){ //new collection
-		if($dacura_server->userHasRole("admin", "all")){
-			$dacura_server->init("create.collection");
-			$colobj = $dacura_server->createNewCollection($c_id, $title);
-			if($colobj){
-				return $dacura_server->write_json_result($colobj, "Created Collection $c_id ($title)");
-			}
+	if($dacura_server->did()== "all"){ //new collection
+		$dacura_server->init("create.collection");
+		$colobj = $dacura_server->createNewCollection($dacura_server->cid(), $title);
+		//opr($colobj);
+		if($colobj){
+			return $dacura_server->write_json_result($colobj, "Created Collection ".$dacura_server->cid()." ($title)");
+		}
+		else {
+			echo "<P>$title collection";
 		}
 	}
 	else { //new dataset
-		if($dacura_server->userHasRole("admin", false, "all")){
-			$dacura_server->init("create.dataset");
-			$dobj = $dacura_server->createNewDataset($c_id, $d_id, $title);
-			if($dobj){
-				return $dacura_server->write_json_result($dobj, "Created Collection $c_id ($title)");
-			}
-		}	
+		return $dacura_server->write_http_error(400, "Dataset management API is not operational");
 	}
 	return $dacura_server->write_http_error();
 }
 
 function update(){
 	global $dacura_server;
-	$c_id = $dacura_server->ucontext->getCollectionID();
-	$d_id = $dacura_server->ucontext->getDatasetID();
-	$title = isset($_POST['title']) ? $_POST['title'] : "";
-	if($dacura_server->userHasRole("admin")){
-		if($d_id == "all"){ //update collection
-			$payload = isset($_POST['payload']) ? json_decode($_POST['payload'], true) : "";
-			$dacura_server->init("update.collection");
-			$cobj = $dacura_server->updateCollection($c_id, $title, $payload);
-			if($cobj){
-				return $dacura_server->write_json_result($cobj, "Updated Collection $c_id ($title)");
-			}
+	$json = file_get_contents('php://input');
+	$obj = json_decode($json, true);
+	if(!$obj){
+		return $dacura_server->write_http_error(400, "Submitted update object was not valid json");
+	}
+	if($dacura_server->did() == "all"){ //update collection
+		$dacura_server->init("update.collection");
+		$cobj = $dacura_server->updateCollection($dacura_server->cid(), $obj);
+		if($cobj){
+			return $dacura_server->write_json_result($cobj, "Updated Collection ".$dacura_server->cid());
 		}
-		else{ //update dataset
-			$update_fields = array();
-			if($title){
-				$update_fields["title"] = $title;
-			}
-			if(isset($_POST["json"])){
-				$update_fields["json"] =  json_decode($_POST['json'], true);				
-			}
-			if(isset($_POST["schema"])){
-				$update_fields["schema"] =  json_decode($_POST['schema'], true);				
-			}
-			if(isset($_POST["config"])){
-				$update_fields["config"] =  json_decode($_POST['config'], true);
-			}
-			$dacura_server->init("update.dataset", implode("|", array_keys($update_fields)));
-				
-			$dobj = $dacura_server->updateDatasetConfig($c_id, $d_id, $update_fields);
-			if($dobj){
-				return $dacura_server->write_json_result($dobj, "Updated Dataset $d_id ($title)");
-			}
+	}
+	else{ //update dataset
+		return $dacura_server->write_http_error(400, "Dataset management API is not operational");		
+	}
+	$dacura_server->write_http_error();
+}
+
+function delete(){
+	global $dacura_server;
+	if($dacura_server->did()== "all"){ //delete collection
+		$dacura_server->init("delete.collection");
+		$collobj = $dacura_server->deleteCollection($dacura_server->cid());
+		if($collobj){
+			return $dacura_server->write_json_result($collobj, "Deleted Collection ".$dacura_server->cid());
 		}
+	}
+	else {
+		return $dacura_server->write_http_error(400, "Dataset management API is not operational");
+	}
+	$dacura_server->write_http_error();
+}
+
+function upload(){
+	global $dacura_server;
+	if(!isset($_GET['filename'])){
+		return $dacura_server->write_http_error(400, "No filename included in file upload request");
+	}
+	$payload = file_get_contents('php://input');
+	if(!$payload){
+		return $dacura_server->write_http_error(400, "No file included in file upload request");
+	}
+	$furl = $dacura_server->saveUploadedFile($_GET['filename'], $payload);
+	if($furl){
+		return $dacura_server->write_json_result($furl, "Uploaded File $furl for ".$dacura_server->contextStr());
 	}
 	$dacura_server->write_http_error();
 }
 
 
-function delete(){
+function showLogs(){
 	global $dacura_server;
-	$c_id = $dacura_server->ucontext->getCollectionID();
-	$d_id = $dacura_server->ucontext->getDatasetID();
-	if($d_id == "all"){ //delete collection
-		$dacura_server->init("delete.collection");
-		if($dacura_server->userHasRole("admin", "all")){
-			$collobj = $dacura_server->deleteCollection($c_id);
-			if($collobj){
-				return $dacura_server->write_json_result($collobj, "Deleted Collection $c_id");
-			}
-		}
+	$dacura_server->init("show.logs");
+	$logobj = $dacura_server->getLogsAsListingObject();
+	if($logobj){
+		return $dacura_server->write_json_result($logobj, "Log listing issued");
 	}
 	else {
-		$dacura_server->init("delete.dataset");
-		if($dacura_server->userHasRole("admin", "all")){
-			$collobj = $dacura_server->deleteDataset($d_id);
-			if($collobj){
-				return $dacura_server->write_json_result($collobj, "Deleted Dataset $d_id");
-			}
-		}
+		return $dacura_server->write_http_error();
 	}
-	$dacura_server->write_http_error();
 }
 

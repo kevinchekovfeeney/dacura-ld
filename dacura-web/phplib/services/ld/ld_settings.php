@@ -1,19 +1,18 @@
 <?php
 $settings = array(
-	"history_datatable_init_string" => '{ 
-		"order": [0, "desc"], 
-		"info": true,
-		"jQueryUI": true,
-		 "scrollX": true,
-		 "aoColumns": [
-            null,
-			null,
-			{"iDataSort": 3},
-          	{"bVisible": false},
-			null,
-			null
-    	]						
-	}',
+	"tables" => array(
+		"history" => array("datatable_options" => array(
+			"jQueryUI" => true, "scrollX" => true, "info" => true, "order" => array(0, "desc"), 
+				"aoColumns" => array(null, null, array("iDataSort" => 3), array("bVisible" => false), null, null))),
+		"ld" => array("datatable_options" => array(
+			"jQueryUI" => true, "scrollX" => false, "pageLength" => 20, "lengthMenu" => array(10, 20, 50, 75, 100), 
+			"info" => true, "order" => array(8, "desc"), 
+				"aoColumns" => array(null, null, null, array("bVisible" => false), null, null, array("iDataSort" => 7), array("bVisible" => false), array("iDataSort" => 9), array("bVisible" => false)))),
+		"updates" => array("datatable_options" => array(
+			"jQueryUI" => true, "scrollX" => false, "pageLength" => 20, "lengthMenu" => array(10, 20, 50, 75, 100), 
+			"info" => true, "order" => array(10, "desc"), 
+				"aoColumns" => array(null, null, null, null, array("bVisible" => false), null, null, null, array("iDataSort" => 9), array("bVisible" => false), array("iDataSort" => 11), array("bVisible" => false)))),
+	),
 	"pending_datatable_init_string" => '{ 
 		"order": [3, "desc"], 
 		"info": true,
@@ -45,48 +44,4 @@ $settings = array(
 			null
 		]						
 	}',	
-	"ld_datatable_init_string" => '{
-		"order": [8, "desc"],
-		"info": true,
-		"jQueryUI": true,
-		"scrollX": false,
-	 	"pageLength": 20,
-	    "lengthMenu": [ 10, 20, 50, 75, 100 ],
-		"aoColumns": [
-            null,
-			null,
-			null,
-			null,
-			null,
-			null,
-			{"iDataSort": 7},
-          	{"bVisible": false},
-          	{"iDataSort": 9},
-          	{"bVisible": false}
-    	]
-	}',
-		
-	"updates_datatable_init_string" => '{
-		"order": [10, "desc"],
-		"info": true,
-		"jQueryUI": true,
-		 "scrollX": true,
-	 	 "pageLength": 20,
-	     "lengthMenu": [ 10, 20, 50, 75, 100 ],
-		 "aoColumns": [
-          		null,
-				null,
-			 	null,
-			 	null,
-				null,
-				null,
-				null,
-				null,
-				{"iDataSort": 9},
-                {"bVisible": false},
-                {"iDataSort": 11},
-                {"bVisible": false}
-         ]
-
-	}'
-);
+	);

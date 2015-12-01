@@ -8,20 +8,23 @@ class LoginService extends DacuraService {
 	var $public_screens = array("login", "home", "register", "lost");
 	var $protected_screens = array("logout" => array("nobody", "any", "any"));
 	
-	function renderFullPageHeader(){
-		parent::renderFullPageHeader();
-		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.login.js");
-		echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$this->get_service_file_url('style.css').'">';
-		echo "<div id='maincontrol'>";
-	}
-
-	function renderFullPageFooter(){
-		echo "</div>";
-		parent::renderFullPageFooter();
+	function init(){
+		$this->included_css[] = $this->get_service_file_url('style.css');
 	}
 	
-	function handlePageLoad(){
-		$lds = new LoginDacuraServer($this);
+	function writeBodyHeader(){
+		echo "<div id='maincontrol'>";
+	}
+	
+	function writeBodyFooter(){
+		echo "</div>";
+	}
+
+	//suppress drawing of topbar
+	function renderTopbarSnippet(){}
+	
+	
+	function handlePageLoad(&$lds){
 		if(!$lds->userman){
 			$this->renderScreen("error", array("title" => "Error in Server Creation", "message" => $lds->errmsg));
 			return false;	

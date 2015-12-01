@@ -119,11 +119,15 @@ dacura.schema.showImportedOntologies = function(imports){
 };
 
 dacura.schema.showSelectedDQS = function(schema, instance){
-	for(var i = 0; i < schema.length; i++){
-		$('#' + schema[i]).prop('checked', true).button("refresh");
+	if(typeof schema != "undefined" && schema){
+		for(var i = 0; i < schema.length; i++){
+			$('#' + schema[i]).prop('checked', true).button("refresh");
+		}
 	}
-	for(var i = 0; i < instance.length; i++){
-		$('#' + instance[i]).prop('checked', true).button("refresh");
+	if(typeof instance != "undefined" && instance){
+		for(var i = 0; i < instance.length; i++){
+			$('#' + instance[i]).prop('checked', true).button("refresh");
+		}
 	}
 };
 

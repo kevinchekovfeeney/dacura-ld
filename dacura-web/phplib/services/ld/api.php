@@ -1,24 +1,31 @@
 <?php
 /*
- * These API calls have candidate ids as targets
- * this is just an api - it has no associated pages. 
+ * This is Dacura's generic, general purpose, Linked Data API
+ * this module is not for normal access, only for administrators directly accessing linked data objects to repair them....
  */
-getRoute()->get('/', 'list_entities');//list the entities of a certain type
-getRoute()->get('/(\w+)/update/(\w+)', 'get_update');
-getRoute()->get('/(\w+)/(\w+)', 'get_entity');//with fragment id
-getRoute()->get('/(\w+)', 'get_entity');//no fragment id
-getRoute()->post('/(\w+)/update/(\w+)', 'update_update');
-getRoute()->post('/(\w+)/(\w+)', 'update_entity');//with frag id
-getRoute()->post('/', 'create_entity');//create a new entity of a given type
-getRoute()->post('/(\w+)', 'update_entity');//no frag id
-getRoute()->delete('/(\w+)/(\w+)', 'delete_entity');//with fragment id
-getRoute()->delete('/(\w+)', 'delete_entity');//no fragment id
-getRoute()->delete('/(\w+)/update/(\w+)', 'delete_update');//no fragment id
+$x = @$entity_type;
+if(!$x && !$dacura_server->userHasRole("admin", "all")){//meaning that this API is being accessed directly 
+	$dacura_server->write_http_error(403, "No permission to directly access linked data API");	
+}
+else {
+	getRoute()->get('/', 'list_entities');//list the entities of a certain type (or updates to them)
+	getRoute()->get('/(\w+)/update/(\w+)', 'get_update');
+	getRoute()->get('/(\w+)/(\w+)', 'get_entity');//with fragment id
+	getRoute()->get('/(\w+)', 'get_entity');//no fragment id
+	getRoute()->post('/(\w+)/update/(\w+)', 'update_update');
+	getRoute()->post('/(\w+)/(\w+)', 'update_entity');//with frag id
+	getRoute()->post('/', 'create_entity');//create a new entity of a given type
+	getRoute()->post('/(\w+)', 'update_entity');//no frag id
+	getRoute()->delete('/(\w+)/(\w+)', 'delete_entity');//with fragment id
+	getRoute()->delete('/(\w+)', 'delete_entity');//no fragment id
+	getRoute()->delete('/(\w+)/update/(\w+)', 'delete_update');//no fragment id	
+}
 
-set_time_limit (0);
-
+/*
+ * Returns a list of either entities, or updates to entities
+ * Designed to accept filter requests from data tables module
+ */
 function list_entities(){
-	//probably want to do a bunch of lookups to 'get variables etc, but for now we're gonna do a quick and dirty one.
 	global $dacura_server, $entity_type;
 	$dt_options = array();
 	if($entity_type){
@@ -88,6 +95,7 @@ function get_update($entity_id, $update_id){
  * post requests take input as a application/json
  */
 function create_entity(){
+	set_time_limit (0);	
 	global $dacura_server, $entity_type;
 	$dacura_server->init("create");
 	$ar = new AnalysisResults("Create");
@@ -122,6 +130,7 @@ function create_entity(){
  *
  */
 function update_entity($target_id, $fragment_id = false){
+	set_time_limit (0);
 	global $dacura_server, $entity_type;
 	$ar = new AnalysisResults("Update $target_id $fragment_id");
 	$json = file_get_contents('php://input');
@@ -148,6 +157,7 @@ function update_entity($target_id, $fragment_id = false){
 }
 
 function update_update($entity_id, $upd_id){
+	set_time_limit (0);
 	global $dacura_server;
 	$json = file_get_contents('php://input');
 	$ar = new AnalysisResults("Update Update");

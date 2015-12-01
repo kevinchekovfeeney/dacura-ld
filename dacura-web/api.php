@@ -22,7 +22,7 @@ include_once("phplib/RequestLog.php");
 //start request log at once to capture as much of the performance data as possible...
 $request_log = new RequestLog($dacura_settings, "api");
 
-require_once("phplib/http_response_code.php");
+require_once("phplib/utilities.php");
 require_once("phplib/libs/epiphany/src/Epi.php");
 include_once("phplib/DacuraObject.php");
 include_once("phplib/ServiceLoader.php");

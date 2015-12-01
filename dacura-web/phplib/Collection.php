@@ -18,7 +18,7 @@ class Collection extends DacuraObject {
 	var $status;
 	var $datasets = array();
 	
-	function __construct($i, $n, $c, $s='active'){
+	function __construct($i, $n, $c, $s='pending'){
 		$this->id = $i;
 		$this->name = $n;
 		$this->config = $c;
@@ -40,6 +40,4 @@ class Collection extends DacuraObject {
 		return $this->failure_result("No variable $var found in $this->id collection configuration", 404);		
 	}
 }
-
-
 

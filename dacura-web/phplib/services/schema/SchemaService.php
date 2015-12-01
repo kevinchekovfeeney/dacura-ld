@@ -4,8 +4,8 @@ include_once("SchemaDacuraServer.php");
 class SchemaService extends LdService {
 	
 	var $default_screen = "view";
-	var $protected_screens = array("view" => array("admin"));
-	var $public_screens = array("test");
+	var $protected_screens = array("view" => array("architect"));
+	//var $public_screens = array("test");
 	var $dqs_options = array(
 			"classCycles" => array(
 					"title" => "Class Cycle", 
@@ -92,55 +92,68 @@ class SchemaService extends LdService {
 				"type" => array("instance")
 			)			
 	);
-
-	function renderFullPageHeader(){
-		parent::renderFullPageHeader();
-		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.schema.js");
-	}
 	
-	function handlePageLoad($dacura_server){
-		$params = array();
-		$params["image"] = $this->url("image", "buttons/schema.png");
-		
+	function init(){
+		parent::init();
+		$ldscript = $this->get_service_script_url("dacura.ld.js", "ld");
+		$this->included_scripts[] = $ldscript;		
+	}
+
+	function getScreenForCall(){
 		if($this->getCollectionID() == "all"){
-			$params['topbreadcrumb'] = "All Ontologies";
-			$params["title"] = "Ontology Viewer";
-			if($this->screen && $this->screen != "view"){
-				$params["breadcrumbs"] = array(array(), array());
-				$this->renderToolHeader($params);
-				$params['args'] = $this->getOptionalArgs();
-				$params["entity_type"] = "ontology";
-				$params['id'] = $this->screen;
-				$this->renderScreen("ontology", $params);								
+			if($this->screen && $this->screen != $this->default_screen){
+				return "ontology";
 			}
 			else {
-				$params["title"] = "Imported Ontologies";
-				$params["entity_type"] = "ontology";
-				$this->renderToolHeader($params);
-				$this->renderScreen("system", $params);
+				return "system";
 			}
 		}
 		else {
-			if($this->screen && $this->screen != "view"){
-				$params["title"] = "Named Graph Schema Management";	
-				$params['collectionbreadcrumb'] = " named graph management";
-				$params["breadcrumbs"] = array(array(), array());
-				$this->renderToolHeader($params);
-				$params['id'] = $this->screen;
-				$params['ontologies'] = $dacura_server->loadImportedOntologyList();
-				$params['args'] = $this->getOptionalArgs();
-				$params["entity_type"] = "graph";
-				$this->renderScreen("graph", $params);
+			if($this->screen && $this->screen != $this->default_screen){
+				return "graph";
 			}
 			else {
-				$params["entity_type"] = "graph";
-				$params["title"] = "Schema Management";
-				$params["subtitle"] = "Manage the graphs where instance data is stored";
-				$this->renderToolHeader($params);
-				$this->renderScreen("schema", $params);				
-			}
+				return "schema";
+			}		
 		}
-		$this->renderToolFooter($params);		
+	}
+	
+	function getScreenForAC(){
+		return "view";
+	}
+
+	function getParamsForScreen($screen, &$dacura_server){
+		$params = array();
+		$params['ontology_datatable'] = $this->getDatatableSetting("ontology");
+		$params['dt'] = true;
+		$params["image"] = $this->url("image", "buttons/schema.png");
+		if($screen == "ontology"){
+			$params['topbreadcrumb'] = "All Ontologies";
+			$params["title"] = "Ontology Viewer";
+		}
+		elseif($screen == "graph" ){
+			$params["title"] = "Named Graph Schema Management";
+			$params['collectionbreadcrumb'] = " named graph management";
+			
+		}
+		elseif($screen == "schema"){
+			$params["entity_type"] = "graph";							
+			$params["title"] = "Schema Management";
+			$params["subtitle"] = "Manage the graphs where instance data is stored";
+		}
+		elseif($screen == "system"){
+			$params["title"] = "Manage Imported Ontologies";
+			$params["entity_type"] = "ontology";
+				
+		}
+		if($screen == "graph" or $screen == "ontology"){
+			$params["entity_type"] = $screen;				
+			$params["breadcrumbs"] = array(array(), array());
+			$params['args'] = $this->getOptionalArgs();
+			$params['id'] = $this->screen;	
+			$params['ontologies'] = $dacura_server->loadImportedOntologyList();
+		}
+		return $params;
 	}
 	
 	function getDQSOptions($type){
@@ -179,18 +192,7 @@ class SchemaService extends LdService {
 		return $html;
 	}
 	
-	/*
-	 * The screens are the ids of ontologies 
-	 * There are no ontology level access control rules
-	 * This function saves the context and ensures that the user has view ontology permission. 
-	 */
-	function userCanViewScreen($user){
-		$sc = $this->screen;
-		$this->screen = "view";
-		$ans = parent::userCanViewScreen($user);
-		$this->screen = $sc;
-		return $ans;
-	}
+
 	
 	
 	

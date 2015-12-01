@@ -9,28 +9,30 @@
  */
 
 /*
- * Tricky question: who has authority over users and what....
  * God -> can do everything....
- * Collection admin -> can do everything related to admin-ed collections
- * 					-> controls everything to do 
- * User -> 
+ * Dacura admin -> can do everything
+ * Collection admin -> can do everything related to their admin-ed collections
+ * Otherwise users can view and update themselves, nothing else. 
  */
 
-getRoute()->get('/', 'listUsers');
+if($dacura_server->userHasRole("admin", false, "all")){
+	getRoute()->get('/', 'listUsers');
+	getRoute()->post('/', 'createUser');	
+	getRoute()->post('/invite', 'inviteUsers');
+}
+//we need to load stuff to check permissions for the below - done in the functions below
 getRoute()->get('/(\w+)', 'viewUser');
-getRoute()->post('/', 'createUser');
 getRoute()->post('/(\w+)', 'updateUser');
 getRoute()->post('/(\w+)/password', 'updateUserPassword');
 getRoute()->delete('/(\w+)', 'deleteUser');
-getRoute()->get('/load/(\w+)', 'switchUser'); //must be turned off - only for testing 
-getRoute()->get('/(\w+)/role/(\w+)', 'viewRole');
 getRoute()->post('/(\w+)/role', 'createRole');
 getRoute()->delete('/(\w+)/role/(\w+)', 'deleteRole');
 
 /*
- * Changes the current user to the user with id $id 
+ * Changes the current user to the user with id $id
  * Just for testing different users - not for production!!!
  */
+getRoute()->get('/load/(\w+)', 'switchUser'); //must be turned off - only for testing
 function switchUser($id){
 	global $dacura_server;
 	$dacura_server->write_json_result($dacura_server->userman->switchToUser($id), "Switched to user $id");
@@ -39,29 +41,24 @@ function switchUser($id){
 function listUsers(){
 	global $dacura_server;
 	$dacura_server->init("listusers");
-	if($dacura_server->userHasRole("admin", false, "all")){
-		$collobj = $dacura_server->getUsersInContext();
-		if($collobj){
-			$dacura_server->write_json_result($collobj, "Retrieved user listing for ".$dacura_server->contextStr());
-		}
+	$collobj = $dacura_server->getUsersInContext();
+	if($collobj){
+		$dacura_server->write_json_result(array_values($collobj), "Retrieved user listing for ".$dacura_server->contextStr());
 	}
-	else $dacura_server->write_http_error();
+	else {
+		$dacura_server->write_http_error();
+	}
 }
 
 function viewUser($id){
 	global $dacura_server;
 	$dacura_server->init("getuser", $id);
-	if($dacura_server->userHasRole("admin", false, "all")){
-		$object_user = $dacura_server->getUserPrunedForContext($id);
-		if($object_user){
-			return $dacura_server->write_json_result($object_user, "Viewing user $id");
-		}
-		else {
-			$dacura_server->write_http_error();
-		}
+	$object_user = $dacura_server->getUserPrunedForContext($id);
+	if($object_user && $dacura_server->canUpdateUserB($object_user)){ //only those users who can update another user can view them
+		return $dacura_server->write_json_result($object_user, "Viewing user $id");
 	}
 	else {
-		$dacura_server->write_http_error();		
+		$dacura_server->write_http_error();
 	}
 }
 
@@ -85,24 +82,14 @@ function deleteUser($id){
 function createUser(){
 	global $dacura_server;
 	$dacura_server->init("createuser");
-	if(!$dacura_server->userHasRole("admin", false, "all")){
-		return $dacura_server->write_http_error();
+	$json = json_decode(file_get_contents('php://input'), true);
+	if(!$json || !isset($json['email']) or !$json['email'] or !isset($json['password']) or !$json['password']){
+		return $dacura_server->write_http_error(400, "Missing parameters: new users must have password and email");
 	}
-	if(!isset($_POST['email']) or !$_POST['email'] or !isset($_POST['password']) or !$_POST['password']){
-		return $this->write_http_error(400, "Missing parameters: new users must have password and email");
+	if(isset($json['role']) && !isset($json['roles'])){
+		$json['roles'] = array(array("collection_id" => $dacura_server->cid(), "dataset_id" => $dacura_server->did(), "role" => $json['role'], "level" => 0));
 	}
-	$init_params = array("email" => $_POST['email'], "password" => $_POST['password']);
-	if(isset($_POST['name'])) $init_params['name'] = $_POST['name'];
-	if(isset($_POST['status'])) $init_params['status'] = $_POST['status'];
-	if(isset($_POST['profile'])){
-		$x = json_decode($_POST['profile']);
-		if($x) $init_params['profile'] = $x;
-	}
-	if(isset($_POST['roles'])){
-		$x = json_decode($_POST['roles']);
-		if($x) $init_params['roles'] = $x;
-	}
-	$uobj = $dacura_server->addUser($init_params);
+	$uobj = $dacura_server->addUser($json);
 	if($uobj){
 		return $dacura_server->write_json_result($uobj, "User $uobj->id has been created");
 	}
@@ -112,41 +99,66 @@ function createUser(){
 function updateUser($id){
 	global $dacura_server;
 	$dacura_server->init("updateuser", $id);
-	if(!$dacura_server->userHasRole("admin", false, "all")){
-		return $dacura_server->write_http_error();
+	$json = json_decode(file_get_contents('php://input'), true);
+	if(!$json){
+		return $dacura_server->write_http_error(400, "failed to read user object from input");
 	}
 	$object = $dacura_server->getUser($id);
-	$changes = array();
-	if(isset($_POST['email'])) $object->email = $_POST['email'];
-	if(isset($_POST['name'])) $object->name = $_POST['name'];
-	if(isset($_POST['status'])) $object->status = $_POST['status'];
-	if(isset($_POST['profile'])) $object->profile = json_decode($_POST['profile'], true);
-	if($dacura_server->canUpdateUserB($object)){
-		if($dacura_server->updateUser($object)){
-			$dacura_server->write_json_result($object, "User $id has been updated");
-		}
-		else {
-			$dacura_server->write_http_error();
+	if($object){
+		$changes = array();
+		if(isset($json['email'])) $object->email = $json['email'];
+		if(isset($json['name'])) $object->name = $json['name'];
+		if(isset($json['status'])) $object->status = $json['status'];
+		if(isset($json['profile'])) $object->profile = $json['profile'];
+		if($dacura_server->canUpdateUserB($object)){
+			if($dacura_server->updateUser($object)){
+				return $dacura_server->write_json_result($object, "User $id has been updated");
+			}
 		}
 	}
+	$dacura_server->write_http_error();		
+}
+
+function inviteUsers(){
+	global $dacura_server;
+	$json = json_decode(file_get_contents('php://input'), true);
+	if(!$json){
+		return $dacura_server->write_http_error(400, "failed to read invitation json from input");
+	}
+	if(!isset($json['emails']) || !$json['emails']){
+		return $dacura_server->write_http_error(400, "No emails specified for invitation");		
+	}
+	if(!isset($json['role']) || !$json['role']){
+		return $dacura_server->write_http_error(400, "No role specified in invitation");
+	}
+	if(!isset($json['message']) || !$json['message']){
+		return $dacura_server->write_http_error(400, "No message specified in invitation");
+	}
+	$invite_list = $dacura_server->parseInviteList($json['emails'], $json['role']);
+	if($dacura_server->inviteListContainsValidEntries($invite_list)){
+		$invite_report = $dacura_server->processInviteList($invite_list, $json['role'], $json['message']);
+		return $dacura_server->write_json_result($invite_report, "issued ".count($invite_report['issued'])." invitations, ".count($invite_report['failed'])." failures");		
+	}
 	else {
-		$dacura_server->write_http_error();		
+		$invite_report = $dacura_server->getInviteErrorReport($invite_list);
+		$dacura_server->write_json_error($invite_report, 400, "Invitations: all ".count($invite_report['failed'])." failed");
 	}
 }
 
 function updateUserPassword($id){
 	global $dacura_server;
 	$dacura_server->init("updatepassword", $id);
-	if(!isset($_POST['password']) || !$_POST['password']){
-		return 	$dacura_server->write_http_error();
+	$json = json_decode(file_get_contents('php://input'), true);
+	if(!$json){
+		return $dacura_server->write_http_error(400, "failed to read password update json object from input");
 	}
 	$uobj = $dacura_server->getUser($id);
 	if($dacura_server->canUpdateUserB($uobj)){
-		if($dacura_server->userman->updatePassword($id, $_POST['password'])){
+		if($dacura_server->userman->updatePassword($id, $json['password'])){
 			return $dacura_server->write_json_result("OK", "User $id password updated");				
 		}
 		else {
-			return $dacura_server->write_http_error($dacura_server->userman->errmsg, $dacura_server->userman->errcode);	
+			return $dacura_server->write_http_error($dacura_server->userman->errcode, $dacura_server->userman->errmsg);	
 		}	
 	}	
 	return $dacura_server->write_http_error();
@@ -178,20 +190,25 @@ function deleteRole($uid, $rid){
 function createRole($uid){
 	global $dacura_server;
 	$dacura_server->init("createrole", $uid);
-	$role_obj = json_decode($_POST['payload'], true);
-	if($role_obj){
-		if(!$dacura_server->userHasRole("admin", $role_obj["collection"], $role_obj["dataset"])){
-			return $dacura_server->write_http_error();
-		}
-		
-		$uobj = $dacura_server->userman->createUserRole($uid, $role_obj["collection"], $role_obj["dataset"], $role_obj["role"], $role_obj["level"]);
-		if($uobj){
-			return $dacura_server->write_json_result($uobj, "Role has been added to user $uid");
-		}
-		else {
-			return $dacura_server->write_http_error($dacura_server->userman->errmsg, $dacura_server->userman->errcode);
-		}
-	}	
+	$role_obj = json_decode(file_get_contents('php://input'), true);
+	if(!isset($role_obj['dataset'])){
+		$role_obj['dataset'] = "all";
+	}
+	if(!$role_obj){
+		return $dacura_server->write_http_error(400, "Bad parameters: could not decipher json object for new role");
+	}
+	if(!$dacura_server->userHasRole("admin", $role_obj["collection"], $role_obj["dataset"])){
+		return $dacura_server->write_http_error();
+	}
+	
+	$uobj = $dacura_server->userman->createUserRole($uid, $role_obj["collection"], $role_obj["dataset"], $role_obj["role"], $role_obj["level"]);
+	if($uobj){
+		return $dacura_server->write_json_result($uobj, "Role has been added to user $uid");
+	}
+	else {
+		return $dacura_server->write_http_error($dacura_server->userman->errmsg, $dacura_server->userman->errcode);
+	}
 	return $dacura_server->write_http_error();
 }	
+
 

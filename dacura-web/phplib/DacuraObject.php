@@ -13,6 +13,8 @@ class DacuraObject {
 	var $errmsg;
 	var $errcode;
 	
+	static $statuses = array("accept" => "Active", "reject" => "Rejected", "pending" => "Pending Approval", "delete" => "Deleted");
+	
 	function failure_result($msg, $code = 500){
 		$this->errmsg = $msg;
 		$this->errcode = $code;

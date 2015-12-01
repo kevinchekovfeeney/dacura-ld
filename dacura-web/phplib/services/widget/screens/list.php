@@ -115,6 +115,10 @@ var entity_urls = [];
 var update_urls = [];
 var entity_classes = [];
 
+dacura.widget.drawClassPropertyTable = function(data){
+	dacura.system.showSuccessResult("received stub from server", data, "Success", "#create-msgs");
+};
+
 dacura.widget.drawEntityClassTable = function(data){
 	for (var g in data){
 		var obj = data[g];
@@ -240,7 +244,7 @@ dacura.widget.drawUpdateListTable = function(data){
 }
 
 $(function() {
-	dacura.system.init({"mode": "tool", "tabbed": true});
+	dacura.system.init({"mode": "tool"});
 	dacura.widget.fetchentitylist(dacura.widget.drawEntityListTable, {resultbox: "#ld-msgs", errorbox: "#ld-msgs", busybox: "#ld-list"});
 	dacura.widget.fetchClasses(dacura.widget.drawEntityClassTable, {resultbox: "#create-msgs", errorbox: "#create-msgs", busybox: "#create-widget"});
 	//dacura.ld.fetchupdatelist(dacura.ld.drawUpdateListTable, {resultbox: "#update-msgs", errorbox: "#update-msgs", busybox: "#update-list"}); 

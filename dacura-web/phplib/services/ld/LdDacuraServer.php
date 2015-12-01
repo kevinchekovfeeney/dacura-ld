@@ -1,23 +1,20 @@
 <?php
-include_once("phplib/db/LDDBManager.php");
-include_once("phplib/LD/EntityCreateRequest.php");
-include_once("phplib/LD/EntityUpdate.php");
-include_once("phplib/LD/LDEntity.php");
-include_once("phplib/LD/Schema.php");
-include_once("phplib/LD/GraphManager.php");
-require_once("phplib/LD/AnalysisResults.php");
-require_once("phplib/LD/NSResolver.php");
 include_once("phplib/PolicyEngine.php");
+include_once("lib/EntityCreateRequest.php");
+include_once("lib/EntityUpdate.php");
+include_once("lib/LDEntity.php");
+include_once("lib/Schema.php");
+include_once("lib/GraphManager.php");
+require_once("lib/AnalysisResults.php");
+require_once("lib/NSResolver.php");
 require_once("LdService.php");
+include_once("LDDBManager.php");
 
 
 /*
- * There are three types of Linked Data Object Managed by the system
- * 1. Candidates 
- * 2. Ontologies
- * 3. Schemata
- * Each of them supports a common set of state management functionality 
- * This file contains those methods that they share
+* This class implements the basic processing pipeline of dacura linked data objects
+* Particular entity types can override whichever parts they want
+* It provides defered updates and version management / linked data conformance
  */
 
 class LdDacuraServer extends DacuraServer {

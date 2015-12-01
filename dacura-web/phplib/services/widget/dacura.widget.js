@@ -14,8 +14,13 @@ dacura.widget.api.fetchentityclasses = function(graphid){
 
 dacura.widget.api.fetchclassproperties = function(graphid, classname){
 	xhr = {};
-	xhr.url = dacura.system.serviceApiURL("schema");
-	xhr.url += "/structure/"+ encodeURIComponent(graphid) + "/" + encodeURIComponent(classname);
+	xhr.data = {
+			"graph": graphid,
+			"class": classname
+	};
+	//alert(encodeURIComponent(classname));
+	xhr.url = dacura.system.serviceApiURL("schema") + "/structure/";
+	//xhr.url += "/structure/"+ encodeURIComponent(graphid) + "/" + encodeURIComponent(classname);
 	return xhr;
 }
 

@@ -71,25 +71,7 @@ class ServiceLoader extends DacuraObject {
 		}
 	}
 	
-	/*
-	 * Used by index.php to draw access denied pages, etc from the core service
-	 */
 
-	function renderErrorPage($type, $title, $message){
-		$screens_path = $this->settings['path_to_services']."core/screens/";
-		if($type == "denied"){
-			$screens_path .= "denied.php";
-		}
-		else {
-			$screens_path .= "error.php";				
-		}
-		$params = array("title" => $title, "message" => $message);
-		$service = new DacuraService($this->settings);
-		include_once("phplib/snippets/header.php");
-		include_once("phplib/snippets/topbar.php");
-		include_once($screens_path);
-		include_once("phplib/snippets/footer.php");
-	}
 
 	/*
 	 * Creates a serviceCall object...

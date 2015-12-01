@@ -458,7 +458,7 @@ class SchemaDacuraServer extends LdDacuraServer {
 		return $tree;
 	}
 	
-	function getEntityClasses($graphid = false){
+	function getEntityClasses($graphid = false, $adorn = false){
 		$entclasses = array();
 		if($graphid){
 			$graph = $this->schema->getGraph($graphid);
@@ -486,30 +486,64 @@ class SchemaDacuraServer extends LdDacuraServer {
 				}
 			}			 		
 		}
-		$res = $this->schema->adornGraphClasses($entclasses);
-		if(!$res){
-			return $this->failure_result($this->schema->errmsg, $this->schema->errcode);
+		if($adorn){
+			$res = $this->schema->adornGraphClasses($entclasses);
+			if(!$res){
+				return $this->failure_result($this->schema->errmsg, $this->schema->errcode);
+			}
+			return $res;
 		}
-		return $res;
-		//return $entclasses;
+		return $entclasses;
 	}
 	
 	//get class hierarchy...
 	//go through entire graphs ontology and pull out all subclass of relationships
 	
 	function getClassTemplate($graphid, $classname){
+		echo "<P>Checking Graph $graphid class $classname";
 		$graph = $this->schema->getGraph($graphid);
 		if($graph){
-			$this->schema->loadOntologies($this, "accept", $graphid);
-			$ch = array();
-			foreach($this->schema->ontologies as $oid => $ont){
-				$ch[$oid] = $ont->getClassHierarchy();
+			$stub = $this->graphman->getClassStub($graphid, $classname);
+			if($stub){
+				return $stub;
 			}
-			return $ch;
+			return $this->failure_result($this->graphman->errmsg, $this->graphman->errcode);
 		}
 		return $this->failure_result("failed to load graph ".$this->schema->errmsg, $this->schema->errcode);
 	}
 	
+	function getClassFrames($graphid = false, $save = false){
+		$frames = array();
+		$res = $this->getEntityClasses($graphid);
+		if($res){
+			foreach($res as $gid => $classes){
+				$frames[$gid] = array();
+				foreach($classes as $cls){
+					if(is_array($cls)){
+						opr($cls);
+					}
+					else {
+						$frame = $this->getClassTemplate($gid,$cls);
+						if($frame){
+							$frames[$gid][$cls] = $frame;
+						}
+						else {
+							echo "<P>frame generation for $cls failed";
+							//return false;
+						}
+					}
+				}
+			}
+			if($save){
+				$config = $this->settings['schema']['framecache_config'];
+				foreach($frames as $gid => $clsarray){
+					$this->fileman->cache("schema", $gid.".frames", $clsarray, $config);						
+				}				
+			}
+			return $frames;
+		}
+		return false;
+	}
 	
 	
 	//extra ontology is for when we want to use a 'live' version of an ontology for checking rather than the stored one...
@@ -543,5 +577,6 @@ class SchemaDacuraServer extends LdDacuraServer {
 		}
 		return $x;
 	}	
+	
 	
 }

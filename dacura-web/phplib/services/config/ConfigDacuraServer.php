@@ -9,11 +9,8 @@
  * Licence: GPL v2
  */
 
-include_once("phplib/db/ConfigDBManager.php");
-
 class ConfigDacuraServer extends DacuraServer {
 	
-	var $dbclass = "ConfigDBManager";
 	var $context_loaded = false;
 	
 	//to prevent failure on create...
@@ -24,33 +21,30 @@ class ConfigDacuraServer extends DacuraServer {
 	}
 	
 	function isValidCollectionID($id, $title){
-		$nid = filter_var($id, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_LOW);
-		$nid = filter_var($nid, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
-		if($nid != $id){
-			return $this->failure_result("Illegal characters in input", 400);
+		if(!$this->isValidDacuraID($id)){
+			return $this->failure_result("fuck you $id", 405);
+			//return false;
 		}
-		if(!(ctype_alnum($id) && strlen($id) > 1 && strlen($id) < 40)){
-			return $this->failure_result("Illegal Collection ID, it must be between 2 and 40 alphanumeric characters (no spaces or punctuation).", 400);
-		}
-		if(isServiceName($id, $this->settings)){
-			return $this->failure_result($id . " is the name of a dacura service, it cannot be used as a collection id.", 400);
-		}
-		elseif($this->isDacuraBannedWord($id)){
-			return $this->failure_result("$id is not permitted to be used as a collection id", 400);			
-		}
-		elseif($this->isDacuraBannedPhrase($title)){
+		if($this->isDacuraBannedPhrase($title)){
 			return $this->failure_result("$title is not permitted to be used as a collection title", 400);				
 		}
 		elseif($this->dbman->hasCollection($id)){
-			return $this->failure_result("$id is already taken. Two dacura datasets cannot share the same ID.", 400);				
+			return $this->failure_result("$id is already taken. Two dacura collections cannot share the same ID.", 400);				
 		}
 		return true;
-		//cant be a service name
-		//cant be dacura
-		//cant be all
 	}
 	
 	function isValidDatasetID($id, $title){
+		if(!$this->isValidDacuraID($id)){
+			return false;
+		}
+		if($this->isDacuraBannedPhrase($title)){
+			return $this->failure_result("$title is not permitted to be used as a dataset title", 400);
+		}
+		elseif($this->dbman->hasDataset($id)){
+			return $this->failure_result("$id is already taken. Two dacura datasets cannot share the same ID.", 400);
+		}
+		return true;		
 	}
 	
 	function createNewCollection($id, $title){
@@ -58,7 +52,7 @@ class ConfigDacuraServer extends DacuraServer {
 			return false;
 		}
 		$obj = $this->getServiceSetting("default_collection_config", "{}");
-		if($this->dbman->createNewCollection($id, $title, $obj)){
+		if($this->dbman->createNewCollection($id, $title, $obj, "pending")){
 			if($this->createCollectionPaths($id)){
 				return $id;
 			}
@@ -73,6 +67,9 @@ class ConfigDacuraServer extends DacuraServer {
 
 	function createCollectionPaths($id){
 		$colbase = $this->getSystemSetting("path_to_collections", "").$id;
+		if(file_exists($colbase)){
+			return $this->failure_result("Collection directory $colbase for collection $id already exists", 400);				
+		}
 		if(!mkdir($colbase)){
 			return $this->failure_result("Failed to create collection directory $colbase for collection $id", 500);
 		}
@@ -81,6 +78,10 @@ class ConfigDacuraServer extends DacuraServer {
 			if(!mkdir($colbase."/".$p)){
 				return $this->failure_result("Failed to create collection directory $colbase/$p", 500);
 			}
+		}
+		//finally have to create main graph
+		if(!$this->dbman->createCollectionInitialEntities($id)){
+			return $this->failure_result("Failed to create collection default linked data entities", 500);				
 		}
 		return true;
 	}
@@ -114,89 +115,23 @@ class ConfigDacuraServer extends DacuraServer {
 		return true;
 	}
 	
-	
-	function updateCollection($id, $ctit, $obj){
-		if($x = $this->dbman->updateCollection($id, $ctit, $obj)){
+	function updateCollection($id, $obj){
+		$oname = false;
+		$ostat = false;
+		if(isset($obj['name'])){
+			$oname = $obj['name'];
+			unset($obj['name']);
+		}
+		if(isset($obj['status'])){
+			$ostat = $obj['status'];
+			unset($obj['status']);
+		}
+		if($x = $this->dbman->updateCollection($id, $oname, $ostat, $obj)){
 			return $x;
 		}
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 	}
-	
-	function updateDatasetConfig($cid, $did, $fields){
-		$d_orig = $this->getDataset($did);
-		$update_db = false;
-		// -> multiple different types of update...
-		// 1. config update...
-		if(isset($fields['config'])){
-			$d_orig->config = $fields['config'];
-			$update_db = true;
-		}		
-		// 2. title update...
-		if(isset($fields['title'])){
-			$d_orig->name = $fields['title'];
-			$update_db = true;
-		}
-		// 3. schema update
-		if(isset($fields['schema'])){
-			if($fields['schema']['version'] == "0"){//new schema
-				$version = "0.1";
-				if($d_orig->updateSchema($version, $fields['schema']['contents'])){
-					$update_db = true;
-				}
-			}
-			elseif($fields['schema']['version'] != $d_orig->config['schema_version']){
-				return $this->failure_result("Attempt to update schema version ".$fields['schema']['version'] . " current version is $d_orig->config['schema_version']");
-			}
-			else {
-				$version = $d_orig->config['schema_version'];
-				$v_bits = explode(".", $version);
-				if(isset($fields['schema']['update_type']) && $fields['schema']['update_type'] == "major"){
-					$nversion = ($v_bits[0] + 1).".0";
-				}
-				else {
-					$nversion = $v_bits[0] . ".".($v_bits[1] + 1);						
-				}
-				if($d_orig->updateSchema($nversion, $fields['schema']['contents'])){
-					$update_db = true;
-				}
-			}	
-		}
-		// 4. json update
-		if(isset($fields['json'])){
-			if($fields['json']['version'] == "0"){//new schema
-				$version = "0.1";
-				if($d_orig->updateJSON($version, $fields['json']['contents'])){
-					$update_db = true;
-				}
-			}
-			elseif($fields['json']['version'] != $d_orig->config['json_version']){
-				return $this->failure_result("Attempt to update json version ".$fields['json']['version'] . " current version is $d_orig->config['json_version']");
-			}
-			else {
-				$version = $d_orig->config['json_version'];
-				$v_bits = explode(".", $version);
-				if(isset($fields['json']['update_type']) && $fields['json']['update_type'] == "major"){
-					$nversion = ($v_bits[0] + 1).".0";
-				}
-				else {
-					$nversion = $v_bits[0] . ".".($v_bits[1] + 1);
-				}
-				if($d_orig->updateJSON($nversion, $fields['json']['contents'])){
-					$update_db = true;
-				}
-			}
-		}
-		if($update_db){
-			if($this->dbman->updateDataset($d_orig->id, $d_orig->name, $d_orig->config)){
-				return $this->getDatasetConfig($d_orig->collection_id, $d_orig->id);
-			}
-			else {
-				return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
-			}
-		}
-		return $this->failure_result("Nothing changed", 400);
-	}
-	
+
 		
 	function deleteCollection($id){
 		if($this->dbman->deleteCollection($id, true)){
@@ -210,15 +145,77 @@ class ConfigDacuraServer extends DacuraServer {
 		}
 	}
 	
-	function getDatasetConfig($cid, $did){
-		$d_obj = $this->getDataset($did);
-		if(isset($d_obj->config['schema_version'])){
-			$d_obj->loadSchema();				
+	function flattenArray($arr){
+		if(isAssoc($arr)) return false;
+		foreach(array_values($arr) as $v){
+			if(is_array($v)){
+				return false;
+			}
 		}
-		if(isset($d_obj->config['json_version'])){
-			$d_obj->loadJSON();				
+		return "[".implode(", ", $arr)."]";
+	}
+	
+	
+	function sysconfig_to_form($arr){
+		$fields = array();
+		foreach($arr as $key => $v){
+			if($key == 'config') continue; //skip the config of the service itself. 
+			if(is_array($v)){
+				if($flat = $this->flattenArray($v)){
+					$fields[] = array("label" => $key, "value" => $flat, "id" => "sca-".$key);						
+				}
+				else {
+					$section = array("label" => $key, "type" => "section", "id" => "sca-".$key);
+					$section['fields'] = $this->sysconfig_to_form($v);
+					$fields[] = $section;
+				}
+			}
+			else {
+				$fields[] = array("label" => $key, "value" => $v, "id" => "sca-".$key);				
+			}
 		}
-		unset($d_obj->storage_base);
-		return $d_obj;
+		return $fields;
+	}
+	
+	function getSysconfigFields(){
+		$fields = $this->sysconfig_to_form($this->settings);
+		return $fields;
+	}
+	
+	function getServiceConfigFields($sname){
+		$dacura_settings = $this->settings;
+		include($this->settings['path_to_services'].$sname."/".$sname."_settings.php");
+		$fields = $this->sysconfig_to_form($settings);
+		return $fields;
+	}
+	
+	function getServiceConfigTables(){
+		$services = $this->getServiceList();
+		$stables = array();
+		foreach($services as $s){
+			if(file_exists($this->settings['path_to_services'].$s."/".$s."_settings.php")){
+				$stables[$s] = $this->getServiceConfigFields($s);
+			}
+		}
+		return $stables;
+	}
+	
+	function getLogsAsListingObject(){
+		return $this->ucontext->logger->lastRowsAsListingObjects();
+	}
+	
+	function saveUploadedFile($fname, $f){
+		$fpath = $this->getSystemSetting('path_to_collections');
+		if($this->cid() == "all"){
+			$fpath .= "all/";
+		}
+		elseif($this->did() == "all"){
+			$fpath .= $this->cid()."/";
+		}
+		else {
+			$fpath .= $this->cid()."/datasets/".$this->did()."/";				
+		}
+		$fpath .= $this->getSystemSetting('files_directory')."/".$fname;
+		
 	}
 }

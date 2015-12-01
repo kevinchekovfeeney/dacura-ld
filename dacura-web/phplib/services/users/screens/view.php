@@ -1,399 +1,256 @@
-<script src='<?=$service->url("js", "jquery.dataTables.js")?>'></script>
-<script src='<?=$service->url("js", "dataTables.jqueryui.js")?>'></script>
-<script src='<?=$service->url("js", "jquery.json-editor.js")?>'></script>
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery.json-editor.css")?>" />
-
-<div id="user-pane-holder">
-	 <ul id="user-pane-list" class="dch">
-	 	<li><a href="#user-update">Details</a></li>
-	 	<li><a href="#user-roles">Roles</a></li>
-		<li><a href="#user-profile">Profile</a></li>
-		<li><a href="#user-password">Password</a></li>
-		<li><a href="#user-history">History</a></li>
-	</ul>
-		<div id="roles-holder">
-			<div id="user-roles" class="user-pane dch">
-				<div class="tab-top-message-holder">
-					<div class="tool-tab-info" id="urolesmsg"></div>
-				</div>
-				<div id="roles-table-holder"></div>
-				<div id="user-role-add" class="pcsection pcbuttons">
-					<select id="rolecollectionip"></select>
-					<select id="roledatasetip"></select>
-					<select id="rolenameip">
-						<?php 
-						foreach($dacura_server->userman->getAvailableRoles("", "", "") as $rname){
-							echo "<option value='$rname'>$rname</option>\n";	
-						}
-						?>
-					</select>
-					<a class="button2" href="javascript:dacura.users.createRole()">Add New Role</a>
-				</div>			
-			</div>
+<div class='dacura-screen' id='user-home'>
+	<?php if(in_array("user-details", $params['subscreens'])) { ?>
+	<div class='dacura-subscreen' id='user-details' title="Details">
+		<div class='subscreen-intro-message'><?=$params['details_intro_msg']?></div>
+		<?php echo $service->getInputTableHTML("udetails", "update", $params['update_details_fields']);?>
+		<div class="subscreen-buttons">
+			<?php if($params['showdelete']){?>
+			<button id='userdelete' class='dacura-delete subscreen-button'>Delete User</button>
+			<?php }?>
+			<button id='userupdate' class='dacura-update subscreen-button'><?=$params['update_button_text']?></button>
 		</div>
-		<div id="profile-holder">		
-			<div id="user-profile" class="user-pane dch">
-				<div class="tab-top-message-holder">
-					<div class="tool-tab-info" id="uprofilemsg"></div>
-				</div>
-				<div id='userconfig'></div>
-				<div id="user-profile-buttons" class="pcsection pcbuttons">
-					<a class="button2" href="javascript:dacura.users.updateProfile()">Update Profile</a>
-				</div>
-			</div>
-		</div>
-		<div id="password-holder">		
-			<div id="user-password" class="user-pane dch">
-				<div class="tab-top-message-holder">
-					<div class="tool-tab-info" id="upasswordmsg"></div>
-				</div>
-				<table class="dc-wizard" id="password_table">
-					<thead><tr><th class='left'></th><th class='right'></th></tr></thead>				
-					<tbody>
-						<tr>
-							<th>New Password</th><td id='password1'><input type="password" id="password1ip" value=""></td>
-						</tr>
-						<tr>		
-							<th>Confirm New Password</th><td id='password2'><input type="password" id="password2ip" value=""></td>
-						</tr>
-					</tbody>
-				</table>
-				<div id="user-profile-buttons" class="pcsection pcbuttons">
-					<a class="button2" href="javascript:dacura.users.updatePassword()">Update Password</a>
-				</div>
-			</div>
+	</div>
+	<?php } if(in_array("user-roles", $params['subscreens'])) { ?>	
+	<div class='dacura-subscreen' id='user-roles' title="Roles">
+		<div class='subscreen-intro-message'><?=$params['roles_intro_msg']?></div>		
+		<div id="user-role-add">
+			<table class='create-role-table'><tr>
+				<td class='option'><select class='dacura-select' id="rolenameip"><?=$params['role_name_options']?></select></td>
+				<td class='option'><select class='dacura-select' id="rolecollectionip"></select></td>
+				<td class='dch option'><select class='dacura-select' id="roledatasetip"></select></td>
+				<td><button id='rolecreate' class='dacura-create subscreen-button'>Add Role</button>
+				
+			</tr></table>
 		</div>	
-		<div id="update-holder">
-			<div id="user-update" class="user-pane dch pcdatatables">
-				<div class="tab-top-message-holder">
-					<div class="tool-tab-info" id="udetailsmsg"></div>
-				</div>
-				<table class="dc-wizard" id="user_table">
-					<thead><tr><th class='left'></th><th class='right'></th></tr></thead>				
-					<tbody>
-						<tr>
-							<th>Name</th><td id='username'><input id="usernameip" value=""></td>
-						</tr>
-						<tr>		
-							<th>Email</th><td id='useremail'><input id="useremailip" value=""></td>
-						</tr>
-						<tr>
-							<th>Status</th><td id='userstatus'><input id="userstatusip" value=""></td>
-						</tr>
-					</tbody>
-				</table>
-				<div id="updaterolesbuttons" class="pcsection pcbuttons">
-					<a class="button2" href="javascript:dacura.users.deleteUser()">Delete User</a>
-					<a class="button2" href="javascript:dacura.users.updateUserDetails()">Update User Details</a>
-				</div>
-			</div>
-		</div>
-		<div id="history-holder">
-			<div id="user-history" class="user-pane dch">
-				<div class="tab-top-message-holder">
-					<div class="tool-tab-info" id="uhistorymsg"></div>
-				</div>
-				<div id="history-table-holder"></div>
+		<div id='roles-listing'>
+			<table id="roles-table" class="dacura-api-listing">
+				<thead>
+				<tr>
+					<th id="dxo-id" title="The internal ID of the role">Role ID</th>
+					<th id="dxo-collection_id" title="The collection id that the role is associated with">Collection</th>
+					<th id="dxo-dataset_id" title="Only datasets with status 'accept' are in use.">Dataset</th>
+					<th id="dxo-role" title="Only datasets with status 'accept' are in use.">Role</th>
+					<th id="dfn-rowselector">Select</th>
+				</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+			<div class="subscreen-buttons role-buttons">
+				<button id='deleteroles' class='dacura-delete subscreen-button'>Delete Selected Roles</button>
 			</div>
 		</div>		
 	</div>
+	<?php } if(in_array("user-password", $params['subscreens'])) { ?>	
+	<div class='dacura-subscreen' id='user-password' title="Password">
+		<div class='subscreen-intro-message'><?=$params['password_intro_msg']?></div>
+		<?php echo $service->getInputTableHTML("upassword", "create", $params['update_password_fields']);?>		
+		<div class="subscreen-buttons">
+			<button id='passwordupdate' class='dacura-update subscreen-button'>Update Password</button>
+		</div>
+	</div>
+	<?php } if(in_array("user-history", $params['subscreens'])) { ?>		
+	<div class='dacura-subscreen' id='user-history' title="History">
+		<div class='subscreen-intro-message'><?=$params['history_intro_msg']?></div>
+		<table id="history-table" class="dacura-api-listing">
+			<thead>
+			<tr>
+				<th id="dlo-start"></th>
+				<th id="dfn-printStart" title="The timestamp when the session started">Session Started</th>
+				<th id="dlo-end"></th>
+				<th id="dfn-printEnd" title="The timestamp when the session ended">Session Ended</th>
+				<th id="dlo-duration"></th>
+				<th id="dfn-printDuration" title="The session's duration">Duration</th>
+				<th id="dlo-service" title="The Dacura service involved">Service</th>
+			</tr>
+			</thead>
+			<tbody></tbody>
+		</table>
+	</div>	
+	<?php } ?>	
 </div>
 
 <script>
+var user_loaded = false;
+var roles_loaded = false;
 
-dacura.users.writeBusyMessage  = function(msg) {
-	dacura.system.showBusyOverlay('#user-pane-holder', msg);
+var roleoptions = <?=json_encode($params['role_options'])?>;
+
+function printEnd(obj){
+	return timeConverter(obj.end);
 }
 
-dacura.users.clearBusyMessage = function(){
-	dacura.system.removeBusyOverlay();
-};
-
-dacura.users.writeSuccessMessage = function(msg){
-	$('#users-result-message').html("<div id='mysux' class='dacura-user-message-box dacura-success'>"+ msg + "</div>").show();
-	var ta = setTimeout(function(){$('#mysux').fadeOut(400)}, 1000);
-	
-};
-
-dacura.users.writeErrorMessage = function(msg){
-	$('#users-result-message').html("<div class='dacura-user-message-box dacura-error'>"+ msg + "</div>").show();
-};
-					
-dacura.users.roleoptions = <?=json_encode($params['role_options'])?>;
-dacura.users.profileed = false;
-
-dacura.users.showuser = function(id){
-	var ajs = dacura.users.api.view(id);
-	var self=this;
-	ajs.beforeSend = function(){
-		dacura.users.writeBusyMessage("Retrieving User Details");
-	};
-	ajs.complete = function(){
-		dacura.users.clearBusyMessage();
-	};
-	$.ajax(ajs)
-		.done(function(data, textStatus, jqXHR) {
-			if(data.length > 0 ){
-				dacura.users.currentuser = id;
-				try{
-					var user = JSON.parse(data);
-					dacura.users.writeSuccessMessage("Retrieved details for user "+ id);
-					dacura.users.drawUserView(user);
-				}
-				catch(e){
-					dacura.users.writeErrorMessage("Error: failed to parse JSON returned by api call: "+ e.message);
-				}
-			}
-			else {
-				dacura.users.writeErrorMessage("Error: no data returned from api call");
-			}   
-		})
-		.fail(function (jqXHR, textStatus){
-			dacura.users.writeErrorMessage("Error: " + jqXHR.responseText );
-		}
-	);	
+function printStart(obj){
+	return timeConverter(obj.start);
 }
 
-dacura.users.drawUserView = function(data){
-	$('.pctitle').html(data.email + " (user "+data.id + " - " + data.status +")").show();
-	$('.pcbreadcrumbs').show();
-	//first get the details
-	$('#usernameip').val(data.name);
-	$('#useremailip').val(data.email);
-	$('#userstatusip').val(data.status);
-	var profile = "{}";
-	//next the profile
-	if(typeof data.profile == "object" && data.profile != null){
-		profile = JSON.stringify(data.profile);
+function printDuration(obj){
+	return durationConverter(obj.duration);
+}
+
+function showCreateRoleResult(obj, targets){
+	drawRoles(obj);
+	dacura.system.showSuccessResult("New role successfully added", obj, "User roles updated", targets.resultbox);
+}
+
+function showDeleteRoleResult(obj, targets){
+	drawRoles(obj);
+	dacura.system.showSuccessResult("Roles successfully removed", obj, "User roles updated", targets.resultbox);
+}
+
+function showDeleteResult(obj, targets){
+	dacura.system.showWarningResult("This user has been deleted", false, "User <?=$params['userid']?> deleted", targets.resultbox);
+}
+
+function showUpdatePasswordResult(obj, targets){
+	dacura.system.showSuccessResult("This user's password has been successfully updated", false, "User <?=$params['userid']?> password updated", targets.resultbox);
+}
+
+function showUpdatedUser(obj, targets){
+	drawDetails(obj);
+	dacura.system.showSuccessResult("Updates successfully saved", obj, "User " + obj.handle + " updated", targets.resultbox);
+}
+
+function drawDetails(obj){
+	var nobj = obj.profile;
+	nobj.id = obj.id;
+	nobj.name = obj.name;
+	nobj.status = obj.status;
+	nobj.email = obj.email;
+	dacura.system.drawDacuraUpdateObject("udetails", nobj);	
+}
+
+function drawHistory(obj){
+	if(typeof obj.history == "undefined" || obj.history.length == 0){
+		dacura.system.showWarningResult(obj.handle + " has no registered no sessions with the system", false, "No history", "#user-history-msgs");
 	}
-	$('#userconfig').html("<textarea id='userconfig_ta'>" + profile + "</textarea>");
-	JSONEditor.prototype.ADD_IMG = '<?=$service->url("image", "add.png")?>';
-    JSONEditor.prototype.DELETE_IMG = '<?=$service->url("image", "delete.png")?>';
-    var j = new JSONEditor($("#userconfig_ta"), "740", "220");
-    j.doTruncation(true);
-	j.showFunctionButtons();
-	dacura.users.jsoneditor = j;
-	//then the roles and history
-	if(typeof data.roles == "object" && data.roles != null) {
-		dacura.users.drawRoleTable(data.roles);
+	else {
+		dacura.system.drawDacuraListingTable("history-table", obj.history, <?= $params['history_table_settings']?>, function(){}, null, user_loaded);
+	}	
+}
+
+function drawRoles(obj){
+	if(typeof obj.roles == "undefined" || obj.roles.length == 0){
+		dacura.system.showWarningResult(obj.handle + " has no roles configured in this context", false, "No roles", "#user-roles-msgs");
+		$('#roles-listing').hide();
 	}
-	if(typeof data.history == "object" && data.history != null) {
-		dacura.users.drawHistoryTable(data.history);
+	else {
+		$('#roles-listing').show();
+		dacura.system.drawDacuraListingTable("roles-table", obj.roles, <?= $params['roles_table_settings']?>, dacura.system.listingRowSelected, null, roles_loaded);
+		roles_loaded = true;
 	}
 }
 
-dacura.users.drawRoleTable = function(roles){
-	$('#roles-table-holder').html('<table class="display" id="roles_table"><thead><tr><th>Collection</th><th>Dataset</th><th>Role</th><th></th></tr></thead><tbody></tbody></table>');
-	for (var i in roles) {
-		var obj = roles[i];
-		$('#roles_table tbody').append("<tr id='role_" + obj.id + "'	><td>" + obj.collection_id + "</td><td>" + obj.dataset_id + 
-			"</td><td>" + obj.role + "</td><td>" + 
-			"<a href='javascript:dacura.users.deleteRole(" + obj.id + ")'>delete</a>" + "</td></tr>");
+function drawUser(obj, targets){
+	if(!user_loaded){
+		dacura.system.addServiceBreadcrumb("<?=$service->my_url()."/".$params['userid']?>", "User " + obj.handle, "selected-user");
 	}
-	$('#roles_table').dataTable(<?=$dacura_server->getServiceSetting('roles_datatable_init_string', "{}");?>).show();
-};
-
-dacura.users.drawHistoryTable = function(ses){
-	$('#history-table-holder').html('<table class="display" id="history_table"><thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Service</th></tr></thead><tbody></tbody></table>');
-	for (var i=0; i<ses.length; i++) {
-		var obj = ses[i];
-		$('#history_table tbody').append("<tr id='session_" + obj.service + "_" + obj.start + "'>" + 
-				"<td>" + obj.start + "</td><td>" + obj.end + "</td><td>" + obj.duration + "</td><td>" + obj.service + "</td></tr>");
-	}
-	$('#history_table').dataTable(<?=$dacura_server->getServiceSetting('history_datatable_init_string', "{}");?>).show();
-};
-
-dacura.users.updateUserDetails = function(){
-	var ds = {};
-	$('#udetailsmsg').empty();
-	ds.name = $('#usernameip').val();
-	ds.email= $('#useremailip').val();
-	ds.status = $('#userstatusip').val();	
-	var ajs = dacura.users.api.update(dacura.users.currentuser);
-	ajs.data = ds;
-	var self=this;
-	ajs.beforeSend = function(){
-		dacura.users.writeBusyMessage("Updating User Details");
-	};
-	ajs.complete = function(){
-		dacura.users.clearBusyMessage();	
-	};
-	$.ajax(ajs)
-	.done(function(data, textStatus, jqXHR) {
-		try{
-			var user = JSON.parse(data);
-			dacura.users.drawUserView(user);
-			dacura.users.writeSuccessMessage("Updated user " + dacura.users.currentuser);
-		}
-		catch(e){
-			dacura.system.writeErrorMessage("", '#udetailsmsg', "", jqXHR.responseText + " " + e.message);
-		}
-	})
-	.fail(function (jqXHR, textStatus){
-		dacura.system.writeErrorMessage("", '#udetailsmsg', "", textStatus + ":" + jqXHR.responseText );
-	});	
+	drawDetails(obj);
+	drawHistory(obj);
+	drawRoles(obj);
+	user_loaded = "<?=$params['userid']?>";
 }
 
-dacura.users.updateProfile = function(){
-	var ds = {};
-	ds.profile = JSON.stringify(dacura.users.jsoneditor.getJSON());
-	var ajs = dacura.users.api.update(dacura.users.currentuser);
-	ajs.data = ds;
-	var self=this;
-	ajs.beforeSend = function(){
-		dacura.users.writeBusyMessage("Updating User Profile");
-	};
-	ajs.complete = function(){
-		dacura.users.clearBusyMessage();	
-	};
-	$.ajax(ajs)
-	.done(function(data, textStatus, jqXHR) {
-		dacura.users.writeSuccessMessage("Profile Updated Successfully");
-	})
-	.fail(function (jqXHR, textStatus){
-		dacura.system.writeErrorMessage("", '#uprofilemsg', "", "Error: " + jqXHR.responseText );
-	});	
+function getRoleDeletes(){
+	var obj = {};
+	obj.rids = [];
+	obj.uid = "<?=$params['userid']?>";
+	$('#roles-table input:checkbox').each(function(){
+		if($(this).is(":checked")){
+	        obj.rids.push(this.id.substring(4));
+	    }
+	});
+	return obj;
 }
 
-dacura.users.updatePassword = function(){
-	var pw1 = $('#password1ip').val();
-	var pw2 = $('#password2ip').val();
-	if(pw1 == "" || pw1.length < 3){
-		return dacura.system.writeErrorMessage("", '#upasswordmsg', "", "Error: the password must be at least 3 characters long" );
+function validatePasswords(obj){
+	if(obj.password.length < 6) {
+		return "The password must be at least six characters long";
 	}
-	if(pw1 != pw2){
-		return dacura.system.writeErrorMessage("", '#upasswordmsg', "", "Error: the passwords do not match!");
+	if(obj.password != obj.confirmpassword){
+		return "The two passwords do not match";
 	}
-	var ds = {};
-	ds.password = pw1;
-	var ajs = dacura.users.api.updatepassword(dacura.users.currentuser);
-	ajs.data = ds;
-	var self=this;
-	ajs.beforeSend = function(){
-		dacura.users.writeBusyMessage("Updating User Password");
-	};
-	ajs.complete = function(){
-		dacura.users.clearBusyMessage();	
-	};
-	$.ajax(ajs)
-	.done(function(data, textStatus, jqXHR) {
-		dacura.users.writeSuccessMessage("Password Updated Successfully");
-	})
-	.fail(function (jqXHR, textStatus){
-		dacura.system.writeErrorMessage("", '#upasswordmsg', "", "Error: " + jqXHR.responseText );
-	});	
-};	
-
-dacura.users.deleteUser = function(){
-	dacura.users.clearscreens();
-	var ajs = dacura.users.api.del(dacura.users.currentuser);
-	var self=this;
-	ajs.beforeSend = function(){
-		dacura.users.writeBusyMessage("Deleting user " + dacura.users.currentuser);
-	};
-	ajs.complete = function(){
-		dacura.users.clearBusyMessage();	
-	};
-	$.ajax(ajs)
-	.done(function(data, textStatus, jqXHR) {
-		dacura.users.writeBusyMessage("User " + dacura.users.currentuser + " deleted");
-		setTimeout(function(){window.location.href = dacura.system.pageURL()}, 1000);
-	})
-	.fail(function (jqXHR, textStatus){
-		dacura.users.writeErrorMessage("Error: " + jqXHR.responseText );
-	});	
+	return "";
 }
 
-dacura.users.deleteRole = function(id){
-	var ajs = dacura.users.api.delrole(dacura.users.currentuser, id);
-	var self=this;
-	ajs.beforeSend = function(){
-		dacura.users.writeBusyMessage("Deleting role of user " + dacura.users.currentuser);
-	};
-	ajs.complete = function(){
-		dacura.users.clearBusyMessage();	
-	};
-	$.ajax(ajs)
-	.done(function(data, textStatus, jqXHR) {
-		$('#role_' + id).remove();
-		self.showuser(dacura.users.currentuser);
-	})
-	.fail(function (jqXHR, textStatus){
-		dacura.system.writeErrorMessage("", '#userhelp', "", "Error: " + jqXHR.responseText );
-	});	
-};
+function validateRoleDeletes(obj){
+	if(obj.rids.length == 0){
+		return "You have not selected any roles to delete";
+	}
+	return "";
+}
 
-dacura.users.createRole = function(){
-	var cid = $('#rolecollectionip option:selected').val();
-	var did = $('#roledatasetip option:selected').val();
-	var rname = $('#rolenameip option:selected').val();
-	var lvel = "0";
-	var ajs = dacura.users.api.createrole(dacura.users.currentuser);
-	var payload = {
-		"collection" : cid,
-		"dataset" : did, 
-		"role" : rname,
-		"level" : lvel
-	};
-	ajs.data.payload = JSON.stringify(payload);
-	var self=this;
-	ajs.beforeSend = function(){
-		dacura.users.writeBusyMessage("creating role for user " + dacura.users.currentuser);
-	};
-	ajs.complete = function(){
-		dacura.users.clearBusyMessage();	
-	};
-	$.ajax(ajs)
-	.done(function(data, textStatus, jqXHR) {
-		self.showuser(dacura.users.currentuser);
-	})
-	.fail(function (jqXHR, textStatus){
-		dacura.system.writeErrorMessage("", '#userhelp', "", "Error: " + jqXHR.responseText );
-	});	
-};
+function getRoleInputs(){
+	var obj = {};
+	obj.collection = $('#rolecollectionip option:selected').val();
+	obj.dataset = $('#roledatasetip option:selected').val();
+	obj.role = $('#rolenameip option:selected').val();
+	obj.uid = "<?=$params['userid']?>";
+	obj.level = "0";
+	return obj;
+}
 
-dacura.users.updateDatasetRoleOptions = function(isupdate){
-	var cid = $('#rolecollectionip option:selected').val();
-	var datasets = dacura.users.roleoptions[cid].datasets;
+function setupRoleOptions(){
 	var num = 0;
-	$('#roledatasetip').html("");
-	$.each(datasets, function(i, obj) {
+	$.each(roleoptions, function(i, obj) {
 		num++;
 		var selected = "";
 		if(num == 1){
 			selected = "selected ";
 		}
-		$('#roledatasetip').append("<option " + selected  + "value='"+ i + "'>" + obj + "</option>");
+		$('#rolecollectionip').append("<option " + selected  + "value='"+ i + "'>" + obj.title + "</option>");
+		$('#rolecollectionip').selectmenu( "refresh" );
 	});
 }
 
 $(function() {
-	$("#user-pane-holder").tabs( {
-        "activate": function(event, ui) {
-            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
-        }
-    });
-	$("#user-pane-list").show();
-	if(dacura.users.roleoptions){
-		$('#rolecollectionip').change(function(){
-			dacura.users.updateDatasetRoleOptions(true);
-		});
-		var num = 0;
-		$.each(dacura.users.roleoptions, function(i, obj) {
-			num++;
-			var selected = "";
-			if(num == 1){
-				selected = "selected ";
+	dacura.system.init({
+		"mode": "tool", 
+		"tabbed": 'user-home', 
+		"entity_id": "<?=$params['userid']?>",
+		"load": dacura.users.fetchUser,
+		"draw": drawUser,
+		"buttons": {
+			"userupdate": {
+				"screen": "user-details",
+				"source": "udetails",
+				"submit": dacura.users.updateUser, 
+				"result": showUpdatedUser
+			},
+			"userdelete": {
+				"screen": "user-details",
+				"gather": function(){ return "<?=$params['userid']?>"},
+				"submit": dacura.users.deleteUser, 
+				"result": showDeleteResult
+			},
+			"rolecreate": {
+				"screen": "user-roles",
+				"gather": getRoleInputs,
+				"submit": dacura.users.createRole,
+				"result": showCreateRoleResult
+			},
+			"deleteroles": {
+				"screen": "user-roles",
+				"gather": getRoleDeletes,
+				"submit": dacura.users.deleteRoles,
+				"validate": validateRoleDeletes,
+				"result": showDeleteRoleResult				
+			},
+			"passwordupdate":  {
+				"screen": "user-password",
+				"source": "upassword",
+				"submit": function (obj, onwards, targets) { obj.uid = "<?=$params['userid']?>", dacura.users.updatePassword(obj, onwards, targets)},
+				"validate": validatePasswords,
+				"result": showUpdatePasswordResult				
 			}
-			$('#rolecollectionip').append("<option " + selected  + "value='"+ i + "'>" + obj.title + "</option>");
-		});
-		dacura.users.updateDatasetRoleOptions(false);
+		}
+	});
+	if(roleoptions){
+		setupRoleOptions();
 	}
 	else {
 		$('#user-role-add').empty();
 	}
-	dacura.users.showuser('<?=$params['userid']?>');
+	
 });
 </script>
 

@@ -43,6 +43,7 @@ $dacura_settings['dacura_system_log'] = $dacura_settings['dacura_logbase'].'even
  * Dumping and caching...
  */
 $dacura_settings['dump_directory'] = "dumps/";
+$dacura_settings['files_directory'] = "files/";
 $dacura_settings['cache_directory'] = "cache/";
 $dacura_settings['default_cache_config'] = array( "type" => "time", "value" => 10000);
 $dacura_settings['performance_timing'] = 2;
@@ -58,8 +59,17 @@ $dacura_settings['dqs_service'] = array(
 		"schema" => $dacura_settings['dqs_url']."schema",
 		"schema_validate" => $dacura_settings['dqs_url']."schema_validate",
 		"validate" => $dacura_settings['dqs_url']."validate",
+		"stub" => "http://192.168.1.14:3020/dacura/stub",
+		"entity" => "http://192.168.1.14:3020/dacura/entity",
 		"logfile" => false,
 		"fakets" => $dacura_settings['dacura_logbase'].'fakets.json',
 		"dumplast" => $dacura_settings['dacura_logbase'].'lastdqs.log'
 );
 
+/*
+ * Mail
+ */
+$dacura_settings['mail_headers'] = 	
+		'From: dacura@scss.tcd.ie' . "\r\n" .
+		'Reply-To: dacura@scss.tcd.ie' . "\r\n" .
+		'X-Mailer: Dacura PHP/' . phpversion();

@@ -4,8 +4,8 @@ getRoute()->get('/(\w+)/dependencies', 'calculate_dependencies');
 getRoute()->post('/validate_ontologies', 'validate_ontologies');
 
 getRoute()->get('/structure', 'get_entity_classes');
-getRoute()->get('/structure/(\w+)', 'get_entity_classes');//with graph id
-getRoute()->get('/structure/(\w+)/(.+)', 'get_class_template');//with graph id
+//getRoute()->get('/structure/(\w+)', 'get_entity_classes');//with graph id
+//getRoute()->get('/structure/(\w+)/(.+)', 'get_class_template');//with graph id
 
 function import_ontology(){
 	global $dacura_server;
@@ -69,22 +69,36 @@ function validate_ontologies(){
 	}
 }
 
-function get_entity_classes($graphid = false){
-	global $dacura_server;
-	if(!$dacura_server->schema){
-		return $dacura_server->write_http_error(400, "Get entity classes can only be called in a collection context");		
-	}
-	$res = $dacura_server->getEntityClasses($graphid);
-	if($res){
-		return $dacura_server->write_json_result($res, "Returned entity classes");		
+function get_entity_classes(){
+	if(isset($_GET['class']) && isset($_GET['graph'])){
+		return get_class_template($_GET['graph'], $_GET['class']);
 	}
 	else {
-		$dacura_server->write_http_error();
+		$graphid = isset($_GET['graph']) ? $_GET['graph'] : false;
+		global $dacura_server;
+		if(!$dacura_server->schema){
+			return $dacura_server->write_http_error(400, "Get entity classes can only be called in a collection context");		
+		}
+		if(isset($_GET['stubs'])){
+			$save= isset($_GET['stash']) ? true : false;
+			$res = $dacura_server->getClassFrames($graphid, $save);
+		}
+		else {
+			$res = $dacura_server->getEntityClasses($graphid);
+		}
+		if($res){
+			return $dacura_server->write_json_result($res, "Returned entity classes");		
+		}
+		else {
+			$dacura_server->write_http_error();
+		}
 	}
 }
 
 function get_class_template($graphid, $classname){
 	global $dacura_server;
+	//return $dacura_server->write_http_error(500, $graphid);
+	
 	if(!$dacura_server->schema){
 		return $dacura_server->write_http_error(400, "Get entity classes can only be called in a collection context");		
 	}

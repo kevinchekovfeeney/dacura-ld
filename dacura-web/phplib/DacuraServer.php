@@ -13,7 +13,7 @@
  */
 
 require_once("DacuraObject.php");
-require_once("db/UsersDBManager.php");
+require_once("DBManager.php");
 require_once("UserManager.php");
 require_once("utilities.php");
 require_once("FileManager.php");
@@ -26,7 +26,7 @@ class DacuraServer extends DacuraObject {
 	//has contents schema, 
 	//var $collection; //collection object in which context the call is made
 	//var $dataset; //dataset object in which the call is made
-	var $dbclass = "UsersDBManager";//the class of the associated dbmanager
+	var $dbclass = "DBManager";//the class of the associated dbmanager
 	var $dbman; //storage manager
 	var $fileman; //log manager, responsible for logging, caching, dumping data
 	
@@ -34,7 +34,7 @@ class DacuraServer extends DacuraObject {
 		$this->settings = $service->settings;
 		$this->ucontext = $service;
 		try {
-			$this->dbman =  new $this->dbclass($this->settings['db_host'], $this->settings['db_user'], $this->settings['db_pass'], $this->settings['db_name']);
+			$this->dbman =  new $this->dbclass($this->settings['db_host'], $this->settings['db_user'], $this->settings['db_pass'], $this->settings['db_name'], $this->getDBConfig());
 		}
 		catch (PDOException $e) {
 			return $this->failure_result('Connection failed: ' . $e->getMessage(), 500);
@@ -43,11 +43,20 @@ class DacuraServer extends DacuraObject {
 		$this->fileman = new FileManager($service);
 		$this->loadContextConfiguration();
 	}
+	
+	function getDBConfig(){
+		$config = array();
+		if(isset($_GET['include_deleted'])){
+			$config['include_deleted'] = true;
+		}
+		return $config;
+	}
 
 	/* 
 	 * Config related functions
 	 */
-	function getDataset($id){
+	function getDataset($id = false){
+		if($id === false) $id = $this->did();//current dataset is default
 		$obj = $this->dbman->getDataset($id);
 		if($obj){
 			$obj->set_storage_base($this->getSystemSetting("path_to_collections", ""));
@@ -58,7 +67,8 @@ class DacuraServer extends DacuraObject {
 		return $obj;
 	}
 	
-	function getCollection($id){
+	function getCollection($id = false){
+		if($id === false) $id = $this->cid();//current collection is default
 		$obj = $this->dbman->getCollection($id);
 		if($obj){
 			return $obj;
@@ -68,6 +78,14 @@ class DacuraServer extends DacuraObject {
 	
 	function getCollectionList(){
 		$obj = $this->dbman->getCollectionList();
+		if($obj){
+			return $obj;
+		}
+		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+	}
+	
+	function getDatasetList($cid = false, $full = false){
+		$obj = $this->dbman->getCollectionDatasets($cid, $full);
 		if($obj){
 			return $obj;
 		}
@@ -84,11 +102,39 @@ class DacuraServer extends DacuraObject {
 		}
 	}
 	
+	function loadContextParams(){
+		$params = array();
+		if($this->cid() != "all"){
+			$col = $this->getCollection();
+			$icon = $col->getConfig("icon") ? $col->getConfig("icon") : $this->ucontext->url("image", "collection_icon.png");
+			$params[] = array(
+					"name" => $col->name,
+					"icon" => $icon,
+					"url" => $this->settings['install_url'].$this->cid(),
+					"class" => "ucontext first");
+		}
+		if($this->did() != "all"){
+			$ds = $this->getDataset($this->did());
+			$icon = $ds->getConfig("icon") ? $ds->getConfig("icon") : $this->ucontext->url("image", "dataset_icon.png");
+			$params[] = array(
+					"name" => $ds->name,
+					"icon" => $icon,
+					"url" => $this->settings['install_url'].$this->cid()."/".$this->did(),
+					"class" => "ucontext");
+			if($this->cid() != "all"){
+				$params[count($params)-1]['class'] = "ucontext first";
+			}
+		}
+		return $params;
+	}
+	
+	
 	function loadServerConfiguration(){
 		$this->config = array();		
 	}
 	
-	function loadCollectionConfiguration($id){
+	function loadCollectionConfiguration($id = false){
+		if($id === false) $id = $this->cid();//current collection is default
 		$col = $this->getCollection($id);
 		if($col){
 			foreach($col->config as $k => $v){
@@ -103,6 +149,7 @@ class DacuraServer extends DacuraObject {
 	}
 	
 	function loadDatasetConfiguration($id){
+		if($id === false) $id = $this->did();//current dataset is default
 		$ds = $this->getDataset($id);
 		if($ds){
 			foreach($ds->config as $k => $v){
@@ -123,6 +170,10 @@ class DacuraServer extends DacuraObject {
 
 	function did(){
 		return $this->ucontext->getDatasetID();
+	}
+	
+	function durl($ajax = false){
+		return ($ajax) ? $this->settings['install_url'] : $this->settings['ajaxurl'];
 	}
 	
 	function sname(){
@@ -181,10 +232,7 @@ class DacuraServer extends DacuraObject {
 			$choices["all"] = array("title" => "All collections", "datasets" => array("all" => "All Datasets"));
 		}	
 		foreach($cols as $colid => $col){
-			if($col->status == "deleted"){
-				continue;
-			}
-			elseif($u->hasCollectionRole($colid, $role) or $u->isGod() or $u->hasCollectionRole("all", $role)){
+			if($u->hasCollectionRole($colid, $role) or $u->isGod() or $u->hasCollectionRole("all", $role)){
 				$choices[$colid] = array("title" => $col->name, "datasets" => array("all" => "All Datasets"));
 				foreach($col->datasets as $datid => $ds){
 					$choices[$colid]["datasets"][$datid] = $ds->name;
@@ -193,7 +241,7 @@ class DacuraServer extends DacuraObject {
 			else {
 				$datasets = array();
 				foreach($col->datasets as $datid => $ds){
-					if($ds->status != "deleted" && $u->hasDatasetRole($colid, $datid, $role)){
+					if($u->hasDatasetRole($colid, $datid, $role)){
 						$datasets[$datid] = $ds->name;
 					}
 				}
@@ -224,8 +272,8 @@ class DacuraServer extends DacuraObject {
 	function userHasRole($role, $cid = false, $did = false){
 		$u = $this->getUser();
 		if(!$u)	return $this->failure_result("Access Denied! User is not logged in.", 401);
-		if($cid === false) $cid = $this->ucontext->collection_id;
-		if($did === false) $did = $this->ucontext->dataset_id;
+		if($cid === false) $cid = $this->cid();
+		if($did === false) $did = $this->did();
 		if($u->hasSufficientRole($role, $cid, $did)){
 			return true;
 		}
@@ -259,7 +307,7 @@ class DacuraServer extends DacuraObject {
 		if(!$u) {
 			return $this->failure_result("User must be logged in to view this page", 401);
 		}
-		if($this->ucontext->userCanViewScreen($u)){
+		if($this->ucontext->userCanViewScreen($u, $this)){
 			return true;
 		}
 		else {
@@ -308,15 +356,36 @@ class DacuraServer extends DacuraObject {
 	 * 
 	 * @param unknown $ting : the thing to be json-ified and returned to the user
 	 * @param string $note : the note to add to the request log
-	 * @return boolean always true (for using as return $x->write_json_result to indicate success result)
+	 * @return boolean to indicate success result
 	 */
 	function write_json_result($ting, $note = "Result returned"){
 		//header("Content-Type: application/json");
-		echo json_encode($ting);
-		$this->ucontext->logger->setResult(200, $note);
-		return true;
+		$json = json_encode($ting);
+		if($json){
+			echo $json;
+			$this->ucontext->logger->setResult(200, $note);
+			return true;
+		}
+		else {
+			http_response_code(500);
+			$msg = "JSON error: ".json_last_error() . " " . json_last_error_msg();
+			$this->ucontext->logger->setResult(500, $note." ".$msg);
+			echo $msg;
+			return false;
+		}
 	}
-
+	
+	function write_json_error($ting, $code, $note = "JSON error returned"){
+		http_response_code($code);
+		$this->ucontext->logger->setResult($code, $note);
+		$json = json_encode($ting);
+		if($json){
+			echo $json;
+		}
+		else {
+			echo $ting;
+		}
+	}
 
 	function write_http_result($code = 0, $msg = "", $log = "debug"){
 		$msg = $msg ? $msg : $this->errmsg;
@@ -376,13 +445,46 @@ class DacuraServer extends DacuraObject {
 		return $this->ucontext->getServiceSetting($cname, $def);		
 	}
 	
-
+	function isValidDacuraID($id, $maxlen = 40, $allow_sname = false){
+		$nid = filter_var($id, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_LOW);
+		$nid = filter_var($nid, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
+		if($nid != $id){
+			return $this->failure_result("Illegal characters in input", 400);
+		}
+		if(!(ctype_alnum($id) && strlen($id) > 1 && strlen($id) < $maxlen)){
+			return $this->failure_result("Illegal ID, it must be between 2 and 40 alphanumeric characters (no spaces or punctuation).", 400);
+		}
+		if($this->isDacuraBannedWord($id)){
+			return $this->failure_result("$id is not permitted to be used as a dacura id", 400);
+		}
+		if(!$allow_sname && isServiceName($id, $this->settings)){
+			return $this->failure_result($id . " is the name of a dacura service, it cannot be used as a dacura id.", 400);
+		}
+		return true;
+	}
 	
 	function isDacuraBannedWord($word){
-		return strtolower($word) == "dacura";
+		return in_array(strtolower($word), array("all", "dacura", "structure", "type", "schema"));
 	}
 	
 	function isDacuraBannedPhrase($title){
 		return false;
+	}
+	
+	function getServiceList(){
+		$srvcs = array();
+		if ($handle = opendir($this->settings['path_to_services'])) {
+			while (false !== ($entry = readdir($handle))) {
+				if ($entry != "." && $entry != "..") {
+					if(is_dir($this->settings['path_to_services'].$entry)
+							&& file_exists($this->settings['path_to_services'].$entry."/".ucfirst($entry)."Service.php")){
+						$srvcs[] = $entry;
+					}
+				}
+			}
+			closedir($handle);
+			return $srvcs;
+		}
+		return $this->failure_result("Failed to read services directory for service list", 500);
 	}
 }

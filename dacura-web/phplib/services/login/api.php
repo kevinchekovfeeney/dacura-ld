@@ -109,5 +109,5 @@ function logout(){
 function hello(){
 	global $dacura_server;
 	$dacura_server->init("hello");
-	$dacura_server->write_json_result("Hello World", "Hello world");
+	$dacura_server->write_json_result("Hello World. This is Dacura speaking.", "Hello world");
 }

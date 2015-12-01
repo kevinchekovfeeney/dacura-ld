@@ -10,23 +10,12 @@ require_once("WidgetUpdateRequest.php");
 
 class WidgetService extends LdService {
 	
-	/*
-	 * Methods which allow you to specify common html headers and footers that will
-	 * apply to every screen in the service
-	 */
-	function renderFullPageHeader(){
-		parent::renderFullPageHeader();
-		$this->writeIncludedInterpolatedScripts($this->mydir."dacura.widget.js");
-	}
-	
-	function handlePageLoad($dacura_server){
+	function getParamsForScreen($screen, &$dacura_server){
 		$params = array("image" => $this->url("image", "buttons/widget.png"));
-		if($this->screen == "list"){
+		if($screen == "list"){
 			$params["title"] = "User Interface Widgets";
 			$params["subtitle"] = "Forms which allow people to view and update the data";
-			$this->renderToolHeader($params);
 			$params['status_options'] = $this->getCreateStatusOptions();
-			$this->renderScreen("list", $params);
 		}
 		else {
 			if($this->args && $this->screen == 'update'){
@@ -49,14 +38,12 @@ class WidgetService extends LdService {
 			else {
 				$params['status_options'] = $this->getEntityStatusOptions();
 			}
-			$this->renderToolHeader($params);
 			if(isset($_GET['mode'])) $params['mode'] = $_GET['mode'];
 			if(isset($_GET['version'])) $params['version'] = $_GET['version'];
 			if(isset($_GET['format'])) $params['format'] = $_GET['format'];
-			if(isset($_GET['display'])) $params['display'] = $_GET['display'];
-			$this->renderScreen("view", $params);
+			if(isset($_GET['display'])) $params['display'] = $_GET['display'];				
 		}
-		$this->renderToolFooter($params);
+		return $params;
 	}
 	
 		

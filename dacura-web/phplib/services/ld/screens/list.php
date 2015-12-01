@@ -1,197 +1,80 @@
-<script src='<?=$service->url("js", "jquery.dataTables.js")?>'></script>
-<script src='<?=$service->url("js", "dataTables.jqueryui.js")?>'></script>
-<script src='<?=$service->url("js", "jquery.json-editor.js")?>'></script>
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery.json-editor.css")?>" />
-
- <div id='tab-holder'>
-	 <ul id="ld-pane-list" class="dch">
-	 	<li><a href="#ld-list">LD Entity Queue</a></li>
-	 	<li><a href="#update-list">LD Entity Update Queue</a></li>
-	 	<li><a href="#create-ld">Create LD Entity</a></li>
-	 </ul>
-	<div id="create-ld">
-		<div class="tab-top-message-holder">
-			<div class="tool-create-info tool-tab-info" id="create-msgs"></div>
-		</div>
-		<div id="create-holder" class="dch">
-			<?php echo $service->showLDResultbox($params);?>
-			<?php echo $service->showLDEditor($params);?>
-		</div>
+<div class='dacura-screen' id='ld-tool-home'>
+	<div class='dacura-subscreen ld-list' id="entity-list" title="Linked Data Entities">
+		<table id="ld_table" class="dcdt display dacura-api-listing">
+			<thead>
+			<tr>
+				<th id='lde-id'>ID</th>
+				<th id='lde-type'>Type</th>
+				<th id='lde-collectionid'>Collection</th>
+				<th id='lde-datasetid'>Dataset ID</th>
+				<th id='lde-status'>Status</th>
+				<th id='lde-version'>Version</th>
+				<th id='dfn-getPrintableCreated'>Created</th>
+				<th id='lde-createtime'>Sortable Created</th>
+				<th id='dfn-getPrintableModified'>Modified</th>
+				<th id='lde-modtime'>Sortable Modified</th>
+			</tr>
+			</thead>
+			<tbody></tbody>
+		</table>
 	</div>
-	<div id="ld-list">
-		<div class="tab-top-message-holder">
-			<div class="tool-tab-info" id="ld-msgs"></div>
-		</div>
-		<div id="ld-holder" class='ld-list dch'>
-			<table id="ld_table" class="dcdt display">
-				<thead>
-				<tr>
-					<th>ID</th>
-					<th>Type</th>
-					<th>Collection</th>
-					<th>Dataset ID</th>
-					<th>Status</th>
-					<th>Version</th>
-					<th>Created</th>
-					<th>Sortable Created</th>
-					<th>Modified</th>
-					<th>Sortable Modified</th>
-				</tr>
-				</thead>
-				<tbody></tbody>
-			</table>
-		</div>
+	<div class='dacura-subscreen ld-list' id="update-list" title="Updates to Linked Data Entities">
+		<table id="update_table" class="dcdt dacura-api-listing display">
+			<thead>
+			<tr>
+				<th id='ldu-eurid'>ID</th>
+				<th id='ldu-targetid'>Target</th>
+				<th id='ldu-type'>Type</th>
+				<th id='ldu-collectionid'>Collection</th>
+				<th id='ldu-datasetid'>Dataset</th>
+				<th id='ldu-status'>Status</th>
+				<th id='ldu-from_version'>From Version</th>
+				<th id='ldu-to_version'>To Version</th>
+				<th id='dfu-getPrintableCreated'>Created</th>
+				<th id='ldu-createtime'>Sortable Created</th>
+				<th id='dfu-getPrintableModified'>Modified</th>
+				<th id='ldu-modtime'>Sortable Modified</th>
+			</tr>
+			</thead>
+			<tbody></tbody>
+		</table>
 	</div>
-	<div id="update-list">
-		<div class="tab-top-message-holder">
-			<div class="tool-tab-info" id="update-msgs"></div>
-		</div>
-		<div id="update-holder" class="ld-list dch">
-			<table id="update_table" class="dcdt display">
-				<thead>
-				<tr>
-					<th>ID</th>
-					<th>Target</th>
-					<th>Type</th>
-					<th>Collection</th>
-					<th>Dataset</th>
-					<th>Status</th>
-					<th>From Version</th>
-					<th>To Version</th>
-					<th>Created</th>
-					<th>Sortable Created</th>
-					<th>Modified</th>
-					<th>Sortable Modified</th>
-				</tr>
-				</thead>
-				<tbody></tbody>
-			</table>
-		</div>
+	<div class='dacura-subscreen' id="create-entity" title="Create New Linked Data Entities">
+		<?php echo $service->showLDResultbox($params);?>
+		<?php echo $service->showLDEditor($params);?>
+		<P>Why oh why</P>
 	</div>
 </div>
-
 <script>
-
-dacura.ld.getTableInitStrings = function(cands){
-	if(typeof cands == "undefined"){
-		var init = <?=$dacura_server->getServiceSetting('ld_datatable_init_string', "{}");?>;
-	} else {
-		var init = <?=$dacura_server->getServiceSetting('updates_datatable_init_string', "{}");?>;
-	}
-	return init;
-}
-
-var entity_urls = [];
-var update_urls = [];
-
-dacura.ld.drawEntityListTable = function(data){		
-	if(typeof data == "undefined" || data.length == 0){
-		$('#ld-holder').show();	
-		$('#ld_table').dataTable(dacura.ld.getTableInitStrings()).show(); 
-		dacura.system.writeErrorMessage("No Entities Found", '#ld_table .dataTables_empty');		
-	}
-	else {
-		$('#ld_table tbody').html("");
-		entity_urls = [];
-		for (var i in data) {
-			var obj = data[i];
-			$('#ld_table tbody').append("<tr class='entityrow' id='ent_" + entity_urls.length + "'>" + 
-			"<td>" + obj.id + "</td>" + 
-			"<td>" + obj.type + "</td>" + 
-			"<td>" + obj.collectionid + "</td>" + 
-			"<td>" + obj.datasetid + "</td>" + 
-			"<td>" + obj.status + "</td>" + 
-			"<td>" + obj.version + "</td>" + 
-			"<td>" + timeConverter(obj.createtime) + "</td>" + 
-			"<td>" + obj.createtime + "</td>" + 
-			"<td>" + timeConverter(obj.modtime) + "</td>" + 
-			"<td>" + obj.modtime + "</td>" + "</tr>");
-			if(obj.type == "candidate"){
-				s = obj.type;
-			}	
-			else if(obj.type == "graph" || obj.type == "ontology"){
-				s = "schema";
-			}
-			else {
-				s = "ld";
-			}
-			entity_urls[entity_urls.length] = dacura.system.pageURL(obj.collectionid, obj.datasetid, s) + "/" + obj.id;
-		}
-		$('.entityrow').hover(function(){
-			$(this).addClass('userhover');
-		}, function() {
-		    $(this).removeClass('userhover');
-		});
-		$('.entityrow').click( function (event){
-			window.location.href = entity_urls[this.id.substr(4)]
-	    }); 		
-		$('#ld-holder').show();	
-		$('#ld_table').dataTable(dacura.ld.getTableInitStrings());
-	}
-}
-
-dacura.ld.drawUpdateListTable = function(data){		
-	if(typeof data == "undefined" || data.length == 0){
-		$('#update-holder').show();	
-		$('#update_table').dataTable(dacura.ld.getTableInitStrings(true)); 
-		dacura.system.writeErrorMessage("No Updates Found", '#update_table .dataTables_empty');		
-	}
-	else {
-		$('#update_table tbody').html("");
-		update_urls = [];
-		for (var i in data) {
-			var obj = data[i];
-			$('#update_table tbody').append("<tr class='updaterow' id='update_" + update_urls.length + "'>" + 
-			"<td>" + obj.eurid + "</td>" + 
-			"<td>" + obj.targetid + "</td>" + 
-			"<td>" + obj.type + "</td>" + 
-			"<td>" + obj.collectionid + "</td>" + 
-			"<td>" + obj.datasetid + "</td>" + 
-			"<td>" + obj.status + "</td>" + 
-			"<td>" + obj.from_version + "</td>" + 
-			"<td>" + obj.to_version + "</td>" + 
-			"<td>" + timeConverter(obj.createtime) + "</td>" + 
-			"<td>" + obj.createtime + "</td>" + 
-			"<td>" + timeConverter(obj.modtime) + "</td>" + 
-			"<td>" + obj.modtime + "</td>" + "</tr>");
-			if(obj.type == "candidate"){
-				s = obj.type;
-			}	
-			else if(obj.type == "graph" || obj.type == "ontology"){
-				s = "schema";
-			}
-			else {
-				s = "ld";
-			}
-			update_urls[update_urls.length] = dacura.system.pageURL(obj.collectionid, obj.datasetid, s) + "/" + obj.targetid + "/update/" + obj.eurid;			
-		}
-		$('.updaterow').hover(function(){
-			$(this).addClass('userhover');
-		}, function() {
-		    $(this).removeClass('userhover');
-		});
-		$('.updaterow').click( function (event){
-			window.location.href = update_urls[this.id.substr(7)]
-	    }); 
-		$('#update-holder').show();	
-		$('#update_table').dataTable(dacura.ld.getTableInitStrings(true)).show();
-	}
-}
-
 $(function() {
-	dacura.system.init({"mode": "tool", "tabbed": true});
-	dacura.editor.init({"editorheight": "300px", "targets": {resultbox: "#create-msgs", errorbox: "#create-msgs", busybox: "#create-holder"}});
+	dacura.system.init({
+		"mode": "tool", 
+		"tabbed": "ld-tool-home",
+		"listings": {
+			"ld_table": {
+				"screen": "entity-list", 
+				"fetch": dacura.ld.fetchentitylist,
+				"settings": <?=$params['entity_datatable']?>
+			},
+			"update_table": {
+				"screen": "update-list", 
+				"fetch": dacura.ld.fetchupdatelist,
+				"settings": <?=$params['update_datatable']?>				
+			}
+		}, 
+		});
+	dacura.editor.init({"editorheight": "300px", "targets": {resultbox: "#create-entity-msgs", busybox: "#create-entity"}});
 	dacura.editor.load(false, false, dacura.ld.create);
-	dacura.ld.fetchentitylist(dacura.ld.drawEntityListTable, {resultbox: "#ld-msgs", errorbox: "#ld-msgs", busybox: "#ld-holder"});
-	dacura.ld.fetchupdatelist(dacura.ld.drawUpdateListTable, {resultbox: "#update-msgs", errorbox: "#update-msgs", busybox: "#update-holder"}); 
-	$('#ld-pane-list').show();
-	$("#tab-holder").tabs( {
-        "activate": function(event, ui) {
-           $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
-        }
-    });
-    $('#create-holder').show();
+
 });
-	
+
+function getPrintableCreated(obj){
+	return timeConverter(obj.createtime);
+}
+
+function getPrintableModified(obj){
+	return timeConverter(obj.modtime);
+}
+
 </script>
+

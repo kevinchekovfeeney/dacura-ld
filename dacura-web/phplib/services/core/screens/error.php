@@ -1,3 +1,4 @@
+<?php include_once(path_to_snippet("header"));?>
 <div class='fullpage-message-container'>
 	<div class='fullpage-message'>
 		<div class='dacura-user-message-box dacura-error'>
@@ -6,3 +7,4 @@
 		</div>
 	</div>
 </div>
+<?php include_once(path_to_snippet("footer"));?>

@@ -83,6 +83,10 @@ General purpose
 	border-radius: 5px;
 }
 
+.ld-list table {
+	width: 100%;
+}
+
 /*
 Editor
 */

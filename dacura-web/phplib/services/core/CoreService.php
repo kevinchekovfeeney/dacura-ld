@@ -7,4 +7,7 @@
  * screens => some standard screens for access denied type of errors..
  */
 
-class CoreService extends DacuraService {}
+class CoreService extends DacuraService {
+	
+	
+}

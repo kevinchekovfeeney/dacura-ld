@@ -33,12 +33,22 @@ class DacuraService extends DacuraObject {
 	var $public_screens = array();
 	//An array of screens provided by the service that require specific dacura roles..
 	var $protected_screens = array();
-	//An array of scripts which will be interpolated in PHP
-	var $interpolated_screens = array();
-
+	//An array of scripts which will be included in screens
+	var $included_scripts = array();
+	//An array of stylesheet urls which will be included in screens
+	var $included_css = array();
+	//The set of forms that are included in the service's pages
+	var $dacura_forms = array();
+	//The set of tables that are included in the service's pages
+	var $dacura_tables = array();
+	//the messages for the user
+	var $dacura_messages = array();
+	
 	function __construct($settings){
 		$this->settings = $settings;
 	}
+	
+	function init(){}//to be overwritten by derived classes
 
 	function getCollectionID(){
 		return $this->collection_id;
@@ -87,6 +97,7 @@ class DacuraService extends DacuraObject {
 		if($sc->provenance == "html"){ //if it is html, all the arguments are in the URL
 			$this->logger->setEvent("read", $this->screen);
 		}
+		$this->init();
 	}
 	
 	
@@ -125,7 +136,7 @@ class DacuraService extends DacuraObject {
 				include_once($f);
 			}
 			else {
-				return $this->renderScreen("error", array("title" => "Navigation Error", "message" => "No '$screen' page found in $other_service service"), "core");
+				return $this->renderScreen("error", array("title" => "Navigation Misstep", "message" => "No '$screen' page found in $other_service service"), "core");
 			}
 		}
 		else {
@@ -134,7 +145,7 @@ class DacuraService extends DacuraObject {
 				include_once($f);
 			}
 			else {
-				return $this->renderScreen("error", array("title" => "Navigation Error", "message" => "No '$screen' page found"), "core");
+				return $this->renderScreen("error", array("title" => "Navigation Error", "message" => "No '$screen' page found in ".$this->servicename), "core");
 			}
 		}
 	}
@@ -148,62 +159,147 @@ class DacuraService extends DacuraObject {
 	}
 	
 	function writeIncludedInterpolatedScripts($path){
+		$this->included_scripts[] = $path;
+/*		$path = $this->mydir.$path;
 		$service = &$this;
-		echo "<script>"; 
-		include_once($path);
-		echo "</script>";
+		global $dacura_server;
+		echo "<script>alert('".$path."')"; 
+		//include_once($path);
+		echo "</script>";*/
 	}
 	
 	function renderToolHeader($option){
+		global $dacura_server;//make it available in the scope of the tool header template
 		$params = array();
+		$params['close-link'] = isset($option['close-link']) ? $option['close-link'] : $this->get_cds_url("", $this->collection_id, $this->dataset_id);
+		$params['close-msg'] = isset($option['close-tool-msg']) ? $option['close-tool-msg'] : "Close the tool and return to the main menu";
 		$params['title']= isset($option['title']) ? $option['title'] : "Dacura Tool";
-		if(isset($option['subtitle'])){
-			$params['subtitle'] = $option['subtitle'];
-		}
-		if(isset($option['description'])){
-			$params['description'] = $option['description'];
-		}
-		if(isset($option['image'])){
-			$params['image'] = $option['image'];
-		}
-		if(isset($option["css_class"]) && strlen(trim($option["css_class"])) > 1){
-			$params['css_class'] = $option["css_class"];
-		}
+		$params['subtitle'] = isset($option['subtitle']) ? $option['subtitle'] : "";
+		$params['description'] = isset($option['description']) ? $option['description'] : "";
+		$params['image'] = isset($option['image']) ? $option['image'] : false;
+		$params['css_class'] = isset($option["css_class"]) ? $option["css_class"] : "";
+		$params['tabs'] = isset($option['tabs']) ? $option['tabs'] : false;
+		$params['jsoned'] = isset($option['jsoned']) ? true : false;
+		$params['dt'] = isset($option['dt']) ? true : false;
 		$params['init-msg'] = isset($option['msg']) ? $option['msg'] : "";
 		$tl = isset($option['topbreadcrumb']) ? $option['topbreadcrumb'] : false;
 		$tx = isset($option['collectionbreadcrumb']) ? $option['collectionbreadcrumb'] : false;
-		$params['close-msg'] = isset($option['close-tool-msg']) ? $option['close-tool-msg'] : "Close the tool and return to the main menu";
-		if(isset($option['breadcrumbs'])){
-			$params['breadcrumbs'] = $this->getBreadCrumbsHTML($option['breadcrumbs'][0], $option['breadcrumbs'][1], $tl, $tx);			
-		}
-		$service = &$this;
-		global $dacura_server;
-		$params['close-link'] = $this->get_cds_url("", $this->collection_id, $this->dataset_id);
-		include_once("phplib/snippets/toolheader.php");
+		$params['breadcrumbs'] = isset($option['breadcrumbs']) ? $this->getBreadCrumbsHTML($option['breadcrumbs'][0], $option['breadcrumbs'][1], $tl, $tx) : false;			
+		$service = &$this;//make $service available in the scope of the tool header template
+		include_once(path_to_snippet("toolheader"));
 	}
 
 	function includeSnippet($sn){
-		include_once("phplib/snippets/$sn.php");
+		include(path_to_snippet($sn));
 	}
 	
 	function renderToolFooter($option){
-		include_once("phplib/snippets/toolfooter.php");
+		include_once(path_to_snippet("toolfooter"));
 	}
 	
-	function renderFullPageHeader(){
+	function renderHeaderSnippet(&$dacura_server){
 		$service = &$this;
-		global $dacura_server;
-		foreach($this->interpolated_screens as $is){
-			$this->writeIncludedInterpolatedScripts($is);
+		$params = array();
+		if($dacura_server->cid() != "all"){
+			$col = $dacura_server->getCollection($dacura_server->cid());
+			if($col && $col->getConfig("background")){
+				$params['bgimage'] = $col->getConfig("background");
+			} 
 		}
-		include_once("phplib/snippets/header.php");
-		include_once("phplib/snippets/topbar.php");		
+		include_once(path_to_snippet("header"));
 	}
 	
-	function renderFullPageFooter(){
+	function getTopbarParams(&$dacura_server){
+		$params = array();
+		$params["context"] = $dacura_server->loadContextParams();
+		$scl = $this->getServiceContextLinks();
+		if(count($scl) > 0){
+			$params["context"][] = $scl;
+		}
+		$u = $dacura_server->getUser();
+		if($u){
+			$params["username"] = $u->handle;
+			$params["usericon"] = $this->url("image", "user_icon.png");
+			if($u->rolesSpanCollections()){
+				$params["profileurl"] = $this->get_service_url("users", array(), "html", "all", "all")."/profile";
+			}
+			else {
+				$cid = $u->getRoleCollectionId();
+				$params["profileurl"] = $this->get_service_url("users", array(), "html", $cid, "all")."/profile";
+			}
+			$params["logouturl"] = $this->getSystemSetting("install_url")."login/logout";
+			if(isset($u->sesssion['syste'])){
+				$sys = $u->sessions["system"];
+				$params["activity"] = "logged in for ".gmdate("H:i", $sys->activeDuration());
+			}
+			else {
+				$params["activity"] = "unknown access history";
+			}
+		}
+		return $params;
+	}
+	
+	function renderTopbarSnippet(&$dacura_server){
+		$params = $this->getTopbarParams($dacura_server);
+		$service = &$this;	
+		$this->renderScreen("topbar", $params, "core");		
+	}
+	
+	function writeIncludedScripts(&$dacura_server){
+		$jsname = "dacura.".$this->servicename.".js";
+		if(file_exists($this->mydir.$jsname)){
+			$this->included_scripts[] = $this->url("script", $jsname);
+		}
+		foreach($this->included_scripts as $url){
+			echo "<script src='$url'></script>";
+		}		
+	}
+
+	function writeIncludedCSS(&$dacura_server){
+		foreach($this->included_css as $url){
+			echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$url.'">';
+		}
+	}
+	
+	function writeBodyHeader(&$dacura_server){
+		echo "<div id='pagecontent-container'>";
+		echo "<div id='pagecontent-nopad'>";		
+	}
+	
+	function writeBodyFooter(&$dacura_server){
+		echo "</div></div>";
+	}
+	
+	function renderFullPageHeader(&$dacura_server){
+		$this->renderHeaderSnippet($dacura_server);
+		$this->renderTopbarSnippet($dacura_server);
+		$this->writeIncludedScripts($dacura_server);
+		$this->writeIncludedCSS($dacura_server);
+		$this->writeBodyHeader($dacura_server);
+	}
+	
+	function renderFullPageFooter(&$dacura_server){
 		$service = &$this;
-		global $dacura_server;
-		include_once("phplib/snippets/footer.php");
+		$this->writeBodyFooter($dacura_server);
+		include_once(path_to_snippet("footer"));
+	}
+	
+	function getServiceContextLinks(){
+		$cls = ($this->getCollectionID() == "all") ? "ucontext first" : "ucontext";
+		$sparams = array(
+			"class" => $cls,
+			"url" => $this->get_service_url(),
+			"icon" => $this->url("image", "buttons/".$this->servicename."_icon.png"),
+			"name" => $this->getTitle()
+		);
+		return $sparams;
+	}
+	
+	function getTitle(){
+		if(isset($this->title) && $this->title){
+			return $this->title;
+		}
+		return ucfirst($this->servicename)." Service";
 	}
 	
 	function showLDEditor($params){
@@ -231,36 +327,57 @@ class DacuraService extends DacuraObject {
 		return in_array($this->screen, $this->public_screens); 
 	}
 	
-	function userCanViewScreen($user){
-		if(!isset($this->protected_screens[$this->screen])){
-			return $this->failure_result("Service: $this->servicename does not have an access rule for $this->screen", 401);				
+	function userCanViewScreen($user, &$dacura_server){
+		$screen = $this->getScreenForAC($dacura_server);
+		if(!isset($this->protected_screens[$screen])){
+			return $this->failure_result("Service: $this->servicename does not have an access rule for $screen", 401);				
 		}
-		$req_role = $this->protected_screens[$this->screen];
+		$req_role = $this->protected_screens[$screen];
 		if(!isset($req_role[1]) or $req_role[1] === false) $req_role[1] = $this->collection_id;
 		if(!isset($req_role[2]) or $req_role[2] === false) $req_role[2] = $this->dataset_id;	
 		if($user->hasSufficientRole($req_role[0], $req_role[1], $req_role[2])){			
 			return true;
 		}
-		return $this->failure_result("User " . $user->getName(). " does not have role required to view $this->screen screen.", 401);
+		return $this->failure_result("User " . $user->getName(). " does not have role required to view $screen screen.", 401);
 	}
 	
 	function renderFullPage(&$dacura_server){
-		$this->renderFullPageHeader();
+		$this->loadDisplaySettings();
+		$this->renderFullPageHeader($dacura_server);
 		$this->handlePageLoad($dacura_server);
-		$this->renderFullPageFooter();	
+		$this->renderFullPageFooter($dacura_server);	
 	}
 	
-	function handlePageLoad($dacura_server){
-		$this->renderScreen($this->screen, $this->args);
+	function getScreenForAC(&$dacura_server){
+		return $this->getScreenForCall($dacura_server);
 	}
 	
-	function getServiceContextLinks(){
-		return "<a href='".$this->get_service_url()."'>".$this->getTitle()."</a>";
+	function getScreenForCall(&$dacura_server){
+		return $this->screen;
 	}
 	
-	function getTitle(){
-		return ucfirst($this->servicename)." Service";
+	function getParamsForScreen($screen, &$dacura_server){
+		return $this->args;
 	}
+	
+	function getParamsFor404(&$dacura_server){
+		return array("title" => "The screen could not be found", "message" => "The service was not able to identify a screen for the call");;
+	}
+	
+	function handlePageLoad(&$dacura_server){
+		$screen = $this->getScreenForCall($dacura_server);
+		if($screen){
+			$params = $this->getParamsForScreen($screen, $dacura_server);
+			$this->renderToolHeader($params);
+			$this->renderScreen($screen, $params);
+			$this->renderToolFooter($params);
+		}
+		else {
+			$params = $this->getParamsFor404($dacura_server);
+			$this->renderScreen("error", $params, "core");
+		}
+	}
+	
 	
 	/*
 	 * to provide url services to html files...
@@ -354,6 +471,34 @@ class DacuraService extends DacuraObject {
 		return $html;
 	}
 	
+	function getInputValueHTML($field_id, $field_help = "", $field_type = "input", $flen = "regular", $field_value = "", $fdisabl = false, $field_submit = ""){
+		$html = "<table class='dacura-property-value-bundle'><tr><td class='dacura-property-input'>";
+		if($field_type == "input"){
+			$cls = 'dacura-'.$flen.'-input';
+			$disabled = ($fdisabl) ? " disabled " : "";
+			$html .= "<input id='$field_id' class='$cls' $disabled type='text' value='$field_value'>";				
+		}
+		$html .= "</td>";
+		if($field_submit){
+			$html .= "<td class='dacura-property-submit'>".$field_submit."</td>";				
+		}
+		if($field_help){
+			$html .= "<td class='dacura-property-help'>".$field_help."</td>";
+		}
+		$html .= "</tr></table>";
+		return $html;				
+	}
+	
+	function getInputTableHTML($jdid, $type, $rows){
+		$fm = new DacuraForm($type);
+		if(!$fm->addElements($rows)){
+			opr($fm);
+			return "<div class='dacura-error'>".$fm->errmsg." ".$fm->errcode." </div>";			
+		}
+		return $fm->html($jdid);
+	}
+	
+	
 	//url associated with a file in a particular collection or dataset (http)
 	function get_cds_url($fname, $col_id = false, $ds_id = false){
 		$col_bit = ($col_id ? $col_id : $this->collection_id)."/";
@@ -367,12 +512,20 @@ class DacuraService extends DacuraObject {
 		return $this->settings['services_url'].$servicen."/files/".$fname;
 	}
 	
+	function get_service_script_url($fname, $servicen = false){
+		$servicen = ($servicen ? $servicen : $this->servicename);
+		return $this->settings['services_url'].$servicen."/".$fname;
+	}
+	
 	function url($type, $name, $c = false, $d = false){
 		if($type == 'service'){
 			return $this->get_service_file_url($name, $c);
 		}
 		elseif($type == "collection"){
 			return $this->get_cds_url($name, $c, $d);
+		}
+		elseif($type == "script"){
+			return $this->get_service_script_url($name, $c);			
 		}
 		else return $this->get_system_file_url($type, $name);
 	}
@@ -403,7 +556,7 @@ class DacuraService extends DacuraObject {
 	
 	//returns setting information
 	
-	function getSystemSetting($cname, $def){
+	function getSystemSetting($cname, $def = false){
 		if(isset($this->settings[$cname])){
 			return $this->settings[$cname];
 		}
@@ -411,13 +564,64 @@ class DacuraService extends DacuraObject {
 	}
 	
 	//returns a setting for a particular service or the default if it does not exist
-	function getServiceSetting($cname, $def){
+	function getServiceSetting($cname, $def = false){
 		if(isset($this->settings[$this->servicename]) && isset($this->settings[$this->servicename][$cname])){
 			return $this->settings[$this->servicename][$cname];
 		}
 		return $def;
 	}
 	
+	function loadDisplaySettings(){
+		$this->loadSettingForms();
+		$this->loadSettingTables();
+		$this->loadSettingMessages();
+	}
+	
+	function loadSettingForms(){
+		$forms = $this->getServiceSetting("forms", array());
+		$fields = $this->getServiceSetting("form_fields", array());
+		foreach($forms as $formid => $fieldids){
+			$this->dacura_forms[$formid] = array();
+			foreach($fieldids as $fieldid){
+				$onef = $fields[$fieldid];
+				if(!isset($onef['id'])){
+					$onef['id'] = $formid."-".$fieldid;						
+				}
+				else {
+					$onef['id'] = $formid."-".$onef['id'];
+				}
+				$this->dacura_forms[$formid][$fieldid] = $onef;
+			}
+		}
+	}
+	
+	function sform($id){
+		return isset($this->dacura_forms[$id]) ? $this->dacura_forms[$id] : array();
+	}
+
+	function smsg($id){
+		return isset($this->dacura_messages[$id]) ? $this->dacura_messages[$id] : "";
+	}
+	
+	function stab($id){
+		return isset($this->dacura_tables[$id]) ? $this->dacura_tables[$id] : array();
+	}
+	
+	
+	function loadSettingMessages(){
+		$this->dacura_messages = $this->getServiceSetting("messages", array());
+	}
+	
+	function loadSettingTables(){
+		$this->dacura_tables = $this->getServiceSetting("tables", array());
+	}
+	
+	function getDatatableSetting($id){
+		if(isset($this->dacura_tables[$id]['datatable_options'])){
+			return json_encode($this->dacura_tables[$id]["datatable_options"]);
+		}
+		return false;
+	}
 	
 	
 }

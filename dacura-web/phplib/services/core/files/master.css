@@ -4,10 +4,23 @@ body {
   font-weight: 300;
 }
 
-select, input {
+select, input,
+.ui-widget,
+.ui-widget input,
+.ui-widget select,
+.ui-widget textarea {
   font-family: 'Open Sans', Helvetica;
-  font-weight: 400;
 }
+
+.ui-widget input,
+.ui-widget select,
+.ui-widget textarea {
+  font-weight: 500;
+}
+
+select {
+}
+
 
 pre {
 	text-align: left;
@@ -45,13 +58,6 @@ ul {
 
 #content-container {
   width: 100%;
-  background: url('Trinity-college-library-dub2.jpg') no-repeat center center fixed;
-  -webkit-background-size: cover;
-  -moz-background-size: cover;
-  -o-background-size: cover;
-  background-size: cover;
-  filter: "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='Trinity-college-library-dub2.jpg', sizingMethod='scale')";
-  -ms-filter: "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='Trinity-college-library-dub2.jpg', sizingMethod='scale')";
   min-height: 100%;
   /* equal to footer height */
   margin-bottom: -692px;
@@ -63,7 +69,7 @@ ul {
 }
 
 #dacura-header {
-  height: 30px;
+  height: 36px;
   z-index: 100000;
   width: 100%;
   background: rgb(28, 16, 19); /* The Fallback */
@@ -73,69 +79,122 @@ ul {
   position: fixed;
 }
 
-#dacura-header div.logo {	
+#dacura-header div.dacura-logo {	
   z-index: 100000;
-  float: left;
+  display: inline-block;
+  border-color: 2px solid blue;
   height: 30px;
-  margin-left: 8px; 
+  padding-left: 4px; 
   padding-top: 4px;
+  padding-bottom: 4px;
+  padding-right: 8px;
 }
 
-#dacura-header div.topbar-context {
+#dacura-header div.topbar-user-actions {
   z-index: 100000;
   float: right;
   margin-right: 8px; 
   padding-top: 2px;
 }
 
+div.topbar-context {
+	display: inline-block;
+	margin-bottom: -3px;
+  }
+
 /*
 Menu bar at the top of pages
 */
 #utopbar-context {
-	margin-left: 40px;
-}
-
-#user-actions-menubar {
-	float: right;
-}
-
-#user-actions-menubar {
-	font-size: 12px;
-	margin-top: 4px;
-	margin-right: 4px;
-	margin-left: 4px;
-}
-
-#user-actions-menubar li.first {
-	text-align: center;
-}
-
-#user-actions-menubar li {
-	min-width: 80px
+	margin-left: 0px;
+	padding: 0px;
 }
 
 #utopbar-context li.first {
-	margin-left: 6px;
+	margin-left: 0px;
 }
 
+.topbar-user-context a,
 #utopbar-context li a {
 	color: white;
 	text-decoration: none;
 }
 
+.topbar-user-context a:hover,
 #utopbar-context li a:hover {
-  	background: rgba(28, 16, 19, 1.0);
+  	background: rgba(58, 66, 119, 0.5);
+	cursor: pointer;
 }
 
 #utopbar-context li {
 	float: left; 
-	padding-left: 24px;
-	padding-top: 6px;
+	padding-left: 0px;
 	margin-right: 10px;
-	//background-image: url("abracket-small.gif");
 	background-repeat: no-repeat;
     background-position: 0% 90%;
 }
+
+#utopbar-context img {
+	margin-bottom: -2px;
+}
+
+div.topbar-user-context {
+	float: right;
+	color: #aaa;
+	margin-right: 6px;
+}
+
+.topbar-user-context .username {
+	padding-right: 12px;
+	padding-left: 12px;
+}
+
+.topbar-user-context .username img {
+	margin-top: 8px;
+}
+
+.topbar-user-context .username label {
+	padding-left: 4px;
+	display: inline-block;
+	font-size: 0.85em;
+	margin-top: -4px;
+	vertical-align: top;
+	padding-top: 12px;
+} 
+
+.topbar-user-context .usersettings {
+	float: right;
+	height: 36px;
+	padding-left: 12px;
+	border-left: 1px solid #333;
+	margin-left: 0px;
+}
+
+.topbar-user-context .usersettings label {
+	padding-right: 6px;
+	display: inline-block;
+	font-size: 0.85em;
+	margin-top: -4px;
+	vertical-align: top;
+	padding-top: 12px;
+	cursor: pointer;
+}
+
+.topbar-user-context .usersettings img {
+	padding-top: 10px;
+}
+
+.topbar-user-context .useractivity {
+	font-size: 0.8em;
+	color: #888;
+}
+
+.topbar-user-context .useroptions {
+	background-color: white;
+	margin-top: 12px;
+}
+
+
 
 /*
 Major different classes of page layout - 
@@ -207,6 +266,12 @@ Styling icons into a dashboard type effect in browsing
 	margin: 0 auto;
 }
 
+#dashboard {
+	background-color: #FBFAF9;
+	border-collapse: collapse;
+	border: 0;
+}
+
 #dashboard-tasks h4{
         text-align: left;
         padding: 0;
@@ -219,35 +284,100 @@ Styling icons into a dashboard type effect in browsing
 }
 
 #dashboard-menu {
-	float: left;
 	width: 170px;
 	height: 400px;
 	background-color: #272727;
-	
+	vertical-align: top;
 }
+
+#dashboard-menu-logo {
+	width: 162px;
+	margin: -2px auto 0 auto;
+	padding: 0px 3px 0 3px;
+	text-align: center;
+}
+
+#dashboard-menu-logo img {
+	width: 100%;
+}
+
+#dashboard-menu-logo .collection-title
+{
+	color: #999;
+	padding: 4px;
+	font-size: 0.8em;
+}
+
+#dashboard-menu-blurb{
+	background-color: #333;
+	font-size: 0.8em;
+	padding: 4px;
+}
+
+#dashboard-menu-blurb table {
+	background-color: #ccc;
+	width: 100%;
+	border-radius: 3px;
+	border: 1px solid #888;
+}
+
+#dashboard-menu-blurb td, 
+#dashboard-menu-blurb th {
+	text-align: right;
+	font-weight: normal;
+}
+
+
+.control-panel-title {
+	font-weight: bold;
+}
+
+#dashboard-menu-title {
+	width: 164px;
+	padding: 4px;
+	color: #bbb;
+	text-align: center;
+	border-top: 2px solid #333;
+	border-bottom: 2px solid #333;
+	background-color: #2f2f2f;	
+	font-size: 0.9em;
+}
+
 
 ul.dashboard-menu {
 	list-style-type: none;
-	padding: 0;
-	color: white;
+	padding: 0px;
+	color: #eee;
+	font-size: 0.8em;
 }
 
 ul.dashboard-menu li {
 	width: 154px;
-	height: 30px;
-	background-color: #1f1f1f;
-	border-bottom: 1px solid #444;
+	background-color: #272727;
+	border-bottom: 1px solid #333;
 	text-align: left;
 	padding: 4px 8px;
 }
 
-ul.dashboard-menu li.dashboard-menu-selected {
-	background-color: #002;
+ul.dashboard-menu li:hover {
+	background-color: #444;	
+	color: #ddd;
+}
+ul.dashboard-menu li a {
+	color: #bbb;
+	text-decoration: none;
 }
 
-ul.dashboard-menu li a {
-	color: white;
-	text-decoration: none;
+ul.dashboard-menu li.dashboard-menu-selected {
+	background-color: #1f1f1f;
+	color: #ddd;
+	font-weight: bold;
+	font-size: 1.1em;
+}
+
+
+ul.dashboard-menu li.dashboard-menu-selected a {
+	color: #ddd;	
 }
 
 #dashboard-content {
@@ -273,21 +403,23 @@ div.dacura-dashboard-panel {
 
 
 div.dacura-dashboard-button {
-	  float: left;
+	text-align: center;
+	float: left;
 	  width: 138px;
 	  height: 138px;
 	  margin-bottom: 20px;
 	  background: url("task-button-plain.png") no-repeat center top;
-  	  background-size:130px 130px;
+  	  background-size:138px 138px;
 }
 
 div.dacura-dashboard-button-wide {
+	  text-align: center;
 	  float: left;
 	  width: 180px;
 	  height: 138px;
 	  margin-bottom: 20px;
 	  background: url("task-button-plain.png") no-repeat center top;
-  	  background-size:180px 130px;
+  	  background-size:180px 138px;
 }
 
 div.dacura-dashboard-task-button:hover,
@@ -306,14 +438,15 @@ img.dacura-task-button-img{
 }
 
 img.dacura-button-img{
-	width: 86px;
-	margin: 10px auto 0px auto;
+	height: 70px;
+	margin: 22px auto 8px auto;
 }
 
 div.dacura-button-title{
 	font-family: Helvetica, sans;
 	font-size: 14px;
-	color: #342323;
+	color: #5c4033;
+	font-weight: bold;
 }
 
 /*
@@ -559,8 +692,8 @@ Message box itself
 	margin-bottom: 10px;
 }
 .dacura-user-message-box .mtitle {
-	padding: 10px 10px 6px 10px;
-	font-weight: bold;
+	padding: 10px 10px 10px 10px;
+	font-size: 1.1em;
 }
 .dacura-user-message-box .mbody {
 	background: rgba(255, 255, 255, .3);
@@ -579,6 +712,16 @@ Message box itself
 .dacura-user-message-box.dacura-success{
 	border: 1px solid #4a4;
 }
+
+.dacura-user-message-box.dacura-help{
+	background: #fafaf4;
+	padding: 8px;
+	border-radius: 0px;
+	weight: 400px;
+		
+}
+
+
 .dacura-error .mtitle {
 	background: rgba(255, 200, 200, .2);
 }
@@ -589,7 +732,7 @@ Message box itself
 	background: rgba(255,140,0, .1);
 }
 .dacura-info .mtitle {
-	background: (235, 235, 255, .1);
+	background: rgba(235, 235, 255, .1);
 }
 
 .dacura-error .mtitle {
@@ -980,9 +1123,13 @@ div.tool-close a {
 }
 
 .tool-header-image {
-	height: 32px;
+	height: 24px;
 	float: left;
 	margin-right: 8px;
+}
+
+span.dacura-help {
+	display: none;
 }
 
 #tab-holder {
@@ -1014,4 +1161,165 @@ div.tool-close a {
 div.tool-buttons {
 	text-align: right;
 	padding: 10px;
+}
+
+table.dacura-api-listing {
+	width: 100% !important;
+}
+
+select.dacura-select {
+}
+
+div#user-role-add {
+	width: 100%;
+	height: 60px;	
+}
+
+table.create-role-table {
+	border: 1px solid #aaa;
+	float: right;
+	border-radius: 3px;
+	background-color: #f4f8fc;
+}
+
+table.create-role-table td {
+	padding-right: 4px;	
+}
+
+table.create-role-table td.option{
+	font-size: 0.9em;
+	padding: 6px 6px 2px 6px;
+}
+
+table.dacura-api-listing,
+.subscreen-intro-message,
+.dacura-subscreen {
+	display: none;
+}
+
+.dacura-subscreen-inactive {
+	display: none;	
+}
+
+.dacura-screen{
+	font-family: 'Open Sans', Helvetica;
+	font-weight: 300;
+	display:none;
+}
+
+div.subscreen-buttons {
+	text-align: right;
+	margin-top: 1.5em;
+}
+
+div.subscreen-buttons button {
+	margin-left: 1em;
+}
+
+img.result-icon {
+	margin-right: 6px;
+	height: 16px;
+	vertical-align: -2px;
+}
+
+
+table.dacura-property-table {
+	border: 1px solid #c8c8c8;
+	border-collapse: collapse;
+	margin: 20px auto 10px auto;
+	background-color: #f8f8f8;
+	font-size: 0.9em;
+}
+
+table.dacura-property-table tr.dacura-property-spacer{
+	border-bottom: 1px solid white;
+}
+
+table.dacura-property-table td.dacura-property-input {
+	padding-right: 10px;
+}
+
+
+table.dacura-property-table tr.dacura-property-section {
+	background-color: red;
+	height: 30px;
+}
+
+
+table.dacura-property-table td.dacura-property-value {
+	padding: 12px 12px 12px 6px;
+	max-width: 800px;
+	overflow: auto;
+}
+
+table.dacura-property-table td.dacura-property-label {
+	padding: 12px 4px 12px 10px;
+	text-align: right;
+	min-width: 100px;
+	font-weight: 600;
+	color: #020;
+}
+
+table.dacura-property-table td.dacura-property-help {
+	font-size: 0.85em;
+}
+
+table.dacura-property-value-bundle td {
+	max-width: 700px;
+	overflow: hidden;
+}
+
+table.dacura-property-table input[type="password"],
+table.dacura-property-table input[type="text"] {
+  padding: 8px;
+  border: solid 1px #dcdcdc;
+  transition: box-shadow 0.3s, border 0.3s;
+  font-family: 'Open Sans', Helvetica;
+  font-weight: 400;
+  border-radius: 2px;
+}
+table.dacura-property-table input[type="password"]:focus,
+table.dacura-property-table input[type="password"].focus,
+table.dacura-property-table input[type="text"]:focus,
+table.dacura-property-table input[type="text"].focus {
+  border: solid 1px #707070;
+  box-shadow: 0 0 5px 1px #969696;
+}
+
+.dacura-tiny-input {
+	width: 80px;
+}
+
+.dacura-short-input {
+	width: 150px;
+}
+.dacura-regular-input {
+	width: 350px;
+}
+
+textarea.dacura-regular-input {
+	width: 600px;
+	height: 120px;
+}
+.dacura-long-input {
+	width: 600px;
+}
+
+.dacura-display-json {
+	white-space: pre;
+ 	unicode-bidi: embed;
+ 	font-size: 0.85em;
+ 	background-color: white;
+ 	overflow: auto;
+ 	padding: 4px;
+}
+
+.dacura-url-input {}
+
+.ui-selectmenu-menu {
+	font-size: 0.8em;
+}
+
+#logtable{
+	font-size: 0.8em;
 }

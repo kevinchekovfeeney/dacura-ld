@@ -29,6 +29,7 @@ class RequestLog {
 	var $request_log_level = "debug";
 	var $system_log_level = "debug";
 	var $log_levels = array("debug", "info", "notice", "warning", "error", "critical", "alert", "emergency");
+	static $log_fields = array("time", "access", "result", "service", "context", "user", "arguments", "timings", "message");
 
 	function __construct($settings, $mode){
 		$this->log_file = $settings['dacura_request_log'];
@@ -100,6 +101,35 @@ class RequestLog {
 		}
 	}
 	
+	static function getAsListingTable($id){
+		$html = "<table id='$id' class='dacura-api-listing'>\n<thead>\n<tr>";
+		foreach(RequestLog::$log_fields as $th){
+			$html .= "\n<th id='log-".$th."' title='$th'>$th</th>";
+		}
+		$html .= "\n</tr>\n</thead>\n<tbody>\n</tbody>\n</table>";
+		return $html;
+	}
+	
+	function lastRowsAsListingObjects($num = 50){
+		$chunk = tailCustom($this->log_file, $num);
+		$lines = explode("\n", $chunk);
+		$objs = array();
+		foreach($lines as $line){
+			$objs[] = $this->rowToListingObject($line);	
+		}
+		return $objs;
+	}
+	
+	
+	function rowToListingObject($row){
+		$lobj = array();
+		$parts = array_map('xstrim', explode("\t", $row));	
+		foreach(RequestLog::$log_fields as $i => $f){
+			$lobj[$f] = isset($parts[$i]) ? $parts[$i] : "";
+		}
+		return $lobj;
+	}
+	
 	function asString(){
 		$str = time()."\t[$this->access_mode]\t[$this->result_code]\t[$this->service|$this->action|$this->object]\t";
 		$str .= "[$this->collection_id:$this->dataset_id]\t";
@@ -147,4 +177,8 @@ class RequestLog {
 		}
 		$this->dumpToLog();
 	}	
+}
+
+function xstrim($ent){
+	return trim($ent, "[]");
 }
