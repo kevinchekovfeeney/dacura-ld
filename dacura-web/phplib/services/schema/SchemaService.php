@@ -4,7 +4,7 @@ include_once("SchemaDacuraServer.php");
 class SchemaService extends LdService {
 	
 	var $default_screen = "view";
-	var $protected_screens = array("view" => array("architect"));
+	var $protected_screens = array("view" => array("architect","any"));
 	//var $public_screens = array("test");
 	var $dqs_options = array(
 			"classCycles" => array(

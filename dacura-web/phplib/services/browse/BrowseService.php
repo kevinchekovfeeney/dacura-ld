@@ -48,6 +48,11 @@ class BrowseService extends DacuraService {
 			"title" => "schema",
 			"help" => "Manage the structure and organisation of your dataset"								
 		),
+		"ontology" => array(
+			"role" => array("architect", "any"),
+			"title" => "Ontologies",
+			"help" => "Manage the ontologies that are imported and available to the dataset"								
+		),
 		"publish" => array(
 			"role" => array("admin", "all"),
 			"title" => "publish",
@@ -71,9 +76,14 @@ class BrowseService extends DacuraService {
 	
 	function getSingleButtonParams($id, $sb){
 		if(!isset($sb["url"])){
-			$sb["url"] = $id;
+			if($id == "ontology"){
+				$sb["url"] = $this->settings['install_url']."schema";				
+			}
+			else {
+				$sb["url"] = $id;
+				$sb["url"] = $this->get_service_url($sb["url"]);
+			}
 		}
-		$sb["url"] = $this->get_service_url($sb["url"]);
 		if(!isset($sb["img"])){
 			$sb["img"] = $id;
 		}
