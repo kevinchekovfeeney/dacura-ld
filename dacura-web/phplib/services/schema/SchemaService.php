@@ -9,29 +9,34 @@ class SchemaService extends LdService {
 	var $dqs_options = array(
 			"classCycles" => array(
 					"title" => "Class Cycle", 
+					"default" => "on",
 					"explanation" => "A cycle in the class inheritance hierarchy.", 
 					"category" => "class", 
 					"type" => array("schema", "schema-instance")
 			),
 			"duplicateClasses" => array(
+					"default" => "on",
 					"title" => "Duplicate Classes", 
 					"explanation" => "Two classes with the same ID in the schema",
 					"category" => "class", 
 					"type" => array("schema", "schema-instance")
 			),
 			"orphanSubClasses" => array(
+					"default" => "on",
 					"title" => "Orphan Class", 
 					"explanation" => "A class derived from a non-existant class",
 					"category" => "class", 
 					"type" => array("schema", "schema-instance")
 			),
 			"orphanSubProperties" => array(
+					"default" => "on",
 					"title" => "Orphan Sub-property",
 					"explanation" => "A property derived from a non-existant property",
 					"category" => "property",
 					"type" => array("schema", "schema-instance")						
 			),
 			"propertyCycles" => array(
+					"default" => "on",
 					"title" => "Property Cycle",
 					"explanation" => "A cycle in the property inheritance hierarchy",
 					"category" => "property",
@@ -44,6 +49,7 @@ class SchemaService extends LdService {
 					"type" => array("schema", "schema-instance")
 			),
 			"orphanProperties" => array(
+					"default" => "on",
 					"title" => "Orphan Property", 
 					"explanation" => "A property that has been used without being defined in the schema",
 					"category" => "property", 
@@ -62,34 +68,39 @@ class SchemaService extends LdService {
 					"type" => array("schema")
 			),
 			"invalidRange" => array(
-				"title" => "Invalid Range",
-				"explanation" => "An invalid range specified for a property",
-				"category" => "general", 
-				"type" => array("schema", "schema-instance")
+					"default" => "on",
+					"title" => "Invalid Range",
+					"explanation" => "An invalid range specified for a property",
+					"category" => "general", 
+					"type" => array("schema", "schema-instance")
 			),  
 			"invalidDomain" => array(
-				"title" => "Invalid Domain",
-				"explanation" => "An invalid domain specified for a property",
-				"category" => "general", 
-				"type" => array("schema", "schema-instance")
+					"default" => "on",
+					"title" => "Invalid Domain",
+					"explanation" => "An invalid domain specified for a property",
+					"category" => "general", 
+					"type" => array("schema", "schema-instance")
 			),  
 			"invalidInstanceDomain" => array(
-				"title" => "Invalid Domain",
-				"explanation" => "Instance data using an invalid range for a property",
-				"category" => "general", 
-				"type" => array("instance")
+					"default" => "on",
+					"title" => "Invalid Domain",
+					"explanation" => "Instance data using an invalid range for a property",
+					"category" => "general", 
+					"type" => array("instance")
 			),  
 			"invalidInstanceRange" => array(
-				"title" => "Invalid Range",
-				"explanation" => "Instance data using an invalid range for a property",
-				"category" => "general", 
-				"type" => array("instance")
+					"default" => "on",
+					"title" => "Invalid Range",
+					"explanation" => "Instance data using an invalid range for a property",
+					"category" => "general", 
+					"type" => array("instance")
 			),  
 			"orphanInstance" => array(
-				"title" => "Orphan Instance",
-				"explanation" => "An instance of a class that does not exist in the schema",
-				"category" => "general", 
-				"type" => array("instance")
+					"default" => "on",
+					"title" => "Orphan Instance",
+					"explanation" => "An instance of a class that does not exist in the schema",
+					"category" => "general", 
+					"type" => array("instance")
 			)			
 	);
 	
@@ -173,7 +184,8 @@ class SchemaService extends LdService {
 			if(!isset($boxes[$props['category']])){
 				$boxes[$props['category']] = array();
 			}
-			$html = "<input type='checkbox' class='dqsoption' id='$id' value='$id' title='" . $props['explanation'] . "'><label for='$id'>".$props['title']."</label>";
+			$checked = (isset($props['default']) && $props['default'] == "on") ? " checked" : "";
+			$html = "<input type='checkbox' class='dqsoption' id='$id' value='$id' title='" . $props['explanation'] . "' $checked><label for='$id'>".$props['title']."</label>";
 			$boxes[$props['category']][] = $html;
 		}
 		$html = "";

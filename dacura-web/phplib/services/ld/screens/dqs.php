@@ -38,153 +38,170 @@ edgeConstraints(localOrphanPropertyIC).
 
 $dqs = array();
 $dqs["classCycleSC"] = array(
-	"name" => "classCycleSC",
+	"name" => "Class Cycle",
+	"default" => "on",
 	"type" => "foundation",
 	"graph" => "schema",
 	"text" => "The schema has cycles in the class hierarchy"
 );
 $dqs["propertyCycleSC"] = array(
-	"name" => "propertyCycleSC",
+	"default" => "on",
+	"name" => "Property Cycle",
 	"type" => "foundation",
 	"graph" => "schema",
 	"text" => "The schema has cycles in the property hierarchy"
 );
 
 $dqs["noImmediateDomainSC"] = array(
-	"name" => "noImmediateDomainSC",
+	"name" => "No Immediate Domain",
 	"type" => "bp",
 	"graph" => "schema",
 	"text" => "There is no domain specified directly for the class"
 );
 
 $dqs["noImmediateRangeSC"] = array(
-	"name" => "noImmediateRangeSC",
+	"name" => "No Immediate Range",
 	"type" => "bp",
 	"graph" => "schema",
 	"text" => "There is no range specified directly for the class"
 );
 
 $dqs["notUniqueClassLabelSC"] = array(
-	"name" => "notUniqueClassLabelSC",
+	"name" => "Not Unique Class Label",
 	"type" => "bp",
 	"graph" => "schema",
 	"text" => "The class label is not unique"
 );
 
 $dqs["notUniqueClassSC"] = array(
-	"name" => "notUniqueClassSC",
+	"name" => "Not Unique Class",
 	"type" => "bp",
 	"graph" => "schema",
 	"text" => "The class is not unique"
 );
 
 $dqs["notUniquePropertySC"] = array(
-	"name" => "notUniquePropertySC",
+	"name" => "Not Unique Property",
 	"type" => "bp",
 	"graph" => "schema",
 	"text" => "The property is not unique"
 );
 
 $dqs["schemaBlankNodeSC"] = array(
-	"name" => "schemaBlankNodeSC",
+	"default" => "on",
+	"name" => "Schema Blank Node",
 	"type" => "bp",
 	"graph" => "schema",
 	"text" => "The schema contains blank nodes"
 );
 
 $dqs["orphanClassSC"] = array(
-		"name" => "orphanClassSC",
+		"default" => "on",
+		"name" => "Orphan Class",
 		"type" => "owldl",
 		"graph" => "schema",
 		"text" => "The parent class does not exist in the schema"
 );
 
 $dqs["orphanPropertySC"] = array(
-		"name" => "orphanPropertySC",
+		"default" => "on",
+		"name" => "Orphan Property",
 		"type" => "owldl",
 		"graph" => "schema",
 		"text" => "The parent property does not exist in the schema"
 );
 
 $dqs["invalidRangeSC"] = array(
-		"name" => "invalidRangeSC",
+		"default" => "on",
+		"name" => "Invalid Range",
 		"type" => "owldl",
 		"graph" => "schema",
 		"text" => "The range is invalid"
 );
 
 $dqs["invalidDomainSC"] = array(
-		"name" => "invalidDomainSC",
+		"default" => "on",
+		"name" => "Invalid Domain",
 		"type" => "owldl",
 		"graph" => "schema",
 		"text" => "The domain is invalid"
 );
 
 $dqs["domainNotSubsumedSC"] = array(
-		"name" => "domainNotSubsumedSC",
+		"default" => "on",
+		"name" => "Domain Not Subsumed",
 		"type" => "owldl",
 		"graph" => "schema",
 		"text" => "The domain is not subsumed"
 );
 
 $dqs["rangeNotSubsumedSC"] = array(
-		"name" => "rangeNotSubsumedSC",
+		"default" => "on",
+		"name" => "Range Not Subsumed",
 		"type" => "owldl",
 		"graph" => "schema",
 		"text" => "The range is not subsumed"
 );
 
 $dqs["noPropertyDomainIC"] = array(
-		"name" => "noPropertyDomainIC",
+		"default" => "on",
+		"name" => "No Property Domain",
 		"type" => "bp",
 		"graph" => "instance",
 		"text" => "The domain of the property is not defined"
 );
 
 $dqs["noPropertyRangeIC"] = array(
-		"name" => "noPropertyRangeIC",
+		"default" => "on",
+		"name" => "No Property Range",
 		"type" => "bp",
 		"graph" => "instance",
 		"text" => "The range of the property is not defined"
 );
 
 $dqs["instanceBlankNodeIC"] = array(
-		"name" => "instanceBlankNodeIC",
+		"default" => "on",
+		"name" => "Instance Blank Node",
 		"type" => "bp",
 		"graph" => "instance",
 		"text" => "Blank nodes are present in the instance data"
 );
 
 $dqs["invalidEdgeIC"] = array(
-		"name" => "invalidEdgeIC",
+		"default" => "on",
+		"name" => "Invalid Edge",
 		"type" => "owldl",
 		"graph" => "instance",
 		"text" => "Invalid edge in instance data"
 );
 
 $dqs["edgeOrphanInstanceIC"] = array(
-		"name" => "edgeOrphanInstanceIC",
+		"default" => "on",
+		"name" => "Edge Orphan Instance",
 		"type" => "owldl",
 		"graph" => "instance",
 		"text" => "Orphan edge in instance data"
 );
 
 $dqs["notFunctionalPropertyIC"] = array(
-		"name" => "notFunctionalPropertyIC",
+		"default" => "on",
+		"name" => "Not Functional Property",
 		"type" => "owldl",
 		"graph" => "instance",
 		"text" => "Not a functional property in instance data"
 );
 
 $dqs["notInverseFunctionalPropertyIC"] = array(
-		"name" => "notInverseFunctionalPropertyIC",
+		"default" => "on",
+		"name" => "Not Inverse Functional Property",
 		"type" => "owldl",
 		"graph" => "instance",
 		"text" => "Not inverse property in instance data"
 );
 
 $dqs["localOrphanPropertyIC"] = array(
-		"name" => "localOrphanPropertyIC",
+		"default" => "on",
+		"name" => "Local Orphan Property",
 		"type" => "owldl",
 		"graph" => "instance",
 		"text" => "Not inverse property in instance data"
@@ -229,7 +246,8 @@ function getDQSCheckboxes($dqs, $graph){
 	$boxes = array();
 	$options = getDQSOptions($dqs, $graph);
 	foreach($options as $id => $props){
-		$html = "<span class='dqs-input-field'><input type='checkbox' class='dqsoption dqsoption-$graph' id='$id' value='$id' title='" . $props['text'] . "'><label for='$id'>".$props['name']."</label></span>";
+		$checked = (isset($props['default']) && $props['default'] == "on") ? " checked" : "";
+		$html = "<span class='dqs-input-field'><input type='checkbox' class='dqsoption dqsoption-$graph' id='$id' value='$id' title='" . $props['text'] . "' $checked><label for='$id'>".$props['name']."</label></span>";
 		$boxes[$props['type']][] = $html;
 	}
 	$html = "";
