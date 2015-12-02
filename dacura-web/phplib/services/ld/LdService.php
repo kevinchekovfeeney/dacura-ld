@@ -113,7 +113,7 @@ class LdService extends DacuraService {
 			else {
 				$params['status_options'] = $this->getEntityStatusOptions();
 			}
-			$this->renderToolHeader($params);
+			//$this->renderToolHeader($params);
 			if(isset($_GET['mode'])) $params['mode'] = $_GET['mode'];
 			if(isset($_GET['version'])) $params['version'] = $_GET['version'];
 			if(isset($_GET['format'])) $params['format'] = $_GET['format'];

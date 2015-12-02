@@ -10,9 +10,16 @@ require_once("WidgetUpdateRequest.php");
 
 class WidgetService extends LdService {
 	
+	function init(){
+		parent::init();
+		$ldscript = $this->get_service_script_url("dacura.ld.js", "ld");
+		$this->included_scripts[] = $ldscript;
+	}
+	
 	function getParamsForScreen($screen, &$dacura_server){
 		$params = array("image" => $this->url("image", "buttons/widget.png"));
 		if($screen == "list"){
+			$params['widget_datatable'] = $this->getDatatableSetting("widget");				
 			$params["title"] = "User Interface Widgets";
 			$params["subtitle"] = "Forms which allow people to view and update the data";
 			$params['status_options'] = $this->getCreateStatusOptions();
@@ -27,6 +34,7 @@ class WidgetService extends LdService {
 			else {
 				$id = $this->screen;
 			}
+			$params['dt'] = true;
 			$params["id"] = $id;
 			$params["title"] = "Entity Data";
 			$params["subtitle"] = "Entity View";

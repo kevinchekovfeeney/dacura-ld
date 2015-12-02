@@ -1,8 +1,5 @@
-<script src='<?=$service->url("js", "jquery.dataTables.js")?>'></script>
-<script src='<?=$service->url("js", "dataTables.jqueryui.js")?>'></script>
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
 
- <div id='tab-holder'>
+<div id='tab-holder'>
 	 <ul id="ld-pane-list" class="dch">
 	 	<li><a href="#ld-list">User Interface Widgets</a></li>
 	 	<!-- <li><a href="#update-list">LD Entity Update Queue</a></li> -->
@@ -102,14 +99,6 @@
 <script>
 
 
-dacura.widget.getTableInitStrings = function(cands){
-	if(typeof cands == "undefined"){
-		var init = <?=$dacura_server->getServiceSetting('ld_datatable_init_string', "{}");?>;
-	} else {
-		var init = <?=$dacura_server->getServiceSetting('updates_datatable_init_string', "{}");?>;
-	}
-	return init;
-}
 
 var entity_urls = [];
 var update_urls = [];
@@ -191,7 +180,7 @@ dacura.widget.drawEntityListTable = function(data){
 			window.location.href = entity_urls[this.id.substr(4)]
 	    }); 		
 		$('#ld-holder').show();	
-		$('#ld_table').dataTable(dacura.widget.getTableInitStrings());
+		$('#ld_table').dataTable(<?=$params['widget_datatable']?>);
 	}
 }
 
@@ -246,7 +235,7 @@ dacura.widget.drawUpdateListTable = function(data){
 $(function() {
 	dacura.system.init({"mode": "tool"});
 	dacura.widget.fetchentitylist(dacura.widget.drawEntityListTable, {resultbox: "#ld-msgs", errorbox: "#ld-msgs", busybox: "#ld-list"});
-	dacura.widget.fetchClasses(dacura.widget.drawEntityClassTable, {resultbox: "#create-msgs", errorbox: "#create-msgs", busybox: "#create-widget"});
+	dacura.widget.fetchClasses(dacura.widget.drawEntityClassTable, {resultbox: "#create-msgs", busybox: "#create-widget"});
 	//dacura.ld.fetchupdatelist(dacura.ld.drawUpdateListTable, {resultbox: "#update-msgs", errorbox: "#update-msgs", busybox: "#update-list"}); 
 	$('#ld-pane-list').show();
 	$("#tab-holder").tabs( {

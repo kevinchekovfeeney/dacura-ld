@@ -5,7 +5,7 @@ class CandidateService extends LdService {
 	
 	var $public_screens = array("test");
 	var $default_screen = "list";
-	var $protected_screens = array("list" => array("admin"), "view" => array("admin"));
+	var $protected_screens = array("list" => array("user"), "view" => array("user"));
 	
 
 	function getCreateStatusOptions(){
@@ -23,6 +23,12 @@ class CandidateService extends LdService {
 		if($this->screen == "list") return "list";
 		return "view";		
 	}
+
+	function init(){
+		parent::init();
+		$ldscript = $this->get_service_script_url("dacura.ld.js", "ld");
+		$this->included_scripts[] = $ldscript;
+	}
 	
 	function getParamsForScreen($screen, $dacura_server){
 		$params = array();
@@ -33,20 +39,14 @@ class CandidateService extends LdService {
 		$params['status_options'] = $this->getCreateStatusOptions();
 		$params['args'] = $this->getOptionalArgs();
 		$params["entity_type"] = "Candidate";
-		if($screen == "list"){
-			if($this->collection_id == "all"){
-				$params['show_collection'] = true;
-				$params['show_dataset'] = false;
-			}
-			else {
-				if($this->dataset_id == "all"){
-					$params['show_dataset'] = false;
-				}
-				$params["breadcrumbs"] = array(array(), array());
-			}
+		if($this->getCollectionID() != "all"){
+			$this->dacura_tables['candidate']['datatable_options']['aoColumns'][2] = array("bVisible" => false);
+			$this->dacura_tables['updates']['datatable_options']['aoColumns'][3] = array("bVisible" => false);
 		}
-		else {
-			$params["breadcrumbs"] = array(array(), array());
+		$params['candidate_datatable'] = $this->getDatatableSetting("candidate");
+		$params['update_datatable'] = $this->getDatatableSetting("updates");				
+		$params["breadcrumbs"] = array(array(), array());
+		if($screen == "view"){
 			if($this->args && $this->screen == 'update'){
 				$id = "update/".implode("/", $this->args);
 			}

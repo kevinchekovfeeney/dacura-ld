@@ -1,43 +1,9 @@
 <?php
 $settings = array(
-	"ld_datatable_init_string" => '{
-		"order": [4, "desc"],
-		"info": true,
-		"jQueryUI": true,
-		 "scrollX": true,
-	 	 "pageLength": 20,
-	     "lengthMenu": [ 10, 20, 50, 75, 100 ],
-		 "aoColumns": [
-            null,
-			null,
-			null,
-			null,
-			{"iDataSort": 5},
-          	{"bVisible": false},
-          	{"iDataSort": 7},
-          	{"bVisible": false}
-    	]
-	}',
-		
-	"updates_datatable_init_string" => '{
-		"order": [7, "desc"],
-		"info": true,
-		"jQueryUI": true,
-		 "scrollX": true,
-	 	 "pageLength": 20,
-	     "lengthMenu": [ 10, 20, 50, 75, 100 ],
-			"aoColumns": [
-          		null,
-			 	null,
-				null,
-				null,
-				null,
-				null,
-				{"iDataSort": 7},
-                {"bVisible": false},
-                {"iDataSort": 9},
-                {"bVisible": false}
-           ]
-
-	}'
-);
+	"tables" => array(
+		"widget" => array("datatable_options" => array(
+				"jQueryUI" => true, "scrollX" => false, "pageLength" => 20, "lengthMenu" => array(10, 20, 50, 75, 100),
+				"info" => true, "order" => array(8, "desc"),
+				"aoColumns" => array(null, null, null, array("bVisible" => false), null, null, array("iDataSort" => 7), array("bVisible" => false), array("iDataSort" => 9), array("bVisible" => false))))
+	
+));
