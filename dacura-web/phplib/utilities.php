@@ -42,7 +42,7 @@ function createRandomKey($length)
 	return substr($encodedBuffer, 0, $length);
 }
 
-function sendemail($headers, $recip, $subj, $text){
+function sendemail($recip, $subj, $text, $headers){
 	if(!$headers){
 		$headers = 'From: dacura@cs.tcd.ie' . "\r\n" .
 			'Reply-To: dacura@cs.tcd.ie' . "\r\n" .
