@@ -747,6 +747,7 @@ dacura.system.drawDacuraListingTable = function(key, obj, dtsettings, rowClick, 
 		ids[ids.length] = obj[i].id;
 		$("#" + key + ' tbody').append(html);
 	}
+	
 	if(typeof $.fn.dataTable != "undefined"){
 		if(typeof refresh == "undefined" || !refresh){
 			$('#' + key).addClass("display");

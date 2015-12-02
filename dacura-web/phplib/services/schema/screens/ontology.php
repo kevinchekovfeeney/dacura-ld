@@ -214,7 +214,7 @@ function validateOntologies(){
 	for (index = 0; index < deps.includes.length; ++index) {	
 		if($('#incont_' +  deps.includes[index]).is(":checked")){
 			onts.push(deps.includes[index]);
-		}
+		}	
 		else {
 			//alert(deps.includes[index] + " not included");
 		}

@@ -1,14 +1,3 @@
-<script src='<?=$service->url("js", "jquery.dataTables.js")?>'></script>
-<script src='<?=$service->url("js", "dataTables.jqueryui.js")?>'></script>
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
-
-<div id='version-header' class="dch">
-	<span class='vc version-title'></span>
-	<span class='vc version-created'></span>
-	<span class='vc version-replaced'></span>
-	<span class='vc version-details'></span>
-</div>	
-
 
 <div id='tab-holder'>
 	 <ul id="graph-pane-list" class="dch">
@@ -212,8 +201,8 @@ $(function() {
 	dacura.schema.lastUpdateObject = false;
 	dacura.schema.entity_type = "graph";
 	initDecorations();
-	dacura.system.init({"mode": "tool", "targets": { resultbox: '#import-msgs', errorbox: '#import-msgs', busybox: "#graph-imports", scrollto:'#import-msgs'}});
-	dacura.editor.init({"entity_type": "ontology", "targets": {resultbox: "#graph-msgs", errorbox: "#graph-msgs", busybox: "#graph-contents", scrollto: "#graph-msgs"},		
+	dacura.system.init({"mode": "tool"});
+	dacura.editor.init({"entity_type": "ontology", "targets": {resultbox: "#graph-msgs", busybox: "#graph-contents", scrollto: "#graph-msgs"},		
 		"args": <?=json_encode($params['args']);?>});
 	dacura.editor.getMetaEditHTML = function(meta){
 		$('#meta-edit-table').html("");
@@ -232,7 +221,7 @@ $(function() {
 	};
 	
 	var onw = function (obj){
-		dacura.editor.load("<?=$params['id']?>", dacura.schema.fetchGraph, dacura.schema.updateGraph, obj);
+		dacura.editor.load("<?=$params['id']?>", dacura.schema.fetch, dacura.schema.update, obj);
 		dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);	
 		dacura.schema.showGraph(obj);
 	    $('#graph-pane-list').show();
