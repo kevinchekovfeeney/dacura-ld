@@ -151,7 +151,7 @@ dacura.login.lost = function(){
 	ajs.data['login-email'] = uname;
 	var msgs = { "busy": "Requesting password reset...", "fail": "Password reset request failed"};
 	ajs.handleResult = function(obj, targets){
-		var msg = JSON.parse(jqXHR.responseText);
+		var msg = JSON.parse(obj);
 		dacura.login.showSuccessPage("Password Rest Process Initiated", msg);				
 	};
 	dacura.system.invoke(ajs, msgs, ltargets);
