@@ -621,7 +621,7 @@ dacura.system.removeModal = function(){
 
 dacura.system.refreshDacuraListingTable = function(key){
 	var drawLTable = function(obj){
-		dacura.system.drawDacuraListingTable(key, obj, dacura.system.pageListings[key].settings, dacura.system.pageListings[key].perRow, dacura.system.pageListings[key].rowClick, true);
+		dacura.system.drawDacuraListingTable(key, obj, dacura.system.pageListings[key].settings, dacura.system.pageListings[key].rowClick, dacura.system.pageListings[key].cellClick, true);
 	};
 	var screen = "#" + dacura.system.pageListings[key].screen;
 	var targets = {resultbox: screen + "-msgs", busybox: screen + "-contents"};
@@ -797,7 +797,7 @@ dacura.system.drawDacuraListingTable = function(key, obj, dtsettings, rowClick, 
 	    });*/
 	}
 	else {
-		$("#" + key + ' .dacura-listing-row').click(perRow); 
+		$("#" + key + ' .dacura-listing-row').click(rowClick); 
 	}
 	$('#' + key).show();
 }
@@ -864,7 +864,7 @@ dacura.system.init = function(options){
 	function initListings(listings){
 		for(var key in listings){
 			var drawLTable = function(obj, targets){
-				dacura.system.drawDacuraListingTable(targets.listingtable, obj, listings[targets.listingtable].settings, listings[targets.listingtable].perRow, listings[targets.listingtable].rowClick)
+				dacura.system.drawDacuraListingTable(targets.listingtable, obj, listings[targets.listingtable].settings, listings[targets.listingtable].rowClick, listings[targets.listingtable].cellClick)
 			}
 			var screen = "#" + listings[key].screen;
 			var targets = {listingtable: key, resultbox: screen + "-msgs", busybox: screen + "-contents"};
