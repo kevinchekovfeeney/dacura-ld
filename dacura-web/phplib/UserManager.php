@@ -196,7 +196,8 @@ class UserManager extends DacuraObject {
 				return $this->failure_result("Invalid email address: you must enter a working email address to receive account confirmation", 401);
 			}
 			//give them a randomly generated password - will need to change it when they accept the invite...
-			$nu = $this->addUser($email, "", "user". uniqid_base36(false), "pending");
+			//$nu = $this->addUser($email, "", "user". uniqid_base36(""), "pending");
+			$nu = $this->addUser($email, "", "user". "aligned", "pending");				
 			if($nu){
 				$role = $this->createUserRole($nu->id, $cid, $did, $role, 0);
 				if(!$role){
