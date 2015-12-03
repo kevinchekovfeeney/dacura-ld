@@ -221,7 +221,7 @@ class UsersDacuraServer extends DacuraServer {
 	
 	function inviteUser($user, $role, $message){
 		if($confirm_code = $this->userman->invite($user, $role, $this->cid(), $this->did())){
-			$address =  $this->durl()."system/login/invite/code/".$confirm_code;
+			$address =  $this->settings['install_url']."login/invite/code/".$confirm_code;
 			ob_start();
 			include_once("screens/invite_email.php");
 			$output = ob_get_contents();

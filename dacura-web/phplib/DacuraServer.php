@@ -173,7 +173,7 @@ class DacuraServer extends DacuraObject {
 	}
 	
 	function durl($ajax = false){
-		return ($ajax) ? $this->settings['install_url'] : $this->settings['ajaxurl'];
+		return (!$ajax) ? $this->settings['install_url'] : $this->settings['ajaxurl'];
 	}
 	
 	function sname(){

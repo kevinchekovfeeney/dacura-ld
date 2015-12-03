@@ -34,7 +34,7 @@ class LoginDacuraServer extends DacuraServer {
 	function register($u, $p){
 		$code = $this->userman->register($u, $p);
 		if($code){
-			$address =  $this->durl()."system/login/register/code/".$code;
+			$address =  $this->durl()."login/register/code/".$code;
 			$name = $u;
 			ob_start();
 			include_once("screens/register_email.php");
@@ -55,7 +55,7 @@ class LoginDacuraServer extends DacuraServer {
 	function lostpassword($u){
 		$code = $this->userman->requestResetPassword($u);
 		if($code){
-			$address =  $this->durl()."system/login/lost/code/".$code;
+			$address =  $this->durl()."login/lost/code/".$code;
 			$name = $u;
 			ob_start();
 			include_once("screens/lost_password_email.php");

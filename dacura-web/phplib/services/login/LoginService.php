@@ -5,7 +5,7 @@ include_once("LoginDacuraServer.php");
 class LoginService extends DacuraService {
 
 	var $default_screen = "login";
-	var $public_screens = array("login", "home", "register", "lost");
+	var $public_screens = array("login", "home", "register", "lost", "invite");
 	var $protected_screens = array("logout" => array("nobody", "any", "any"));
 	
 	function init(){
@@ -54,6 +54,16 @@ class LoginService extends DacuraService {
 				}
 				else {
 					$this->renderScreen("register_success", array("message" => "Good to have you on board ".$user->email));
+				}
+			}
+			elseif($this->screen == 'invite'){
+				$code = $this->args["code"];
+				$user = $lds->userman->confirmInvite($code);
+				if(!$user){
+					$this->renderScreen("error", array("title" => "Error in invitation confirmation", "message" => $lds->userman->errmsg));
+				}
+				else {
+					$this->renderScreen("invite_success", array("message" => "Good to have you on board ".$user->email));
 				}
 			}
 			elseif($this->screen == 'lost'){

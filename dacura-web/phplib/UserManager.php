@@ -261,6 +261,30 @@ class UserManager extends DacuraObject {
 		}
 		return false;
 	}
+
+	function confirmInvite($code){
+		$uid = $this->dbman->getConfirmCodeUid($code, "invite");
+		if(!$uid){
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+		}
+		//$this->dbman->updateUserState($uid, "new");
+		$du = $this->loadUser($uid);
+	
+		if(!$du){
+			return false;
+		}
+		if($du->status != "pending"){
+			return $this->failure_result("This invitation code is no longer valid", 401);
+		}
+		$du->setStatus("accept");
+		$du->recordAction("invite", "confirm_invite", true);
+		if($this->saveUser($du)){
+			return $du;
+		}
+		return false;
+	}
+	
+	
 	
 	function confirmRegistration($code){
 		$uid = $this->dbman->getConfirmCodeUid($code, "register");
