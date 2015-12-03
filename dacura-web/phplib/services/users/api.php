@@ -18,8 +18,8 @@
 if($dacura_server->userHasRole("admin", false, "all")){
 	getRoute()->get('/', 'listUsers');
 	getRoute()->post('/', 'createUser');	
-	getRoute()->post('/invite', 'inviteUsers');
 }
+getRoute()->post('/invite', 'inviteUsers');
 //we need to load stuff to check permissions for the below - done in the functions below
 getRoute()->get('/(\w+)', 'viewUser');
 getRoute()->post('/(\w+)', 'updateUser');

@@ -1,9 +1,5 @@
-<?php if($params['dt'] && true){?>
-	<script src='https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js'></script>
-	<script src='https://cdn.datatables.net/1.10.10/js/dataTables.jqueryui.min.js'></script>
-	<link rel="stylesheet" type="text/css" media="screen" href="https://cdn.datatables.net/1.10.10/css/dataTables.jqueryui.min.css" />
-<?php } else if($params['dt'] && false) {?>
-	<script src='<?=$service->url("js", "jquery.dataTables.js")?>'></script>
+<?php if($params['dt']) {?>
+	<script src='<?=$service->url("js", "jquery.dataTables.min.js")?>'></script>
 	<script src='<?=$service->url("js", "dataTables.jqueryui.js")?>'></script>
 	<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
 <?php } if($params['jsoned']){?>
