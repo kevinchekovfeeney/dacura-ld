@@ -197,7 +197,7 @@ class UserManager extends DacuraObject {
 			}
 			//give them a randomly generated password - will need to change it when they accept the invite...
 			//$nu = $this->addUser($email, "", "user". uniqid_base36(""), "pending");
-			$nu = $this->addUser($email, "", "user". "aligned", "pending");				
+			$nu = $this->addUser($email, "", "aligned", "pending");				
 			if($nu){
 				$role = $this->createUserRole($nu->id, $cid, $did, $role, 0);
 				if(!$role){

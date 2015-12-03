@@ -39,7 +39,7 @@ class BrowseService extends DacuraService {
 			"help" => "Import data into your dataset from elsewhere"								
 		),
 		"candidate" => array(
-			"role" => array("user"),
+			"role" => array("admin"),
 			"title" => "data",
 			"help" => "View and update the data in your dataset."								
 		),
