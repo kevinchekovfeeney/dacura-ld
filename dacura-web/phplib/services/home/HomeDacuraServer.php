@@ -1,28 +1,32 @@
 <?php
-
-/*
+/**
+ * A service that redirects a user to their appropriate home page
  *
- * Created By: Chekov
  * Creation Date: 20/11/2014
- * Contributors: Chekov
- * Modifications: 20/11/2014 - 07/12/2014
- * Licence: GPL v2
+ *
+ * @package home
+ * @author chekov
+ * @license GPL v2
  */
-
-
-
 class HomeDacuraServer extends DacuraServer {
-	
+
+	/**
+	 * Always returns true
+	 * 
+	 * non-logged in users are redirected to login, everybody else is sent to the collection home page
+	 */
 	function userHasViewPagePermission(){
 		return true;
 	}
 	
-	function getUserHomeService(){
-		$u = $this->getUser(0);
-		if($u){
-			return "browse";
-		}
-		return "login";	
+	/**
+	 * Different users might have different services that are their home pages
+	 * 
+	 * Currently everybody goes to the browse service
+	 * @return string the name of the service to load as the user's home page
+	 */
+	function getUserHomeService($s = "browse"){
+		return $s;
 	}	
 }
 

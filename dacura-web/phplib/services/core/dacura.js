@@ -1,58 +1,252 @@
-/*
- * Basic defaults...
+/** 
+ * @file The core dacura javascript library
+ * @author Chekov
+ * @license GPL V2
  */
 
-
-/*
- * Get the current string representing the collection/dataset/servicename context
- * A basic where am I for building links
+/**
+ * @namespace dacura
+ * @summary dacura
+ * @description The basic dacura namespace for javascript functions
  */
 
-dacura.system.getcds = function(c, d, s){
+ /** 
+ * @namespace system 
+ * @memberof dacura
+ * @summary dacura.system
+ * @description Dacura core javascript module. Everything is defined within the dacura.system object
+ */
+
+/**
+ * @typedef DacuraAPIConfig
+ * @type {Object}
+ * @property {beforeSend} [beforeSend=show busy overlay] - will be called immediately before the api call is invoked
+ * @property {always} [always=clear busy message and optionally scroll to result]- will be called always upon api invocation
+ * @property {handleResult} [handleResult=show a success message to the user]- called when an api invocation returns ok with a json payload
+ * @property {handleTextResult} [handleTextResult=show an error message to the user]- called when an api invocation returns ok but without a valid json payload
+ * can be overriden to allow simple text responses for simple api functions
+ * @property {handleJSONError} [handleJSONError=shows a structured json error message]- called when an api invocation returns an error code with a valid json message body
+ * @property {fail} [fail=calls either handleError or handleJSONerror depending on the content] - this should only be overriden when you want to throw away 
+ * most of the normal behaviour of invoke.  If you override this, handleJSONError will not be invoked automatically
+ * @property {done} [done=calls handleResult or handleTextResult, if the result cannot be json-parsed] called upon successful 
+ * termination of an invocation.  If you override this, handleResult and handleTextResult will not be called automatically
+ */
+
+/**
+ * @typedef DacuraPageConfig
+ * @type {Object}
+ * @property {string} [resultbox=dacura.system.resultbox] - the jquery selector of the div where the result will be written
+ * @property {string} [busybox=dacura.system.busybox] - the jquery selector of the div that will be blanked out while the invocation is in progress
+ * @property {string} [scrollTo=false] - the jquery selector of the div that will be scrolled to when the result returns (should be either resultbox or false for no scroll)
+ * @property {always_callback} [always_callback=void] - called as part of always - regular always will be called and then this callback  
+ * @property {ResultMessageConfig} [mopts] - configuration object for result message
+ * @property {BusyMessageConfig} [bopts] - configuration object for busy message
+ */
+
+/**
+ * @typedef DacuraMessagesConfig
+ * @type {Object}
+ * @property {string} [busy=dacura.system.msgs.busy] - message to write to screen while the system is busy
+ * @property {string} [fail=dacura.system.msgs.fail] - message to write if a call fails
+ * @property {string} [success=dacura.system.msgs.success] - message to write if a call succeeds
+ * @property {string} [nodata=dacura.system.msgs.nodata] - message to write if a call returns no data
+ * @property {string} [notjson=dacura.system.msgs.notjson] - message to write if a call returns data which is not in json format
+ */
+
+/** 
+ * @typedef BusyMessageConfig
+ * @type {Object}
+ * @property {string} [busyclass="medium"] - css class that will apply to progress bar container (small|medium)
+ * @property {string} [loaderclass="indeterminate-busy"] - the class that will be applied to the progress bar 
+ * @property {Object} [loaderoptions={value:false}] - the options array that will be passed to the jqueryui progressbar initialisation
+ */
+
+/** 
+ * @typedef ResultMessageConfig
+ * @type {Object}
+ * @property {Boolean} [icon=true] - should an icon be shown in the message header
+ * @property {Boolean} [closeable=true] - should an icon be shown with a link for dismissing the message
+ */
+
+/**
+ * @typedef HelpMessageConfig 
+ * @type {Object}
+ * @property {Boolean} [icon=true] - show a help icon with the message?
+ */
+
+/**
+ * @callback beforeSend 
+ */
+
+/**
+ * @callback always 
+ * @param data_or_jqXHR
+ * @param {string} textStatus - status that comes back from API call
+ * @param jqXHR_or_errorThrown
+ */
+
+/**
+ * @callback always_callback
+ * @param {DacuraPageConfig} targets - the configuration for the invocation - where should results be written to?
+ */
+
+/**
+ * @callback handleResult
+ * @param {Object} json - the object returned by the API call
+ * @param {DacuraPageConfig} targets - the configuration for the invocation - where should results be written to?
+ */
+
+/**
+ * @callback handleTextResult
+ * @param {string} text - the object returned by the API call
+ * @param {DacuraPageConfig} targets - the configuration for the invocation - where should results be written to?
+ */
+
+/**
+ * @callback handleJSONError
+ * @param {Object} json - the object returned by the API call
+ * @param {DacuraPageConfig} targets - the configuration for the invocation - where should results be written to?
+ * @param {string} textStatus - status that comes back from API call
+ */
+
+/**
+ * @callback fail
+ * @param {Object} jqXHR - Jquery XHR object from API call
+ * @param {string} textStatus - status that comes back from API call
+ * @param errorThrown - the error thrown 
+ */
+
+/**
+ * @callback done
+ * @param {string} data - data that comes back from API call
+ * @param {string} textStatus - status that comes back from API call
+ * @param {Object} jqXHR - Jquery XHR object from API call
+ */
+
+/**
+ * @function cid
+ * @memberof dacura.system
+ * @summary returns the current collection context
+ * @return {string} collection id
+ */
+dacura.system.cid = function(){
+	return dacura.system.pagecontext.collection_id;
+}
+
+/**
+ *  @function getcds
+ *  @memberof dacura.system
+ *  @summary Get the current string representing the collection & servicename context. A basic "where am I" for building links
+ *  @param {string} [s=current service] - The service name .
+ *  @param {string} [c=current collection] - The collection id.
+ */
+dacura.system.getcds = function(s, c){
 	if(typeof c == "undefined"){
 		c = dacura.system.pagecontext.collection_id;
 	}
 	if(typeof s == "undefined"){
 		s = dacura.system.pagecontext.service;
 	}
-	if(typeof d == "undefined"){
-		d = dacura.system.pagecontext.dataset_id;
-	}
 	if(c == "" || c == "all"){
 		return s;
 	}
-	if(d == "" || d == "all"){
-		return c + "/" + s;
+	return c + "/" + s;
+};
+
+/**
+ *  @function apiURL
+ *  @memberof dacura.system
+ *  @summary get the url of the current services API (for the given collection context)
+ *  @param {string} [s=current service] - The service name .
+ *  @param {string} [c=current collection] - The collection id.
+ */
+dacura.system.apiURL = function(s, c){
+	return dacura.system.ajax_url + this.getcds(s, c);
+};
+
+/**
+ * @function pageURL
+ * @memberof dacura.system
+ * @summary get the url of a dacura service page (not api)
+ * @param {string} [s=current service] - The service name .
+ * @param {string} [c=current collection] - The collection id.
+ */
+dacura.system.pageURL = function(s, c){
+	return dacura.system.install_url + this.getcds(s, c);
+};
+
+/**
+ * @function switchContext
+ * @memberof dacura.system
+ * @summary switch from the current context to another one
+ * @param {string} c - The collection id.
+ * @param {string} [s=current service] - The service name .
+ */
+dacura.system.switchContext = function(c, s){
+	if(typeof s == "undefined"){
+		s = dacura.system.pagecontext.service;
 	}
-	return c + "/" + d + "/" + s;	
+	window.location.href = this.pageURL(s, c);
 };
 
-//wrappers for more context finding stuff
-
-dacura.system.apiURL = function(c, d, s){
-	return dacura.system.ajax_url + this.getcds(c, d, s);
-};
-
-dacura.system.serviceApiURL = function(s){
-	c = dacura.system.pagecontext.collection_id;
-	d = dacura.system.pagecontext.dataset_id;
-	return dacura.system.install_url + this.getcds(c, d, s);
+/**
+ * @function selects
+ * @memberof dacura.system
+ * @summary dacura.system.selects
+ * @description applies a selectmenu configuration to all html selects with the css class dacura-select
+ */
+dacura.system.selects = function(){
+	$('select.dacura-select').selectmenu({"width": "200"});
 }
 
-dacura.system.pageURL = function(c, d, s){
-	return dacura.system.install_url + this.getcds(c, d, s);
-};
+dacura.system.refreshselects = function(){
+	$('select.dacura-select').selectmenu("refresh");
+}
 
-dacura.system.switchContext = function(c, d){
-	window.location.href = this.pageURL(c, d, dacura.system.pagecontext.service);
-};
+/**
+ * @function styleJSONLD
+ * @memberof dacura.system
+ * @summary dacura.system.styleJSONLD
+ * @description apply a visual style to json ld elements in tables 
+ * Shows the full json in the title attribute
+ * and shows an abbreviated version in the regular html
+ * @param {string} [jqid=.rawjson] - the jquery id of the element to be styled 
+ */
+dacura.system.styleJSONLD = function(jqid) {
+	if(typeof jqid == "undefined"){
+		jqid = ".rawjson";
+	}
+	$(jqid).each(function(){
+	    var text = $(this).html();
+	    if(text){
+	    	if(text.length > 50){
+	    		presentation = text.substring(0, 50) + "...";
+	    	}
+	    	else {
+	    		presentation = text;
+	    	}
+		    $(this).html(presentation);
+	    	try {
+	    		var t = JSON.parse(text);
+	    		if(t){
+	    			t = JSON.stringify(t, 0, 4);
+	    		    $(this).attr("title", t);
+	    		}
+	    	}
+	    	catch (e){
+    		    $(this).attr("title", "Failure: " + e.message);	    		
+	    	}
+	    }
+	});
+}
 
-/*
- * Initialisiation functions telling dacura where to write the different types of messages to
- * Result messages are typically used for reporting results of API interactions, especially updates 
- * Error messages are typically used for reporting random errors in page processing
- * In most cases they are the same thing
+/**
+ * @function getTargets
+ * @memberof dacura.system
+ * @summary Initialisiation functions telling dacura where to write the different types of messages to
+ * @description Result messages are typically used for reporting results of API interactions, especially updates 
  * Busy messages are use for blanking out the screen while the system is busy and doesn't want any more calls
+ * @param {DacuraPageConfig} [targets=dacura.system.targets] - the configuration for the invocation - where should results be written to?
  */
 dacura.system.getTargets = function (targets){
 	if(typeof targets == "undefined"){
@@ -67,8 +261,12 @@ dacura.system.getTargets = function (targets){
 	return targets;
 }
 
-/*
- * Default messages that dacura prints for the various classes of messages
+/**
+ * @function getMessages
+ * @memberof dacura.system
+ * @description Get the set of messages that dacura prints for the various classes of messages
+ * calculated by combining the passed messages with dacura's default
+ * @param {DacuraMessagesConfig} [msgs=dacura.system.msgs] - the specific messages for this invocation
  */
 dacura.system.getMessages = function(msgs){
 	if(typeof msgs == "undefined"){
@@ -92,47 +290,101 @@ dacura.system.getMessages = function(msgs){
 	return msgs;
 }
 
-dacura.system.showSuccessResult = function(msg, extra, title, jqid){
+/**
+ * @function showSuccessResult
+ * @memberof dacura.system
+ * @summary Display a success message for the user after a successful invocation of the api
+ * @param {string} msg - the body of the message
+ * @param {string} [title=dacura.system.msgs.success] - the title to appear on the result message
+ * @param {string} [jqid=dacura.system.targets.resultbox] - the jquery selector of the div where the result will be written
+ * @param {Object} [extra] - a object containing extra details of the result
+ * @param {ResultMessageConfig} [opts] - an options object containing options about the message
+ */
+dacura.system.showSuccessResult = function(msg, title, jqid, extra, opts){
 	if(typeof title == "undefined" || title == ""){
 		title = dacura.system.msgs.success;
 	}
 	if(typeof jqid == "undefined" || jqid == ""){
 		jqid = dacura.system.targets.resultbox;
 	}
-	dacura.system.writeResultMessage("success", title, jqid, msg, extra);	
+	dacura.system.writeResultMessage("success", title, jqid, msg, extra, opts);	
 }
 
-dacura.system.showInfoResult = function(msg, extra, title, jqid){
+/**
+ * @function showInfoResult
+ * @memberof dacura.system
+ * @summary Display a informational message for the user after an invocation of the api
+ * @param {string} msg - the body of the message
+ * @param {string} [title=dacura.system.msgs.info] - the title to appear on the result message
+ * @param {string} [jqid=dacura.system.targets.resultbox] - the jquery selector of the div where the result will be written
+ * @param {Object} [extra] - a object containing extra details of the result
+ * @param {ResultMessageConfig} [opts] - an options object containing options about the message
+ */
+dacura.system.showInfoResult = function(msg, title, jqid, extra, opts){
 	if(typeof title == "undefined" || title == ""){
 		title = dacura.system.msgs.info;
 	}
 	if(typeof jqid == "undefined" || jqid == ""){
 		jqid = dacura.system.targets.resultbox;
 	}
-	dacura.system.writeResultMessage("info",  title, jqid, msg, extra);
+	dacura.system.writeResultMessage("info",  title, jqid, msg, extra, opts);
 }
 
-dacura.system.showWarningResult = function(msg, extra, title, jqid){
+/**
+ * @function showWarningResult
+ * @memberof dacura.system
+ * @summary Display a warning message for the user after an invocation of the api
+ * @param {string} msg - the body of the message
+ * @param {string} [title=dacura.system.msgs.warning] - the title to appear on the result message
+ * @param {string} [jqid=dacura.system.targets.resultbox] - the jquery selector of the div where the result will be written
+ * @param {Object} [extra] - a object containing extra details of the result
+ * @param {ResultMessageConfig} [opts] - an options object containing options about the message
+ */
+dacura.system.showWarningResult = function(msg, title, jqid, extra, opts){
 	if(typeof title == "undefined" || title == ""){
 		title = dacura.system.msgs.warning;
 	}
 	if(typeof jqid == "undefined" || jqid == ""){
 		jqid = dacura.system.targets.resultbox;
 	}
-	dacura.system.writeResultMessage("warning", title, jqid, msg, extra);
+	dacura.system.writeResultMessage("warning", title, jqid, msg, extra, opts);
 }
 
-dacura.system.showErrorResult = function(msg, extra, title, jqid){
+/**
+ * @function showErrorResult
+ * @memberof dacura.system
+ * @summary Display an error / failure message for the user after an invocation of the api
+ * @param {string} msg - the body of the message
+ * @param {string} [title=dacura.system.msgs.fail] - the title to appear on the result message
+ * @param {string} [jqid=dacura.system.targets.resultbox] - the jquery selector of the div where the result will be written
+ * @param {Object} [extra] - a object containing extra details of the result
+ * @param {ResultMessageConfig} [opts] - an options object containing options about the message
+ */
+dacura.system.showErrorResult = function(msg, title, jqid, extra, opts){
 	if(typeof title == "undefined" || title == ""){
 		title = dacura.system.msgs.fail;
 	}
 	if(typeof jqid == "undefined" || jqid == ""){
 		jqid = dacura.system.targets.resultbox;
 	}
-	dacura.system.writeResultMessage("error", title, jqid, msg, extra);
+	dacura.system.writeResultMessage("error", title, jqid, msg, extra, opts);
 }
 
-dacura.system.showJSONErrorResult = function(json, jqid, tit){
+/**
+ * @function showJSONErrorResult
+ * @memberof dacura.system
+ * @summary Display an error / failure message for the user after an invocation of the api 
+ * @description when a dacura api calls returns a http error code and a json encoded body, this function is called. 
+ * It is most especially used by the linked data api where error results often contain complex information
+ * @param {Object} json - The object returned in the body of the response
+ * @param {string} json.action - The action that was invoked at the API 
+ * @param {string} [json.msg_title] - The msg title from the response
+ * @param {string} [json.msg_body] - The msg body from the response
+ * @param {string} [jqid=dacura.system.targets.resultbox] - the jquery selector of the div where the result will be written
+ * @param {string} [tit=dacura.system.msgs.fail] - the title to appear on the result message
+ * @param {ResultMessageConfig} [opts] - an options object containing options about the message
+ */
+dacura.system.showJSONErrorResult = function(json, jqid, tit, opts){
 	var tit = "";
 	var body = "";
 	if(typeof tit != "undefined"){
@@ -152,109 +404,36 @@ dacura.system.showJSONErrorResult = function(json, jqid, tit){
 	else {
 		body = "JSON Error message returned";
 	}
-	dacura.system.showErrorResult(body, json, tit, jqid);
+	dacura.system.showErrorResult(body, tit, jqid, json, opts);
 }
 
-dacura.system.writeHelpMessage = function (cnt, jqid){
-	var html = "<div class='dacura-user-message-box dacura-help'><span class='result-icon result-info'>" + dacura.system.resulticons["info"] + "</span>" + cnt + "</div>";
-	$(jqid).html(html);
-}
-
-dacura.system.showErrorMessage = dacura.system.showErrorResult;
-dacura.system.showInfoMessage = dacura.system.showInfoResult
-/*
- * 
- * Two types of busy messages - one creates an overlay on the screen and loads a loading bar
- * It is used for when we want to stop any further user actions during an ajax call - prevent multi-clicking killing us
- * The other creates a spinner type of thing within a particular box
+/**
+ * @function writeResultMessage
+ * @memberof dacura.system
+ * @summary Underlying function that actually does the work of writing the message to the dom  
+ * @param {string} type - the type of the result (error, success, warning, info)
+ * @param {string} title - the title to appear at the top of the message box
+ * @param {string} jqueryid - the jquery selector of the div where the result will be written
+ * @param {string} [msg] - the message to appear in the body of the message box
+ * @param {Object} [extra] - a object containing extra details of the result
+ * @param {ResultMessageConfig} [opts] - an options object containing options about the message 
  */
-dacura.system.showBusyMessage = function(msg, uopts, jqid){
-	if(typeof jqid == "undefined"){
-		if(typeof msg == "undefined" || msg == ""){
-			msg = dacura.system.msgs.busy;
-		}
-		if(typeof uopts == "undefined"){
-			uopts = {};
-		}
-		uopts.busyclass = dacura.system.busyclass;
-		dacura.system.showBusyOverlay(dacura.system.targets.busybox, msg, uopts);
+dacura.system.writeResultMessage = function(type, title, jqueryid, msg, extra, opts){
+	if(typeof opts == "undefined"){
+		opts = {"icon" : true, "closeable": false};
 	}
-	else {
-		dacura.system.showBusyOverlay(jqid, msg);
-	}
-}
-
-dacura.system.updateBusyMessage = function(msg, uopts, jqid){
-	if(typeof jqid == "undefined"){
-		$('.dacura-busy-message').html(msg);
-	}
-	else {
-		$(jqid).html(msg);
-	}
-}
-
-/* 
- * Busy messages which black out a panel and place a load icon instead.
- */
-
-dacura.system.showBusyOverlay = function(jqueryid, msg, uopts){
-	var makeweight = true;
-	var busyclass="medium";
-	if(typeof uopts != "undefined" && typeof uopts.busyclass != undefined && uopts.busyclass){
-		busyclass = uopts.busyclass;
-	}
-	var loaderclass = "indeterminate-busy";
-	if(typeof uopts != "undefined" && typeof uopts.loaderclass != undefined && uopts.loaderclass){
-		loaderclass = uopts.loaderclass;
-	}
-	var loaderoptions = {value: false};
-	if(typeof uopts != "undefined" && typeof uopts.loaderoptions != undefined){
-		//loaderoptions = uopts.loaderoptions;
-	}
-	$(jqueryid + ' .busy-overlay').remove();
-	$("<div class='busy-overlay'/>").css({
-	    position: "absolute",
-	    width: "100%",
-	    height: "100%",
-	    left: 0,
-	    top: 0,
-	    zIndex: 1000000,  // to be on the safe side
-		background: "rgba(255, 255, 255, .8)"
-	}).appendTo($(jqueryid).css("position", "relative"));
-	
-	var html = "<div class='progress-container " + busyclass + "'><div class='" + loaderclass + "'></div></div>";
-	html += "<div class='dacura-busy-message'>"+ msg + "</div></div>"; 
-	$(jqueryid + ' .busy-overlay').html(html);
-	if($(jqueryid).height() < 100){
-		$(jqueryid).css("min-height", "100px");
-	}
-	$(jqueryid + ' .'+loaderclass).progressbar(loaderoptions);
-};
-
-/*
- * Write functions are the ones that produce the html - the show functions do the state management on top
- */
-
-/*
- * These might be made different - currently just copies of the above
- */
-dacura.system.writeErrorMessage = function(title, jqid, msg, extra){
-	dacura.system.writeResultMessage("error", title, jqid, msg, extra);
-}
-
-dacura.system.writeWarningMessage = function(title, jqid, msg, extra){
-	dacura.system.writeResultMessage("warning", title, jqid, msg, extra);	
-}	
-
-dacura.system.writeInfoMessage = function(title, jqid, msg, extra){
-	dacura.system.writeResultMessage("info", title, jqid, msg, extra);	
-}	
-
-dacura.system.writeResultMessage = function(type, title, jqueryid, msg, extra){
 	var self = dacura.system;
 	var cls = "dacura-" + type;
-	var contents = "<div class='mtitle'><span class='result-icon result-" + type + "'>" + self.resulticons[type] + "</span>"+ title + "<span title='remove this message' class='user-message-close ui-icon-close ui-icon'></span></div>";
-	if(typeof msg != "undefined"){
+	var contents = "<div class='mtitle'>";
+	if(typeof opts.icon != "undefined" && opts.icon){
+		contents += "<span class='result-icon result-" + type + "'>" + self.resulticons[type] + "</span>";
+	}
+	contents += title;
+	if(typeof opts.closeable != "undefined" && opts.closeable){
+		contents += "<span title='remove this message' class='user-message-close ui-icon-close ui-icon'></span>";
+	}
+	contents += "</div>";	
+	if(typeof msg != "undefined" && msg){
 		contents += "<div class='mbody'>" + msg + "</div>";
 	}
 	if(typeof extra != "undefined" && extra){
@@ -287,24 +466,143 @@ dacura.system.writeResultMessage = function(type, title, jqueryid, msg, extra){
 		    }
 		});
 	}
-	else {
-		
+	else {		
 		$(jqueryid).html("<div class='dacura-user-message-box " + cls + "'>" + contents + "</div>");
 	}
-	$('.user-message-close').click(function(){
-		$(jqueryid).html("");
-	})
+	if(typeof opts.closeable != "undefined" && opts.closeable){
+		$('.user-message-close').click(function(){
+			$(jqueryid).html("");
+		})
+	}
+	if(typeof opts.scrollTo == "boolean" && opts.scrollTo){
+		dacura.system.goTo(jqueryid);
+	}
 	$(jqueryid).show();
 };
 
-/*
- * Clearing the various messages
+
+/**
+ * @function showBusyMessage
+ * @memberof dacura.system
+ * @summary overlays a busy message over a part of the screen
+ * @description It is used for when we want to stop any further user actions during an ajax call - prevent multi-clicking killing us
+ * @param {string} [msg=dacura.system.msgs.busy] - the message to appear on top of the busy overlay
+ * @param {string} [jqid=dacura.system.targets.busybox] - the jquery selector of the div where the result will be written
+ * @param {BusyMessageConfig} [uopts] - an options object containing options about the message 
  */
-dacura.system.clearMessages = function(){
-	dacura.system.clearResultMessage();
-	dacura.system.clearBusyMessage();
+dacura.system.showBusyMessage = function(msg, jqid, uopts){
+	if(typeof jqid == "undefined"){
+		jqid = dacura.system.targets.busybox; 
+	}
+	if(typeof msg == "undefined" || msg == ""){
+		msg = dacura.system.msgs.busy;
+	}
+	if(typeof uopts == "undefined"){
+		uopts = {busyclass : "medium"};
+	}
+	dacura.system.showBusyOverlay(jqid, msg, uopts);
 }
 
+/**
+ * @function showBusyOverlay
+ * @memberof dacura.system
+ * @summary Overlays a busy message on the screen
+ * @param {string} jqueryid - the jquery selector of the div where the result will be written
+ * @param {string} msg - the message to appear in the body of the message box
+ * @param {BusyMessageConfig} uopts - an options object containing options about the message 
+ */
+dacura.system.showBusyOverlay = function(jqueryid, msg, uopts){
+	var busyclass="medium";
+	if(typeof uopts.busyclass != undefined && uopts.busyclass){
+		busyclass = uopts.busyclass;
+	}
+	var loaderclass = "indeterminate-busy";
+	if(typeof uopts.loaderclass != undefined && uopts.loaderclass){
+		loaderclass = uopts.loaderclass;
+	}
+	var loaderoptions = {value: false};
+	if(typeof uopts.loaderoptions != undefined && uopts.loaderoptions){
+		loaderoptions = uopts.loaderoptions;
+	}
+	$(jqueryid + ' .busy-overlay').remove();
+	$("<div class='busy-overlay'/>").css({
+	    position: "absolute",
+	    width: "100%",
+	    height: "100%",
+	    left: 0,
+	    top: 0,
+	    zIndex: 1000000,  // to be on the safe side
+		background: "rgba(255, 255, 255, .8)"
+	}).appendTo($(jqueryid).css("position", "relative"));
+	
+	var html = "<div class='progress-container " + busyclass + "'><div class='" + loaderclass + "'></div></div>";
+	html += "<div class='dacura-busy-message'>"+ msg + "</div></div>"; 
+	$(jqueryid + ' .busy-overlay').html(html);
+	if($(jqueryid).height() < 100){
+		$(jqueryid).css("min-height", "100px");
+	}
+	$(jqueryid + ' .'+loaderclass).progressbar(loaderoptions);
+};
+
+/**
+ * @function updateBusyMessage
+ * @memberof dacura.system
+ * @summary updates the busy message after it has been launced
+ * @description It is used for comet calls when the server communicates multiple messages to us in the course of a single invocation
+ * @param {string} msg - the message to appear on top of the busy overlay
+ * @param {string} [jqid='.dacura-busy-message'] - the jquery selector of the div where the result will be written
+ */
+dacura.system.updateBusyMessage = function(msg, jqid){
+	if(typeof jqid == "undefined"){
+		$('.dacura-busy-message').html(msg);
+	}
+	else {
+		$(jqid).html(msg);
+	}
+}
+
+/**
+ * @function writeHelpMessage
+ * @memberof dacura.system
+ * @summary writes a help message 
+ * @description Used for drawing dacura forms
+ * @param {string} cnt - the help message 
+ * @param {string} jqid - the jquery selector of the div where the message will be written
+ * @param {HelpMessageConfig} [opts={"icon": true}] - an options object containing options about the message 
+
+ */
+dacura.system.writeHelpMessage = function (cnt, jqid, opts){
+	if(typeof opts == "undefined"){
+		opts = {"icon": true};
+	}
+	var html = "<div class='dacura-user-message-box dacura-help'>";
+	if(typeof opts.icon != "undefined" && opts.icon){
+		html += "<span class='result-icon result-info'>" + dacura.system.resulticons["info"] + "</span>";
+	}
+	html += cnt + "</div>";
+	$(jqid).html(html);
+}
+
+/* Clearing the various messages */
+
+/**
+ * @function clearMessages
+ * @memberof dacura.system
+ * @summary clears messages from resultbox and busybox
+ * @param {string} [rjqid=dacura.system.targets.resultbox] - the jquery selector of the div where results are written
+ * @param {string} [bjqid=".busy-overlay"] - the jquery selector of the div where busy messages are written
+ */
+dacura.system.clearMessages = function(rjqid, bjqid){
+	dacura.system.clearResultMessage(rjqid);
+	dacura.system.clearBusyMessage(bjqid);
+}
+
+/**
+ * @function clearResultMessage
+ * @memberof dacura.system
+ * @summary clears messages from resultbox
+ * @param {string} [jqid=dacura.system.targets.resultbox] - the jquery selector of the div where results are written
+ */
 dacura.system.clearResultMessage = function(jqid){
 	if(typeof jqid == "undefined" || jqid == ""){
 		jqid = dacura.system.targets.resultbox;
@@ -312,11 +610,22 @@ dacura.system.clearResultMessage = function(jqid){
 	$(jqid).html("");	
 }
 
+/**
+ * @function clearBusyMessage
+ * @memberof dacura.system
+ * @summary clears messages busybox
+ * @param {string} [jqid=".busy-overlay"] - the jquery selector of the div where busy messages are written
+ */
 dacura.system.clearBusyMessage = function(jqid){
-	//alert("clear busy " +  jqid);
 	dacura.system.removeBusyOverlay(jqid);
 }
 
+/**
+ * @function removeBusyOverlay
+ * @memberof dacura.system
+ * @summary removes busy overlay
+ * @param {string} [jqid=".busy-overlay"] - the jquery selector of the div where busy messages are written
+ */
 dacura.system.removeBusyOverlay = function(jqid){
 	if(typeof jqid == "undefined"){
 		$(".busy-overlay").remove();
@@ -327,10 +636,13 @@ dacura.system.removeBusyOverlay = function(jqid){
 	}
 };
 
-/*
- * Switches the calling panel to full-window mode
- */	
-
+/**
+ * @function goFullBrowser
+ * @memberof dacura.system
+ * @summary Switches the calling panel to full-window mode 
+ * @description used to allow full page editing
+ * @param {string} [jqid=dacura.system.targets.busybox] - the jquery selector of the div that will go full screen
+ */
 dacura.system.goFullBrowser = function(jqid){
 	if(typeof jqid == "undefined"){
 		jqid = dacura.system.targets.busybox;
@@ -350,6 +662,13 @@ dacura.system.goFullBrowser = function(jqid){
 	this.goTo("#full-browser-overlay");
 }
 
+/**
+ * @function leaveFullBrowser
+ * @memberof dacura.system
+ * @summary Switches the calling panel from full-window mode back to normal mode
+ * @description used to end full page editing
+ * @param {string} [jqid=dacura.system.targets.busybox] - the jquery selector of the div that was full screen
+ */
 dacura.system.leaveFullBrowser = function(jqid){
 	if(typeof jqid == "undefined"){
 		jqid = dacura.system.targets.busybox;
@@ -361,6 +680,13 @@ dacura.system.leaveFullBrowser = function(jqid){
 	this.goTo(jqid);
 }
 
+/**
+ * @function goTo
+ * @memberof dacura.system
+ * @summary Moves the view panel to the specified box
+ * @description used to jump to the results
+ * @param {string} [jqid=dacura.system.targets.resultbox] - the jquery selector of the div to go to
+ */
 dacura.system.goTo = function (jqid){
 	if(typeof jqid == "undefined" || jqid == ""){
 		jqid = dacura.system.targets.resultbox;
@@ -372,12 +698,12 @@ dacura.system.goTo = function (jqid){
 	}
 };
 
-
-/*
- * The complicated stuff
- * Service calls and their callbacks for accessing the Dacura APIs
+/**
+ * @function default_update
+ * @memberof dacura.system
+ * @summary Default handler for messages from the server when onmessage has not been defined
+ * @param {Object} msgs - an array of messages for the user
  */
-
 dacura.system.default_update = function(msgs){
 	if(typeof msgs == "object"){
 		for(var i = 0; i < msgs.length; i++){
@@ -388,7 +714,18 @@ dacura.system.default_update = function(msgs){
 }
 
 
-
+/**
+ * @function invoke
+ * @memberof dacura.system
+ * @summary the single function for accessing the dacura API
+ * @description this is the central service offered by the dacura javascript api. 
+ * Calling programs define various callbacks and then pass them to this function 
+ * which takes care of all of the plumbing in terms of communicating with the server
+ * In the majority of cases the default event handlers will do, otherwise, they can be provided
+ * @param {DacuraAPIConfig} ajs - the dacura api configuration object which provides callbacks
+ * @param {DacuraMessagesConfig} [msgs] - the messages that will be shown to the user in the course of the api invocation
+ * @param {DacuraPageConfig} [ctargets] - the messaging configuration for this invocation
+ */
 dacura.system.invoke = function(ajs, cmsgs, ctargets){
 	if(typeof ajs == "undefined"){
 		return alert("Dacura Service Invoked with no arguments - coding error!");
@@ -399,7 +736,7 @@ dacura.system.invoke = function(ajs, cmsgs, ctargets){
 	if(typeof ajs.beforeSend == "undefined"){
 		var bb = targets.busybox;
 		ajs.beforeSend = function(){
-			self.showBusyMessage(msgs.busy, "", bb);
+			self.showBusyMessage(msgs.busy, bb, targets.bopts);
 		};	
 	}
 	if(typeof ajs.always == "undefined"){
@@ -423,8 +760,8 @@ dacura.system.invoke = function(ajs, cmsgs, ctargets){
 		}
 	}
 	if(typeof ajs.handleTextResult == "undefined" ){
-		ajs.handleTextResult = function(text){ 
-			self.showErrorResult(text, null, msgs.notjson, targets.resultbox);
+		ajs.handleTextResult = function(text, targets){ 
+			self.showErrorResult(text, msgs.notjson, targets.resultbox, false, targets.mopts);
 		}
 	}
 	if(typeof ajs.handleJSONError == "undefined" ){
@@ -439,12 +776,12 @@ dacura.system.invoke = function(ajs, cmsgs, ctargets){
 					jsonerror = JSON.parse(jqXHR.responseText);
 				}
 				catch(e){
-					return dacura.system.showErrorResult(jqXHR.responseText, null, msgs.fail, targets.resultbox);										
+					return dacura.system.showErrorResult(jqXHR.responseText, msgs.fail, targets.resultbox, false, targets.mopts);										
 				}
-				ajs.handleJSONError(jsonerror, targets, textStatus);
+				ajs.handleJSONError(jsonerror, targets, textStatus, targets.mopts);
 			}
 			else {
-				dacura.system.showErrorResult(msgs.nodata, jqXHR, msgs.fail, targets.resultbox);						
+				dacura.system.showErrorResult(msgs.nodata, msgs.fail, targets.resultbox, jqXHR, targets.mopts);						
 			}
 		};
 	}
@@ -454,13 +791,13 @@ dacura.system.invoke = function(ajs, cmsgs, ctargets){
 	}
 	if(typeof ajs.done == "undefined"){
 		done = function(data, textStatus, jqXHR){
-			if(data){ //sometimes jquery automatically gives us json
+			if(data){ 
 				var lastresult;
 				if(typeof data == "object"){
 					json = data;
 				}
-				else {
-					try{ //other times we have to parse it
+				else { //dacura api should automatically parse the response into a json object, this is just in case...
+					try{ 
 						json = JSON.parse(data);
 					}
 					catch(e){
@@ -470,7 +807,7 @@ dacura.system.invoke = function(ajs, cmsgs, ctargets){
 				ajs.handleResult(json, targets);
 			}
 			else {
-				self.showErrorResult(self.msgs.nodata, jqXHR, msgs.fail, targets.resultbox);										
+				self.showErrorResult(self.msgs.nodata, msgs.fail, targets.resultbox, jqXHR, targets.mopts);										
 			}
 		};
 	}
@@ -481,17 +818,24 @@ dacura.system.invoke = function(ajs, cmsgs, ctargets){
 	return $.ajax(ajs).done(done).fail(fail).always(always);
 };
 
-
-/*
- * Function for calling slow ajax functions which print status updates before returning a result 
- * We need access to the onreadystatechange event which is apparently not supported by the jqXHR object
- * this means we have to do things differently here
- * ajs: the ajax setting object that will be sent
- * oncomplete: the function that will be executed on completion
- * onmessage: the function that will be executed on receipt of a message
- * onerror: the function that will be called on 
+/**
+ * @callback onmsg
+ * @param {Object} msgs - array of messages from API
  */
 
+/**
+ * @function slowAjax
+ * @memberof dacura.system
+ * @summary for calling slow ajax functions which print status updates before returning a result 
+ * @description We need access to the onreadystatechange event which is apparently not supported by the jqXHR object
+ * this means we have to do things differently here
+ * @param {string} url - URL of Dacura API
+ * @param {string} method - POST | GET 
+ * @param {Object} args - associative array of arguments to API
+ * @param {done} oncomplete - on complete callback
+ * @param {onmsg} onmessage - comet message handler
+ * @param {fail} onerror - error callback
+ */
 dacura.system.slowAjax = function (url, method, args, oncomplete, onmessage, onerror){
 	var self = dacura.system;
 	if(typeof onerror == "undefined"){
@@ -511,13 +855,13 @@ dacura.system.slowAjax = function (url, method, args, oncomplete, onmessage, one
 						json = JSON.parse(data);
 					}
 					catch(e){
-						return self.showErrorResult(jqXHR.responseText, null, self.msgs.notjson);
+						return self.showErrorResult(jqXHR.responseText, self.msgs.notjson);
 					}
 				}
 				self.showSuccessResult(json);
 			}
 			else {
-				self.showErrorResult(self.msgs.nodata, jqXHR);										
+				self.showErrorResult(self.msgs.nodata, self.msgs.fail, jqXHR);										
 			}
 		};
 	}
@@ -566,11 +910,25 @@ dacura.system.slowAjax = function (url, method, args, oncomplete, onmessage, one
 	self.xhr = xhr;
 };
 
+/**
+ * @function abortSlowAjax
+ * @memberof dacura.system
+ * @summary called when the user cancels a long-runnking api call
+ */
 dacura.system.abortSlowAjax = function(){
 	dacura.system.xhraborted = true;
 	dacura.system.xhr.abort();
 }
 
+/**
+ * @function modalSlowAjax
+ * @memberof dacura.system
+ * @summary for calling slow ajax functions which print status updates to a modal dialogue
+ * @param {string} url - URL of Dacura API
+ * @param {string} method - POST | GET 
+ * @param {Object} args - associative array of arguments to API
+ * @param {string} initmsg - user initiallisation message
+ */
 dacura.system.modalSlowAjax = function(url, method, args, initmsg){
 	var self = dacura.system;
 	self.showModal(initmsg, "info");
@@ -585,6 +943,12 @@ dacura.system.modalSlowAjax = function(url, method, args, initmsg){
 	self.slowAjax(url, method, args, onc, onm);
 };
 
+/**
+ * @function setModalProperties
+ * @memberof dacura.system
+ * @summary Set the properties of the modal dialog
+ * @param {Object} args - associative array of arguments to API
+ */
 dacura.system.setModalProperties = function(args){
 	for (var key in args) {
 		if (args.hasOwnProperty(key)) {
@@ -594,8 +958,12 @@ dacura.system.setModalProperties = function(args){
 };
 
 
-/*
- * General functions for managing modal messages
+/**
+ * @function setModalProperties
+ * @memberof dacura.system
+ * @summary update the message in the modal dialog
+ * @param {string} msg - the message to write to the dialog
+ * @param {string} msgclass - css class to apply to the message
  */
 dacura.system.updateModal = function(msg, msgclass){
 	if(!$('#dacura-modal').dialog( "isOpen" )){
@@ -604,499 +972,73 @@ dacura.system.updateModal = function(msg, msgclass){
 	$('#dacura-modal').html(msg);
 } 
 
+/**
+ * @function showModal
+ * @memberof dacura.system
+ * @summary Show the modal dialog
+ * @param {string} msg - the message to write to the dialog
+ * @param {string} msgclass - css class to apply to the message
+ */
 dacura.system.showModal = function(msg, msgclass){
 		$('#dacura-modal').dialog(dacura.system.modalConfig).html(msg);		
 }
 
+/**
+ * @function removeModal
+ * @memberof dacura.system
+ * @summary Removes the modal dialog
+ */
 dacura.system.removeModal = function(){
 	if($('#dacura-modal').dialog( "isOpen" )){
 		$('#dacura-modal').dialog("close").html("This should be invisible");
 	}
 }
 
-
-/*
- * Initialisation Functions
+/**
+ * @function init
+ * @memberof dacura.system
+ * @summary initialises the targets and messages for a page
+ * @param {Object} opts an options array
+ * @param {DacuraPageConfig} opts.targets the targets settings
+ * @param {DacuraMessagesConfig} opts.msgs the messages settings
  */
-
-dacura.system.refreshDacuraListingTable = function(key){
-	var drawLTable = function(obj){
-		dacura.system.drawDacuraListingTable(key, obj, dacura.system.pageListings[key].settings, dacura.system.pageListings[key].rowClick, dacura.system.pageListings[key].cellClick, true);
-	};
-	var screen = "#" + dacura.system.pageListings[key].screen;
-	var targets = {resultbox: screen + "-msgs", busybox: screen + "-contents"};
-	dacura.system.pageListings[key].fetch(drawLTable, targets);
-}
-
-dacura.system.extractListingValueFromObject = function(property_code, obj){
-	var parts = property_code.split("-");
-	for(i = 0; i < parts.length; i++){
-		if(typeof obj[parts[i]] != "undefined"){
-			obj = obj[parts[i]];
-		}
-		else {
-			return null;
-		}
-	}
-	return obj;
-}
-
-dacura.system.extractListingValueWithFunction = function(funcname, obj){
-	if(funcname == "rowselector"){
-		if(typeof obj.id == "undefined" && typeof obj.eurid != "undefined"){
-			obj.id = obj.eurid;
-		}
-		return "<input type='checkbox' class='dacura-select-listing-row' id='drs-" + obj.id + "' />";
-	}
-	else {
-		return window[funcname](obj);							
-	}
-}
-
-
-dacura.system.drawDacuraListingTableRow = function(rowid, obj, props){
-	var html = "<tr class='dacura-listing-row' id='" + rowid + "'>";
-	for(var j = 0; j<props.length; j++){
-		html += "<td class='" + props[j] + "'>";
-		if(props[j].substring(0,2) == "df"){//indicates that a function is used to populate the field
-			html += dacura.system.extractListingValueWithFunction(props[j].substring(4), obj);
-		}
-		else { //an object property is used
-			var val = dacura.system.extractListingValueFromObject(props[j].substring(4), obj);
-			if(val !== null){
-				html += val;
-			}
-			else {
-				html += "?";
-			}
-		}
-		html += "</td>";
-	}
-	html += "</tr>";
-	return html;
-}
-
-dacura.system.getListingTableRowArray = function(obj, props){
-	var vals = [];
-	for(var j = 0; j<props.length; j++){
-		if(props[j].substring(0,2) == "df"){
-			vals[vals.length] = dacura.system.extractListingValueWithFunction(props[j].substring(4), obj);							
-		}
-		else {
-			var val = dacura.system.extractListingValueFromObject(props[j].substring(4), obj);
-			if(val !== null){
-				vals[vals.length] = val;
-			}
-			else {
-				vals[vals.length] = "?";
-			}
-		}
-	}
-	return vals;
-}
-
-dacura.system.listingTables = {};
-
-dacura.system.selectListingRow = function(rowid){
-	//alert(trid);
-	var checkbox = $('#'+rowid + " input.dacura-select-listing-row");
-	toggleCheckbox(checkbox);	
-}
-
-function toggleCheckbox(cbox){
-	if(cbox.is(':checked')) {
-		cbox.prop( "checked", false)
-	} 
-	else {
-		cbox.prop('checked', 'checked'); 
-	}	
-}
-
-dacura.system.listingRowSelected = function(event){
-	var trid = $(this).closest('tr').attr('id'); // table row ID 
-	//alert(trid);
-	var checkbox = $('#'+trid + " input.dacura-select-listing-row");
-	toggleCheckbox(checkbox);
-}
-
-dacura.system.drawDacuraListingTable = function(key, obj, dtsettings, rowClick, cellClick, refresh){
-	var props = [];
-	var ids = [];
-	var rows = [];
-	//nuke table body
-	$("#" + key + ' tbody').html("");
-	//read the table structure from the th ids 
-	if(typeof dacura.system.listingTables[key] == "undefined"){
-		$("#" + key + ' thead th').each(function(){
-			props[props.length] = this.id;
-		});
-		dacura.system.listingTables[key] = props;
-	}
-	else {
-		props = dacura.system.listingTables[key]; 
-	}
-	for(var i = 0; i<obj.length; i++){
-		var html = dacura.system.drawDacuraListingTableRow(key + "_"+ ids.length, obj[i], props);
-		rows[rows.length] = dacura.system.getListingTableRowArray(obj[i], props);
-		if(typeof obj[i].id == "undefined"){
-			ids[ids.length] = ids.length;
-		}
-		else {
-			ids[ids.length] = obj[i].id;
-		}
-		ids[ids.length] = obj[i].id;
-		$("#" + key + ' tbody').append(html);
-	}
-	
-	if(typeof $.fn.dataTable != "undefined"){
-		if(typeof refresh == "undefined" || !refresh){
-			$('#' + key).addClass("display");
-			$( "#" + key ).dataTable( dtsettings );
-		}
-		else {
-			$( "#" + key ).dataTable().fnClearTable();
-			$( "#" + key ).dataTable().fnAddData(rows);
-			$( "#" + key ).dataTable().fnDraw();
-		}
-	}
-	//finally apply the events - special hover style
-	$("#" + key + ' .dacura-listing-row').hover(function(){
-		$(this).addClass('userhover');
-	}, function() {
-	    $(this).removeClass('userhover');
-	});
-	
-	//then apply events to table cells (not rows because we want to be able to do special things with e.g. selector cells
-	if(typeof rowClick == "undefined" || rowClick == null){ //rowclicks override cell clicks
-		for(var i = 0; i<props.length; i++){
-			var tcls = props[i];
-			if(tcls.substring(4) == "rowselector"){ //special click events for these...
-				$(' .dacura-listing-row td.' + tcls).click( dacura.system.listingRowSelected ); 				
-			}
-			else {
-				$(' .dacura-listing-row td.' + tcls).click( function(event){
-					var trid = $(this).closest('tr').attr('id'); // table row ID 
-					var index = parseInt(/[^_]*$/.exec(trid)[0]);
-					var entid = ids[index];
-					if(typeof cellClick == "undefined"){
-						window.location.href = dacura.system.pageURL() + "/" + entid;
-					}
-					else {
-						cellClick(entid);
-					}
-				}); 				
-			}
-		}/*
-		$("#" + key + ' .dacura-listing-row').click( function (event){
-			if(typeof rowClick == "undefined"){
-				window.location.href = dacura.system.pageURL() + "/" + entid;
-			}
-			else {
-				rowClick(entid);
-			}
-	    });*/
-	}
-	else {
-		$("#" + key + ' .dacura-listing-row').click(rowClick); 
-	}
-	$('#' + key).show();
-}
-
-dacura.system.drawDacuraUpdateObject = function(key, obj){
-	$("#" + key + ' .dacura-property-input input').each(function(){
-		$('#'+this.id).val(obj[this.id.substring(4)]);
-	});
-	$("#" + key + ' .dacura-property-input textarea').each(function(){
-		$('#'+this.id).val(obj[this.id.substring(4)]);
-	});
-	$("#" + key + ' .dacura-property-input select').each(function(){
-		$('#'+this.id).val(obj[this.id.substring(4)]);
-		$('#'+this.id).selectmenu("refresh");
-	});
-
-}
-
-
-dacura.system.init = function(options){
-
-	function initToolHeader(header){
-		$('.tool-close a').button({
-			text: false,
-			icons: {
-				primary: "ui-icon-circle-close"
-			}
-		}).click(function(){
-			$('.tool-holder').hide("blind");
-		});
-		$('.tool-close').show();
-		if(typeof(header) != "undefined"){
-			this.updateToolHeader(header);
-		}
-	}
-	
-	function initScreens(tabbed){
-		var listhtml = "<ul class='subscreen-tabs'>";
-		$('.dacura-subscreen').each(function(){
-			listhtml += "<li><a href='"+ '#'+ this.id + "'>" + $('#' + this.id).attr("title") + "</a></li>";
-			$('#' + this.id).attr("title", "");
-			$('#' + this.id).wrapInner("<div class='tool-tab-contents' id='" + this.id + "-contents'></div>");
-			$('#' + this.id).prepend("<div class='tool-tab-info' id='" + this.id + "-msgs'></div>");
-			var intro = $('#'+ this.id + " .subscreen-intro-message").html();
-			if(intro && intro.length > 0){
-				$('#'+ this.id + " .subscreen-intro-message").attr("title", "");
-				dacura.system.writeHelpMessage(intro, "#" + this.id + "-msgs");
-			}
-		});
-		listhtml += "</ul>";
-		$('#'+tabbed).prepend(listhtml);
-		if(typeof $.fn.dataTable != "undefined"){
-			$('#'+tabbed).tabs( {
-		        "activate": function(event, ui) {
-		            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
-		        }
-		    });
-		}
-		else {
-			$('#'+tabbed).tabs();
-		}
-	}
-
-	function initListings(listings){
-		for(var key in listings){
-			var drawLTable = function(obj, targets){
-				dacura.system.drawDacuraListingTable(targets.listingtable, obj, listings[targets.listingtable].settings, listings[targets.listingtable].rowClick, listings[targets.listingtable].cellClick)
-			}
-			var screen = "#" + listings[key].screen;
-			var targets = {listingtable: key, resultbox: screen + "-msgs", busybox: screen + "-contents"};
-			listings[key].fetch(drawLTable, targets);
-		}		
-	}
-	
-	function initButtons(buttons){
-		var button_pressed = false;//only allow one update button to be in train per subscreen.
-		for(var key in buttons){
-			var scrjqid = '#'+buttons[key].screen;
-			var busid = scrjqid + "-contents";
-			var resid = scrjqid + "-msgs";
-			if(typeof buttons[key].submit == "undefined"){
-				buttons[key].submit = function(obj){ 
-					button_pressed = false;
-					alert("no submit function defined for dacura button " + key + "\nsubmitted\n" + JSON.stringify(obj));
-				};
-			}
-			if(typeof buttons[key].validate == "undefined"){
-				buttons[key].validate = function(obj){
-					return "";
-				}; 	
-			}		
-			if(typeof buttons[key].result == "undefined"){
-				buttons[key].result = function(json, targets){
-					button_pressed = false;
-					dacura.system.showSuccessResult(obj, false, "Success", resid);
-				}//; 	
-			}
-			if(typeof buttons[key].source != "undefined"){
-				buttons[key].gather = function(jqid){
-					var obj = {};
-					$("#" + jqid + ' .dacura-property-input input').each(function(){
-						obj[this.id.substring(4)] = $('#'+this.id).val();
-					});
-					$("#" + jqid + ' .dacura-property-input textarea').each(function(){
-						obj[this.id.substring(4)] = $('#'+this.id).val();
-					});
-					$("#" + jqid + ' .dacura-property-input select').each(function(){
-						obj[this.id.substring(4)] = $('#'+this.id).val();
-					});
-					return obj;
-				};
-			}
-			if(typeof buttons[key].gather == "undefined"){
-				buttons[key].gather = function(jqid){ 
-					alert("no gather function or data source defined for dacura button " + jqid);
-				};
-			}
-
-			$('#'+key).button().click(function(){
-				if(button_pressed){
-					alert("A request is being processed, please be patient");
-					return;
-				}
-				scrjqid = '#'+buttons[this.id].screen;
-				busid = scrjqid + "-contents";
-				resid = scrjqid + "-msgs";
-				button_pressed = true;
-				var obj = buttons[this.id].gather(buttons[this.id].screen);
-				var errs = buttons[this.id].validate(obj);
-				if(errs){
-					button_pressed = false;
-					dacura.system.showErrorResult(errs, false, "User errors in form input", resid);
-				}
-				else {
-					var targets = {busybox: busid, resultbox: resid, scrollto: resid, always_callback: function(){button_pressed = false}};
-					buttons[this.id].submit(obj, buttons[this.id].result, targets);
-				}
-			});
-		}		
-	}
-	
-	function initTool(options){
-		initToolHeader(options.header);
-		if(typeof options.tabbed != "undefined"){
-			initScreens(options.tabbed);
-		}
-		if(typeof options.buttons != "undefined"){
-			initButtons(options.buttons);
-		}
-		if(typeof options.listings != "undefined"){
-			dacura.system.pageListings = options.listings; 
-			initListings(options.listings);
-		}
-		if(typeof options.load != "undefined" && typeof options.entity_id != "undefined"){
-			if(typeof options.tabbed != "undefined"){
-				draw = function(a, b){
-					$('#'+options.tabbed).show();
-					options.draw(a, b);
-				};
-			}
-			else {
-				draw = options.draw;
-			}
-
-			options.load(options.entity_id, draw);
-		}
-		else {
-			if(typeof options.tabbed != "undefined"){
-				$('#'+options.tabbed).show();
-			}
-		}	
-	}
-	if(options.mode == 'widget'){
-		this.busyclass = 'small';
-	}	
-	else if(options.mode == 'tool'){
-		initTool(options);
-	}
+dacura.system.init = function(opts){
+	dacura.system.targets = dacura.system.getTargets(opts.targets);
+	dacura.system.msgs = dacura.system.getMessages(opts.msgs);
 };
 
-dacura.system.updateToolHeader = function(options){
-	if(typeof options.title != "undefined"){
-		dacura.system.setToolTitle(options.title);
-	}
-	if(typeof options.subtitle != "undefined"){
-		dacura.system.setToolSubtitle(options.subtitle);
-	}
-	if(typeof options.description != "undefined"){
-		dacura.system.setToolDescription(options.description);
-	}
-	if(typeof options.image != "undefined"){
-		dacura.system.setToolImage(options.image);
-	}
+dacura.system.openKCFinder = function(field, src, dir, type) {
+
+    if(typeof type == "string"){
+    	src += "?type=" + type;
+        if(typeof dir == "string"){
+        	src += "&dir=" + type + "/" + dir;
+        }
+    }
+    //src = src + "?type=files";
+    $(field).html('<div id="kcfinder_div"><iframe name="kcfinder_iframe" src="' + src + '" frameborder="0" width="100%" height="100%" marginwidth="0" marginheight="0" scrolling="no" /></div>');
 }
 
-dacura.system.setToolTitle = function(msg){
-	$('.tool-title').html(msg);
-};
 
-
-dacura.system.setToolSubtitle = function(msg){
-	$('.tool-subtitle').html(msg);
-};
-
-dacura.system.setToolDescription = function(msg){
-	$('.tool-description').html(msg);
-};
-
-dacura.system.setToolImage = function(img){
-	$('.tool-image').html("<img class='tool-header-image' url='" + img.url + "' title='" + img.title + "; />");
-}
-
-dacura.system.setLDEntityToolHeader = function(ent){
-	options = { subtitle: ent.id };
-	if(typeof ent.title != "undefined"){
-		options.subtitle = ent.title;
-	}
-	if(typeof ent.image != "undefined"){
-		options.image = ent.image;
-	}
-	options.description = $('#ldentity-header-template').html();
-	dacura.system.updateToolHeader(options);
-	if(typeof ent.metadetails != "undefined"){
-		metadetails = ent.metadetails;
-	}
-	else {
-		metadetails = timeConverter(ent.created);
-	}
-	$('.ent_type').html("<span class='entity-type'>" + ent.type + "</span>");
-	$('.ent_created').html("<span class='entity-details'>" + metadetails + "</span>");
-	$('.ent_status').html("<span class='entity-status entity-" + ent.latest_status + "'>" + ent.latest_status + "</span>");
-}
-
-/*
- * breadcrumbs on tools
+/* some simple utility functions */
+/**
+ * @function validateURL
+ * @summary basic url validation
+ * @param {string} url - the url to be validated
+ * @return {Boolean} - true if it is a valid url
  */
-
-dacura.system.removeServiceBreadcrumb = function(id){
-	$('#'+id).remove();
-}
-
-dacura.system.addServiceBreadcrumb = function (url, txt, id){
-	if(typeof id != "undefined"){
-		$('#'+id).remove();
-		xtra = " id='"+id+"'"
-	}
-	else {
-		xtra = "";
-	}
-	var zindex = 20 - $("ul.service-breadcrumbs li").length;
-	$('ul.service-breadcrumbs').append("<li><a" + xtra + " href='" + url + "' style='z-index:" + zindex + ";'>" + txt + "</a></li>");
-}
-
-//
-dacura.system.setLDSingleValue = function(obj, key, val){
-	if(typeof obj != "undefined"){
-		for(var k in obj){
-			if(typeof obj[k][key] != "undefined"){
-				obj[k][key] = val;
-			}
-		}
-	}
-}
-
-dacura.system.styleJSONLD = function(jqid) {
-	if(typeof jqid == "undefined"){
-		jqid = ".rawjson";
-	}
-	$(jqid).each(function(){
-	    var text = $(this).html();
-	    if(text){
-	    	if(text.length > 50){
-	    		presentation = text.substring(0, 50) + "...";
-	    	}
-	    	else {
-	    		presentation = text;
-	    	}
-		    $(this).html(presentation);
-	    	try {
-	    		var t = JSON.parse(text);
-	    		if(t){
-	    			t = JSON.stringify(t, 0, 4);
-	    		    $(this).attr("title", t);
-	    		}
-	    	}
-	    	catch (e){
-    		    $(this).attr("title", "Failure: " + e.message);	    		
-	    	}
-	    }
-	});
-}
-/*
- * Then just a few utility functions
- */
-
 function validateURL(url){
 	return /^(https|http):/.test(url);
 };
 
+/**
+ * @function getMetaProperty
+ * @summary gets a property from a meta array or a default if it is not present
+ * @param {Object} meta - the meta array
+ * @param {string} key - the key to use
+ * @param {Object} def - the default value to use if the key is not present
+ * @return {Object} - the value of meta.key or def if it does not exist
+ */
 function getMetaProperty(meta, key, def){
 	if(typeof meta[key] == "undefined"){
 		return def;
@@ -1104,6 +1046,11 @@ function getMetaProperty(meta, key, def){
 	return meta[key];
 }
 
+/**
+ * @function durationConverter
+ * @summary prints out a duration in human readable form
+ * @param {Number} secs - number of seconds
+ */
 function durationConverter(secs){
     var sec_num = parseInt(secs, 10); // don't forget the second param
     var hours   = Math.floor(sec_num / 3600);
@@ -1117,6 +1064,11 @@ function durationConverter(secs){
     return time;
 }
 
+/**
+ * @function timeConverter
+ * @summary prints out a date time duration in human readable form
+ * @param {Number} UNIX_timestamp - number of seconds since 1970
+ */
 function timeConverter(UNIX_timestamp){
 	  var a = new Date(UNIX_timestamp*1000);
 	  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1133,10 +1085,22 @@ function timeConverter(UNIX_timestamp){
 	  return time;
 }
 
+/**
+ * @function size
+ * @summary gets the count of an associative array / object
+ * @param {Object} obj - the object 
+ * @return {Number} - the number of elements in the object
+ */
 function size(obj){
 	return Object.keys(obj).length
 }
 
+/**
+ * @function isEmpty
+ * @summary is the object / associative array empty?
+ * @param {Object} obj - the object 
+ * @return {Boolean} - true if the object is empty
+ */
 function isEmpty(obj) {
     // null and undefined are "empty"
     if (obj == null) return true;
@@ -1151,4 +1115,64 @@ function isEmpty(obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) return false;
     }
     return true;
+}
+
+/**
+ * @function toggleCheckbox
+ * @summary Toggles the state of a checkbox
+ * @param cbox jquery checkbox object
+ */
+function toggleCheckbox(cbox){
+	if(cbox.is(':checked')) {
+		cbox.prop( "checked", false)
+	} 
+	else {
+		cbox.prop('checked', 'checked'); 
+	}	
+}
+
+
+function escapeQuotes(text) {
+	var map = {
+		    '"': '\\"',
+		    "'": ''
+		  };
+	  return text.replace(/"']/g, function(m) { return map[m]; });
+}
+function escapeHtml(text) {
+	  var map = {
+	    '&': '&amp;',
+	    '<': '&lt;',
+	    '>': '&gt;',
+	    '"': '&quot;',
+	    "'": '&#039;'
+	  };
+
+	  return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+	}
+
+/**
+ * @function nvArrayToOptions
+ * @summary Produces a list of html options to populate a select from a passed name-value array
+ * @param {Object} nv - the name-value array object
+ * @param {string} [selected] - the id of the element that is selected by default
+ * @return {string} - the html string 
+ */
+function nvArrayToOptions(nv, selected){
+	var html = "";
+	for(i in nv){
+	    var selhtml = "";
+	    if (typeof selected == "string" && i == selected) selhtml = " selected"; 
+		html += "<option value='" + i + "'" + selhtml + ">" + nv[i] + "</option>";
+	}
+	return html;
+}
+
+/**
+ * @function jpr
+ * @summary a short cut to alerting a json stringified version of a javascript object - basic debugging 
+ * @param obj the object to be show in the alert box
+ */
+function jpr(obj){
+	alert(JSON.stringify(obj));
 }

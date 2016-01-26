@@ -1,16 +1,26 @@
-<?php $bgimage = isset($params['bgimage']) ? $params['bgimage'] : $service->url("image", "Trinity-college-library-dub2.jpg");?>
+<?php 
+/**
+ * Dacura Standard Header
+ *
+ * Header that appears on almost all dacura pages
+ * 
+ * @package core/snippets
+ * @author chekov
+ * @copyright GPL v2
+ */
+$bgimage = isset($params['bgimage']) ? $params['bgimage'] : $service->furl("image", "Trinity-college-library-dub2.jpg");?>
 <!DOCTYPE html>
 <html>
 	<head>
 		<meta charset=utf-8 />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
 		<title>Dacura</title>
-		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "jquery-ui.css")?>" />
-		<link rel="shortcut icon" href="<?=$service->url("images", "favicon2.ico")?>" />
+		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->furl("css", "jquery-ui.css")?>" />
+		<link rel="shortcut icon" href="<?=$service->furl("images", "favicon2.ico")?>" />
 		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->get_service_file_url('master.css', "core")?>"/>
-		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "opensans.css")?>" />
-		<script src="<?=$service->url("js", "jquery-2.1.4.min.js")?>"></script>
-		<script src="<?=$service->url("js", "jquery-ui.js")?>"></script>
+		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->furl("css", "opensans.css")?>" />
+		<script src="<?=$service->furl("js", "jquery-2.1.4.min.js")?>"></script>
+		<script src="<?=$service->furl("js", "jquery-ui.js")?>"></script>
 		<script>
 			<?php include_once($service->settings['path_to_services']."core/dacura.init.js"); //included for variable interpolation ?>
 		</script>

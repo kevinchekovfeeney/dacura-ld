@@ -1,4 +1,4 @@
-Hi <?=$name?>
+Hi <?=$email?>
 
 Somebody requested a password reset for your account on Dacura 
 (http://dacura.scss.tcd.ie).  The below link will allow you to change your 

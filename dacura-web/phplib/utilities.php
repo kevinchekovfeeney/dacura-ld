@@ -1,25 +1,35 @@
 <?php
-/*
- * A place to put random utility functions that you might want to use again
- *
- * Created By: Chekov
- * Creation Date: 20/11/2014
- * Contributors:
- * Modified: 
- * Licence: GPL v2
+/**
+ * A place to put random utility functions that are useful in multiple places
+ * 
+ * * Creation Date: 20/11/2014
+ * @author Chekov
+ * @license GPL v2
  */
 
-
+/**
+ * Prints out a php datastructure in structured way with pre tags wrapping it
+ * @param mixed $s any php variable
+ */
 function opr($s){
 	echo "<PRE>";
 	print_r($s);
 	echo "</PRE>";
 }
 
+/**
+ * Generates a randomised ID using php's uniqid function
+ * @return string id
+ */
 function randid(){
 	return uniqid_base36();
 }
 
+/**
+ * generates a base 36 encoded uniqid (for tersness)
+ * @param boolean $more_entropy if set to true, a longer id, with more entropy will be returned
+ * @return string
+ */
 function uniqid_base36($more_entropy=false) {
 	$s = uniqid('', $more_entropy);
 	if (!$more_entropy)
@@ -30,18 +40,35 @@ function uniqid_base36($more_entropy=false) {
 	return base_convert($hex, 16, 36) . base_convert($dec, 10, 36);
 }
 
-function isAssoc($arr)
-{
-	return array_keys($arr) !== range(0, count($arr) - 1);
-}
-
-function createRandomKey($length)
-{
+/**
+ * Function to generate a randomised key of specified length
+ * @param int $length length of key desired
+ * @return string key
+ */
+function createRandomKey($length){
 	$buffer = mcrypt_create_iv($length, MCRYPT_DEV_URANDOM);
 	$encodedBuffer = str_replace(array('+', '/'), array('_', 'X'), base64_encode($buffer));
 	return substr($encodedBuffer, 0, $length);
 }
 
+/**
+ * Is the passed data structure a php associative array
+ * @param mixed $arr variable to be tested
+ * @return boolean true if the variable is an associative array (and is not indexed 0,1,2...)
+ */
+function isAssoc($arr)
+{
+	return array_keys($arr) !== range(0, count($arr) - 1);
+}
+
+/**
+ * Sends an email
+ * @param string $recip recipient email address
+ * @param string $subj subject line
+ * @param string $text body 
+ * @param string $headers message headers
+ * @return boolean true if sent
+ */
 function sendemail($recip, $subj, $text, $headers){
 	if(!$headers){
 		$headers = 'From: dacura@cs.tcd.ie' . "\r\n" .
@@ -49,46 +76,86 @@ function sendemail($recip, $subj, $text, $headers){
 			'X-Mailer: PHP/' . phpversion();
 	}
 	if(is_array($headers)){
-		
+		$headers = implode("\r\n", $headers);
 	}
-	
-	if(mail( $recip, $subj, $text, $headers)){
-		return true;
-	}
-	return false;
+	return mail( $recip, $subj, $text, $headers);
 }
 
-function deepArrCopy($x){
+/**
+ * creates a 'deep' recursive copy of an array
+ * @param array $x the array to copy 
+ * @return array the copied array
+ */
+function deepArrCopy(array $x){
 	$vals = array();
-	if(is_array($x)){
-		foreach($x as $i => $v){
-			if(is_array($v)){
-				$vals[$i] = deepArrCopy($v);
-			}
-			else {
-				$vals[$i] = $v;
-			}
+	foreach($x as $i => $v){
+		if(is_array($v)){
+			$vals[$i] = deepArrCopy($v);
 		}
-		return $vals;
+		else {
+			$vals[$i] = $v;
+		}
 	}
-	return $x;
+	return $vals;
 }
 
+/**
+ * compares two deep arrays and returns differences. 
+ * adapted from arrayRecursiveDiff in comments of http://php.net/manual/en/function.array-diff.php
+ */
+function arrayRecursiveCompare($aArray1, $aArray2) {
+	foreach ($aArray1 as $mKey => $mValue) {
+		if (array_key_exists($mKey, $aArray2)) {
+			if (is_array($mValue)) {
+				if(!arrayRecursiveCompare($mValue, $aArray2[$mKey])){
+					return false;
+				}
+			} else {
+				if ($mValue != $aArray2[$mKey]) {
+					return false;
+				}
+			}
+		} else {
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * Returns true if the value is a string and is not a url
+ * @param unknown $x the value to test
+ * @return boolean true if it is a literal
+ */
 function isLiteral($x){
 	return (is_string($x) && !isURL($x) && !isBlankNode($x) && !isNamespacedURL($x));
 }
 
+/**
+ * Returns true if the passed string is a URL 
+ * @param string $str
+ * @return boolean
+ */
 function isURL($str){
 	return (!filter_var($str, FILTER_VALIDATE_URL) === false);
 }
 
+/**
+ * Returns true if the passed string is a valid email address
+ * @param string $email
+ * @return boolean
+ */
 function isValidEmail($email){
 	return (!filter_var($email, FILTER_VALIDATE_EMAIL) === false);
 }
 
+/**
+ * Returns true if the passed string is a namespaced url (prefix:localurl)
+ * @param string $x the string to test
+ * @return boolean
+ */
 function isNamespacedURL($x){
-	if(is_array($x)){
-		//pr($x);
+	if(!is_string($x)){
 		return false;
 	}
 	else {
@@ -97,40 +164,43 @@ function isNamespacedURL($x){
 	}
 }
 
+/**
+ * Returns the namespace / prefix portion of a namespaced url
+ * @param string $str the string 
+ * @return string the namespace portion (false if it does not exist) 
+ */
 function getNamespacePortion($str){
 	if(is_array($str)) return false;
 	$bits = explode(":", $str);
 	return (count($bits) > 1) ? $bits[0]: false;
 }
 
+/**
+ * Tests for a string being a blank node url (_:...)
+ * @param string $str the string to test
+ * @return boolean
+ */
 function isBlankNode($str){
 	return (getNamespacePortion($str) == "_");
 }
 
-function isServiceName($servicename, $settings){
-	return file_exists($settings['path_to_services'].$servicename);
-}
-
+/**
+ * Returns the path to a particular snippet 
+ * @param string $snip the name of the snippet
+ * @return string the path
+ */
 function path_to_snippet($snip){
 	return "phplib/services/core/snippets/".$snip.".php";
 }
 
-/*
- * generates correct text and codes for http responses
-*
-* Created By: Chekov
-* Creation Date: 20/11/2014
-* Contributors:
-* Modified:
-* Licence: GPL v2
-*/
-
-
+//this function exists in PHP 5.4 - this emulates it in case we are < 5.4
 if (!function_exists('http_response_code')) {
+/** 
+ * generates correct text and codes for http responses and writes them to http
+ * @param number $code the http response code desired
+*/
 	function http_response_code($code = NULL) {
-
 		if ($code !== NULL) {
-
 			switch ($code) {
 				case 100: $text = 'Continue'; break;
 				case 101: $text = 'Switching Protocols'; break;
@@ -173,28 +243,28 @@ if (!function_exists('http_response_code')) {
 					exit('Unknown http status code "' . htmlentities($code) . '"');
 					break;
 			}
-
 			$protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
-
 			header($protocol . ' ' . $code . ' ' . $text);
-
 			$GLOBALS['http_response_code'] = $code;
 
 		} else {
-
 			$code = (isset($GLOBALS['http_response_code']) ? $GLOBALS['http_response_code'] : 200);
-
 		}
-
 		return $code;
-
 	}
 }
 
 /* 
- * Adapted from https://gist.github.com/lorenzos/1711e81a9162320fde20
  */
-
+/**
+ * Self-rolled tail replicator 
+ * 
+ * Adapted from https://gist.github.com/lorenzos/1711e81a9162320fde20
+ * @param string $filepath the file to tail
+ * @param number $lines number of lines to show
+ * @param boolean $adaptive should it adapt to the size of the lines or just use a fixed buffer?
+ * @return string last lines in file as a string
+ */
 function tailCustom($filepath, $lines = 1, $adaptive = true) {
 	// Open file
 	$f = @fopen($filepath, "rb");
@@ -234,4 +304,68 @@ function tailCustom($filepath, $lines = 1, $adaptive = true) {
 	fclose($f);
 	return trim($output);
 }
+
+/**
+ * Trims square brackets from the start and front of string
+ * @param string $ent the string to be trimmed
+ * @return string
+ */
+function xstrim($ent){
+	return trim($ent, "[]");
+} 
+
+function default_settings(&$dacura_settings){
+	if(!isset($dacura_settings['dacura_sessions'])){
+		$dacura_settings['dacura_sessions'] = $dacura_settings['storage_base'].'sessions/';
+	}
+	if(!isset($dacura_settings['ajaxurl'])){
+		$dacura_settings['ajaxurl'] = $dacura_settings['install_url'].$dacura_settings['apistr'] . "/";
+	}
+	if(!isset($dacura_settings['services_url'])){
+		$dacura_settings['services_url'] = $dacura_settings['install_url'].$dacura_settings['path_to_services'];
+	}
+	if(!isset($dacura_settings['files_url'])){
+		$dacura_settings['files_url'] = $dacura_settings['install_url'] . $dacura_settings['path_to_files'];
+	}
+	if(!isset($dacura_settings['path_to_collections'])){
+		$dacura_settings['path_to_collections'] = $dacura_settings['storage_base']."collections/";
+	}
+	if(!isset($dacura_settings['collections_urlbase'])){
+		$dacura_settings['collections_urlbase'] = $dacura_settings['install_url'] . "cfiles/";
+	}
+	if(!isset($dacura_settings['dacura_sessions'])){
+		$dacura_settings['dacura_sessions'] = $dacura_settings['storage_base'].'sessions/';
+	}
+	if(!isset($dacura_settings['dqs_service'])){
+		$dacura_settings['dqs_service'] = array();
+	}
+	if(!isset($dacura_settings['dqs_service']['instance'])){
+		$dacura_settings['dqs_service']["instance"] = $dacura_settings['dqs_url']."instance";
+	}
+	if(!isset($dacura_settings['dqs_service']['schema'])){
+		$dacura_settings['dqs_service']["schema"] = $dacura_settings['dqs_url']."schema";
+	}
+	if(!isset($dacura_settings['dqs_service']['schema_validate'])){
+		$dacura_settings['dqs_service']["schema_validate"] = $dacura_settings['dqs_url']."schema_validate";
+	}
+	if(!isset($dacura_settings['dqs_service']['validate'])){
+		$dacura_settings['dqs_service']["validate"] = $dacura_settings['dqs_url']."validate";
+	}
+	if(!isset($dacura_settings['dqs_service']['instance'])){
+		$dacura_settings['dqs_service']["stub"] = $dacura_settings['dqs_url']."stub";
+	}
+	if(!isset($dacura_settings['dqs_service']['entity'])){
+		$dacura_settings['dqs_service']["stub"] = $dacura_settings['dqs_url']."entity";
+	}
+	if(!isset($dacura_settings['dqs_service']['logfile'])){
+		$dacura_settings['dqs_service']["logfile"] = false;
+	}
+	if(!isset($dacura_settings['dqs_service']['fakets'])){
+		$dacura_settings['dqs_service']["fakets"] = $dacura_settings['dacura_logbase'].'fakets.json';
+	}
+	if(!isset($dacura_settings['dqs_service']['dumplast'])){
+		$dacura_settings['dqs_service']["dumplast"] = $dacura_settings['dacura_logbase'].'lastdqs.log';
+	}
+}
+
 

@@ -1,6 +1,5 @@
 @CHARSET "ISO-8859-1";
-
-    #dacura-widget-reset-password,
+	#dacura-widget-reset-password,
     #dacura-widget-error,
     #dacura-widget-login {
 		width: 460px;
@@ -10,6 +9,10 @@
 	
 	.dc-login-field{ 
 		display: none;
+	}
+	
+	#dacura-widget-reset-password .mtitle {
+		color: white;
 	}
 	
 	#dacura-widget-login table{
@@ -24,7 +27,7 @@
 	}
     
 	#dacura-widget-login td {
-		width: 250px;
+		width: 240px;
 		text-align: left;
 		padding: 6px 2px 2px 8px;	
 	}
@@ -90,7 +93,7 @@
 
 	#dacura-widget-reset-password th {
 		text-align: right;
-		width: 34%;
+		width: 38%;
 		font-size: 16px;
 	}
     

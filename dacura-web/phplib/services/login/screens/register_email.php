@@ -1,4 +1,4 @@
-Hi <?=$name?>,
+Hi <?=$email?>,
 
 Somebody has registered an account with this email address at the Dacura system.  
 If it was you who registered an account, please click on the link below to confirm your email address 

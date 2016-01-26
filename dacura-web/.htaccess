@@ -97,7 +97,6 @@ DirectoryIndex index.php index.html index.htm
   # VirtualDocumentRoot and the rewrite rules are not working properly.
   # For example if your site is at http://example.com/drupal uncomment and
   # modify the following line:
-  # RewriteBase /drupal
   #
   # If your site is running in a VirtualDocumentRoot at http://example.com/,
   # uncomment the following line:
@@ -111,16 +110,18 @@ DirectoryIndex index.php index.html index.htm
   RewriteRule ^ - [ENV=BASE:%2]
   
   RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^rest/(.*)$ %{ENV:BASE}api.php?path=$1 [QSA,L]
+  RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteRule ^(.*)$ %{ENV:BASE}index.php?path=$1 [L,QSA]
 
   #prevent direct access to php files except index and api
-  RewriteCond %{REQUEST_FILENAME} !(index|api)\.php
-  RewriteRule \.php$ - [F,L,NC]
+  #RewriteCond %{REQUEST_FILENAME} !(index|api)\.php
+  #RewriteRule \.php$ - [F,L,NC]
   #prevent direct access to any php files in phplib directory
-  RewriteCond %{REQUEST_URI} /phplib/
-  RewriteRule \.php$ - [F,L,NC]
+  #RewriteCond %{REQUEST_URI} /phplib/
+  #RewriteRule \.php$ - [F,L,NC]
  
 
 

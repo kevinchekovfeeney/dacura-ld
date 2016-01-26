@@ -1,67 +1,320 @@
 <?php
-
-/*
- * Class representing an invocation of a service
+/**
+ * Class representing a service invocation
+ * 
  * This is extended by actual service classes
  * The base class contains common functionality for producing service paths and urls for the current context
- *
- * Also where the access control will be inserted...
- *
- * Created By: Chekov
- * Contributors:
  * Creation Date: 20/11/2014
- * Licence: GPL v2
+ * 
+ * @author Chekov
+ * @license GPL v2
  */
-
-
 class DacuraService extends DacuraObject {
-	var $settings;  // the server wide settings that the service has been invoked in.
+	/** @var array a name-value associate array of configuration settings that apply to this service invocation */
+	var $settings; 
+	/** @var string the path to the service's home directory (phplib/services/sname/) */
 	var $mydir;
+	/** @var string the service's name */
 	var $servicename = "abstract_base_class";
-	//var $servicecall;
-	//Variables representing the context in which the service is invoked
+	/** @var string the id of the collection in which the service was invoked */
 	var $collection_id;
-	var $dataset_id;
-	var $args;	//associative array of the arguments that have been passed
-	var $screen = ""; //special value passed to indicate the screen in html mode....
-	var $connection_type; //html / api -> what mode has the service been invoked in..
-
+	/** @var array associative array of the arguments that were passed to the service invocation */
+	var $args;	
+	/** @var string either "html" or "api" to indicate that the service was invoked from either a webpage or an api call*/ 
+	var $connection_type; 
+	/** @var string the name of the screen requested when the service is invoked in html mode */
+	var $screen = ""; 
+	/** @var string the screen to be used if no screen is passed with invocation in html mode */
 	var $default_screen = "view";
-	
+	/** @var RequestLog the service logger object */
 	var $logger;
-	//An array of screens provided by the service that are publically accesible
-	var $public_screens = array();
-	//An array of screens provided by the service that require specific dacura roles..
-	var $protected_screens = array();
-	//An array of scripts which will be included in screens
+	/** @var string[] An array of java script urls which will be included in service screens */
 	var $included_scripts = array();
-	//An array of stylesheet urls which will be included in screens
+	/** @var string[] An array of stylesheet urls which will be included in screens */
 	var $included_css = array();
-	//The set of forms that are included in the service's pages
-	var $dacura_forms = array();
-	//The set of tables that are included in the service's pages
-	var $dacura_tables = array();
-	//the messages for the user
-	var $dacura_messages = array();
-	
+
+	/**
+	 * 
+	 * @param array $settings a name-value associative array of settings for the service invocation 
+	 */
 	function __construct($settings){
 		$this->settings = $settings;
 	}
 	
-	function init(){}//to be overwritten by derived classes
+	/**
+	 * Called immediately after service creation.  
+	 * 
+	 * To be defined by derived services who have particular initiallisation requirements
+	 */
+	function init(){}
 
+	/**
+	 * returns the id of the collection in which the service was invokved. 
+	 * 
+	 * If there is no collection id (server root context) the string "all" will be returned
+	 * @return string the collection id 
+	 */
 	function getCollectionID(){
 		return $this->collection_id;
 	}
-
-	function getDatasetID(){
-		return $this->dataset_id;
-	}
 	
+	/**
+	 * Returns the name of the service that was invoked
+	 * @return string
+	 */
 	function name(){
 		return $this->servicename;
 	}
 	
+	/**
+	 * Returns a user-readable title of the service 
+	 * If no title property is set, the title is service id followed by "service"
+	 * @return string the service title
+	 */
+	function getTitle(){
+		if(isset($this->title) && $this->title){
+			return $this->title;
+		}
+		return ucfirst($this->servicename)." Service";
+	}
+	
+	/* Shorthand methods to access context details.*/
+	
+	/**
+	 * shorthand for get collection id
+	 * @return string collection id
+	 */
+	function cid(){
+		return $this->getCollectionID();
+	}
+	
+	/**
+	 * Returns the base url of the dacura server
+	 * @param string $ajax if true, the ajax url is returned, otherwise the html url
+	 * @return string the url
+	 */
+	function durl($ajax = false){
+		return (!$ajax) ? $this->getSystemSetting('install_url') : $this->getSystemSetting('ajaxurl');
+	}
+	
+	/**
+	 * Loads the service context from the service call object passed in
+	 * @param ServiceCall $sc the object containing the parameters of the service invocation
+	 * @param RequestLog $logger the object which will be used to log the results of the request
+	 */
+	function load(ServiceCall $sc, RequestLog &$logger){
+		$this->servicename = $sc->servicename;
+		$this->collection_id = $sc->collection_id;
+		$this->connection_type = $sc->provenance;
+		if($sc->provenance == "html"){ //if it is html, all the arguments are in the URL
+			$this->loadArgsFromBrowserURL($sc->args);
+		}
+		else {
+			$this->args = $sc->args;
+		}
+		$this->mydir = $this->getSystemSetting('path_to_services').$this->name()."/";
+		$logger->loadFromService($this);
+		$this->logger =& $logger;
+		if($sc->provenance == "html"){ //if it is html, all the arguments are in the URL
+			$this->logger->setEvent("read", $this->screen);
+		}
+		$this->init();
+	}
+	
+	/**
+	 * Loads the appropriate server for this service
+	 * 
+	 * Every Dacura Service has an associated Server which serves as an interface between the service and the rest 
+	 * of the system. By convention, the server name is the service name followed by "DacuraServer" 
+	 * 
+	 *  At this stage we also load all of the configuration information in the system and local collections.
+	 */
+	function loadServer(){
+		$srvclass = ucfirst($this->servicename)."DacuraServer";
+		try {
+			$srvr = new $srvclass($this);
+			if($srvr->errcode){
+				return $this->failure_result($srvr->errmsg, $srvr->errcode);
+			}
+			if($this->cid() != "all"){
+				if(!$col = $srvr->getCollection()){
+					default_settings($this->settings);//must call this explicitly as it is not called until loadcontextsettings						
+					return $this->failure_result($this->cid() . " is not a valid id of a dacura collection or service", 404);
+				}
+				if($col->status != "accept" && !$srvr->userHasRole("admin", "all")){
+					default_settings($this->settings);						
+					return $this->failure_result($this->cid() . " is currently in state $col->status and cannot be accessed", 401);						
+				}
+				$defs = $col->getDefaultSettings($srvr);
+				foreach($defs as $k => $v){
+					if(!isset($this->settings[$k])){
+						$this->settings[$k] = $defs[$k];
+					}
+				}				
+			}
+			$this->loadContextSettings($this->settings, $srvr);
+			$this->loadServiceContextSettings($this->servicename, $this->settings[$this->servicename], $srvr);
+			$u = $srvr->getUser();
+			if($u){
+				$this->logger->user_name = $u->getName();
+			}
+			else {
+				$this->logger->user_name = $_SERVER['REMOTE_ADDR'];				
+			}
+			return $srvr;
+		}
+		catch(Exception $e){
+			return $this->failure_result("Failed to create $srvrclass object: ".$e->getMessage(), 500);
+		}
+	}
+	
+	/**
+	 * Loads the settings for the context (collection)
+	 * @param array $settings the settings array to load
+	 * @param DacuraServer $srvr the active server
+	 */
+	function loadContextSettings(&$settings, DacuraServer $srvr){
+		$sys = $srvr->getCollection("all");
+		$this->applyCollectionSettings($settings, $sys);
+		if($this->cid() != "all"){
+			$c = $srvr->getCollection();
+			$this->applyCollectionSettings($settings, $c);
+		}
+		$this->overwriteLocked($settings, $sys->getConfig("settings"), $sys->getConfig("meta"));
+		default_settings($settings);
+	}
+
+	/**
+	 * Loads the service's settings for this context (collection)
+	 * @param string $sid the id of the service
+	 * @param array $settings the settings array to load
+	 * @param DacuraServer $srvr the active server
+	 */
+	function loadServiceContextSettings($sid, &$settings, DacuraServer $srvr){
+		$sys = $srvr->getCollection("all");
+		$this->applyServiceSettings($sid, $settings, $sys);
+		if($this->cid() != "all"){
+			$c = $srvr->getCollection();
+			$this->applyServiceSettings($sid, $settings, $c);
+		}
+		$sset = $sys->getConfig("services.".$sid);
+		$smeta = $sys->getConfig("servicesmeta.".$sid);
+		$this->overwriteLocked($settings, $sset, $smeta);
+		if(isset($sset['status']) && isset($smeta['status']) && isset($smeta['status']) && $smeta['status']['changeable'] != "changeable"){
+			$settings['status_locked'] = true;	
+		}
+		//opr($sset);
+		if(isset($sset['status']) && $sset['status'] != "enable"){
+			$settings['status'] = 'disable';
+		}
+	}
+	
+	/**
+	 * Overwrites any values in the settings that are locked at a system level with the corresponding system level values
+	 * 
+	 * Provides the basic ability to lock certain variables system wide 
+	 * @param array $arr collection settings array
+	 * @param array $lvals system level settings array
+	 * @param array $meta an array of metadata about the lvals - only those with a meta[changeable] = changeable can vary in collections
+	 */
+	function overwriteLocked(&$arr, $lvals, $meta){
+		if(!is_array($lvals)) return;
+		foreach($lvals as $i => $v){
+			if(isset($meta[$i]) && isset($meta[$i]['changeable']) && $meta[$i]['changeable'] != "changeable"){
+				$arr[$i] = $v;
+			}
+			if(is_array($lvals[$i])){
+				$this->overwriteLocked($arr[$i], $lvals[$i], $meta);
+			}
+		}
+	}
+	
+	/**
+	 * Applies the settings from the passed collection to a particular service's settings
+	 * @param string $sid the service id
+	 * @param array $ssettings the server level settings array
+	 * @param Collection $c the collection object to apply
+	 */
+	function applyServiceSettings($sid, &$ssettings, $c){
+		if($service_conf = $c->getConfig("services.".$sid)){
+			foreach($service_conf as $k => $v){
+				$ssettings[$k] = $v;
+			}
+		}
+	}
+	
+	/**
+	 * Applies the settings from the passed collection to the system settings
+	 * @param array $settings the settings array to be modified
+	 * @param Collection $c the collection object to apply
+	 */
+	function applyCollectionSettings(&$settings, $c){
+		if($csets = $c->getConfig("settings")){
+			foreach($csets as $k => $v){
+				$settings[$k] = $v;				
+			}
+		}
+	}
+	
+	/*  Service access control / facet related functions */
+	
+	/**
+	 * Returns a list of the facets that are considered active for the current user
+	 * @param DacuraUser $u (or false if not logged in)
+	 * @return array<string> the list of the facet names that are active
+	 */
+	function getActiveFacets($u = false){
+		if(!$facets = $this->getServiceSetting("facets")){
+			if(isset($this->default_facets) && is_array($this->default_facets)){
+				return $this->default_facets;
+			}
+			return array();
+		}
+		$allowed = array();
+		foreach($facets as $f){
+			if($f['role'] == "public"){
+				$allowed[] = $f;
+			}
+			elseif($u && $u->hasSufficientRole($f['role'], $this->cid())){
+				$allowed[] = $f;				
+			}
+		}
+		return $allowed;
+	}
+	
+	/**
+	 * Compares facets according to some hierarchy - returns true if the first is >= the second
+	 * @param string $a facet name
+	 * @param string $b facet name
+	 * @return true if $a >= $b
+	 */
+	function compareFacets($a, $b){
+		//hierarchy... admin->manage
+		//admin->inspect->view inspect->list
+		if($a == $b) return true;
+		if($a == "admin") return true;
+		elseif($b == "admin") return false;
+		if(($a == "manage" || $a == "inspect") && ($b == 'view' or $b == 'list')) return true;
+		return false;
+	}
+	
+	/**
+	 * What is the minimum facet required to access a service
+	 * @param DacuraServer $dacura_server
+	 * @return string the facet name required
+	 */
+	function getMinimumFacetForAccess(DacuraServer &$dacura_server){
+		return $this->getScreenForAC($dacura_server);
+	}
+	
+	/**
+	 * Load any URL arguments from the browser into the service context
+	 * 
+	 * Sets the first arg to screen
+	 * Sets args to a name value associative array covering the rest of the args /a/b/c/d => [a=>b, c=>d]
+	 * 
+	 * @param string[] $sections the segments of the URL (divided by /) that appeared after the servicename in the URL 
+	 */
 	function loadArgsFromBrowserURL($sections){
 		if(count($sections) > 0){
 			$this->screen = array_shift($sections);
@@ -73,143 +326,199 @@ class DacuraService extends DacuraObject {
 		}
 		else {
 			$this->screen = $this->default_screen;
-		}		
-	}
-	
-	/*
-	 * Loads the service context from the service call object passed in
-	 */
-	function load($sc, &$logger){
-		$this->servicename = $sc->servicename;
-		//$this->servicecall = $sc;
-		$this->collection_id = $sc->collection_id;
-		$this->dataset_id = $sc->dataset_id;
-		$this->connection_type = $sc->provenance;
-		if($sc->provenance == "html"){ //if it is html, all the arguments are in the URL
-			$this->loadArgsFromBrowserURL($sc->args);
 		}
-		else {
-			$this->args = $sc->args;
-		}
-		$this->mydir = $this->settings['path_to_services'].$this->servicename."/";
-		$logger->loadFromService($this);
-		$this->logger =& $logger;
-		if($sc->provenance == "html"){ //if it is html, all the arguments are in the URL
-			$this->logger->setEvent("read", $this->screen);
-		}
-		$this->init();
-	}
-	
-	
-	/*
-	 * Loads the appropriate server for this service
-	 */
-	function loadServer(){
-		$srvclass = ucfirst($this->servicename)."DacuraServer";
-		try {
-			$srvr = new $srvclass($this);
-			if($srvr->errcode){
-				return $this->failure_result($srvr->errmsg, $srvr->errcode);
-			}				
-			$u = $srvr->getUser(0);
-			if($u){
-				$this->logger->user_name = $u->getName();
-			}
-			return $srvr;
-		}
-		catch(Exception $e){
-			return $this->failure_result("Failed to create $srvrclass object: ".$e->getMessage(), 500);
-		}
-		
 	}
 
-	function hasScreen($screen){
-		return file_exists($this->mydir."screens/$screen.php");
-	}
+	/*
+	 * Functions for getting configuration settings
+	 */
 
-	function renderScreen($screen, $params, $other_service = false){
-		$service =& $this;
-		global $dacura_server;
-		if($other_service){
-			$f = $this->settings['path_to_services'].$other_service."/screens/$screen.php";
-			if(file_exists($f)){				
-				include_once($f);
-			}
-			else {
-				return $this->renderScreen("error", array("title" => "Navigation Misstep", "message" => "No '$screen' page found in $other_service service"), "core");
+	/**
+	 * Return the value of a system configuration setting
+	 * @param string $cname the name of the configuration variable
+	 * @param string $def the default value to give it if the variable does not exist
+	 * @param array $fillings name value array of parameter subsitutions ("TITLE" => "this is the title to be subbed in")
+	 * @return string the parameterised configuration variable value (or default if not set)
+	 */
+	function getSystemSetting($cname, $def = false, $fillings = array()){
+		if(isset($this->settings[$cname])){
+			$cval = $this->settings[$cname];
+			return $this->subParamsIntoConfigValue($cval, $fillings);
+		}
+		return $def;
+	}
+	
+	/**
+	 * returns the value of a service configuration variable (or default if it does not exist)
+	 * @param unknown $cname
+	 * @param string $def the default value to give it if the variable does not exist
+	 * @param array $fillings name value array of parameter subsitutions ("TITLE" => "this is the title to be subbed in")
+	 * @return string the parameterised configuration variable value (or default if not set)
+	 */
+	function getServiceSetting($cname, $def = false, $fillings = array()){
+		if(isset($this->settings[$this->servicename]) && isset($this->settings[$this->servicename][$cname])){
+			$cval = $this->settings[$this->servicename][$cname];
+			return $this->subParamsIntoConfigValue($cval, $fillings);
+		}
+		return $def;
+	}
+	
+	/**
+	 * Substitutes parameters (fillings) into the configuration variable value 
+	 * 
+	 * If the value is an array, it will apply the subtitution recursively to the array values
+	 * @param mixed $val the configuration variable value
+	 * @param array $fillings name value array of parameter subsitutions ("TITLE" => "this is the title to be subbed in")
+	 */
+	protected function subParamsIntoConfigValue(&$val, $fillings){
+		if(is_array($val)){
+			foreach($val as $i => $nval){
+				$this->subParamsIntoConfigValue($val[$i], $fillings);
 			}
 		}
 		else {
-			$f = $this->mydir."screens/$screen.php";
-			if(file_exists($f)){
-				include_once($f);
-			}
-			else {
-				return $this->renderScreen("error", array("title" => "Navigation Error", "message" => "No '$screen' page found in ".$this->servicename), "core");
+			foreach($fillings as $n => $v){
+				if(strstr($n, $val) !== false){
+					$val = str_replace($n, $v, $val);
+				}		
 			}
 		}
+		return $val;//just for convenience - the value is changed by being passed by reference
 	}
 	
-	function renderScreenAsString($screen, $params, $other_service = false){
-		ob_start();
-		$this->renderScreen($screen, $params, $other_service);
-		$page = ob_get_contents();
-		ob_end_clean();
-		return $page;
+	/**
+	 * Get the necessary configuration for a particular dacura form 
+	 * @param string $id the form id
+	 * @param array $fillings name value array of parameter subsitutions ("TITLE" => "this is the title to be subbed in")
+	 * @return array an array of form element configurations (associative arrays with id, etc. set]
+	 * @see DacuraForm 
+	 */
+	protected function sform($id, $fillings = array()){
+		$forms = $this->getServiceSetting("forms", array());
+		if(!isset($forms[$id])){
+			return array();
+		}
+		$fields = $this->getServiceSetting("form_fields", array());
+		$sform = array();
+		foreach($forms[$id] as $fieldid){
+			$onef = $fields[$fieldid];
+			if(!isset($onef['id'])){
+			//	$onef['id'] = $id."-".$fieldid;
+				$onef['id'] = $fieldid;
+			}
+			//else {
+				//$onef['id'] = $id."-".$onef['id'];
+			//}
+			$sform[$fieldid] = $this->subParamsIntoConfigValue($onef, $fillings);
+		}
+		return $sform;
 	}
 	
-	function writeIncludedInterpolatedScripts($path){
-		$this->included_scripts[] = $path;
-/*		$path = $this->mydir.$path;
-		$service = &$this;
-		global $dacura_server;
-		echo "<script>alert('".$path."')"; 
-		//include_once($path);
-		echo "</script>";*/
+	/**
+	 * Get a particular natural language message from a service's setting
+	 * @param string $id the message id
+	 * @param array $fillings name value array of parameter subsitutions ("TITLE" => "this is the title to be subbed in")
+	 * @return string the message itself
+	 */
+	protected function smsg($id, $fillings = array()){
+		$msgs = $this->getServiceSetting("messages", array());
+		$msg = isset($msgs[$id]) ? $msgs[$id] : "";
+		return $this->subParamsIntoConfigValue($msg, $fillings);
 	}
 	
-	function renderToolHeader($option){
-		global $dacura_server;//make it available in the scope of the tool header template
-		$params = array();
-		$params['close-link'] = isset($option['close-link']) ? $option['close-link'] : $this->get_cds_url("", $this->collection_id, $this->dataset_id);
-		$params['close-msg'] = isset($option['close-tool-msg']) ? $option['close-tool-msg'] : "Close the tool and return to the main menu";
-		$params['title']= isset($option['title']) ? $option['title'] : "Dacura Tool";
-		$params['subtitle'] = isset($option['subtitle']) ? $option['subtitle'] : "";
-		$params['description'] = isset($option['description']) ? $option['description'] : "";
-		$params['image'] = isset($option['image']) ? $option['image'] : false;
-		$params['css_class'] = isset($option["css_class"]) ? $option["css_class"] : "";
-		$params['tabs'] = isset($option['tabs']) ? $option['tabs'] : false;
-		$params['jsoned'] = isset($option['jsoned']) ? true : false;
-		$params['dt'] = isset($option['dt']) ? true : false;
-		$params['init-msg'] = isset($option['msg']) ? $option['msg'] : "";
-		$tl = isset($option['topbreadcrumb']) ? $option['topbreadcrumb'] : false;
-		$tx = isset($option['collectionbreadcrumb']) ? $option['collectionbreadcrumb'] : false;
-		$params['breadcrumbs'] = isset($option['breadcrumbs']) ? $this->getBreadCrumbsHTML($option['breadcrumbs'][0], $option['breadcrumbs'][1], $tl, $tx) : false;			
-		$service = &$this;//make $service available in the scope of the tool header template
-		include_once(path_to_snippet("toolheader"));
+	/**
+	 * Get a particular listing table configuration from a service's settings 
+	 * @param string $id the table id
+	 * @param array $fillings
+	 * @return mixed
+	 */
+	protected function stab($id, $fillings = array()){
+		$tabs = $this->getServiceSetting("tables", array());
+		$tab = isset($tabs[$id]) ? $tabs[$id] : array();
+		return $this->subParamsIntoConfigValue($tab, $fillings);
 	}
-
-	function includeSnippet($sn){
+	
+	/**
+	 * Return the services datatable settings for a particular table
+	 * @param string $id table id
+	 * @return string|boolean the json-encoded datatable setting string or false if not found
+	 */
+	protected function getDatatableSetting($id){
+		$tab = $this->stab($id);
+		if(isset($tab['datatable_options'])){
+			return json_encode($tab["datatable_options"]);
+		}
+		return false;
+	}
+	
+	/* Functions for rendering screens. Listed in the order that they are called */
+	
+	/**
+	 * Includes a snippet of html (from services/core/snippets) and sets the parameters in it
+	 *
+	 * @param string $sn snippet name
+	 * @param array $params substitution name value array for snippet parameters
+	 */
+	public function includeSnippet($sn, $params = array()){
+		$service = &$this;//make $service available in the scope of the snippet
+		global $dacura_server;//make server available too!
 		include(path_to_snippet($sn));
 	}
 	
-	function renderToolFooter($option){
-		include_once(path_to_snippet("toolfooter"));
+	/**
+	 * Renders a screen when viewed in full page mode
+	 * @param DacuraServer $dacura_server
+	 */
+	public function renderFullPage(DacuraServer &$dacura_server){
+		$this->renderFullPageHeader($dacura_server);
+		$this->handlePageLoad($dacura_server);
+		$this->renderFullPageFooter($dacura_server);
+	}
+
+	/**
+	 * Renders the html header for a service when viewed in full page mode
+	 * @param DacuraServer $dacura_server
+	 */
+	protected function renderFullPageHeader(DacuraServer &$dacura_server){
+		$this->renderHeaderSnippet($dacura_server);
+		$this->renderTopbarSnippet($dacura_server);
+		$this->writeIncludedScripts($dacura_server);
+		$this->writeIncludedCSS($dacura_server);
+		$this->writeBodyHeader($dacura_server);
 	}
 	
-	function renderHeaderSnippet(&$dacura_server){
+	/**
+	 * Render the page's HTML header
+	 * @param DacuraServer $dacura_server the dacura server object that was invoked
+	 */
+	protected function renderHeaderSnippet(DacuraServer &$dacura_server){
 		$service = &$this;
 		$params = array();
-		if($dacura_server->cid() != "all"){
+		if($this->cid() != "all"){
 			$col = $dacura_server->getCollection($dacura_server->cid());
 			if($col && $col->getConfig("background")){
 				$params['bgimage'] = $col->getConfig("background");
-			} 
+			}
 		}
-		include_once(path_to_snippet("header"));
+		$this->includeSnippet("header", $params);
 	}
 	
-	function getTopbarParams(&$dacura_server){
+	/**
+	 * Render the bar at the top of each Dacura Page
+	 * @param DacuraServer $dacura_server
+	 */
+	protected function renderTopbarSnippet(DacuraServer &$dacura_server){
+		$params = $this->getTopbarParams($dacura_server);
+		$service = &$this;
+		$this->renderScreen("topbar", $params, "core");
+	}
+	
+	/**
+	 * Generates a parameter array for passing to the topbar snippet rendering
+	 * @param DacuraServer $dacura_server
+	 * @return array a name-value array of parameters
+	 */
+	protected function getTopbarParams(DacuraServer &$dacura_server){
 		$params = array();
 		$params["context"] = $dacura_server->loadContextParams();
 		$scl = $this->getServiceContextLinks();
@@ -219,7 +528,7 @@ class DacuraService extends DacuraObject {
 		$u = $dacura_server->getUser();
 		if($u){
 			$params["username"] = $u->handle;
-			$params["usericon"] = $this->url("image", "user_icon.png");
+			$params["usericon"] = $this->furl("image", "user_icon.png");
 			if($u->rolesSpanCollections()){
 				$params["profileurl"] = $this->get_service_url("users", array(), "html", "all", "all")."/profile";
 			}
@@ -238,133 +547,64 @@ class DacuraService extends DacuraObject {
 		}
 		return $params;
 	}
-	
-	function renderTopbarSnippet(&$dacura_server){
-		$params = $this->getTopbarParams($dacura_server);
-		$service = &$this;	
-		$this->renderScreen("topbar", $params, "core");		
+	/**
+	 * Loads a parameter array for the current service
+	 * @return array parameter array("class": css class, "url": service url, "icon": service icon file, "name": service name)
+	 */
+	protected function getServiceContextLinks(){
+		$cls = ($this->getCollectionID() == "all") ? "ucontext first" : "ucontext";
+		$sparams = array(
+				"class" => $cls,
+				"url" => $this->get_service_url(),
+				"icon" => $this->furl("image", "buttons/".$this->servicename."_icon.png"),
+				"name" => $this->getTitle()
+		);
+		return $sparams;
 	}
 	
-	function writeIncludedScripts(&$dacura_server){
+	/**
+	 * Includes any necessary javascripts in the page
+	 * 
+	 * If there is a script in the service directory called dacura.[servicename].js it will be included
+	 * As will any scripts that are added to $this->included_scripts
+	 * @param DacuraServer $dacura_server
+	 */
+	protected function writeIncludedScripts(DacuraServer &$dacura_server){
 		$jsname = "dacura.".$this->servicename.".js";
 		if(file_exists($this->mydir.$jsname)){
-			$this->included_scripts[] = $this->url("script", $jsname);
+			$this->included_scripts[] = $this->furl("script", $jsname);
 		}
 		foreach($this->included_scripts as $url){
 			echo "<script src='$url'></script>";
-		}		
+		}
 	}
-
-	function writeIncludedCSS(&$dacura_server){
+	
+	/**
+	 * Writes the html to include necessary css files in page
+	 * 
+	 * Whatever is included in $this->included_css is included
+	 * @param DacuraServer $dacura_server
+	 */
+	protected function writeIncludedCSS(DacuraServer &$dacura_server){
 		foreach($this->included_css as $url){
 			echo '<link rel="stylesheet" type="text/css" media="screen" href="'.$url.'">';
 		}
 	}
 	
-	function writeBodyHeader(&$dacura_server){
+	/**
+	 * Writes the header of the page body
+	 * @param DacuraServer $dacura_server
+	 */
+	protected function writeBodyHeader(DacuraServer &$dacura_server){
 		echo "<div id='pagecontent-container'>";
-		echo "<div id='pagecontent-nopad'>";		
+		echo "<div id='pagecontent-nopad'>";
 	}
 	
-	function writeBodyFooter(&$dacura_server){
-		echo "</div></div>";
-	}
-	
-	function renderFullPageHeader(&$dacura_server){
-		$this->renderHeaderSnippet($dacura_server);
-		$this->renderTopbarSnippet($dacura_server);
-		$this->writeIncludedScripts($dacura_server);
-		$this->writeIncludedCSS($dacura_server);
-		$this->writeBodyHeader($dacura_server);
-	}
-	
-	function renderFullPageFooter(&$dacura_server){
-		$service = &$this;
-		$this->writeBodyFooter($dacura_server);
-		include_once(path_to_snippet("footer"));
-	}
-	
-	function getServiceContextLinks(){
-		$cls = ($this->getCollectionID() == "all") ? "ucontext first" : "ucontext";
-		$sparams = array(
-			"class" => $cls,
-			"url" => $this->get_service_url(),
-			"icon" => $this->url("image", "buttons/".$this->servicename."_icon.png"),
-			"name" => $this->getTitle()
-		);
-		return $sparams;
-	}
-	
-	function getTitle(){
-		if(isset($this->title) && $this->title){
-			return $this->title;
-		}
-		return ucfirst($this->servicename)." Service";
-	}
-	
-	function showLDEditor($params){
-		$service = $this;
-		$entity = isset($params['entity']) ? $params['entity'] : "Entity";
-		$this->renderScreen("editor", $params, "ld");
-		//include_once("phplib/snippets/LDEditor.php");		
-	}
-	
-	function showLDResultbox($params){
-		$service = $this;
-		$entity = isset($params['entity']) ? $params['entity'] : "Entity";
-		$this->renderScreen("resultbox", $params, "ld");
-		//include_once("phplib/snippets/LDEditor.php");
-	}
-	
-	function showDQSControls($graph, $set_tests){
-		$params = array("graph" => $graph, "tests" => $set_tests);
-		$this->renderScreen("dqs", $params, "ld");		
-	}
-	
-	
-	function isPublicScreen(){
-		if($this->screen == "") $this->screen = "home";
-		return in_array($this->screen, $this->public_screens); 
-	}
-	
-	function userCanViewScreen($user, &$dacura_server){
-		$screen = $this->getScreenForAC($dacura_server);
-		if(!isset($this->protected_screens[$screen])){
-			return $this->failure_result("Service: $this->servicename does not have an access rule for $screen", 401);				
-		}
-		$req_role = $this->protected_screens[$screen];
-		if(!isset($req_role[1]) or $req_role[1] === false) $req_role[1] = $this->collection_id;
-		if(!isset($req_role[2]) or $req_role[2] === false) $req_role[2] = $this->dataset_id;	
-		if($user->hasSufficientRole($req_role[0], $req_role[1], $req_role[2])){			
-			return true;
-		}
-		return $this->failure_result("User " . $user->getName(). " does not have role required to view $screen screen.", 401);
-	}
-	
-	function renderFullPage(&$dacura_server){
-		$this->loadDisplaySettings();
-		$this->renderFullPageHeader($dacura_server);
-		$this->handlePageLoad($dacura_server);
-		$this->renderFullPageFooter($dacura_server);	
-	}
-	
-	function getScreenForAC(&$dacura_server){
-		return $this->getScreenForCall($dacura_server);
-	}
-	
-	function getScreenForCall(&$dacura_server){
-		return $this->screen;
-	}
-	
-	function getParamsForScreen($screen, &$dacura_server){
-		return $this->args;
-	}
-	
-	function getParamsFor404(&$dacura_server){
-		return array("title" => "The screen could not be found", "message" => "The service was not able to identify a screen for the call");;
-	}
-	
-	function handlePageLoad(&$dacura_server){
+	/**
+	 * Called to deal with the actual invocation when a page is loaded after the headers have been rendered
+	 * @param DacuraServer $dacura_server
+	 */
+	function handlePageLoad(DacuraServer &$dacura_server){
 		$screen = $this->getScreenForCall($dacura_server);
 		if($screen){
 			$params = $this->getParamsForScreen($screen, $dacura_server);
@@ -377,77 +617,202 @@ class DacuraService extends DacuraObject {
 			$this->renderScreen("error", $params, "core");
 		}
 	}
-	
-	
-	/*
-	 * to provide url services to html files...
+
+	/**
+	 * Which screen is being accessed by the browser?
+	 * @param DacuraServer $dacura_server
+	 * @return string the id of the screen
 	 */
+	function getScreenForCall(DacuraServer &$dacura_server){
+		return $this->screen;
+	}
 	
-	/*
-	 * Service calls include the collection/dataset id and may include parameters and may come through multiple interfaces
+	/**
+	 * Which screen is being accessed from an access control point of view?
+	 * 
+	 * This is separated out to allow services to override this to get 
+	 * complex relationships between screens and access control
+	 * @param DacuraServer $dacura_server
+	 * @return string the id of the screen 
 	 */
-	function get_service_url($servicen = false, $args = array(), $interface="html", $col_id = false, $ds_id = false){
-		$args_ext = (count($args) > 0) ? "/".implode("/", $args) : "";
-		$servicen = ($servicen ? $servicen : $this->servicename);
-		if($servicen == 'login'){
-			return $this->settings['install_url']."login".$args_ext;
+	function getScreenForAC(DacuraServer &$dacura_server){
+		return $this->getScreenForCall($dacura_server);
+	}
+	
+	/**
+	 * Generate the name-value array of parameters to pass to a particular screen
+	 * @param string $screen the id of the screen in question
+	 * @param DacuraServer $dacura_server
+	 * @return array parameter array 
+	 */
+	function getParamsForScreen($screen, DacuraServer &$dacura_server){
+		return $this->args;
+	}
+	
+	/**
+	 * Gets the necessary parameter array for 404 screens (when the screen being accessed does not exist)
+	 * @param DacuraServer $dacura_server
+	 * @return array Parameter array(title => "", "message" => )
+	 */
+	function getParamsFor404(&$dacura_server){
+		return array("title" => "The screen could not be found", "message" => "The service was not able to identify a screen for the call");;
+	}	
+	
+	/**
+	 * Writes the tool header html to the browser
+	 * @param array $option name value array of options to pass to tool
+	 */
+	protected function renderToolHeader($option){
+		global $dacura_server;//make it available in the scope of the tool header template
+		$params = array();
+		$params['close-link'] = isset($option['close-link']) ? $option['close-link'] : $this->get_service_url("browse");
+		$params['close-msg'] = isset($option['close-tool-msg']) ? $option['close-tool-msg'] : "Close the tool and return to the main menu";
+		$params['title']= isset($option['title']) ? $option['title'] : "Dacura Tool";
+		$params['subtitle'] = isset($option['subtitle']) ? $option['subtitle'] : "";
+		$params['description'] = isset($option['description']) ? $option['description'] : "";
+		$params['image'] = isset($option['image']) ? $option['image'] : false;
+		$params['image-link'] = $dacura_server->userHasRole("admin", "all") ? $this->durl().$this->servicename : "";
+		$params['css_class'] = isset($option["css_class"]) ? $option["css_class"] : "";
+		$params['tabs'] = isset($option['tabs']) ? $option['tabs'] : false;
+		$params['jsoned'] = isset($option['jsoned']) ? true : false;
+		$params['dt'] = isset($option['dt']) ? true : false;
+		$params['init-msg'] = isset($option['msg']) ? $option['msg'] : "";
+		$tl = isset($option['breadcrumb_labels']) ? $option['breadcrumb_labels'] : false;
+		$tx = isset($option['breadcrumb_links']) ? $option['breadcrumb_links'] : false;
+		$params['breadcrumbs'] = isset($option['breadcrumbs']) ? $this->getBreadCrumbsHTML($tl, $tx) : false;
+		$this->includeSnippet("toolheader", $params);
+	}
+
+	/**
+	 * Called to render a screen to the browser
+	 * @param string $screen the name of the screen to render
+	 * @param array $params name value associate array of substitution parameters to be passed to screen
+	 * @param string $other_service if set, the screen will be taken from this service, rather than the current one which is default
+	 * @return void
+	 */
+	public function renderScreen($screen, $params, $other_service = false){
+		$service =& $this;
+		global $dacura_server;
+		if($other_service){
+			$f = $this->getSystemSetting('path_to_services').$other_service."/screens/$screen.php";
+			if(file_exists($f)){				
+				include_once($f);
+			}
+			else {
+				return $this->renderScreen("error", array("title" => "Navigation Misstep", "message" => "No '$screen' page found in $other_service service"), "core");
+			}
 		}
 		else {
-			$api_bit = ($interface == $this->settings['apistr'] ? $this->settings['apistr']."/" : "");
-			$col_id = $col_id ? $col_id : $this->collection_id;
-			if($col_id == "all"){
-				$col_bit = "";
+			$f = $this->mydir."screens/$screen.php";
+			if(file_exists($f)){
+				include_once($f);
 			}
 			else {
-				$col_bit = $col_id ."/";
+				return $this->renderScreen("error", array("title" => "Navigation Error", "message" => "No '$screen' page found in ".$this->servicename), "core");
 			}
-			$ds_id = $ds_id ? $ds_id : $this->dataset_id;
-			if($ds_id == "all"){
-				$ds_bit = "";
-			}
-			else {
-				$ds_bit = $ds_id."/";
-			}
-			return $this->settings['install_url'].$api_bit.$col_bit.$ds_bit.$servicen.$args_ext;
 		}
 	}
 	
-	function get_service_breadcrumbs($top_level = "", $collection = ""){
-		$path = array();
-		if($top_level){
-			$url = $this->settings['install_url'];
-			$path = array();
-			$path[] = array("url" => $this->settings['install_url'].$this->servicename, "title" => $top_level);
-			if($this->getCollectionID() && $this->getCollectionID() != "all"){
-				$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/".$this->servicename, "title" => $this->getCollectionID());
-				if($this->getDatasetID() && $this->getDatasetID() != "all"){
-					$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/". $this->getDatasetID()."/".$this->servicename, "title" => $this->getDatasetID());
-				}
-			}
-		}
-		else {
-			if($this->getCollectionID() && $this->getCollectionID() != "all"){
-				if($this->getDatasetID() && $this->getDatasetID() != "all"){
-					$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/".$this->servicename, "title" => $this->getCollectionID());
-					$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/". $this->getDatasetID()."/".$this->servicename, "title" => $this->getDatasetID(). " " . $collection);
-				}
-				else {
-					$path[] = array("url" => $this->settings['install_url'].$this->getCollectionID()."/".$this->servicename, "title" => $this->getCollectionID()." " . $collection);
-				}
-			}
-		}
-		return $path;
+	/**
+	 * Renders a screen and returns the HTML string
+	 * @param string $screen
+	 * @param array $params - name:value substitution parameters for screen 
+	 * @param string $other_service the name of the service which owns the screen (if omitted, the current service is assumed)
+	 * @return string the html encoding of the screen
+	 */
+	public function renderScreenAsString($screen, $params, $other_service = false){
+		ob_start();
+		$this->renderScreen($screen, $params, $other_service);
+		$page = ob_get_contents();
+		ob_end_clean();
+		return $page;
 	}
 	
-	function getBreadCrumbsHTML($x = array(), $append = array(), $top_level = "", $collection = ""){
-		$paths = $this->get_service_breadcrumbs($top_level, $collection);
+	/**
+	 * Tests whether the service has a particular screen
+	 * @param string $screen the name of the screen
+	 * @return boolean true if it exists
+	 */
+	function hasScreen($screen){
+		return file_exists($this->mydir."screens/$screen.php");
+	}
+	
+	/**
+	 * Writes the tool footer html to the browser
+	 * @param array $params
+	 */
+	protected function renderToolFooter($params){
+		$this->includeSnippet("toolfooter", $params);
+	}
+	
+	/**
+	 * Render the html footer of a full page
+	 * @param DacuraServer $dacura_server
+	 */
+	protected function renderFullPageFooter(DacuraServer &$dacura_server){
+		$service = &$this;
+		$this->writeBodyFooter($dacura_server);
+		$this->includeSnippet("footer");
+	}
+	
+	/**
+	 * Writes the footer of the page body
+	 * @param DacuraServer $dacura_server
+	 */
+	protected function writeBodyFooter(DacuraServer &$dacura_server){
+		echo "</div></div>";
+	}
+	
+	/*
+	 * The next functions render snippets of html that are needed by multiple services
+	 */
+	
+	/**
+	 * Renders the LD editor screen (from the ld service)
+	 * @param array $params
+	 */
+	public function showLDEditor($params){
+		$service = $this;
+		$entity = isset($params['entity']) ? $params['entity'] : "Entity";
+		$this->renderScreen("editor", $params, "ld");
+	}
+	
+	/**
+	 * Renders the Linked Data Update Result box
+	 * @param array $params
+	 */
+	public function showLDResultbox($params){
+		$service = $this;
+		$entity = isset($params['entity']) ? $params['entity'] : "Entity";
+		$this->renderScreen("resultbox", $params, "ld");
+	}
+	
+	/**
+	 * Renders the Dacura Quality Service Control screen 
+	 * @param string $graph the name of the graph that it is being applied to 
+	 * @param array $set_tests an array of the ids of the dqs tests that are available
+	 */
+	public function showDQSControls($graph, $set_tests){
+		$params = array("graph" => $graph, "tests" => $set_tests);
+		$this->renderScreen("dqs", $params, "ld");		
+	}
+
+	/**
+	 * Generates the HTML for a service's breadcrumb tabs
+	 * @param array $xcrumbs an array of extra breadcrumbs to add to the regular service ones
+	 * @param string $append a string (non linked) to be added at the end of the breadcrumb list
+	 * @param string $top_level the label on the top level breadcrumb (leave blank to omit top level)
+	 * @param string $collection a string that is appended to the collection breadcrumb label (e.g. "users")
+	 * @return string html breadcrumbs (in a html ul element)
+	 */
+	function getBreadCrumbsHTML($link_overrides = false){
+		$paths = $this->getBreadcrumbsPaths($link_overrides);
 		$html = "<ul class='service-breadcrumbs'>";
 		$z = 20;
 		$tot = 0;
 		foreach($paths as $i => $path){
 			$n = $z--;
 			$tot++;
-			//$n = count($path) - $i;
 			if($i == 0){
 				$html .= "<li class='first'><a href='".$path['url']."' style='z-index:$n;'><span></span>".$path['title']."</a></li>";
 			}
@@ -455,173 +820,161 @@ class DacuraService extends DacuraObject {
 				$html .= "<li><a href='".$path['url']."' style='z-index:$n;'>".$path['title']."</a></li>";
 			}
 		}
-		foreach($x as $onex){
-			$tot++;
-			$n = $z--;
-			$html .= "<li><a href='".$onex[0]."' style='z-index:" . ($z++). ";'>" .$onex[1]."</a></li>";				
-		}
-		foreach($append as $app){
-			$tot++;
-			$html .= "<li>$app</li>";
-		}
 		$html .= "</ul>";
 		if($tot > 0){
-			$html .= "<script>$('.pcbreadcrumbs').css('height', '29px')</script>";
+			$html .= "<script>$('.service-breadcrumbs').css('height', '29px')</script>";
 		}
 		return $html;
 	}
 	
-	function getInputValueHTML($field_id, $field_help = "", $field_type = "input", $flen = "regular", $field_value = "", $fdisabl = false, $field_submit = ""){
-		$html = "<table class='dacura-property-value-bundle'><tr><td class='dacura-property-input'>";
-		if($field_type == "input"){
-			$cls = 'dacura-'.$flen.'-input';
-			$disabled = ($fdisabl) ? " disabled " : "";
-			$html .= "<input id='$field_id' class='$cls' $disabled type='text' value='$field_value'>";				
+	/**
+	 * Generates the breadcrumbs that return the user to the root context from their current context
+	 * @param string $top_level the label on the top level breadcrumb (leave blank to omit top level)
+	 * @param string $collection a string that is appended to the collection breadcrumb label (e.g. "users")
+	 * @return array an array where each entry is an associative array with 'url' & 'title' parameters
+	 */
+	protected function getBreadcrumbsPaths(){
+		$path = array();
+		$stitle = $this->getServiceSetting("service-title");
+		if(!$stitle) $stitle = ucfirst($this->servicename)." service";
+		if($this->cid() != "all"){
+			$ctitle = $this->settings['name'];
+			$path[] = array("url" => $this->durl().$this->cid(), "title" => $ctitle);
+			$path[] = array("url" => $this->durl().$this->cid()."/".$this->servicename, "title" => $stitle);
 		}
-		$html .= "</td>";
-		if($field_submit){
-			$html .= "<td class='dacura-property-submit'>".$field_submit."</td>";				
+		else {
+			$path[] = array("url" => $this->durl(), "title" => "Dacura Platform");
+			$path[] = array("url" => $this->durl()."/".$this->servicename, "title" => $stitle);				
 		}
-		if($field_help){
-			$html .= "<td class='dacura-property-help'>".$field_help."</td>";
+		return $path;
+	}
+
+	/**
+	 * Produces html for a given confirugation of table rows 
+	 * @param string $tid the html id of the table
+	 * @param string $ttype the type of table being shown one of DacuraForm::type
+	 * @param array<rows> $fields an array of filed configuration rows (name value pairs)
+ 	 */
+	function getInputTableHTML($tid, $fields, $settings = array()){
+		$df = new DacuraForm($tid, $settings);
+		if(is_array($fields) && $df->addElements($fields)){
+			return $df->html($tid);				
 		}
-		$html .= "</tr></table>";
-		return $html;				
+		else {
+			return $this->renderScreenAsString("errormsg", array("title" => "failed to load dacura table $tid ".$df->errcode, "message" => $df->errmsg), "core");
+		}
+	}
+
+/* functions to get the appropriate urls for stuff */
+	
+	/**
+	 * Gets the url for this service 
+	 * @param string $interface html | api (whether the api or webpage is desired
+	 * @return string the url
+	 */
+	function my_url($interface = "html"){
+		$api_sign = $this->getSystemSetting('apistr');
+		$api_bit = ($interface ==  $api_sign ? $api_sign ."/" : "");
+		$ext = $this->cid() == "all" ? "" : $this->cid()."/";
+		return $this->durl().$api_bit.$ext.$this->name();
 	}
 	
-	function getInputTableHTML($jdid, $type, $rows){
-		$fm = new DacuraForm($type);
-		if(!$fm->addElements($rows)){
-			opr($fm);
-			return "<div class='dacura-error'>".$fm->errmsg." ".$fm->errcode." </div>";			
-		}
-		return $fm->html($jdid);
-	}
-	
-	
-	//url associated with a file in a particular collection or dataset (http)
-	function get_cds_url($fname, $col_id = false, $ds_id = false){
-		$col_bit = ($col_id ? $col_id : $this->collection_id)."/";
-		$ds_bit = ($ds_id ? $ds_id : $this->dataset_id)."/";
-		return $this->settings['install_url'].$col_bit.$ds_bit.$fname;
-	}
-	
-	//url associated with a file in the local service (http)
-	function get_service_file_url($fname, $servicen = false){
+	/**
+	 * Returns the URL for accessing a service
+	 * @param string $servicen the name of the service (if omitted, the current service is used)
+	 * @param array $args the arguments to be passed as url parameters
+	 * @param string $interface html | api
+	 * @param string $col_id collection id
+	 * @return string the url to the service
+	 */
+	function get_service_url($servicen = false, $args = array(), $interface="html", $col_id = false){
+		$args_ext = (count($args) > 0) ? "/".implode("/", $args) : "";
 		$servicen = ($servicen ? $servicen : $this->servicename);
-		return $this->settings['services_url'].$servicen."/files/".$fname;
+		if($servicen == 'login'){
+			return $this->durl()."login".$args_ext;
+		}
+		else {
+			$api_bit = ($interface == $this->getSystemSetting('apistr') ? $this->getSystemSetting('apistr') ."/" : "");
+			$col_id = $col_id ? $col_id : $this->cid();
+			if($col_id == "all"){
+				$col_bit = "";
+			}
+			else {
+				$col_bit = $col_id ."/";
+			}
+			return $this->durl().$api_bit.$col_bit.$servicen.$args_ext;
+		}
 	}
 	
-	function get_service_script_url($fname, $servicen = false){
-		$servicen = ($servicen ? $servicen : $this->servicename);
-		return $this->settings['services_url'].$servicen."/".$fname;
-	}
-	
-	function url($type, $name, $c = false, $d = false){
+	/**
+	 * Get the URL of a particular file
+	 * @param string $type [service, collection, script, image, css, js]
+	 * @param string $name filename
+	 * @param string $cid collection id if type = service|collection|script
+	 * @return string the file url
+	 */
+	function furl($type, $name, $cid = false){
 		if($type == 'service'){
-			return $this->get_service_file_url($name, $c);
+			return $this->get_service_file_url($name, $cid);
 		}
 		elseif($type == "collection"){
-			return $this->get_cds_url($name, $c, $d);
+			return $this->get_cds_url($name, $cid);
 		}
 		elseif($type == "script"){
-			return $this->get_service_script_url($name, $c);			
+			return $this->get_service_script_url($name, $cid);
 		}
 		else return $this->get_system_file_url($type, $name);
 	}
-		
-	function my_url($interface = "html"){
-		$api_bit = ($interface == $this->settings['apistr'] ? $this->settings['apistr']."/" : "");
-		$ext = $this->collection_id == "all" ? "" : $this->collection_id."/";
-		$ext .= $this->dataset_id == "all" ? "" : $this->dataset_id."/";
-		return $this->settings['install_url'].$api_bit.$ext.$this->servicename;
+	
+	/**
+	 * URL of a file that is associated with a particular collection
+	 * @param string $fname filename
+	 * @param string $col_id collection id
+	 * @return string url
+	 */
+	function get_cds_url($fname, $col_id = false){
+		$col_bit = ($col_id ? $col_id : $this->cid())."/";
+		return $this->getSystemSetting("collections_urlbase").$col_bit.$fname;
 	}
 	
-	//these are all html -> all api access is via services.
-	/*
-	 * System calls are for files (css, img, etc)
+	/**
+	 * URL of a file that is associated with a particular service
+	 * @param string $fname filename
+	 * @param string $servicen service name
+	 * @return string url
+	 */
+	function get_service_file_url($fname, $servicen = false){
+		$servicen = ($servicen ? $servicen : $this->name());
+		$durl = $this->getSystemSetting("services_url");
+		return $durl.$servicen."/files/".$fname;
+	}
+	
+	/**
+	 * Get the URL of a script associated with a particular service
+	 * @param string $fname the script name
+	 * @param string $servicen the service name
+	 * @return string url
+	 */
+	function get_service_script_url($fname, $servicen = false){
+		$servicen = ($servicen ? $servicen : $this->name());
+		$durl = $this->getSystemSetting("services_url");
+		return $durl.$servicen."/".$fname;
+	}
+	
+	/**
+	 * System files are dacura media (css, image, js, etc)
+	 * @param string $type (css, image, js)
+	 * @param unknown $name
+	 * @return string
 	 */
 	function get_system_file_url($type, $name){
-		if($type == "js"){
-			$ext_bit = $this->settings['files_url']."js/";
-		}
-		elseif($type == "css"){
-			$ext_bit = $this->settings['files_url']."css/";
+		$fu = $this->getSystemSetting("files_url");
+		if($type == "js" || $type == "css"){
+			$ext_bit = $fu.$type."/";
 		}
 		else {
-			$ext_bit = $this->settings['files_url']."images/";
+			$ext_bit = $fu."images/";
 		}
 		return $ext_bit.$name;
 	}
-	
-	//returns setting information
-	
-	function getSystemSetting($cname, $def = false){
-		if(isset($this->settings[$cname])){
-			return $this->settings[$cname];
-		}
-		return $def;
-	}
-	
-	//returns a setting for a particular service or the default if it does not exist
-	function getServiceSetting($cname, $def = false){
-		if(isset($this->settings[$this->servicename]) && isset($this->settings[$this->servicename][$cname])){
-			return $this->settings[$this->servicename][$cname];
-		}
-		return $def;
-	}
-	
-	function loadDisplaySettings(){
-		$this->loadSettingForms();
-		$this->loadSettingTables();
-		$this->loadSettingMessages();
-	}
-	
-	function loadSettingForms(){
-		$forms = $this->getServiceSetting("forms", array());
-		$fields = $this->getServiceSetting("form_fields", array());
-		foreach($forms as $formid => $fieldids){
-			$this->dacura_forms[$formid] = array();
-			foreach($fieldids as $fieldid){
-				$onef = $fields[$fieldid];
-				if(!isset($onef['id'])){
-					$onef['id'] = $formid."-".$fieldid;						
-				}
-				else {
-					$onef['id'] = $formid."-".$onef['id'];
-				}
-				$this->dacura_forms[$formid][$fieldid] = $onef;
-			}
-		}
-	}
-	
-	function sform($id){
-		return isset($this->dacura_forms[$id]) ? $this->dacura_forms[$id] : array();
-	}
-
-	function smsg($id){
-		return isset($this->dacura_messages[$id]) ? $this->dacura_messages[$id] : "";
-	}
-	
-	function stab($id){
-		return isset($this->dacura_tables[$id]) ? $this->dacura_tables[$id] : array();
-	}
-	
-	
-	function loadSettingMessages(){
-		$this->dacura_messages = $this->getServiceSetting("messages", array());
-	}
-	
-	function loadSettingTables(){
-		$this->dacura_tables = $this->getServiceSetting("tables", array());
-	}
-	
-	function getDatatableSetting($id){
-		if(isset($this->dacura_tables[$id]['datatable_options'])){
-			return json_encode($this->dacura_tables[$id]["datatable_options"]);
-		}
-		return false;
-	}
-	
-	
 }

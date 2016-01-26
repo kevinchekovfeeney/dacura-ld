@@ -1,83 +1,39 @@
 <?php
-
 include_once("BrowseDacuraServer.php");
-
+/** 
+ * Browse Service - provides access to home page of collection and system.
+ * 
+ * Creation Date: 01/03/2015
+ * @package browse
+ * @author Chekov
+ * @license: GPL v2
+ */
 class BrowseService extends DacuraService {
+	/** @var array<string:array> any user of a collection can view the collection home page */
+	//var $protected_screens = array("view" => array("user"));
+	/** @var array a list of the services available to the user in the current collection context */
+	var $services;
+	var $public_screens = array("view");
 	
-	var $collection_context;
-	var $dataset_context;
-	var $public_screens = array();
-	var $protected_screens = array("view" => array("user"));
+	/**
+	 * Loads the set of available services from configuration 
+	 * @see DacuraService::init()
+	 */
+	function init(){
+		parent::init();
+		$this->services =  $this->getServiceSetting("services");		
+	}
 	
-	var $internal_services = array(
-		"config" => array(
-			"role" => array("admin"),
-			"title" => "settings",
-			"help" => "View and update the configuration of the ENTITY"								
-		),
-		"widget" => array(
-			"role" => array("admin"),
-			"title" => "widgets",
-			"help" => "Create and manage user interfaces, tools and forms for managing your data"								
-		),
-		"users" => array(
-			"role" => array("admin"),
-			"title" => "users",
-			"help" => "Manage the users of the ENTITY"								
-		),
-		"task" => array(
-			"role" => array("admin", "all"),
-			"title" => "tasks",
-			"help" => "Manage the tasks to be carried out on your data"								
-		),				
-	);
-
-	var $data_services = array(
-		"import" => array(
-			"role" => array("admin", "all"), 
-			"title" => "import",
-			"help" => "Import data into your dataset from elsewhere"								
-		),
-		"candidate" => array(
-			"role" => array("admin"),
-			"title" => "data",
-			"help" => "View and update the data in your dataset."								
-		),
-		"schema" => array(
-			"role" => array("user"),
-			"title" => "schema",
-			"help" => "Manage the structure and organisation of your dataset"								
-		),
-		"ontology" => array(
-			"role" => array("architect", "any"),
-			"title" => "Ontologies",
-			"help" => "Manage the ontologies that are imported and available to the dataset"								
-		),
-		"publish" => array(
-			"role" => array("admin", "all"),
-			"title" => "publish",
-			"help" => "Publish and share your data in a wide range of ways"
-		),
-	);
-
-	var $tool_services = array(
-		"ld" => array(
-			"title" => "Linked Data Browser",
-			"help" => "Direct, low-level access to all of the Linked Data Objects in the ENTITY",								
-			"role" => array("admin", "all")
-		),
-		"scraper" => array(
-			"title" => "Seshat Scraper",
-			"help" => "A tool for extracting data from the Seshat wiki and converting it into a ",								
-			"role" => array("user", "seshat")
-		)
-
-	);
-	
+	/**
+	 * loads the parameters for a service button on the collection home page 
+	 * @param string $id button id
+	 * @param array $sb button configuration array
+	 * @return array update button configuration array
+	 */
 	function getSingleButtonParams($id, $sb){
 		if(!isset($sb["url"])){
 			if($id == "ontology"){
-				$sb["url"] = $this->settings['install_url']."schema";				
+				$sb["url"] = $this->getSystemSetting('install_url')."schema";				
 			}
 			else {
 				$sb["url"] = $id;
@@ -87,75 +43,106 @@ class BrowseService extends DacuraService {
 		if(!isset($sb["img"])){
 			$sb["img"] = $id;
 		}
-		$sb["img"] = $this->url("file", "buttons/".$sb["img"].".png");
-		$ent = $this->getCollectionID() == "all" ? "System" : "Dataset";
+		$sb["img"] = $this->furl("file", "buttons/".$sb["img"].".png");
+		$ent = $this->cid() == "all" ? "System" : "Dataset";
 		$sb['help'] = str_replace("ENTITY", $ent, $sb['help']);
 		$sb['title'] = str_replace("ENTITY", $ent, $sb['title']);
 		return $sb;
 	}
 	
-	function userCanSee($user, $srvc){
+	/**
+	 * Checks to see if a user has permission to see a particular button
+	 * @param DacuraUser $user
+	 * @param array $srvc a role requirement array [rolename, collectionid]
+	 * @return boolean true if the user has a role that allows them to see the button
+	 */
+	function userCanSee(DacuraUser $user, $srvc){
 		$req_role = $srvc['role'];
-		if(!isset($req_role[1]) or $req_role[1] === false) $req_role[1] = $this->getCollectionID();
-		if(!isset($req_role[2]) or $req_role[2] === false) $req_role[2] = $this->getDatasetID();
-		if($user->hasSufficientRole($req_role[0], $req_role[1], $req_role[2])){
+		if(!isset($req_role[1]) or $req_role[1] === false) $req_role[1] = $this->cid();
+		if($user->hasSufficientRole($req_role[0], $req_role[1])){
 			return true;
 		}
 		return false;		
 	}
 	
+	/**
+	 * Generate the template parameters for all of the service buttons that they user has permission to see 
+	 * @param DacuraUser $user the user in question
+	 * @return array an array of service configuration settings for each of internal_services, data_services, tool_services
+	 */
 	function getServiceButtonParams($user){
 		$params = array();
-		$params['internal_services'] = array();
-		foreach($this->internal_services as $id => $is){
-			$sb = $this->getSingleButtonParams($id, $is);
-			if($this->userCanSee($user, $sb)){
-				$params['internal_services'][] = $sb;
-			} 
-		}
-		$params['data_services'] = array();
-		foreach($this->data_services as $id => $is){
-			$sb = $this->getSingleButtonParams($id, $is);
-			if($this->userCanSee($user, $sb)){
-				$params['data_services'][] = $sb;
-			} 
-		}
-		$params['tool_services'] = array();
-		foreach($this->tool_services as $id => $is){
-			$sb = $this->getSingleButtonParams($id, $is);
-			if($this->userCanSee($user, $sb)){
-				$params['tool_services'][] = $sb;
-			} 
+		foreach(array("internal", "data", "tool") as $stype){
+			if(isset($this->services[$stype])){
+				foreach($this->services[$stype] as $id => $is){
+					$sb = $this->getSingleButtonParams($id, $is);
+					if($this->userCanSee($user, $sb)){
+						$params[$stype."_services"][] = $sb;
+					}
+				}
+			}
 		}
 		return $params;		
 	}
 	
+	/**
+	 * We don't want a link to the browse service to appear so we override it and do nothing
+	 * @see DacuraService::getServiceContextLinks()
+	 */
 	function getServiceContextLinks(){
 		return array();
 	}
 	
-	function getScreenForCall(&$dacura_server){
+	/**
+	 * The view screen is the only one supported by the browse service
+	 * @see DacuraService::getScreenForCall()
+	 * @param BrowseDacuraServer dacura_server the server object
+	 */
+	function getScreenForCall(BrowseDacuraServer &$dacura_server){
 		return "view";
 	}
 	
-	//suppress these as we are not in a tool context
-	function renderToolHeader($p){}
-	function renderToolFooter($p){}
-	function writeBodyHeader(&$dacura_server){}
-	function writeBodyFooter(&$dacura_server){}
+	/**
+	 * Does nothing - just override it to suppress it
+	 * @param array $p parameters
+	 */
+	protected function renderToolHeader($p){}
+	/**
+	 * Does nothing - just override it to suppress it
+	 * @param array $p parameters
+	 */
+	protected function renderToolFooter($p){}
+	/**
+	 * Does nothing - just override it to suppress it
+	 * @param BrowseDacuraServer $dacura_server
+	 */
+	protected function writeBodyHeader(BrowseDacuraServer &$dacura_server){}
+	/**
+	 * Does nothing - just override it to suppress it
+	 * @param BrowseDacuraServer $dacura_server
+	 */
+	protected function writeBodyFooter(BrowseDacuraServer &$dacura_server){}
 	
-	
-	function getParamsForScreen($screen, $dacura_server){
+	/**
+	 * Generates the parameters for the view screen
+	 * 
+	 * See the view screen for details of what parameters are accepted :sheep:
+	 * @see DacuraService::getParamsForScreen()
+	 * @param string $screen the name of the screen - always view in this case
+	 * @param BrowseDacuraServer $dacura_server the server object
+	 */
+	function getParamsForScreen($screen, BrowseDacuraServer $dacura_server){
 		$user = $dacura_server->getUser();
 		$params = $dacura_server->getMenuPanelParams();
 		$cparams = $dacura_server->loadContextParams();
-		$params = array_merge($this->getServiceButtonParams($user), $params);
+		if($user){
+			$params = array_merge($this->getServiceButtonParams($user), $params);
+		}
 		$nparams = $dacura_server->getStatusParams();
 		$params['collection_blurb'] = $this->renderScreenAsString("status", $nparams);
 		if($this->getCollectionID() == 'all'){
-			$params['collection_logo'] = $params['system_logo'];//array();
+			$params['collection_logo'] = $params['system_logo'];
 		}
 		return $params;
-	}
-		
+	}	
 }

@@ -25,20 +25,20 @@ dacura.system = {
 		},
 };	
 	
-dacura.system.ajax_url = "<?=$service->settings['ajaxurl']?>";
-dacura.system.install_url = "<?=$service->settings['install_url']?>";
+dacura.system.ajax_url = "<?=$service->durl(true)?>";
+dacura.system.install_url = "<?=$service->durl()?>";
 dacura.system.pagecontext = {
-		"collection_id": "<?=$service->getCollectionID()?>", 
-		"dataset_id": "<?=$service->getDatasetID()?>", 
-		"service" : "<?=$service->servicename?>"
+		"collection_id": "<?=$service->cid()?>", 
+		"service" : "<?=$service->name()?>"
 };
+
 dacura.system.resulticons = {
-		"error" : "<img class='result-icon result-error' src='<?=$service->url("image", "capi/error.png");?>'>",		
-		"success" : "<img class='result-icon result-success' src='<?=$service->url("image", "capi/success.png");?>'>",
-		"warning" : "<img class='result-icon result-warning' src='<?=$service->url("image", "capi/warning.png");?>'>",
-		"info" : "<img class='result-icon result-info' src='<?=$service->url("image", "capi/info.png");?>'>",
+		"error" : "<img class='result-icon result-error' src='<?=$service->furl("image", "capi/error.png");?>'>",		
+		"success" : "<img class='result-icon result-success' src='<?=$service->furl("image", "capi/success.png");?>'>",
+		"warning" : "<img class='result-icon result-warning' src='<?=$service->furl("image", "capi/warning.png");?>'>",
+		"info" : "<img class='result-icon result-info' src='<?=$service->furl("image", "capi/info.png");?>'>",
 };
 
 $(document).ready(function() {
-	$('select.dacura-select').selectmenu({"width": "200"});
+	dacura.system.selects()
 });

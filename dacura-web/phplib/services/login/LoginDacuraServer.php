@@ -1,47 +1,44 @@
 <?php
-/*
- * Login service - supports lost password and registration interface too
- *
- * Created By: Chekov
- * Contributors:
- * Creation Date: 12/01/2015
- * Licence: GPL v2
+/** 
+ * Login server 
+ * 
+ * supports lost password and registration interface too
+ * @package login
+ * @author Chekov
+ * @license GPL v2
  */
-
-
-
-include_once("phplib/DacuraServer.php");
 
 class LoginDacuraServer extends DacuraServer {
 	
 	/**
 	 * Login function
-	 * @param string $u username
+	 * @param string $u user email
 	 * @param string $p password
-	 * @return boolean - login successful
+	 * @return DacuraUser|boolean - if login successful returns user object
 	 */
-	function login($u, $p){
-		$u = $this->userman->login($u, $p);
+	function login($email, $p){
+		$u = $this->userman->login($email, $p, $this->cid());
 		return ($u) ? $u : $this->failure_result($this->userman->errmsg, 401);
 	}
 	
 	/**
 	 * Registration function
-	 * @param string $u username
+	 * 
+	 * Creates a new user account on the system and generates a confirm email
+	 * @param string $email email 
 	 * @param string $p password
-	 * @return boolean - login successful
+	 * @return boolean - registration successfully initiated
 	 */
-	function register($u, $p){
-		$code = $this->userman->register($u, $p);
+	function register($email, $p){
+		$code = $this->userman->register($email, $p, $this->cid());
 		if($code){
 			$address =  $this->durl()."login/register/code/".$code;
-			$name = $u;
 			ob_start();
 			include_once("screens/register_email.php");
 			$output = ob_get_contents();
 			ob_clean();
-			$htmloutput = $this->getRegisterUnderwayHTML($name);
-			sendemail($u, $this->getServiceSetting('register_email_subject', "Dacura registration"), $output, $this->getSystemSetting('mail_headers',""));
+			$htmloutput = $this->getRegisterUnderwayHTML($email);
+			sendemail($email, $this->getServiceSetting('register_email_subject', "Dacura registration"), $output, $this->getSystemSetting('mail_headers',""));
 			return $htmloutput;
 		}
 		else {
@@ -49,20 +46,23 @@ class LoginDacuraServer extends DacuraServer {
 		}
 	}
 	
-	/*
-	 * Password Reseting
-	*/
-	function lostpassword($u){
-		$code = $this->userman->requestResetPassword($u);
+	/**
+	 * Lost Password Functionality
+	 * 
+	 * Generates an email with a link in it which allows the user to change their password
+	 * @param string $email user email
+	 * @return string|boolean - html string with message for user or false on failure
+	 */
+	function lostpassword($email){
+		$code = $this->userman->requestResetPassword($email);
 		if($code){
 			$address =  $this->durl()."login/lost/code/".$code;
-			$name = $u;
 			ob_start();
 			include_once("screens/lost_password_email.php");
 			$output = ob_get_contents();
 			ob_clean();
-			$htmloutput = $this->getLostUnderwayHTML($name);
-			sendemail($u, $this->getServiceSetting('lost_email_subject', "Lost password notification"), $output, $this->getSystemSetting('mail_headers',""));
+			$htmloutput = $this->getLostUnderwayHTML($email);
+			sendemail($email, $this->getServiceSetting('lost_email_subject', "Lost password notification"), $output, $this->getSystemSetting('mail_headers',""));
 			return $htmloutput;
 		}
 		else {
@@ -70,8 +70,17 @@ class LoginDacuraServer extends DacuraServer {
 		}
 	}
 	
-	function resetpassword($uid, $p){
-		if($this->userman->resetPassword($uid, $p)){
+	/**
+	 * Reset Password function 
+	 * 
+	 * Resets the user's password when they fill in the form after following the confirm link
+	 * @param number $uid user id
+	 * @param string $p password
+	 * @param string $action the user-action that triggered the reset: lost|invite
+	 * @return string|boolean confirmation string on success, false on failure
+	 */
+	function resetpassword($uid, $p, $action){
+		if($this->userman->resetPassword($uid, $p, $action)){
 			return "Your password has been successfully reset. You may now log into the system.";
 		}
 		else {
@@ -79,6 +88,10 @@ class LoginDacuraServer extends DacuraServer {
 		}
 	}
 	
+	/**
+	 * Logout of the system
+	 * @return boolean true on success
+	 */
 	function logout(){
 		if($this->userman->isLoggedIn()){
 			$this->userman->logout();
@@ -89,16 +102,26 @@ class LoginDacuraServer extends DacuraServer {
 		}
 	}
 	
-	function getLostUnderwayHTML($name){
-		$html ="<p>An email has been sent to <strong>$name</strong>. It contains instructions on how to complete the resetting of your password.</p>
+	/**
+	 * Get html to communicate instructions to user upon lost password
+	 * @param string $email
+	 * @return string html string
+	 */
+	private function getLostUnderwayHTML($email){
+		$html ="<p>An email has been sent to <strong>$email</strong>. It contains instructions on how to complete the resetting of your password.</p>
 						<p>Complete the steps outlined in the email within the next 24 hours to reset your password.</p>";
 		return $html;
 	}
-	function getRegisterUnderwayHTML($name){
-		$html = '<P>An email has been sent to <strong>'.$name.'</strong></P>';
+	
+	/**
+	 * Get html to communicate instructions to user upon registration
+	 * @param string $email
+	 * @return string html string
+	 */	
+	private function getRegisterUnderwayHTML($email){
+		$html = '<P>An email has been sent to <strong>'.$email.'</strong></P>';
 		$html .= '<P>Please follow the instructions in that email to complete your registration. </P>';
 		return $html;	
-	}
-	
+	}	
 }
 

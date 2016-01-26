@@ -1,37 +1,31 @@
 <?php
-/*
- * Class representing access to Dacura's logging, caching and file-dumping 
+/**
+ * Class the control's Dacura's logging, caching and file-dumping 
  *
- * Created By: Chekov
- * Creation Date: 25/12/2014
- * Contributors:
- * Modified: 
- * Licence: GPL v2
+ * * Creation Date: 25/12/2014
+ * @author Chekov
+ * @license GPL v2
  */
-
-class FileManager extends DacuraObject {
-	
-	var $service;
-	
-	function __construct(&$service){
-		$this->service = $service;
-	}
-
-	function logEvent($a, $b, $c){
-		$this->service->logger->logEvent($a, $b, $c);
-	}
-	
+class FileManager extends DacuraController {
+	/**
+	 * Caches data for later reuse
+	 * @param string $cname cache name
+	 * @param string $oname object name (to be cached)
+	 * @param string $data the data to be inserted into the cache
+	 * @param array $config configuration settings for the cache
+	 * @return number number of bytes written
+	 */
 	function cache($cname, $oname, $data, $config = false){
 		$oname = $this->sanitise_file_name($oname);
-		$fpath = $this->service->settings['path_to_collections'];
-		if($this->service->getCollectionID()) $fpath .= $this->service->getCollectionID()."/";
-		$fpath .= $this->service->settings['cache_directory'];
+		$fpath = $this->getSystemSetting('path_to_collections');
+		if($this->cid()) $fpath .= $this->cid()."/";
+		$fpath .= $this->getSystemSetting('cache_directory');
 		$d_name = $fpath.$cname;
 		if(!file_exists($d_name)){
 			mkdir($d_name);
 		}
 		if(!$config){
-			$config = $this->service->settings['default_cache_config'];
+			$config = $this->getSystemSetting('default_cache_config');
 		}
 		$cache_config_file = $d_name."/".$oname.".config";
 		if(!file_exists($cache_config_file)){
@@ -40,18 +34,14 @@ class FileManager extends DacuraObject {
 		$full_name = $d_name."/".$oname.".cache";
 		$this->logEvent("debug", 200, "Cached $oname");
 		return (file_put_contents($full_name, json_encode($data)));
-	
 	}
-	
-	function sanitise_file_name( $filename ) {
-		$special_chars = array("?", "[", "]", "/", "\\", "=", "<", ">", ":", ";", ",", "'", "\"", "&", "$", "#", "*", "(", ")", "|", "~", "`", "!", "{", "}");
-		//$special_chars = apply_filters('sanitize_file_name_chars', $special_chars, $filename_raw);
-		$filename = str_replace($special_chars, '', $filename);
-		$filename = preg_replace('/[\s-]+/', '-', $filename);
-		$filename = trim($filename, '.-_');
-		return $filename;
-	}
-	
+	/**
+	 * Is the cache stale (i.e. we must refetch the data)
+	 * @param string $cfile cache file name
+	 * @param array $config cache configuration settings 
+	 * @param mixed $ch Curl handle for connection to check data
+	 * @return boolean true if the cache is stale
+	 */
 	function cacheIsStale($cfile, $config, $ch = false){
 		if($config['type'] == "time"){
 			//check modification time of cache file
@@ -82,11 +72,19 @@ class FileManager extends DacuraObject {
 		return true;
 	}
 	
+	/**
+	 * Fetches data from the cache
+	 * @param string $cname the cache name
+	 * @param string $oname the cached object's name
+	 * @param mixed $ch a curl channel
+	 * @param boolean $return_stale set to true if you want to return data from cache even when it is stale
+	 * @return boolean|mixed either the cached data (array) or false for failure
+	 */
 	function decache($cname, $oname, $ch=false, $return_stale = false){
 		$oname = $this->sanitise_file_name($oname);
-		$fpath = $this->service->settings['path_to_collections'];
-		if($this->service->getCollectionID()) $fpath .= $this->service->getCollectionID()."/";
-		$fpath .= $this->service->settings['cache_directory'];
+		$fpath = $this->getSystemSetting('path_to_collections');
+		if($this->cid()) $fpath .= $this->service->cid()."/";
+		$fpath .= $this->getSystemSetting('cache_directory');
 		$d_name = $fpath.$cname;
 		$full_name = $d_name."/".$oname.".cache";
 		if(!file_exists($full_name)){
@@ -100,8 +98,7 @@ class FileManager extends DacuraObject {
 		if(file_exists($config_file)){
 			$config = json_decode(file_get_contents($config_file), true);
 		}
-		if(!$config) 
-			$config = $this->service->settings['default_cache_config'];
+		if(!$config) $config = $this->getSystemSetting('default_cache_config');
 		if(!$this->cacheIsStale($full_name, $config, $ch)){
 			$this->logEvent("debug", 200, "$oname retrieved from cache");
 			return json_decode(file_get_contents($full_name), true);
@@ -109,16 +106,30 @@ class FileManager extends DacuraObject {
 		return $this->failure_result("Cache file for $cname / $oname is stale", 400);
 	}
 	
+	/**
+	 * Get the URL that corresponds to a particular log file (for web access)
+	 * @param string $fpath the local filesystem path of the fil
+	 * @return string the url of the file
+	 */
 	function getURLofLogfile($fpath){
-		$f_ext = substr($fpath, strlen($this->service->settings['dacura_logbase']));
-		$url = $this->service->settings['log_url'].$f_ext;
+		$f_ext = substr($fpath, strlen($this->getSystemSetting('dacura_logbase')));
+		$url = $this->getSystemSetting('log_url').$f_ext;
 		return $url;
 	}
 	
+	/**
+	 * Starts a service dump into a particular file
+	 * @param string $sname service name
+	 * @param string $dname the name of the dump file
+	 * @param string $extension the file extnesion of the dump file
+	 * @param boolean $avoid_overwrite if this is true, if the dump exists, it will not be overwritten
+	 * @param boolean $prepend_date if true, the date will be prepended to the dump file name
+	 * @return boolean|FileChannel
+	 */
 	function startServiceDump($sname, $dname, $extension = "txt", $avoid_overwrite = true, $prepend_date = false){
-		$fpath = $this->service->settings['path_to_collections'];
-		if($this->service->getCollectionID()) $fpath .= $this->service->getCollectionID()."/";
-		$fpath .= $this->service->settings['dump_directory'];
+		$fpath = $this->getSystemSetting('path_to_collections');
+		if($this->service->getCollectionID()) $fpath .= $this->cid()."/";
+		$fpath .= $this->getSystemSetting('dump_directory');
 		if($prepend_date){
 			$dname .= date("Ymd")."-".$dname;
 		}
@@ -141,24 +152,62 @@ class FileManager extends DacuraObject {
 		}
 		return $this->failure_result("Failed to create lock on dump file $full_nam", 400);
 	}
-	
-	function dumpData($fc, $data){
+	/**
+	 * Dump data to the service dump
+	 * @param FileChannel $fc a file channel for writing the data
+	 * @param string $data the data to be written to file
+	 * @return number the number of bytes written
+	 */
+	function dumpData(FileChannel $fc, $data){
 		return fwrite($fc->fhandle, $data);
 	}
-	
-	function endServiceDump($fc){
+	/**
+	 * 
+	 * @param FileChannel $fc
+	 */
+	function endServiceDump(FileChannel $fc){
 		fflush($fc->fhandle);            // flush output before releasing the lock
 		flock($fc->fhandle, LOCK_UN);    // release the lock
 		fclose($fc->fhandle);
 	}
+	
+	/**
+	 * Ensures a simple filename by removing special characters whitespace, etc
+	 * @param string $filename
+	 * @return string the sanitized version with special chars removed
+	 */
+	function sanitise_file_name( $filename ) {
+		$special_chars = array("?", "[", "]", "/", "\\", "=", "<", ">", ":", ";", ",", "'", "\"", "&", "$", "#", "*", "(", ")", "|", "~", "`", "!", "{", "}");
+		//$special_chars = apply_filters('sanitize_file_name_chars', $special_chars, $filename_raw);
+		$filename = str_replace($special_chars, '', $filename);
+		$filename = preg_replace('/[\s-]+/', '-', $filename);
+		$filename = trim($filename, '.-_');
+		return $filename;
+	}
 }
 
+/**
+ * Class which serves as a simple file-channel wrapper
+ * @author chekov
+ *
+ */
 class FileChannel {
+	/** @var string the directory path to the file */
 	var $path;
+	/** @var string the name of the file */
 	var $name;
-	var $extenstion;
+	/** @var string the file extension */
+	var $extension;
+	/** @var resource the file handle itself */
 	var $fhandle;
 	
+	/**
+	 * 
+	 * @param string $p path to file
+	 * @param string $n name of file
+	 * @param string $e extension of file
+	 * @param resource $f file handle
+	 */
 	function __construct($p, $n, $e, $f){
 		$this->path = $p;
 		$this->name = $n;
@@ -166,6 +215,10 @@ class FileChannel {
 		$this->fhandle = $f;
 	}
 	
+	/**
+	 * Return the filename
+	 * @return string 
+	 */
 	function filename(){
 		return $this->name.".".$this->extension;
 	}

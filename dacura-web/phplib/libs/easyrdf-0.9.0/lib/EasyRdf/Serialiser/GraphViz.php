@@ -48,7 +48,7 @@
  */
 class EasyRdf_Serialiser_GraphViz extends EasyRdf_Serialiser
 {
-    private $dotCommand = 'C:\\Users\\chekov\\Downloads\\graphviz-2.38\\release\\bin\\dot.exe';
+    private $dotCommand = 'dot';
     private $useLabels = false;
     private $onlyLabelled = false;
     private $attributes = array('charset' => 'utf-8');

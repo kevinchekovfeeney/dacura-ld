@@ -1,15 +1,12 @@
 <?php
-
-/*
+/** 
  * API for login service - supports lost password and registration interface too
  *
- * Created By: Chekov
- * Contributors:
- * Creation Date: 12/01/2015
- * Licence: GPL v2
+ * * Creation Date: 12/01/2015
+ * @package login/api
+ * @author Chekov
+ * @license GPL v2
  */
-
-
 getRoute()->get("/", "hello");
 getRoute()->post('/', 'login');
 getRoute()->post('/register', 'register');
@@ -18,22 +15,24 @@ getRoute()->post('/reset', 'resetpassword');
 getRoute()->delete('/', 'logout');
 
 
+/**
+ * Login API
+ * 
+ * POST login/
+ * Requires $_POST['login-email'] and $_POST['login-password']
+ * @api
+ */
 function login(){
 	global $dacura_server;
 	$dacura_server->init("login");
-	$u = $dacura_server->getUser(0);
+	$u = $dacura_server->getUser();
 	if($u){
 		return $dacura_server->write_http_result(400, "User is logged in - cannot log in again", "notice");
 	}
 	if(isset($_POST['login-email']) && isset($_POST['login-password'])){
 		$u = $dacura_server->login($_POST['login-email'], $_POST['login-password']);
 		if($u) {
-			if(isset($u->profile['dacurahome']) && $u->profile['dacurahome']){
-				$dacura_server->write_json_result($u->profile['dacurahome'], "Login Successful");			
-			}
-			else {
-				$dacura_server->write_json_result($dacura_server->settings['install_url'], "Login Successful");
-			}
+			$dacura_server->write_json_result($dacura_server->durl(), "Login Successful");
 		}
 		else {
 			$dacura_server->write_http_result(false, false, "notice");
@@ -44,6 +43,13 @@ function login(){
 	}
 }
 
+/**
+ * Register API
+ * 
+ * POST login/register
+ * Requires $_POST['login-email'] and $_POST['login-password']
+ * @api
+ */
 function register(){
 	global $dacura_server;
 	$dacura_server->init("register");
@@ -61,6 +67,13 @@ function register(){
 	}
 }
 
+/**
+ * Lost Password API
+ *
+ * POST login/lost
+ * Requires $_POST['login-email']
+ * @api
+ */
 function lost(){
 	global $dacura_server;
 	$dacura_server->init("lost");
@@ -78,7 +91,15 @@ function lost(){
 	}
 }
 
-
+/**
+ * Reset Password API
+ * 
+ * This is called when a user updates their password after following the link...
+ *
+ * POST login/reset
+ * Requires $_POST['login-password'] && $_POST['userid'] && $_POST['action']
+ * @api
+ */
 function resetpassword(){
 	global $dacura_server;
 	$dacura_server->init("resetpassword");
@@ -86,8 +107,8 @@ function resetpassword(){
 	if($u){
 		return $dacura_server->write_http_result(401, "User is logged in - cannot reset password", "notice");
 	}
-	if(isset($_POST['userid']) &&  isset($_POST['login-password'])){
-		$u = $dacura_server->resetpassword($_POST['userid'], $_POST['login-password']);
+	if(isset($_POST['userid']) &&  isset($_POST['login-password']) && isset($_POST['action'])){
+		$u = $dacura_server->resetPassword($_POST['userid'], $_POST['login-password'], $_POST['action']);
 		if($u) $dacura_server->write_json_result($u, "Password Reset Successfully");
 		else $dacura_server->write_http_result(false, false, "notice");
 	}
@@ -96,6 +117,12 @@ function resetpassword(){
 	}
 }
 
+/**
+ * Logout API
+ *
+ * DELETE login/
+ * @api
+ */
 function logout(){
 	global $dacura_server;
 	$dacura_server->init("logout");
@@ -106,6 +133,13 @@ function logout(){
 	$dacura_server->write_json_result($dacura_server->logout(), "Logged out successfully");
 }
 
+/**
+ * Hello API
+ * 
+ * GET login/hello
+ * Just says hello to let us know the server is there
+ * @api
+ */
 function hello(){
 	global $dacura_server;
 	$dacura_server->init("hello");

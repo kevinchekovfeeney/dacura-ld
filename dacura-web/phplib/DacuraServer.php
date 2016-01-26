@@ -1,81 +1,148 @@
 <?php
-
-/*
- * The Core Dacura Server
- * It includes functionality that is used by multiple services
- * It provides common logging functions, path and url generation, etc
- * For service specific functionality, extend this class in the service's directory
- * 
- * Created By: Chekov
- * Contributors: 
- * Creation Date: 20/11/2014
- * Licence: GPL v2
- */
-
-require_once("DacuraObject.php");
+require_once("DacuraController.php");
+require_once("Collection.php");
+require_once("DacuraUser.php");
 require_once("DBManager.php");
 require_once("UserManager.php");
 require_once("utilities.php");
 require_once("FileManager.php");
 
-class DacuraServer extends DacuraObject {
+/** The Core Dacura Server Class
+ * 
+ * It includes functionality that is used by multiple services
+ * It provides common logging functions, path and url generation, etc
+ * For service specific functionality, this class is extended by services
+ * Creation Date: 20/11/2014
+ * @author Chekov
+ * @license GPL v2
+ */
+class DacuraServer extends DacuraController {
+	/** @var @array name-value array of server settings (see settings.php) */
 	var $settings;
-	var $userman;	//user & session manager
-	var $ucontext;
-	var $config; //configuration for the context -> dataset, collection, schema, etc
-	//has contents schema, 
-	//var $collection; //collection object in which context the call is made
-	//var $dataset; //dataset object in which the call is made
-	var $dbclass = "DBManager";//the class of the associated dbmanager
-	var $dbman; //storage manager
-	var $fileman; //log manager, responsible for logging, caching, dumping data
+	/** @var string the name of the Database Manager Class of this server */
+	var $dbclass = "DBManager";//the php class of the associated dbmanager
+	/** @var DBManager the server's database manager object */
+	var $dbman; 
+	/** @var FileManager log manager, responsible for logging, caching, dumping data, etc */
+	var $fileman; 
+	/** @var UserManager server's user & session manager */
+	var $userman;	
+	/** @var <string:Collection> associativee array of collection objects - just a cache to prevent reloading the same thing over and over */
+	var $loaded_configs; 
 	
-	function __construct($service){
-		$this->settings = $service->settings;
-		$this->ucontext = $service;
+	/**
+	 * Creates the dacura server for the service invocation passed 
+	 * 
+	 * The server consists of several encapsulated controller / manager classes, they are all instantiated in the constructor
+	 * @param DacuraService $service
+	 * @return void (if the constructor fails, the new object's $errcode > 0)
+	 */
+	function __construct(DacuraService &$service){
+		parent::__construct($service);
 		try {
-			$this->dbman =  new $this->dbclass($this->settings['db_host'], $this->settings['db_user'], $this->settings['db_pass'], $this->settings['db_name'], $this->getDBConfig());
+			$this->dbman =  new $this->dbclass($service);
+			$dbc = $this->getDBConfig();
+			$this->dbman->connect($dbc[0], $dbc[1], $dbc[2], $dbc[3], $dbc[4]);
 		}
 		catch (PDOException $e) {
-			return $this->failure_result('Connection failed: ' . $e->getMessage(), 500);
+			return $this->failure_result('DB Connection failed: ' . $e->getMessage(), 500);
 		}
-		$this->userman = new UserManager($this->dbman, $service);
+		catch (Exception $e) {
+			return $this->failure_result('DB manager creation failed: ' . $e->getMessage(), 500);
+		}
+		
+		$this->userman = new UserManager($service, $this->dbman);
 		$this->fileman = new FileManager($service);
-		$this->loadContextConfiguration();
 	}
 	
-	function getDBConfig(){
-		$config = array();
+	/**
+	 * Called Immediately after server creation. 
+	 * Used to initialise the server and initialise the request log for the service invocation
+	 * @param string $action a string describing the action that is being invoked
+	 * @param mixed $object any further parameters that should be added to the invocation request log (e.g. object of action)
+	 * @return void
+	 */
+	function init($action, $object=""){
+		$this->service->logger->setEvent($action, $object);
+		$user = $this->getUser();
+		$name = $user ? $user->handle : $_SERVER['REMOTE_ADDR'];
+		$this->service->logger->user_name = $name;
+	}
+	
+	/**
+	 * Creates another dacura server that is dependant on this server
+	 * 
+	 * This is the mechanism that allows servers to overcome their isolation from one another.  
+	 * When a dacura server wants to access the capabilities of another server, it calls this function
+	 * and can then use the methods of that service.  The dependant service shares the same service context object
+	 * so, the service and the server will be of different types.  I don't think this causes a problem anywhere, 
+	 * but it might :)
+	 * @param string $sname the id of the secondary server to load
+	 * @return DacuraServer|boolean
+	 */
+	function createDependantServer($sname){
+		$sclass = ucfirst($sname)."DacuraServer";
+		try {
+			$ds = new $sclass($this->service);
+			return $ds;
+		}
+		catch (Exception $e){
+			return $this->failure_result("Failed to create new $sname server ".$e->getMessage(), 500);
+		}
+	}
+	
+	/**
+	 *
+	 * @param string $id the request id of the entity
+	 * @param number $maxlen the maximum length that entity ids may be
+	 * @param boolean $allow_sname true if service names are allowed as entity ids
+	 * @return boolean - true if the requested id is valid
+	 */
+	function isValidDacuraID($id, $maxlen = 40, $allow_sname = false){
+		$reserved_words = ($allow_sname) ? array() : $this->getServiceList();
+		return parent::isValidDacuraID($id, $maxlen, $reserved_words);
+	}
+	
+	/**
+	 * Fetches the database configuration details in a format ready to be passed to Mysql
+	 * @return array(string) an array [host, user, password, name, [options]] for accessing the db
+	 */
+	private function getDBConfig(){
+		$dbconfig = $this->getSystemSetting("db");
+		$config = array($dbconfig['host'], $dbconfig['user'], $dbconfig['pass'], $dbconfig['name']);
 		if(isset($_GET['include_deleted'])){
-			$config['include_deleted'] = true;
+			$config[] = array('include_deleted' => true);
+		}
+		else {
+			$config[] = array();
 		}
 		return $config;
 	}
-
-	/* 
-	 * Config related functions
-	 */
-	function getDataset($id = false){
-		if($id === false) $id = $this->did();//current dataset is default
-		$obj = $this->dbman->getDataset($id);
-		if($obj){
-			$obj->set_storage_base($this->getSystemSetting("path_to_collections", ""));
-		}
-		else {
-			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
-		}
-		return $obj;
-	}
 	
+	/**
+	 * Fetch the collection object which contains the collection's configuration
+	 * 
+	 * loaded collections are saved in a loaded_configs cache array to prevent reloading multiple times
+	 * @param string $id collection id
+	 * @return Collection|boolean
+	 */
 	function getCollection($id = false){
 		if($id === false) $id = $this->cid();//current collection is default
+		if(isset($this->loaded_configs[$id])){
+			return $this->loaded_configs[$id];
+		}
 		$obj = $this->dbman->getCollection($id);
 		if($obj){
+			$this->loaded_configs[$id] = $obj;
 			return $obj;
 		}
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 	}
 	
+	/**
+	 * Fetch the list of collections on the server
+	 * @return array(array) |boolean an array of associative arrays, each containing information about a collection
+	 */
 	function getCollectionList(){
 		$obj = $this->dbman->getCollectionList();
 		if($obj){
@@ -83,183 +150,190 @@ class DacuraServer extends DacuraObject {
 		}
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 	}
-	
-	function getDatasetList($cid = false, $full = false){
-		$obj = $this->dbman->getCollectionDatasets($cid, $full);
-		if($obj){
-			return $obj;
-		}
-		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
-	}
-	
-	function loadContextConfiguration(){
-		$this->loadServerConfiguration();
-		if($this->cid() != "all"){
-			$this->loadCollectionConfiguration($this->cid());
-			if($this->did() != "all"){
-				$this->loadDatasetConfiguration($this->did());
-			}
-		}
-	}
-	
+
+	/**
+	 * Loads certain parameters for displaying the service depending on its context
+	 * @return array an associative array with the name, icon, url and class attributes set for the current collection context
+	 */
 	function loadContextParams(){
 		$params = array();
 		if($this->cid() != "all"){
 			$col = $this->getCollection();
-			$icon = $col->getConfig("icon") ? $col->getConfig("icon") : $this->ucontext->url("image", "collection_icon.png");
+			$icon = $col->getConfig("icon") ? $col->getConfig("icon") : $this->service->furl("image", "collection_icon.png");
 			$params[] = array(
 					"name" => $col->name,
 					"icon" => $icon,
-					"url" => $this->settings['install_url'].$this->cid(),
+					"url" => $this->durl().$this->cid(),
 					"class" => "ucontext first");
-		}
-		if($this->did() != "all"){
-			$ds = $this->getDataset($this->did());
-			$icon = $ds->getConfig("icon") ? $ds->getConfig("icon") : $this->ucontext->url("image", "dataset_icon.png");
-			$params[] = array(
-					"name" => $ds->name,
-					"icon" => $icon,
-					"url" => $this->settings['install_url'].$this->cid()."/".$this->did(),
-					"class" => "ucontext");
-			if($this->cid() != "all"){
-				$params[count($params)-1]['class'] = "ucontext first";
-			}
 		}
 		return $params;
 	}
 	
-	
-	function loadServerConfiguration(){
-		$this->config = array();		
-	}
-	
-	function loadCollectionConfiguration($id = false){
-		if($id === false) $id = $this->cid();//current collection is default
-		$col = $this->getCollection($id);
-		if($col){
-			foreach($col->config as $k => $v){
-				$this->config[$k] = $v;
-			}
-			if($this->did() != "all"){
-				return $this->loadDatasetConfiguration($this->did());
-			}
-			else return true;
-		}
-		return false;
-	}
-	
-	function loadDatasetConfiguration($id){
-		if($id === false) $id = $this->did();//current dataset is default
-		$ds = $this->getDataset($id);
-		if($ds){
-			foreach($ds->config as $k => $v){
-				$this->config[$k] = $v;
-			}
-			return true;
-		}
-		return false;
-	}
-	
-	/*
-	 * Shorthand methods to access context details..
+	/**
+	 * returns an array listing the ids of all the dacura services. 
+	 * @return string[] |boolean either the list of all the services, or false on error. 
 	 */
+	function getServiceList(){
+		$srvcs = array();
+		$sdir = $this->getSystemSetting("path_to_services");
+		if ($handle = opendir($sdir)) {
+			while (false !== ($entry = readdir($handle))) {
+				if ($entry != "." && $entry != "..") {
+					if(is_dir($sdir.$entry)
+							&& file_exists($sdir.$entry."/".ucfirst($entry)."Service.php") && $entry != "core"){
+						//only show login as a platform service
+						if($this->cid() == "all" or $entry != "login"){
+							$srvcs[] = $entry;
+						}
+					}
+				}
+			}
+			closedir($handle);
+			return $srvcs;
+		}
+		return $this->failure_result("Failed to read services directory for service list", 500);
+	}	
 	
-	function cid(){
-		return $this->ucontext->getCollectionID();
+	/**
+	 * Generates the id of the associated service according to the server / service naming convention
+	 * @return string id the id of the service associated with this server
+	 */
+	function my_service_id(){
+		return strtolower(substr(get_class($this), 0, strlen(get_class($this))-strlen("DacuraServer")));
 	}
 
-	function did(){
-		return $this->ucontext->getDatasetID();
-	}
+	/* User related functions */
 	
-	function durl($ajax = false){
-		return (!$ajax) ? $this->settings['install_url'] : $this->settings['ajaxurl'];
-	}
-	
-	function sname(){
-		return $this->ucontext->name();
-	}
-	
-	function contextStr(){
-		return "[".$this->cid()."|".$this->did()."]";
-	}
-	
-	/*
-	 * User related functions
+	/**
+	 * is the user invoking the server logged in?
+	 * @return boolean
 	 */
-	
 	function isLoggedIn(){
 		return $this->userman->isLoggedIn();
 	}
 	
-	function addUser($u, $p, $n, $status){
-		$u = $this->userman->adduser($u, $n, $p, $status);
-		return ($u) ? $u : $this->failure_result("Failed to create user ".$this->userman->errmsg, 401);
-	}
-	
-	function getUser($id=0){
+	/**
+	 * Fetch a DacuraUser object
+	 * @param string $id the id of the user desired - empty string denotes current user
+	 * @return DacuraUser | boolean the user object if it exists, otherwise false
+	 */
+	function getUser($id=""){
 		$u = $this->userman->getUser($id);
-		return ($u) ? $u : $this->failure_result("Failed to retrieve user $id: ".$this->userman->errmsg, 404);
+		return ($u) ? $u : $this->failure_result("Failed to retrieve user $id: ".$this->userman->errmsg, $this->userman->errcode);
 	}
 	
-	function deleteUser($id){
-		if(!$id){
-			return $this->failure_result("User ID not supplied, cannot delete", 400);
+	/**
+	 * Update the passed user object
+	 * @param DacuraUser $u the updated user object
+	 * @return DacuraUser | boolean the update user object if update succeeded, false otherwise
+	 */
+	function updateUser(&$u, $params = array()){
+		if(!$this->userman->saveUser($u)){
+			return $this->failure_result($this->userman->errmsg, $this->userman->errcode);
 		}
-		else {
-			return ($this->userman->deleteUser($id)) ? "$id Deleted" : $this->failure_result($this->userman->errmsg, 404);
+		if(isset($params['status']) || isset($params['email']) || isset($params['name'])){
+			$u->recordAction("system", $this->cid(), "updated", true);
 		}
+		$params['user'] = $u->id;
+		$this->recordUserAction("update user", $params);//the subject of the update
+		return true;		
 	}
 	
-	function updateUser($u){
-		return $this->userman->saveUser($u);
-	}
-	
-	function getusers(){
+	/**
+	 * fetch the list of all the users in the system
+	 * @return array(string => DacuraUser) | boolean an array of user objects indexed by their ids, or false on failure
+	 */
+	function getUsers(){
 		$u =  $this->userman->getUsers();
 		return ($u) ? $u : $this->failure_result("Failed to retrieve user list: ".$this->userman->errmsg, 404);
 	}
 	
-	/*
-	 * Returns a data structure describing the collection / dataset context available to the user 
-	 * that are at least as senior as the role argument. 
+	/**
+	 * checks to see if the user invoking the server has permission to view the page specified in the service context
+	 * @return boolean if true, the user has permission
 	 */
-	function getUserAvailableContexts($role=false){
+	function userHasViewPagePermission(){
+		if(!$this->contextIsValid()){
+			return $this->failure_result("Invalid context ".$this->contextStr(), 404);
+		}
+		//get service setting to make sure it is enabled...
+		if($this->getServiceSetting("status") == "disable"){
+			return $this->failure_result("The ". $this->sname()." service is not enabled for ".$this->cid(), 401);							
+		}
+		$facet = $this->service->getMinimumFacetForAccess($this);
+		if($facet === true || $this->userHasFacet($facet)){
+			return true;				
+		}
+		return $this->failure_result("User does not have permission to view this page ($facet)", 401);
+	}
+	
+	/**
+	 * Checks to see whether a user has a particular role
+	 * @param string $role the name of the role
+	 * @param string $cid The collection ID to check for the role (if omitted, current collection id is used)
+	 * @return boolean true if the user has a role that is greater than or equal to the passed role
+	 */
+	function userHasRole($role, $cid = false){
 		$u = $this->getUser();
-		$cols = $this->getCollectionList();
-		$choices = array();
-		if($u->isGod() or $u->hasCollectionRole("all", $role)){
-			$choices["all"] = array("title" => "All collections", "datasets" => array("all" => "All Datasets"));
-		}	
-		foreach($cols as $colid => $col){
-			if($u->hasCollectionRole($colid, $role) or $u->isGod() or $u->hasCollectionRole("all", $role)){
-				$choices[$colid] = array("title" => $col->name, "datasets" => array("all" => "All Datasets"));
-				foreach($col->datasets as $datid => $ds){
-					$choices[$colid]["datasets"][$datid] = $ds->name;
+		if(!$u)	return $this->failure_result("Access Denied! User is not logged in.", 401);
+		if($cid === false) $cid = $this->cid();
+		if($u->hasSufficientRole($role, $cid)){
+			return true;
+		}
+		return $this->failure_result("User ".$u->getName()." does not have the required role $role for $cid", 401);
+	}
+
+	/**
+	 * Checks to see whether a user is entitled to a demanded facet 
+	 * @param string $f the facet name
+	 * @return true if the user has >= facet to that requested
+	 */
+	function userHasFacet($f = false){
+		$u = $this->getUser();
+		if($u && $u->isPlatformAdmin()) return true;
+		if($f){
+			$facets = $this->service->getActiveFacets($u);
+			foreach($facets as $onef){
+				if($this->service->compareFacets($onef['facet'], $f)){
+					return true;
 				}
 			}
-			else {
-				$datasets = array();
-				foreach($col->datasets as $datid => $ds){
-					if($u->hasDatasetRole($colid, $datid, $role)){
-						$datasets[$datid] = $ds->name;
-					}
-				}
-				$choices[$colid]['datasets'] = $datasets;
+			return false;
+		}
+		return $this->service->getActiveFacets($u);
+	}
+	
+	/**
+	 * Returns a data structure describing the collections available to the user 
+	 * where the user has a role that is at least as senior as the role argument
+	 * @param string $role the minimum role required 
+	 * @return array indexed by collection id with a collection data structure.
+	 */
+	function getUserAvailableContexts($role=false){
+		if(!$u = $this->getUser()){
+			return $this->failure_result("User is not logged in - no roles", 400);
+		}
+		$cols = $this->getCollectionList();
+		$choices = array();
+		if($u->hasCollectionRole("all", $role)){
+			$choices["all"] = array("title" => "All collections");
+		}	
+		foreach($cols as $colid => $col){
+			if($u->hasCollectionRole($colid, $role) or $u->hasCollectionRole("all", $role)){
+				$choices[$colid] = array("title" => $col->name);
 			}
 		}
 		return $choices;
 	}
 	
-	/*
+	/**
 	 * Returns the user's home context (i.e. which collection they belong to) 
-	 * all indicates that they are a dacura user and their home context is the user's home...
+	 * "all" indicates that they are a dacura system-level user and their home context is the system root
+	 * @param DacuraUser $u the user in question
+	 * @return boolean|string the id of the user's home collection or false if it does not exist
 	 */
-	function getUserHomeContext($u){
-		if(!$u){
-			return false;
-		}
-		if($u->isGod() or $u->hasCollectionRole("all")){
+	function getUserHomeContext(DacuraUser $u){
+		if($u->hasCollectionRole("all")){
 			return "all";
 		}
 		if(isset($u->roles[0])){
@@ -268,93 +342,46 @@ class DacuraServer extends DacuraObject {
 		return $this->failure_result("User $u->email has no roles", 403);
 	}
 	
-	
-	function userHasRole($role, $cid = false, $did = false){
-		$u = $this->getUser();
-		if(!$u)	return $this->failure_result("Access Denied! User is not logged in.", 401);
-		if($cid === false) $cid = $this->cid();
-		if($did === false) $did = $this->did();
-		if($u->hasSufficientRole($role, $cid, $did)){
-			return true;
-		}
-		return $this->failure_result("User ".$u->getName()." does not have the required role $role for $cid | $did", 401);
-	}
-	
+	/**
+	 * Checks to make sure that the collection id in the service context is valid
+	 * The collection id in the context must exist and not be deleted
+	 * @return boolean true if the context is valid 
+	 */
 	function contextIsValid(){
 		if($this->cid() != "all"){
 			$col = $this->getCollection($this->cid());
-			if(!$col or $col->status == "deleted"){
-				return false;
-			}
-		}
-		if($this->did() != "all"){
-			$ds = $this->getDataset($this->did());
-			if(!$ds or $ds->status == "deleted"){
+			if(!$col or $col->is_deleted()){
 				return false;
 			}
 		}
 		return true;
 	}
 	
-	function userHasViewPagePermission(){
-		if(!$this->contextIsValid()){
-			return $this->failure_result("Invalid context ".$this->contextStr(), 404);
-		}
-		if($this->ucontext->isPublicScreen()){
-			return true;
-		}
-		$u = $this->getUser(0);
-		if(!$u) {
-			return $this->failure_result("User must be logged in to view this page", 401);
-		}
-		if($this->ucontext->userCanViewScreen($u, $this)){
-			return true;
-		}
-		else {
-			return $this->failure_result($this->ucontext->errmsg, $this->ucontext->errcode);
-		}
-	}
-	
-	/*
-	 * Just shims to allow more convenient addressing of logging functions
-	 */
-	function logEvent($level, $code, $msg){
-		$this->ucontext->logger->logEvent($level, $code, $msg);
-	}
-	
-	function timeEvent($a, $b){
-		$this->ucontext->logger->timeEvent($a, $b);
-	}
-	
-	function failure_result($msg = false, $code = false, $loglevel = ""){
-		if($msg === false && $code === false){
-			$msg = $this->errmsg;
-			$code = $this->errcode;
-		}
-		if($loglevel) {
-			$this->logEvent($loglevel, $code, $msg);
-		}
-		return parent::failure_result($msg, $code);
-	}
-	
-/*	function write_error($msg = "", $code = 0){
-		$msg = $msg ? $msg : $this->errmsg;
-		$code = $code ? $code : $this->errcode;
-		$this->ucontext->logger->setResult($code, $msg);
-		http_response_code($code);	
-		echo $msg;
-		return false;
-	}
-*/	
-	function init($action, $object=""){
-		$this->ucontext->logger->setEvent($action, $object);
-		$user = $this->getUser();
-		if($user) $this->ucontext->logger->user_name = $user->getName();
-	}
-	
 	/**
+	 * Records an action by the user to a session log
 	 * 
-	 * @param unknown $ting : the thing to be json-ified and returned to the user
+	 * The default behaviour is to maintain one session log per service 
+	 * @param DacuraUser $u the user carrying out the action 
+	 * @param string $action the action itself (verb noun)
+	 * @param array $params an array of parameters for the action that will be recorded
+	 * @param string $sid an optional id of the session log, default is the name of the current service
+	 */
+	function recordUserAction($action, $params = array(), $sid = false){
+		if(!($u = $this->getUser())){
+			//record anonymous session...
+			//$this->userman->recordAnonymousSession($sid, $this->cid(), $params);
+			return $this->failure_result("Current user is not logged in", 401);
+		}
+		$sid = $sid ? $sid : $this->my_service_id();
+		$params['action'] = $action;
+		$u->registerSessionEvent($sid, $this->cid(), $params);
+	}
+			
+	/* Output related functions - Common IO functions for all Dacura Servers*/
+
+	/**
+	 * Writes the passed result in JSON format over HTTP
+	 * @param mixed $ting : the thing to be json-ified and returned to the user
 	 * @param string $note : the note to add to the request log
 	 * @return boolean to indicate success result
 	 */
@@ -363,44 +390,70 @@ class DacuraServer extends DacuraObject {
 		$json = json_encode($ting);
 		if($json){
 			echo $json;
-			$this->ucontext->logger->setResult(200, $note);
+			$this->logResult(200, $note);
 			return true;
 		}
 		else {
 			http_response_code(500);
 			$msg = "JSON error: ".json_last_error() . " " . json_last_error_msg();
-			$this->ucontext->logger->setResult(500, $note." ".$msg);
+			$this->logResult(500, $note." ".$msg);
 			echo $msg;
 			return false;
 		}
 	}
 	
+	/**
+	 * Writes an error to HTTP with a structured JSON body (for structured errors in response to updates)
+	 * @param mixed $ting : the thing to be json-ified and returned to the user
+	 * @param integer $code : the http error return code 
+	 * @param string $note : the note to add to the request log
+	 * @return void
+	 */
 	function write_json_error($ting, $code, $note = "JSON error returned"){
 		http_response_code($code);
-		$this->ucontext->logger->setResult($code, $note);
+		$this->logResult($code, $note);
 		$json = json_encode($ting);
 		if($json){
 			echo $json;
 		}
 		else {
-			echo $ting;
+			echo json_last_error_msg()."\n".$ting;
 		}
 	}
-
+	
+	/**
+	 * Writes a http result - with passed message and response code, and optionally logs the result 
+	 * @param number $code : http return code
+	 * @param string $msg : text to be written to http response body
+	 * @param string $log : log level of this result (if the current system log level is less than this it is logged
+	 */
 	function write_http_result($code = 0, $msg = "", $log = "debug"){
 		$msg = $msg ? $msg : $this->errmsg;
 		$code = $code ? $code : $this->errcode;
 		$code = $code ? $code : 400;
-		$this->ucontext->logger->setResult($code, $msg);
-		$this->ucontext->logger->logEvent($log, $code, $msg);
+		$this->logResult($code, $msg);
+		$this->logEvent($log, $code, $msg);
 		http_response_code($code);
 		echo $msg;
 	}
 	
+	/**
+	 * Writes a error message (code > 400) to http 
+	 * @param number $code http error return code
+	 * @param string $msg message to be written to body of http response
+	 */
 	function write_http_error($code = 0, $msg = ""){
 		$this->write_http_result($code, $msg, "error");
 	}
 	
+	/* Comet style output functions return multiple messages over the course of a single service invocation */
+	
+	/**
+	 * Writes headers and flushes buffers in preparation for comet output sequence of messages
+	 * 
+	 * Comet messsages are persistent channels to the client through which multiple atomic messages can be sent
+	 * They are suitable for long-running server processes where the user should be informed of the process's status
+	 */
 	function start_comet_output(){
 		header("Cache-Control: no-cache, must-revalidate");
 		header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
@@ -408,17 +461,27 @@ class DacuraServer extends DacuraObject {
 		flush();
 	}
 	
-	function write_comet_update($type, $ting){
+	/**
+	 * 
+	 * @param string $status - the status of the service invocation 
+	 * @param mixed $ting - the message to be sent to the client 
+	 */
+	function write_comet_update($status, $ting){
 		$struct = array(
-				"message_type" => "comet_update",
-				"status" => $type,
-				"payload" => $ting
+			"message_type" => "comet_update",
+			"status" => $type,
+			"payload" => $ting
 		);
 		echo json_encode($struct)."\n";
 		ob_flush();
 		flush();
 	}
 	
+	/**
+	 * Terminates a comet session with an errorcode and message
+	 * @param string $msg
+	 * @param number $code
+	 */
 	function write_comet_error($msg = "", $code = 0){
 		$msg = $msg ? $msg : $this->errmsg;
 		$code = $code ? $code : $this->errcode;
@@ -426,65 +489,18 @@ class DacuraServer extends DacuraObject {
 		$this->end_comet_output("error", "$code: $msg");
 	}
 	
-	function end_comet_output($rtype, $result){
+	/**
+	 * Terminates a comet session with a final comet message that has a message_type = comet_result
+	 * @param string $status the status code of the message
+	 * @param mixed $result the final result message to terminate the comet channel 
+	 */
+	function end_comet_output($status, $result){
 		$struct = array(
 				"message_type" => "comet_result",
-				"status" => $rtype,
+				"status" => $status,
 				"payload" => $result
 		);
 		echo json_encode($struct);
-		//echo '{ "message_type": "comet_result", "status": "'.$rtype.'", "payload": '.json_encode($result)."}\n";
 		ob_end_flush();
-	}
-	
-	function getSystemSetting($cname, $def){
-		return $this->ucontext->getSystemSetting($cname, $def);
-	}
-	
-	function getServiceSetting($cname, $def){
-		return $this->ucontext->getServiceSetting($cname, $def);		
-	}
-	
-	function isValidDacuraID($id, $maxlen = 40, $allow_sname = false){
-		$nid = filter_var($id, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_LOW);
-		$nid = filter_var($nid, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
-		if($nid != $id){
-			return $this->failure_result("Illegal characters in input", 400);
-		}
-		if(!(ctype_alnum($id) && strlen($id) > 1 && strlen($id) < $maxlen)){
-			return $this->failure_result("Illegal ID, it must be between 2 and 40 alphanumeric characters (no spaces or punctuation).", 400);
-		}
-		if($this->isDacuraBannedWord($id)){
-			return $this->failure_result("$id is not permitted to be used as a dacura id", 400);
-		}
-		if(!$allow_sname && isServiceName($id, $this->settings)){
-			return $this->failure_result($id . " is the name of a dacura service, it cannot be used as a dacura id.", 400);
-		}
-		return true;
-	}
-	
-	function isDacuraBannedWord($word){
-		return in_array(strtolower($word), array("all", "dacura", "structure", "type", "schema"));
-	}
-	
-	function isDacuraBannedPhrase($title){
-		return false;
-	}
-	
-	function getServiceList(){
-		$srvcs = array();
-		if ($handle = opendir($this->settings['path_to_services'])) {
-			while (false !== ($entry = readdir($handle))) {
-				if ($entry != "." && $entry != "..") {
-					if(is_dir($this->settings['path_to_services'].$entry)
-							&& file_exists($this->settings['path_to_services'].$entry."/".ucfirst($entry)."Service.php")){
-						$srvcs[] = $entry;
-					}
-				}
-			}
-			closedir($handle);
-			return $srvcs;
-		}
-		return $this->failure_result("Failed to read services directory for service list", 500);
-	}
+	}	
 }

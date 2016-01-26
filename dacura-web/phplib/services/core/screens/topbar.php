@@ -1,10 +1,15 @@
 <?php
-$install_base = $service->settings['install_url'];
-
-?>
+/**
+ * The bar at the top of most dacura pages
+ *
+ * includes some context information and a link to their profile page
+ * @package core/screens
+ * @author chekov
+ * @copyright GPL v2
+*/?>
 <div id="dacura-header">
 	<div class="dacura-logo">
-		<a href="<?=$install_base?>" title="Dacura Home"><img src="<?=$service->url("image", "dacura-logo-simple.png")?>" height="24"></a>
+		<a href="<?=$service->durl()?>" title="Dacura Home"><img src="<?=$service->furl("image", "dacura-logo-simple.png")?>" height="24"></a>
 	</div>
 	<div class="topbar-context">
 		<ul id="utopbar-context">
@@ -24,7 +29,7 @@ $install_base = $service->settings['install_url'];
 			<span class="usersettings">
 			<a href="<?=$params['logouturl']?>">
 				<label>logout</label>
-				<img src='<?= $service->url("image", "buttons/config_icon.png")?>'>
+				<img src='<?= $service->furl("image", "buttons/config_icon.png")?>'>
 			</a>
 			</span>			
 			<div class="useroptions dch">
@@ -39,19 +44,9 @@ $install_base = $service->settings['install_url'];
 							$choices = $dacura_server->getUserAvailableContexts();
 							foreach($choices as $i => $choice){
 								echo "<option value='$i'"; 
-								if($i == $service->getCollectionID() or ($i == "all" && !$service->getCollectionID())) echo " selected";
+								if($i == $service->cid() or ($i == "all" && !$service->cid())) echo " selected";
 								echo ">".$choice['title']."</option>";
 							}?>
-						</select>
-						<select class='dch dccontextchanger dcdatasetselect' id='dcdatasetcontext_<?=$i?>'>
-							<?php 
-								foreach($choices as $i => $choice){
-									foreach($choice['datasets'] as $j => $t){
-										echo "<option value='$j'";
-										if($j == $service->getDatasetID() or ($j == "all" && !$service->getDatasetID())) echo " selected";
-										echo ">$t</option>";
-									}
-								}?>
 						</select>
 						<input id='dcchangecontext' type='submit' value="go">	
 					</li>
@@ -66,7 +61,7 @@ $install_base = $service->settings['install_url'];
 <script>
 $(document).ready(function() {
 	$('.dccontextchanger').change(function(){
-		dacura.system.switchContext($('#dccollectioncontext').val(), $('#dcdatasetcontext_' + $('#dccollectioncontext').val()).val());
+		dacura.system.switchContext($('#dccollectioncontext').val());
 	});
 });	
 

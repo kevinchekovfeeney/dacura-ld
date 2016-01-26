@@ -1,3 +1,14 @@
+<?php 
+/**
+ * Dacura home page
+ * 
+ * This is the screen that users arrive at immediately after they log in.  
+ * It shows them the services available to them
+ * @package browse/screens
+ * @author chekov
+ * @copyright GPL v2
+ */
+?>
 <div id='dashboard-container'>
 	<table id='dashboard'>
 		<tr class='dashboard-header'><td colspan="2" id='dashboard-header'></td></tr>
@@ -33,38 +44,38 @@
 				<table id='dashboard-lanes'>
 					<tr class="internal-panel">
 						<td id="internal-panel">
-							<?php foreach($params['internal_services'] as $serv) {?>
+							<?php if(isset($params['internal_services'])){foreach($params['internal_services'] as $serv) {?>
 							<a href='<?=$serv["url"]?>' title='<?=$serv["help"]?>' alt='<?=$serv["title"]?>'>
 								<div class='dacura-dashboard-button'>
 									<img class='dacura-button-img' src="<?=$serv["img"]?>">
 									<div class="dacura-button-title"><?=$serv["title"]?></div>
 								</div>
 							</a>
-							<?php } ?>
+							<?php }} ?>
 						</td>
 					</tr>
 					<tr class="data-panel">
 						<td id="data-panel">
-							<?php foreach($params['data_services'] as $serv) {?>
+							<?php if(isset($params['data_services'])){foreach($params['data_services'] as $serv) {?>
 							<a href='<?=$serv["url"]?>' title='<?=$serv["help"]?>' alt='<?=$serv["title"]?>'>
 								<div class='dacura-dashboard-button'>
 									<img class='dacura-button-img' src="<?=$serv["img"]?>">
 									<div class="dacura-button-title"><?=$serv["title"]?></div>
 								</div>
 							</a>
-							<?php } ?>
+							<?php }} ?>
 						</td>
 					</tr>
 					<tr class="tool-panel">
 						<td id="tool-panel">
-							<?php foreach($params['tool_services'] as $serv) {?>
+							<?php if(isset($params['tool_services'])){foreach($params['tool_services'] as $serv) {?>
 							<a href='<?=$serv["url"]?>' title='<?=$serv["help"]?>' alt='<?=$serv["title"]?>'>
 								<div class='dacura-dashboard-button-wide'>
 									<img class='dacura-button-img' src="<?=$serv["img"]?>">
 									<div class="dacura-button-title"><?=$serv["title"]?></div>
 								</div>
 							</a>
-							<?php } ?>
+							<?php }} ?>
 						</td>
 					</tr>
 				</table>
@@ -73,10 +84,7 @@
 	</table>
 </div>
 
-
-
 <script>
-	$(function() {
-	});
+	//$(function() {});
 </script>
 

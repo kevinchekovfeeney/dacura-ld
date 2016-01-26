@@ -1,3 +1,13 @@
+<?php 
+/** Logout page
+ * 
+ * If $params['exexute'] is set, the user will be logged out automatically, 
+ * otherwise they will be presented with a button giving them the option of doing so. 
+ * @package login/screens
+ * @author chekov
+ * @copyright GPL v2
+ */
+?>
 <div class='dacura-widget' id='dacura-widget-logout'>
 	<div class="dacura-widget-title">Logout of Dacura</div>
 	<div id="logoutbox-status" class="dacura-status"></div>
@@ -6,44 +16,16 @@
 		<strong><?=$params['username']?></strong>.</p>
 	</div>
 	<div class="dacura-widget-buttons">
-		<a class="button logout-button" id='dacura-logout-button' href="javascript:dacura.login.logout()">Logout</a>
+		<a class="button logout-button" id='dacura-logout-button' href="javascript:dacura.login.logout('<?=$service->my_url()?>', pconf)">Logout</a>
 	</div>
 </div>
 <script>
-dacura.login.logout = function(){
-	var ajs = dacura.login.api.logout();//getAjaxSettings('register');
-	this.disablelogout();
-	var msgs = {"busy": "Signing out"};
-	var targets = {busybox: '.dacura-widget', resultbox: '#logoutbox-status'};
-	ajs.always = function(){
-		dacura.login.enablelogout();
-	};
-	ajs.done = function(data, textStatus, jqXHR) {
-   		window.location.replace("<?=$service->get_service_url("login")?>");
-	};
-	ajs.fail = function (jqXHR, textStatus){
-		dacura.system.showErrorResult("Failed to log out", jqXHR.responseText );
-		dacura.system.clearBusyMessage();
-	};
-	dacura.system.invoke(ajs, msgs, targets);
-};
+var pconf = {
+	"resultbox": "#loginbox-status", 
+	"busybox": ".dacura-widget", 
+	"mopts": {"closeable": false, "icon": true}, 
+	"bopts": {busyclass: "small"}};
 
-
-dacura.login.disablelogout = function(){
-	$('#dacura-logout-button').unbind("click");
-	$('#dacura-logout-button').click( function(e){
-		 e.preventDefault();
-	});		
-}
-
-dacura.login.enablelogout = function(){
-	$('#dacura-logout-button').unbind("click");		
-	$('#dacura-logout-button').click( function(e){
-		 e.preventDefault();
-		 dacura.login.logout();			
-	});
-}
-
-<?php if($params['execute']) echo "dacura.login.logout();" ?>
+<?php if($params['execute']) echo "dacura.login.logout('".$service->my_url()."', pconf);" ?>
 
 </script>	
