@@ -149,24 +149,31 @@ class ConfigService extends DacuraService {
 	 * @param DacuraUser $u the current logged in user (false if not logged in)
 	 */
 	function getSysconfigTabParams(&$params, ConfigDacuraServer &$dacura_server, $screen, Collection $col, $u = false){
-		$params['sysconfig_settings'] = $this->getSysConfigFormSettings($dacura_server, $col);				
+		$params['sysconfig_settings'] = $this->getSysConfigFormSettings($dacura_server, $col);
 		if($screen == 'system'){
-			$params['sysconfig_fields'] = $dacura_server->getSysconfigFields($this->getServiceSetting("sysconfig_form_fields"));			
+			$params['sysconfig_fields'] = $dacura_server->getSysconfigFields($this->sform("sysconfig_form_fields"));			
 		}
 		else {
 			$basic_fields = array("id" => array("id" => "id", "length" => "short", "type" => "text", "value" => $dacura_server->cid(), "disabled" => true, "label" => "id", "help" => "The id of the collection - used in urls"));
-			$basic_fields = array_merge($basic_fields, $this->getServiceSetting("update_collection_fields"));
-			$defs = $col->getDefaultSettings($dacura_server);
+			$basic_fields = array_merge($basic_fields, $this->sform("update_collection_fields"));
+			/*$defs = $col->getDefaultSettings($dacura_server);
 			foreach($defs as $k => $v){
 				if(isset($basic_fields[$k]) && !isset($basic_fields[$k]['value'])){
 					$basic_fields[$k]['value'] = $defs[$k];
 				}
-			}
+			}*/
 			if(!$u or !$u->isPlatformAdmin()){
-				//$basic_fields['status']['disabled'] = true;
+				$basic_fields['status']['disabled'] = true;
 			}
 			if($dacura_server->userHasFacet("admin") || $dacura_server->userHasFacet("inspect")){
-				$params['sysconfig_fields'] = array_merge($basic_fields, $dacura_server->getSysconfigFields($this->getServiceSetting("sysconfig_form_fields")));
+				$sysform = $this->sform("sysconfig_form_fields");
+				foreach($sysform as $sid => $s){
+					if(!isset($basic_fields[$sid])){
+						$basic_fields[$sid] = $s;
+					}						
+				}
+				//opr($basic_fields);
+				$params['sysconfig_fields'] = $dacura_server->getSysconfigFields($basic_fields);
 				if($u && $u->isPlatformAdmin()){
 					$params['candelete'] = true;
 				}

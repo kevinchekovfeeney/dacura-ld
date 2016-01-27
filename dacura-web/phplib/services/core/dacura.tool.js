@@ -84,6 +84,12 @@ dacura.tool.init = function(options){
 	if(typeof options.tables != "undefined"){
 		dacura.tool.initTables(options.tables);
 	}
+	if(typeof options.forms != "undefined"){
+		var opts = { icon: options.forms.icon };
+		for(var i = 0; i < options.forms.ids.length; i++){
+			dacura.tool.form.init(options.forms.ids[i], opts);		
+		}
+	}
 };
 
 /**
@@ -92,7 +98,7 @@ dacura.tool.init = function(options){
  * @summary Transforms a dacura tool page by taking all of the divs that have css class 'dacura-subscreen' and making them into tabs
  * @param {string} holder the id of the div that holds the sub-screens
  */
-dacura.tool.initScreens = function(holder){
+dacura.tool.initScreens = function(holder, forms){
 	var listhtml = "<ul class='subscreen-tabs'>";
 	$('.dacura-subscreen').each(function(){
 		//build page configuration from subscreen id
@@ -113,6 +119,12 @@ dacura.tool.initScreens = function(holder){
 	});
 	listhtml += "</ul>";
 	$('#'+holder).prepend(listhtml).show();
+	if(typeof forms == "object"){
+		for(var i in forms){
+			dacura.tool.form.init(i, forms[i]);
+		}
+	}
+
 	if(typeof $.fn.dataTable != "undefined"){
 		$('#'+holder).tabs( {
 	        "activate": function(event, ui) {
@@ -125,6 +137,15 @@ dacura.tool.initScreens = function(holder){
 	}
 }
 
+/**
+ * @function loadSubscreen loads a subscreen and collapses the regular contents of the screen
+ * @memberof dacura.tool
+ * @param {string} screen - html id of the screen that the subscreen belongs to
+ * @param {string} subscreen - html id of the subscreen 
+ * @param {string} collapsedtext - text that will replace the collapsed screen
+ * @param {string} header - text that will go into the header of the subscreen
+ * 
+ */
 dacura.tool.loadSubscreen = function(screen, subscreen, collapsedtext, header){
 	$('#' + screen).before("<div class='dch subscreen-revertbar'>" + collapsedtext + "</div>");
 	$('#' + screen).hide("blind", {}, "slow");
@@ -141,13 +162,24 @@ dacura.tool.loadSubscreen = function(screen, subscreen, collapsedtext, header){
 	return pconf;
 }
 
+/**
+ * @function unloadSubscreen 
+ * @memberof dacura.tool
+ * @summary unloads a subscreen and replaces it with the regular contents of the screen
+ * @param {string} screen - html id of the screen that the subscreen belongs to
+ * @param {string} subscreen - html id of the subscreen 
+ */
 dacura.tool.unloadSubscreen = function(screen, subscreen){
 	$('#' + screen).show("blind", {}, "slow");
 	$('.subscreen-revertbar').remove();
 	$('#' + subscreen).hide();
 }
 
-
+/**
+ * @function clearResultMessages 
+ * @summary clears all of the result messages from the page
+ * @memberof dacura.tool
+ */
 dacura.tool.clearResultMessages = function(){
 	for(screenid in dacura.tool.subscreens){
 		dacura.system.clearResultMessage(dacura.tool.subscreens[screenid].resultbox);
@@ -179,8 +211,6 @@ dacura.tool.initTables = function(listings){
 		dacura.tool.table.init(key, listings[key]);
 	}		
 }
-
-
 
 /**
  * @namespace header
@@ -328,6 +358,7 @@ dacura.tool.header = {
 	}
 }
 
+
 /**
  * @namespace form
  * @memberof dacura.tool
@@ -354,54 +385,7 @@ dacura.tool.form = {
 		$("#" + key + ' .dacura-property-input textarea').each(function(){
 			$('#'+this.id).val("");
 		});
-		//$("#" + key + ' .dacura-property-input select').each(function(){
-		//	obj[this.id.substring(4)] = $('#'+this.id).val();
-		//});
-	},
-	
-	
-	setValue: function(key, row, val){
-		var rowid = 'row-' + key + "-" + row;
-		var jqid = '#' + key + " tr#"+rowid;
-		if(typeof val == "string"){
-			val = escapeQuotes(val);
-		}
-		$(jqid + ' .dacura-property-input input').val(val);
-		$(jqid + ' .dacura-property-input textarea').val(val);
-		$(jqid + ' .dacura-property-input select').each(function(){
-			//var fieldid = dacura.tool.form.getFieldIDFromInputID(this.id);
-			$('#'+this.id).val(val);
-		});
-		//$(jqid + ' .dacura-display-value').html(val);
-	},
-
-	//maps to and from a json structure and values in the form
-	populateFromStruct: function(key, struct){
-		for(i in struct){
-			if(typeof struct[i] == "object"){
-				this.populateFromStruct(key, struct[i]);
-			}
-			else {
-				this.setValue(key, i, struct[i]);
-			}
-		}
-	},
-	
-	populateMeta: function(key, meta){
-		for(k in meta){
-			for(f in meta[k]){
-				$('#' + key + "-" + k + "-" + f).val(meta[k][f]);	
-			}
-		}
-	},
-	
-	getVarValue: function(key, inputid){
-		var val = $('#'+key + "-" + inputid).val();
-		if($('#'+key + "-" + inputid).hasClass("dacura-display-json")){
-			val = JSON.parse(val);
-		}
-		return val;
-	},
+	},	
 	
 	/**
 	 * @function gather
@@ -417,7 +401,9 @@ dacura.tool.form = {
 		$(rjqid).each(function(){
 			var inputid = this.id.substring(5+key.length);
 			nrqid = '#' + key + " > tbody > tr#"+this.id + " > td.dacura-property-meta";
+			alert(nrqid);
 			$(nrqid).each(function(){
+				alert("yus");
 				if(typeof meta[inputid] != "object"){
 					meta[inputid] = {};
 				}
@@ -452,120 +438,109 @@ dacura.tool.form = {
 			return {"meta": meta, "values": vals};
 		}
 	},
-	
-	
 
-		
-	ogather: function(key){
-		if($("#" + key + ' .dacura-property-selector input').length){
-			return dacura.tool.form.getStruct(key);
+	/**
+	 * @function getVarValue
+	 * @summary retrieves the form values from the passed element id
+	 * @memberof dacura.tool.form
+	 * @param {string} key - the html id of the form
+	 * @param {string} inputid - the html id of the input element
+	 * @returns {mixed} the possibly complex value of the element
+	 */
+	getVarValue: function(key, inputid){
+		var val = $('#'+key + "-" + inputid).val();
+		if($('#'+key + "-" + inputid).hasClass("dacura-display-json")){
+			val = JSON.parse(val);
+		}
+		return val;
+	},
+	
+	/**
+	 * @function init
+	 * @summary initialises the form with the passed values...
+	 * @memberof dacura.tool.form
+	 * @param {string} key - the html id of the form
+	 * @param {object} opts - an options array for initialising the form
+	 */
+	init: function(key, opts){
+		if(typeof opts == "object" && typeof opts.icon == "string"){
+			icon = opts.icon;
 		}
 		else {
-			return dacura.tool.form.gather_simple(key);
+			icon = "media/images/icon_help.png";
 		}
+		if(typeof opts == "object" && typeof opts.initselects != "undefined"){
+			dacura.system.selects();
+			dacura.system.selects("select.property-meta", {width: 100});
+		}
+		$('#'+key+' td.dacura-property-help').each(function(){
+			$(this).html("<img class='helpicon' title=\"" + escapeQuotes($(this).html()) + "\" src=\"" + icon + "\">");
+		});
+		$('#'+key+' .helpicon').tooltip();
 	},
-	
-	gather_multi: function(key){
-		var obj = {};
-		$("#" + key + ' .dacura-property-input input').each(function(){
-			var fieldid = dacura.tool.form.getFieldIDFromInputID(this.id);
-			obj[fieldid] = {'value': $('#'+this.id).val()};
-		});
-		$("#" + key + ' .dacura-property-input textarea').each(function(){
-			var fieldid = dacura.tool.form.getFieldIDFromInputID(this.id);
-			obj[fieldid] = {'value': $('#'+this.id).val()};
-		});
-		$("#" + key + ' .dacura-property-input select').each(function(){
-			var fieldid = dacura.tool.form.getFieldIDFromInputID(this.id);
-			obj[fieldid] = {'value': $('#'+this.id).val()};
-		});
-		
-		$("#" + key + ' .dacura-property-selector input').each(function(){
-			var fieldid = dacura.tool.form.getFieldIDFromInputID(this.id);
-			if(typeof obj[fieldid] != "undefined"){
-				if($(this).is(":checked")){
-					obj[fieldid]['selected'] = 1;
-				}
-				else {
-					obj[fieldid]['selected'] = 0;
-				}
-			}
-		});
-		return obj;
-	},
-	
-	gather_simple: function(key){
-		var obj = {};
-		$("#" + key + ' .dacura-property-input input').each(function(){
-			var fieldid = dacura.tool.form.getFieldIDFromInputID(this.id);
-			obj[fieldid] = $('#'+this.id).val();
-		});
-		$("#" + key + ' .dacura-property-input textarea').each(function(){
-			var fieldid = dacura.tool.form.getFieldIDFromInputID(this.id);
-			obj[fieldid] = $('#'+this.id).val();
-		});
-		$("#" + key + ' .dacura-property-input select').each(function(){
-			var fieldid = dacura.tool.form.getFieldIDFromInputID(this.id);
-			obj[fieldid] = $('#'+this.id).val();
-		});
-		return obj;
-	},
-	
-	/**
-	 * @function getFieldIDFromInputID
-	 * @memberof dacura.tool.form
-	 * @summary gives us the id of the form input field from the id of the property
-	 * @description The property ids need to have a prefix to ensure they are unique when 
-	 * multiple forms on the same page use the same property. This relies upon a convention for forming ids of form fields
-	 * formid-fieldid - the field id is the segment after the first dash character
-	 * @param {string} ipid - the id of the input element
-	 */
-	getFieldIDFromInputID: function(ipid){
-		return ipid.substring(ipid.indexOf("-") + 1);
-	},	
 
-	getFieldValueFromFieldID: function(fid, obj){
-		if(typeof obj == "object" && typeof obj[fid] == "object" && typeof obj[fid].value != "undefined"){
-			return obj[fid].value;
-		}
-		if(typeof obj == "object" && typeof obj[fid] != "undefined"){
-			if(typeof obj[fid] == "object"){
-				dacura.tool.form.populate('embedded', obj[fid]);
-			}
-			return obj[fid];			
-		}
-		return "?";
-	},
-	
 	/**
 	 * @function populate
+	 * @summary populates the form with the passed values in struct
 	 * @memberof dacura.tool.form
-	 * @summary populates the input form with the passed json objects values
-	 * @param {string} key - html id of the table
-	 * @param {Object} obj - the object from whose properties the form will be populated
-	 */		
-	populate: function(key, obj){
-		$("#" + key + ' .dacura-property-input input').each(function(){
-			var fieldid = dacura.tool.form.getFieldIDFromInputID(this.id);
-			var fieldval = dacura.tool.form.getFieldValueFromFieldID(fieldid, obj);
-			$('#'+this.id).val(fieldval);
+	 * @param {string} key - the html id of the form
+	 * @param {object} struct - an object whose fields represent the values to be filled into the form
+	 */
+	populate: function(key, struct, meta, context){
+		context = (typeof context == "string") ? context : "";
+		metabase = key + "-";
+		if(context.length > 0) {
+			metabase += context;
+		}
+		for(i in struct){
+			//if(i == "facet-list") jpr(meta);
+			if(typeof meta == "object" && typeof meta[i] == "object"){
+				for(f in meta[i]){
+					$('#' + metabase + i + "-" + f).val(meta[i][f]);	
+				}
+			}
+			if(typeof struct[i] == "object"){
+				ncontext = context + i + "-";
+				this.populate(key, struct[i], meta, ncontext);
+			}
+			else {
+				this.setValue(key, i, struct[i]);
+			}
+		}
+		//dacura.tool.form.refresh(key);
+		if(typeof meta == "object"){
+			//dacura.tool.form.refreshMeta(key);	
+		}
+	},
+	
+	refreshMeta: function(key){
+		//$('#'+key+" .property-meta").selectmenu("refresh");
+	},
+	
+	refresh: function(key){
+		$('#'+key+" .dacura-select").selectmenu("refresh");
+	},
+		
+	/**
+	 * @function setValue
+	 * @memberof dacura.tool.form
+	 * @summary sets the value of a particular input element in the form
+	 * @param {string} key - the html id of the form element
+	 * @param {string} row - the variable name
+	 * @param {mixed} val - a value (possibly complex)
+	 */
+	setValue: function(key, row, val){
+		var rowid = 'row-' + key + "-" + row;
+		var jqid = '#' + key + " tr#"+rowid;
+		if(typeof val == "string"){
+			val = escapeQuotes(val);
+		}
+		$(jqid + ' .dacura-property-input input').val(val);
+		$(jqid + ' .dacura-property-input textarea').val(val);
+		$(jqid + ' .dacura-property-input select').each(function(){
+			$('#'+this.id).val(val);
 		});
-		$("#" + key + ' .dacura-property-input textarea').each(function(){
-			var fieldid = dacura.tool.form.getFieldIDFromInputID(this.id);
-			var fieldval = dacura.tool.form.getFieldValueFromFieldID(fieldid, obj);
-			$('#'+this.id).val(fieldval);
-		});
-		$("#" + key + ' .dacura-property-input select').each(function(){
-			var fieldid = dacura.tool.form.getFieldIDFromInputID(this.id);
-			var fieldval = dacura.tool.form.getFieldValueFromFieldID(fieldid, obj);
-			$('#'+this.id).val(fieldval);
-			//$('#'+this.id).selectmenu("refresh");
-		});
-		$("#" + key + ' .dacura-display-value').each(function(){
-			var fieldid = dacura.tool.form.getFieldIDFromInputID(this.id);
-			var fieldval = dacura.tool.form.getFieldValueFromFieldID(fieldid, obj);
-			//$('#'+this.id).html(fieldval);
-		})
+		$(jqid + ' .dacura-display-value').html(val);
 	}
 }
 
@@ -831,7 +806,8 @@ dacura.tool.table = {
 		}
 
 		$('#' + key).addClass("display");
-		$( "#" + key ).dataTable( tconfig.dtsettings );
+		$("#" + key).dataTable( tconfig.dtsettings );
+		$("#" + key + "_length select").addClass("dt-select");
 		if(typeof tconfig.refresh == "object"){
 			dacura.tool.table.drawRefreshButton(tconfig.refresh.label, key, tconfig.refresh.bconfig)
 		}
@@ -978,7 +954,8 @@ dacura.tool.table = {
 		$('#' + multi.container).html(html);
 		var ustate = "";
 		if(shtml.length){
-			dacura.system.selects();//initialise dacura style selectmenus
+			//$('.dacura-select').selectmenu();
+			dacura.system.selects('#'+key + "-update-status" );//initialise dacura style selectmenus
 		}
 		$('#' + key + "-update-button").button({
 				icons: {"secondary": "ui-icon-arrowstop-1-e"}, 
@@ -1175,4 +1152,18 @@ dacura.tool.table = {
 		}
 	}
 };
+
+
+dacura.system.openKCFinder = function(field, src, dir, type) {
+
+    if(typeof type == "string"){
+    	src += "?type=" + type;
+        if(typeof dir == "string"){
+        	src += "&dir=" + type + "/" + dir;
+        }
+    }
+    //src = src + "?type=files";
+    $(field).html('<div id="kcfinder_div"><iframe name="kcfinder_iframe" src="' + src + '" frameborder="0" width="100%" height="100%" marginwidth="0" marginheight="0" scrolling="no" /></div>');
+}
+
 

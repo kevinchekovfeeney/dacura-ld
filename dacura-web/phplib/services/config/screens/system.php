@@ -96,10 +96,12 @@ function loadService(e, id){
 	dacura.tool.clearResultMessages();
 	if(!isEmpty(service_tables[id])){
 		$('#servicebox-contents').empty().append(service_tables[id].body);
-		$('#servicebox-contents select.dacura-select').selectmenu();
-		dacura.tool.form.populateFromStruct('service-'+id, lconfig.services);	
+		//dacura.tool.form.init('service-'+id, {initselects: true, icon: "<?= $service->get_system_file_url("image", "help-icon.png")?>"});
 		if(typeof lconfig.collection == "object" && typeof lconfig.collection.config == "object" && typeof lconfig.collection.config.servicesmeta == "object"){
-			dacura.tool.form.populateMeta('service-'+id, lconfig.collection.config.servicesmeta[id]);
+			dacura.tool.form.populate('service-'+id, lconfig.services[id], lconfig.collection.config.servicesmeta[id]);
+		}
+		else {
+			dacura.tool.form.populate('service-'+id, lconfig.services[id]);		
 		}		
 	}
 	else {
@@ -110,14 +112,9 @@ function loadService(e, id){
 }
 
 function readServiceUpdate(screen){
-	//get id of currently loaded serviced
-	//alert(jqid);
 	if($('#servicebox-contents table').length){
 		var tid = $("#servicebox-contents table").attr("id");
 		var obj = dacura.tool.form.gather(tid);
-		if(typeof obj.meta == "object" && typeof obj.values == "object"){
-
-		}
 		obj.id = tid.substring(8);
 		return obj;
 	}
@@ -171,13 +168,11 @@ function drawCollection(obj){
 	else {
 		lconfig = obj;
 	}
-	if(typeof obj.settings == "object"){
-		dacura.tool.form.populateFromStruct("sysconfig", obj.settings);
-		$('#sysconfig select.dacura-select').selectmenu("refresh");
-		
+	if((typeof obj.collection == "object") && (typeof obj.collection.config == "object") && obj.collection.config && typeof obj.collection.config.meta == "object"){
+		dacura.tool.form.populate("sysconfig", lconfig.settings, obj.collection.config.meta);
 	}
-	if(typeof obj.collection == "object" && typeof obj.collection.config == "object" && typeof obj.collection.config.meta == "object"){
-		dacura.tool.form.populateMeta("sysconfig", obj.collection.config.meta);
+	else if(typeof obj.settings == "object"){
+		dacura.tool.form.populate("sysconfig", lconfig.settings);
 	}
 	if(typeof obj.services == "object"){
 		drawServiceTable(obj.services);
@@ -212,8 +207,9 @@ function drawServiceTable(services){
 var fbloaded = false;//is the configuration loaded
 var lconfig;
 
-$(function() {
-	dacura.tool.init({"tabbed": 'system-config'}); 
+$(function() {	
+	dacura.tool.init({"tabbed": 'system-config', forms: {ids:['sysconfig','collection-details'], 
+		icon: "<?= $service->get_system_file_url("image", "help-icon.png")?>"}}); 
 	dacura.tool.table.init("collections-table", {
 		"screen": "list-collections", 
 		"fetch": dacura.config.getCollections,
@@ -260,7 +256,7 @@ $(function() {
      	 }
     });
 	var pconf = { resultbox: ".tool-info", busybox: "#system-config"};
-    dacura.config.fetchCollection(dacura.system.cid(), drawCollection, pconf);
+	dacura.config.fetchCollection(dacura.system.cid(), drawCollection, pconf);
     fbloaded = true;
 	//$('#kcfilebrowser').bind('isVisible', isVisible);
 	//load kcfinder when it first becomes visible...

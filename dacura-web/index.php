@@ -44,7 +44,8 @@ if($service){
 }
 else {
 	$service = new DacuraService($dacura_settings);
-	$service->renderScreen("error", array("title" => "Error retrieving page" .$servman->errcode, "message" => $servman->errmsg ), "core");
+	default_settings($service->settings);
+	$service->renderScreen("error", array("title" => " Page Not Found [" .$servman->errcode."]", "message" => $servman->errmsg ), "core");
 	$request_log->setResult( 400, "Failed to load service: $servman->errcode|$servman->errmsg" );
 }
 

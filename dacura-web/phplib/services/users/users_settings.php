@@ -7,6 +7,8 @@
  */
 $settings = array(
 	"facet-list" => array("list" => "View user lists", "view" => "View user pages", "inspect" => "Inspect user activity", "admin" => "Administer Users", "profile" => "Manage profile"),
+	"service-title" => "User Management",
+	"service-description" => "Manage users' profiles and permissions",
 	"add_user_status" => "accept",
 	"default_profile" => array(),
 	"messages" => array(

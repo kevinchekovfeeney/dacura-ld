@@ -23,7 +23,7 @@ class HomeService extends DacuraService {
 		if(!$active_facets){
 			if($u){
 				$colname = ($this->cid() == "all") ? "platform" : $this->cid();
-				$this->renderScreen("denied", array("title" => "Access Denied", "message" => "You do not have permission to view the home page of $colname"), "core");				
+				$this->renderScreen("denied", array("title" => "Access Denied", "message" => "You do not have permission to view the $colname home page."), "core");				
 			}
 			else {
 				$url = $this->get_service_url("login");				

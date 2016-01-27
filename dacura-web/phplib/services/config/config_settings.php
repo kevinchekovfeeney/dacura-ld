@@ -10,7 +10,7 @@ $settings = array(
 	"default_status" => "pending",
 	"default_profile" => array(),
 	"service-title" => "Configuration Manager",
-	"service-descriptions" => "View and update the settings of the platform and its collections",
+	"service-description" => "View and update the settings of the platform and its collections",
 	"default_collection_config" => array(),
 	"collection_paths_to_create" => array("logs", "cache", "dumps", "files"),
 	"messages" => array(
@@ -52,7 +52,7 @@ $settings = array(
 		"dacurauser" => array("label" => "Dacura Session User", "type" => "text", "length" => "short", "help" => "The name of the dacura user object in the user's php session - it only has to  be changed to allow multiple dacuras to be installed on the same server."),				
 		"db" => array("disabled" => true, "label" => "Database Settings", "type" => "section", "help" => "Access information for the database where Dacura will store its information."),				
 		"host" => array("disabled" => true, "label" => "Hostname", "type" => "text", "length" => "short"),				
-		"name" => array("disabled" => true, "label" => "Name", "type" => "text", "length" => "short"),				
+		"dbname" => array("id" => "name", "disabled" => true, "label" => "Name", "type" => "text", "length" => "short"),				
 		"user" => array("disabled" => true, "label" => "Username", "type" => "text", "length" => "short"),				
 		"pass" => array("disabled" => true, "label" => "Password", "type" => "text", "length" => "short"),	
 		"apistr" => array("label" => "API url offset", "type" => "text", "length" => "tiny", "help"=>"The URL path used to route requests to the ajax api rather than the html page."),			

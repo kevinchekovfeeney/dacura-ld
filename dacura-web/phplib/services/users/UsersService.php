@@ -104,9 +104,9 @@ class UsersService extends DacuraService {
 				$params['admin_table_settings'] = ($this->cid() == "all") ? $this->getDatatableSetting("users"): $this->getDatatableSetting("cusers");
 				$params['subscreens'][] = "add-user";
 				$params['admin'] = true;
-				$cform = $this->sform("ccu");
-				$cform['role']["options"] = $roles;
 				if($dacura_server->cid() != "all") {
+					$cform = $this->sform("ccu");
+					$cform['role']["options"] = $roles;
 					$params['subscreens'][] = "invite-users";
 					$iform = $this->sform("icu");
 					$iform['role']["options"] = $roles;					
@@ -117,6 +117,7 @@ class UsersService extends DacuraService {
 					$params['add_intro_msg'] = $this->smsg("collection_add");
 				}
 				else {
+					$cform = $this->sform("csu");						
 					$params['add_intro_msg'] = $this->smsg("system_add");						
 				}
 				$params['create_user_fields'] = array_values($cform);				

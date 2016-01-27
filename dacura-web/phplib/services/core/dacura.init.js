@@ -37,8 +37,10 @@ dacura.system.resulticons = {
 		"success" : "<img class='result-icon result-success' src='<?=$service->furl("image", "capi/success.png");?>'>",
 		"warning" : "<img class='result-icon result-warning' src='<?=$service->furl("image", "capi/warning.png");?>'>",
 		"info" : "<img class='result-icon result-info' src='<?=$service->furl("image", "capi/info.png");?>'>",
+		"help" : "<img class='result-icon result-info' src='<?=$service->furl("image", "help_icon.png");?>'>",
 };
 
 $(document).ready(function() {
-	dacura.system.selects()
+	dacura.system.selects();
+	//dacura.system.selects("select.property-meta", {width: 100});
 });

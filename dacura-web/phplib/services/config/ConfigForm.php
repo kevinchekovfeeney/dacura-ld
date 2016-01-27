@@ -41,28 +41,58 @@ class ConfigForm extends DacuraObject {
 	 * is the input values to a DacuraFormElement
 	 * @return array list of DacuraFormElement initialisation arrays ready to be passed to drawInputTable function
 	 */
-	function generateFieldsFromSettings($settings, $sfields, $depth = 0, $sname = ""){
+	function generateFieldsFromSettings($settings, $sfields, $depth = 0){
 		$fields = array();
+		$sfield_id_map = array();
 		if(!is_array($settings)){
 			return $fields;
 		}
+		//do fields first to respect ordering...
+		foreach($sfields as $sid => $sf){
+			if(!isset($sf['id'])){
+				$sf['id'] = $sid;
+			}
+			elseif($sid != $sf['id']) {
+				$sfield_id_map[$sid] = $sf['id'];				
+			}
+			if(isset($settings[$sf['id']]) && isset($settings[$sid])){				
+				$fields[] = $this->loadField($sf['id'], $settings[$sid], $depth, $sf, $sfields);
+				unset($settings[$sid]);				
+			}
+		}
 		foreach($settings as $key => $v){
+			$field = false;
 			if(isset($sfields[$key])){
 				$field = $sfields[$key];
+				unset($sfields[$key]);
 			}
-			else {
-				$field = array("label" => $key);
+			else{
+				$findex = array_search($key, $sfield_id_map);
+				if($findex){
+					$field = $sfields[$findex];
+					unset($sfields[$findex]);
+				}
 			}
-			$field['id'] = $key;
-			$field['value'] = $v;
-			$field['depth'] = $depth;
-			if(is_array($v) && (!isset($field['type']) || $field['type'] == "section")){
-				if(!isset($field['type'])) $field['type'] = "section";
-				$field['fields'] = $this->generateFieldsFromSettings($v, $sfields, $depth++, $sname);
-			}
-			$fields[] = $field;				
+			$fields[] = $this->loadField($key, $v, $depth, $field, $sfields);
+			unset($settings[$key]);				
 		}
 		return $fields;
+	}
+	
+	function loadField($k, $v, $d, $field = false, $sfields){
+		if(!$field){
+			$field = array("label" => $k);
+		}
+		if(!isset($field['id'])){
+			$field['id'] = $k;
+		}
+		$field['value'] = $v;
+		$field['depth'] = $d;
+		if(is_array($v) && (!isset($field['type']) || $field['type'] == "section")){
+			if(!isset($field['type'])) $field['type'] = "section";
+			$field['fields'] = $this->generateFieldsFromSettings($v, $sfields, $d++);
+		}
+		return $field;
 	}
 	
 	/**
@@ -111,8 +141,8 @@ class ConfigForm extends DacuraObject {
 		if($this->cid() !== "all" && !isset($settings['facets'])){
 			$settings['facets'] = array();
 		}
-		//if($sname == "config") opr ($sfields);
-		$fields = $this->generateFieldsFromSettings($settings, $sfields, 0);
+		$fields = $this->generateFieldsFromSettings($settings, $sfields);
+		//if($sname == "config") opr ($fields);
 		$nfields = array();
 		foreach($fields as $onef){
 			if($this->cid() != "all"){

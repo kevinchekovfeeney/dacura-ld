@@ -169,7 +169,7 @@ function drawDetails(obj){
 	prof["name"] = obj.name;
 	prof["status"] = obj.status;
 	prof["email"] = obj.email;
-	dacura.tool.form.populateFromStruct("udetails", prof);
+	dacura.tool.form.populate("udetails", prof);
 	$('#udetails select.dacura-select').selectmenu("refresh");
 		
 }

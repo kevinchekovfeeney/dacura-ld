@@ -63,11 +63,23 @@ class DacuraForm extends DacuraObject {
 	 */
 	function html($jdid, $context = array()){
 		$context[] = $jdid;
-		$html = "<table class='dacura-property-table dacura-".$this->settings['display_type']."-table' id='$jdid'>";
+		if(count($context) == 1){
+			$cls_extra = " property-table-top property-table-odd property-table-level-1";
+		}
+		elseif(count($context) % 2 == 0){
+			$cls_extra = " property-table-even property-table-level-".count($context);				
+		}
+		else {
+			$cls_extra = " property-table-odd property-table-level-".count($context);				
+		}
+		$html = "<table class='dacura-property-table dacura-".$this->settings['display_type']."-table $cls_extra' id='$jdid'>";
+		//echo htmlspecialchars($html);
 		$html.= $this->table_header($context);
 		$html .= "<tbody>";
-		foreach($this->elements as $el){
-			$html .= $el->tr($this->settings, $context);			
+		foreach($this->elements as $i => $el){
+			$rownum = $i + 1;
+			$is_last = ($rownum == count($this->elements) || isset($this->elements[$rownum]) && $this->elements[$rownum]->isSection());
+			$html .= $el->tr($this->settings, $context, $rownum, $is_last);			
 		}
 		$html .="</tbody></table>";		
 		return $html;

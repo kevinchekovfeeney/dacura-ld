@@ -15,10 +15,10 @@ $bgimage = isset($params['bgimage']) ? $params['bgimage'] : $service->furl("imag
 		<meta charset=utf-8 />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
 		<title>Dacura</title>
+		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->furl("css", "opensans.css")?>" />
 		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->furl("css", "jquery-ui.css")?>" />
 		<link rel="shortcut icon" href="<?=$service->furl("images", "favicon2.ico")?>" />
 		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->get_service_file_url('master.css', "core")?>"/>
-		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->furl("css", "opensans.css")?>" />
 		<script src="<?=$service->furl("js", "jquery-2.1.4.min.js")?>"></script>
 		<script src="<?=$service->furl("js", "jquery-ui.js")?>"></script>
 		<script>

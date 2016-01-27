@@ -71,7 +71,7 @@ class UsersDacuraServer extends DacuraServer {
 		}
 		else {
 			if($this->cid() == "all" || !isset($params['roles']) || count($params['roles']) == 0){
-				return $this->failure_result("A user with the email address $email is already registered on the system", 400);
+				return $this->failure_result("A user with the email address ".$params['email']." is already registered on the system", 400);
 			}
 			foreach($params['roles'] as $role){
 				if(!$this->canCreateRole($ou, $role['collection_id'], $role['role'])) return false;

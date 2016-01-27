@@ -1258,14 +1258,6 @@ img.result-icon {
 	vertical-align: -2px;
 }
 
-table.dacura-property-table {
-	border: 1px solid #c8c8c8;
-	border-collapse: collapse;
-	margin: 2px auto 2px auto;
-	background-color: #f8f8f8;
-	font-size: 0.9em;
-}
-
 span.select-image {
 	width: 32px;
 	height: 32px;
@@ -1295,33 +1287,72 @@ img.helpicon {
 	height: 20px;
 }
 
+table.dacura-property-table {
+	border-collapse: collapse;
+	margin: 0;
+	padding: 0;
+	background-color: #f8f8f8;	
+}
+
+table.dacura-property-table.property-table-top {
+	margin: 2px auto 2px auto;
+	background-color: #f8f8f8;
+	font-size: 0.9em;
+	overflow: hidden;
+}
+
+
+table.dacura-property-table.property-table-odd  {
+	border: 1px solid #c8c8c8;
+}
+
+table.dacura-property-table.property-table-even {
+	border: 0;
+}
+
+
 table.dacura-property-table .dacura-display-json {
 	border: 1px solid #ccc;	
 }
 
-table.dacura-property-table td.dacura-embedded-property table {
-	width: 100%;	
-	border-collapse: collapse;
-}	
-
 table.dacura-property-table td.dacura-embedded-property {
+	background-color: #efefef;
+	padding: 0px 6px 8px 6px;
 }
 
-table.dacura-property-table td.dacura-embedded-property table.dacura-property-table  {
-	margin: 0px 0px 0px 5px;
-	background-color: #fafcfe;	
-	
+
+table.dacura-property-table td.dacura-embedded-property table {
+	width: 100%;
 }
 
-table.dacura-property-table td.dacura-embedded-property table.dacura-property-table  td {
-	padding-right: 4px;
+table.dacura-property-table td.dacura-embedded-property table.dacura-property-table {
+	border: 1px solid white;
+	border-radius: 4px;	
 }
+
+table.dacura-property-table tr.last-row > td {
+	padding-bottom: 20px;
+}
+
+table.dacura-property-table tr.first-row > td {
+	padding-top: 20px;
+}
+
 
 table.dacura-property-table th.dacura-property-label,
 table.dacura-property-table th.dacura-property-meta {
-	border-top: 1px solid #aaa;
-	padding: 18px 4px;	
+	border-top: 1px solid #ddd;
+	padding: 20px 4px;	
+	background-color: #efefef;
+	border-bottom: white;
 }
+
+table.dacura-property-table.property-table-top > thead > tr > th.dacura-property-label {
+	border-top: 0;
+	font-size: 1.1em;
+	color:#444;
+}
+
 
 table.dacura-property-table th.dacura-property-label .dacura-property-help {
 	font-size: 0.8em;
@@ -1329,22 +1360,33 @@ table.dacura-property-table th.dacura-property-label .dacura-property-help {
 }
 
 table.dacura-property-table tr.dacura-section-spacer{
-	border-bottom: 1px solid #aaa;
-	height: 10px;
+	border-bottom: 1px solid #ddd;	
 }
+
+td.dacura-property-meta .ui-selectmenu-button,	 
+th.dacura-property-meta .ui-selectmenu-menu,	 
+th.dacura-property-meta .ui-selectmenu-button,	 
+td.dacura-property-meta .ui-selectmenu-menu {
+	font-size: 0.8em;
+}
+
+th.dacura-property-meta .ui-selectmenu-button {
+	border: 1px solid #faf9f9;
+	
+}	 
+td.dacura-property-meta .ui-selectmenu-button {
+	border: 1px solid #efefef;
+}	 
+
 
 
 table.dacura-property-table tr.dacura-property-spacer{
 	border-bottom: 1px solid white;
 }
 
-table.dacura-property-table td.dacura-property-input {
-	padding-right: 10px;
-}
-
-
 table.dacura-property-table tr.dacura-property-section {
 }
+
 
 
 table.dacura-property-table td.dacura-property-value {
@@ -1363,11 +1405,13 @@ table.dacura-property-table td.dacura-property-label {
 
 table.dacura-property-table td.dacura-property-help {
 	font-size: 0.85em;
+	padding-left: 10px;
+	text-align: left;
 }
 
-table.dacura-property-value-bundle td {
-	max-width: 700px;
-	overflow: hidden;
+table.dacura-property-table td.dacura-property-meta {
+	padding: 4px;
+	text-align: right;
 }
 
 table.dacura-property-table input[type="password"],

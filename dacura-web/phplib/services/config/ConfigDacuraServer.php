@@ -235,8 +235,14 @@ class ConfigDacuraServer extends DacuraServer {
 				$upds['services'] = $usrv;
 			}	
 		}
+		if(isset($obj['meta'])){
+			$upds['meta'] = $obj['meta'];
+		}
+		if(isset($obj['servicesmeta'])){
+			$upds['servicesmeta'] = $obj['servicesmeta'];
+		}
 		if(count($upds) == 0){
-			return $this->failure_report("Submitted update request did not contain any changes to the configuration", 400);
+			return $this->failure_result("Submitted update request did not contain any changes to the configuration", 400);
 		}
 		if(!$this->containsOnlyPermittedUpdates($upds)){
 			return false;

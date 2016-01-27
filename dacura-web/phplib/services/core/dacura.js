@@ -195,10 +195,18 @@ dacura.system.switchContext = function(c, s){
  * @summary dacura.system.selects
  * @description applies a selectmenu configuration to all html selects with the css class dacura-select
  */
-dacura.system.selects = function(){
-	$('select.dacura-select').selectmenu({"width": "200"});
+dacura.system.selects = function(key, opts){
+	if(typeof key == "undefined") key = 'select.dacura-select';
+	$(key).selectmenu(opts);
 }
 
+/**
+ * @function selects
+ * @memberof dacura.system
+ * @summary dacura.system.refreshselects 
+ * @description calls the selectmenu refresh function to update the displays after a value change
+ * 
+ */
 dacura.system.refreshselects = function(){
 	$('select.dacura-select').selectmenu("refresh");
 }
@@ -957,7 +965,6 @@ dacura.system.setModalProperties = function(args){
 	}
 };
 
-
 /**
  * @function setModalProperties
  * @memberof dacura.system
@@ -1006,19 +1013,6 @@ dacura.system.init = function(opts){
 	dacura.system.targets = dacura.system.getTargets(opts.targets);
 	dacura.system.msgs = dacura.system.getMessages(opts.msgs);
 };
-
-dacura.system.openKCFinder = function(field, src, dir, type) {
-
-    if(typeof type == "string"){
-    	src += "?type=" + type;
-        if(typeof dir == "string"){
-        	src += "&dir=" + type + "/" + dir;
-        }
-    }
-    //src = src + "?type=files";
-    $(field).html('<div id="kcfinder_div"><iframe name="kcfinder_iframe" src="' + src + '" frameborder="0" width="100%" height="100%" marginwidth="0" marginheight="0" scrolling="no" /></div>');
-}
-
 
 /* some simple utility functions */
 /**
@@ -1131,25 +1125,34 @@ function toggleCheckbox(cbox){
 	}	
 }
 
-
+/**
+ * @function escapeQuotes
+ * @param text the string
+ * @returns a string with the quotes escaped
+ */
 function escapeQuotes(text) {
 	var map = {
-		    '"': '\\"',
-		    "'": ''
-		  };
-	  return text.replace(/"']/g, function(m) { return map[m]; });
+	    '"': '\\"',
+	    "'": ''
+    };
+	return text.replace(/"']/g, function(m) { return map[m]; });
 }
-function escapeHtml(text) {
-	  var map = {
-	    '&': '&amp;',
-	    '<': '&lt;',
-	    '>': '&gt;',
-	    '"': '&quot;',
-	    "'": '&#039;'
-	  };
 
-	  return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-	}
+/**
+ * @function escapeHtml
+ * @param text the string
+ * @returns a string with the quotes escaped
+ */
+function escapeHtml(text) {
+  var map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
 
 /**
  * @function nvArrayToOptions

@@ -75,7 +75,7 @@ function drawCollection(obj){
 		obj.settings.name = obj.collection.name;
 		obj.settings.id = obj.collection.id;
 		obj.settings.status = obj.collection.status;
-		dacura.tool.form.populateFromStruct("sysconfig", obj.settings);
+		dacura.tool.form.populate("sysconfig", obj.settings);
 	}
 	<?php if(in_array("view-services", $params['subscreens'])) { ?>
 	
@@ -191,7 +191,7 @@ function loadService(id){
 			}
 			dacura.config.updateCollection(ndata, onwards, service_subpage_conf);	
 		});
-		dacura.tool.form.populateFromStruct('service-'+id, lconfig.services);		
+		dacura.tool.form.populate('service-'+id, lconfig.services);		
 	}
 	else {
 		dacura.system.showErrorResult("Found no service configuration information for " + id, "Error loading service", '#servicebox-contents');
@@ -306,6 +306,7 @@ $(function() {
 	<?php } ?>	
         
 	var pconf = { resultbox: ".tool-info", errorbox: ".tool-info", busybox: "#collection-config"};
+	dacura.tool.form.init('sysconfig');
     dacura.config.fetchCollection(dacura.system.cid(), drawCollection, pconf);
     fbloaded = true;
 	$('td.dacura-property-help').each(function(){

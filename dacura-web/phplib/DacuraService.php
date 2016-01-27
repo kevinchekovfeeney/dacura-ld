@@ -137,20 +137,10 @@ class DacuraService extends DacuraObject {
 				return $this->failure_result($srvr->errmsg, $srvr->errcode);
 			}
 			if($this->cid() != "all"){
-				if(!$col = $srvr->getCollection()){
-					default_settings($this->settings);//must call this explicitly as it is not called until loadcontextsettings						
-					return $this->failure_result($this->cid() . " is not a valid id of a dacura collection or service", 404);
+				if(!$this->loadDefaultCollectionSettings($srvr)){
+					default_settings($this->settings);//must load them explicitly as they aren't loaded yet
+					return false;
 				}
-				if($col->status != "accept" && !$srvr->userHasRole("admin", "all")){
-					default_settings($this->settings);						
-					return $this->failure_result($this->cid() . " is currently in state $col->status and cannot be accessed", 401);						
-				}
-				$defs = $col->getDefaultSettings($srvr);
-				foreach($defs as $k => $v){
-					if(!isset($this->settings[$k])){
-						$this->settings[$k] = $defs[$k];
-					}
-				}				
 			}
 			$this->loadContextSettings($this->settings, $srvr);
 			$this->loadServiceContextSettings($this->servicename, $this->settings[$this->servicename], $srvr);
@@ -166,6 +156,28 @@ class DacuraService extends DacuraObject {
 		catch(Exception $e){
 			return $this->failure_result("Failed to create $srvrclass object: ".$e->getMessage(), 500);
 		}
+	}
+	
+	/**
+	 * Loads the necessary settings for a collection from the default values if they have not already been set by
+	 * the configuration. 
+	 * @param DacuraServer $srvr
+	 * @return boolean true if success
+	 */
+	function loadDefaultCollectionSettings(DacuraServer $srvr){
+		if(!$col = $srvr->getCollection()){
+			return $this->failure_result($this->cid() . " is not a valid id of a dacura collection or service", 404);
+		}
+		if($col->status != "accept" && !$srvr->userHasRole("admin", "all")){
+			return $this->failure_result($this->cid() . " is currently in state $col->status and cannot be accessed", 401);
+		}
+		$defs = $col->getDefaultSettings($srvr);
+		foreach($defs as $k => $v){
+			if(!isset($this->settings[$k])){
+				$this->settings[$k] = $defs[$k];
+			}
+		}
+		return true;
 	}
 	
 	/**
@@ -394,21 +406,15 @@ class DacuraService extends DacuraObject {
 	 * @see DacuraForm 
 	 */
 	protected function sform($id, $fillings = array()){
-		$forms = $this->getServiceSetting("forms", array());
-		if(!isset($forms[$id])){
+		$form = $this->getServiceSetting($id);
+		if(!$form){
 			return array();
 		}
-		$fields = $this->getServiceSetting("form_fields", array());
 		$sform = array();
-		foreach($forms[$id] as $fieldid){
-			$onef = $fields[$fieldid];
+		foreach($form as $fieldid => $onef){
 			if(!isset($onef['id'])){
-			//	$onef['id'] = $id."-".$fieldid;
 				$onef['id'] = $fieldid;
 			}
-			//else {
-				//$onef['id'] = $id."-".$onef['id'];
-			//}
 			$sform[$fieldid] = $this->subParamsIntoConfigValue($onef, $fillings);
 		}
 		return $sform;

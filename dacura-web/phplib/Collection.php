@@ -111,7 +111,7 @@ class Collection extends DacuraObject {
 						$this->config["services"][$sid] = $sobj;
 					}	
 				}
-				elseif($k == "settings"){
+				elseif($k == "settings"){					
 					if(isset($v['name'])){
 						$this->name = $v['name'];
 						unset($v['name']);
@@ -122,8 +122,10 @@ class Collection extends DacuraObject {
 					}
 					if(isset($v['id'])){
 						unset($v['id']);							
-					}		
-					$this->config[$k] = $v;
+					}
+					foreach($v as $id => $f){		
+						$this->config["settings"][$id] = $f;
+					}
 				}				
 				else {
 					$this->config[$k] = $v;
