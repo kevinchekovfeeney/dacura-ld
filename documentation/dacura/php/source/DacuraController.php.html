@@ -1,0 +1,175 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php 
+/**
+ * A class which controller classes inherit from 
+ * 
+ * It includes a common constructor and a few functions for access service context information 
+ * @author chekov
+ * @license GPL V2
+ */
+class DacuraController extends DacuraObject {
+	/** @var DacuraService the service that is invoking this controller */
+	var $service;
+	
+	/** 
+	 * Object constructor
+	 * @param DacuraService $service The service that is invoking this controller
+	 */
+	function __construct(DacuraService &amp;$service){
+		$this-&gt;service = $service;
+	}
+	
+	/**
+	 * Logs an event to the system's event log
+	 * @param string $level must be one of RequestLog::$log_levels
+	 * @param number $code the http return code (200 for ok, 400+ -&gt; error)
+	 * @param string $msg the message to log
+	 */
+	function logEvent($level, $code, $msg){
+		$this-&gt;service-&gt;logger-&gt;logEvent($level, $code, $msg);
+	}
+	
+	/**
+	 * Logs the result of a request to the request log
+	 * @param number $code http response code (200 = ok)
+	 * @param string $note human readable note to log
+	 */
+	function logResult($code = 200, $note = &quot;&quot;){
+		$this-&gt;service-&gt;logger-&gt;setResult($code, $note);
+	}
+	
+	/**
+	 * Adds a timestamp for an event [action, object] to the request log
+ * 
+	 * @param string $event the name of the event
+	 * @param string $level must be one of RequestLog::debug_levels
+	 */
+	function timeEvent($event, $level){
+		$this-&gt;service-&gt;logger-&gt;timeEvent($event, $level);
+	}
+	
+	
+	/**
+	 * Get Current Collection ID
+	 * @return string collection id
+	 */
+	function cid(){
+		return $this-&gt;service-&gt;cid();
+	}
+	
+	/**
+	 * Returns the base url of the dacura server
+	 * @param string $ajax if true, the ajax url is returned, otherwise the html url
+	 * @return string the url
+	 */
+	function durl($ajax = false){
+		return (!$ajax) ? $this-&gt;getSystemSetting('install_url') : $this-&gt;getSystemSetting('ajaxurl');
+	}
+	
+	/**
+	 * The name of the current service
+	 * @return string service name
+	 */
+	function sname(){
+		return $this-&gt;service-&gt;name();
+	}
+	
+	/**
+	 * A human readable string describing the current context
+	 * @return string
+	 */
+	function contextStr(){
+		return &quot;[&quot;.$this-&gt;cid().&quot;]&quot;;
+	}
+	
+	/**
+	 * Fetch a system-wide configuration setting
+	 * @param string $cname the name of the configuration setting required
+	 * @param string $def a default value to be returned in case the configuration setting is unset
+	 * @param array(string) $fillers an associative array of strings available to be subsituted into
+	 * the configuration setting templates
+	 */
+	function getSystemSetting($cname, $def = &quot;&quot;, $fillers = array()){
+		return $this-&gt;service-&gt;getSystemSetting($cname, $def, $fillers);
+	}
+	
+	/**
+	 * Fetch a configuration setting for the current service context
+	 * @param string $cname the name of the configuration setting required
+	 * @param string $def a default value to be returned in case the configuration setting is unset
+	 * @param array(string) $fillers an associative array of strings available to be subsituted into
+	 * the configuration setting templates
+	 */
+	function getServiceSetting($cname, $def = &quot;&quot;, $fillers = array()){
+		return $this-&gt;service-&gt;getServiceSetting($cname, $def, $fillers);
+	}
+		
+	/**
+	 * Dacura server functions signal failure by calling this function. It returns false,
+	 * sets the object's errcode and errmsg and and optionally logs the failure.
+	 */
+	
+	/**
+	 * Overrides the regular failure result to add in logging (also can be called with state and no arguments)
+	 * (non-PHPdoc)
+	 * @see DacuraObject::failure_result()
+	 * @param string $msg the human-readable failure message
+	 * @param number $code the http response code associated
+	 * $loglevel string one of 
+	 * @see RequestLog::log_levels
+	 */
+	function failure_result($msg = false, $code = false, $loglevel = &quot;&quot;){
+		if($msg === false &amp;&amp; $code === false){
+			$msg = $this-&gt;errmsg;
+			$code = $this-&gt;errcode;
+		}
+		if($loglevel) {
+			$this-&gt;logEvent($loglevel, $code, $msg);
+		}
+		return parent::failure_result($msg, $code);
+	}
+	
+}</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

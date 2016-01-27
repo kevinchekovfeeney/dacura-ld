@@ -1,0 +1,283 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php 
+/**
+ * Class representing an element within a user-interface form
+ *
+ * Creation Date: 15/11/2015
+ * @author Chekov
+ * @license GPL V2
+ */
+class DacuraFormElement extends DacuraObject {
+	/** @var string[] the list of valid types of form element */
+	private static $valid_types = array(&quot;text&quot;, &quot;url&quot;, &quot;image&quot;, &quot;password&quot;, &quot;choice&quot;, &quot;status&quot;, &quot;section&quot;, &quot;email&quot;);
+	/** @var string[] the list of valid input types of form element */
+	private static $valid_input_types = array(&quot;input&quot;, &quot;select&quot;, &quot;radio&quot;, &quot;textarea&quot;, &quot;checkbox&quot;, &quot;password&quot;);
+	/** @var string[] the list of valid sizes of form elements */
+	private static $valid_element_sizes = array(&quot;long&quot;, &quot;regular&quot;, &quot;short&quot;, &quot;tiny&quot;);
+	/** @var string[] the list of valid display types of forms and form elements */
+	private static $valid_display_types = array(&quot;view&quot;, &quot;update&quot;, &quot;create&quot;);
+	/** @var string the element type - must be one of DacuraFormElement::$valid_types */
+	var $type; 
+	/** @var string the input html element associated with this element type. must be one of DacuraFormElement::$valid_input_types */
+	var $input_type; 
+	/** @var string the size of the ui element must be one of DacuraFormElement::$valid_element_sizes */
+	var $element_size; 
+	/** @var string the display type of the element must be one of DacuraFormElement::$valid_display_types */
+	var $display_type;
+	/** @var string a human readable label */
+	var $label;
+	/** @var string passage of text to help the user in undertstanding this element */
+	var $help;
+	/** @var mixed The value of the input element */
+	var $value;
+	/** @var mixed The default value (if any) of the input element */
+	var $default_value;
+	/** @var boolean if true, the input element is disabled */
+	var $update_disabled;
+	/** @var boolean if true, the element is hidden */
+	var $hidden;
+	/** @var boolean if true, the element can be submitted independently of the form */
+	var $submittable_alone;
+	/** @var array Associative name-value array of options */
+	var $options; 
+	/** @var DacuraFormElement[] an array of sub-elements of this element (e.g. for elements of type &quot;section&quot; */
+	var $subfields;
+
+	/**
+	 * Loads the form element from an associative name-value array of settings 
+	 * 
+	 * The settings are generally specified in service settings files
+	 * @param array $row an associative array with fields for:
+	 * [label, hidden, length, value, default_value, submit, disabled, type, id, options, input_type, fields]
+	 * @param string $type one of DacuraFormElement::$valid_display_types
+	 * @return boolean
+	 */
+	function load(array $row, $display_type = false){
+		if(!isset($row['id'])){
+			return $this-&gt;failure_result(&quot;Dacura form elements must have a form id associated&quot;, 400);
+		}
+		$this-&gt;label = isset($row['label']) ? $row['label'] : false;
+		$this-&gt;hidden = isset($row['hidden']) ? $row['hidden'] : false;
+		$this-&gt;element_size = isset($row['length']) ? $row['length'] : 'regular';
+		$this-&gt;default_value = isset($row['default_value']) ? $row['default_value'] : &quot;&quot;;
+		$this-&gt;value = isset($row['value'])  ? $row['value'] : $this-&gt;default_value;
+		$this-&gt;submittable_alone = isset($row['submit']) ? $row['submit'] : false;
+		$this-&gt;update_disabled = isset($row['disabled']) ? $row['disabled'] : false;
+		$this-&gt;help = isset($row['help']) ? $row['help'] : &quot;&quot;;
+		$this-&gt;options = isset($row['options']) ? $row['options'] : array();
+		$this-&gt;id = $row['id'];
+		$this-&gt;type = isset($row['type']) ? $row['type'] : 'text';
+		if(isset($row['input_type'])){
+			$this-&gt;input_type = $row['input_type'];
+		}
+		elseif(is_array($this-&gt;value)){
+			$this-&gt;input_type = &quot;textarea&quot;;
+		}
+		elseif($this-&gt;type == 'password'){
+			$this-&gt;input_type = &quot;password&quot;;
+		}
+		elseif($this-&gt;type == 'status'){
+			$this-&gt;options = DacuraObject::$valid_statuses;
+			$this-&gt;input_type = &quot;select&quot;;
+		}
+		elseif($this-&gt;type == 'choice'){
+			$this-&gt;input_type = &quot;select&quot;;
+		}
+		else {
+			$this-&gt;input_type = &quot;input&quot;;
+		}
+		if($this-&gt;type == &quot;section&quot;){
+			$this-&gt;input_type = &quot;section&quot;;
+			$this-&gt;subfields = new DacuraForm($this-&gt;id, $display_type);
+			$this-&gt;subfields-&gt;addElements($row['fields']);
+		}
+		$this-&gt;display_type = $display_type ? $display_type : &quot;view&quot;;
+		return $this-&gt;hasValidSettings();
+	}
+	
+	/**
+	 * Tests the element to ensure that it has been given valid settings 
+	 * 
+	 * Just checks that type, input_type, display_type and element_size are among the valid entries defined 
+	 * for those type
+	 * @return boolean true if valid, false if invalid
+	 */
+	function hasValidSettings(){
+		if(!in_array($this-&gt;type, DacuraFormElement::$valid_types)){
+			return $this-&gt;failure_result(&quot;Form element $this-&gt;id has invalid type: $this-&gt;type&quot;, 400);
+		}
+		if(!in_array($this-&gt;input_type, DacuraFormElement::$valid_input_types)){
+			return $this-&gt;failure_result(&quot;Form element $this-&gt;id has invalid input type: $this-&gt;input_type&quot;, 400);
+		}		
+		if(!in_array($this-&gt;element_size, DacuraFormElement::$valid_element_sizes)){
+			return $this-&gt;failure_result(&quot;Form element $this-&gt;id has invalid element size: $this-&gt;element_size&quot;, 400);
+		}		
+		if(!in_array($this-&gt;display_type, DacuraFormElement::$valid_display_types)){
+			return $this-&gt;failure_result(&quot;Form element $this-&gt;id has invalid display type: $this-&gt;display_type&quot;, 400);
+		}		
+		return true;
+	}
+	
+	/**
+	 * Returns a HTML table row as a representation of this form element
+	 * @param string $display_type one of DacuraFormElement::$valid_display_types
+	 * @return string html as a TR element
+	 */
+	function tr($display_type){
+		$html = &quot;&lt;tr class='dacura-property' id='row-&quot;.$this-&gt;id.&quot;'&gt;&quot;;
+		$html .= &quot;&lt;td class='dacura-property-label'&gt;&quot;.$this-&gt;label.&quot;&lt;/td&gt;&quot;;
+		$html .= &quot;&lt;td class='dacura-property-value'&gt;&quot;;
+		$html .= $this-&gt;getValueTable($display_type);
+		$html .= &quot;&lt;/td&gt;&lt;/tr&gt;&quot;;
+		return $html;
+	}
+	
+	/**
+	 * Returns a representation of the element's value as a HTML table 
+	 * 
+	 * The table has css class dacura-property-value-bundle and cells for: 
+	 * * the value (css class dacura-property-input)
+	 * * a submit cell - when the value can be submitted in isolation (css class: dacura-property-submit)
+	 * * a help cell (css class: dacura-property-help)
+	 * @param string $display_type one of $DacuraFormElement::$valid_display_types
+	 * @return string The TABLE html
+	 */
+	function getValueTable($display_type){
+		$html = &quot;&lt;table class='dacura-property-value-bundle'&gt;&lt;tr&gt;&lt;td class='dacura-property-input'&gt;&quot;;
+		if($display_type == &quot;view&quot;){
+			$html .= $this-&gt;getDisplayElementHTML();
+		}
+		else {
+			$html .= $this-&gt;getInputElementHTML();
+		}
+		$html .= &quot;&lt;/td&gt;&quot;;
+		if($this-&gt;submittable_alone){
+			$html .= &quot;&lt;td class='dacura-property-submit'&gt;&quot;.$this-&gt;submittable_alone.&quot;&lt;/td&gt;&quot;;
+		}
+		if($this-&gt;help){
+			$html .= &quot;&lt;td class='dacura-property-help'&gt;&quot;.$this-&gt;help.&quot;&lt;/td&gt;&quot;;
+		}
+		$html .= &quot;&lt;/tr&gt;&lt;/table&gt;&quot;;
+		return $html;
+	}
+	
+	/**
+	 * Generates the HTML to display the element value when display_type = &quot;view&quot;
+	 * 
+	 * @return string the element HTML 
+	 */
+	function getDisplayElementHTML(){
+		if($this-&gt;isSection()){
+			$html = $this-&gt;subfields-&gt;html($this-&gt;id.&quot;-sub-property-table&quot;);
+		}
+		elseif(is_array($this-&gt;value)){
+			$html = &quot;&lt;div class='dacura-display-json raw-json'&gt;&quot; . json_encode($this-&gt;value, JSON_PRETTY_PRINT).&quot;&lt;/div&gt;&quot;;
+		}
+		else {
+			$v = $this-&gt;value;
+			if($v === true) $v = &quot;true&quot;;
+			if($v === false) $v = &quot;false&quot;;
+			$html = &quot;&lt;span id='$this-&gt;id' class='dacura-display-value'&gt;$v&lt;/span&gt;&quot;;
+		}
+		return $html;
+	}
+	
+	/**
+	 * Generates the HTML to display the element value when display_type = &quot;update&quot; or &quot;create&quot;
+	 *
+	 * @return string the element input HTML
+	 */
+	function getInputElementHTML(){
+		$cls = 'dacura-'.$this-&gt;element_size.'-input';
+		$disabled = $this-&gt;update_disabled ? &quot;disabled&quot; : &quot;&quot;;
+		if($this-&gt;input_type == &quot;input&quot;){
+			$html = &quot;&lt;input id='$this-&gt;id' class='$cls' $disabled type='text' value='$this-&gt;value'&gt;&quot;;				
+		}
+		elseif($this-&gt;input_type == &quot;textarea&quot;){
+			if(is_array($this-&gt;value)){
+				$val = json_encode($this-&gt;value, JSON_PRETTY_PRINT);
+				$cls .= &quot; dacura-display-json&quot;;
+			}
+			else {
+				$val = $this-&gt;value;
+			}			
+			$html = &quot;&lt;textarea id='$this-&gt;id' class='$cls' $disabled &gt;$val&lt;/textarea&gt;&quot;;
+		}
+		elseif ($this-&gt;input_type == &quot;password&quot;){
+			$html = &quot;&lt;input id='$this-&gt;id' class='$cls' $disabled type='password' value='$this-&gt;value'/&gt;&quot;;
+		}
+		elseif($this-&gt;input_type == &quot;select&quot;){
+			$html = &quot;&lt;select id='$this-&gt;id' class='dacura-select $cls' $disabled&gt;&quot;;
+			if(isAssoc($this-&gt;options)){
+				foreach($this-&gt;options as $v =&gt; $title){
+					$selected = ($this-&gt;value &amp;&amp; $this-&gt;value == $v) ? &quot; selected&quot; : &quot;&quot;;
+					$html .= &quot;&lt;option value='$v' $selected&gt;$title&lt;/option&gt;&quot;;
+				}
+			}
+			else {
+				foreach($this-&gt;options as $v ){
+					$selected = ($this-&gt;value &amp;&amp; $this-&gt;value == $v) ? &quot; selected&quot; : &quot;&quot;;
+					$html .= &quot;&lt;option value='$v' $selected&gt;$v&lt;/option&gt;&quot;;
+				}
+			}
+			$html .= &quot;&lt;/select&gt;&quot;;
+		}
+		else {
+			$html = &quot;&lt;span class='dacura-error'&gt;Value: $this-&gt;value&lt;/span&gt;&quot;;
+		}
+		return $html;
+	}
+
+	/**
+	 * Sections are special types of form elements that contain lists of form elements
+	 * @return boolean true if the element is a section (container) element, false otherwise
+	 */
+	function isSection(){
+		return $this-&gt;type == &quot;section&quot;;
+	}
+}
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

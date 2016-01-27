@@ -1,0 +1,2649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <meta charset="utf-8"/>
+    <title>API Documentation</title>
+    <meta name="author" content=""/>
+    <meta name="description" content=""/>
+
+    <link href="../css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/prism.css" rel="stylesheet" media="all"/>
+    <link href="../css/template.css" rel="stylesheet" media="all"/>
+    
+    <!--[if lt IE 9]>
+    <script src="../js/html5.js"></script>
+    <![endif]-->
+    <script src="../js/jquery-1.11.0.min.js"></script>
+    <script src="../js/ui/1.10.4/jquery-ui.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/jquery.smooth-scroll.js"></script>
+    <script src="../js/prism.min.js"></script>
+    <!-- TODO: Add http://jscrollpane.kelvinluck.com/ to style the scrollbars for browsers not using webkit-->
+    <script type="text/javascript">
+    function loadExternalCodeSnippets() {
+        Array.prototype.slice.call(document.querySelectorAll('pre[data-src]')).forEach(function (pre) {
+            var src = pre.getAttribute('data-src');
+            var extension = (src.match(/\.(\w+)$/) || [, ''])[1];
+            var language = 'php';
+
+            var code = document.createElement('code');
+            code.className = 'language-' + language;
+
+            pre.textContent = '';
+
+            code.textContent = 'Loading…';
+
+            pre.appendChild(code);
+
+            var xhr = new XMLHttpRequest();
+
+            xhr.open('GET', src, true);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4) {
+
+                    if (xhr.status < 400 && xhr.responseText) {
+                        code.textContent = xhr.responseText;
+
+                        Prism.highlightElement(code);
+                    }
+                    else if (xhr.status >= 400) {
+                        code.textContent = '✖ Error ' + xhr.status + ' while fetching file: ' + xhr.statusText;
+                    }
+                    else {
+                        code.textContent = '✖ Error: File does not exist or is empty';
+                    }
+                }
+            };
+
+            xhr.send(null);
+        });
+    }
+
+    $(document).ready(function(){
+        loadExternalCodeSnippets();
+    });
+    $('#source-view').on('shown', function () {
+        loadExternalCodeSnippets();
+    })
+</script>
+
+    <link rel="shortcut icon" href="../images/favicon.ico"/>
+    <link rel="apple-touch-icon" href="../images/apple-touch-icon.png"/>
+    <link rel="apple-touch-icon" sizes="72x72" href="../images/apple-touch-icon-72x72.png"/>
+    <link rel="apple-touch-icon" sizes="114x114" href="../images/apple-touch-icon-114x114.png"/>
+</head>
+<body>
+
+<div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <i class="icon-ellipsis-vertical"></i>
+            </a>
+            <a class="brand" href="../index.html">API Documentation</a>
+
+            <div class="nav-collapse">
+                <ul class="nav pull-right">
+                                        <li class="dropdown" id="charts-menu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Charts <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="../graphs/class.html">
+                                    <i class="icon-list-alt"></i>&#160;Class hierarchy diagram
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="dropdown" id="reports-menu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Reports <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="../reports/errors.html">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <i class="icon-list-alt"></i>&#160;Errors <span class="label label-info pull-right">1940</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="../reports/markers.html">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <i class="icon-list-alt"></i>&#160;Markers <span class="label label-info pull-right">0</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="../reports/deprecated.html">
+                                                                                                            <i class="icon-list-alt"></i>&#160;Deprecated <span class="label label-info pull-right">0</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!--<div class="go_to_top">-->
+    <!--<a href="#___" style="color: inherit">Back to top&#160;&#160;<i class="icon-upload icon-white"></i></a>-->
+    <!--</div>-->
+</div>
+
+<div id="___" class="container-fluid">
+        <section class="row-fluid">
+        <div class="span2 sidebar">
+                                <div class="accordion" style="margin-bottom: 0">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                                    <a class="accordion-toggle " data-toggle="collapse" data-target="#namespace-17710880"></a>
+                                <a href="../namespaces/default.html" style="margin-left: 30px; padding-left: 0">\</a>
+            </div>
+            <div id="namespace-17710880" class="accordion-body collapse in">
+                <div class="accordion-inner">
+
+                    
+                    <ul>
+                                                                                                    <li class="class"><a href="../classes/AnalysisResults.html">AnalysisResults</a></li>
+                                                    <li class="class"><a href="../classes/BrowseDacuraServer.html">BrowseDacuraServer</a></li>
+                                                    <li class="class"><a href="../classes/BrowseService.html">BrowseService</a></li>
+                                                    <li class="class"><a href="../classes/Candidate.html">Candidate</a></li>
+                                                    <li class="class"><a href="../classes/CandidateCreateRequest.html">CandidateCreateRequest</a></li>
+                                                    <li class="class"><a href="../classes/CandidateDacuraServer.html">CandidateDacuraServer</a></li>
+                                                    <li class="class"><a href="../classes/CandidateService.html">CandidateService</a></li>
+                                                    <li class="class"><a href="../classes/CandidateUpdateRequest.html">CandidateUpdateRequest</a></li>
+                                                    <li class="class"><a href="../classes/Collection.html">Collection</a></li>
+                                                    <li class="class"><a href="../classes/ConfigDacuraServer.html">ConfigDacuraServer</a></li>
+                                                    <li class="class"><a href="../classes/ConfigService.html">ConfigService</a></li>
+                                                    <li class="class"><a href="../classes/CoreService.html">CoreService</a></li>
+                                                    <li class="class"><a href="../classes/DacuraController.html">DacuraController</a></li>
+                                                    <li class="class"><a href="../classes/DacuraForm.html">DacuraForm</a></li>
+                                                    <li class="class"><a href="../classes/DacuraFormElement.html">DacuraFormElement</a></li>
+                                                    <li class="class"><a href="../classes/DacuraObject.html">DacuraObject</a></li>
+                                                    <li class="class"><a href="../classes/DacuraResult.html">DacuraResult</a></li>
+                                                    <li class="class"><a href="../classes/DacuraServer.html">DacuraServer</a></li>
+                                                    <li class="class"><a href="../classes/DacuraService.html">DacuraService</a></li>
+                                                    <li class="class"><a href="../classes/DacuraSession.html">DacuraSession</a></li>
+                                                    <li class="class"><a href="../classes/DacuraUser.html">DacuraUser</a></li>
+                                                    <li class="class"><a href="../classes/DBManager.html">DBManager</a></li>
+                                                    <li class="class"><a href="../classes/EntityCreateRequest.html">EntityCreateRequest</a></li>
+                                                    <li class="class"><a href="../classes/EntityUpdate.html">EntityUpdate</a></li>
+                                                    <li class="class"><a href="../classes/FakeTripleStore.html">FakeTripleStore</a></li>
+                                                    <li class="class"><a href="../classes/FileChannel.html">FileChannel</a></li>
+                                                    <li class="class"><a href="../classes/FileManager.html">FileManager</a></li>
+                                                    <li class="class"><a href="../classes/Graph.html">Graph</a></li>
+                                                    <li class="class"><a href="../classes/GraphAnalysisResults.html">GraphAnalysisResults</a></li>
+                                                    <li class="class"><a href="../classes/GraphCreateRequest.html">GraphCreateRequest</a></li>
+                                                    <li class="class"><a href="../classes/GraphManager.html">GraphManager</a></li>
+                                                    <li class="class"><a href="../classes/GraphUpdateRequest.html">GraphUpdateRequest</a></li>
+                                                    <li class="class"><a href="../classes/HomeDacuraServer.html">HomeDacuraServer</a></li>
+                                                    <li class="class"><a href="../classes/HomeService.html">HomeService</a></li>
+                                                    <li class="class"><a href="../classes/LdDacuraServer.html">LdDacuraServer</a></li>
+                                                    <li class="class"><a href="../classes/LDDBManager.html">LDDBManager</a></li>
+                                                    <li class="class"><a href="../classes/LDDelta.html">LDDelta</a></li>
+                                                    <li class="class"><a href="../classes/LDEntity.html">LDEntity</a></li>
+                                                    <li class="class"><a href="../classes/LDPropertyValue.html">LDPropertyValue</a></li>
+                                                    <li class="class"><a href="../classes/LdService.html">LdService</a></li>
+                                                    <li class="class"><a href="../classes/LoginDacuraServer.html">LoginDacuraServer</a></li>
+                                                    <li class="class"><a href="../classes/LoginService.html">LoginService</a></li>
+                                                    <li class="class"><a href="../classes/NSResolver.html">NSResolver</a></li>
+                                                    <li class="class"><a href="../classes/Ontology.html">Ontology</a></li>
+                                                    <li class="class"><a href="../classes/OntologyCreateRequest.html">OntologyCreateRequest</a></li>
+                                                    <li class="class"><a href="../classes/OntologyUpdateRequest.html">OntologyUpdateRequest</a></li>
+                                                    <li class="class"><a href="../classes/PolicyEngine.html">PolicyEngine</a></li>
+                                                    <li class="class"><a href="../classes/RequestLog.html">RequestLog</a></li>
+                                                    <li class="class"><a href="../classes/Schema.html">Schema</a></li>
+                                                    <li class="class"><a href="../classes/SchemaDacuraServer.html">SchemaDacuraServer</a></li>
+                                                    <li class="class"><a href="../classes/SchemaService.html">SchemaService</a></li>
+                                                    <li class="class"><a href="../classes/ScraperDacuraServer.html">ScraperDacuraServer</a></li>
+                                                    <li class="class"><a href="../classes/ScraperService.html">ScraperService</a></li>
+                                                    <li class="class"><a href="../classes/ServiceCall.html">ServiceCall</a></li>
+                                                    <li class="class"><a href="../classes/ServiceLoader.html">ServiceLoader</a></li>
+                                                    <li class="class"><a href="../classes/seshatParsing.html">seshatParsing</a></li>
+                                                    <li class="class"><a href="../classes/SimpleRequestResults.html">SimpleRequestResults</a></li>
+                                                    <li class="class"><a href="../classes/UpdateAnalysisResults.html">UpdateAnalysisResults</a></li>
+                                                    <li class="class"><a href="../classes/UserManager.html">UserManager</a></li>
+                                                    <li class="class"><a href="../classes/UserRole.html">UserRole</a></li>
+                                                    <li class="class"><a href="../classes/UsersService.html">UsersService</a></li>
+                                                    <li class="class"><a href="../classes/Widget.html">Widget</a></li>
+                                                    <li class="class"><a href="../classes/WidgetCreateRequest.html">WidgetCreateRequest</a></li>
+                                                    <li class="class"><a href="../classes/WidgetDacuraServer.html">WidgetDacuraServer</a></li>
+                                                    <li class="class"><a href="../classes/WidgetService.html">WidgetService</a></li>
+                                                    <li class="class"><a href="../classes/WidgetUpdateRequest.html">WidgetUpdateRequest</a></li>
+                                            </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        </div>
+    </section>
+    <section class="row-fluid">
+        <div class="span10 offset2">
+            <div class="row-fluid">
+                <div class="span8 content class">
+                    <nav>
+                                                <a href="../namespaces/default.html">\</a> <i class="icon-level-up"></i>
+                                            </nav>
+                    <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal"><i class="icon-code"></i></a>
+
+                    <h1><small>\</small>UserManager</h1>
+                    <p><em>Class providing access to information about users of the Dacura System</em></p>
+                    <ul>
+<li>Creation Date: 20/11/2014</li>
+</ul>
+                    
+                                        
+                    <section id="summary">
+                        <h2>Summary</h2>
+                        <section class="row-fluid heading">
+                            <section class="span4">
+                                <a href="#methods">Methods</a>
+                            </section>
+                            <section class="span4">
+                                <a href="#properties">Properties</a>
+                            </section>
+                            <section class="span4">
+                                <a href="#constants">Constants</a>
+                            </section>
+                        </section>
+                        <section class="row-fluid public">
+                            <section class="span4">
+                                                                    <a href="../classes/UserManager.html#method___construct" class="">__construct()</a><br />
+                                                                    <a href="../classes/DacuraController.html#method_logEvent" class="">logEvent()</a><br />
+                                                                    <a href="../classes/DacuraController.html#method_logResult" class="">logResult()</a><br />
+                                                                    <a href="../classes/DacuraController.html#method_timeEvent" class="">timeEvent()</a><br />
+                                                                    <a href="../classes/DacuraController.html#method_cid" class="">cid()</a><br />
+                                                                    <a href="../classes/DacuraController.html#method_durl" class="">durl()</a><br />
+                                                                    <a href="../classes/DacuraController.html#method_sname" class="">sname()</a><br />
+                                                                    <a href="../classes/DacuraController.html#method_contextStr" class="">contextStr()</a><br />
+                                                                    <a href="../classes/DacuraController.html#method_getSystemSetting" class="">getSystemSetting()</a><br />
+                                                                    <a href="../classes/DacuraController.html#method_getServiceSetting" class="">getServiceSetting()</a><br />
+                                                                    <a href="../classes/DacuraObject.html#method_failure_result" class="">failure_result()</a><br />
+                                                                    <a href="../classes/DacuraObject.html#method_setStatus" class="">setStatus()</a><br />
+                                                                    <a href="../classes/DacuraObject.html#method_getStatus" class="">getStatus()</a><br />
+                                                                    <a href="../classes/DacuraObject.html#method_status" class="">status()</a><br />
+                                                                    <a href="../classes/DacuraObject.html#method_isValidDacuraID" class="">isValidDacuraID()</a><br />
+                                                                    <a href="../classes/DacuraObject.html#method_is_pending" class="">is_pending()</a><br />
+                                                                    <a href="../classes/DacuraObject.html#method_is_accept" class="">is_accept()</a><br />
+                                                                    <a href="../classes/DacuraObject.html#method_is_reject" class="">is_reject()</a><br />
+                                                                    <a href="../classes/DacuraObject.html#method_is_deleted" class="">is_deleted()</a><br />
+                                                                    <a href="../classes/DacuraObject.html#method_is_error" class="">is_error()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_isValidPassword" class="">isValidPassword()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_getUser" class="">getUser()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_loadUser" class="">loadUser()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_loadUserByEmail" class="">loadUserByEmail()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_getUsers" class="">getUsers()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_saveUser" class="">saveUser()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_addUser" class="">addUser()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_deleteUser" class="">deleteUser()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_refreshCurrentUser" class="">refreshCurrentUser()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_switchToUser" class="">switchToUser()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_getUserRole" class="">getUserRole()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_deleteUserRole" class="">deleteUserRole()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_createUserRole" class="">createUserRole()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_updateUserRoles" class="">updateUserRoles()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_getUsersInContext" class="">getUsersInContext()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_getUserPrunedForContext" class="">getUserPrunedForContext()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_getAvailableRoles" class="">getAvailableRoles()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_loadUserHistory" class="">loadUserHistory()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_login" class="">login()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_isLoggedIn" class="">isLoggedIn()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_logout" class="">logout()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_register" class="">register()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_confirmRegistration" class="">confirmRegistration()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_invite" class="">invite()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_inviteToCollection" class="">inviteToCollection()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_confirmInvite" class="">confirmInvite()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_updatePassword" class="">updatePassword()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_resetPassword" class="">resetPassword()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_requestResetPassword" class="">requestResetPassword()</a><br />
+                                                                    <a href="../classes/UserManager.html#method_confirmLostPassword" class="">confirmLostPassword()</a><br />
+                                                            </section>
+                            <section class="span4">
+                                                                    <a href="../classes/DacuraController.html#property_service" class="">$service</a><br />
+                                                                    <a href="../classes/DacuraObject.html#property_errmsg" class="">$errmsg</a><br />
+                                                                    <a href="../classes/DacuraObject.html#property_errcode" class="">$errcode</a><br />
+                                                                    <a href="../classes/DacuraObject.html#property_status" class="">$status</a><br />
+                                                                    <a href="../classes/DacuraObject.html#property_id" class="">$id</a><br />
+                                                                    <a href="../classes/DacuraObject.html#property_valid_statuses" class="">$valid_statuses</a><br />
+                                                                    <a href="../classes/DacuraObject.html#property_reserved_words" class="">$reserved_words</a><br />
+                                                                    <a href="../classes/DacuraObject.html#property_banned_phrases" class="">$banned_phrases</a><br />
+                                                                    <a href="../classes/UserManager.html#property_user_dir" class="">$user_dir</a><br />
+                                                                    <a href="../classes/UserManager.html#property_dbman" class="">$dbman</a><br />
+                                                                    <a href="../classes/UserManager.html#property_uservar" class="">$uservar</a><br />
+                                                            </section>
+                            <section class="span4">
+                                                                    <em>No constants found</em>
+                                                            </section>
+                        </section>
+                        <section class="row-fluid protected">
+                            <section class="span4">
+                                                                    <em>No protected methods found</em>
+                                                            </section>
+                            <section class="span4">
+                                                                    <em>No protected properties found</em>
+                                                            </section>
+                            <section class="span4">
+                                <em>N/A</em>
+                            </section>
+                        </section>
+                        <section class="row-fluid private">
+                            <section class="span4">
+                                                                    <em>No private methods found</em>
+                                                            </section>
+                            <section class="span4">
+                                                                    <em>No private properties found</em>
+                                                            </section>
+                            <section class="span4">
+                                <em>N/A</em>
+                            </section>
+                        </section>
+                    </section>
+                </div>
+                <aside class="span4 detailsbar">
+                                        
+                    
+                    <dl>
+                        <dt>File</dt>
+                            <dd><a href="../files/UserManager.html"><div class="path-wrapper">UserManager.php</div></a></dd>
+                                                <dt>Package</dt>
+                            <dd><div class="namespace-wrapper">Default</div></dd>
+                                                <dt>Class hierarchy</dt>
+                            <dd class="hierarchy">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+                                        <div class="namespace-wrapper"><a href="../classes/DacuraObject.html">\DacuraObject</a></div>
+                                                                    
+                                        <div class="namespace-wrapper"><a href="../classes/DacuraController.html">\DacuraController</a></div>
+                                                                                                    <div class="namespace-wrapper">\UserManager</div>
+                            </dd>
+
+                        
+                        
+                        
+                        
+                                                                        </dl>
+                    <h2>Tags</h2>
+                    <table class="table table-condensed">
+                                            <tr>
+                            <th>
+                                author
+                            </th>
+                            <td>
+                                                                    <p>Chekov</p>
+                                                            </td>
+                        </tr>
+                                            <tr>
+                            <th>
+                                license
+                            </th>
+                            <td>
+                                                                    <p>GPL v2</p>
+                                                            </td>
+                        </tr>
+                                        </table>
+                </aside>
+            </div>
+
+                        
+                                    <a id="properties" name="properties"></a>
+            <div class="row-fluid">
+                <div class="span8 content class">
+                    <h2>Properties</h2>
+                </div>
+                <aside class="span4 detailsbar"></aside>
+            </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_service" name="property_service" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$service</h3>
+                <pre class="signature">$service : \DacuraService</pre>
+                <p><em></em></p>
+                
+
+                                <h4>Type</h4>
+                <a href="../classes/DacuraService.html">\DacuraService</a>
+                &mdash; the service that is invoking this controller                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraController.html"><div class="path-wrapper">\DacuraController</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_errmsg" name="property_errmsg" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$errmsg</h3>
+                <pre class="signature">$errmsg : string</pre>
+                <p><em></em></p>
+                
+
+                                <h4>Type</h4>
+                string
+                &mdash; a human-readable error message                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_errcode" name="property_errcode" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$errcode</h3>
+                <pre class="signature">$errcode : integer</pre>
+                <p><em></em></p>
+                
+
+                                <h4>Type</h4>
+                integer
+                &mdash; a non-zero number indicates an error condition                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_status" name="property_status" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$status</h3>
+                <pre class="signature">$status : string</pre>
+                <p><em></em></p>
+                
+
+                                <h4>Type</h4>
+                string
+                &mdash; either accept, reject, pending or deleted                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_id" name="property_id" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$id</h3>
+                <pre class="signature">$id : string</pre>
+                <p><em></em></p>
+                
+
+                                <h4>Type</h4>
+                string
+                &mdash; Dacura IDs are between 2 and 40 characters long [a-z0-9-_]                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_valid_statuses" name="property_valid_statuses" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$valid_statuses</h3>
+                <pre class="signature">$valid_statuses : array</pre>
+                <p><em></em></p>
+                
+
+                                <h4>Type</h4>
+                array
+                &mdash; the set of valid statuses and their human readable forms                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_reserved_words" name="property_reserved_words" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$reserved_words</h3>
+                <pre class="signature">$reserved_words : array</pre>
+                <p><em></em></p>
+                
+
+                                <h4>Type</h4>
+                array
+                &mdash; the list of Dacura Reserved Words                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_banned_phrases" name="property_banned_phrases" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$banned_phrases</h3>
+                <pre class="signature">$banned_phrases : array</pre>
+                <p><em></em></p>
+                
+
+                                <h4>Type</h4>
+                array
+                &mdash; a list of phrases that aren&#039;t allowed to appear in titles                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_user_dir" name="property_user_dir" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$user_dir</h3>
+                <pre class="signature">$user_dir : string</pre>
+                <p><em></em></p>
+                
+
+                                <h4>Type</h4>
+                string
+                &mdash; the directory in which user sessions are kept                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_dbman" name="property_dbman" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$dbman</h3>
+                <pre class="signature">$dbman : \DBManager</pre>
+                <p><em></em></p>
+                
+
+                                <h4>Type</h4>
+                <a href="../classes/DBManager.html">\DBManager</a>
+                &mdash; a database manager object for accessing database                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_uservar" name="property_uservar" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$uservar</h3>
+                <pre class="signature">$uservar : string</pre>
+                <p><em></em></p>
+                
+
+                                <h4>Type</h4>
+                string
+                &mdash; the name of the session user (can be changed in settings to support multiple side-by-side installs of dacura                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                                            
+                                    <a id="methods" name="methods"></a>
+            <div class="row-fluid">
+                <div class="span8 content class"><h2>Methods</h2></div>
+                <aside class="span4 detailsbar"></aside>
+            </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method___construct" name="method___construct" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">__construct()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">__construct(\DacuraService  <span class="argument">$service</span>, \DBManager  <span class="argument">$dbman</span>) </pre>
+                <p><em>Object constructor</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td><a href="../classes/DacuraService.html">\DacuraService</a></td>
+                                <td>$service </td>
+                                <td><p>The service that is invoking this controller</p></td>
+                            </tr>
+                                                    <tr>
+                                <td><a href="../classes/DBManager.html">\DBManager</a></td>
+                                <td>$dbman </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_logEvent" name="method_logEvent" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">logEvent()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">logEvent(string  <span class="argument">$level</span>, \number  <span class="argument">$code</span>, string  <span class="argument">$msg</span>) </pre>
+                <p><em>Logs an event to the system&#039;s event log</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$level </td>
+                                <td><p>must be one of RequestLog::$log_levels</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$code </td>
+                                <td><p>the http return code (200 for ok, 400+ -&gt; error)</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$msg </td>
+                                <td><p>the message to log</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraController.html"><div class="path-wrapper">\DacuraController</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_logResult" name="method_logResult" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">logResult()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">logResult(\number  <span class="argument">$code = 200</span>, string  <span class="argument">$note = &quot;&quot;</span>) </pre>
+                <p><em>Logs the result of a request to the request log</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$code </td>
+                                <td><p>http response code (200 = ok)</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$note </td>
+                                <td><p>human readable note to log</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraController.html"><div class="path-wrapper">\DacuraController</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_timeEvent" name="method_timeEvent" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">timeEvent()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">timeEvent(string  <span class="argument">$event</span>, string  <span class="argument">$level</span>) </pre>
+                <p><em>Adds a timestamp for an event [action, object] to the request log</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$event </td>
+                                <td><p>the name of the event</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$level </td>
+                                <td><p>must be one of RequestLog::debug_levels</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraController.html"><div class="path-wrapper">\DacuraController</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_cid" name="method_cid" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">cid()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">cid() : string</pre>
+                <p><em>Get Current Collection ID</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    string
+                                            &mdash; <p>collection id</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraController.html"><div class="path-wrapper">\DacuraController</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_durl" name="method_durl" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">durl()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">durl(string  <span class="argument">$ajax = false</span>) : string</pre>
+                <p><em>Returns the base url of the dacura server</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$ajax </td>
+                                <td><p>if true, the ajax url is returned, otherwise the html url</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    string
+                                            &mdash; <p>the url</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraController.html"><div class="path-wrapper">\DacuraController</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_sname" name="method_sname" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">sname()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">sname() : string</pre>
+                <p><em>The name of the current service</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    string
+                                            &mdash; <p>service name</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraController.html"><div class="path-wrapper">\DacuraController</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_contextStr" name="method_contextStr" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">contextStr()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">contextStr() : string</pre>
+                <p><em>A human readable string describing the current context</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    string
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraController.html"><div class="path-wrapper">\DacuraController</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_getSystemSetting" name="method_getSystemSetting" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">getSystemSetting()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">getSystemSetting(string  <span class="argument">$cname</span>, string  <span class="argument">$def = &quot;&quot;</span>, \array(string)  <span class="argument">$fillers = array()</span>) </pre>
+                <p><em>Fetch a system-wide configuration setting</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$cname </td>
+                                <td><p>the name of the configuration setting required</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$def </td>
+                                <td><p>a default value to be returned in case the configuration setting is unset</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>\array(string)</td>
+                                <td>$fillers </td>
+                                <td><p>an associative array of strings available to be subsituted into
+the configuration setting templates</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraController.html"><div class="path-wrapper">\DacuraController</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_getServiceSetting" name="method_getServiceSetting" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">getServiceSetting()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">getServiceSetting(string  <span class="argument">$cname</span>, string  <span class="argument">$def = &quot;&quot;</span>, \array(string)  <span class="argument">$fillers = array()</span>) </pre>
+                <p><em>Fetch a configuration setting for the current service context</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$cname </td>
+                                <td><p>the name of the configuration setting required</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$def </td>
+                                <td><p>a default value to be returned in case the configuration setting is unset</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>\array(string)</td>
+                                <td>$fillers </td>
+                                <td><p>an associative array of strings available to be subsituted into
+the configuration setting templates</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraController.html"><div class="path-wrapper">\DacuraController</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_failure_result" name="method_failure_result" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">failure_result()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">failure_result(string  <span class="argument">$msg</span>, \number  <span class="argument">$code = 500</span>) : boolean</pre>
+                <p><em>Sets the internal errorcode and message of the object and returns false</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$msg </td>
+                                <td><p>A user-readable error message</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$code </td>
+                                <td><p>A http error code</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    boolean
+                                            &mdash; <p>always returns false</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_setStatus" name="method_setStatus" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">setStatus()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">setStatus(string  <span class="argument">$s</span>) </pre>
+                <p><em>Set the status of the object</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$s </td>
+                                <td><p>accept, reject, pending or deleted</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_getStatus" name="method_getStatus" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">getStatus()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">getStatus() : string</pre>
+                <p><em>Get the status of the object</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    string
+                                            &mdash; <p>the status of the object</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_status" name="method_status" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">status()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">status(string|boolean  <span class="argument">$s = false</span>) : string</pre>
+                <p><em>Get or set the status of the object</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string|boolean</td>
+                                <td>$s </td>
+                                <td><p>if the argument is included, it will set the status.</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    string
+                                            &mdash; <p>the object's status</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_isValidDacuraID" name="method_isValidDacuraID" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">isValidDacuraID()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">isValidDacuraID(string  <span class="argument">$id</span>, integer  <span class="argument">$maxlen = 40</span>, array&lt;mixed,string&gt;  <span class="argument">$bwords = array()</span>, array&lt;mixed,string&gt;  <span class="argument">$bphrases = array()</span>) </pre>
+                <p><em>Checks to ensure that requested ids for dacura objects are valid ids</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$id </td>
+                                <td><p>the requested id</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>integer</td>
+                                <td>$maxlen </td>
+                                <td><p>the maximum permitted length of ids</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>array&lt;mixed,string&gt;</td>
+                                <td>$bwords </td>
+                                <td><p>an array of 'banned' words to extend the built-in dacura reserved words</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>array&lt;mixed,string&gt;</td>
+                                <td>$bphrases </td>
+                                <td><p>an array of banned phrases to extend the built-in dacura list of banned phrases</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_is_pending" name="method_is_pending" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">is_pending()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">is_pending() : boolean</pre>
+                <p><em>does the object have &#039;pending&#039; status</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    boolean
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_is_accept" name="method_is_accept" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">is_accept()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">is_accept() : boolean</pre>
+                <p><em>does the object have &#039;accept&#039; status</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    boolean
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_is_reject" name="method_is_reject" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">is_reject()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">is_reject() : boolean</pre>
+                <p><em>does the object have &#039;reject&#039; status</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    boolean
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_is_deleted" name="method_is_deleted" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">is_deleted()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">is_deleted() : boolean</pre>
+                <p><em>does the object have &#039;deleted&#039; status</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    boolean
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_is_error" name="method_is_error" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">is_error()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">is_error() : boolean</pre>
+                <p><em>Has an error  been encountered by the object</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    boolean
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/DacuraObject.html"><div class="path-wrapper">\DacuraObject</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_isValidPassword" name="method_isValidPassword" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">isValidPassword()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">isValidPassword(string  <span class="argument">$pword</span>) : boolean</pre>
+                <p><em>Is the proposed password valid according to the password rules</em></p>
+                <p>Currently this will accept any password &gt;= 6 characters long
+We probably need to make this stronger...</p>
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$pword </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    boolean
+                                            &mdash; <p>true indicates that the chosen password is ok</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_getUser" name="method_getUser" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">getUser()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">getUser(string  <span class="argument">$n = &quot;&quot;</span>) : boolean|\DacuraUser</pre>
+                <p><em>Fetch a user object</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$n </td>
+                                <td><p>the id of the user to load (empty to load currently logged in user)</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    boolean|<a href="../classes/DacuraUser.html">\DacuraUser</a>
+                                            &mdash; <p>the user object or false on failure</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_loadUser" name="method_loadUser" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">loadUser()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">loadUser(\number  <span class="argument">$id</span>) : \DacuraUser|boolean</pre>
+                <p><em>Loads the user with the given id</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$id </td>
+                                <td><p>the user id</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    <a href="../classes/DacuraUser.html">\DacuraUser</a>|boolean
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_loadUserByEmail" name="method_loadUserByEmail" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">loadUserByEmail()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">loadUserByEmail(string  <span class="argument">$email</span>) : \DacuraUser|boolean</pre>
+                <p><em>Loads the user with the given email</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$email </td>
+                                <td><p>email address</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    <a href="../classes/DacuraUser.html">\DacuraUser</a>|boolean
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_getUsers" name="method_getUsers" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">getUsers()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">getUsers() : \array&lt;id:DacuraUser&gt;</pre>
+                <p><em>Returns a list of all users on the system</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    \array<id:DacuraUser>
+                                            &mdash; <p>an array of users indexed by their ids</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_saveUser" name="method_saveUser" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">saveUser()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">saveUser(\DacuraUser  <span class="argument">$u</span>) : \DacuraUser|boolean</pre>
+                <p><em>Save user to storage</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td><a href="../classes/DacuraUser.html">\DacuraUser</a></td>
+                                <td>$u </td>
+                                <td><p>user object to update</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    <a href="../classes/DacuraUser.html">\DacuraUser</a>|boolean
+                                            &mdash; <p>updated users object</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_addUser" name="method_addUser" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">addUser()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">addUser(string  <span class="argument">$email</span>, string  <span class="argument">$n</span>, string  <span class="argument">$p</span>, string  <span class="argument">$status</span>, array  <span class="argument">$prof = false</span>) : boolean|\DacuraUser</pre>
+                <p><em>Adds new user to Dacura</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$email </td>
+                                <td><p>user's email address</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$n </td>
+                                <td><p>user's handle</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$p </td>
+                                <td><p>user's password</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$status </td>
+                                <td><p>users status (@see:DacuraObject::valid_statuses)</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>array</td>
+                                <td>$prof </td>
+                                <td><p>profile name-value configuration array for user</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    boolean|<a href="../classes/DacuraUser.html">\DacuraUser</a>
+                                            &mdash; <p>added user object</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_deleteUser" name="method_deleteUser" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">deleteUser()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">deleteUser(\number  <span class="argument">$id</span>) : boolean|\DacuraUser</pre>
+                <p><em>Delete user with specified ID</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$id </td>
+                                <td><p>user id to be deleted</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    boolean|<a href="../classes/DacuraUser.html">\DacuraUser</a>
+                                            &mdash; <p>deleted user object or false if failure</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_refreshCurrentUser" name="method_refreshCurrentUser" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">refreshCurrentUser()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">refreshCurrentUser() : \DacuraUser|boolean</pre>
+                <p><em>Called when the state of the user has changed on disk and we want to refresh the session user</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    <a href="../classes/DacuraUser.html">\DacuraUser</a>|boolean
+                                            &mdash; <p>the refreshed user</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_switchToUser" name="method_switchToUser" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">switchToUser()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">switchToUser(\number  <span class="argument">$id</span>) : \DacuraUser|boolean</pre>
+                <p><em>Switches the current user to become the user with the passed id</em></p>
+                <p>This is only used for testing purposes to facilitate switching between accounts and is a huge security hole!
+It should be turned off in the users service api before deployment</p>
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$id </td>
+                                <td><p>the id of the user to switch to</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    <a href="../classes/DacuraUser.html">\DacuraUser</a>|boolean
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_getUserRole" name="method_getUserRole" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">getUserRole()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">getUserRole(\number  <span class="argument">$uid</span>, \number  <span class="argument">$rid</span>) : \UserRole|boolean</pre>
+                <p><em>Fetch the role object with id $rid for user $uid</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$uid </td>
+                                <td><p>the id of the user who owns the role</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$rid </td>
+                                <td><p>the id of the role</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    <a href="../classes/UserRole.html">\UserRole</a>|boolean
+                                            &mdash; <p>the role object of false if it does not exist</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_deleteUserRole" name="method_deleteUserRole" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">deleteUserRole()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">deleteUserRole(\number  <span class="argument">$uid</span>, \number  <span class="argument">$rid</span>) : boolean|\DacuraUser</pre>
+                <p><em>Deletes the specified role from the specified user</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$uid </td>
+                                <td><p>User ID</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$rid </td>
+                                <td><p>Role ID</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    boolean|<a href="../classes/DacuraUser.html">\DacuraUser</a>
+                                            &mdash; <p>update user object</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_createUserRole" name="method_createUserRole" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">createUserRole()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">createUserRole(\number  <span class="argument">$uid</span>, string  <span class="argument">$cid</span>, string  <span class="argument">$role</span>) : boolean|\DacuraUser</pre>
+                <p><em>Creates a new role for the specified user</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$uid </td>
+                                <td><p>user id</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$cid </td>
+                                <td><p>collection id</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$role </td>
+                                <td><p>role name (@see UserRole::dacura_roles)</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    boolean|<a href="../classes/DacuraUser.html">\DacuraUser</a>
+                                            &mdash; <p>the user object with the role added</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_updateUserRoles" name="method_updateUserRoles" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">updateUserRoles()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">updateUserRoles(\DacuraUser  <span class="argument">$u</span>) : boolean</pre>
+                <p><em>Updates a user&#039;s stored roles to be those that are contained in the passed user object</em></p>
+                <p>This works by deleting all existing roles then adding all ones contained in the object</p>
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td><a href="../classes/DacuraUser.html">\DacuraUser</a></td>
+                                <td>$u </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    boolean
+                                            &mdash; <p>true if successful</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_getUsersInContext" name="method_getUsersInContext" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">getUsersInContext()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">getUsersInContext(string  <span class="argument">$cid</span>) : \array&lt;DacuraUser&gt;</pre>
+                <p><em>returns an array of userids that appear (i.e. have a role) in the given collection</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$cid </td>
+                                <td><p>collection id</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    \array<DacuraUser>
+                                            &mdash; <p>array of user objects</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_getUserPrunedForContext" name="method_getUserPrunedForContext" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">getUserPrunedForContext()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">getUserPrunedForContext(\number  <span class="argument">$uid</span>, string  <span class="argument">$cid</span>) : \DacuraUser</pre>
+                <p><em>Returns a user object pruned so that it only has roles within the given context.</em></p>
+                <p>..</p>
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$uid </td>
+                                <td><p>user id</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$cid </td>
+                                <td><p>collection id</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    <a href="../classes/DacuraUser.html">\DacuraUser</a>
+                                            &mdash; <p>pruned user object</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_getAvailableRoles" name="method_getAvailableRoles" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">getAvailableRoles()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">getAvailableRoles(string  <span class="argument">$cid = &quot;all&quot;</span>, \number  <span class="argument">$uid</span>) : array&lt;mixed,string&gt;</pre>
+                <p><em>Returns the list of roles that a use may delegate in a given context</em></p>
+                <p>Only admin and god can give out access roles.
+All users can give out nobody roles</p>
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$cid </td>
+                                <td><p>collection id</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$uid </td>
+                                <td><p>user id</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    array&lt;mixed,string&gt;
+                                            &mdash; <p>array of roles availbe to user in the context</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_loadUserHistory" name="method_loadUserHistory" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">loadUserHistory()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">loadUserHistory(\DacuraUser  <span class="argument">$u</span>) : boolean</pre>
+                <p><em>Loads a users session history from the user session directory</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td><a href="../classes/DacuraUser.html">\DacuraUser</a></td>
+                                <td>$u </td>
+                                <td><p>the relevant user object</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    boolean
+                                            &mdash; <p>true is successful</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_login" name="method_login" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">login()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">login(string  <span class="argument">$email</span>, string  <span class="argument">$p</span>) : \DacuraUser</pre>
+                <p><em>Login to the system</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$email </td>
+                                <td><p>email address</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$p </td>
+                                <td><p>password</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    <a href="../classes/DacuraUser.html">\DacuraUser</a>
+                                            &mdash; <p>on success</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_isLoggedIn" name="method_isLoggedIn" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">isLoggedIn()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">isLoggedIn() : boolean</pre>
+                <p><em>Is the current user logged in?</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    boolean
+                                            &mdash; <p>true if user is logged in</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_logout" name="method_logout" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">logout()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">logout() </pre>
+                <p><em>Logout of the system</em></p>
+                
+
+                
+                
+                				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_register" name="method_register" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">register()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">register(string  <span class="argument">$email</span>, string  <span class="argument">$p</span>) : string|boolean</pre>
+                <p><em>Register a new user with the system</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$email </td>
+                                <td><p>email address</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$p </td>
+                                <td><p>password</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    string|boolean
+                                            &mdash; <p>if successful, returns a confirm code for the user to use to complete registration</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_confirmRegistration" name="method_confirmRegistration" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">confirmRegistration()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">confirmRegistration(string  <span class="argument">$code</span>) : \DacuraUser</pre>
+                <p><em>Called when a user clicks on a confirm registration email link with a code</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$code </td>
+                                <td><p>the confirm code</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    <a href="../classes/DacuraUser.html">\DacuraUser</a>
+                                            &mdash; <p>the confirmed user</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_invite" name="method_invite" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">invite()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">invite(string  <span class="argument">$email</span>, string  <span class="argument">$role</span>, string  <span class="argument">$cid</span>) : string|boolean</pre>
+                <p><em>Invite a user to a collection</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$email </td>
+                                <td></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$role </td>
+                                <td><p>@see UserRole::dacura_roles</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$cid </td>
+                                <td><p>collection id</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    string|boolean
+                                            &mdash; <p>if successful, returns a confirm code</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_inviteToCollection" name="method_inviteToCollection" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">inviteToCollection()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">inviteToCollection(string  <span class="argument">$email</span>, string  <span class="argument">$role</span>, string  <span class="argument">$cid</span>) : \DacuraUser</pre>
+                <p><em>Called when an already existing user that is not a member of the collection is invited to the collection</em></p>
+                <p>Gives them a role</p>
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$email </td>
+                                <td><p>email address</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$role </td>
+                                <td><p>the role to be given to the user</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$cid </td>
+                                <td><p>the collection id</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    <a href="../classes/DacuraUser.html">\DacuraUser</a>
+                                            &mdash; <p>the invited user object</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_confirmInvite" name="method_confirmInvite" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">confirmInvite()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">confirmInvite(string  <span class="argument">$code</span>) : \DacuraUser</pre>
+                <p><em>Called when a user clicks on a link with an invite confirmation code in it</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$code </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    <a href="../classes/DacuraUser.html">\DacuraUser</a>
+                                            &mdash; <p>the invited user object</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_updatePassword" name="method_updatePassword" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">updatePassword()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">updatePassword(\number  <span class="argument">$uid</span>, string  <span class="argument">$p</span>) : boolean</pre>
+                <p><em>Updates the user&#039;s password</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$uid </td>
+                                <td><p>the user id</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$p </td>
+                                <td><p>password</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    boolean
+                                            &mdash; <p>true on success</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_resetPassword" name="method_resetPassword" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">resetPassword()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">resetPassword(\number  <span class="argument">$uid</span>, string  <span class="argument">$p</span>) : boolean</pre>
+                <p><em>Reset the user&#039;s password</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>\number</td>
+                                <td>$uid </td>
+                                <td><p>user id</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>string</td>
+                                <td>$p </td>
+                                <td><p>password</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    boolean
+                                            &mdash; <p>true on success</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_requestResetPassword" name="method_requestResetPassword" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">requestResetPassword()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">requestResetPassword(string  <span class="argument">$email</span>) : boolean|string</pre>
+                <p><em>Called to request a password reset for a particular user</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$email </td>
+                                <td><p>the user's email address</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    boolean|string
+                                            &mdash; <p>if successful, returns a confirm code</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_confirmLostPassword" name="method_confirmLostPassword" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">confirmLostPassword()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">confirmLostPassword(string  <span class="argument">$code</span>) : \DacuraUser</pre>
+                <p><em>Called when a user clicks on a lost password confirm link</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$code </td>
+                                <td><p>the confirm code in the link</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    <a href="../classes/DacuraUser.html">\DacuraUser</a>
+                                            &mdash; <p>the confirmed user object</p>
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                                                    </div>
+    </section>
+
+    <div id="source-view" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="source-view-label" aria-hidden="true">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h3 id="source-view-label">UserManager.php</h3>
+        </div>
+        <div class="modal-body">
+            <pre data-src="../files/UserManager.php.txt" class="language-php line-numbers"></pre>
+        </div>
+    </div>
+
+    <footer class="row-fluid">
+        <section class="span10 offset2">
+            <section class="row-fluid">
+                <section class="span10 offset1">
+                    <section class="row-fluid footer-sections">
+                        <section class="span4">
+                                                        <h1><i class="icon-code"></i></h1>
+                            <div>
+                                <ul>
+                                                                    </ul>
+                            </div>
+                        </section>
+                        <section class="span4">
+                                                        <h1><i class="icon-bar-chart"></i></h1>
+                            <div>
+                                <ul>
+                                    <li><a href="../graphs/class.html">Class Hierarchy Diagram</a></li>
+                                </ul>
+                            </div>
+                        </section>
+                        <section class="span4">
+                                                        <h1><i class="icon-pushpin"></i></h1>
+                            <div>
+                                <ul>
+                                    <li><a href="../reports/errors.html">Errors</a></li>
+                                    <li><a href="../reports/markers.html">Markers</a></li>
+                                </ul>
+                            </div>
+                        </section>
+                    </section>
+                </section>
+            </section>
+            <section class="row-fluid">
+                <section class="span10 offset1">
+                    <hr />
+                    Documentation is powered by <a href="http://www.phpdoc.org/">phpDocumentor </a> and authored
+                    on December 10th, 2015 at 22:53.
+                </section>
+            </section>
+        </section>
+    </footer>
+</div>
+
+</body>
+</html>

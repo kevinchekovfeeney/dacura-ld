@@ -1,0 +1,96 @@
+<?php
+/*
+ * API for config service - viewing and updating configuration details
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 12/01/2015
+ * Licence: GPL v2
+ */
+if($dacura_server->userHasRole("admin", "all")){
+	getRoute()->post('/create', 'create');
+	getRoute()->delete('/', 'delete');
+	getRoute()->get('/logs', 'showLogs');
+}
+if($dacura_server->userHasRole("admin")){//only publish the API endpoints that the user has permission to see
+	getRoute()->get('/', 'view');
+	getRoute()->post('/files', 'upload');
+	getRoute()->post('/', 'update');
+}
+
+function view(){
+	global $dacura_server;
+	$dacura_server->init("viewconfig");
+	if($dacura_server->cid() == "all"){
+		$collobj = array_values($dacura_server->getCollectionList());	
+	}
+	else {
+		$collobj = $dacura_server->getCollection();
+	}
+	if($collobj){
+		return $dacura_server->write_json_result($collobj, "Retrieved configuration listing for ".$dacura_server->contextStr());		
+	}
+	$dacura_server->write_http_error();
+}
+
+function create(){
+	global $dacura_server;
+	$title = isset($_POST['title']) ? $_POST['title'] : "";
+	$dacura_server->init("create.collection");
+	if($colobj = $dacura_server->createNewCollection($dacura_server->cid(), $title)){
+		return $dacura_server->write_json_result($colobj, "Created Collection ".$dacura_server->cid()." ($title)");
+	}
+	return $dacura_server->write_http_error();
+}
+
+function update(){
+	global $dacura_server;
+	$json = file_get_contents('php://input');
+	if(!($obj = json_decode($json, true))){
+		return $dacura_server->write_http_error(400, "Submitted update object was not valid json");
+	}
+	$dacura_server->init("update.collection");
+	if($cobj = $dacura_server->updateCollection($dacura_server->cid(), $obj)){
+		return $dacura_server->write_json_result($cobj, "Updated Collection ".$dacura_server->cid());
+	}
+	$dacura_server->write_http_error();
+}
+
+function delete(){
+	global $dacura_server;
+	if($dacura_server->cid() == "all"){
+		return $dacura_server->write_http_error(400, "Deleting system configuration is not permitted");		
+	}
+	$dacura_server->init("delete.collection");
+	if($collobj = $dacura_server->deleteCollection($dacura_server->cid())){
+		return $dacura_server->write_json_result($collobj, "Deleted Collection ".$dacura_server->cid());
+	}
+	$dacura_server->write_http_error();
+}
+
+function upload(){
+	global $dacura_server;
+	if(!isset($_GET['filename'])){
+		return $dacura_server->write_http_error(400, "No filename included in file upload request");
+	}
+	$payload = file_get_contents('php://input');
+	if(!$payload){
+		return $dacura_server->write_http_error(400, "No file included in file upload request");
+	}
+	if($furl = $dacura_server->saveUploadedFile($_GET['filename'], $payload)){
+		return $dacura_server->write_json_result($furl, "Uploaded File $furl for ".$dacura_server->contextStr());
+	}
+	$dacura_server->write_http_error();
+}
+
+function showLogs(){
+	global $dacura_server;
+	$dacura_server->init("show.logs");
+	if($logobj = $dacura_server->getLogsAsListingObject()){
+		return $dacura_server->write_json_result($logobj, "Log listing issued");
+	}
+	else {
+		return $dacura_server->write_http_error();
+	}
+}
+
+

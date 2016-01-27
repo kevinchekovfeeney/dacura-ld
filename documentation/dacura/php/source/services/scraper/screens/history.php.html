@@ -1,0 +1,535 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;get_service_file_url('style.css')?&gt;&quot; /&gt;
+   &lt;div class=&quot;tool-header&quot;&gt;
+   	&lt;span class=&quot;tool-title&quot;&gt;Seshat Scraper - Historical Views&lt;/span&gt;
+	&lt;span class=&quot;tool-description&quot;&gt;This tool shows trends in data collection on the Seshat wiki.&lt;/span&gt;
+   &lt;/div&gt;
+   &lt;div id=&quot;history-info&quot;&gt;&lt;/div&gt;
+   &lt;div class=&quot;history-screen&quot; id=&quot;history-screen-1&quot;&gt;
+      &lt;div class=&quot;tool-buttons&quot;&gt;
+   		&lt;button class=&quot;dacura-button get-ngas&quot; id=&quot;get-ngas&quot;&gt;Retrieve History&amp;gt;&amp;gt;&lt;/button&gt;
+   	   &lt;/div&gt;
+   &lt;/div&gt;
+   &lt;div class=&quot;history-screen&quot; id=&quot;history-screen-2&quot;&gt;
+   		&lt;div id=&quot;nga-display&quot; class=&quot;tool-content&quot;&gt;&lt;/div&gt;
+   		&lt;div class=&quot;tool-buttons&quot;&gt;
+	   	&lt;button class=&quot;dacura-button back-button get-ngas&quot; id=&quot;get-ngas2&quot;&gt;Refresh NGA List&lt;/button&gt;
+	   	&lt;button class=&quot;dacura-button forward-button&quot; id=&quot;get-polities&quot;&gt;2. Choose Polities to Export &amp;gt;&amp;gt;&lt;/button&gt;
+	   	&lt;/div&gt;
+   &lt;/div&gt;
+   &lt;div class=&quot;history-screen&quot; id=&quot;history-screen-3&quot;&gt;
+   		&lt;div id=&quot;polity-display&quot; class=&quot;tool-content&quot;&gt;
+   		&lt;/div&gt;
+   		&lt;div class=&quot;tool-buttons&quot;&gt;
+   			&lt;button class=&quot;dacura-button back-button&quot; id=&quot;back-ngas&quot;&gt;&amp;lt;&amp;lt; Return to NGA List&lt;/button&gt;
+			&lt;button class=&quot;dacura-button forward-button&quot; id=&quot;get-data&quot;&gt;3. Export Data &amp;gt;&amp;gt;&lt;/button&gt;
+	   &lt;/div&gt;
+   &lt;/div&gt;
+   &lt;div class=&quot;history-screen&quot; id=&quot;history-screen-4&quot;&gt;
+   		&lt;div id=&quot;results-display&quot; class=&quot;tool-content&quot;&gt;
+   		&lt;/div&gt;
+		&lt;div class=&quot;tool-buttons&quot;&gt;
+			&lt;button class=&quot;dacura-button back-button&quot; id=&quot;back-polities&quot;&gt;&amp;lt;&amp;lt; Change Polity List&lt;/button&gt;		
+		&lt;/div&gt;	
+   &lt;/div&gt;
+   &lt;div style=&quot;clear: both; height: '10px'&quot;&gt;&amp;nbsp;&lt;/div&gt;
+	&lt;div id=&quot;functionality&quot;&gt;
+	&lt;/div&gt;
+	&lt;script&gt;
+
+		function resetScraperScreen(n){
+			$('#history-screen-'+n +' div.tool-content').html(&quot;&quot;);
+		}
+
+		function hideScraperScreen(n){
+			$('#history-screen-'+n).hide();	
+		}
+		
+		function showScraperScreen(n){
+			$('#history-screen-'+n).show();
+		}
+	
+		function include(url){
+			//change to case statement
+			if(includeAll){
+				return true;
+			}else if(url.indexOf(&quot;&amp;&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;#&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;User&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;Special&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;Conflicts:&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;Main_Page&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;File:&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;Memento&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;Code_book&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;Macrostate_Inventory&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;Seshat.info&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;mediawiki&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;.jpg&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;.gif&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;.pdf&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;.png&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;infohttp&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;Productivity_Template&quot;) &gt; -1){
+				return false;
+			}else if(url.indexOf(&quot;Talk&quot;) &gt; -1){
+				return false;
+			}
+			return true;
+		}
+
+		var requests = [];
+		var NGAsObtainedCount = 0;
+		var includeAll = false;
+
+		var ngaStatus = {
+			loaded: 0,
+			failed: 0,
+			message: &quot;&quot;
+		};
+		var polityStatus = {
+			loaded: 0,
+			failed: 0,
+			message: &quot;&quot;
+		};
+		var dataStatus = {
+			loaded: 0,
+			failed: 0,
+			message: &quot;&quot;
+		};
+
+		$('document').ready(function(){
+			$(&quot;button&quot;).button();
+			showScraperScreen(1);
+			$(&quot;#cancel&quot;).click(function(){
+				//ngaRequest.abort();
+				for(var i = 0;i&lt;requests.length;i++){
+					requests[i].abort();
+				}
+				requests = [];
+			});
+
+			$(&quot;#back-ngas&quot;).click(function(){
+				hideScraperScreen(3);
+				showScraperScreen(2);
+				resetScraperScreen(3);
+				$('#history-info').html(ngaStatus.message);
+			});
+
+			
+			$(&quot;#back-polities&quot;).click(function(){
+				hideScraperScreen(4);
+				showScraperScreen(3);
+				resetScraperScreen(4);
+				$('#history-info').html(polityStatus.message);
+			});
+			
+			$(&quot;.get-ngas&quot;).click(function(){
+				ngaStatus.loaded = 0;
+				ngaStatus.failed = 0;
+				ngaStatus.message = &quot;&quot;;
+				
+				var ajs = dacura.scraper.api.getngalist();
+				var self=this;
+				ajs.beforeSend = function(){
+					dacura.system.showModal(&quot;&lt;p&gt;Retrieving NGA list from Seshat Wiki&lt;/p&gt;&lt;div class='indeterminate-progress'&gt;&lt;/div&gt;&quot;);
+					$('.indeterminate-progress').progressbar({
+						value: false
+					});
+				};
+				ajs.complete = function(){
+					dacura.system.removeModal();
+				};
+				dacura.system.setModalProperties({ 
+					&quot;buttons&quot;: [
+						{
+							&quot;text&quot;: &quot;Cancel&quot;,
+							&quot;click&quot;: function() {
+								jqax.responseText = &quot;Aborted by User&quot;;
+								jqax.abort();
+								$( this ).dialog( &quot;close&quot; );
+							}
+						}
+					], 
+				});
+				var jqax =	$.ajax(ajs)
+					.done(function(response, textStatus, jqXHR) {				
+						try {
+							x = JSON.parse(response);
+							addition = &quot;&lt;div class='ngaList'&gt;&lt;table class='nga-list seshat-list'&gt;&lt;tr&gt;&lt;th&gt;NGA&lt;/th&gt;&lt;th&gt;URL&lt;/th&gt;&lt;th&gt;&lt;input type='checkbox' class='selectAll'&gt;&amp;nbsp;&amp;nbsp;Select All&lt;/span&gt;&lt;/th&gt;&lt;/tr&gt;&quot;;
+							for(var i=0;i&lt;x.length;i++){
+								if(include(x[i]) ){
+									ngaStatus.loaded++; 
+									addition += &quot;&lt;tr&gt;&lt;td&gt;&quot; + dacura.scraper.tidyNGAString(x[i]) + &quot;&lt;/td&gt;&lt;td&gt;&lt;a href='&quot; + x[i] + &quot;'&gt;&quot; + x[i] + &quot;&lt;/a&gt;&lt;/td&gt;&lt;td&gt;&lt;input type='checkbox' class='ngaValid' id='&quot; + x[i] + &quot;'&gt;&lt;/td&gt;&lt;/tr&gt;&quot;;
+								}
+							}
+							ngaStatus.message = ngaStatus.loaded + &quot; NGAs identified. please select the NGAs for which you wish to export data from the list below&quot;;
+							addition += &quot;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;&quot;;
+							hideScraperScreen(1);
+							showScraperScreen(2);
+							$('#history-info').html(ngaStatus.message);
+							$(&quot;#nga-display&quot;).html(addition).show();
+							$(&quot;.ngaList h3 span&quot;).click(function(ev) {
+								ev.stopPropagation();
+							});
+							$(&quot;.selectAll&quot;).click(function(){
+								if ($(this).is(':checked')) {
+									$(this).closest(&quot;div.ngaList&quot;).find(&quot;:checkbox&quot;).prop('checked',true);
+								}else{
+									$(this).closest(&quot;div.ngaList&quot;).find(&quot;:checkbox&quot;).prop('checked',false);
+								}
+							});
+						}
+						catch(e) 
+						{
+							$('#history-info').html(&quot;Error - Could not interpret the server response &quot; + e.message + &quot; - please try again later&quot;);
+						}
+					})
+					.fail(function (jqXHR, textStatus){
+						$('#history-info').html(&quot;&lt;strong&gt;Retrieval of NGA List failed&lt;/strong&gt;&lt;br&gt;&quot; + jqXHR.responseText);
+					}
+				);
+				
+			});
+
+			$(&quot;#get-polities&quot;).click(function(){
+				var aborted = false;
+				var polityList = {}; //maps polities to NGAs
+				polityStatus.loaded = 0;
+				polityStatus.failed = 0;
+				polityStatus.message = &quot;&quot;;
+				if($('input:checked').length==0){
+					alert(&quot;nothing selected - you must select at least one policy to export!&quot;);
+				}else{
+					ngaCount = $('input.ngaValid:checked').length;
+					var nganm = &quot;&quot;; if(ngaCount == 1) { nganm = &quot;NGA&quot;; } else { nganm = &quot;NGAs&quot;;}
+					var checkedNGAs = $('input.ngaValid:checked').map(function(){return this.id;});
+					var ngas = []
+					for(var i=0;i&lt;checkedNGAs.length;i++){
+						ngas[ngas.length] = checkedNGAs[i];
+					}
+					var requests = [];
+					var NGAerrorCount = 0;
+					NGAsObtainedCount = 0;
+					dacura.system.setModalProperties({ 
+						&quot;width&quot;: 400,
+						&quot;buttons&quot;: [
+							{
+								&quot;text&quot;: &quot;Cancel&quot;,
+								&quot;click&quot;: function() {
+									$('#history-info').html(&quot;&lt;br&gt;&lt;span class='seshat-error'&gt;&lt;strong&gt;Loading of polities aborted by user&lt;/strong&gt;&lt;/span&gt;&lt;br&gt;&quot;);
+									for (var i = 0; i &lt; requests.length; i++) {
+										requests[i].status = 0;
+									    requests[i].abort();
+									}
+									aborted = true;
+									$( this ).dialog( &quot;close&quot; );
+								}
+							}
+						], 
+					});
+					dacura.system.showModal(&quot;&lt;p class='polity-head'&gt;Getting polity lists for &quot; + ngaCount + &quot; &quot; + nganm + &quot;&lt;/p&gt;&lt;p class='polity-got'&gt;&lt;/p&gt;&lt;p class='polity-next'&gt;&lt;/p&gt;&lt;div class='determinate-progress'&gt;&lt;/div&gt;&quot;);
+					$('.determinate-progress').progressbar({
+						value: false
+					});
+					
+					divs = &quot;&lt;div class='polity-intro'&gt;Select the polities to export from the list below &lt;span class='select-all-polities'&gt;Select all polities &lt;input type='checkbox' id='everypolity'&gt;&lt;/span&gt;&lt;/div&gt;&lt;div id='accordion'&gt;&quot;;
+					for(var i = 0; i &lt; ngas.length; i++){
+						var nga = ngas[i];
+						var ajs = dacura.scraper.api.getpolities(nga);
+						ajs.nga = ajs.data.nga;
+						var numComplete = 0;
+						requests[requests.length] = $.ajax(ajs)
+							.done(function(response, textStatus, jqXHR) {				
+								var name = dacura.scraper.tidyNGAString(this.nga);
+								var myOrder = ++numComplete;
+								try {
+									x = JSON.parse(response);
+									//x = a[&quot;polities&quot;];
+									var polities = [];
+									//remove extraneous polities
+									for(var i=0;i&lt;x.length;i++){
+										if(include(x[i]) &amp;&amp; x[i] != this.nga &amp;&amp; x[i].trim() != &quot;&quot;){
+											var pol = decodeURI(x[i]);
+											if(polities.indexOf(pol) == -1){
+											    polities.push(pol);
+											}
+										}
+									}	
+									if(polities.length == 0){
+										$('.polity-got').html(&quot;&lt;p class='seshat-error'&gt;&quot; + name + &quot; did not contain any polities - ignored (&quot; +  myOrder + &quot;/&quot; + ngaCount + &quot;)&lt;/p&gt;&quot;);
+										$('.determinate-progress').progressbar({
+											value: (myOrder / ngaCount) * 100
+										});
+										polityStatus.message += &quot;&lt;span class='seshat-detail seshat-error'&gt;Empty NGA: &quot; + name + &quot; does not contain any polities&quot; + &quot;&lt;/span&gt;&lt;br&gt;&quot;;
+										NGAerrorCount++;
+									}
+									else {
+										$('.polity-got').html(&quot;Successfully retrieved polity list for &quot; + name + &quot; (&quot; + myOrder + &quot;/&quot; + ngaCount + &quot;)&quot;);
+										$('.determinate-progress').progressbar({
+											value: (myOrder / ngaCount) * 100
+										});
+										addition = &quot;&lt;h3&gt;&quot; + name + &quot; (&quot; + polities.length + &quot;) &lt;span&gt;Select all &lt;input type='checkbox' class='selectAll'&gt;&lt;/span&gt;&lt;/h3&gt;&lt;div class='ngas'&gt;&quot;;
+										addition += &quot;&lt;table class='polity-list seshat-list' title='&quot; + this.nga +&quot;'&gt;&lt;tr&gt;&lt;th&gt;Polity&lt;/th&gt;&lt;th&gt;Period&lt;/th&gt;&lt;th&gt;URL&lt;/th&gt;&lt;th&gt;&lt;/th&gt;&lt;/tr&gt;&quot;;
+										for(var i=0;i&lt;polities.length;i++){
+											var pdet = dacura.scraper.parsePolityString(polities[i]);
+											addition += &quot;&lt;tr&gt;&lt;td&gt;&quot; + pdet.polityname + &quot;&lt;/td&gt;&lt;td&gt;&quot;+pdet.period+&quot;&lt;/td&gt;&lt;td&gt;&quot;;
+											if(pdet.url.length &gt; 50) {
+												addition += &quot;&lt;a href='&quot; + pdet.url + &quot;' title='&quot; + pdet.url + &quot;'&gt;&quot; + pdet.url.substr(0,50) + &quot;...&lt;/a&gt;&quot;;
+											}
+											else {
+												addition += &quot;&lt;a href='&quot; + pdet.url + &quot;' title='&quot; + pdet.url + &quot;'&gt;&quot; + pdet.url + &quot;...&lt;/a&gt;&quot;;
+											} 
+											addition += &quot;&lt;/a&gt;&lt;/td&gt;&lt;td&gt;&lt;input class='polityValid' type='checkbox' title='&quot; + polities[i] + &quot;'&gt;&lt;/td&gt;&lt;/tr&gt;&quot;;
+											if(typeof polityList[polities[i]] !== &quot;undefined&quot;){
+												polityList[polities[i]].push(this.nga);
+											}else{
+												polityList[polities[i]] = [];
+												polityList[polities[i]].push(this.nga);
+											}
+										}
+										addition += &quot;&lt;/table&gt;&lt;/div&gt;&quot;;
+										divs += addition;
+										NGAsObtainedCount++;
+									}
+								}
+								catch (e) {
+									$('.polity-got').html(&quot;&lt;p class='seshat-error'&gt;Failed to get polity list for &quot; + name + &quot; &quot; + e.message + &quot; (&quot; + myOrder + &quot;/&quot; + ngaCount + &quot;)&lt;/p&gt;&quot;);
+									NGAerrorCount++;
+									$('.determinate-progress').progressbar({
+										value: (myOrder / ngaCount) * 100
+									});
+									polityStatus.message += &quot;&lt;span class='seshat-detail seshat-error'&gt;Parse error - Server response could not be interpreted for &quot; + name  + &quot;&lt;/span&gt;&lt;br&gt;&quot;;
+								}
+							})
+							.fail(function (jqXHR, textStatus){
+								if(jqXHR.status != 0){
+									var myOrder = ++numComplete;
+									$('.polity-got').html(&quot;&lt;p class='seshat-error'&gt;Failed to get polity list for &quot; + dacura.scraper.tidyNGAString(this.nga) + &quot; (&quot; +  myOrder + &quot;/&quot; + ngaCount + &quot;)&lt;/p&gt;&quot;);
+									$('.determinate-progress').progressbar({
+										value: (myOrder / ngaCount) * 100
+									});
+									NGAerrorCount++;
+									polityStatus.message += &quot;&lt;span class='seshat-detail seshat-error'&gt;Network error (&quot; + jqXHR.status + &quot;). Failed to load &quot; + dacura.scraper.tidyNGAString(this.nga) + &quot;&lt;/span&gt;&lt;br&gt;&quot;;
+								}
+							}								
+					    );
+					}
+					var checkForCompletion = function(){
+						if(aborted){
+							return;
+						}
+						if((NGAsObtainedCount + NGAerrorCount) &lt; ngaCount){
+							setTimeout(checkForCompletion, 200);
+						}
+						else {
+							if(NGAsObtainedCount == 0){
+								$('#history-info').append(&quot;&lt;br&gt;&lt;span class='seshat-error'&gt;&lt;strong&gt;Failed to load any polities&lt;/strong&gt;&lt;/span&gt;&lt;br&gt;&quot; + polityStatus.message);
+								dacura.system.removeModal();								
+							}
+							else {		
+								polityStatus.failed = NGAerrorCount;
+								polityStatus.loaded = NGAsObtainedCount;
+								var nganm = &quot;&quot;; if(NGAsObtainedCount== 1) { nganm = &quot;NGA&quot;; } else { nganm = &quot;NGAs&quot;;}
+								var fnm = &quot;&quot;; if(NGAerrorCount== 1) { fnm = &quot;failure&quot;; } else { fnm = &quot;failures&quot;;}
+								polityStatus.message = &quot;Retrieved polity lists for &quot; + NGAsObtainedCount + &quot; &quot; + nganm + &quot; (&quot; + NGAerrorCount + &quot; &quot; + fnm + &quot;) &quot; + (Object.keys(polityList).length) + &quot; polities in total.&lt;br&gt;&quot;;
+								$('#history-info').html(polityStatus.message);
+								dacura.system.removeModal();
+								hideScraperScreen(2);
+								showScraperScreen(3);
+								divs += &quot;&lt;/div&gt;&quot;;
+								$(&quot;#polity-display&quot;).html(divs).show();
+								$(function(){
+									$(&quot;#accordion&quot;).accordion({
+										collapsible: true,
+										heightStyle: &quot;content&quot;
+									});
+									$(&quot;#accordion h3 span&quot;).click(function(ev){
+										ev.stopPropagation();
+									});
+									$(&quot;.selectAll&quot;).click(function(){
+										if ($(this).is(':checked')) {
+											$(this).closest(&quot;h3&quot;).next().find(&quot;:checkbox&quot;).prop('checked',true);
+										}else{
+											$(this).closest(&quot;h3&quot;).next().find(&quot;:checkbox&quot;).prop('checked',false);
+										}
+									});
+									$(&quot;#everypolity&quot;).click(function(){
+										if ($(this).is(':checked')) {
+											$(&quot;:checkbox&quot;).prop('checked',true);
+										}
+										else {
+											$(&quot;:checkbox&quot;).prop('checked',false);
+										}
+									});
+								});
+							}
+						}
+					};
+					checkForCompletion();
+				}
+			});
+
+			
+			$('#get-data').click(function(){
+				dataStatus.loaded = 0;
+				dataStatus.failed = 0;
+				dataStatus.message = &quot;&quot;;
+				var jajax = &quot;&quot;;
+				if($('input:checked').length==0){
+					alert(&quot;nothing selected - you must select at least one policy to export!&quot;);
+				}else{
+					$('#history-info').html(&quot;&quot;);
+					var polities = [];
+					var ngas = [];
+					dacura.system.setModalProperties({ 
+						&quot;width&quot;: 400,
+						&quot;minHeight&quot;: 400,
+						&quot;buttons&quot;: [
+							{
+								&quot;text&quot;: &quot;Cancel&quot;,
+								&quot;click&quot;: function() {
+									$('#history-info').html(&quot;&lt;br&gt;&lt;span class='seshat-error'&gt;&lt;strong&gt;Loading of data aborted by user&lt;/strong&gt;&lt;/span&gt;&lt;br&gt;&quot;);
+									dacura.scraper.abortdump();
+									aborted = true;
+									$( this ).dialog( &quot;close&quot; );
+								}
+							}
+						], 
+					});
+					$('input.polityValid:checked').each(function (i) {
+						polityURL = $( this ).attr(&quot;title&quot;);
+						polityNGA = $( this ).parents(&quot;table&quot;).attr(&quot;title&quot;);
+						if(polities.indexOf(polityURL) == -1){
+							polities.push(polityURL);
+						}
+						if(ngas.indexOf(polityNGA) == -1){
+							ngas.push(polityNGA);
+						}
+					});
+					var polityList = {}; //maps polities to NGAs
+					$('input.polityValid:checked').each(function (i) {
+						polityURL = $( this ).attr(&quot;title&quot;);
+						polityNGA = $( this ).parents(&quot;table&quot;).attr(&quot;title&quot;);
+						if(typeof polityList[polityNGA] !== &quot;undefined&quot;){
+							polityList[polityNGA].push(polityURL);
+						}else{
+							polityList[polityNGA] = [];
+							polityList[polityNGA].push(polityURL);
+						}
+					});
+					var onm = function(msgs){
+						for(var i = 0; i &lt; msgs.length; i++){
+							try {
+								var res = JSON.parse(msgs[i]);
+								if(res &amp;&amp; res.message_type == &quot;comet_update&quot;){
+									if(res.status == &quot;error&quot;){
+										dataStatus.failed++;
+									}
+									else {
+										dataStatus.loaded++;
+									}
+									$('p.data-got').html(res.payload);
+									$('.determinate-progress').progressbar({
+										value: (dataStatus.loaded / polities.length) * 100
+									});
+																					
+								}
+							}
+							catch(e) 
+							{							
+								$('.data-got').html(&quot;&lt;p class='seshat-error'&gt;Failed to parse message from server: &quot; + e.message + msgs[i] + &quot;&lt;/p&gt;&quot;);
+							}
+						}
+					};
+					var onc = function(res) {
+						try {
+							var pl = JSON.parse(res);
+							if(pl.status == &quot;error&quot;){
+								$('#history-info').html(&quot;Failed to export data dump &quot; + pl.payload);
+							}
+							else {
+								hideScraperScreen(3);
+								showScraperScreen(4);
+								$('#results-display').html(pl.payload).show();
+								dataStatus.message = &quot;Exported data dump with data from &quot; + dataStatus.loaded + &quot; polities - &quot; + dataStatus.failed + &quot; polities failed&quot;;
+								$('#history-info').html(dataStatus.message);
+							}
+						}
+						catch(e){
+							$('#history-info').html(&quot;Failed to export data dump &quot; + e.message);
+						}						
+						dacura.system.removeModal();
+					};
+					dataStatus.message = &quot;Retrieving data for &quot; + polities.length + &quot; polities in &quot; + ngas.length + &quot; NGAs&quot;;
+					$('#history-info').html(dataStatus.message);
+					dacura.system.showModal(&quot;&lt;p class='polity-head'&gt;Retrieving variables from Seshat Wiki&lt;/p&gt;&lt;p class='data-got'&gt;&lt;/p&gt;&lt;div class='determinate-progress'&gt;&lt;/div&gt;&quot;);
+					$('.determinate-progress').progressbar({
+						value: false
+					});
+					dacura.scraper.dump({&quot;polities&quot; : JSON.stringify(polityList)}, onc, onm); 
+				}
+			});
+		});
+		&lt;/script&gt;
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

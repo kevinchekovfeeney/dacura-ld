@@ -1,0 +1,84 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;div class=&quot;dacura-dashboard-panel&quot;&gt;
+	&lt;a href='&lt;?=$service-&gt;get_service_url()?&gt;/export'&gt;
+			&lt;div class='dacura-dashboard-button' id='dacura-export-button' title=&quot;Export data from the wiki to CSV&quot;&gt;
+			&lt;img class='dacura-button-img' src=&quot;&lt;?=$service-&gt;url(&quot;image&quot;, &quot;buttons/export.png&quot;)?&gt;&quot;&gt;
+			&lt;div class=&quot;dacura-button-title&quot;&gt;Export Data&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/a&gt;
+	&lt;a href='&lt;?=$service-&gt;get_service_url()?&gt;/status'&gt;
+			&lt;div class='dacura-dashboard-button' id='dacura-sources-button' title=&quot;Get an up to date status of the wiki&quot;&gt;
+			&lt;img class='dacura-button-img' src=&quot;&lt;?=$service-&gt;url(&quot;image&quot;, &quot;buttons/status.png&quot;)?&gt;&quot;&gt;
+			&lt;div class=&quot;dacura-button-title&quot;&gt;Current State&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/a&gt;
+	&lt;a href='&lt;?=$service-&gt;get_service_url()?&gt;/history'&gt;
+			&lt;div class='dacura-dashboard-button' id='dacura-sources-button' title=&quot;Historical Statistics of wiki data collection&quot;&gt;
+			&lt;img class='dacura-button-img' src=&quot;&lt;?=$service-&gt;url(&quot;image&quot;, &quot;buttons/stats.jpg&quot;)?&gt;&quot;&gt;
+			&lt;div class=&quot;dacura-button-title&quot;&gt;History&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/a&gt;
+	&lt;a href='&lt;?=$service-&gt;get_service_url()?&gt;/test'&gt;
+			&lt;div class='dacura-dashboard-button' id='dacura-sources-button' title=&quot;Test exporting variables and pages&quot;&gt;
+			&lt;img class='dacura-button-img' src=&quot;&lt;?=$service-&gt;url(&quot;image&quot;, &quot;buttons/syntax.png&quot;)?&gt;&quot;&gt;
+			&lt;div class=&quot;dacura-button-title&quot;&gt;Test Syntax&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/a&gt;
+	&lt;a href='&lt;?=$service-&gt;get_service_url()?&gt;/syntax'&gt;
+			&lt;div class='dacura-dashboard-button' id='dacura-sources-button' title=&quot;A guide to the syntax of Seshat Variables&quot;&gt;
+			&lt;img class='dacura-button-img' src=&quot;&lt;?=$service-&gt;url(&quot;image&quot;, &quot;buttons/syntax2.png&quot;)?&gt;&quot;&gt;
+			&lt;div class=&quot;dacura-button-title&quot;&gt;Syntax Guide&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/a&gt;
+&lt;/div&gt;
+&lt;div style=&quot;clear: both;&quot;&gt;&amp;nbsp;&lt;/div&gt;
+&lt;script&gt;
+	function updateWikiStatus(){
+		//alert(&quot;pressed update&quot;);
+		dacura.scraper.status();
+				
+	}
+&lt;/script&gt;</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

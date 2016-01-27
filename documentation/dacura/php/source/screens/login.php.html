@@ -1,0 +1,139 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php 
+/** Main login page
+ * 
+ * Includes scripts for switching between functions: register, reset password, login
+ * @package login/screens
+ * @author chekov
+ * @copyright GPL v2
+ */
+?&gt;
+&lt;div class='dacura-widget dch' id='dacura-widget-login'&gt;	
+	&lt;div class=&quot;dacura-widget-title&quot;&gt;Log in to dacura&lt;/div&gt;
+	&lt;div class='loginlinks'&gt;
+			&lt;span class=&quot;loginlink register lost&quot; &gt;&lt;a href=&quot;javascript:dacura.login.showlogin();&quot;&gt;login&lt;/a&gt;&lt;/span&gt;&lt;span class=&quot;loginlink lost login&quot;&gt;&lt;a href=&quot;javascript:dacura.login.showregister();&quot; title='Register a new account on Dacura'&gt;register&lt;/a&gt;&lt;/span&gt;&lt;span class=&quot;loginlink login&quot;&gt;&lt;/span&gt;&lt;span class=&quot;loginlink register login&quot;&gt;&lt;a href=&quot;javascript:javascript:dacura.login.showlost();&quot; title='Rest a lost password'&gt;lost password&lt;/a&gt;&lt;/span&gt;
+	&lt;/div&gt;
+	&lt;div id=&quot;loginbox-status&quot; class=&quot;dacura-status&quot;&gt;&lt;/div&gt;			
+	&lt;div class=&quot;dacura-widget-body&quot;&gt;
+		&lt;table class=&quot;dc-dialog&quot;&gt;
+			&lt;tr class=&quot;dc-login-field login register lost&quot;&gt;&lt;th&gt;Email Address&lt;/th&gt;&lt;td&gt;&lt;input class=&quot;dc-login-input&quot; id=&quot;dacura-login-email&quot; type=&quot;text&quot; value=&quot;&quot;&gt;&lt;/td&gt;
+			&lt;tr class=&quot;dc-login-field login register&quot;&gt;&lt;th&gt;Password&lt;/th&gt;&lt;td&gt;&lt;input class=&quot;dc-login-input&quot; id=&quot;dacura-login-password&quot; type=&quot;password&quot; value=&quot;&quot;&gt;&lt;/td&gt;
+			&lt;tr class=&quot;dc-login-field register&quot;&gt;&lt;th&gt;Confirm Password&lt;/th&gt;&lt;td&gt;&lt;input class=&quot;dc-login-input&quot; id=&quot;dacura-login-password-confirm&quot; type=&quot;password&quot; value=&quot;&quot;&gt;&lt;/td&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	&lt;div class=&quot;dacura-widget-buttons&quot;&gt;
+		&lt;a class=&quot;button login-button login&quot; id='dacura-login-button' href=&quot;javascript:dacura.login.login('&lt;?=$service-&gt;durl()?&gt;', pconf)&quot;&gt;Log in&lt;/a&gt;
+		&lt;a class=&quot;button login-button register&quot; id='dacura-register-button' href=&quot;javascript:dacura.login.register(pconf)&quot;&gt;Register&lt;/a&gt;
+		&lt;a class=&quot;button login-button lost&quot; id='dacura-lost-button' href=&quot;javascript:dacura.login.lost(pconf)&quot;&gt;Reset password&lt;/a&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+var pconf = {
+	&quot;resultbox&quot;: &quot;#loginbox-status&quot;, 
+	&quot;busybox&quot;: &quot;.dacura-widget&quot;, 
+	&quot;mopts&quot;: {&quot;closeable&quot;: false, &quot;icon&quot;: true}, 
+	&quot;bopts&quot;: {busyclass: &quot;small&quot;}
+};
+
+dacura.login.showregister = function(){
+	dacura.login.loginpagestate = &quot;register&quot;;
+	$('.dacura-widget-title').html(&quot;Register a New Account&quot;);
+	$('.dc-login-field').hide(); 
+	$('span.loginlink').hide(); 
+	$('.login-button').hide();
+	$('.dc-login-input').val(&quot;&quot;);
+	$('.register').show();	
+};
+
+dacura.login.showlost = function(){
+	$('.dacura-widget-title').html(&quot;Reset Lost Password&quot;);
+	dacura.login.loginpagestate = &quot;lost&quot;;
+	$('.dc-login-field').hide(); 
+	$('span.loginlink').hide(); 
+	$('.login-button').hide();
+	$('.lost').show();	
+};
+
+dacura.login.showlogin = function(){
+	$('.dacura-widget-title').html(&quot;Log in to Dacura&quot;);
+	dacura.login.loginpagestate = &quot;login&quot;;
+	$('.login-button').hide();
+	$('.dc-login-field').hide(); 
+	$('span.loginlink').hide(); 
+	$('.login').show();
+}
+
+$(function() {
+	$('#dacura-login-password').keypress(function(e) {
+		if (dacura.login.loginpagestate == &quot;login&quot; &amp;&amp; e.keyCode == $.ui.keyCode.ENTER) {
+			dacura.login.login('&lt;?=$service-&gt;durl()?&gt;', pconf);
+		}
+	});
+	$('#dacura-login-password-confirm').keypress(function(e) {
+		if (dacura.login.loginpagestate == &quot;register&quot; &amp;&amp; e.keyCode == $.ui.keyCode.ENTER) {
+			dacura.login.register(pconf);
+		}
+	});
+	$('#dacura-login-email').keypress(function(e) {
+		if (dacura.login.loginpagestate == &quot;lost&quot; &amp;&amp; e.keyCode == $.ui.keyCode.ENTER) {
+			dacura.login.lost(pconf);
+		}
+	});
+	dacura.system.init({&quot;targets&quot;: pconf});
+	&lt;?php 
+	if(isset($params['active_function']) &amp;&amp; $params['active_function'] == 'register'){
+		echo &quot;dacura.login.showregister();&quot;;
+	} 
+	elseif(isset($params['active_function']) &amp;&amp; $params['active_function'] == 'lost'){
+		echo &quot;dacura.login.showlost();&quot;;
+	}
+	else echo &quot;dacura.login.showlogin();&quot;;
+	?&gt;
+	$('#dacura-widget-login').show();
+});
+&lt;/script&gt;
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,75 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+include_once(&quot;Ontology.php&quot;);
+
+class Graph extends LDEntity {
+	
+	function getLocalOntology(&amp;$srvr) {
+		$id = isset($this-&gt;meta['prefix'])? $this-&gt;meta['prefix'] : $this-&gt;id;
+		$url = isset($this-&gt;meta['url'])? $this-&gt;meta['url'] : $srvr-&gt;getGraphSchemaGraph($this-&gt;id); 
+		$title = isset($this-&gt;meta['title']) ? $this-&gt;meta['title'] : &quot;Graph $this-&gt;id local ontology&quot;;
+		$local_ont = new Ontology($id);
+		$local_ont-&gt;ldprops = array($id =&gt; $this-&gt;ldprops[$this-&gt;id]);
+		$local_ont-&gt;meta = array(&quot;url&quot; =&gt; $url, &quot;title&quot; =&gt; $title);
+		$local_ont-&gt;copyBasics($this);
+		$local_ont-&gt;nsres = $this-&gt;nsres;
+		return $local_ont;
+	}
+
+	function getImportedOntologies(){
+		if(isset($this-&gt;meta['imports'])){
+			return $this-&gt;meta['imports'];
+		}
+		return array();
+	}
+	
+	function hasLocalOntology(){
+		return (isset($this-&gt;ldprops[$this-&gt;id]) &amp;&amp; count($this-&gt;ldprops[$this-&gt;id]) &gt; 0);
+	}
+	
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

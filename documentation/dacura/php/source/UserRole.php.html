@@ -1,0 +1,171 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/**
+ * Class representing a role of a user of the Dacura System
+ * 
+ * Roles are given scope by collection id. 
+ * * Creation Date: 20/11/2014
+ * @author Chekov
+ * @license GPL v2
+ */
+class UserRole extends DacuraObject {
+	/** @var string the collection for which the role holds */
+	var $collection_id;
+	/** @var string the name of the role (must be one of $dacura_roles) */
+	var $role;
+	/** @var array name value array of rolename: role title (human readable) */
+	public static $dacura_roles = array(
+		&quot;user&quot; =&gt; &quot;Data Consumer&quot;,
+		&quot;harvester&quot; =&gt; &quot;Data Harvester&quot;, 
+		&quot;expert&quot; =&gt; &quot;Domain Expert&quot;, 
+		&quot;architect&quot; =&gt; &quot;Schema Architect&quot;,  
+		&quot;analyst&quot; =&gt; &quot;Data Analyst&quot;, 
+		&quot;admin&quot; =&gt; &quot;Administrator&quot;, 
+		&quot;nobody&quot; =&gt; &quot;No access&quot;,
+		&quot;god&quot; =&gt; &quot;Deity&quot;,
+	);
+	
+	/**
+	 * @param string $id role id
+	 * @param string $cid collection id
+	 * @param string $role role name
+	 */
+	function __construct($id, $cid, $role){
+		$this-&gt;id = $id;
+		$this-&gt;collection_id = $cid;
+		$this-&gt;role = $role;
+	}
+
+	/**
+	 * Get the role's collection id
+	 * @return string collection id
+	 */
+	function collectionID(){
+		return $this-&gt;collection_id;
+	}
+	
+	/**
+	 * Get the role's collection id
+	 * @return string collection id
+	 */
+	function cid(){
+		return $this-&gt;collection_id;
+	}
+	
+	/**
+	 * Get the name of the role
+	 * @return string the name of the role (one of UserRole::$dacura_roles)
+	 */
+	function role(){
+		return $this-&gt;role;
+	}
+	
+	/* role hierarchy..	 */
+	/**
+	 * Compares two roles according to the role hierarchy
+	 * 
+	 * god &gt; admin &gt; [other roles] &gt; user &gt; nobody
+	 * 
+	 * @param string $r1 first role name
+	 * @param string $r2 second role name
+	 * @return number code indicating result of comparison:
+	 * * 0 if roles are equal 
+	 * * 1 if role 1 &gt; role 2
+	 * * -1 if role1 &lt; role 2
+	 */
+	function roleCompare($r1, $r2){
+		if($r1 == $r2) return 0;
+		elseif($r1 == &quot;god&quot;) return 1;
+		elseif($r1 == &quot;admin&quot; &amp;&amp; $r2 != &quot;god&quot;) return 1;
+		elseif($r2 == &quot;nobody&quot;) return 1;
+		elseif($r2 == &quot;user&quot; &amp;&amp; $r1 != &quot;nobody&quot;) return 1;
+		else return -1;
+	}
+	
+	/**
+	 * Returns true if this role covers the passed requirements
+	 * @param string $r role name
+	 * @param string $cid collection id
+	 * @return boolean if this role covers $r, $cid
+	 */
+	function covers($r, $cid){
+		if($this-&gt;roleCompare($this-&gt;role, $r) &lt; 0){
+			return false;
+		}
+		if(($this-&gt;cid() == &quot;all&quot; or $cid == 'any')){
+			return true;
+		}
+		elseif($this-&gt;cid() != $cid){
+			return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * Does this role cover a second role 
+	 * @param UserRole $r2
+	 * @return boolean true if this role covers r2
+	 */
+	function coversRole(UserRole $r2){
+		return $this-&gt;covers($r2-&gt;role, $r2-&gt;collection_id);		
+	}
+	
+	/**
+	 * Is this an admin role?
+	 * @return boolean
+	 */
+	function isAdmin(){
+		return ($this-&gt;role() == &quot;admin&quot;);
+	}
+	
+	/**
+	 * Is this a good role?
+	 * @return boolean
+	 */
+	function isGod(){
+		return ($this-&gt;cid() == &quot;all&quot; &amp;&amp; $this-&gt;role() == &quot;god&quot;); 
+	}
+}</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

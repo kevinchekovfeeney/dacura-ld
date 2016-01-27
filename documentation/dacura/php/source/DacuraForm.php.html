@@ -1,0 +1,110 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+require_once(&quot;DacuraFormElement.php&quot;);
+/**
+ * Class representing a user interface (html) form 
+ * 
+ * Forms can be read-only (view), read-write (update) or write-only (create)
+ * Creation Date: 15/11/2015
+ * @author Chekov
+ * @license GPL V2
+ */
+class DacuraForm extends DacuraObject {
+	/** @var array(DacuraFormElement) an array of form elements, each representing a line in the form */
+	var $elements = array();
+	/** @var array() a name-value array of settings for this form */
+	var $settings = array();
+	/** @var string the type of the form [update|view|create]*/
+	var $type; 
+	
+	/** 
+	 * @param string $id Dacura ID
+	 * @param string $type update | view | create - which type of form is this
+	 * @param array $settings the settings for the form
+	 */
+	function __construct($id, $type, $settings = array()){
+		$this-&gt;id = $id;
+		$this-&gt;type = $type;
+		$this-&gt;settings = $settings;
+	}
+	
+	/**
+	 * Adds an array of elements to the form
+	 * @param DacuraFormElement[] $rows form elements to be added to the form
+	 * @return boolean true if the elements were all legal, false otherwise
+	 */
+	function addElements(array $rows){
+		foreach($rows as $row){
+			$dfe = new DacuraFormElement();
+			if($dfe-&gt;load($row, $this-&gt;type)){
+				$this-&gt;elements[] = $dfe;
+			}
+			else {
+				return $this-&gt;failure_result($dfe-&gt;errmsg, $dfe-&gt;errcode);
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * Generage a html representation of the form
+	 * @param string $jdid the html id of the table that will be created to hold the form
+	 * @return string the html table of the form
+	 */
+	function html($jdid){
+		$html = &quot;&lt;table class='dacura-property-table dacura-&quot;.$this-&gt;type.&quot;-table' id='$jdid'&gt;&quot;;
+		foreach($this-&gt;elements as $el){
+			$html .= $el-&gt;tr($this-&gt;type);			
+		}
+		$html .=&quot;&lt;/table&gt;&quot;;		
+		return $html;
+	}
+}
+
+
+
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

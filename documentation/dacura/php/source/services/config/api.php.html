@@ -1,0 +1,140 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/*
+ * API for config service - viewing and updating configuration details
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 12/01/2015
+ * Licence: GPL v2
+ */
+if($dacura_server-&gt;userHasRole(&quot;admin&quot;, &quot;all&quot;)){
+	getRoute()-&gt;post('/create', 'create');
+	getRoute()-&gt;delete('/', 'delete');
+	getRoute()-&gt;get('/logs', 'showLogs');
+}
+if($dacura_server-&gt;userHasRole(&quot;admin&quot;)){//only publish the API endpoints that the user has permission to see
+	getRoute()-&gt;get('/', 'view');
+	getRoute()-&gt;post('/files', 'upload');
+	getRoute()-&gt;post('/', 'update');
+}
+
+function view(){
+	global $dacura_server;
+	$dacura_server-&gt;init(&quot;viewconfig&quot;);
+	if($dacura_server-&gt;cid() == &quot;all&quot;){
+		$collobj = array_values($dacura_server-&gt;getCollectionList());	
+	}
+	else {
+		$collobj = $dacura_server-&gt;getCollection();
+	}
+	if($collobj){
+		return $dacura_server-&gt;write_json_result($collobj, &quot;Retrieved configuration listing for &quot;.$dacura_server-&gt;contextStr());		
+	}
+	$dacura_server-&gt;write_http_error();
+}
+
+function create(){
+	global $dacura_server;
+	$title = isset($_POST['title']) ? $_POST['title'] : &quot;&quot;;
+	$dacura_server-&gt;init(&quot;create.collection&quot;);
+	if($colobj = $dacura_server-&gt;createNewCollection($dacura_server-&gt;cid(), $title)){
+		return $dacura_server-&gt;write_json_result($colobj, &quot;Created Collection &quot;.$dacura_server-&gt;cid().&quot; ($title)&quot;);
+	}
+	return $dacura_server-&gt;write_http_error();
+}
+
+function update(){
+	global $dacura_server;
+	$json = file_get_contents('php://input');
+	if(!($obj = json_decode($json, true))){
+		return $dacura_server-&gt;write_http_error(400, &quot;Submitted update object was not valid json&quot;);
+	}
+	$dacura_server-&gt;init(&quot;update.collection&quot;);
+	if($cobj = $dacura_server-&gt;updateCollection($dacura_server-&gt;cid(), $obj)){
+		return $dacura_server-&gt;write_json_result($cobj, &quot;Updated Collection &quot;.$dacura_server-&gt;cid());
+	}
+	$dacura_server-&gt;write_http_error();
+}
+
+function delete(){
+	global $dacura_server;
+	if($dacura_server-&gt;cid() == &quot;all&quot;){
+		return $dacura_server-&gt;write_http_error(400, &quot;Deleting system configuration is not permitted&quot;);		
+	}
+	$dacura_server-&gt;init(&quot;delete.collection&quot;);
+	if($collobj = $dacura_server-&gt;deleteCollection($dacura_server-&gt;cid())){
+		return $dacura_server-&gt;write_json_result($collobj, &quot;Deleted Collection &quot;.$dacura_server-&gt;cid());
+	}
+	$dacura_server-&gt;write_http_error();
+}
+
+function upload(){
+	global $dacura_server;
+	if(!isset($_GET['filename'])){
+		return $dacura_server-&gt;write_http_error(400, &quot;No filename included in file upload request&quot;);
+	}
+	$payload = file_get_contents('php://input');
+	if(!$payload){
+		return $dacura_server-&gt;write_http_error(400, &quot;No file included in file upload request&quot;);
+	}
+	if($furl = $dacura_server-&gt;saveUploadedFile($_GET['filename'], $payload)){
+		return $dacura_server-&gt;write_json_result($furl, &quot;Uploaded File $furl for &quot;.$dacura_server-&gt;contextStr());
+	}
+	$dacura_server-&gt;write_http_error();
+}
+
+function showLogs(){
+	global $dacura_server;
+	$dacura_server-&gt;init(&quot;show.logs&quot;);
+	if($logobj = $dacura_server-&gt;getLogsAsListingObject()){
+		return $dacura_server-&gt;write_json_result($logobj, &quot;Log listing issued&quot;);
+	}
+	else {
+		return $dacura_server-&gt;write_http_error();
+	}
+}
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

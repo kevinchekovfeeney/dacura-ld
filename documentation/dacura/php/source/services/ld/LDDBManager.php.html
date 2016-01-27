@@ -1,0 +1,412 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+/*
+ * Manages the state of linked data entities in the DB.
+ *
+ * Created By: Chekov
+ * Creation Date: 20/11/2014
+ * Contributors:
+ * Modified:
+ * Licence: GPL v2
+ */
+
+include_once(&quot;phplib/DBManager.php&quot;);
+
+class LDDBManager extends DBManager {
+	
+	function loadEntityList($filter){
+		//first work out the where clause
+		$params = array();
+		$sql = $this-&gt;getListSQL($filter, $params);
+		try {
+			$stmt = $this-&gt;link-&gt;prepare($sql);
+			$stmt-&gt;execute($params);
+			$rows = $stmt-&gt;fetchAll(PDO::FETCH_ASSOC);
+			if($rows){
+				return $rows;
+			}
+			else {
+				return $this-&gt;failure_result(&quot;No entities found in system&quot;, 404);
+			}
+		}
+		catch(PDOException $e){
+			return $this-&gt;failure_result(&quot;PDO Error&quot;.$e-&gt;getMessage(), 500);
+		}
+	}
+	
+	function loadUpdatesList($filter){
+		$params = array();
+		$sql = $this-&gt;getListSQL($filter, $params, true);
+		try {
+			$stmt = $this-&gt;link-&gt;prepare($sql);
+			$stmt-&gt;execute($params);
+			$rows = $stmt-&gt;fetchAll(PDO::FETCH_ASSOC);
+			if($rows){
+				return $rows;
+			}
+			else {
+				return $this-&gt;failure_result(&quot;No entity updates found in system&quot;, 404);
+			}
+		}
+		catch(PDOException $e){
+			return $this-&gt;failure_result(&quot;PDO Error&quot;.$e-&gt;getMessage(), 500);
+		}
+	}	
+	
+	//helper functions to load options and turn them into sql
+	function getListSQL($filter, &amp;$params, $view_updates = false){
+		$fields = &quot;&quot;;
+		if($view_updates){
+			if(isset($filter['include_all'])){
+				$fields = &quot;, meta, forward, backward&quot;;
+			}
+			$sql = &quot;SELECT eurid, targetid, type, collectionid, status, from_version, to_version,
+				createtime, modtime&quot;.$fields.&quot; FROM entity_update_requests&quot;;		
+		}
+		else {
+			if(isset($filter['include_all'])){
+				$fields = &quot;, contents&quot;;
+			}
+			$sql = &quot;SELECT id, collectionid, version, type, status, createtime, modtime, meta&quot;. $fields.&quot; FROM ld_entities&quot;;				
+		}
+		$wheres = array();
+		if(isset($filter['type'])){
+			$wheres['type'] = $filter['type'];
+		}
+		if(isset($filter['collectionid'])){
+			$wheres['collectionid'] = $filter['collectionid'];
+		}
+		if(isset($filter['status'])){
+			$wheres['status'] = $filter['status'];
+		}
+		if(isset($filter['version'])){
+			$wheres['version'] = $filter['version'];
+		}
+		if(isset($filter['createtime'])){
+			$wheres['createtime'] = $filter['createtime'];
+		}
+		if(isset($filter['entityid'])){
+			$wheres['targetid'] = $filter['entityid'];
+		}
+		$wsql = &quot;&quot;;
+		if(count($wheres) &gt; 0){
+			$i = 0;
+			foreach($wheres as $p =&gt; $v){
+				if($i++ &gt; 0) $wsql .= &quot; AND &quot;;
+				$wsql .= &quot;$p=?&quot;;
+				$params[] = $v;
+			}
+		}
+		if($wsql != &quot;&quot;){
+			$sql .= &quot; WHERE $wsql&quot;;
+		}
+		return $sql;
+	}
+	
+	function loadEntity($entid, $type, $cid, $options){
+		try {
+			$stmt = $this-&gt;link-&gt;prepare(&quot;SELECT collectionid, version, type, contents, meta, status, createtime, modtime FROM ld_entities where id=? and collectionid=? and type=?&quot;);
+			$stmt-&gt;execute(array($entid, $cid, $type));
+			$row = $stmt-&gt;fetch(PDO::FETCH_ASSOC);
+			if($row){
+				$ctype = ucfirst($row['type']);
+				$ent = new $ctype($entid);
+				$ent-&gt;loadFromDBRow($row);
+			}
+			else {
+				return $this-&gt;failure_result(&quot;No $type with id $entid in $cid&quot;, 404);
+			}
+		}
+		catch(PDOException $e){
+			return $this-&gt;failure_result(&quot;PDO Error&quot;.$e-&gt;getMessage(), 500);
+		}
+		return $ent;
+	}
+	
+	function loadEntityUpdateHistory($ent, $version){
+		try {
+			$stmt = $this-&gt;link-&gt;prepare(&quot;SELECT * FROM entity_update_requests
+				WHERE targetid=? AND to_version &lt;= ? AND from_version &gt;= ? AND status='accept' ORDER BY from_version DESC&quot;);
+			$stmt-&gt;execute(array($ent-&gt;id, $ent-&gt;version(), $version));
+			$rows = $stmt-&gt;fetchAll(PDO::FETCH_ASSOC);
+			return $rows;
+		}
+		catch(PDOException $e){
+			return $this-&gt;failure_result(&quot;PDO Error&quot;.$e-&gt;getMessage(), 500);
+		}
+	}
+	
+	function loadEntityUpdateRequest($id, $options){
+		try {
+			$stmt = $this-&gt;link-&gt;prepare(&quot;SELECT type, eurid, targetid, from_version, to_version, forward, backward, meta, collectionid, status, createtime, modtime FROM entity_update_requests where eurid=?&quot;);
+			$stmt-&gt;execute(array($id));
+			$row = $stmt-&gt;fetch(PDO::FETCH_ASSOC);
+			if($row){
+				$cname = $row['type'].&quot;UpdateRequest&quot;;
+				$eur = new $cname(id);
+				$eur-&gt;loadFromDBRow($row);			
+				return $eur;
+			}
+			else {
+				return $this-&gt;failure_result(&quot;No update with id &quot;.$id.&quot; found in system&quot;, 404);
+			}
+		}
+		catch(PDOException $e){
+			return $this-&gt;failure_result(&quot;PDO Error&quot;.$e-&gt;getMessage(), 500);
+		}
+	}
+	
+	/*
+	 * load Entity
+	 * eur-&gt;load from db row
+	 */
+	
+	
+	function createEntity($ent, $type){
+		try {
+			$stmt = $this-&gt;link-&gt;prepare(&quot;INSERT INTO ld_entities
+				(id, collectionid, type, version, contents, meta, status, createtime, modtime)
+				VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)&quot;);
+			$ld = json_encode($ent-&gt;ldprops);
+			if(!$ld){
+				return $this-&gt;failure_result(&quot;JSON encoding error: &quot;.json_last_error() . &quot; &quot; . json_last_error_msg(), 500);
+			}
+			$x = array(
+					$ent-&gt;id,
+					$ent-&gt;cid,
+					$type,
+					$ent-&gt;version(),
+					$ld,
+					json_encode($ent-&gt;meta),
+					$ent-&gt;get_status(),
+					time(),
+					time()
+			);
+			$res = $stmt-&gt;execute($x);
+			//opr(strlen($x[5]));
+			return true;
+		}
+		catch(PDOException $e){
+			return $this-&gt;failure_result(&quot;PDO Error&quot;.$e-&gt;getMessage(), 500);
+		}
+	}
+	
+	function updateEntity($uent, $res){
+		if($res == &quot;accept&quot;) {
+			if($uent-&gt;to_version == 0){
+				$uent-&gt;to_version = $uent-&gt;changed-&gt;version;
+			}
+			return ($this-&gt;insertEntityUpdate($uent) &amp;&amp; $this-&gt;updateEntityRecord($uent-&gt;changed));
+		}
+		elseif($res == &quot;pending&quot;){
+			return $this-&gt;deferEntityUpdate($uent, $res);
+		}
+		elseif($res == &quot;reject&quot;){
+			$uent-&gt;status = &quot;reject&quot;;
+			$uent-&gt;changed-&gt;status = &quot;reject&quot;;
+			$uent-&gt;changed-&gt;version = 0;
+			return $this-&gt;insertEntityUpdate($uent);
+		}
+	}
+
+	function deferEntityUpdate($uent, $res){
+		$uent-&gt;status = &quot;pending&quot;;
+		$uent-&gt;changed-&gt;version = 0;
+		return $this-&gt;insertEntityUpdate($uent);
+	}
+	
+	function updateEntityRecord($ent){
+		try {
+			$stmt = $this-&gt;link-&gt;prepare(&quot;UPDATE ld_entities SET
+					collectionid = ?, version = ?, contents = ?, meta = ?, status = ?, modtime = ? WHERE id = ?&quot;);
+			$res = $stmt-&gt;execute(array(
+					$ent-&gt;cid,
+					$ent-&gt;version(),
+					json_encode($ent-&gt;ldprops),
+					json_encode($ent-&gt;meta),
+					$ent-&gt;get_status(),
+					time(),
+					$ent-&gt;id
+			));
+			return true;
+		}
+		catch(PDOException $e){
+			return $this-&gt;failure_result(&quot;PDO Error &quot;.$e-&gt;getMessage(), 500);
+		}
+	}
+	
+	function insertEntityUpdate($uent){
+		try {
+			$stmt = $this-&gt;link-&gt;prepare(&quot;INSERT INTO entity_update_requests
+					(targetid, from_version, to_version, forward, backward, meta, createtime, modtime, status, type, collectionid)
+					VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)&quot;);
+			$res = $stmt-&gt;execute(array(
+					$uent-&gt;targetid,
+					$uent-&gt;from_version(),
+					$uent-&gt;to_version(),
+					$uent-&gt;get_forward_json(),
+					$uent-&gt;get_backward_json(),
+					$uent-&gt;get_meta_json(),
+					$uent-&gt;created,
+					$uent-&gt;modified,
+					$uent-&gt;get_status(),
+					$uent-&gt;getEntityType(),
+					$uent-&gt;cid
+			));
+			$id = $this-&gt;link-&gt;lastInsertId();
+			return $id;
+		}
+		catch(PDOException $e){
+			return $this-&gt;failure_result(&quot;PDO Error on create update &quot;.$e-&gt;getMessage(), 500);
+		}
+	}
+	
+	function updateUpdate($uent, $ostatus = false){
+		if($uent-&gt;published()) {
+			if($uent-&gt;to_version == 0){
+				$uent-&gt;to_version = $uent-&gt;changed-&gt;version;
+			}
+			return ($this-&gt;updateEntityUpdate($uent) &amp;&amp; $this-&gt;updateEntityRecord($uent-&gt;changed));
+		}
+		elseif($ostatus == &quot;accept&quot;){
+			return ($this-&gt;updateEntityUpdate($uent) &amp;&amp; $this-&gt;updateEntityRecord($uent-&gt;original));				
+		}
+		else {
+			return $this-&gt;updateEntityUpdate($uent);
+		}
+	}
+	
+	function updateEntityUpdate($uent){
+		try {
+			$stmt = $this-&gt;link-&gt;prepare(&quot;UPDATE entity_update_requests SET from_version = ?, to_version = ?, forward = ?,
+					backward = ?, meta=?, status=?, createtime=?, modtime=? WHERE eurid=?&quot;);
+			$args = array(
+					$uent-&gt;from_version(),
+					$uent-&gt;to_version(),
+					$uent-&gt;get_forward_json(),
+					$uent-&gt;get_backward_json(),
+					$uent-&gt;get_meta_json(),
+					$uent-&gt;get_status(),
+					$uent-&gt;created,
+					$uent-&gt;modified,
+					$uent-&gt;id
+			);
+			$stmt-&gt;execute($args);
+			if($stmt-&gt;rowCount() == 0){
+				return $this-&gt;failure_result(&quot;Failed to update update &quot;.$uent-&gt;id, 404);
+			}
+			return true;
+		}
+		catch(PDOException $e){
+			return $this-&gt;failure_result(&quot;PDO Error on update update &quot;.$e-&gt;getMessage(), 500);
+		}
+	}
+
+	function rollbackUpdate($ocur, $ncur){
+		$ncur-&gt;from_version = $ocur-&gt;original-&gt;version;
+		$ncur-&gt;to_version = 0;
+		return ($this-&gt;updateEntityUpdate($ncur) &amp;&amp; $this-&gt;updateEntityRecord($ocur-&gt;original));
+	}
+	
+	function pendingUpdatesExist($targetid, $type, $cid, $entversion){
+		try {
+			$stmt = $this-&gt;link-&gt;prepare(&quot;SELECT eurid FROM ld_entities, entity_update_requests where ld_entities.id = ? AND ld_entities.id = entity_update_requests.targetid AND 
+					entity_update_request.status = 'pending' AND entity_update_requests.from_version = ? AND ld_entities.collectionid = ? AND
+					AND ld_entities.collectionid = entity_update_requests.collectionid AND ld_entities.type = ?&quot;);
+			$stmt-&gt;execute(array($targetid, $entversion, $cid, $type));
+			$rows = $stmt-&gt;fetchAll(PDO::FETCH_ASSOC);
+			if($rows &amp;&amp; count($rows) &gt; 0){
+				return $rows;
+			}
+			else {
+				return false;
+			}
+		}
+		catch(PDOException $e){
+			return $this-&gt;failure_result(&quot;PDO Error&quot;.$e-&gt;getMessage(), 500);
+		}
+	}
+
+	function getRelevantUpdates($ent){
+		try {
+			if($ent-&gt;isLatestVersion()){
+				$stmt = $this-&gt;link-&gt;prepare(&quot;SELECT * FROM entity_update_requests WHERE targetid=? ORDER BY createtime DESC&quot;);
+				$stmt-&gt;execute(array($ent-&gt;id));
+				$rows = $stmt-&gt;fetchAll(PDO::FETCH_ASSOC);
+				return $rows;
+			}
+			else {
+				$stmt = $this-&gt;link-&gt;prepare(&quot;SELECT * FROM entity_update_requests 
+					WHERE targetid=? AND from_version &lt;= ? AND (to_version = 0 OR to_version = null OR to_version &gt; ?)&quot;);
+				$stmt-&gt;execute(array($ent-&gt;id, $ent-&gt;version(), $ent-&gt;version()));
+				$rows = $stmt-&gt;fetchAll(PDO::FETCH_ASSOC);
+				return $rows;
+			}
+		}		
+		catch(PDOException $e){
+			return $this-&gt;failure_result(&quot;PDO Error&quot;.$e-&gt;getMessage(), 500);
+		}	
+	}
+	
+	function hasEntity($id, $type, $cid){
+		try {
+			$stmt = $this-&gt;link-&gt;prepare(&quot;SELECT id FROM ld_entities where id=? and type=? and collectionid=?&quot;);
+			$stmt-&gt;execute(array($id, $type, $cid));
+			if($stmt-&gt;rowCount()) {
+				return true;
+			}		
+			return false;
+		}
+		catch(PDOException $e){
+			return $this-&gt;failure_result(&quot;error retrieving entity $id &quot;.$e-&gt;getMessage(), 500);
+		}
+	}
+}
+
+
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

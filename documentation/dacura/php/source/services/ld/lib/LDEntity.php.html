@@ -1,0 +1,916 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+//require_once(&quot;LDDocument.php&quot;);
+include_once(&quot;phplib/libs/easyrdf-0.9.0/lib/EasyRdf.php&quot;);
+include_once(&quot;LDUtils.php&quot;);
+
+/*
+ * The basic variables required by the editor
+ */
+class LDEntity extends DacuraObject {
+	var $id = false;
+	var $index = false; //obj_id =&gt; &amp;$obj
+	var $bad_links = array(); //bad links in various categories in the document
+	var $idmap = array(); //blank nodes that have been mapped to new names in the document
+	var $cwurl = &quot;&quot;;//closed world URL of the document. If present, encapsulated entities will have ids that start with this.
+	var $compressed = false;
+	var $cid;
+	var $version;
+	var $latest_version;
+	var $status;
+	var $latest_status;
+	var $created;//time entity was created
+	var $modified;//time entity was last updated
+	var $version_created;//time this version was created
+	var $version_replaced;//when was this version replaced
+	var $nsres;
+	var $ldprops; //associative array in Dacura LD format
+	var $meta;
+	var $logger;//shortcut to logger object
+	
+	static $entity_types = array(&quot;ontology&quot; =&gt; &quot;Ontology&quot;, &quot;graph&quot; =&gt; &quot;Named Graph&quot;, &quot;widget&quot; =&gt; &quot;User Interface Widget&quot;, &quot;candidate&quot; =&gt; &quot;Instance Data Object&quot;, &quot;import&quot; =&gt; &quot;Data Import Process&quot;, &quot;publish&quot; =&gt; &quot;Data Publication Process&quot;, &quot;task&quot; =&gt; &quot;Data Processing Task&quot;);
+	
+	function __construct($id, $cwbase = false, $logger = false){
+		$this-&gt;id = $id;
+		$this-&gt;created = time();
+		$this-&gt;modified = time();
+		if($cwbase){
+			$this-&gt;cwurl = $cwbase.&quot;/&quot;.$id;
+		}
+		else {
+			$this-&gt;cwurl = false;
+		}
+		$this-&gt;logger = $logger;
+	}
+	
+	function copyBasics($other){
+		$this-&gt;cid = $other-&gt;cid;
+		$this-&gt;did = $other-&gt;did;
+		$this-&gt;version = $other-&gt;version;
+		$this-&gt;created = $other-&gt;created;
+		$this-&gt;status = $other-&gt;status;
+		$this-&gt;modified = $other-&gt;modified;
+	}
+	
+	
+	function loadFromDBRow($row, $latest = true){
+		$this-&gt;setContext($row['collectionid']);
+		$this-&gt;version = $row['version'];
+		$this-&gt;ldprops = json_decode($row['contents'], true);
+		$this-&gt;meta = json_decode($row['meta'], true);
+		$this-&gt;created = $row['createtime'];
+		$this-&gt;status = $row['status'];
+		if(!isset($this-&gt;meta['status'])){
+			$this-&gt;meta['status'] = $this-&gt;status;
+		}
+		else {
+			$this-&gt;status = $this-&gt;meta['status'];
+		}
+		$this-&gt;modified = $row['modtime'];
+		if($latest){
+			$this-&gt;version_created = $this-&gt;modified;
+			$this-&gt;version_replaced = 0;
+			$this-&gt;latest_status = $this-&gt;status; 
+			$this-&gt;latest_version = $this-&gt;version; 
+		}
+	}
+
+
+	function __clone(){
+		$this-&gt;ldprops = deepArrCopy($this-&gt;ldprops);
+		$this-&gt;index = false;
+		$this-&gt;bad_links = deepArrCopy($this-&gt;bad_links);
+		$this-&gt;meta = deepArrCopy($this-&gt;meta);
+	}
+	
+	function load($arr){
+		$this-&gt;ldprops = $arr;
+	}
+	
+	function get_json($key = false){
+		if($key){
+			if(!isset($this-&gt;ldprops[$key])){
+				return &quot;{}&quot;;
+			}
+			return json_encode($this-&gt;ldprops[$key]);
+		}
+		return json_encode($this-&gt;ldprops);
+	}
+	
+	function get_json_ld(){
+		$ld = $this-&gt;ldprops;
+		$ld[&quot;@id&quot;] = $this-&gt;id;
+		return $ld;
+	}
+	
+	
+	function setContext($cid){
+		$this-&gt;cid = $cid;
+	}
+	
+	function version(){
+		return $this-&gt;version;
+	}
+	
+	function isLatestVersion(){
+		return $this-&gt;version == $this-&gt;latest_version;
+	}
+	
+	function set_version($v, $is_latest = false){
+		$this-&gt;version = $v;
+		if($is_latest){
+			$this-&gt;latest_version = $v;
+		}
+	}	
+
+	function get_status(){
+		return $this-&gt;status;
+	}
+	
+	function set_status($v, $is_latest = false){
+		$this-&gt;status = $v;
+		if(!isset($this-&gt;meta) or !is_array($this-&gt;meta)){
+			$this-&gt;meta = array();
+		}
+		$this-&gt;meta['status'] = $v;
+		if($is_latest){
+			$this-&gt;latest_status = $v;
+		}
+	}
+
+	function expandNS(){
+		$this-&gt;compressed = false;
+		return expandNamespaces($this-&gt;ldprops, $this-&gt;nsres, $this-&gt;cwurl);
+	}
+	
+	function compressNS(){
+		$this-&gt;compressed = true;
+		compressNamespaces($this-&gt;ldprops, $this-&gt;nsres, $this-&gt;cwurl);
+	}
+	
+	function getNS(){
+		return getNamespaces($this-&gt;ldprops, $this-&gt;nsres, $this-&gt;cwurl, $this-&gt;compressed);
+	}
+	
+	function setNamespaces($nsres){
+		$this-&gt;nsres = $nsres;
+	}
+
+	/*
+	 * Calculates the transforms necessary to get to current from other
+	 */
+	function compare($other){
+		$aprops = $this-&gt;ldprops;
+		$aprops['meta'] = $this-&gt;meta;
+		$bprops = $other-&gt;ldprops;
+		$bprops['meta'] = $other-&gt;meta;
+		$cdelta = compareLDGraphs($this-&gt;id, $aprops, $bprops, $this-&gt;cwurl, true);
+		//opr($aprops);
+		//opr($cdelta);
+		if($cdelta-&gt;containsChanges()){
+			$cdelta-&gt;setMissingLinks($this-&gt;missingLinks(), $other-&gt;missingLinks());
+		}
+		return $cdelta;
+	}
+	
+	function update($update_obj, $is_force=false, $demand_id_allowed = false){
+		if(isset($update_obj['meta'])){
+			$umeta = $update_obj['meta'];
+			unset($update_obj['meta']);
+		}
+		else {
+			$umeta = false;
+		}
+		if($this-&gt;applyUpdates($update_obj, $this-&gt;ldprops, $this-&gt;idmap, $is_force, $demand_id_allowed)){
+			if($umeta === false || $this-&gt;applyUpdates($umeta, $this-&gt;meta, $this-&gt;idmap, true, false, true)){
+				if(count($this-&gt;idmap) &gt; 0){
+					$unresolved = updateBNReferences($this-&gt;ldprops, $this-&gt;idmap, $this-&gt;cwurl);
+					if($unresolved === false){
+						return false;
+					}
+					elseif(count($unresolved) &gt; 0){
+						$this-&gt;bad_links = $unresolved;
+					}
+				}
+				$this-&gt;buildIndex();
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Apply changes specified in props to properties in dprops
+	 * Generates new ids for each blank node and returns mapping in idmap.
+	 *
+	 * @param array $uprops - the update instructions
+	 * @param array $dprops - the properties to be updated (delta)
+	 * @param array $idmap - map of local ids to newly generated IDs
+	 * @return boolean
+	 */
+	function applyUpdates($uprops, &amp;$dprops, &amp;$idmap, $id_set_allowed = false, $demand_id_allowed = false, $ignore_bad_deletes = false){
+		foreach($uprops as $prop =&gt; $v){
+			if(!is_array($dprops)){
+				$dprops = array();
+			}
+			$pv = new LDPropertyValue($v, $this-&gt;cwurl);
+			if($pv-&gt;illegal()){
+				return $this-&gt;failure_result($pv-&gt;errmsg, $pv-&gt;errcode);
+			}
+			elseif($pv-&gt;scalar() or $pv-&gt;objectliteral()){
+				$dprops[$prop] = $v;
+			}
+			elseif($pv-&gt;valuelist() or $pv-&gt;objectliterallist()){
+				$dprops[$prop] = $v;
+			}
+			elseif($pv-&gt;isempty()){ // delete property or complain
+				if(isset($dprops[$prop])){
+					unset($dprops[$prop]);
+				}
+				elseif(!$ignore_bad_deletes) {
+					return $this-&gt;failure_result(&quot;Attempted to remove non-existant property $prop&quot;, 404);
+				}
+			}
+			elseif($pv-&gt;objectlist()){ //list of new objects (may have @ids inside)
+				foreach($v as $obj){
+					addAnonObj($this-&gt;id, $obj, $dprops, $prop, $idmap, $this-&gt;cwurl, $demand_id_allowed);
+				}
+			}
+			elseif($pv-&gt;embedded()){ //new object to add to the list - give her an id and insert her
+				$rep = expandLD($this-&gt;id, $v, $this-&gt;cwurl, $demand_id_allowed);
+				if($rep === false){
+					return $this-&gt;failure_result(&quot;Failed to expand blank nodes&quot;, 400);
+				}
+				if(isset($rep[&quot;missing&quot;])){
+					$this-&gt;bad_links = array_merge($this-&gt;bad_links, $rep[&quot;missing&quot;]);
+				}
+				$idmap = array_merge($idmap, $rep['idmap']);
+				addAnonObj($this-&gt;id, $v, $dprops, $prop, $idmap, $this-&gt;cwurl, $demand_id_allowed);				
+			}
+			elseif($pv-&gt;embeddedlist()){
+				$bnids = $pv-&gt;getbnids();//new nodes
+				foreach($bnids as $bnid){
+					addAnonObj($this-&gt;id, $v[$bnid], $dprops, $prop, $idmap, $this-&gt;cwurl, $demand_id_allowed, $bnid);
+				}
+				$delids = $pv-&gt;getdelids();//delete nodes
+				foreach($delids as $did){
+					if(isset($dprops[$prop][$did])){
+						unset($dprops[$prop][$did]);
+					}
+					else {
+						if(!$ignore_bad_deletes){
+							return $this-&gt;failure_result(&quot;Attempted to remove non-existant embedded object $did from $prop&quot;, 404);
+						}
+					}
+				}
+				$update_ids = $pv-&gt;getupdates();
+				foreach($update_ids as $uid){
+					if(!isset($dprops[$prop])){
+						$dprops[$prop] = array();
+					}
+					//echo &quot;&lt;h5&gt;$prop $uid&lt;/h5&gt;&quot;;
+					//opr($dprops[$prop]);
+					if(!isset($dprops[$prop][$uid])){
+						//echo &quot;&lt;h1&gt;$prop $uid&lt;/h1&gt;&quot;;
+						if($id_set_allowed){
+							$dprops[$prop][$uid] = array();
+						}
+						else {
+							return $this-&gt;failure_result(&quot;Attempted to update non existent element $uid of property $prop&quot;, 404);
+						}
+					}
+					//opr($dprops[$prop][$uid]);
+					if(!$this-&gt;applyUpdates($uprops[$prop][$uid], $dprops[$prop][$uid], $idmap, $id_set_allowed, $demand_id_allowed, $ignore_bad_deletes)){
+						return false;
+					}
+					//opr($dprops[$prop][$uid]);
+					if(isset($dprops[$prop][$uid]) &amp;&amp; is_array($dprops[$prop][$uid]) and count($dprops[$prop][$uid]) == 0){
+						unset($dprops[$prop][$uid]);
+					}
+				}
+			}
+			if(isset($dprops[$prop]) &amp;&amp; is_array($dprops[$prop]) &amp;&amp; count($dprops[$prop])==0) {
+				unset($dprops[$prop]);
+			}
+		}
+		return true;
+	}
+	
+	function getFragIDForExtension($f, $ext){
+		if(isset($this-&gt;ldprops[$f][$this-&gt;cwurl.&quot;/&quot;.$ext])){
+			return $this-&gt;cwurl.&quot;/&quot;.$ext;
+		}
+		if(isset($this-&gt;ldprops[$f][&quot;local:&quot;.$this-&gt;id.&quot;/&quot;.$ext])){
+			return &quot;local:&quot;.$this-&gt;id.&quot;/&quot;.$ext;
+		}
+		if(isset($this-&gt;ldprops[$f][&quot;_:&quot;.$ext])){
+			return &quot;_:&quot;.$ext;
+		}
+		return false;
+	}
+	
+	function getFragment($fid, $merge = false){
+		if($this-&gt;index === false){
+			$this-&gt;buildIndex();
+		}
+		if($merge){
+			$merged = array();
+			foreach($this-&gt;index[$fid] as $i =&gt; $frag){
+				//$this-&gt;
+			}
+		}
+		//echo &quot;&lt;P&gt;$fid is the fragment id&lt;/p&gt;&quot;;
+		//opr($this-&gt;index[$fid]);
+		return isset($this-&gt;index[$fid]) ? $this-&gt;index[$fid] : false;
+	}
+	
+	function hasFragment($frag_id){
+		if($this-&gt;index === false){
+			$this-&gt;buildIndex($this-&gt;ldprops, $this-&gt;index);
+		}
+		return isset($this-&gt;index[$frag_id]);
+	}
+	
+	function isDocumentLocalLink($val){
+		return isInternalLink($val, $this-&gt;id, $this-&gt;cwurl);
+	}
+	
+	function getFragmentPaths($fid, $html = false){
+		$paths = getFragmentContext($fid, $this-&gt;ldprops, $this-&gt;cwurl);
+		return $paths;
+	}
+	
+	function setContentsToFragment($fragment_id){
+		$this-&gt;ldprops = getFragmentInContext($fragment_id, $this-&gt;ldprops, $this-&gt;cwurl);
+	}
+	
+	function buildIndex(){
+		$this-&gt;index = array();
+		indexLD($this-&gt;ldprops, $this-&gt;index, $this-&gt;cwurl);
+	}
+	
+
+	function getObjectType($obj){
+		if(!isset($obj['rdf:type']) and !isset($obj[$this-&gt;nsres-&gt;getURL(&quot;rdf&quot;)])){
+			return false;
+		}
+		return isset($obj['rdf:type']) ? $obj['rdf:type'] : $obj[$this-&gt;nsres-&gt;getURL(&quot;rdf&quot;)];
+	}
+
+	/*
+	 * Some state may be duplicated between the meta ld field and the object properties
+	 * In such cases the meta field is authoritative (as it is part of state-management)
+	 */
+	function readStateFromMeta(){
+		$this-&gt;status = $this-&gt;meta['status'];
+	}
+	
+	function importERDF($type, $arg, $gurl = false, $format = false){
+		try {
+			if($type == &quot;url&quot;){
+				$graph = EasyRdf_Graph::newAndLoad($arg, $format, $this-&gt;id);
+			}
+			elseif($type == &quot;text&quot;){
+				$graph = new EasyRdf_Graph($gurl, $arg, $format, $this-&gt;id);
+			}
+			elseif($type == &quot;file&quot;){
+				$graph = new EasyRdf_Graph($gurl);
+				$graph-&gt;genid = $this-&gt;id;
+				$graph-&gt;parseFile($arg, $format);//the slow one
+				$this-&gt;logger &amp;&amp; $this-&gt;logger-&gt;timeEvent(&quot;Load Graph&quot;, &quot;debug&quot;);
+			}
+			if($graph-&gt;isEmpty()){
+				return $this-&gt;failure_result(&quot;Graph loaded from $type was empty.&quot;, 500);
+			}
+			return $graph;
+		}
+		catch(Exception $e){
+			//opr($graph);
+			return $this-&gt;failure_result(&quot;Failed to load graph from $type. &quot;.$e-&gt;getMessage(), $e-&gt;getCode());
+		}
+	}
+	
+	function getERDFSupportedNamespaces(){
+		return EasyRdf_Namespace::namespaces();		
+	}
+	
+	function import($type, $arg, $gurl = false, $format = false){
+		$graph = $this-&gt;importERDF($type, $arg, $gurl, $format);
+		$op = $graph-&gt;serialise(&quot;php&quot;);
+		$this-&gt;ldprops[$this-&gt;id] = importEasyRDFPHP($op);
+		$this-&gt;expand();
+		$errs = validLD($this-&gt;ldprops, $this-&gt;cwurl);
+		if(count($errs) &gt; 0){
+			$msg = &quot;&lt;ul&gt;&lt;li&gt;&quot;.implode(&quot;&lt;li&gt;&quot;, $errs).&quot;&lt;/ul&gt;&quot;;
+			return $this-&gt;failure_result(&quot;Graph had &quot;. count($errs).&quot; errors. $msg&quot;, 400);
+		}
+		return true;
+	}
+	
+	function export($format, $nsobj = false){
+		$easy = exportEasyRDFPHP($this-&gt;id, $this-&gt;ldprops);
+		try{
+			foreach($this-&gt;nsres-&gt;prefixes as $id =&gt; $url){
+				EasyRdf_Namespace::set($id, $url);
+			}
+				
+			$graph = new EasyRdf_Graph($this-&gt;id, $easy, &quot;php&quot;, $this-&gt;id);
+			if($graph-&gt;isEmpty()){
+				return $this-&gt;failure_result(&quot;Graph was empty.&quot;, 400);
+			}
+			if($nsobj){
+				$nslist = $this-&gt;getNS($nsobj);
+				if($nslist){
+					foreach($nslist as $prefix =&gt; $full){
+						EasyRdf_Namespace::set($prefix, $full);
+					}
+				}
+			}
+			$res = $graph-&gt;serialise($format);
+			if(!$res){
+				return $this-&gt;failure_result(&quot;failed to serialise graph&quot;, 500);
+			}
+			return $res;
+		}
+		catch(Exception $e){
+			return $this-&gt;failure_result(&quot;Graph croaked on input. &quot;.$e-&gt;getMessage(), $e-&gt;getCode());
+		}
+	}
+	
+	function expand($allow_demand_id = false){
+		$rep = expandLD($this-&gt;id, $this-&gt;ldprops, $this-&gt;cwurl, $allow_demand_id);
+		if($rep === false){
+			return $this-&gt;failure_result(&quot;Failed to expand blank nodes&quot;, 400);
+		}
+		if(isset($rep[&quot;missing&quot;])){
+			$this-&gt;bad_links = $rep[&quot;missing&quot;];
+		}
+		$this-&gt;idmap = $rep['idmap'];
+		return true;
+	}
+	
+	function problems(){
+		if(count($this-&gt;bad_links) &gt; 0){
+			return $this-&gt;bad_links;
+		}
+		return false;
+	}
+	
+	function missingLinks(){
+		if(isset($this-&gt;bad_links)){
+			return $this-&gt;bad_links;
+		}
+		return $this-&gt;findMissingLinks();
+	}
+	
+	function findMissingLinks(){
+		if($this-&gt;index === false){
+			$this-&gt;buildIndex($this-&gt;ldprops, $this-&gt;index, $this-&gt;cwurl);
+		}
+		$ml = findInternalMissingLinks($this-&gt;ldprops, array_keys($this-&gt;index), $this-&gt;id, $this-&gt;cwurl);
+		$x = count($ml);
+		if($x &gt; 0){
+			$this-&gt;bad_links = $ml;
+		}
+		return $ml;
+	}
+	
+	function compliant(){
+		$errs = validLD($this-&gt;ldprops, $this-&gt;cwurl);
+		if(count($errs) == 0){
+			return true;
+		}
+		else {
+			$errmsg = &quot;Errors in input formatting:&lt;ol&gt; &quot;;
+			foreach($errs as $err){
+				$errmsg .= &quot;&lt;li&gt;&quot;.$err[0].&quot; &quot;.$err[1];
+			}
+			$errmsg .= &quot;&lt;/ol&gt;&quot;;
+			return $this-&gt;failure_result($errmsg, 400);
+		}
+	}
+	
+	function typedTriples(){
+		return getObjectAsTypedTriples($this-&gt;id, $this-&gt;ldprops, $this-&gt;cwurl);
+	}
+	
+	function triples(){
+		return getObjectAsTriples($this-&gt;id, $this-&gt;ldprops, $this-&gt;cwurl);
+	}
+	
+	function internalTriples(){
+		return getPropertiesAsArray($this-&gt;id, $this-&gt;ldprops, $this-&gt;cwurl, array($this, &quot;showTriples&quot;));
+	}
+	
+	function getTypedQuads($gname){
+		$triples = $this-&gt;typedTriples();
+		$quads = array();
+		if(count($triples) &gt; 0){
+			foreach($triples as $trip){
+				$trip[] = $gname;
+				$quads[] = $trip;
+			}
+		}
+		return $quads;
+	}
+	
+	function getPropertyAsQuads($prop, $gname){
+		if(!isset($this-&gt;ldprops[$prop])) return array();
+		$quads = array();
+		$trips = getEOLAsTypedTriples($this-&gt;ldprops[$prop], $this-&gt;cwurl);
+		foreach($trips as $trip){
+			$trip[] = $gname;
+			$quads[] = $trip;
+		}
+		return $quads;
+	}
+	
+	function displayTriples($flags, $vstr, $srvr){
+		$this-&gt;display = $this-&gt;typedTriples($flags, $vstr);
+	}
+	
+	function displayQuads($flags, $vstr, $srvr){
+		$this-&gt;display = &quot;&lt;h2&gt;need to write display Quads&lt;/h2&gt;&quot;;
+	}
+	
+	function displayHTML($flags, $vstr, $srvr){
+		$allsubjs = $this-&gt;ldprops[$this-&gt;id];
+		$html = &quot;&quot;;
+		foreach($allsubjs as $k =&gt; $v){
+			$html .= &quot;&lt;h3&gt;$k&lt;/h3&gt;&quot;.$this-&gt;getPropertiesAsHTMLTable($vstr, $v);
+		}
+		$this-&gt;display = $html;
+	}
+	
+	function displayJSON($flags, $vstr, $srvr, $jsonld = false){
+		$base = $this-&gt;ldprops;
+		if($jsonld){
+			$base = toJSONLD($base, $this-&gt;cwurl);			
+		}
+		if(in_array(&quot;links&quot;, $flags)){
+			$this-&gt;display = $this-&gt;linkify($vstr, $base);				
+		}
+		else {
+			$this-&gt;display = $base;				
+		}
+	}
+	
+	function displayExport($format, $flags, $vstr, $srvr){
+		$exported = $this-&gt;export($format);
+		if(!$exported){
+			return false;
+		}
+		if($format != &quot;svg&quot; &amp;&amp; $format != &quot;dot&quot; &amp;&amp; $format != &quot;png&quot; &amp;&amp; $format != &quot;gif&quot;){
+			$this-&gt;display = htmlspecialchars($exported);
+		}
+		else {
+			if($format == &quot;png&quot; or $format == &quot;gif&quot;){
+				$this-&gt;display = '&lt;img src=&quot;data:image/png;base64,'.base64_encode ( $exported).'&quot;/&gt;';
+			}
+			else {
+				$this-&gt;display = $exported;
+			}
+		}
+	}
+	
+	function forAPI(){
+		$other = clone $this;
+		unset($other-&gt;index);
+		unset($other-&gt;nsres);
+		unset($other-&gt;idmap);
+		unset($other-&gt;bad_links);
+		return $other;
+	}
+	
+	function decorated(){
+		return $this-&gt;ldprops;
+	}
+	
+	function decoratedTriples(){
+		return array();
+	}	
+	
+	function linkify($vstr, $props=false){
+		if($props === false){
+			$props = $this-&gt;ldprops;
+		}
+		$nprops = array();
+		if($props &amp;&amp; is_array($props)) {
+			foreach($props as $p =&gt; $v){
+				//properties should always be URLs or namespaced URLs
+				$np = $this-&gt;applyLinkHTML($p, $vstr, true);
+				$pv = new LDPropertyValue($v, $this-&gt;cwurl);
+				if($pv-&gt;literal() or $pv-&gt;objectliteral()){
+					$nv = $this-&gt;applyLiteralHTML($v);
+				}
+				elseif($pv-&gt;link()){
+					$nv = $this-&gt;applyLinkHTML($v, $vstr);
+				}
+				elseif($pv-&gt;valuelist() or $pv-&gt;objectliterallist()){
+					$nv = array();
+					foreach($v as $val){
+						if(isURL($val) || isNamespacedURL($val)){
+							$nv[] = $this-&gt;applyLinkHTML($val, $vstr);
+						}
+						else {
+							$nv[] = $this-&gt;applyLiteralHTML($val);
+						}
+					}
+				}
+				elseif($pv-&gt;embeddedlist()){
+					$nv = array();
+					foreach($v as $id =&gt; $obj){
+						//ids should always be URLs or namespaced URLs
+						$nid = $this-&gt;applyLinkHTML($id, $vstr);
+						$nv[$nid] = $this-&gt;linkify($vstr, $obj);
+					}
+				}
+				else {
+					$nv = $v;
+				}
+				$nprops[$np] = $nv;
+			}
+		}
+		return $nprops;
+	}
+	
+
+	function applyLinkHTML($ln, $vstr, $is_prop = false){
+		if($is_prop){
+			$cls = &quot;dacura-property&quot;;
+		}
+		else {
+			$cls = &quot;dacura-property-value&quot;;
+		}
+		if(isURL($ln)){
+			if($this-&gt;isDocumentLocalLink($ln)){
+				$cls .= &quot; document_local_link&quot;;
+				$lh = &quot;&lt;a class='$cls' href='$ln&quot;.$vstr.&quot;'&gt;$ln&lt;/a&gt;&quot;;
+			}
+			else {
+				$lh = &quot;&lt;a class='$cls' href='$ln'&gt;$ln&lt;/a&gt;&quot;;
+			}
+		}
+		elseif(isNamespacedURL($ln)){
+			if($this-&gt;isDocumentLocalLink($ln)){
+				$cls .= &quot; document_local_link&quot;;
+				$expanded = $this-&gt;nsres-&gt;expand($ln);
+				if(!$expanded){
+					$lh = &quot;&lt;span class='$cls unknown-namespace' title='warning: unknown namespace'&gt;$ln&lt;/span&gt;&quot;;
+				}
+				else {
+					$lh = &quot;&lt;a class='$cls' href='$expanded&quot;.$vstr.&quot;'&gt;$ln&lt;/a&gt;&quot;;
+				}
+			}
+			else {
+				$expanded = $this-&gt;nsres-&gt;expand($ln);
+				if(!$expanded){
+					$lh = &quot;&lt;span class='$cls unknown-namespace'&gt;$ln&lt;/span&gt;&quot;;
+				}
+				else {
+					$lh = &quot;&lt;a class='$cls' href='$expanded'&gt;$ln&lt;/a&gt;&quot;;
+				}
+			}
+		}
+		else {
+			$lh = &quot;&lt;span class='$cls not-a-url'&gt;$ln&lt;/span&gt;&quot;;
+		}
+		return $lh;
+	}
+	
+
+	function getPropertiesAsHTMLTable($vstr, $props, $depth = 0, $obj_id_prefix = &quot;&quot;){
+		if($depth % 2 == 1){
+			$cls_extra = &quot;even_depth&quot;;
+		}
+		else {
+			$cls_extra = &quot;odd_depth&quot;;
+		}
+		if(!is_array($props)){
+			return &quot;$props is not an array of properties&quot;;
+		}
+		$html = &quot;&lt;table class='ld-properties emb-$depth $cls_extra'&gt;&quot;;
+		//if($depth == 0) $html .= &quot;&lt;tr class='$cls_extra'&gt;&lt;th class='prop-ph $cls_extra'&gt;Property&lt;/th&gt;&lt;th class='prop-vh $cls_extra'&gt;Value&lt;/th&gt;&lt;/tr&gt;&quot;;
+		$depth = $depth+1;
+		$pcount = 0;
+		$props_html = array();
+		foreach($props as $p =&gt; $v){
+			$pcount++;
+			$np = $this-&gt;applyLinkHTML($p, $vstr, true);
+			$pv = new LDPropertyValue($v, $this-&gt;cwurl);
+			if($pv-&gt;literal()){
+				if(isURL($v) || isNamespacedURL($v)){
+					$nv = $this-&gt;applyLinkHTML($v, $vstr);
+				}
+				else {
+					$nv = $this-&gt;applyLiteralHTML($v);
+				}
+				array_unshift($props_html, &quot;&lt;tr class='firstp $cls_extra'&gt;&lt;td class='prop-pd $cls_extra'&gt;$np&lt;/td&gt;&lt;td class='prop-vd $cls_extra'&gt;$nv&lt;/td&gt;&lt;/tr&gt;&quot;);
+			}
+			elseif($pv-&gt;link()){
+				$nv = $this-&gt;applyLinkHTML($v, $vstr);				
+				array_unshift($props_html, &quot;&lt;tr class='firstp $cls_extra'&gt;&lt;td class='prop-pd $cls_extra'&gt;$np&lt;/td&gt;&lt;td class='prop-vd $cls_extra'&gt;$nv&lt;/td&gt;&lt;/tr&gt;&quot;);
+			}
+			elseif($pv-&gt;objectliteral()){
+				$nv = $this-&gt;applyObjectLiteralHTML($v);
+				array_unshift($props_html, &quot;&lt;tr class='firstp $cls_extra'&gt;&lt;td class='prop-pd $cls_extra'&gt;$np&lt;/td&gt;&lt;td class='prop-vd $cls_extra'&gt;$nv&lt;/td&gt;&lt;/tr&gt;&quot;);
+			}
+			elseif($pv-&gt;objectliterallist()){
+				$nv = array();
+				foreach($v as $val){
+					$nv[] = $this-&gt;applyObjectLiteralHTML($val, $vstr);
+				}
+				array_unshift($props_html, &quot;&lt;tr class='firstp $cls_extra'&gt;&lt;td class='prop-pd $cls_extra'&gt;$np&lt;/td&gt;&lt;td class='prop-vd $cls_extra'&gt;&quot;.implode(&quot;&lt;br&gt;&quot;, $nv).&quot;&lt;/td&gt;&lt;/tr&gt;&quot;);
+			}
+			elseif($pv-&gt;valuelist()){
+				$nv = array();
+				foreach($v as $val){
+					if(isURL($val) || isNamespacedURL($val)){
+						$nv[] = $this-&gt;applyLinkHTML($val, $vstr);
+					}
+					else {
+						$nv[] = $this-&gt;applyLiteralHTML($val, $vstr);
+					}
+					array_unshift($props_html, &quot;&lt;tr class='firstp $cls_extra'&gt;&lt;td class='prop-pd $cls_extra'&gt;$np&lt;/td&gt;&lt;td class='prop-vd $cls_extra'&gt;&quot;.implode(&quot;&lt;br&gt;&quot;, $nv).&quot;&lt;/td&gt;&lt;/tr&gt;&quot;);
+				}
+			}
+			elseif($pv-&gt;embeddedlist()){
+				$count = 0;
+				foreach($v as $id =&gt; $obj){
+					$nid = $this-&gt;applyLinkHTML($id, $vstr);
+					$obj_id = $obj_id_prefix.&quot;_&quot;.$depth.&quot;_&quot;.$pcount.&quot;_&quot;.$count;
+					$rdft = $this-&gt;extractTypeFromProps($obj);
+					if($rdft){
+						if(is_array($rdft)) {
+							$np .= &quot; &quot; . implode(&quot;, &quot;, $rdft);
+						}
+						else {
+							$np .= &quot; &quot; . $rdft;
+						}
+						unset($obj['rdf:type']);
+					}
+						
+					if($count == 0){
+						$props_html[] = &quot;&lt;tr class='firstp'&gt;&lt;td class='prop-pd p-embedded $cls_extra'&gt;$np&lt;/td&gt;&lt;td class='prop-pv $cls_extra'&gt;&lt;div id='$obj_id' class='dch pidembedded embobj_id $cls_extra'&gt;$nid&lt;/div&gt;&lt;/td&gt;&lt;/tr&gt;&quot;;
+					}
+					else {
+						$props_html[] = &quot;&lt;tr&gt;&lt;td class='prop-pd prop-empty $cls_extra'&gt;&amp;nbsp;&lt;/td&gt;&lt;td class='prop-pv prop-embedded $cls_extra'&gt;&lt;div  id='$obj_id' class='dch pidembedded $cls_extra'&gt;&quot;;
+						//ids should always be URLs or namespaced URLs
+						$props_html[] .= $nid.&quot;&lt;/div&gt;&lt;/td&gt;&lt;/tr&gt;&quot;;
+					}
+					$count++;
+					$props_html[] = &quot;&lt;tr id='$obj_id&quot;.&quot;_objrow' class='embedded-object'&gt;&lt;td class='container' colspan='2'&gt;&quot;;
+					$props_html[] = $this-&gt;getPropertiesAsHTMLTable($vstr, $obj, $depth, $obj_id_prefix);
+					$props_html[] = &quot;&lt;/tr&gt;&quot;;
+				}
+			}
+			elseif($pv-&gt;objectlist()){
+				//opr($v);
+			}
+			elseif($pv-&gt;embedded()){
+				//opr($v);	
+			}
+		}
+		$html = &quot;&lt;table class='ld-properties emb-$depth $cls_extra'&gt;&quot;;
+		$html .= implode(&quot;&quot;, $props_html);
+		$html .= &quot;&lt;/table&gt;&quot;;
+		return $html;
+	}
+	
+	function extractTypeFromProps($props){
+		if(isset($props['rdf:type'])){
+			return $props['rdf:type'];
+		}
+		return false;
+	}
+	
+	function applyLiteralHTML($ln){
+		if(is_array($ln)){
+			$html = &quot;&lt;span class='dacura-property-value dacura-objectliteral'&gt;&quot;;
+			foreach($ln as $k =&gt; $v){
+				$html .= &quot;&lt;span class='dacura-objectliteral-index&gt;$k&lt;/span&gt; &lt;span class='dacura-objectliteral-value'&gt;$v&lt;/span&gt; &quot;;
+			}
+			$html .= &quot;&lt;/span&gt;&quot;;
+		}
+		else {
+			$html = &quot;&lt;span class='dacura-property-value dacura-literal'&gt;$ln&lt;/span&gt;&quot;;
+		}
+		return $html;
+	}
+	
+	function applyObjectLiteralHTML($olit){
+		$data = &quot;&lt;input value='&quot;.$olit['data'].&quot;'&gt;&lt;button class='update-html-literal'&gt;Update Value&lt;/button&gt;&quot;;
+		$html = &quot;&lt;span class='dacura-property-value dacura-objectliteral'&gt;&quot;;
+		if(isset($olit['type'])){
+			$html .= &quot;&lt;span class='dacura-objectliteral-index&gt;&quot;.$olit['type'].&quot;&lt;/span&gt; &lt;input type='text' class='dacura-objectliteral-value'&gt;$data&lt;/span&gt;&quot;;
+		}
+		else {
+			$html .= &quot;&lt;span class='dacura-objectliteral-index&gt;&quot;.$olit['lang'].&quot;&lt;/span&gt; &lt;input type='text' class='dacura-objectliteral-value'&gt;$data&lt;/span&gt;&quot;;				
+		}
+		return $html;
+		//opr($olit);
+	}
+
+	function linkifyTriples(&amp;$trips, $alink, $vstr){
+		foreach($trips as $i =&gt; $v){
+			foreach($v as $j =&gt; $k){
+				if(is_array($k)){
+					$nv = json_encode($k);
+				}
+				elseif((isURL($k) || isNamespacedURL($k))){
+					if($alink){
+						$k = $this-&gt;applyLinkHTML($k, $vstr, $j==1);
+					}
+					$nv = &quot;&amp;lt;&quot;.$k.&quot;&amp;gt;&quot;;
+				}
+				elseif($alink) {
+					if($j == 1 or $j == 0){
+						$nv = $this-&gt;applyLinkHTML($k, $vstr, $j==1);
+					}
+					else {
+						$nv = '&quot;'.$this-&gt;applyLiteralHTML($k).'&quot;';
+					}
+				}
+				else {
+					$nv = '&quot;'.$k.'&quot;';
+				}
+				$trips[$i][$j] = $nv;
+			}
+		}
+	}
+	
+	function showTriples($s, $p, $o, $t, $g = false){
+		if($t == 'literal'){
+			$o = '&quot;'.$o.'&quot;';
+		}
+		return array(array($s, $p, $o));
+	}
+	
+	/*
+	 * For specifiying dqs configs
+	 */
+	function dqsSpecified(){
+		return isset($this-&gt;meta['imports']) &amp;&amp; is_array($this-&gt;meta['imports']) &amp;&amp;
+		(isset($this-&gt;meta['schema_dqs']) || isset($this-&gt;meta['instance_dqs']));
+	}
+	
+	function getDQSTests($which){
+		if(isset($this-&gt;meta[$which.'_dqs'])){
+			return $this-&gt;meta[$which.'_dqs'];
+		}
+		return false;
+	}
+	
+	function getImportedOntologies(){
+		if(isset($this-&gt;meta['imports'])){
+			return $this-&gt;meta['imports'];
+		}
+		return false;
+	}
+	
+	
+	
+}</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

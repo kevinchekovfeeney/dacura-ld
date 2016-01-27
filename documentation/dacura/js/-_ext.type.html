@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Namespace: type</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Namespace: type</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>type</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">Type based plug-ins.
+
+Each column in DataTables has a type assigned to it, either by automatic
+detection or by direct assignment using the `type` option for the column.
+The type of a column will effect how it is ordering and search (plug-ins
+can also make use of the column type if required).</div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html">media/js/DataTables-1.10.4/DataTables-1.10.4/media/js/jquery.dataTables.js</a>, <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html#line13709">line 13709</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id=".detect"><span class="type-signature">(static) </span>detect<span class="type-signature"> :array</span></h4>
+
+
+
+
+<div class="description">
+    Type detection functions.
+
+The functions defined in this object are used to automatically detect
+a column's type, making initialisation of DataTables super easy, even
+when complex data is in the table.
+
+The functions defined take two parameters:
+
+ 1. `{*}` Data from the column cell to be analysed
+ 2. `{settings}` DataTables settings object. This can be used to
+    perform context specific type detection - for example detection
+    based on language settings such as using a comma for a decimal
+    place. Generally speaking the options from the settings will not
+    be required
+
+Each function is expected to return:
+
+* `{string|null}` Data type detected, or null if unknown (and thus
+  pass it on to the other type detection functions.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">array</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html">media/js/DataTables-1.10.4/DataTables-1.10.4/media/js/jquery.dataTables.js</a>, <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html#line13750">line 13750</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// Currency type detection plug-in:
+   $.fn.dataTable.ext.type.detect.push(
+     function ( data, settings ) {
+       // Check the numeric part
+       if ( ! $.isNumeric( data.substring(1) ) ) {
+         return null;
+       }
+
+       // Check prefixed by currency
+       if ( data.charAt(0) == '$' || data.charAt(0) == '&amp;pound;' ) {
+         return 'currency';
+       }
+       return null;
+     }
+   );</code></pre>
+
+
+
+        
+            
+<h4 class="name" id=".detect"><span class="type-signature">(static) </span>detect<span class="type-signature"> :array</span></h4>
+
+
+
+
+<div class="description">
+    Type detection functions.
+
+The functions defined in this object are used to automatically detect
+a column's type, making initialisation of DataTables super easy, even
+when complex data is in the table.
+
+The functions defined take two parameters:
+
+ 1. `{*}` Data from the column cell to be analysed
+ 2. `{settings}` DataTables settings object. This can be used to
+    perform context specific type detection - for example detection
+    based on language settings such as using a comma for a decimal
+    place. Generally speaking the options from the settings will not
+    be required
+
+Each function is expected to return:
+
+* `{string|null}` Data type detected, or null if unknown (and thus
+  pass it on to the other type detection functions.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">array</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_jquery.dataTables.js.html">media/js/jquery.dataTables.js</a>, <a href="media_js_jquery.dataTables.js.html#line13750">line 13750</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// Currency type detection plug-in:
+   $.fn.dataTable.ext.type.detect.push(
+     function ( data, settings ) {
+       // Check the numeric part
+       if ( ! $.isNumeric( data.substring(1) ) ) {
+         return null;
+       }
+
+       // Check prefixed by currency
+       if ( data.charAt(0) == '$' || data.charAt(0) == '&amp;pound;' ) {
+         return 'currency';
+       }
+       return null;
+     }
+   );</code></pre>
+
+
+
+        
+            
+<h4 class="name" id=".order"><span class="type-signature">(static) </span>order<span class="type-signature"> :object</span></h4>
+
+
+
+
+<div class="description">
+    Type based ordering.
+
+The column type tells DataTables what ordering to apply to the table
+when a column is sorted upon. The order for each type that is defined,
+is defined by the functions available in this object.
+
+Each ordering option can be described by three properties added to
+this object:
+
+* `{type}-pre` - Pre-formatting function
+* `{type}-asc` - Ascending order function
+* `{type}-desc` - Descending order function
+
+All three can be used together, only `{type}-pre` or only
+`{type}-asc` and `{type}-desc` together. It is generally recommended
+that only `{type}-pre` is used, as this provides the optimal
+implementation in terms of speed, although the others are provided
+for compatibility with existing Javascript sort functions.
+
+`{type}-pre`: Functions defined take a single parameter:
+
+ 1. `{*}` Data from the column cell to be prepared for ordering
+
+And return:
+
+* `{*}` Data to be sorted upon
+
+`{type}-asc` and `{type}-desc`: Functions are typical Javascript sort
+functions, taking two parameters:
+
+ 1. `{*}` Data to compare to the second parameter
+ 2. `{*}` Data to compare to the first parameter
+
+And returning:
+
+* `{*}` Ordering match: <0 if first parameter should be sorted lower
+  than the second parameter, ===0 if the two parameters are equal and
+  >0 if the first parameter should be sorted height than the second
+  parameter.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li>{}</li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_jquery.dataTables.js.html">media/js/jquery.dataTables.js</a>, <a href="media_js_jquery.dataTables.js.html#line13856">line 13856</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Numeric ordering of formatted numbers with a pre-formatter
+   $.extend( $.fn.dataTable.ext.type.order, {
+     "string-pre": function(x) {
+       a = (a === "-" || a === "") ? 0 : a.replace( /[^\d\-\.]/g, "" );
+       return parseFloat( a );
+     }
+   } );
+
+ </code></pre>
+
+    <pre class="prettyprint"><code>// Case-sensitive string ordering, with no pre-formatting method
+   $.extend( $.fn.dataTable.ext.order, {
+     "string-case-asc": function(x,y) {
+       return ((x &lt; y) ? -1 : ((x > y) ? 1 : 0));
+     },
+     "string-case-desc": function(x,y) {
+       return ((x &lt; y) ? 1 : ((x > y) ? -1 : 0));
+     }
+   } );</code></pre>
+
+
+
+        
+            
+<h4 class="name" id=".order"><span class="type-signature">(static) </span>order<span class="type-signature"> :object</span></h4>
+
+
+
+
+<div class="description">
+    Type based ordering.
+
+The column type tells DataTables what ordering to apply to the table
+when a column is sorted upon. The order for each type that is defined,
+is defined by the functions available in this object.
+
+Each ordering option can be described by three properties added to
+this object:
+
+* `{type}-pre` - Pre-formatting function
+* `{type}-asc` - Ascending order function
+* `{type}-desc` - Descending order function
+
+All three can be used together, only `{type}-pre` or only
+`{type}-asc` and `{type}-desc` together. It is generally recommended
+that only `{type}-pre` is used, as this provides the optimal
+implementation in terms of speed, although the others are provided
+for compatibility with existing Javascript sort functions.
+
+`{type}-pre`: Functions defined take a single parameter:
+
+ 1. `{*}` Data from the column cell to be prepared for ordering
+
+And return:
+
+* `{*}` Data to be sorted upon
+
+`{type}-asc` and `{type}-desc`: Functions are typical Javascript sort
+functions, taking two parameters:
+
+ 1. `{*}` Data to compare to the second parameter
+ 2. `{*}` Data to compare to the first parameter
+
+And returning:
+
+* `{*}` Ordering match: <0 if first parameter should be sorted lower
+  than the second parameter, ===0 if the two parameters are equal and
+  >0 if the first parameter should be sorted height than the second
+  parameter.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li>{}</li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html">media/js/DataTables-1.10.4/DataTables-1.10.4/media/js/jquery.dataTables.js</a>, <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html#line13856">line 13856</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Numeric ordering of formatted numbers with a pre-formatter
+   $.extend( $.fn.dataTable.ext.type.order, {
+     "string-pre": function(x) {
+       a = (a === "-" || a === "") ? 0 : a.replace( /[^\d\-\.]/g, "" );
+       return parseFloat( a );
+     }
+   } );
+
+ </code></pre>
+
+    <pre class="prettyprint"><code>// Case-sensitive string ordering, with no pre-formatting method
+   $.extend( $.fn.dataTable.ext.order, {
+     "string-case-asc": function(x,y) {
+       return ((x &lt; y) ? -1 : ((x > y) ? 1 : 0));
+     },
+     "string-case-desc": function(x,y) {
+       return ((x &lt; y) ? 1 : ((x > y) ? -1 : 0));
+     }
+   } );</code></pre>
+
+
+
+        
+            
+<h4 class="name" id=".search"><span class="type-signature">(static) </span>search<span class="type-signature"> :object</span></h4>
+
+
+
+
+<div class="description">
+    Type based search formatting.
+
+The type based searching functions can be used to pre-format the
+data to be search on. For example, it can be used to strip HTML
+tags or to de-format telephone numbers for numeric only searching.
+
+Note that is a search is not defined for a column of a given type,
+no search formatting will be performed.
+
+Pre-processing of searching data plug-ins - When you assign the sType
+for a column (or have it automatically detected for you by DataTables
+or a type detection plug-in), you will typically be using this for
+custom sorting, but it can also be used to provide custom searching
+by allowing you to pre-processing the data and returning the data in
+the format that should be searched upon. This is done by adding
+functions this object with a parameter name which matches the sType
+for that target column. This is the corollary of <i>afnSortData</i>
+for searching data.
+
+The functions defined take a single parameter:
+
+ 1. `{*}` Data from the column cell to be prepared for searching
+
+Each function is expected to return:
+
+* `{string|null}` Formatted string that will be used for the searching.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li>{}</li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_jquery.dataTables.js.html">media/js/jquery.dataTables.js</a>, <a href="media_js_jquery.dataTables.js.html#line13789">line 13789</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>$.fn.dataTable.ext.type.search['title-numeric'] = function ( d ) {
+     return d.replace(/\n/g," ").replace( /&lt;.*?>/g, "" );
+   }</code></pre>
+
+
+
+        
+            
+<h4 class="name" id=".search"><span class="type-signature">(static) </span>search<span class="type-signature"> :object</span></h4>
+
+
+
+
+<div class="description">
+    Type based search formatting.
+
+The type based searching functions can be used to pre-format the
+data to be search on. For example, it can be used to strip HTML
+tags or to de-format telephone numbers for numeric only searching.
+
+Note that is a search is not defined for a column of a given type,
+no search formatting will be performed.
+
+Pre-processing of searching data plug-ins - When you assign the sType
+for a column (or have it automatically detected for you by DataTables
+or a type detection plug-in), you will typically be using this for
+custom sorting, but it can also be used to provide custom searching
+by allowing you to pre-processing the data and returning the data in
+the format that should be searched upon. This is done by adding
+functions this object with a parameter name which matches the sType
+for that target column. This is the corollary of <i>afnSortData</i>
+for searching data.
+
+The functions defined take a single parameter:
+
+ 1. `{*}` Data from the column cell to be prepared for searching
+
+Each function is expected to return:
+
+* `{string|null}` Formatted string that will be used for the searching.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li>{}</li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html">media/js/DataTables-1.10.4/DataTables-1.10.4/media/js/jquery.dataTables.js</a>, <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html#line13789">line 13789</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>$.fn.dataTable.ext.type.search['title-numeric'] = function ( d ) {
+     return d.replace(/\n/g," ").replace( /&lt;.*?>/g, "" );
+   }</code></pre>
+
+
+
+        
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>type</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">Type based plug-ins.
+
+Each column in DataTables has a type assigned to it, either by automatic
+detection or by direct assignment using the `type` option for the column.
+The type of a column will effect how it is ordering and search (plug-ins
+can also make use of the column type if required).</div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_jquery.dataTables.js.html">media/js/jquery.dataTables.js</a>, <a href="media_js_jquery.dataTables.js.html#line13709">line 13709</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id=".detect"><span class="type-signature">(static) </span>detect<span class="type-signature"> :array</span></h4>
+
+
+
+
+<div class="description">
+    Type detection functions.
+
+The functions defined in this object are used to automatically detect
+a column's type, making initialisation of DataTables super easy, even
+when complex data is in the table.
+
+The functions defined take two parameters:
+
+ 1. `{*}` Data from the column cell to be analysed
+ 2. `{settings}` DataTables settings object. This can be used to
+    perform context specific type detection - for example detection
+    based on language settings such as using a comma for a decimal
+    place. Generally speaking the options from the settings will not
+    be required
+
+Each function is expected to return:
+
+* `{string|null}` Data type detected, or null if unknown (and thus
+  pass it on to the other type detection functions.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">array</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html">media/js/DataTables-1.10.4/DataTables-1.10.4/media/js/jquery.dataTables.js</a>, <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html#line13750">line 13750</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// Currency type detection plug-in:
+   $.fn.dataTable.ext.type.detect.push(
+     function ( data, settings ) {
+       // Check the numeric part
+       if ( ! $.isNumeric( data.substring(1) ) ) {
+         return null;
+       }
+
+       // Check prefixed by currency
+       if ( data.charAt(0) == '$' || data.charAt(0) == '&amp;pound;' ) {
+         return 'currency';
+       }
+       return null;
+     }
+   );</code></pre>
+
+
+
+        
+            
+<h4 class="name" id=".detect"><span class="type-signature">(static) </span>detect<span class="type-signature"> :array</span></h4>
+
+
+
+
+<div class="description">
+    Type detection functions.
+
+The functions defined in this object are used to automatically detect
+a column's type, making initialisation of DataTables super easy, even
+when complex data is in the table.
+
+The functions defined take two parameters:
+
+ 1. `{*}` Data from the column cell to be analysed
+ 2. `{settings}` DataTables settings object. This can be used to
+    perform context specific type detection - for example detection
+    based on language settings such as using a comma for a decimal
+    place. Generally speaking the options from the settings will not
+    be required
+
+Each function is expected to return:
+
+* `{string|null}` Data type detected, or null if unknown (and thus
+  pass it on to the other type detection functions.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">array</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_jquery.dataTables.js.html">media/js/jquery.dataTables.js</a>, <a href="media_js_jquery.dataTables.js.html#line13750">line 13750</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// Currency type detection plug-in:
+   $.fn.dataTable.ext.type.detect.push(
+     function ( data, settings ) {
+       // Check the numeric part
+       if ( ! $.isNumeric( data.substring(1) ) ) {
+         return null;
+       }
+
+       // Check prefixed by currency
+       if ( data.charAt(0) == '$' || data.charAt(0) == '&amp;pound;' ) {
+         return 'currency';
+       }
+       return null;
+     }
+   );</code></pre>
+
+
+
+        
+            
+<h4 class="name" id=".order"><span class="type-signature">(static) </span>order<span class="type-signature"> :object</span></h4>
+
+
+
+
+<div class="description">
+    Type based ordering.
+
+The column type tells DataTables what ordering to apply to the table
+when a column is sorted upon. The order for each type that is defined,
+is defined by the functions available in this object.
+
+Each ordering option can be described by three properties added to
+this object:
+
+* `{type}-pre` - Pre-formatting function
+* `{type}-asc` - Ascending order function
+* `{type}-desc` - Descending order function
+
+All three can be used together, only `{type}-pre` or only
+`{type}-asc` and `{type}-desc` together. It is generally recommended
+that only `{type}-pre` is used, as this provides the optimal
+implementation in terms of speed, although the others are provided
+for compatibility with existing Javascript sort functions.
+
+`{type}-pre`: Functions defined take a single parameter:
+
+ 1. `{*}` Data from the column cell to be prepared for ordering
+
+And return:
+
+* `{*}` Data to be sorted upon
+
+`{type}-asc` and `{type}-desc`: Functions are typical Javascript sort
+functions, taking two parameters:
+
+ 1. `{*}` Data to compare to the second parameter
+ 2. `{*}` Data to compare to the first parameter
+
+And returning:
+
+* `{*}` Ordering match: <0 if first parameter should be sorted lower
+  than the second parameter, ===0 if the two parameters are equal and
+  >0 if the first parameter should be sorted height than the second
+  parameter.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li>{}</li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_jquery.dataTables.js.html">media/js/jquery.dataTables.js</a>, <a href="media_js_jquery.dataTables.js.html#line13856">line 13856</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Numeric ordering of formatted numbers with a pre-formatter
+   $.extend( $.fn.dataTable.ext.type.order, {
+     "string-pre": function(x) {
+       a = (a === "-" || a === "") ? 0 : a.replace( /[^\d\-\.]/g, "" );
+       return parseFloat( a );
+     }
+   } );
+
+ </code></pre>
+
+    <pre class="prettyprint"><code>// Case-sensitive string ordering, with no pre-formatting method
+   $.extend( $.fn.dataTable.ext.order, {
+     "string-case-asc": function(x,y) {
+       return ((x &lt; y) ? -1 : ((x > y) ? 1 : 0));
+     },
+     "string-case-desc": function(x,y) {
+       return ((x &lt; y) ? 1 : ((x > y) ? -1 : 0));
+     }
+   } );</code></pre>
+
+
+
+        
+            
+<h4 class="name" id=".order"><span class="type-signature">(static) </span>order<span class="type-signature"> :object</span></h4>
+
+
+
+
+<div class="description">
+    Type based ordering.
+
+The column type tells DataTables what ordering to apply to the table
+when a column is sorted upon. The order for each type that is defined,
+is defined by the functions available in this object.
+
+Each ordering option can be described by three properties added to
+this object:
+
+* `{type}-pre` - Pre-formatting function
+* `{type}-asc` - Ascending order function
+* `{type}-desc` - Descending order function
+
+All three can be used together, only `{type}-pre` or only
+`{type}-asc` and `{type}-desc` together. It is generally recommended
+that only `{type}-pre` is used, as this provides the optimal
+implementation in terms of speed, although the others are provided
+for compatibility with existing Javascript sort functions.
+
+`{type}-pre`: Functions defined take a single parameter:
+
+ 1. `{*}` Data from the column cell to be prepared for ordering
+
+And return:
+
+* `{*}` Data to be sorted upon
+
+`{type}-asc` and `{type}-desc`: Functions are typical Javascript sort
+functions, taking two parameters:
+
+ 1. `{*}` Data to compare to the second parameter
+ 2. `{*}` Data to compare to the first parameter
+
+And returning:
+
+* `{*}` Ordering match: <0 if first parameter should be sorted lower
+  than the second parameter, ===0 if the two parameters are equal and
+  >0 if the first parameter should be sorted height than the second
+  parameter.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li>{}</li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html">media/js/DataTables-1.10.4/DataTables-1.10.4/media/js/jquery.dataTables.js</a>, <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html#line13856">line 13856</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Numeric ordering of formatted numbers with a pre-formatter
+   $.extend( $.fn.dataTable.ext.type.order, {
+     "string-pre": function(x) {
+       a = (a === "-" || a === "") ? 0 : a.replace( /[^\d\-\.]/g, "" );
+       return parseFloat( a );
+     }
+   } );
+
+ </code></pre>
+
+    <pre class="prettyprint"><code>// Case-sensitive string ordering, with no pre-formatting method
+   $.extend( $.fn.dataTable.ext.order, {
+     "string-case-asc": function(x,y) {
+       return ((x &lt; y) ? -1 : ((x > y) ? 1 : 0));
+     },
+     "string-case-desc": function(x,y) {
+       return ((x &lt; y) ? 1 : ((x > y) ? -1 : 0));
+     }
+   } );</code></pre>
+
+
+
+        
+            
+<h4 class="name" id=".search"><span class="type-signature">(static) </span>search<span class="type-signature"> :object</span></h4>
+
+
+
+
+<div class="description">
+    Type based search formatting.
+
+The type based searching functions can be used to pre-format the
+data to be search on. For example, it can be used to strip HTML
+tags or to de-format telephone numbers for numeric only searching.
+
+Note that is a search is not defined for a column of a given type,
+no search formatting will be performed.
+
+Pre-processing of searching data plug-ins - When you assign the sType
+for a column (or have it automatically detected for you by DataTables
+or a type detection plug-in), you will typically be using this for
+custom sorting, but it can also be used to provide custom searching
+by allowing you to pre-processing the data and returning the data in
+the format that should be searched upon. This is done by adding
+functions this object with a parameter name which matches the sType
+for that target column. This is the corollary of <i>afnSortData</i>
+for searching data.
+
+The functions defined take a single parameter:
+
+ 1. `{*}` Data from the column cell to be prepared for searching
+
+Each function is expected to return:
+
+* `{string|null}` Formatted string that will be used for the searching.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li>{}</li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_jquery.dataTables.js.html">media/js/jquery.dataTables.js</a>, <a href="media_js_jquery.dataTables.js.html#line13789">line 13789</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>$.fn.dataTable.ext.type.search['title-numeric'] = function ( d ) {
+     return d.replace(/\n/g," ").replace( /&lt;.*?>/g, "" );
+   }</code></pre>
+
+
+
+        
+            
+<h4 class="name" id=".search"><span class="type-signature">(static) </span>search<span class="type-signature"> :object</span></h4>
+
+
+
+
+<div class="description">
+    Type based search formatting.
+
+The type based searching functions can be used to pre-format the
+data to be search on. For example, it can be used to strip HTML
+tags or to de-format telephone numbers for numeric only searching.
+
+Note that is a search is not defined for a column of a given type,
+no search formatting will be performed.
+
+Pre-processing of searching data plug-ins - When you assign the sType
+for a column (or have it automatically detected for you by DataTables
+or a type detection plug-in), you will typically be using this for
+custom sorting, but it can also be used to provide custom searching
+by allowing you to pre-processing the data and returning the data in
+the format that should be searched upon. This is done by adding
+functions this object with a parameter name which matches the sType
+for that target column. This is the corollary of <i>afnSortData</i>
+for searching data.
+
+The functions defined take a single parameter:
+
+ 1. `{*}` Data from the column cell to be prepared for searching
+
+Each function is expected to return:
+
+* `{string|null}` Formatted string that will be used for the searching.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-default">Default Value:</dt>
+    <dd class="tag-default"><ul class="dummy">
+            <li>{}</li>
+        </ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html">media/js/DataTables-1.10.4/DataTables-1.10.4/media/js/jquery.dataTables.js</a>, <a href="media_js_DataTables-1.10.4_DataTables-1.10.4_media_js_jquery.dataTables.js.html#line13789">line 13789</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>$.fn.dataTable.ext.type.search['title-numeric'] = function ( d ) {
+     return d.replace(/\n/g," ").replace( /&lt;.*?>/g, "" );
+   }</code></pre>
+
+
+
+        
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="-_anonymous_-factory-AutoFill.html">AutoFill</a></li><li><a href="-_anonymous_-factory-ColReorder.html">ColReorder</a></li><li><a href="-_anonymous_-factory-ColVis.html">ColVis</a></li><li><a href="-_anonymous_-factory-Responsive.html">Responsive</a></li><li><a href="-_anonymous_-sh.Highlighter.html">Highlighter</a></li><li><a href="DataTable.Api.html">Api</a></li><li><a href="FixedColumns.html">FixedColumns</a></li><li><a href="Scroller.html">Scroller</a></li><li><a href="DataTable_.html">~DataTable</a></li><li><a href="Scroller_.html">~Scroller</a></li></ul><h3>Events</h3><ul><li><a href="DataTable_column-sizing.html#.event:dt">dt</a></li><li><a href="DataTable_column-visibility.html#.event:dt">dt</a></li><li><a href="DataTable_destroy.html#.event:dt">dt</a></li><li><a href="DataTable_draw.html#.event:dt">dt</a></li><li><a href="DataTable.html#event:destroy">destroy</a></li><li><a href="DataTable.html#event:draw">draw</a></li><li><a href="DataTable.html#event:filter">filter</a></li><li><a href="DataTable.html#event:init">init</a></li><li><a href="DataTable.html#event:page">page</a></li><li><a href="DataTable.html#event:processing">processing</a></li><li><a href="DataTable.html#event:sort">sort</a></li><li><a href="DataTable.html#event:stateLoaded">stateLoaded</a></li><li><a href="DataTable.html#event:stateLoadParams">stateLoadParams</a></li><li><a href="DataTable.html#event:stateSaveParams">stateSaveParams</a></li><li><a href="DataTable.html#event:xhr">xhr</a></li><li><a href="DataTable_init.html#.event:dt">dt</a></li><li><a href="DataTable_length.html#.event:dt">dt</a></li><li><a href="DataTable_order.html#.event:dt">dt</a></li><li><a href="DataTable_page.html#.event:dt">dt</a></li><li><a href="DataTable_processing.html#.event:dt">dt</a></li><li><a href="DataTable_search.html#.event:dt">dt</a></li><li><a href="DataTable_stateLoaded.html#.event:dt">dt</a></li><li><a href="DataTable_stateLoadParams.html#.event:dt">dt</a></li><li><a href="DataTable_stateSaveParams.html#.event:dt">dt</a></li><li><a href="DataTable_xhr.html#.event:dt">dt</a></li><li><a href="FixedColumns_draw.html#.event:dtfc">dtfc</a></li><li><a href="FixedColumns.html#event:draw">draw</a></li></ul><h3>Namespaces</h3><ul><li><a href="-_anonymous_-factory-AutoFill.defaults.html">defaults</a></li><li><a href="-_anonymous_-factory-AutoFill.defaults.column.html">column</a></li><li><a href="-_anonymous_-factory-ColReorder.defaults.html">defaults</a></li><li><a href="-_anonymous_-FixedColumns.defaults.html">defaults</a></li><li><a href="-_anonymous_-FixedColumns_dom.html">dom</a></li><li><a href="-_anonymous_-FixedColumns_dom.clone.html">clone</a></li><li><a href="-_anonymous_-FixedColumns_dom.clone.left.html">left</a></li><li><a href="-_anonymous_-FixedColumns_dom.clone.right.html">right</a></li><li><a href="-_anonymous_-FixedColumns_dom.grid.html">grid</a></li><li><a href="-_anonymous_-FixedColumns_dom.grid.left.html">left</a></li><li><a href="-_anonymous_-FixedColumns_dom.grid.right.html">right</a></li><li><a href="-_anonymous_-FixedColumns_s.html">s</a></li><li><a href="-_ext.type.html">type</a></li><li><a href="Cached%252520information%252520about%252520the%252520border%252520display.html">Cached information about the border display</a></li><li><a href="Cached%252520information%252520about%252520the%252520little%252520dragging%252520icon%252520.html">Cached information about the little dragging icon </a></li><li><a href="Classes%252520used%252520by%252520TableTools%252520-%252520allows%252520the%252520styles%252520to%252520be%252520override%252520easily.%25250A%252520%252520Note%252520that%252520when%252520TableTools%252520initialises%252520it%252520will%252520take%252520a%252520copy%252520of%252520the%252520classes%252520object%25250A%252520%252520and%252520will%252520use%252520its%252520internal%252520copy%252520for%252520the%252520remainder%252520of%252520its%252520run%252520time..html">Classes used by TableTools - allows the styles to be override easily.
+  Note that when TableTools initialises it will take a copy of the classes object
+  and will use its internal copy for the remainder of its run time.</a></li><li><a href="Common%252525252525252520and%252525252525252520useful%252525252525252520DOM%252525252525252520elements%252525252525252520for%252525252525252520the%252525252525252520class%252525252525252520instance.html">Common and useful DOM elements for the class instance</a></li><li><a href="Data%252520cache%252520for%252520information%252520that%252520we%252520need%252520for%252520scrolling%252520the%252520screen%252520when%252520we%252520near%25250A%252520%252520the%252520edges.html">Data cache for information that we need for scrolling the screen when we near
+  the edges</a></li><li><a href="Data%252520cache%252520for%252520the%252520position%252520of%252520the%252520DataTables%252520scrolling%252520element%252520.html">Data cache for the position of the DataTables scrolling element (when scrolling
+  is enabled)</a></li><li><a href="DataTable.defaults.html">defaults</a></li><li><a href="DataTable.defaults.classes.html">classes</a></li><li><a href="DataTable.defaults.html#.column">column</a></li><li><a href="DataTable.defaults.columns.html">columns</a></li><li><a href="DataTable.defaults.language.html">language</a></li><li><a href="DataTable.defaults.language.aria.html">aria</a></li><li><a href="DataTable.defaults.language.paginate.html">paginate</a></li><li><a href="DataTable.defaults.oLanguage.html">oLanguage</a></li><li><a href="DataTable.defaults.oLanguage.oAria.html">oAria</a></li><li><a href="DataTable.defaults.oLanguage.oPaginate.html">oPaginate</a></li><li><a href="DataTable.defaults.oSearch.html">oSearch</a></li><li><a href="DataTable.defaults.search.html">search</a></li><li><a href="DataTable.ext.html">ext</a></li><li><a href="DataTable.models.html">models</a></li><li><a href="DataTable.models.ext.html">ext</a></li><li><a href="DataTable.models.oColumn.html">oColumn</a></li><li><a href="DataTable.models.oRow.html">oRow</a></li><li><a href="DataTable.models.oSearch.html">oSearch</a></li><li><a href="DataTable.models.oSettings.html">oSettings</a></li><li><a href="DataTable.models.oSettings.oBrowser.html">oBrowser</a></li><li><a href="DataTable.models.oSettings.oFeatures.html">oFeatures</a></li><li><a href="DataTable.models.oSettings.oLanguage.html">oLanguage</a></li><li><a href="DataTable.models.oSettings.oPreviousSearch.html">oPreviousSearch</a></li><li><a href="DataTable.models.oSettings.oScroll.html">oScroll</a></li><li><a href="DataTable.render.html">render</a></li><li><a href="DataTable.util.html">util</a></li><li><a href="Default%252520button%252520configurations.html">Default button configurations</a></li><li><a href="FixedColumns.defaults.html">defaults</a></li><li><a href="FixedColumns_dom.clone.html">clone</a></li><li><a href="FixedColumns_dom.clone.left.html">left</a></li><li><a href="FixedColumns_dom.clone.right.html">right</a></li><li><a href="FixedColumns_dom.grid.html">grid</a></li><li><a href="FixedColumns_dom.grid.left.html">left</a></li><li><a href="FixedColumns_dom.grid.right.html">right</a></li><li><a href="Information%252520stored%252520for%252520each%252520column.%252520An%252520array%252520of%252520objects.html"> An array of objects</a></li><li><a href="Information%252520used%252520for%252520the%252520mouse%252520drag.html">Information used for the mouse drag</a></li><li><a href="Name%252520space%252520for%252520the%252520classes%252520that%252520this%252520TableTools%252520instance%252520will%252520use.html">Name space for the classes that this TableTools instance will use</a></li><li><a href="Nodes%252520used%252520for%252520a%252520collection%252520display.%252520This%252520contains%252520the%252520currently%252520used%252520collection.html"> This contains the currently used collection</a></li><li><a href="Nodes%252520used%252520for%252520the%252520print%252520display.html">Nodes used for the print display</a></li><li><a href="oApi.html">oApi</a></li><li><a href="Print%252520specific%252520information.html">Print specific information</a></li><li><a href="Responsive.defaults.html">defaults</a></li><li><a href="Scroller.defaults.html">defaults</a></li><li><a href="Select%252520rows%252520specific%252520information.html">Select rows specific information</a></li><li><a href="Settings%2520object%2520which%2520contains%2520customisable%2520information%2520for%250A%2520%2520%2520%2520ColVis%2520instance.%2520Augmented%2520by%2520ColVis.defaults.html">Settings object which contains customisable information for
+    ColVis instance. Augmented by ColVis.defaults</a></li><li><a href="Settings%252520object%252520which%252520contains%252520customisable%252520information%252520for%252520AutoFill%252520instance.html">Settings object which contains customisable information for AutoFill instance</a></li><li><a href="Settings%252520object%252520which%252520contains%252520customisable%252520information%252520for%252520ColReorder%252520instance.html">Settings object which contains customisable information for ColReorder instance</a></li><li><a href="Settings%2520object%2520which%2520contains%2520customisable%2520information%2520for%2520ColVis%2520instance.html">Settings object which contains customisable information for ColVis instance</a></li><li><a href="Settings%252520object%252520which%252520contains%252520customisable%252520information%252520for%252520TableTools%252520instance.html">Settings object which contains customisable information for TableTools instance</a></li><li><a href="Store%252520for%252520live%252520information%252520for%252520the%252520current%252520drag.html">Store for live information for the current drag</a></li><li><a href="TableTools%252520default%252520settings%252520for%252520initialisation.html">TableTools default settings for initialisation</a></li><li><a href="ThemeRoller%252520classes%252520-%252520built%252520in%252520for%252520compatibility%252520with%252520DataTables_%252520%25250A%252520%252520bJQueryUI%252520option..html">ThemeRoller classes - built in for compatibility with DataTables' 
+  bJQueryUI option.</a></li><li><a href="DataTable.defaults_.html">defaults</a></li><li><a href="DataTable.defaults.columns_.html">defaults.columns</a></li><li><a href="DataTable.defaults.oLanguage_.html">oLanguage</a></li><li><a href="DataTable.defaults.oLanguage.oAria_.html">oAria</a></li><li><a href="DataTable.defaults.oLanguage.oPaginate_.html">oPaginate</a></li><li><a href="DataTable.defaults.oSearch_.html">oSearch</a></li><li><a href="DataTable.ext_.html">ext</a></li><li><a href="DataTable.models_.html">models</a></li><li><a href="DataTable.models.ext_.html">models.ext</a></li><li><a href="DataTable.models.oColumn_.html">models.oColumn</a></li><li><a href="DataTable.models.oRow_.html">models.oRow</a></li><li><a href="DataTable.models.oSearch_.html">models.oSearch</a></li><li><a href="DataTable.models.oSettings_.html">models.oSettings</a></li><li><a href="DataTable.models.oSettings.oBrowser_.html">oBrowser</a></li><li><a href="DataTable.models.oSettings.oFeatures_.html">oFeatures</a></li><li><a href="DataTable.models.oSettings.oLanguage_.html">oLanguage</a></li><li><a href="DataTable.models.oSettings.oPreviousSearch_.html">oPreviousSearch</a></li><li><a href="DataTable.models.oSettings.oScroll_.html">oScroll</a></li><li><a href="DataTable_oApi_.html">oApi</a></li><li><a href="Scroller.oDefaults.html">oDefaults</a></li><li><a href="Scroller_dom.html">dom</a></li><li><a href="Scroller_s_.html">s</a></li></ul><h3>Global</h3><ul><li><a href="global.html#$">$</a></li><li><a href="global.html#_">_</a></li><li><a href="global.html#_fnFillerDisplay">_fnFillerDisplay</a></li><li><a href="global.html#_fnFillerDragMove">_fnFillerDragMove</a></li><li><a href="global.html#_fnFillerDragStart">_fnFillerDragStart</a></li><li><a href="global.html#_fnFillerFinish">_fnFillerFinish</a></li><li><a href="global.html#_fnFillerPosition">_fnFillerPosition</a></li><li><a href="global.html#_fnInit">_fnInit</a></li><li><a href="global.html#_fnPrep">_fnPrep</a></li><li><a href="global.html#_fnReadCell">_fnReadCell</a></li><li><a href="global.html#_fnStep">_fnStep</a></li><li><a href="global.html#_fnTargetCoords">_fnTargetCoords</a></li><li><a href="global.html#_fnUpdateBorder">_fnUpdateBorder</a></li><li><a href="global.html#_fnWriteCell">_fnWriteCell</a></li><li><a href="global.html#api">api</a></li><li><a href="global.html#button">button</a></li><li><a href="global.html#CLASS">CLASS</a></li><li><a href="global.html#fnAddData">fnAddData</a></li><li><a href="global.html#fnAdjustColumnSizing">fnAdjustColumnSizing</a></li><li><a href="global.html#fnArraySwitch">fnArraySwitch</a></li><li><a href="global.html#fnClearTable">fnClearTable</a></li><li><a href="global.html#fnClose">fnClose</a></li><li><a href="global.html#fnDeleteRow">fnDeleteRow</a></li><li><a href="global.html#fnDestroy">fnDestroy</a></li><li><a href="global.html#fnDomSwitch">fnDomSwitch</a></li><li><a href="global.html#fnDraw">fnDraw</a></li><li><a href="global.html#fnFilter">fnFilter</a></li><li><a href="global.html#fnGetData">fnGetData</a></li><li><a href="global.html">fnGetInstance</a></li><li><a href="global.html">fnGetMasters</a></li><li><a href="global.html#fnGetNodes">fnGetNodes</a></li><li><a href="global.html#fnGetPosition">fnGetPosition</a></li><li><a href="global.html#fnInvertKeyValues">fnInvertKeyValues</a></li><li><a href="global.html#fnIsOpen">fnIsOpen</a></li><li><a href="global.html#fnOpen">fnOpen</a></li><li><a href="global.html#fnPageChange">fnPageChange</a></li><li><a href="global.html#fnRebuild">fnRebuild</a></li><li><a href="global.html#fnSetColumnVis">fnSetColumnVis</a></li><li><a href="global.html#fnSettings">fnSettings</a></li><li><a href="global.html#fnSort">fnSort</a></li><li><a href="global.html#fnSortListener">fnSortListener</a></li><li><a href="global.html#fnUpdate">fnUpdate</a></li><li><a href="global.html#fnVersionCheck">fnVersionCheck</a></li><li><a href="global.html#Jeditable">Jeditable</a></li><li><a href="global.html#method">method</a></li><li><a href="global.html#VERSION">VERSION</a></li><li><a href="global.html#version">version</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Dec 09 2015 20:53:58 GMT+0000 (GMT Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

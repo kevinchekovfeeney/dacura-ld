@@ -1,0 +1,536 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/**
+ * Users Server - provides access to updating / editing / viewing users and roles, etc.
+ * 
+ * This class is just an interface which adds context to the UserManager object included in all dacura server objects 
+ * (as user maninpulation / access is common to most services.
+ * Creation Date: 15/01/2015
+ *
+ * @author chekov
+ * @license GPL V2
+ */
+class UsersDacuraServer extends DacuraServer {
+	
+	/**
+	 * Returns an array of users who have a role in the current collection context
+	 * @return array&lt;DacuraUser&gt;|boolean
+	 */
+	function getUsersInContext(){
+		if(!($users = $this-&gt;userman-&gt;getUsersInContext($this-&gt;cid()))){
+			return $this-&gt;failure_result($this-&gt;userman-&gt;errmsg, $this-&gt;userman-&gt;errcode);				
+		}
+		if(!($ua = $this-&gt;getUser())){
+			return false;
+		}
+		foreach($users as $i =&gt; $u){
+			if(!$this-&gt;canUpdateUserStatus($ua, $u)){
+				$users[$i]-&gt;selectable = false;
+			}
+			$users[$i]-&gt;category = $users[$i]-&gt;rcategory();
+				
+			if($this-&gt;cid() == &quot;all&quot;){
+				$users[$i]-&gt;collections = $users[$i]-&gt;collectionSummary();
+				$rs = $users[$i]-&gt;roleSummary();
+				$users[$i]-&gt;roles = $rs;
+			}
+			else {
+				$croles = $u-&gt;getRolesInCollection($this-&gt;cid());
+				$users[$i]-&gt;roles = array();
+				foreach($croles as $rname){
+					$users[$i]-&gt;roles[$rname] = UserRole::$dacura_roles[$rname];
+				}
+			}			
+			$users[$i]-&gt;forapi();				
+		}
+		$this-&gt;recordUserAction(&quot;view users&quot;, array());				
+		return $users;
+	}
+			
+	/**
+	 * Prunes a user object to remove roles that are not relevant to the current context
+	 * 
+	 * Based on the principle that roles in other collections should be invisible in api calls within other collections
+	 * @param Number $uid the user id
+	 * @return DacuraUser|boolean
+	 */
+	function getUserPrunedForContext($uid){
+		if(!($u = $this-&gt;getUser($uid))){
+			return false;
+		}
+		$covering_role = new UserRole(0, $this-&gt;cid(), &quot;god&quot;);
+		$nroles = array();
+		foreach($u-&gt;roles as $i =&gt; $r){
+			if(!(!$covering_role-&gt;coversRole($r) || ($this-&gt;cid() !=&quot;all&quot; &amp;&amp; $r-&gt;cid() == &quot;all&quot;))){
+				$nroles[] = $r;
+			}
+		}
+		$u-&gt;roles = $nroles;
+		return $u-&gt;forapi();
+	}
+	
+	/**
+	 * Decides which users can update the status of which other users
+	 * 
+	 * Only platform administrators can update the status of platform or multi-collection users
+	 * Collection admins can update the status of collection users
+	 * @param DacuraUser $ua the user carrying out the update
+	 * @param DacuraUser $ub the user being updated
+	 * @return boolean true if the update is permitted
+	 */
+	function canUpdateUserStatus(DacuraUser $ua, DacuraUser $ub){
+		if($ua-&gt;isGod()) return true;
+		if($ub-&gt;isGod()) return false;
+		if($ua-&gt;isPlatformAdmin()) return true;
+		if($ub-&gt;rolesSpanCollections()) return $this-&gt;failure_result(&quot;Only platform administrators can update users who have roles in multiple collections $ub-&gt;id&quot;, 401);
+		if($ua-&gt;isCollectionAdmin($ub-&gt;getRoleCollectionId())) return true;
+		return $this-&gt;failure_result(&quot;Administrator of collection &quot;.$ub-&gt;getRoleCollectionId().&quot; role is needed to update $ub-&gt;id status&quot;, 401);
+	}
+	
+	/**
+	 * Decides which users can update another user object
+	 * 
+	 * Has the same rules as updating status, with the exception that users can update themselves
+	 * @param DacuraUser $object the user object to be updated
+	 * @param array $json a name value array of attributes to be updated in the user object
+	 * @return boolean if true, the update is allowed by the current users
+	 */
+	function canUpdateUser(DacuraUser $object, $json){
+		if(!($ua = $this-&gt;getUser())){
+			return false;
+		}
+		if(isset($json['status']) &amp;&amp; !$this-&gt;canUpdateUserStatus($ua, $object)){
+			return false;
+		}
+		else if($ua-&gt;id == $object-&gt;id || $this-&gt;canUpdateUserStatus($ua, $object)){ //same rules for status, except the user can update themselves
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * Updates the user object by changing one or more of status, name, email, profile
+	 * @see DacuraServer::updateUser()
+	 * @param DacuraUser the user object to be updated
+	 * @param array&lt;string:string&gt; name value array of parameters (email, status, profile, name)
+	 */
+	function updateUser(DacuraUser &amp;$uobj, $params){
+		foreach($params as $n =&gt; $v){
+			if($n == &quot;email&quot;) $uobj-&gt;email = $v;
+			elseif($n == &quot;name&quot;) $uobj-&gt;name = $v;
+			elseif($n == &quot;status&quot;) $uobj-&gt;status($v);
+			elseif($n == &quot;profile&quot;){
+				$uobj-&gt;profile = $v;
+				$params['profile'] = &quot;updated&quot;;//don't save the entire profile in session
+			}
+			else unset($params[$n]);//don't save random stuff into session
+		}
+		if(!(parent::updateUser($uobj, $params))){
+			return false;
+		}
+		return $uobj-&gt;forapi();
+	}
+	
+	/**
+	 * Is the current user delete the passed user?
+	 * 
+	 * Only permitted if the user is not the current user and has permission to update the user's status
+	 * @param DacuraUser $ub
+	 * @return boolean 
+	 */
+	function canDeleteUser($ub){
+		return (($ua = $this-&gt;getUser()) &amp;&amp; ($ua-&gt;id != $ub-&gt;id ) &amp;&amp; $this-&gt;canUpdateUserStatus($ua, $ub));	
+	}
+	
+	/**
+	 * Deletes the passed user
+	 * @param DacuraUser $u the user to be deleted
+	 * @return boolean true if the user is successfully deleted
+	 */
+	function deleteUser(DacuraUser &amp;$u){
+		if(!$this-&gt;userman-&gt;deleteUser($u-&gt;id)){
+			return $this-&gt;failure_result($this-&gt;userman-&gt;errmsg, $this-&gt;userman-&gt;errcode);				
+		}
+		$this-&gt;recordUserAction(&quot;delete user&quot;, array(&quot;user&quot; =&gt; $uobj-&gt;id));
+		return true;
+	}
+	
+	/**
+	 * Is the current user allowed to update the password of the passed user
+	 * @param DacuraUser $ub
+	 * @return boolean if true the current user is allowed to update the passed user
+	 */
+	function canUpdatePassword(DacuraUser $ub){
+		return (($ua = $this-&gt;getUser()) &amp;&amp; (($ua-&gt;id == $ub-&gt;id) || $this-&gt;canUpdateUserStatus($ua, $ub)));
+	}
+
+	/**
+	 * Updates the passed user object to set the password to the passed password.
+	 * @param DacuraUser $uobj the user object to be updated
+	 * @param unknown $np
+	 * @return boolean
+	 */
+	function updatePassword(&amp;$uobj, $np){
+		if(!$this-&gt;userman-&gt;updatePassword($uobj-&gt;id, $np)){
+			return $this-&gt;failure_result($this-&gt;userman-&gt;errmsg, $this-&gt;userman-&gt;errcode);
+		}
+		$this-&gt;recordUserAction(&quot;update password&quot;, array(&quot;user&quot; =&gt; $uobj-&gt;id));
+		return true;		
+	}
+	
+	function canAddUser($params){
+		if(!($ua = $this-&gt;getUser())){
+			return false;
+		}
+		if(!($ou = $this-&gt;userman-&gt;loadUserByEmail($params['email']))){//brand spanking new user
+			foreach($params['roles'] as $role){
+				if($role['role'] == &quot;god&quot; &amp;&amp; !$ua-&gt;isGod($role['collection_id'])){
+					return $this-&gt;failure_result(&quot;Only deities can create other deities&quot;, 401);
+				}
+				if($role['collection_id'] == &quot;all&quot; &amp;&amp; !$ua-&gt;isPlatformAdmin()){
+					return $this-&gt;failure_result(&quot;Only platform administrators can add platform roles&quot;, 401);
+				}
+				if(!$ua-&gt;isCollectionAdmin($role['collection_id'])){
+					return $this-&gt;failure_result(&quot;Only the admin of collection &quot;.$role['collection_id'].&quot; can add roles&quot;, 401);
+				}
+			}		
+			return true;
+		}
+		else {
+			if($this-&gt;cid() == &quot;all&quot; || !isset($params['roles']) || count($params['roles']) == 0){
+				return $this-&gt;failure_result(&quot;A user with the email address $email is already registered on the system&quot;, 400);
+			}
+			foreach($params['roles'] as $role){
+				if(!$this-&gt;canCreateRole($ou, $role['collection_id'], $role['role'])) return false;
+			}
+			return true;
+		}		
+	}
+	
+	function addUser($params){
+		$ou = $this-&gt;userman-&gt;loadUserByEmail($params['email']);
+		if($ou){
+			if($this-&gt;cid() == &quot;all&quot; || !isset($params['roles']) || count($params['roles']) == 0){
+				return $this-&gt;failure_result(&quot;A user with the email address &quot;.$params['email'].&quot; is already registered on the system&quot;, 400);
+			}
+			foreach($params['roles'] as $role){
+				$x = $this-&gt;userman-&gt;createUserRole($ou-&gt;id, $role['collection_id'], $role['role']);
+				if(!$x){
+					$this-&gt;logEvent(&quot;warning&quot;, $this-&gt;userman-&gt;errcode, &quot;Failed to create user role &quot;.$role['role'].&quot; &quot;.$this-&gt;userman-&gt;errmsg);
+				}
+				else {
+					$ou-&gt;addRole($x);
+					$this-&gt;recordUserAction(&quot;add role&quot;, array(&quot;user&quot; =&gt; $ou-&gt;id, &quot;role&quot; =&gt; $role['role']));
+				}						
+			}
+			return $ou;
+		}
+		if(!isset($params['name'])){
+			$params['name'] = &quot;&quot;;
+		}
+		if(!isset($params['status'])){
+			$params['status'] = $this-&gt;getServiceSetting(&quot;add_user_status&quot;, &quot;accept&quot;);
+		}
+		if(!isset($params['profile'])){
+			$params['profile'] = $this-&gt;getServiceSetting('default_profile', array());
+		}		
+		$u = $this-&gt;userman-&gt;addUser($params['email'], $params['name'], $params['password'], $params['status'], json_encode($params['profile'], true));
+		if($u){
+			$this-&gt;recordUserAction(&quot;create user&quot;, array(&quot;user&quot; =&gt; $u-&gt;id, &quot;email&quot; =&gt; $params['email']));
+			if(isset($params['roles'])){
+				foreach($params['roles'] as $role){
+					$x = $this-&gt;userman-&gt;createUserRole($u-&gt;id, $role['collection_id'], $role['role']);
+					if(!$x){
+						$this-&gt;logEvent(&quot;warning&quot;, $this-&gt;userman-&gt;errcode, &quot;Failed to create user role &quot;.$role['role'].&quot; &quot;.$this-&gt;userman-&gt;errmsg);
+					}
+					else {
+						$u-&gt;addRole($x);
+						$this-&gt;recordUserAction(&quot;add role&quot;, array(&quot;user&quot; =&gt; $u-&gt;id, &quot;role&quot; =&gt; $role['role']));						
+					}
+				}
+			}
+			return $u;
+		}	
+		return $this-&gt;failure_result($this-&gt;userman-&gt;errmsg, $this-&gt;userman-&gt;errcode);
+	}
+	
+	/**
+	 * Decides which users can create which roles for which other users
+	 * 
+	 * Platform administrators can create whatever roles they like
+	 * collection administrators can create any roles that are not already possessed by the user for their collection
+	 * Otherwise no. 
+	 * @param DacuraUser $uobj the object user - the one that is getting the role added
+	 * @param string $cid the collection id for the new role
+	 * @param string $rname the name of the role
+	 * @return boolean if true, the current user is allowed to create this role.
+	 */
+	function canCreateRole($uobj, $cid, $rname){
+		if(!($ua = $this-&gt;getUser())) return false;
+		if($rname == 'god' &amp;&amp; !$ua-&gt;isGod($cid)) return $this-&gt;failure_result(&quot;Only deities can create deities, $ua-&gt;id is no god!&quot;, 401);
+		if($ua-&gt;isPlatformAdmin()) return true;
+		if(!$ua-&gt;isCollectionAdmin($cid)) return $this-&gt;failure_result(&quot;Only collection admins can create roles in their collections&quot;, 401);
+		if($uobj-&gt;hasSufficientRole($rname, $cid)) return $this-&gt;failure_result(&quot;User $uobj-&gt;id has a role covering collection $cid that is greater or equal to the $rname role&quot;, 400);
+		return true;
+	}
+	
+	function canDeleteRole($uobj, $robj){
+		if(!($ua = $this-&gt;getUser())) return false;
+		if($robj-&gt;role() == &quot;god&quot; &amp;&amp; !$ua-&gt;isGod($robj-&gt;cid())) return $this-&gt;failure_result(&quot;Only deities can cast other deities out&quot;, 401);
+		if($ua-&gt;isPlatformAdmin()) return true;
+		if(!$ua-&gt;isCollectionAdmin($robj-&gt;cid())) return $this-&gt;failure_result(&quot;Only collection admins can remove roles in their collections&quot;, 401);
+		return true;
+	}
+	
+	function deleteRole(&amp;$uobj, $robj){
+		if(!($uobj = $this-&gt;userman-&gt;deleteUserRole($uobj-&gt;id, $robj-&gt;id))){
+			return $this-&gt;failure_result($this-&gt;userman-&gt;errmsg, $this-&gt;userman-&gt;errcode);
+		}
+		$this-&gt;recordUserAction(&quot;delete role&quot;, array(&quot;role&quot; =&gt; $robj-&gt;role(), &quot;user&quot; =&gt; $uobj-&gt;id, &quot;collection&quot; =&gt; $robj-&gt;cid()));
+		return $uobj;
+	}
+
+	function createRole(&amp;$uobj, $cid, $rname){
+		$uobj = $this-&gt;userman-&gt;createUserRole($uobj-&gt;id, $cid, $rname);
+		if(!$uobj){
+			return $this-&gt;failure_result($this-&gt;userman-&gt;errmsg, $this-&gt;userman-&gt;errcode);
+		}
+		$uobj-&gt;endSession(&quot;system&quot;, $cid);
+		$this-&gt;recordUserAction(&quot;add role&quot;, array(&quot;role&quot; =&gt; $rname, &quot;user&quot; =&gt; $uobj-&gt;id, &quot;collection&quot; =&gt; $cid));
+		return $uobj;		
+	}		
+
+	
+	/**
+	 * Can the current user view another user's history? 
+	 * 
+	 * The answer depends upon the context in which it is being view (which collection) and the 
+	 * category of user - platform admins can do anything, 
+	 * collection admins can view the history only of a user who has a role in the current collection
+	 * nobody else is allowed to view a user's history 
+	 * not even the user themselves although this may change...
+	 * @param DacuraUser $ub the user who is the object of the action (i.e. whose history is being viewed)
+	 * @return boolean if true, the current user is allowed to view the object user's history
+	 */
+	function canViewUserHistory($ub){
+		if(!($ua = $this-&gt;getUser())){
+			return false;
+		}
+		if($ua-&gt;isCollectionAdmin($this-&gt;cid()) &amp;&amp; $ub-&gt;hasCollectionRole($this-&gt;cid())) return true;
+		return false;		
+	}
+	
+	function getUserHistory($ub){
+		
+	}
+	
+	function userIsOwnedByCollection($u, $cid){
+		if($u-&gt;rolesSpanCollections()){
+			return false;
+		}
+		return ($u-&gt;getRoleCollectionId() == $cid);
+	}
+	/*
+	 * Returns a datastructure representing the datasets and contexts that the user has at least the given role in  
+	 * (or any role if false) 
+	 * collection_id: {title: &quot;title&quot;, datasets: {dataset_id =&gt; &quot;dataset title&quot;}}
+	 */
+	function getContextsWithUserRole($role=false){
+		$u = $this-&gt;getUser();
+		if($u-&gt;hasCollectionRole(&quot;all&quot;, $role)){
+			$choices[&quot;all&quot;] = array(&quot;title&quot; =&gt; &quot;All collections&quot;);				
+		}
+		$cols = $this-&gt;getCollectionList();
+		foreach($cols as $colid =&gt; $col){
+			if($col-&gt;status == &quot;deleted&quot;){ continue;}
+			if($u-&gt;hasCollectionRole($colid, $role)){
+				$choices[$colid] = array(&quot;title&quot; =&gt; $col-&gt;name);
+			}
+		}
+		return $choices;
+	}
+	
+	/*
+	 * Returns an a structure representing datasets and contexts that can be given to a user in a certain context..
+	 */
+	function getRoleCreateOptions($uid, $cid = false){
+		if(!($ub = $this-&gt;getUser($uid))){
+			return false;
+		}
+		$cid = ($cid === false) ? $this-&gt;cid() : $cid;
+		$contexts = $this-&gt;getContextsWithUserRole(&quot;admin&quot;);
+		if($cid != &quot;all&quot; &amp;&amp; (!isset($contexts[$cid]))){
+			return $this-&gt;failure_result(&quot;User does not possess permission to create roles for $uid in [$cid] context&quot;, 401);
+		}
+		$choices = array();
+		foreach($contexts as $cid =&gt; $txt){
+			$options = array();
+			foreach(UserRole::$dacura_roles as $rn =&gt; $rtitle){
+				if($this-&gt;canCreateRole($ub, $cid, $rn)){
+					$options[$rn] = $rtitle;
+				}
+			}
+			if(count($options) &gt; 0){
+				$choices[$cid] = $options;
+			}		
+		}
+		return $choices;
+	}
+	
+	function getRoleCollectionOptions($uid){
+		$admin = $this-&gt;getUser(0);
+		$colls = array();
+		if($admin-&gt;isGod()){
+			$colls = $this-&gt;getCollectionList(false);
+			$colls[0] = array(&quot;id&quot; =&gt; &quot;all&quot;, &quot;name&quot; =&gt; &quot;All Collections&quot;);
+		}
+		else {
+			foreach($admin-&gt;roles as $role){
+				if($role-&gt;isAdmin() &amp;&amp; !isset($colls[$role-&gt;collection_id])){
+					$colls[$role-&gt;collection_id] = $this-&gt;getCollection($role-&gt;collection_id);
+				}
+			}
+		}
+		return $colls;
+	}
+	
+	function inviteUser($user, $role, $message){
+		if($confirm_code = $this-&gt;userman-&gt;invite($user, $role, $this-&gt;cid())){
+			$address =  $this-&gt;durl().&quot;login/invite/code/&quot;.$confirm_code;
+			ob_start();
+			include(&quot;screens/invite_email.php&quot;);
+			$output = ob_get_contents();
+			ob_clean();
+			$content = $message . $output;
+			sendemail($user, $this-&gt;getServiceSetting('invite_email_subject', &quot;Invitation to join Data Curation Project&quot;), $content, $this-&gt;getSystemSetting('mail_headers',&quot;&quot;));
+			$this-&gt;recordUserAction(&quot;invite user&quot;, array(&quot;email&quot; =&gt; $user, &quot;role&quot; =&gt; $role));
+			return true;
+		}
+		else {
+			$this-&gt;recordUserAction(&quot;failed to invite user&quot;, array(&quot;email&quot; =&gt; $user, &quot;role&quot; =&gt; $role, &quot;error&quot; =&gt; $this-&gt;userman-&gt;errcode));
+			return $this-&gt;failure_result($this-&gt;userman-&gt;errmsg, $this-&gt;userman-&gt;errcode);
+		}
+	}
+
+	function processInviteList($invite_list, $role, $message){
+		$results = $this-&gt;getInviteErrorReport($invite_list);
+		foreach(array(&quot;unknown&quot;, &quot;pending&quot;, &quot;active&quot;) as $itype){
+			foreach($invite_list[$itype] as $new_user){
+				if($itype == &quot;active&quot;){
+					if($this-&gt;userman-&gt;inviteToCollection($new_user, $role, $this-&gt;cid())){
+						$results['issued'][$new_user] = &quot;Existing Dacura user invited to join collection&quot;;
+						$this-&gt;recordUserAction(&quot;add role&quot;, array(&quot;email&quot; =&gt; $new_user, &quot;role&quot; =&gt; $role));						
+					}
+					else {
+						$results['failed'][$new_user] = $this-&gt;userman-&gt;errcode.&quot;: &quot;.$this-&gt;userman-&gt;errmsg;						
+						$this-&gt;recordUserAction(&quot;failed to add role&quot;, array(&quot;email&quot; =&gt; $new_user, &quot;role&quot; =&gt; $role, &quot;error&quot; =&gt; $this-&gt;userman-&gt;errcode));						
+					}
+				}
+				else {
+					if($this-&gt;inviteUser($new_user, $role, $message)){
+						$results['issued'][$new_user] = ($itype == &quot;unknown&quot;) ? &quot;New user invited to join&quot; : &quot;Invitation re-issued to pending user&quot;;
+					}
+					else {
+						$results['failed'][$new_user] = $this-&gt;errcode.&quot;: &quot;.$this-&gt;errmsg;
+					}
+				}
+			}
+		}
+		return $results;
+	}
+	
+	function inviteListContainsValidEntries($invite_list){
+		foreach(array(&quot;unknown&quot;, &quot;active&quot;, &quot;pending&quot;) as $itype){
+			if(count($invite_list[$itype]) &gt; 0) return true;
+		}
+		return false;
+	}
+	
+	function getInviteErrorReport($invite_list, $show_empty = true){
+		$results = array(&quot;issued&quot; =&gt; array(), &quot;failed&quot; =&gt; array());
+		foreach(array(&quot;invalid&quot;, &quot;inactive&quot;, &quot;redundant&quot;) as $itype){
+			foreach($invite_list[$itype] as $email){
+				$results['failed'][$email] = $itype.&quot;: &quot;;	
+			}
+		}
+		return $results;
+	}
+	
+	function parseInviteList($text, $role){
+		$emails = preg_split('/[,\s]+/', $text);
+		$invite_list = array(&quot;unknown&quot; =&gt; array(), &quot;pending&quot; =&gt; array(), &quot;active&quot; =&gt; array(), &quot;inactive&quot; =&gt; array(), &quot;invalid&quot; =&gt; array(), &quot;redundant&quot; =&gt; array());
+		foreach($emails as $email){
+			if(!isValidEmail($email)){
+				$invite_list['invalid'][] = $email;
+			}
+			else {
+				$ou = $this-&gt;userman-&gt;loadUserByEmail($email);
+				if($ou){
+					if($ou-&gt;status == &quot;pending&quot;){
+						$invite_list['pending'][] = $email;
+					}
+					elseif($ou-&gt;status != &quot;accept&quot;){
+						$invite_list['inactive'][] = $email;
+					}
+					elseif($ou-&gt;hasSufficientRole($role, $this-&gt;cid())){
+						$invite_list['redundant'][] = $email;
+					}
+					else {
+						$invite_list['active'][] = $email;
+					}
+				}
+				else {
+					$invite_list['unknown'][] = $email;
+				}
+			}
+		}
+		return $invite_list;
+	}
+	
+	
+
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,216 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;script src='&lt;?=$service-&gt;furl(&quot;js&quot;, &quot;jquery.dataTables.js&quot;)?&gt;'&gt;&lt;/script&gt;
+&lt;script src='&lt;?=$service-&gt;furl(&quot;js&quot;, &quot;dataTables.jqueryui.js&quot;)?&gt;'&gt;&lt;/script&gt;
+&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;furl(&quot;css&quot;, &quot;dataTables.jqueryui.css&quot;)?&gt;&quot; /&gt;
+
+&lt;div id='fragment-header' class=&quot;dch&quot;&gt;
+	&lt;span class='entity-subhead fragment-title'&gt;&lt;/span&gt;
+	&lt;span class='fragment-details'&gt;&lt;/span&gt;
+	&lt;span class='fragment-path'&gt;&lt;/span&gt;
+&lt;/div&gt;			
+&lt;div id='version-header' class=&quot;dch&quot;&gt;
+	&lt;span class='entity-subhead version-title'&gt;&lt;/span&gt;
+	&lt;span class='version-created'&gt;&lt;/span&gt;
+	&lt;span class='version-replaced'&gt;&lt;/span&gt;
+	&lt;span class='version-details'&gt;&lt;/span&gt;
+&lt;/div&gt;			
+
+&lt;div id='update-header' class=&quot;dch&quot;&gt;
+	&lt;span class='entity-subhead update-title'&gt;&lt;/span&gt;
+	&lt;span class='update-created'&gt;&lt;/span&gt;
+	&lt;span class='update-modified'&gt;&lt;/span&gt;
+	&lt;span class='update-details'&gt;&lt;/span&gt;
+&lt;/div&gt;			
+
+&lt;div class=&quot;dch&quot; id=&quot;show-entity&quot;&gt;
+	&lt;?php echo $service-&gt;showLDEditor($params);?&gt;
+	&lt;div id=&quot;entity-sub-sections&quot; &gt;
+		&lt;div id=&quot;history-section&quot; class=&quot;dch&quot;&gt;
+			&lt;div class=&quot;tool-section-header&quot;&gt;
+				&lt;span class=&quot;section-title&quot;&gt;Entity History&lt;/span&gt;
+			&lt;/div&gt;
+		&lt;/div&gt;
+		&lt;div id=&quot;pending-section&quot; class=&quot;dch&quot;&gt;
+			&lt;div class=&quot;tool-section-header&quot;&gt;
+				&lt;span class=&quot;section-title&quot;&gt;Entity Update Queue&lt;/span&gt;
+			&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+	
+&lt;div id=&quot;tabletemplates&quot; class='dacura-templates'&gt;
+	&lt;div id=&quot;header-template&quot;&gt;
+		&lt;table class='entity-invariants'&gt;
+			&lt;thead&gt;
+				&lt;tr&gt;
+					&lt;th&gt;Status&lt;/th&gt;
+					&lt;th&gt;Type&lt;/th&gt;
+					&lt;th&gt;Dataset&lt;/th&gt;
+					&lt;th&gt;Details&lt;/th&gt;
+				&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;
+				&lt;tr&gt;
+					&lt;td class='cand_status'&gt;&lt;/td&gt;
+					&lt;td class='cand_type'&gt;&lt;/td&gt;
+					&lt;td class='cand_owner'&gt;&lt;/td&gt;
+					&lt;td class='cand_created'&gt;&lt;/td&gt;
+				&lt;/tr&gt;
+			&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	&lt;div id=&quot;history-template&quot;&gt;
+		&lt;table class=&quot;history_table display&quot;&gt;
+			&lt;thead&gt;
+				&lt;tr&gt;
+					&lt;th&gt;Version&lt;/th&gt;
+					&lt;th&gt;Schema Version&lt;/th&gt;
+					&lt;th&gt;Created&lt;/th&gt;
+					&lt;th&gt;Sortable Created&lt;/th&gt;
+					&lt;th&gt;Changed From&lt;/th&gt;
+					&lt;th&gt;Changed To&lt;/th&gt;
+				&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;
+			&lt;/tbody&gt;
+		&lt;/table&gt;		
+	&lt;/div&gt;
+	&lt;div id=&quot;updates-template&quot;&gt;
+		&lt;table class=&quot;updates_table display&quot;&gt;
+			&lt;thead&gt;
+			&lt;tr&gt;
+				&lt;th&gt;Status&lt;/th&gt;
+				&lt;th&gt;From Version&lt;/th&gt;
+				&lt;th&gt;To Version&lt;/th&gt;
+				&lt;th&gt;Created&lt;/th&gt;
+				&lt;th&gt;Sortable Created&lt;/th&gt;
+				&lt;th&gt;Updated&lt;/th&gt;
+				&lt;th&gt;Sortable Updated&lt;/th&gt;
+				&lt;th&gt;Change From&lt;/th&gt;
+				&lt;th&gt;Change To&lt;/th&gt;
+			&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;&lt;/tbody&gt;
+		&lt;/table&gt;			
+	&lt;/div&gt;	
+&lt;/div&gt;
+&lt;script&gt;
+
+/*
+ * Called once per page load - sets the entity context of the view page
+ */
+dacura.ld.showHeader = function(ent){
+	options = { subtitle: ent.id };
+	if(typeof ent.title != &quot;undefined&quot;){
+		options.subtitle = ent.title;
+	}
+	if(typeof cand.image != &quot;undefined&quot;){
+		options.image = ent.image;
+	}
+	options.description = $('#header-template').html();
+	dacura.system.updateToolHeader(options);
+	if(typeof ent.dataset_title != &quot;undefined&quot;){
+		dtit = ent.dataset_title;			
+	}
+	else if(ent.did == &quot;all&quot;){
+		dtit = ent.cid;
+	}
+	if(typeof ent.metadetails != &quot;undefined&quot;){
+		metadetails = ent.metadetails;
+	}
+	else {
+		metadetails = timeConverter(ent.created);
+	}
+	$('.cand_type').html(&quot;&lt;span class='entity-type'&gt;&quot; + ent.type + &quot;&lt;/span&gt;&quot;);
+	$('.cand_owner').html(&quot;&lt;span class='entity-owner'&gt;&quot; + dtit + &quot;&lt;/span&gt;&quot;);
+	$('.cand_created').html(&quot;&lt;span class='entity-details'&gt;&quot; + metadetails + &quot;&lt;/span&gt;&quot;);
+	$('.cand_status').html(&quot;&lt;span class='entity-status entity-&quot; + ent.latest_status + &quot;'&gt;&quot; + ent.latest_status + &quot;&lt;/span&gt;&quot;);
+    dacura.system.addServiceBreadcrumb(&quot;&lt;?=$service-&gt;my_url()?&gt;/&quot; + ent.id , options.subtitle);	
+}
+
+
+function drawVersionHeader(data){
+	
+}
+
+
+function drawUpdateHeader(data){
+	
+}
+
+function drawFragmentHeader(data){
+	if(typeof data.fragment_id != &quot;undefined&quot;){
+		fids = data.fragment_id.split(&quot;/&quot;);
+		fid = fids[fids.length -1];
+		fdets = data.fragment_details;
+		fpaths = data.fragment_paths;
+		fpathhtml = &quot;&lt;div class='fragment-paths'&gt;&quot;;
+		for(i in fpaths){
+			fpathhtml += &quot;&lt;span class='fragment-path'&gt;&quot;;
+			fpathhtml += &quot;&lt;span class='fragment-step'&gt;&quot; + data.id + &quot;&lt;/span&gt;&lt;span class='fragment-step'&gt;&quot;;
+			fpathhtml += fpaths[i].join(&quot;&lt;/span&gt;&lt;span class='fragment-step'&gt;&quot;);
+			fpathhtml += &quot;&lt;/span&gt;&lt;span class='fragment-step'&gt;&quot; + data.fragment_id + &quot;&lt;/span&gt;&lt;/span&gt;&quot;;
+		}
+		fpathhtml += &quot;&lt;/div&gt;&quot;;
+		$('#fragment-data').html(&quot;&lt;span class='fragment-title-label'&gt;Fragment&lt;/span&gt; &lt;span class='fragment-title'&gt;&quot; + fid + &quot;&lt;/span&gt;&lt;span class='fragment-details'&gt;&quot; + fdets + &quot;&lt;/span&gt;&quot; + fpathhtml);
+		$('#fragment-data').show();
+	}	
+}
+
+function isUpdateID(id){
+	return id.substr(0,7) == &quot;update/&quot;;
+}
+
+$('document').ready(function(){
+	dacura.system.init({&quot;mode&quot;: &quot;tool&quot;});
+	dacura.editor.init();
+	dacura.editor.load(&quot;&lt;?=$params['id']?&gt;&quot;, dacura.ld.fetch, dacura.ld.update);
+	$('#show-entity').show();
+});
+&lt;/script&gt;
+
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

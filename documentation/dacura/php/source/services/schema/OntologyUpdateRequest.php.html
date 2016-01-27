@@ -1,0 +1,90 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+class OntologyUpdateRequest extends EntityUpdate {
+	
+	function makeMetaChanges($stuff){
+		$changes = array();
+		if(isset($stuff['url']) &amp;&amp; $stuff['url'] != $this-&gt;original-&gt;url){
+			$changes['url'] = array($this-&gt;original-&gt;url =&gt; $stuff['url']);
+			$this-&gt;changed-&gt;url = $stuff['url'];
+		}
+		if(isset($stuff['title']) &amp;&amp; $stuff['title'] != $this-&gt;original-&gt;title){
+			$changes['title'] = array($this-&gt;original-&gt;title =&gt; $stuff['title']);
+			$this-&gt;changed-&gt;title = $stuff['title'];
+		}
+		if(isset($stuff['description']) &amp;&amp; $stuff['description'] != $this-&gt;original-&gt;description){
+			$changes['description'] = array($this-&gt;original-&gt;description =&gt; $stuff['description']);
+			$this-&gt;changed-&gt;description = $stuff['description'];
+		}
+		if(isset($stuff['real_version']) &amp;&amp; $stuff['real_version'] != $this-&gt;original-&gt;real_version){
+			$changes['real_version'] = array($this-&gt;original-&gt;real_version =&gt; $stuff['real_version']);
+			$this-&gt;changed-&gt;real_version = $stuff['real_version'];
+		}
+		if(isset($stuff['status']) &amp;&amp; $stuff['status'] != $this-&gt;original-&gt;status){
+			$changes['status'] = array($this-&gt;original-&gt;status =&gt; $stuff['status']);
+			$this-&gt;changed-&gt;status = $stuff['status'];
+		}
+		$this-&gt;changed-&gt;version++;
+		$this-&gt;changed-&gt;latest_version = $this-&gt;changed-&gt;version;
+		//opr($changes);
+		return $changes;
+	}
+	
+	function validateCommand($obj, $in_embedded = false){
+		foreach($obj as $p =&gt; $v){
+			$pv = new LDPropertyValue($v, $this-&gt;cwurl);
+			if($pv-&gt;illegal()) return $this-&gt;failure_result(&quot;Update failed validation: &quot;.$pv-&gt;errmsg, $pv-&gt;errcode);
+		}
+		return true;
+	}
+	
+
+	function getLDForm(){
+		return $this-&gt;changed-&gt;store(true);
+	}
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

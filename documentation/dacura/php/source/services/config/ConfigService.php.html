@@ -1,0 +1,118 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/*
+ * Config Service - provides access to updating / editing / viewing users and roles, etc.
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 30/01/2015
+ * Licence: GPL v2
+ */
+
+include_once(&quot;ConfigDacuraServer.php&quot;);
+
+class ConfigService extends DacuraService {
+	var $protected_screens = array(&quot;view&quot; =&gt; array(&quot;admin&quot;));
+	var $default_screen = &quot;view&quot;;
+	var $title = &quot;Configuration Management&quot;;
+	
+	function getScreenForAC(&amp;$dacura_server){
+		return &quot;view&quot;;
+	}
+	
+	function getScreenForCall(){
+		if($this-&gt;getCollectionID() == &quot;all&quot;){
+			return &quot;system&quot;;
+		}
+		return &quot;collection&quot;;
+	}
+	
+	function getCollectionConfigVals(&amp;$form){
+		$cid = $this-&gt;getCollectionID();
+		$form[&quot;collection_url&quot;]['value'] = $this-&gt;getSystemSetting(&quot;install_url&quot;).$cid;
+		$form[&quot;collection_path&quot;]['value'] = $this-&gt;getSystemSetting(&quot;path_to_collections&quot;).$cid;
+		$form[ &quot;instance_idbase&quot;]['value'] = $this-&gt;get_service_url(&quot;candidate&quot;);
+		$form[&quot;graph_idbase&quot;]['value'] = $this-&gt;get_service_url(&quot;schema&quot;);
+		$form[&quot;dqs_url&quot;]['value'] = $this-&gt;getSystemSetting(&quot;dqs_url&quot;);
+	}
+
+	function getParamsForScreen($screen, &amp;$dacura_server){
+		$params = array();
+		$u = $dacura_server-&gt;getUser();
+		$params['image'] = $this-&gt;furl(&quot;image&quot;, &quot;buttons/config.png&quot;);
+		$params['dt'] = true;
+		if($screen == &quot;system&quot;){
+			$params['sysconfig_fields'] = $dacura_server-&gt;getSysconfigFields();//$this-&gt;dacura_forms[&quot;sys&quot;];
+			$params['service_tables'] = $dacura_server-&gt;getServiceConfigTables();//$this-&gt;dacura_forms[&quot;sys&quot;];
+			$params['create_collection_fields'] = $this-&gt;sform(&quot;ccf&quot;);
+			$params['dacura_table_settings'] = $this-&gt;getDatatableSetting(&quot;collections&quot;);
+			$params['log_table_settings'] = $this-&gt;getDatatableSetting(&quot;logs&quot;);
+			$params[&quot;title&quot;] = &quot;Configuration Management Tool&quot;;
+			$params[&quot;subtitle&quot;] = &quot;Manage the configuration of the collections on this server&quot;;				
+			$params['subscreens'] = array(&quot;system-configuration&quot;, &quot;list-collections&quot;, &quot;add-collection&quot;, &quot;view-logs&quot;);
+		}
+		else {
+			$params[&quot;cid&quot;] = $this-&gt;cid();
+			$params['update_collection_fields'] =  $this-&gt;sform(&quot;ucf&quot;);
+			$cdf = $this-&gt;sform(&quot;cdf&quot;);
+			$this-&gt;getCollectionConfigVals($cdf);//$cdf['']
+			$params['cconfig_fields'] =  array_values($cdf);
+			//opr($params['cconfig_fields']);
+			$params['settings_intro_msg'] = $this-&gt;smsg(&quot;settings_intro&quot;);
+			if($u-&gt;rolesSpanCollections()){
+				$params['topbreadcrumb'] = &quot;System Configuration&quot;;
+				$params[&quot;breadcrumbs&quot;] = array(array(), array());
+			}
+			$params['collectionbreadcrumb'] = &quot;configuration&quot;;
+			$col = $dacura_server-&gt;getCollection();
+			$params[&quot;title&quot;] = $col-&gt;name.&quot; settings&quot;;
+			$params[&quot;subtitle&quot;] = &quot;Manage the settings of the &quot;.$col-&gt;name . &quot; collection&quot;;
+			$params['subscreens'] = array(&quot;collection-settings&quot;, &quot;colconfig&quot;);				
+		}		
+		return $params;
+	}
+
+}</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

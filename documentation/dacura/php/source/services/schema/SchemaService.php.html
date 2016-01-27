@@ -1,0 +1,259 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+include_once(&quot;SchemaDacuraServer.php&quot;);
+
+class SchemaService extends LdService {
+	
+	var $default_screen = &quot;view&quot;;
+	var $protected_screens = array(&quot;view&quot; =&gt; array(&quot;architect&quot;,&quot;any&quot;));
+	//var $public_screens = array(&quot;test&quot;);
+	var $dqs_options = array(
+			&quot;classCycles&quot; =&gt; array(
+					&quot;title&quot; =&gt; &quot;Class Cycle&quot;, 
+					&quot;default&quot; =&gt; &quot;on&quot;,
+					&quot;explanation&quot; =&gt; &quot;A cycle in the class inheritance hierarchy.&quot;, 
+					&quot;category&quot; =&gt; &quot;class&quot;, 
+					&quot;type&quot; =&gt; array(&quot;schema&quot;, &quot;schema-instance&quot;)
+			),
+			&quot;duplicateClasses&quot; =&gt; array(
+					&quot;default&quot; =&gt; &quot;on&quot;,
+					&quot;title&quot; =&gt; &quot;Duplicate Classes&quot;, 
+					&quot;explanation&quot; =&gt; &quot;Two classes with the same ID in the schema&quot;,
+					&quot;category&quot; =&gt; &quot;class&quot;, 
+					&quot;type&quot; =&gt; array(&quot;schema&quot;, &quot;schema-instance&quot;)
+			),
+			&quot;orphanSubClasses&quot; =&gt; array(
+					&quot;default&quot; =&gt; &quot;on&quot;,
+					&quot;title&quot; =&gt; &quot;Orphan Class&quot;, 
+					&quot;explanation&quot; =&gt; &quot;A class derived from a non-existant class&quot;,
+					&quot;category&quot; =&gt; &quot;class&quot;, 
+					&quot;type&quot; =&gt; array(&quot;schema&quot;, &quot;schema-instance&quot;)
+			),
+			&quot;orphanSubProperties&quot; =&gt; array(
+					&quot;default&quot; =&gt; &quot;on&quot;,
+					&quot;title&quot; =&gt; &quot;Orphan Sub-property&quot;,
+					&quot;explanation&quot; =&gt; &quot;A property derived from a non-existant property&quot;,
+					&quot;category&quot; =&gt; &quot;property&quot;,
+					&quot;type&quot; =&gt; array(&quot;schema&quot;, &quot;schema-instance&quot;)						
+			),
+			&quot;propertyCycles&quot; =&gt; array(
+					&quot;default&quot; =&gt; &quot;on&quot;,
+					&quot;title&quot; =&gt; &quot;Property Cycle&quot;,
+					&quot;explanation&quot; =&gt; &quot;A cycle in the property inheritance hierarchy&quot;,
+					&quot;category&quot; =&gt; &quot;property&quot;,
+					&quot;type&quot; =&gt; array(&quot;schema&quot;, &quot;schema-instance&quot;)						
+			),
+			&quot;duplicateProperties&quot; =&gt; array(
+					&quot;title&quot; =&gt; &quot;Duplicate Properties&quot;, 
+					&quot;explanation&quot; =&gt; &quot;Two properties with the same ID in the schema&quot;,
+					&quot;category&quot; =&gt; &quot;property&quot;, 
+					&quot;type&quot; =&gt; array(&quot;schema&quot;, &quot;schema-instance&quot;)
+			),
+			&quot;orphanProperties&quot; =&gt; array(
+					&quot;default&quot; =&gt; &quot;on&quot;,
+					&quot;title&quot; =&gt; &quot;Orphan Property&quot;, 
+					&quot;explanation&quot; =&gt; &quot;A property that has been used without being defined in the schema&quot;,
+					&quot;category&quot; =&gt; &quot;property&quot;, 
+					&quot;type&quot; =&gt; array(&quot;schema-instance&quot;)
+			),
+			&quot;blankNode&quot; =&gt; array(
+					&quot;title&quot; =&gt; &quot;Blank Node&quot;, 
+					&quot;explanation&quot; =&gt; &quot;An anonymous node in the graph&quot;,
+					&quot;category&quot; =&gt; &quot;general&quot;, 
+					&quot;type&quot; =&gt; array(&quot;schema-instance&quot;)
+			),
+			&quot;schemaBlankNodes&quot; =&gt; array(
+					&quot;title&quot; =&gt; &quot;Blank Node&quot;, 
+					&quot;explanation&quot; =&gt; &quot;An anonymous node in the schema&quot;,
+					&quot;category&quot; =&gt; &quot;general&quot;, 
+					&quot;type&quot; =&gt; array(&quot;schema&quot;)
+			),
+			&quot;invalidRange&quot; =&gt; array(
+					&quot;default&quot; =&gt; &quot;on&quot;,
+					&quot;title&quot; =&gt; &quot;Invalid Range&quot;,
+					&quot;explanation&quot; =&gt; &quot;An invalid range specified for a property&quot;,
+					&quot;category&quot; =&gt; &quot;general&quot;, 
+					&quot;type&quot; =&gt; array(&quot;schema&quot;, &quot;schema-instance&quot;)
+			),  
+			&quot;invalidDomain&quot; =&gt; array(
+					&quot;default&quot; =&gt; &quot;on&quot;,
+					&quot;title&quot; =&gt; &quot;Invalid Domain&quot;,
+					&quot;explanation&quot; =&gt; &quot;An invalid domain specified for a property&quot;,
+					&quot;category&quot; =&gt; &quot;general&quot;, 
+					&quot;type&quot; =&gt; array(&quot;schema&quot;, &quot;schema-instance&quot;)
+			),  
+			&quot;invalidInstanceDomain&quot; =&gt; array(
+					&quot;default&quot; =&gt; &quot;on&quot;,
+					&quot;title&quot; =&gt; &quot;Invalid Domain&quot;,
+					&quot;explanation&quot; =&gt; &quot;Instance data using an invalid range for a property&quot;,
+					&quot;category&quot; =&gt; &quot;general&quot;, 
+					&quot;type&quot; =&gt; array(&quot;instance&quot;)
+			),  
+			&quot;invalidInstanceRange&quot; =&gt; array(
+					&quot;default&quot; =&gt; &quot;on&quot;,
+					&quot;title&quot; =&gt; &quot;Invalid Range&quot;,
+					&quot;explanation&quot; =&gt; &quot;Instance data using an invalid range for a property&quot;,
+					&quot;category&quot; =&gt; &quot;general&quot;, 
+					&quot;type&quot; =&gt; array(&quot;instance&quot;)
+			),  
+			&quot;orphanInstance&quot; =&gt; array(
+					&quot;default&quot; =&gt; &quot;on&quot;,
+					&quot;title&quot; =&gt; &quot;Orphan Instance&quot;,
+					&quot;explanation&quot; =&gt; &quot;An instance of a class that does not exist in the schema&quot;,
+					&quot;category&quot; =&gt; &quot;general&quot;, 
+					&quot;type&quot; =&gt; array(&quot;instance&quot;)
+			)			
+	);
+	
+	function init(){
+		parent::init();
+		$ldscript = $this-&gt;get_service_script_url(&quot;dacura.ld.js&quot;, &quot;ld&quot;);
+		$this-&gt;included_scripts[] = $ldscript;		
+	}
+
+	function getScreenForCall(){
+		if($this-&gt;getCollectionID() == &quot;all&quot;){
+			if($this-&gt;screen &amp;&amp; $this-&gt;screen != $this-&gt;default_screen){
+				return &quot;ontology&quot;;
+			}
+			else {
+				return &quot;system&quot;;
+			}
+		}
+		else {
+			if($this-&gt;screen &amp;&amp; $this-&gt;screen != $this-&gt;default_screen){
+				return &quot;graph&quot;;
+			}
+			else {
+				return &quot;schema&quot;;
+			}		
+		}
+	}
+	
+	function getScreenForAC(){
+		return &quot;view&quot;;
+	}
+
+	function getParamsForScreen($screen, &amp;$dacura_server){
+		$params = array();
+		$params['ontology_datatable'] = $this-&gt;getDatatableSetting(&quot;ontology&quot;);
+		$params['dt'] = true;
+		$params[&quot;image&quot;] = $this-&gt;furl(&quot;image&quot;, &quot;buttons/schema.png&quot;);
+		if($screen == &quot;ontology&quot;){
+			$params['topbreadcrumb'] = &quot;All Ontologies&quot;;
+			$params[&quot;title&quot;] = &quot;Ontology Viewer&quot;;
+		}
+		elseif($screen == &quot;graph&quot; ){
+			$params[&quot;title&quot;] = &quot;Named Graph Schema Management&quot;;
+			$params['collectionbreadcrumb'] = &quot; named graph management&quot;;
+			
+		}
+		elseif($screen == &quot;schema&quot;){
+			$params[&quot;entity_type&quot;] = &quot;graph&quot;;							
+			$params[&quot;title&quot;] = &quot;Schema Management&quot;;
+			$params[&quot;subtitle&quot;] = &quot;Manage the graphs where instance data is stored&quot;;
+		}
+		elseif($screen == &quot;system&quot;){
+			$params[&quot;title&quot;] = &quot;Manage Imported Ontologies&quot;;
+			$params[&quot;entity_type&quot;] = &quot;ontology&quot;;
+				
+		}
+		if($screen == &quot;graph&quot; or $screen == &quot;ontology&quot;){
+			$params[&quot;entity_type&quot;] = $screen;				
+			$params[&quot;breadcrumbs&quot;] = array(array(), array());
+			$params['args'] = $this-&gt;getOptionalArgs();
+			$params['id'] = $this-&gt;screen;	
+			$params['ontologies'] = $dacura_server-&gt;loadImportedOntologyList();
+		}
+		return $params;
+	}
+	
+	function getDQSOptions($type){
+		$options = array();
+		foreach($this-&gt;dqs_options as $id =&gt; $props){
+			if(in_array($type, $props['type'])){
+				$options[$id] = $props;
+			}
+		}
+		return $options;	
+	}
+	
+	function getDQSCheckboxes($type){
+		$boxes = array();
+		$options = $this-&gt;getDQSOptions($type);
+		foreach($options as $id =&gt; $props){
+			if(!isset($boxes[$props['category']])){
+				$boxes[$props['category']] = array();
+			}
+			$checked = (isset($props['default']) &amp;&amp; $props['default'] == &quot;on&quot;) ? &quot; checked&quot; : &quot;&quot;;
+			$html = &quot;&lt;input type='checkbox' class='dqsoption' id='$id' value='$id' title='&quot; . $props['explanation'] . &quot;' $checked&gt;&lt;label for='$id'&gt;&quot;.$props['title'].&quot;&lt;/label&gt;&quot;;
+			$boxes[$props['category']][] = $html;
+		}
+		$html = &quot;&quot;;
+		foreach($boxes as $id =&gt; $entries){
+			$html .= &quot;&lt;div class='ontology-type ontology-$id'&gt;&lt;div class='dqs-category-title'&gt;&quot;.ucfirst($id).&quot; Constraints&lt;/div&gt;&quot;.implode(&quot; &quot;, $entries).&quot;&lt;/div&gt;&quot;;
+		}
+		return $html;
+	}
+	
+	function getCheckingOptions(){
+		$opts = array(&quot;dqs&quot; =&gt; &quot;Dacura Quality Service&quot;, &quot;simple&quot; =&gt; &quot;Simple Triplestore (Testing)&quot;, &quot;none&quot; =&gt; &quot;Not Published to Graph&quot;);
+		$html = &quot;&quot;;
+		foreach($opts as $o =&gt; $v){
+			$html .= &quot;&lt;option value='$o'&gt;$v&lt;/option&gt;&quot;;
+		}
+		return $html;
+	}
+	
+
+	
+	
+	
+	
+	
+	
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

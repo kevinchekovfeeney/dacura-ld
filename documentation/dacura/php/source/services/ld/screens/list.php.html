@@ -1,0 +1,123 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;div class='dacura-screen' id='ld-tool-home'&gt;
+	&lt;div class='dacura-subscreen ld-list' id=&quot;entity-list&quot; title=&quot;Linked Data Entities&quot;&gt;
+		&lt;table id=&quot;ld_table&quot; class=&quot;dcdt display dacura-api-listing&quot;&gt;
+			&lt;thead&gt;
+			&lt;tr&gt;
+				&lt;th id='lde-id'&gt;ID&lt;/th&gt;
+				&lt;th id='lde-type'&gt;Type&lt;/th&gt;
+				&lt;th id='lde-collectionid'&gt;Collection&lt;/th&gt;
+				&lt;th id='lde-status'&gt;Status&lt;/th&gt;
+				&lt;th id='lde-version'&gt;Version&lt;/th&gt;
+				&lt;th id='dfn-getPrintableCreated'&gt;Created&lt;/th&gt;
+				&lt;th id='lde-createtime'&gt;Sortable Created&lt;/th&gt;
+				&lt;th id='dfn-getPrintableModified'&gt;Modified&lt;/th&gt;
+				&lt;th id='lde-modtime'&gt;Sortable Modified&lt;/th&gt;
+			&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	&lt;div class='dacura-subscreen ld-list' id=&quot;update-list&quot; title=&quot;Updates to Linked Data Entities&quot;&gt;
+		&lt;table id=&quot;update_table&quot; class=&quot;dcdt dacura-api-listing display&quot;&gt;
+			&lt;thead&gt;
+			&lt;tr&gt;
+				&lt;th id='ldu-eurid'&gt;ID&lt;/th&gt;
+				&lt;th id='ldu-targetid'&gt;Target&lt;/th&gt;
+				&lt;th id='ldu-type'&gt;Type&lt;/th&gt;
+				&lt;th id='ldu-collectionid'&gt;Collection&lt;/th&gt;
+				&lt;th id='ldu-status'&gt;Status&lt;/th&gt;
+				&lt;th id='ldu-from_version'&gt;From Version&lt;/th&gt;
+				&lt;th id='ldu-to_version'&gt;To Version&lt;/th&gt;
+				&lt;th id='dfu-getPrintableCreated'&gt;Created&lt;/th&gt;
+				&lt;th id='ldu-createtime'&gt;Sortable Created&lt;/th&gt;
+				&lt;th id='dfu-getPrintableModified'&gt;Modified&lt;/th&gt;
+				&lt;th id='ldu-modtime'&gt;Sortable Modified&lt;/th&gt;
+			&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	&lt;div class='dacura-subscreen' id=&quot;create-entity&quot; title=&quot;Create New Linked Data Entities&quot;&gt;
+		&lt;?php echo $service-&gt;showLDResultbox($params);?&gt;
+		&lt;?php echo $service-&gt;showLDEditor($params);?&gt;
+		&lt;P&gt;Why oh why&lt;/P&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+&lt;script&gt;
+$(function() {
+	dacura.system.init({
+		&quot;mode&quot;: &quot;tool&quot;, 
+		&quot;tabbed&quot;: &quot;ld-tool-home&quot;,
+		&quot;listings&quot;: {
+			&quot;ld_table&quot;: {
+				&quot;screen&quot;: &quot;entity-list&quot;, 
+				&quot;fetch&quot;: dacura.ld.fetchentitylist,
+				&quot;settings&quot;: &lt;?=$params['entity_datatable']?&gt;
+			},
+			&quot;update_table&quot;: {
+				&quot;screen&quot;: &quot;update-list&quot;, 
+				&quot;fetch&quot;: dacura.ld.fetchupdatelist,
+				&quot;settings&quot;: &lt;?=$params['update_datatable']?&gt;				
+			}
+		}, 
+		});
+	dacura.editor.init({&quot;editorheight&quot;: &quot;300px&quot;, &quot;targets&quot;: {resultbox: &quot;#create-entity-msgs&quot;, busybox: &quot;#create-entity&quot;}});
+	dacura.editor.load(false, false, dacura.ld.create);
+
+});
+
+function getPrintableCreated(obj){
+	return timeConverter(obj.createtime);
+}
+
+function getPrintableModified(obj){
+	return timeConverter(obj.modtime);
+}
+
+&lt;/script&gt;
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

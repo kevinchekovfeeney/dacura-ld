@@ -1,0 +1,732 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/**
+ * Class providing access to information about users of the Dacura System
+ *
+ * * Creation Date: 20/11/2014
+ * @author Chekov
+ * @license GPL v2
+ */
+class UserManager extends DacuraController {
+	/** @var string the directory in which user sessions are kept */
+	var $user_dir;
+	/** @var DBManager a database manager object for accessing database */
+	var $dbman;
+	/** @var string the name of the session user (can be changed in settings to support multiple side-by-side installs of dacura */
+	var $uservar; 
+	
+	/**
+	 * Object constructor
+	 * @param DacuraService $service
+	 * @param DBManager $dbman
+	 */
+	function __construct(DacuraService &amp;$service, DBManager &amp;$dbman){
+		parent::__construct($service);
+		$this-&gt;user_var = $this-&gt;getSystemSetting('dacurauser');
+		$this-&gt;dbman = $dbman;
+	}
+	
+	/**
+	 * Is the proposed password valid according to the password rules
+	 * 
+	 * Currently this will accept any password &gt;= 6 characters long
+	 * We probably need to make this stronger...
+	 * @param string $pword
+	 * @return boolean true indicates that the chosen password is ok
+	 */
+	function isValidPassword($pword){
+		return strlen($pword) &gt; 5;
+	}
+	
+	/**
+	 * Fetch a user object 
+	 * @param number $n the id of the user to load (default is to load currently logged in user)
+	 * @return boolean|DacuraUser the user object or false on failure
+	 */
+	function getUser($n = &quot;&quot;){
+		if($n === &quot;&quot; || $n === 0 || $n === &quot;0&quot;) {
+			if (isset($_SESSION[$this-&gt;user_var])) {
+				$u =&amp; $_SESSION[$this-&gt;user_var];
+				return $u;
+			}
+			else {
+				return $this-&gt;failure_result(&quot;not logged in&quot;, 401);
+			}
+		}
+		else {
+			return $this-&gt;loadUser($n);
+		}
+	}
+	
+	/**
+	 * Loads the user with the given id
+	 * @param number $id the user id
+	 * @return DacuraUser|boolean
+	 */
+	function loadUser($id){
+		if($u = $this-&gt;dbman-&gt;loadUser($id)){
+			return $u;
+		}
+		else {
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+	}
+	
+	/**
+	 * Loads the user with the given email
+	 * @param string $email email address
+	 * @return DacuraUser|boolean
+	 */
+	function loadUserByEmail($email){
+		if($u = $this-&gt;dbman-&gt;loadUserByEmail($email)){
+			return $u;
+		}
+		else {
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+	}
+	
+	/**
+	 * Returns a list of all users on the system
+	 * @return array&lt;id:DacuraUser&gt; an array of users indexed by their ids
+	 */
+	function getUsers(){
+		if($u = $this-&gt;dbman-&gt;loadUsers()){
+			return $u;
+		}
+		else {
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+	}
+			
+	/**
+	 * Save user to storage
+	 * @param DacuraUser $u user object to update
+	 * @return DacuraUser|boolean updated users object
+	 */
+	function saveUser($u){
+		if($this-&gt;dbman-&gt;saveUser($u)){
+			//if the user being updated is the currently logged in user, update the user object in the session 
+			if(isset($_SESSION[$this-&gt;user_var]) &amp;&amp; $_SESSION[$this-&gt;user_var]-&gt;id == $u-&gt;id){
+				$this-&gt;refreshCurrentUser();
+			}
+			return $u;
+		}
+		return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+	}
+		
+	/**
+	 * Adds new user to Dacura
+	 * @param string $email user's email address
+	 * @param string $n user's handle
+	 * @param string $p user's password
+	 * @param string $status users status (@see:DacuraObject::valid_statuses)
+	 * @param array $prof profile name-value configuration array for user 
+	 * @return boolean|DacuraUser added user object
+	 */
+	function addUser($email, $n, $p, $status, $prof = false){
+		if(!$email or !$p){
+			return $this-&gt;failure_result(&quot;Attempt to add user with no email and password&quot;, 400);
+		}
+		if(!isValidEmail($email)){
+			return $this-&gt;failure_result(&quot;Invalid email address: you must enter a working email address to allow communication with the user.&quot;, 401);
+		}
+		if(!$this-&gt;isValidPassword($p)){
+			return $this-&gt;failure_result(&quot;Password is invalid: passwords must be at least six characters long&quot;, 400);
+		}
+		!$prof &amp;&amp; $prof = '{}';
+		$nu = $this-&gt;dbman-&gt;addUser($email, $n, $p, $status, $prof);
+		if($nu){
+			$nu-&gt;recordAction(&quot;system&quot;, &quot;all&quot;, &quot;created&quot;, true);				
+			return $nu;
+		}
+		return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+	}
+	
+	/**
+	 * Delete user with specified ID
+	 * @param number $id user id to be deleted
+	 * @return boolean|DacuraUser deleted user object or false if failure
+	 */
+	function deleteUser($id){
+		$du = $this-&gt;loadUser($id);
+		if(!$du){
+			return false;
+		}
+		$du-&gt;setStatus(&quot;deleted&quot;);
+		$du-&gt;recordAction(&quot;system&quot;, &quot;all&quot;, &quot;deleted&quot;, true);
+		return $this-&gt;saveUser($du);
+	}
+	
+	/**
+	 * Called when the state of the user has changed on disk and we want to refresh the session user
+	 * @return DacuraUser|boolean the refreshed user
+	 */
+	function refreshCurrentUser(){
+		$x = isset($_SESSION[$this-&gt;user_var]) ? $_SESSION[$this-&gt;user_var]-&gt;id : false;
+		if($x){
+			$u = $this-&gt;loadUser($x);
+			if($u) {
+				$_SESSION[$this-&gt;user_var] =&amp; $u;
+				return $u;
+			}
+			return false;
+		}
+		return $this-&gt;failure_result(&quot;Failed to load existing user from session!&quot;, 500);
+	}
+	
+	/**
+	 * Switches the current user to become the user with the passed id
+	 * 
+	 * This is only used for testing purposes to facilitate switching between accounts and is a huge security hole!
+	 * It should be turned off in the users service api before deployment
+	 * @param number $id the id of the user to switch to
+	 * @return DacuraUser|boolean
+	 */
+	function switchToUser($id){
+		if($this-&gt;isLoggedIn()){
+			$this-&gt;logout();
+		}
+		$u = $this-&gt;loadUser($id);
+		if($u) {
+			$_SESSION[$this-&gt;user_var] =&amp; $u;
+			return $u;
+		}
+		return false;
+	}
+
+	/* Methods for managing user roles*/
+	
+	/**
+	 * Fetch the role object with id $rid for user $uid
+	 * 
+	 * @param number $uid the id of the user who owns the role
+	 * @param number $rid the id of the role
+	 * @return UserRole|boolean the role object of false if it does not exist
+	 */
+	function getUserRole($uid, $rid){
+		$u = $this-&gt;getUser($uid);
+		foreach($u-&gt;roles as $role){
+			if($role-&gt;id == $rid){
+				return $role;
+			}
+		}
+		return $this-&gt;failure_result('User $uid Role $rid did not exist' . $e-&gt;getMessage(), 500);
+	}
+	
+	/**
+	 * Deletes the specified role from the specified user
+	 * @param number $uid User ID
+	 * @param number $rid Role ID
+	 * @return boolean|DacuraUser update user object
+	 */
+	function deleteUserRole($uid, $rid){
+		$u = $this-&gt;getUser($uid);
+		if(!$u){
+			return $this-&gt;failure_result(&quot;Could not delete role $rid for user $uid.&quot; . &quot; &quot; . $this-&gt;errmsg, $this-&gt;errcode);
+		}
+		foreach($u-&gt;roles as $i =&gt; $role){
+			if($role-&gt;id == $rid){
+				if(!$this-&gt;dbman-&gt;deleteRole($rid)){
+					return $this-&gt;failure_result(&quot;Failed to delete $rid role for $uid&quot;, 500);
+				}
+				unset($u-&gt;roles[$i]);
+				$u-&gt;recordAction(&quot;system&quot;, $role-&gt;cid(), &quot;deleted role &quot;.$role-&gt;role(), true);		
+				return $u;
+			}
+		}
+		return $this-&gt;failure_result('User $uid Role $rid did not exist', 500);
+	}
+	
+	/**
+	 * Creates a new role for the specified user
+	 * @param number $uid user id
+	 * @param string $cid collection id
+	 * @param string $role role name (@see UserRole::dacura_roles)
+	 * @return boolean|DacuraUser the user object with the role added
+	 */
+	function createUserRole($uid, $cid, $role){
+		$u = $this-&gt;getUser($uid);
+		if($u){
+			$u-&gt;addRole(new UserRole(0, $cid, $role));
+			if(!$this-&gt;dbman-&gt;updateUserRoles($u)){
+				return $this-&gt;failure_result(&quot;Failed to create new roles for $id collection &quot;.$this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+			}
+			$roles = $this-&gt;dbman-&gt;loadUserRoles($uid);
+			if($roles === false){ return false; }
+			$u-&gt;roles = $roles;	
+			$u-&gt;recordAction(&quot;system&quot;, $cid, &quot;created role &quot;.$role);
+			return $u;
+		}
+		return $this-&gt;failure_result(&quot;Could not create role for user $uid.&quot; . &quot; &quot; . $this-&gt;errmsg, $this-&gt;errcode);
+	}	
+	
+	/**
+	 * returns an array of users that appear (i.e. have a role) in the given collection
+	 * @param string $cid collection id
+	 * @return array&lt;DacuraUser&gt; array of user objects
+	 */
+	function getUsersInContext($cid){
+		//first figure out which cids to use for the given active user...
+		$cids = array();
+		if($cid == &quot;all&quot;){
+			return $this-&gt;getUsers();
+		}
+		if(!($users  = $this-&gt;dbman-&gt;getUsersInContext(array($cid), array()))){
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+		return $users;
+	}
+	
+	/**
+	 * Returns the list of roles that a use may delegate in a given context
+	 * 
+	 * Only admin and god can give out access roles.
+	 * All users can give out nobody roles
+	 * 
+	 * @param string $cid collection id
+	 * @param number $uid user id
+	 * @return string[] array of roles availbe to user in the context
+	 */
+	function getAvailableRoles($cid = &quot;all&quot;, $uid = 0){
+		$u = $this-&gt;getUser($uid);
+		if(!$u){
+			return false;
+		}
+		$top_role = &quot;nobody&quot;;
+		$covered_role = new UserRole(0, $cid, &quot;nobody&quot;);
+		$all_roles = UserRole::$dacura_roles;
+		foreach($u-&gt;roles as $i =&gt; $r){
+			if($r-&gt;coversRole($covered_role)){
+				if($r-&gt;role == &quot;god&quot;){
+					return $all_roles;
+				}
+				elseif($r-&gt;role == &quot;admin&quot;){
+					$top_role = &quot;admin&quot;;
+				}
+				elseif($r-&gt;role != &quot;nobody&quot; &amp;&amp; $top_role != &quot;admin&quot;){
+					$top_role = &quot;user&quot;;
+				}
+			}
+		}
+		if($top_role == 'nobody') return array();
+		if($top_role == 'user') return array(&quot;nobody&quot; =&gt; $all_roles['nobody']);
+		if($top_role == 'admin'){
+			unset($all_roles['god']);
+			return $all_roles;
+		}
+	}
+	
+	/**
+	 * Loads a users session history from the user session directory 
+	 * @param DacuraUser $u the relevant user object
+	 * @return boolean true is successful
+	 */
+	function loadUserHistory(DacuraUser &amp;$u){
+		if ($handle = opendir($u-&gt;session_dump)) {
+			while (false !== ($entry = readdir($handle))) {
+				$ext = substr($entry, strrpos($entry, '.') +1);
+				if ($ext == &quot;session&quot;){
+					$sess_id = substr($entry, 0, strrpos($entry, '.'));
+					$fhandle = fopen($u-&gt;session_dump.$entry, &quot;r&quot;);
+					if ($fhandle) {
+						while (($line = fgets($fhandle)) !== false) {
+							$ds = new DacuraSession($sess_id);
+							if($ds-&gt;loadFromJSON($line)){
+								$one_history = $ds-&gt;summary();
+								$one_history['service'] = $sess_id;
+								$one_history['events'] = $ds-&gt;events;
+								$u-&gt;history[] = $one_history;
+							}
+							else {
+								$this-&gt;logEvent(&quot;notice&quot;, 500, &quot;Failed to parse session dump [$line]&quot;);
+							}
+						}
+						fclose($fhandle);
+					}
+					else {
+						$this-&gt;logEvent(&quot;notice&quot;, 500, &quot;Failed to open file $entry in $this-&gt;session_dump&quot;);
+					}
+				}
+				else {
+					if($entry != &quot;.&quot; &amp;&amp; $entry != &quot;..&quot;){
+						$this-&gt;logEvent(&quot;notice&quot;, 500, &quot;Non session file $entry in session directory ($ext)&quot;);
+					}
+				}
+			}
+			closedir($handle);
+			return true;
+		}
+		else {
+			return $this-&gt;failure_result(&quot;Failed to open user session directory $u-&gt;session_dump&quot;, 500, &quot;warning&quot;);
+		}
+	}
+	
+	/* Login / registration / invitation / lost password functions */	
+	
+	/**
+	 * Login to the system
+	 * @param string $email email address
+	 * @param string $p password
+	 * @param string $cid collection id through which the login is being accessed
+	 * @return DacuraUser on success
+	 */
+	function login($email, $p, $cid){
+		if($this-&gt;isLoggedIn()){
+			return $this-&gt;failure_result(&quot;user is already logged in - cannot log in again &quot;, 401);
+		}
+		else {
+			$u = $this-&gt;dbman-&gt;testLogin($email, $p);
+			if($u){
+				$_SESSION[$this-&gt;user_var]=&amp; $u;
+				$u-&gt;recordAction(&quot;system&quot;, $cid, &quot;login&quot;);
+				return $u;
+			}
+			else {
+				return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+			}
+		}
+	}
+	
+	/**
+	 * Is the current user logged in?
+	 * @return boolean true if user is logged in
+	 */
+	function isLoggedIn(){
+		return (isset($_SESSION[$this-&gt;user_var]) &amp;&amp; $_SESSION[$this-&gt;user_var]);
+	}
+	
+	/**
+	 * Logout of the system
+	 */
+	function logout(){
+		$u = $this-&gt;getUser();
+		//opr($u);
+		$u-&gt;endLiveSessions(&quot;logout&quot;);
+		unset($_SESSION[$this-&gt;user_var]);
+	}
+
+	/**
+	 * Register a new user with the system
+	 * @param string $email email address
+	 * @param string $p password
+	 * @param string $cid collection id through which the registration is being accessed
+	 * @return string|boolean if successful, returns a confirm code for the user to use to complete registration
+	 */
+	function register($email, $p, $cid){
+		//if the user is pending, send them a fresh notification...
+		$eu = $this-&gt;loadUserbyEmail($email);
+		if($eu){
+			if($eu-&gt;status == &quot;pending&quot;){
+				if($code = $this-&gt;dbman-&gt;getUserConfirmCode($eu-&gt;id, &quot;register&quot;)){
+					$eu-&gt;recordAction(&quot;system&quot;, $cid, &quot;reregister&quot;, true);
+					return $code;
+				}
+				elseif($code = $this-&gt;dbman-&gt;generateUserConfirmCode($eu-&gt;id, &quot;register&quot;)){
+					$eu-&gt;recordAction(&quot;system&quot;, $cid, &quot;regenerate_confirm&quot;, true);
+					return $code;
+				}
+				else {
+					return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+				}
+			}
+			else {
+				return $this-&gt;failure_result(&quot;User with email $email already exists on the system (status: $eu-&gt;status) - cannot register&quot;, 401);
+			}
+		}
+		else {
+			if(!isValidEmail($email)){
+				return $this-&gt;failure_result(&quot;Invalid email address: you must enter a working email address to receive account confirmation&quot;, 401);				
+			}
+			if(!$this-&gt;isValidPassword($p)){
+				return $this-&gt;failure_result(&quot;Password is invalid: passwords must be at least six characters long&quot;, 400);
+			}
+			$nu = $this-&gt;addUser($email, &quot;&quot;, $p, &quot;pending&quot;);
+			if($nu){
+				if($code = $this-&gt;dbman-&gt;generateUserConfirmCode($nu-&gt;id, &quot;register&quot;)){
+					$nu-&gt;recordAction(&quot;system&quot;, $cid, &quot;register&quot;, true);
+					return $code;
+				}
+				else {
+					return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);				
+				}
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Called when a user clicks on a confirm registration email link with a code
+	 * @param string $code the confirm code
+	 * @return DacuraUser the confirmed user
+	 */
+	function confirmRegistration($code, $cid){
+		$uid = $this-&gt;dbman-&gt;getConfirmCodeUid($code, &quot;register&quot;);
+		if(!$uid){
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+		if(!($du = $this-&gt;loadUser($uid))){
+			return false;				
+		}
+		if(!$du-&gt;is_pending()){
+			return $this-&gt;failure_result(&quot;This confirmation code is no longer valid&quot;, 401);
+		}
+		$du-&gt;setStatus(&quot;accept&quot;);
+		$du-&gt;recordAction(&quot;system&quot;, $cid, &quot;confirm register&quot;, true);
+		if($this-&gt;saveUser($du)){
+			return $du;	
+		}
+		return false;		
+	}
+	
+	/**
+	 * Invite a user to a collection
+	 * @param string $email
+	 * @param string $role @see UserRole::dacura_roles
+	 * @param string $cid collection id
+	 * @return string|boolean if successful, returns a confirm code
+	 */
+	function invite($email, $role, $cid){
+		//if the user is pending, send them a fresh notification...
+		$eu = $this-&gt;loadUserbyEmail($email);
+		if($eu){
+			if($eu-&gt;status == &quot;pending&quot;){
+				$code = $this-&gt;dbman-&gt;getUserConfirmCode($eu-&gt;id, &quot;invite&quot;);
+				if($code){
+					$eu-&gt;recordAction(&quot;system&quot;, $cid, &quot;reissue invite&quot;, true);
+					return $code;
+				}
+				else {
+					$code = $this-&gt;dbman-&gt;generateUserConfirmCode($eu-&gt;id, &quot;invite&quot;);
+					if($code){
+						$eu-&gt;recordAction(&quot;system&quot;, $cid, &quot;regenerate invite&quot;, true);
+						return $code;
+					}
+					else {
+						return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+					}
+				}
+			}
+			else {
+				return $this-&gt;failure_result(&quot;User with email $email already exists on the system (status: $eu-&gt;status) - cannot register&quot;, 401);
+			}
+		}
+		else {
+			if(!isValidEmail($email)){
+				return $this-&gt;failure_result(&quot;Invalid email address: you must enter a working email address to receive account confirmation&quot;, 401);
+			}
+			//give them a randomly generated password - will need to change it when they accept the invite...
+			$nu = $this-&gt;addUser($email, &quot;&quot;, &quot;user&quot;. uniqid_base36(&quot;&quot;), &quot;pending&quot;);
+			if($nu){
+				$role = $this-&gt;createUserRole($nu-&gt;id, $cid, $role, 0);
+				if(!$role){
+					return false;
+				}
+				$code = $this-&gt;dbman-&gt;generateUserConfirmCode($nu-&gt;id, &quot;invite&quot;);
+				if($code){
+					$nu-&gt;recordAction(&quot;system&quot;, $cid, &quot;invite&quot;, true);
+					return $code;
+				}
+				else {
+					return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+				}
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Called when an already existing user that is not a member of the collection is invited to the collection
+	 * 
+	 * Gives them a role
+	 * @param string $email email address
+	 * @param string $role the role to be given to the user
+	 * @param string $cid the collection id
+	 * @return DacuraUser the invited user object
+	 */
+	function inviteToCollection($email, $role, $cid){
+		$eu = $this-&gt;loadUserbyEmail($email);
+		if(!$eu){
+			return $this-&gt;failure_result(&quot;user $email is unknown cannot be invited to collection&quot;, 404);
+		}
+		return $this-&gt;createUserRole($eu-&gt;id, $cid, $role, 0);
+		$eu-&gt;recordAction(&quot;system&quot;, $cid, &quot;invite to collection&quot;, true);
+	}
+	
+	/**
+	 * Called when a user clicks on a link with an invite confirmation code in it
+	 * @param string $code
+	 * @return DacuraUser the invited user object
+	 */
+	function confirmInvite($code, $cid){
+		if(!($uid = $this-&gt;dbman-&gt;getConfirmCodeUid($code, &quot;invite&quot;))){
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg .$uid . &quot; is the uid ($code)&quot;, $this-&gt;dbman-&gt;errcode);
+		}
+		if(!($du = $this-&gt;loadUser($uid))){
+			return false;
+		}
+		if($du-&gt;status != &quot;pending&quot;){
+			return $this-&gt;failure_result(&quot;This invitation code is no longer valid&quot;, 401);
+		}
+		if(!($rcid = $du-&gt;getRoleCollectionId())){
+			return $this-&gt;failure_result(&quot;This invitation code is invalid it is not associated with a role in any collection&quot;, 401);				
+		}
+		if($rcid != $cid &amp;&amp; $cid != &quot;all&quot;){
+			return $this-&gt;failure_result(&quot;Mismatch between the collection that issued the invitation and the confirmation url&quot;, 401);
+		}
+		$du-&gt;recordAction(&quot;system&quot;, $rcid, &quot;confirm invite&quot;, true);
+		return $du;
+	}
+	
+	/**
+	 * Updates the user's password
+	 * @param number $uid the user id
+	 * @param string $p password
+	 * @return boolean true on success
+	 */
+	function updatePassword($uid, $p){
+		if(!$this-&gt;isValidPassword($p)){
+			return $this-&gt;failure_result(&quot;Password is invalid: passwords must be at least six characters long&quot;, 400);
+		}
+		if($this-&gt;dbman-&gt;updatePassword($uid, $p)){
+			$u = $this-&gt;loadUser($uid);
+			if(!$u){
+				return false;
+			}
+			$u-&gt;recordAction(&quot;system&quot;, &quot;all&quot;, &quot;updated password&quot;, true);
+			return true;
+		}
+		return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+	}
+	
+	/**
+	 * Reset the user's password
+	 * @param number $uid user id
+	 * @param string $p password 
+	 * @param string $action the user action that triggered the reset: lost|invite
+	 * @return boolean true on success
+	 */
+	function resetPassword($uid, $p, $action){
+		if(!$this-&gt;isValidPassword($p)){
+			return $this-&gt;failure_result(&quot;Password is invalid: passwords must be at least six characters long&quot;, 400);
+		}
+		$u = $this-&gt;loadUser($uid);
+		if(!$u){
+			return false;
+		}
+		if($action == &quot;invite&quot; &amp;&amp; $u-&gt;status() != 'pending'){
+			return $this-&gt;failure_result(&quot;The invitation has been aborted: &quot;.$u-&gt;handle.&quot; has status &quot;.$u-&gt;status(), 400);
+		}
+		if($action != &quot;invite&quot; &amp;&amp; $u-&gt;status() != &quot;accept&quot;){
+			return $this-&gt;failure_result(&quot;Cannot reset password of user &quot;.$u-&gt;handle.&quot; not an active user: &quot;.$u-&gt;status(), 400);
+		}
+		$code = $this-&gt;dbman-&gt;getUserConfirmCode($uid, $action);
+		if($code){
+			if($this-&gt;dbman-&gt;updatePassword($uid, $p, true)){
+				if($action == 'invite'){
+					$u-&gt;setStatus(&quot;accept&quot;);
+					if(!$this-&gt;saveUser($u)){
+						return false;
+					}
+				}
+				$u-&gt;recordAction(&quot;system&quot;, &quot;all&quot;, &quot;$action password reset&quot;, true);
+				return true;
+			}
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+		return $this-&gt;failure_result(&quot;No confirm code found for password reset&quot;, 401);
+	}
+	
+	/**
+	 * Called to request a password reset for a particular user
+	 * @param string $email the user's email address
+	 * @return boolean|string if successful, returns a confirm code
+	 */
+	function requestResetPassword($email){
+		if(!($u = $this-&gt;loadUserByEmail($email))){
+			return false;
+		}
+		if($u-&gt;status == &quot;pending&quot;){
+			$u-&gt;recordAction(&quot;system&quot;, &quot;all&quot;, &quot;pending user failed password reset&quot;, true);
+			return $this-&gt;failure_result(&quot;You must confirm your account before you can reset the password.&quot;, 401);
+		}
+		elseif($u-&gt;status == &quot;reject&quot;){
+			$u-&gt;recordAction(&quot;system&quot;, &quot;all&quot;, &quot;rejected user failed password reset&quot;, true);
+			return $this-&gt;failure_result(&quot;The account $u has been suspended, you cannot reset the password while suspended.&quot;, 401);
+		}
+		elseif($u-&gt;status == &quot;deleted&quot;){
+			$u-&gt;recordAction(&quot;system&quot;, &quot;all&quot;, &quot;deleted user failed password reset&quot;, true);
+			return $this-&gt;failure_result(&quot;The account $u has been deleted, you cannot reset the password of a deleted account.&quot;, 401);
+		}
+		$u-&gt;recordAction(&quot;register&quot;, &quot;all&quot;, &quot;password reset initiated&quot;, true);
+		if(!($code = $this-&gt;dbman-&gt;generateUserConfirmCode($u-&gt;id, &quot;lost&quot;, true))){
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+		return $code;
+	}	
+	
+	/**
+	 * Called when a user clicks on a lost password confirm link
+	 * @param string $code the confirm code in the link
+	 * @return DacuraUser the confirmed user object
+	 */
+	function confirmLostPassword($code){
+		$uid = $this-&gt;dbman-&gt;getConfirmCodeUid($code, &quot;lost&quot;);
+		if(!$uid){
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+		if(!($du = $this-&gt;loadUser($uid))){
+			return false;
+		}
+		if($du-&gt;status != &quot;accept&quot;){
+			return $this-&gt;failure_result(&quot;This confirmation code is invalid $du-&gt;email is not an active user&quot;, 401);
+		}
+		$du-&gt;recordAction(&quot;system&quot;, &quot;all&quot;, &quot;confirm password reset&quot;, true);
+		return $du;
+	}
+}
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

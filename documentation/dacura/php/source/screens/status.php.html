@@ -1,0 +1,68 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php 
+/**
+ * Status pane in the menu on dacura home page
+ * 
+ * Shows various statistics about the collection
+ * @package browse/screens
+ * @author chekov
+ * @copyright GPL v2
+ */
+?&gt;
+&lt;table class='dacura-status'&gt;
+	&lt;tr&gt;&lt;th&gt;Users&lt;/th&gt;&lt;td class='user-count'&gt;&lt;?=$params['user-count']?&gt;&lt;/td&gt;
+	&lt;tr&gt;&lt;th&gt;Schema Triples&lt;/th&gt;&lt;td class='schema-count'&gt;&lt;?=$params['schema-count']?&gt;&lt;/td&gt;
+	&lt;tr&gt;&lt;th&gt;Instance Triples&lt;/th&gt;&lt;td class='instance-count'&gt;&lt;?=$params['instance-count']?&gt;&lt;/td&gt;	
+	&lt;tr&gt;&lt;th&gt;Graphs&lt;/th&gt;&lt;td class='graph-count'&gt;&lt;?=$params['graph-count']?&gt;&lt;/td&gt;
+	&lt;?php if($params['type'] == &quot;system&quot;){ ?&gt;
+		&lt;tr&gt;&lt;th&gt;Collections&lt;/th&gt;&lt;td class='collection-count'&gt;&lt;?=$params['collection-count']?&gt;&lt;/td&gt;
+		&lt;tr&gt;&lt;th&gt;Ontologies&lt;/th&gt;&lt;td class='ontology-count'&gt;&lt;?=$params['ontology-count']?&gt;&lt;/td&gt;
+	&lt;?php } elseif($params['type'] == &quot;admin&quot;){ ?&gt;	
+		&lt;tr&gt;&lt;th&gt;Imported Ontologies&lt;/th&gt;&lt;td class='ontology-count'&gt;&lt;?=$params['ontology-count']?&gt;&lt;/td&gt;
+	&lt;?php } ?&gt;
+&lt;/table&gt;
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,1588 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+/*
+ * The service for scraping datasets from the seshat wiki
+ *
+ * Created By: Odhran
+ * Creation Date: 20/11/2014
+ * Contributors: Chekov
+ * Modifications: 20/11/2014 - 07/12/2014
+ * Licence: GPL v2
+ */
+
+
+require_once(&quot;phplib/DacuraServer.php&quot;);
+require_once('files/seshat.parser.php');
+
+//need to do logging, cookiejar, etc.
+
+class ScraperDacuraServer extends DacuraServer {
+	
+	var $ch; //curl handle
+	var $index = array(); //index of the structure and statistics of the wiki
+	
+	/*
+	 * Public Functions
+	 */
+	function __construct($service){
+		parent::__construct($service);
+		$x = $this-&gt;fileman-&gt;decache(&quot;scraper&quot;, &quot;index&quot;);
+		if($x) {
+			$this-&gt;index = $x;
+		}
+		else {
+			$this-&gt;index = array();			
+		}
+	}
+	
+	function updateStatus($nga = false){
+		$stats = array( &quot;ngas&quot; =&gt; 0, &quot;polities&quot; =&gt; 0, &quot;errors&quot; =&gt; 0, &quot;warnings&quot; =&gt; 0, &quot;total_variables&quot; =&gt; 0, &quot;empty&quot; =&gt; 0, &quot;complex&quot; =&gt; 0, &quot;lines&quot; =&gt; 0);
+		if($nga == false or $nga == &quot;false&quot;){
+			$this-&gt;write_comet_update(&quot;phase&quot;, &quot;Rebuilding List of NGAs&quot;);
+			$ngas = $this-&gt;getNGAList(true);
+			if(!$ngas){
+				$this-&gt;write_comet_error(&quot;Failed to load list of NGAs from wiki &quot;.$this-&gt;errmsg, $this-&gt;errcode);
+				return false;
+			}
+			$seen_pols = array();
+			foreach($ngas as $anga){
+				$stats['ngas']++;
+				$this-&gt;write_comet_update(&quot;phase&quot;, &quot;Processing NGA Pages &quot; . $stats['ngas'] . &quot; of &quot; .count($ngas));
+				$pols = $this-&gt;getPolities($anga, true);
+				$percent_done = ($stats['ngas'] / count($ngas)) * 100;
+				$this-&gt;write_comet_update(&quot;progress&quot;, $percent_done);
+				if($pols){
+					$nganame = $this-&gt;formatNGAName($anga);
+					$this-&gt;write_comet_update(&quot;success&quot;, $nganame . &quot;&lt;span class='seshaturl'&gt;$anga&lt;/span&gt;&quot;);		
+					foreach($pols as $p){
+						if(!in_array($p, $seen_pols)){
+							$seen_pols[] = $p;
+						}
+					}
+				}
+				else {
+					$this-&gt;write_comet_update(&quot;error&quot;, &quot;Failed to Retrieve Polity List for $anga&quot;);
+				}
+			}
+			foreach($seen_pols as $p){
+				$stats['polities']++;
+				$this-&gt;write_comet_update(&quot;phase&quot;, &quot;Processing Polity Page &quot; . $stats['polities'] . &quot; of &quot; .count($seen_pols));
+				//$msg = &quot;&lt;p class='status'&gt;&quot;.$stats['polities'] . &quot; of &quot; . count($seen_pols).&quot;&lt;/progress&gt;&quot;;
+				$facts = $this-&gt;getFactsFromURL($p, true);
+				$percent_done = ($stats['polities'] / count($seen_pols)) * 100;
+				$this-&gt;write_comet_update(&quot;progress&quot;, $percent_done);
+				$polname = $this-&gt;formatNGAName($p);
+				if($facts){
+					$this-&gt;incorporateStats($stats, $facts);					
+					$this-&gt;write_comet_update(&quot;success&quot;, &quot;&lt;p&gt;$polname &lt;span class='seshaturl'&gt;$p&lt;/span&gt;&lt;/p&gt;&quot;.$this-&gt;statsToString($facts, $stats));
+				}
+				else {
+					$this-&gt;write_comet_update(&quot;error&quot;, &quot;&lt;p&gt;$polname Failed&lt;/p&gt;&quot;.
+							$this-&gt;statsToString($this-&gt;getEmptyFactList(), $stats));
+				}
+			}
+		}
+		else {
+			$stats['ngas'] = 1;
+			$pols = $this-&gt;getPolities($nga, true);
+			if(!is_array($pols)) {
+				$this-&gt;write_comet_error(&quot;Failed to Retrieve Polity List for $nga&quot;, $this-&gt;errcode);	
+				return false;			
+			}
+			else { 
+				foreach($pols as $p){
+					$stats['polities']++;
+					$this-&gt;write_comet_update(&quot;phase&quot;, &quot;Processing Polity Page &quot; . $stats['polities'] . &quot; of &quot; .count($pols));
+					$polname = $this-&gt;formatNGAName($p);
+					$facts = $this-&gt;getFactsFromURL($p, true);
+					$percent_done = ($stats['polities'] / count($pols)) * 100;
+					$this-&gt;write_comet_update(&quot;progress&quot;, $percent_done);
+					if($facts){
+						$this-&gt;incorporateStats($stats, $facts);
+						$this-&gt;write_comet_update(&quot;success&quot;, &quot;&lt;p&gt;$polname &lt;span class='seshaturl'&gt;$p&lt;/span&gt;&lt;/p&gt;&quot;.$this-&gt;statsToString($facts, $stats));
+					}
+					else {
+						$this-&gt;write_comet_update(&quot;error&quot;, &quot;&lt;p&gt;$polname failed&lt;/p&gt;&quot;.
+							$this-&gt;statsToString($this-&gt;getEmptyFactList(), $stats));
+					}
+				}		
+				$this-&gt;end_comet_output(&quot;success&quot;, $this-&gt;index);				
+			}
+		}
+		return true;
+	}
+	
+	function getStatus($nga = false){
+		return $this-&gt;index;
+	}
+	
+	function saveIndex($updated_page = false){
+		if($updated_page){
+			$this-&gt;index['stats'] = array(0, 0, 0, 0, 0);
+			//first update the nga stats.
+			foreach($this-&gt;index['polities'] as $p =&gt; $val){
+				$stat = $val[1][&quot;stats&quot;];
+				foreach($stat as $i =&gt; $v){
+					$this-&gt;index[&quot;stats&quot;][$i] += $v;
+				}
+			}
+			foreach($this-&gt;index['ngas'] as $nga =&gt; $ngal){
+				if(in_array($updated_page, $ngal[1])){
+					if(!isset($this-&gt;index[&quot;ngastats&quot;])){
+						$this-&gt;index[&quot;ngastats&quot;] = array();
+					}
+					$this-&gt;index[&quot;ngastats&quot;][$nga] = array(0, 0, 0, 0, 0);
+					foreach($ngal[1] as $pageid){
+						if(isset($this-&gt;index['polities'][$pageid])){
+							$prec = $this-&gt;index['polities'][$pageid][1];
+							foreach($prec[&quot;stats&quot;] as $i =&gt; $v){
+								$this-&gt;index[&quot;ngastats&quot;][$nga][$i] += $v;
+							}
+						}
+					}
+				}
+				
+			}
+		}
+		$this-&gt;fileman-&gt;cache(&quot;scraper&quot;, &quot;index&quot;, $this-&gt;index, $this-&gt;settings['scraper']['indexcache_config']);
+	}
+	
+	function seshatInit($action, $object=&quot;&quot;){
+		ini_set(&quot;memory_limit&quot;,&quot;512M&quot;);
+		$this-&gt;init($action, $object);
+		return $this-&gt;login();		
+	}
+	
+	function includePageLink($ln){
+		if(strpbrk($ln, &quot;&amp;#&quot;)){
+			return false;
+		}
+		$nonpages = array(&quot;User&quot;, &quot;Special&quot;, &quot;Conflicts:&quot;, &quot;File:&quot;,  &quot;Memento&quot;, &quot;Main_Page&quot;, &quot;Code_book&quot;, 
+				&quot;Macrostate_Inventory&quot;, &quot;Productivity_Template&quot;, &quot;http&quot;, &quot;mediawiki&quot;, &quot;Talk&quot;);
+		foreach($nonpages as $non){
+			if(strpos($ln, $non) !== false) return false;
+		}
+		return true;
+	}
+		
+	/*
+	 * Fetches the list of NGAs from the Seshat Main page (the World-30 sample table)
+	 * Returns an array of URLs
+	 */
+	function getNGAList($suppress_cache = false){
+		if($this-&gt;settings['scraper']['use_cache'] &amp;&amp; !$suppress_cache){
+			$x = $this-&gt;fileman-&gt;decache(&quot;scraper&quot;, $this-&gt;settings['scraper']['mainPage'], $this-&gt;ch);
+			if($x) {
+				return $x;
+			}
+		}
+		curl_setopt($this-&gt;ch, CURLOPT_URL, $this-&gt;settings['scraper']['mainPage']);
+		//curl_setopt($this-&gt;ch, CURLOPT_HEADER, true);
+		curl_setopt($this-&gt;ch, CURLOPT_FILETIME, true);
+		curl_setopt($this-&gt;ch, CURLOPT_RETURNTRANSFER, 1);
+		$content = curl_exec($this-&gt;ch);
+		if(curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+			return $this-&gt;failure_result(&quot;Failed to retrieve nga list page &quot;.$this-&gt;settings['scraper']['mainPage'], curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE), &quot;warning&quot;);
+		}
+		$fmod = curl_getinfo($this-&gt;ch, CURLINFO_FILETIME);
+		$dom = new DOMDocument;
+		$dom-&gt;loadXML($content);
+		$xpath = new DOMXPath($dom);
+		$links = $xpath-&gt;query('//table[@class=&quot;wikitable&quot;][1]//a/@href');
+		$ngaURLs = array();
+		foreach($links as $link){
+			$x = $link-&gt;value;
+			$url = 'http://seshat.info'.$x;
+			$ngaURLs[] = $url;
+		}
+		if($this-&gt;settings['scraper']['use_cache']){
+			$config = $this-&gt;settings['scraper']['ngacache_config'];
+			$config[&quot;url&quot;] = $this-&gt;settings['scraper']['mainPage'];
+			$this-&gt;fileman-&gt;cache(&quot;scraper&quot;, $this-&gt;settings['scraper']['mainPage'], $ngaURLs, $config);				
+			$this-&gt;index['nga_list'] = array(time(), $ngaURLs);
+			$this-&gt;saveIndex();
+		}
+		$this-&gt;logEvent(&quot;debug&quot;, 200, &quot;get_ngas returned: &quot;.count($ngaURLs).&quot; from seshat main page&quot;);
+		return $ngaURLs;
+	}
+	
+	
+	/*
+	 * Fetches a list of polities from a Seshat NGA page
+	 * Takes the URL of the polity page
+	 * Returns an array of URLs
+	 */
+	function getPolities($pageURL, $suppress_cache = false ){
+		if($this-&gt;settings['scraper']['use_cache'] &amp;&amp; !$suppress_cache){
+			$x = $this-&gt;fileman-&gt;decache(&quot;scraper&quot;, $pageURL, $this-&gt;ch);
+			if($x) return $x;
+		}
+		curl_setopt($this-&gt;ch, CURLOPT_URL, $pageURL);
+		$content = curl_exec($this-&gt;ch);
+		if(curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+			return $this-&gt;failure_result(&quot;Failed to retrieve $pageURL&quot;, curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE), &quot;info&quot;);
+		}
+		$dom = new DOMDocument;
+		if(!$dom-&gt;loadXML($content)){
+			return $this-&gt;failure_result(&quot;$pageURL did not parse correctly&quot;, 503, &quot;warning&quot;);
+		}
+		$xpath = new DOMXPath($dom);
+		$links = $xpath-&gt;query('//a/@href');
+		$polities = array();
+		foreach($links as $link){
+			$x = $link-&gt;value;
+			if(strstr($x, &quot;seshat.info:&quot;) or 'http://seshat.info'.$x == $pageURL or $x[0] == &quot;:&quot; or !$this-&gt;includePageLink($x)){
+				continue;
+			}
+			if(!strstr($x, &quot;seshat.info&quot;)){
+				$url = 'http://seshat.info'.$x;
+			}
+			if(!in_array($url, $polities)){	
+				$polities[] = $url;
+			}
+		}
+		if($this-&gt;settings['scraper']['use_cache']){
+			$config = $this-&gt;settings['scraper']['cache_config'];
+			$config[&quot;url&quot;] = $pageURL;
+			$this-&gt;fileman-&gt;cache(&quot;scraper&quot;, $pageURL, $polities, $config);				
+			if(!isset($this-&gt;index['ngas'])){
+				$this-&gt;index['ngas'] = array();
+			}
+			$this-&gt;index['ngas'][$pageURL] = array(time(), $polities);
+			$this-&gt;saveIndex();
+		}
+		$this-&gt;logEvent(&quot;debug&quot;, 200, &quot;get_polities returned: &quot;.count($polities).&quot; from $pageURL&quot;);
+		return $polities;
+	}
+	
+	/*
+	 * Functions for turning a seshat page into an array of facts...
+	 */
+	function getFactsFromURL($pageURL, $suppress_cache = false, $fetch_remote = true){
+		$facts = false;
+		if($this-&gt;settings['scraper']['use_cache'] &amp;&amp; !$suppress_cache){
+			$facts = $this-&gt;fileman-&gt;decache(&quot;scraper&quot;, $pageURL, $this-&gt;ch, !$fetch_remote);
+		}
+		if(!$facts &amp;&amp; $fetch_remote){
+			curl_setopt($this-&gt;ch, CURLOPT_URL, $pageURL);
+			$content = curl_exec($this-&gt;ch);
+			if(curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+				return $this-&gt;failure_result(&quot;Failed to retrieve url: $pageURL&quot;, curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE), &quot;info&quot;);
+			}
+			$facts = $this-&gt;getFactsFromPage($content);
+			if($this-&gt;settings['scraper']['use_cache']){
+				$config = $this-&gt;settings['scraper']['cache_config'];
+				$config[&quot;url&quot;] = $pageURL;
+				$this-&gt;fileman-&gt;cache(&quot;scraper&quot;, $pageURL, $facts, $config);
+				if(!isset($this-&gt;index['polities'])){
+					$this-&gt;index['polities'] = array();
+				}
+				$page_index = array(&quot;stats&quot; =&gt; array($facts['total_variables']-$facts['empty'], $facts['lines'], $facts['empty'], count($facts['errors']), count($facts['warnings'])));
+				$this-&gt;index['polities'][$pageURL] = array(time(), $page_index);
+				$this-&gt;saveIndex($pageURL);
+			}
+		}
+		return $facts;
+	}
+	
+	
+	/**
+	 * Produces a dump of the NGA / polity sets passed in
+	 * @param $data associative array of NGA name -&gt; polity URL
+	 * @param $suppress_cache - turn off cache for this call
+	 */
+	function getDump($data, $suppress_cache = false, $on_date = false){
+		$polities_retrieved = array();
+		$field_sep = ($this-&gt;settings['scraper']['dump_format'] == &quot;csv&quot;) ? &quot;,&quot; : &quot;\t&quot;;
+		$summaries = array();
+		$headers = array(&quot;NGA&quot;, &quot;Polity&quot;, &quot;Section&quot;, &quot;Subsection&quot;, &quot;Variable&quot;, &quot;Value From&quot;, &quot;Value To&quot;,
+				&quot;Date From&quot;, &quot;Date To&quot;, &quot;Fact Type&quot;, &quot;Value Note&quot;, &quot;Date Note&quot;, &quot;Comment&quot;);
+		$error_headers = array(&quot;NGA&quot;, &quot;Polity&quot;, &quot;Section&quot;, &quot;Subsection&quot;, &quot;Variable&quot;, &quot;Type&quot;, &quot;Value&quot;, &quot;Error&quot;);
+		$stats = array( &quot;ngas&quot; =&gt; 0, &quot;polities&quot; =&gt; 0, &quot;errors&quot; =&gt; 0, &quot;warnings&quot; =&gt; 0, &quot;total_variables&quot; =&gt; 0, &quot;empty&quot; =&gt; 0, &quot;complex&quot; =&gt; 0, &quot;lines&quot; =&gt; 0);
+		$polity_failures = array();
+		$rows = array();
+		$this-&gt;start_comet_output();
+		$error_op = $this-&gt;fileman-&gt;startServiceDump(&quot;scraper&quot;, &quot;Errors&quot;, &quot;html&quot;, true, true);
+		$this-&gt;fileman-&gt;dumpData($error_op, &quot;&lt;table&gt;&lt;tr&gt;&lt;th&gt;&quot;.implode(&quot;&lt;/th&gt;&lt;th&gt;&quot;, $error_headers).&quot;&lt;/th&gt;&lt;/tr&gt;&quot;);
+		$html_op = $this-&gt;fileman-&gt;startServiceDump(&quot;scraper&quot;, &quot;Export&quot;, &quot;html&quot;, true, true);
+		$this-&gt;fileman-&gt;dumpData($html_op, &quot;&lt;table&gt;&lt;tr&gt;&lt;th&gt;&quot;.implode(&quot;&lt;/th&gt;&lt;th&gt;&quot;, $headers).&quot;&lt;/th&gt;&lt;/tr&gt;&quot;);
+		$tsv_op = $this-&gt;fileman-&gt;startServiceDump(&quot;scraper&quot;, &quot;Export&quot;, $this-&gt;settings['scraper']['dump_format'], true, true);
+		$this-&gt;fileman-&gt;dumpData($tsv_op, implode($field_sep, $headers).&quot;\n&quot;);
+		foreach($data as $nga =&gt; $polities){
+			$stats['ngas']++;
+			$summary = array(&quot;nga&quot; =&gt; $this-&gt;formatNGAName($nga), &quot;polities&quot; =&gt; count($polities), &quot;failures&quot; =&gt; 0, &quot;warnings&quot; =&gt; 0,
+					&quot;total_variables&quot; =&gt; 0, &quot;empty&quot; =&gt; 0, &quot;complex&quot; =&gt; 0, &quot;lines&quot; =&gt; 0, &quot;errors&quot; =&gt; 0);
+			foreach($polities as $p){
+				if(!$p) continue;
+				if(!isset($polities_retrieved[$p])){
+					$this-&gt;logEvent(&quot;debug&quot;, 200, &quot;retrieving facts from $p&quot;);
+					$pfacts = $this-&gt;getFactsFromURL($p, $suppress_cache);
+					if($pfacts){
+						$polities_retrieved[$p] = $pfacts;
+						//op errors
+						foreach($pfacts['errors'] as $e){
+							if(isset($e['variable']) &amp;&amp; isset($e['section'])){
+								$row = $this-&gt;getErrorTableRowHTML($e, $nga, $p, &quot;error&quot;);
+								$this-&gt;fileman-&gt;dumpData($error_op, $row);							
+							}	
+						}
+						foreach($pfacts['warnings'] as $e){
+							if(isset($e['variable']) &amp;&amp; isset($e['section'])){
+								$row = $this-&gt;getErrorTableRowHTML($e, $nga, $p, &quot;warning&quot;);
+								$this-&gt;fileman-&gt;dumpData($error_op, $row);							
+							}	
+						}
+						$stats['polities']++;
+						$this-&gt;incorporateStats($stats, $pfacts);
+						$msg = $this-&gt;formatNGAName($p).$this-&gt;statsToString($pfacts, $stats);
+						$this-&gt;write_comet_update(&quot;success&quot;, $msg);
+						$this-&gt;timeEvent(&quot;Retrieved $p&quot;, &quot;debug&quot;);
+						$this-&gt;logEvent(&quot;info&quot;, 200, &quot;Successfully retrieved $p : (&quot;.$pfacts['total_variables'].&quot; variables)&quot;);
+					}
+					else {
+						//add to failures
+						$polity_failures[] = array($nga, $p, $this-&gt;errmsg, $this-&gt;errcode);
+						$msg = $this-&gt;formatNGAName($p).&quot; error: $this-&gt;errcode $this-&gt;errmsg&quot;;
+						$this-&gt;write_comet_update(&quot;error&quot;, $msg);						
+					}
+				}
+				else {
+					$pfacts = $polities_retrieved[$p];
+				}
+				$this-&gt;incorporateStats($summary, $pfacts);
+				if(isset($polities_retrieved[$p])){
+					$rows = $this-&gt;factListToRows($this-&gt;formatNGAName($nga), $this-&gt;formatNGAName($p), $polities_retrieved[$p]);
+					foreach($rows as $row){
+						$this-&gt;fileman-&gt;dumpData($html_op, &quot;&lt;tr&gt;&lt;td&gt;&quot;.implode(&quot;&lt;/td&gt;&lt;td&gt;&quot;, $row).&quot;&lt;/td&gt;&lt;/tr&gt;&quot;);				
+						$this-&gt;fileman-&gt;dumpData($tsv_op, implode($field_sep, $row).&quot;\n&quot;);			
+					}
+				}
+			}
+			$summaries[] = $summary;
+		}
+		$tab_style = &quot;&lt;style&gt;th,td { padding: 2px; border: 1px solid black; }\ntable { border-collapse: collapse}&lt;/stlye&gt;&quot;;
+		$this-&gt;fileman-&gt;dumpData($html_op, &quot;&lt;/table&gt;$tab_style&quot;);				
+		$this-&gt;fileman-&gt;dumpData($error_op, &quot;&lt;/table&gt;$tab_style&quot;);				
+		$this-&gt;fileman-&gt;endServiceDump($error_op);
+		$this-&gt;fileman-&gt;endServiceDump($html_op);
+		$this-&gt;fileman-&gt;endServiceDump($tsv_op);
+		//start op buffering
+		ob_start();
+		$this-&gt;service-&gt;renderScreen(&quot;results&quot;, array(&quot;stats&quot; =&gt; $stats, &quot;failures&quot; =&gt; $polity_failures, &quot;summary&quot; =&gt; $summaries,
+				&quot;files&quot; =&gt; array(&quot;errors&quot; =&gt; $this-&gt;ucontext-&gt;my_url(&quot;rest&quot;).&quot;/view/&quot;.$error_op-&gt;filename(&quot;rest&quot;), &quot;html&quot; =&gt; $this-&gt;ucontext-&gt;my_url(&quot;rest&quot;).&quot;/view/&quot;.$html_op-&gt;filename(), &quot;tsv&quot; =&gt; $this-&gt;ucontext-&gt;my_url(&quot;rest&quot;).&quot;/view/&quot;.$tsv_op-&gt;filename())));
+		$page = ob_get_contents();
+		ob_end_clean();
+		$this-&gt;end_comet_output(&quot;success&quot;, $page);
+		return true;
+	}
+	
+	function getErrorTableRowHTML($e, $nga, $p, $t){
+		$row = &quot;&lt;tr&gt;&lt;td&gt;&lt;a href='$nga'&gt;&quot;. $this-&gt;formatNGAName($nga).&quot;&lt;/a&gt;&lt;/td&gt;&quot;;
+		$row .= &quot;&lt;td&gt;&lt;a href='$p'&gt;&quot;. $this-&gt;formatNGAName($p).&quot;&lt;/a&gt;&lt;/td&gt;&quot;;
+		$row .= &quot;&lt;td&gt;&lt;a href='$p&quot;.&quot;#&quot;.$this-&gt;unformatSectionName($e['section']).&quot;'&gt;&quot;.$e['section'].&quot;&lt;/a&gt;&lt;/td&gt;&quot;;
+		$row .= &quot;&lt;td&gt;&lt;a href='$p&quot;.&quot;#&quot;.$this-&gt;unformatSectionName($e['subsection']).&quot;'&gt;&quot;.$e['subsection'].&quot;&lt;/a&gt;&lt;/td&gt;&quot;;
+		$row .= &quot;&lt;td&gt;&quot;.$e['variable'].&quot;&lt;/td&gt;&quot;;
+		$row .= &quot;&lt;td&gt;&quot;.$t.&quot;&lt;/td&gt;&quot;;
+		$row .= &quot;&lt;td&gt;&quot;.$e['value'].&quot;&lt;/td&gt;&quot;;
+		$row .= &quot;&lt;td&gt;&quot;.$e['comment'].&quot;&lt;/td&gt;&lt;/tr&gt;&quot;;
+		return $row;
+	}
+	
+	function getReport($repname){
+		$fpath = $this-&gt;getSystemSetting('path_to_collections');
+		if($this-&gt;cid()) $fpath .= $this-&gt;cid().&quot;/&quot;;
+		$fpath .= $this-&gt;settings['dump_directory'];
+		$fname = $fpath . $repname;
+		$fsize = filesize($fname);
+		$path_parts = pathinfo($fname);
+		$ext = strtolower($path_parts[&quot;extension&quot;]);
+		if ($fd = fopen ($fname, &quot;r&quot;)) {
+			switch ($ext) {
+				case &quot;tsv&quot; : 
+					header(&quot;Content-type: text/tab-separated-values&quot;);
+					header(&quot;Content-Disposition: attachment; filename=\&quot;&quot;.$path_parts[&quot;basename&quot;].&quot;\&quot;&quot;); // use 'attachment' to force a file download
+					header(&quot;Content-length: $fsize&quot;);
+					header(&quot;Cache-control: private&quot;); //use this to open files directly
+					break;
+				case &quot;csv&quot; :
+					header(&quot;Content-type: text/comma-separated-values&quot;);
+					header(&quot;Content-Disposition: attachment; filename=\&quot;&quot;.$path_parts[&quot;basename&quot;].&quot;\&quot;&quot;); // use 'attachment' to force a file download
+					header(&quot;Content-length: $fsize&quot;);
+					header(&quot;Cache-control: private&quot;); //use this to open files directly
+					break;
+				case &quot;html&quot; :
+					header(&quot;Content-Type: text/html; charset=utf-8&quot;);
+					break;
+				default;
+				    header(&quot;Content-type: application/octet-stream&quot;);
+					header(&quot;Content-Disposition: filename=\&quot;&quot;.$path_parts[&quot;basename&quot;].&quot;\&quot;&quot;);
+					break;
+			}
+			while(!feof($fd)) {
+				$buffer = fread($fd, 2048);
+				echo $buffer;
+			}
+			fclose ($fd);
+			$this-&gt;logEvent(&quot;debug&quot;, 200, ($fsize % 1024) .&quot;kb returned for report $repname&quot;);
+			return true;
+		}
+		else {
+			return $this-&gt;failure_result(&quot;Could not open requested report file $repname&quot;, 404);
+		}
+	}
+		
+	/*
+	 * Dump Statistics - showing how many variables have been retrieved
+	 */
+	function statsToString($fact_list, $second_fl = false){
+		$html = &quot;&lt;table class='scraper-report scraper-update'&gt;&lt;tr&gt;&lt;td&gt;&lt;/td&gt;&lt;th&gt;Datapoints&lt;/th&gt;&lt;th&gt;Errors&lt;/th&gt;&lt;th&gt;Empty&lt;/th&gt;&lt;/tr&gt;&quot;;
+		$html .= &quot;&lt;tr&gt;&lt;td&gt;&lt;td&gt;&quot;. $fact_list['lines'].&quot;&lt;/td&gt;&lt;td&gt;&quot;.count($fact_list['errors']).&quot;&lt;/td&gt;&lt;td&gt;&quot;.$fact_list['empty'];
+		$html .= &quot;&lt;/td&gt;&lt;/tr&gt;&quot;;
+		if($second_fl){
+			$html .= &quot;&lt;tr&gt;&lt;td&gt;Total&lt;/td&gt;&lt;td&gt;&quot;. $second_fl['lines'].&quot;&lt;/td&gt;&lt;td&gt;&quot;.$second_fl['errors'].&quot;&lt;/td&gt;&lt;td&gt;&quot;.$second_fl['empty'];
+			$html .= &quot;&lt;/td&gt;&lt;/tr&gt;&quot;;
+		}
+		$html .= &quot;&lt;/table&gt;&quot;;
+		return $html;
+	}
+	
+	function incorporateStats(&amp;$stats, $nfacts){
+		$stats['total_variables'] += $nfacts['total_variables'];
+		$stats['empty'] += $nfacts['empty'];
+		$stats['complex'] += $nfacts['complex'];
+		$stats['lines'] += $nfacts['lines'];
+		$stats['errors'] += count($nfacts['errors']);
+		$stats['warnings'] += count($nfacts['warnings']);
+	}
+
+	function getEmptyFactList(){
+		$fact_list = array( &quot;variables&quot; =&gt; array(), &quot;errors&quot; =&gt; array(), &quot;warnings&quot; =&gt; array(),
+				&quot;title&quot; =&gt; &quot;&quot;, &quot;total_variables&quot; =&gt; 0, &quot;empty&quot; =&gt; 0, &quot;complex&quot; =&gt; 0, &quot;lines&quot; =&gt; 0, &quot;sections&quot; =&gt; array());
+		return $fact_list;
+	}
+
+	/*
+	 * Takes a seshat page and extracts all of the facts 
+	 * Takes the URL of the page
+	 * Returns a fact list object (associative array)
+	 */
+	function getFactsFromPage($content){
+		$fact_list = $this-&gt;getEmptyFactList();
+		//array( &quot;variables&quot; =&gt; array(), &quot;errors&quot; =&gt; array(), &quot;warnings&quot; =&gt; array(),
+		//	&quot;title&quot; =&gt; &quot;&quot;, &quot;total_variables&quot; =&gt; 0, &quot;empty&quot; =&gt; 0, &quot;complex&quot; =&gt; 0, &quot;lines&quot; =&gt; 0, &quot;sections&quot; =&gt; array());
+		// strip out the non-content to minimise collision risk
+		/*$content_start_offset = strpos($content, $this-&gt;content_start_html);
+		$content_end_offset = strpos($content, $this-&gt;content_end_html);
+		if($content_start_offset &amp;&amp; $content_end_offset){
+				$content = substr($content, $content_start_offset , $content_end_offset - $content_start_offset);
+		}*/
+		// Divide into main sections....
+		$sections = explode(&quot;&lt;h2&gt;&quot;, $content);
+		$i = 0;
+		//echo count($sections) . &quot; sections found\n&quot;;
+		foreach($sections as $sect){
+			++$i;
+			if($i == 1){ 	//variables that appear before the first section -&gt; page level variables 
+				$sfl = $this-&gt;parseFactsFromString($sect);
+				$this-&gt;updateFactStats($fact_list, $sfl);
+				$fact_list['variables'] = array_merge($fact_list['variables'], $sfl['variables']);
+			}
+			else {
+				//divide into sub-sections
+				$sec_bits = explode(&quot;&lt;/span&gt;&lt;/h2&gt;&quot;, $sect);
+				if(count($sec_bits) == 2){
+					$sec_head_start_pos = strpos($sec_bits[0], &quot;&gt;&quot;) + 1;
+					$sec_head_end_pos = strpos(substr($sec_bits[0], 1), &quot;&lt;&quot;) + 1;
+					$sec_title = substr($sec_bits[0], $sec_head_start_pos, $sec_head_end_pos - $sec_head_start_pos);
+					$sec_title = str_replace(array(&quot;,&quot;, &quot;#&quot;), array(&quot;&quot;, &quot;&quot;), $sec_title );
+					if(!$sec_title) $sec_title = &quot;Unknown&quot;;
+					$sec_content = $sec_bits[1];
+					$subsects = explode(&quot;&lt;h3&gt;&quot;, $sec_content);
+					$j = 0;
+					foreach($subsects as $subsect){
+						if(++$j == 1){ //sub-section level variables
+							$sec_fact_list = $this-&gt;parseFactsFromString($subsect, $sec_title);
+							$sec_fact_list['sections'] = array();
+						}
+						 else {
+							$subsec_bits = explode(&quot;&lt;/span&gt;&lt;/h3&gt;&quot;, $subsect);
+							if(count($subsec_bits) == 2){
+								$subsec_head_start_pos = strpos($subsec_bits[0], &quot;&gt;&quot;) + 1;
+								$subsec_head_end_pos = strpos(substr($subsec_bits[0], 1), &quot;&lt;&quot;) + 1;
+								$subsec_title = substr($subsec_bits[0], $subsec_head_start_pos, $subsec_head_end_pos - $subsec_head_start_pos);
+								$subsec_title = str_replace(array(&quot;,&quot;, &quot;#&quot;), array(&quot;&quot;, &quot;&quot;), $subsec_title );
+								if(!$subsec_title) $subsec_title = &quot;Unknown&quot;;
+								$subsec_content = $subsec_bits[1];
+								$ssfl = $this-&gt;parseFactsFromString($subsec_content, $sec_title, $subsec_title);
+								$this-&gt;updateFactStats($sec_fact_list, $ssfl);
+								$k = 0;
+								$nsubtitle = $subsec_title;
+								while(isset($sec_fact_list['sections'][$nsubtitle])){
+									$nsubtitle = $subsec_title .&quot;_&quot;.$k++;
+								}
+								$sec_fact_list['sections'][$nsubtitle] = $ssfl; 
+							}
+							else {
+								$ssfl = $this-&gt;parseFactsFromString($subsect, $sec_title);
+								$this-&gt;updateFactStats($sec_fact_list, $ssfl);
+								$sec_fact_list = array_merge($sec_fact_list, $ssfl['variables']);
+							}								
+						}
+					}
+					$this-&gt;updateFactStats($fact_list, $sec_fact_list);
+					$k = 0;
+					$nsectitle = $sec_title;
+					while(isset($sec_fact_list['sections'][$nsectitle])){
+						$nsectitle = $sec_title .&quot;_&quot;.$k++;
+					}
+					$fact_list[&quot;sections&quot;][$nsectitle] = $sec_fact_list;
+				}
+				else {  //do our best...
+					$sfl = $this-&gt;parseFactsFromString($sect);
+					$this-&gt;updateFactStats($fact_list, $sfl);
+					$fact_list['variables'] = array_merge($fact_list['variables'], $sfl['variables']);
+				}
+			}
+		}
+		return $fact_list;
+	}
+
+	function updateFactStats(&amp;$myfl, $newfl){
+		$myfl['total_variables'] += $newfl['total_variables'];
+		$myfl['empty'] += $newfl['empty'];
+		$myfl['complex'] += $newfl['complex'];
+		$myfl['lines'] += $newfl['lines'];
+		$myfl['errors'] = array_merge($myfl['errors'], $newfl['errors']);
+		$myfl['warnings'] = array_merge($myfl['warnings'], $newfl['warnings']);
+	}
+
+	/*
+	 * Creates an array of name =&gt; value for variables found in the text
+	 * If there are repeated keys, it appends _n to the duplicates to retain the values.
+	 * Returns a FactList...
+	 */
+	function parseFactsFromString($str, $section = &quot;&quot;, $subsection = &quot;&quot;){
+		$pattern = '/\x{2660}([^\x{2660}\x{2665}\x{2663}]*)\x{2663}([^\x{2660}\x{2665}]*)\x{2665}/Uu';
+		$matches = array();
+		$factoids = array();
+		$res = array(&quot;variables&quot; =&gt; array(), &quot;errors&quot; =&gt; array(), &quot;warnings&quot; =&gt; array(), &quot;total_variables&quot; =&gt; 0, &quot;empty&quot; =&gt; 0, &quot;complex&quot; =&gt; 0, &quot;lines&quot; =&gt; 0);
+		if(preg_match_all($pattern, $str, $matches)){
+			for($i = 0; $i&lt; count($matches[0]); $i++){
+				$key = trim($matches[1][$i]);
+				$key = str_replace(array(&quot;,&quot;, &quot;#&quot;), array(&quot;&quot;, &quot;&quot;), $key);
+				$val = trim($matches[2][$i]);
+				if(isset($factoids[$key])){
+					$n = 1;
+					while(isset($factoids[$key.&quot;_$n&quot;])){
+						$n++;
+					}
+					$key = $key.&quot;_$n&quot;;
+				}
+				$res['total_variables']++;
+				$parsed = $this-&gt;parseVariableValue($val);
+				if($parsed['result_code'] == &quot;complex&quot;){
+					$res['complex']++;
+					$res['lines'] += count($parsed['datapoints']);
+					$factoids[$key] = $parsed['datapoints'];
+				}
+				elseif($parsed['result_code'] == &quot;warning&quot;){
+					$res['complex']++;
+					$res['lines'] += count($parsed['datapoints']);
+					$factoids[$key] = $parsed['datapoints'];
+					$e = $this-&gt;getEmptyWarning();
+					$e['value'] = $parsed['value'];
+					$e['variable'] = $key;
+					$e['section'] = $section;
+					$e['subsection'] = $subsection;
+					$e['comment'] = $parsed['result_message'];
+					$res['warnings'][] = $e;
+									}		
+				elseif($parsed['result_code'] == &quot;empty&quot;){
+					$factoids[$key] = &quot;&quot;;
+					$res['empty']++;
+				}		
+				elseif($parsed['result_code'] == &quot;error&quot;){
+					$res['complex']++;
+					$e = $this-&gt;getEmptyError();
+					$e['value'] = $parsed['value'];
+					$e['variable'] = $key;
+					$e['section'] = $section;
+					$e['subsection'] = $subsection;
+					$e['comment'] = $parsed['result_message'];
+					$res['errors'][] = $e;
+				}
+				else {
+					$res['lines']++;
+					$factoids[$key] = $parsed['datapoints'];
+				}
+			}
+		}
+		$res[&quot;variables&quot;] = $factoids;
+		return $res;
+	}
+	
+
+	/**
+	 *
+	 * @param string $from (date that value holds from)
+	 * @param string $to (date that value holds to)
+	 * @param string $dtype (date type: simple, range, disputed, uncertain)
+	 * @param string $vfrom (value of variable - from value if range)
+	 * @param string $vto (to value when range of variable.
+	 * @param string $vtype (value type -&gt; disputed, range, uncertain)
+	 * @param string $facttype (complex | simple | error)
+	 * @param string $comment
+	 * @return associative array with a key for each parameter
+	 */
+	function createFactoid($from, $to, $dtype, $vfrom, $vto, $vtype, $facttype, $comment = &quot;&quot;){
+		return array(&quot;date_from&quot; =&gt; $from, &quot;date_to&quot; =&gt; $to, &quot;date_type&quot; =&gt; $dtype,
+				&quot;value_from&quot; =&gt; $vfrom, &quot;value_to&quot; =&gt; $vto, &quot;value_type&quot; =&gt; $vtype,
+				&quot;fact_type&quot; =&gt; $facttype, &quot;comment&quot; =&gt; $comment);
+	}
+	
+	function getEmptyError(){
+		return array(&quot;type&quot; =&gt; &quot;error&quot;, &quot;nga&quot; =&gt; &quot;&quot;, &quot;polity&quot; =&gt; &quot;&quot;, &quot;section&quot; =&gt; &quot;&quot;, &quot;subsection&quot; =&gt; &quot;&quot;, &quot;variable&quot; =&gt; &quot;&quot;, 
+				&quot;value&quot; =&gt; &quot;&quot;, &quot;comment&quot; =&gt; &quot;&quot;, &quot;link&quot; =&gt; &quot;&quot;);
+	}
+	
+	function getEmptyWarning(){
+		return array(&quot;type&quot; =&gt; &quot;warning&quot;, &quot;nga&quot; =&gt; &quot;&quot;, &quot;polity&quot; =&gt; &quot;&quot;, &quot;section&quot; =&gt; &quot;&quot;, &quot;subsection&quot; =&gt; &quot;&quot;, &quot;variable&quot; =&gt; &quot;&quot;,
+			&quot;value&quot; =&gt; &quot;&quot;, &quot;comment&quot; =&gt; &quot;&quot;, &quot;link&quot; =&gt; &quot;&quot;);
+	}
+	
+	/*
+	 * These Functions are for navigating the parse tree..
+	 */
+	
+	/**
+	 * 
+	 * @param string $t the raw text value of the variable 
+	 * @return associative array: 
+	 *   &quot;value&quot; =&gt; initial_value_of_variable
+	 * 	 &quot;result_code&quot; =&gt; error | empty | simple | complex
+	 *   &quot;result_message =&gt; &quot;string to show to user&quot;
+	 *   &quot;datapoints&quot; =&gt; simple array of 'factoids' -&gt; basic information about the fact in a table format
+	 */
+	function parseVariableValue($t){
+		$val = strip_tags($t);
+		$val = trim(html_entity_decode($val));
+		//remove both # and , characters
+		$val = str_replace(array(&quot;,&quot;, &quot;#&quot;), array(&quot;&quot;, &quot;&quot;), $val);
+		$ret_val = array(
+			&quot;value&quot; =&gt; $val,
+			&quot;result_code&quot; =&gt; &quot;&quot;,
+			&quot;result_message&quot; =&gt; &quot;&quot;,
+			&quot;datapoints&quot; =&gt; array()
+		);
+		if($val == &quot;&quot;){
+			$ret_val[&quot;result_code&quot;] = &quot;empty&quot;;
+			return $ret_val;
+		}
+		$factoids = array();
+		if(strpbrk($val, &quot;:;[{&quot;)){
+			$p = new seshatParsing($val);
+			$parsedFact = $p-&gt;match_fact();
+			if($parsedFact){
+				if($parsedFact['text'] == $val){
+					$ret_val[&quot;result_code&quot;] = &quot;complex&quot;;
+					$fragment_contents = $parsedFact['value'];
+					if(isset($fragment_contents[0])){ //array of fragments...
+						$fragments = $fragment_contents;
+					}
+					else {
+						$fragments = array($fragment_contents);
+					}
+					foreach($fragments as $f){
+						if($f['name'] == &quot;undatedfact&quot;){
+							$mini_factoids = $this-&gt;processUndatedFact($f['value']);
+							foreach($mini_factoids as $mf){
+								$factoids[] = $this-&gt;createFactoid(&quot;&quot;, &quot;&quot;, &quot;&quot;, $mf['value_from'], $mf['value_to'], $mf['value_type'], &quot;complex&quot;, &quot;&quot;);
+							}
+						}
+						else {
+							$n_factoids = $this-&gt;processDatedFact($f['value'], $val);
+							if(is_array($n_factoids)){
+								$factoids = array_merge($factoids, $n_factoids);
+							}
+							else {							
+								$ret_val[&quot;result_code&quot;] = &quot;error&quot;;
+								$ret_val[&quot;result_message&quot;] = &quot;The date value could not be parsed: &quot; .$f['text'];
+								break;
+							}
+						}
+					}
+				}
+				else {
+					$ret_val = $this-&gt;lastChanceSaloon($val);
+					if($ret_val[&quot;result_code&quot;] == &quot;error&quot;){
+						$ret_val[&quot;result_message&quot;] = &quot; This fragment: \&quot;&quot; .$parsedFact['text'].
+						&quot;\&quot; parsed ok. The fragment following \&quot;&quot;.substr($val, strlen($parsedFact['text'])).&quot;\&quot; contains the error.&quot;;
+					}
+					return $ret_val;
+				}
+			}
+			else {
+				return $this-&gt;lastChanceSaloon($val);
+			}
+		}
+		else {
+			$ret_val[&quot;result_code&quot;] = &quot;simple&quot;;
+			$ret_val[&quot;result_message&quot;] = &quot;Simple Value.&quot;;		
+			$factoids[] = $this-&gt;createFactoid(&quot;&quot;, &quot;&quot;, &quot;&quot;, $val, &quot;&quot;, &quot;simple&quot;, &quot;simple&quot;, &quot;&quot;);
+		}
+		$ret_val['datapoints'] = $factoids;
+		return $ret_val;
+	}
+
+	/*
+	 * Last gasp attempt to allow known common slips through, while raising a warning
+	 */
+	function lastChanceSaloon($txt){
+		$ret_val = array(&quot;value&quot; =&gt; $txt, &quot;result_code&quot; =&gt; &quot;error&quot;);
+		$factoids = false;
+		//1 uncertainty list items surrounded by [] and separated by , instead of 
+		$is_bad_list = false;
+		if(strpos($txt, '[') === 0 &amp;&amp; strpos($txt, ']') == (strlen($txt) -1)){
+			$is_bad_list = &quot;uncertain&quot;;
+		}
+		elseif(strpos($txt, '{') === 0 &amp;&amp; strpos($txt, '}') == (strlen($txt) -1)){
+			$is_bad_list = &quot;disputed&quot;;
+		}
+		if($is_bad_list &amp;&amp; strpos($txt, &quot;,&quot;) !== false){
+			$vals = explode(&quot;,&quot;, substr($txt, 1, strlen($txt)-2));
+			foreach($vals as $val){
+				$factoids[] = $this-&gt;createFactoid(&quot;&quot;, &quot;&quot;, &quot;&quot;, $val, &quot;&quot;, $is_bad_list, &quot;complex&quot;, &quot;warning - Using comma (,) instead of semi-colon (;) to separate list of $is_bad_list values&quot;);
+			}
+			$ret_val['result_message'] = &quot;Warning: using comma (,) instead of semi-colon (;) to separate list of $is_bad_list values&quot;;
+		}
+		elseif($is_bad_list &amp;&amp; !strpbrk(substr($txt, 1, strlen($txt)-3), &quot;:;[{,&quot;)){
+			$factoids = array($this-&gt;createFactoid(&quot;&quot;, &quot;&quot;, &quot;&quot;, trim(substr($txt, 1, strlen($txt)-2)), &quot;&quot;, $is_bad_list, &quot;simple&quot;, &quot;warning - Surrounding a simple value in $is_bad_list brackets&quot;));				
+			$ret_val['result_message'] = &quot;Surrounding a simple value in $is_bad_list brackets&quot;;
+		}
+		elseif(!$is_bad_list &amp;&amp; strpos($txt, &quot;;&quot;) !== false &amp;&amp; !strpbrk($txt, &quot;:[{,&quot;)){
+			$vals = explode(&quot;;&quot;, $txt);
+			$factoids = array();
+			foreach($vals as $val){
+				if($val){
+					$factoids[] = $this-&gt;createFactoid(&quot;&quot;, &quot;&quot;, &quot;&quot;, $val, &quot;&quot;, &quot;list&quot;, &quot;complex&quot;, &quot;&quot;);
+				}
+			}
+			$ret_val['result_message'] = &quot;list of variable values&quot;;
+		}
+		if($factoids){
+			$ret_val['datapoints'] = $factoids;
+			$ret_val['result_code'] = &quot;warning&quot;;
+			if($ret_val['result_message'] == &quot;list of variable values&quot;){ //ugly hack
+				$ret_val['result_code'] = &quot;complex&quot;;
+			}
+		}
+		else {
+			$ret_val[&quot;result_message&quot;] = &quot;Value $txt failed to parse. It has a formatting error. &quot;;				
+		}
+		return $ret_val;
+	}
+	
+	/*
+	 * Takes a $fact (node from parse tree) representing a dated fact
+	 * Returns an array of factoids. 
+	 */
+	function processDatedFact($fact, $orig){
+		foreach($fact as $factbit){
+			if($factbit['name'] == &quot;undatedfact&quot;){
+				$factoids = $this-&gt;processUndatedFact($factbit['value']);
+			}
+			elseif($factbit['name'] == &quot;datevalue&quot;){
+				$datebit = $this-&gt;processDateValue($factbit['value']);
+				if(!$datebit){
+					return $this-&gt;failure_result(&quot;Failed to parse date part &quot;.$factbit['text'].$this-&gt;errmsg, $this-&gt;errcode);
+				}	
+			}
+		}
+		foreach($factoids as $i =&gt; $factoid){
+			$factoids[$i]['fact_type'] = &quot;complex&quot;;
+			$factoids[$i][&quot;date_type&quot;] = $datebit['type'];
+			if(isset($factoids[$i]['comment']) &amp;&amp; $factoids[$i]['comment'] &amp;&amp; isset($datebit['comment'])  &amp;&amp; $datebit['comment']){
+				$factoids[$i]['comment'] .= &quot; - &quot;;
+			}
+			$factoids[$i][&quot;comment&quot;] .= (isset($datebit['comment']) ? $datebit['comment'] : &quot;&quot;);
+			if($datebit[&quot;type&quot;] == &quot;range&quot;){
+				$factoids[$i][&quot;date_to&quot;] = $datebit['to'];
+				$factoids[$i][&quot;date_from&quot;] = $datebit['from'];
+			}
+			else {
+				$factoids[$i][&quot;date_from&quot;] = $datebit['value'];
+			}
+		}
+		return $factoids;
+	}
+	
+	/*
+	 * Undated facts can be either string | complex
+	 */
+	function processUndatedFact($fact){
+		$factoids = array();
+		if($fact['name'] == 'string'){
+			$factoids[] = $this-&gt;createFactoid(&quot;&quot;,&quot;&quot;, &quot;&quot;, $fact['text'], &quot;&quot;, &quot;simple&quot;, &quot;&quot;, &quot;&quot;);
+		}
+		elseif($fact['name'] == 'uncertainrange') {
+			$factoids[] = $this-&gt;createFactoid(&quot;&quot;,&quot;&quot;, &quot;&quot;, $fact['value'][0]['text'], $fact['value'][1]['text'], &quot;range&quot;, &quot;complex&quot;, &quot;&quot;);
+		}
+		elseif(($fact['name'] == 'disagreelist') ){
+			foreach($fact['value'] as $i =&gt; $disagreefragment){			
+				if(($disagreefragment['value']['name']) == &quot;string&quot;){
+					$factoids[] = $this-&gt;createFactoid(&quot;&quot;,&quot;&quot;, &quot;&quot;, $disagreefragment['value']['text'], &quot;&quot;, &quot;disputed&quot;, &quot;complex&quot;, &quot;&quot;);	
+				}
+				else {
+					$factoids[] = $this-&gt;createFactoid(&quot;&quot;,&quot;&quot;, &quot;&quot;, $disagreefragment['value']['value'][0]['text'], $disagreefragment['value']['value'][1]['text'], &quot;disputed&quot;, &quot;complex&quot;, &quot;&quot;);	
+				}
+			}
+		}
+		else {
+			foreach($fact['value'] as $i =&gt; $possibleval){
+				$factoids[] = $this-&gt;createFactoid(&quot;&quot;,&quot;&quot;, &quot;&quot;, $possibleval['text'], &quot;&quot;, &quot;uncertain&quot;, &quot;complex&quot;, &quot;The fact is uncertain&quot;);
+			}
+		}
+		return $factoids;
+	}
+	
+	/*
+	 * For processing the date part of a factoid
+	 */
+	function processDateValue($fact){
+		$datevals = array();
+		$date_comment = &quot;&quot;;
+		if($fact['name'] == &quot;daterange&quot; &amp;&amp; $fact['value'][0] &amp;&amp; $fact['value'][1]){
+			$from = $fact['value'][0];
+			$to = $fact['value'][1];
+			$from = $this-&gt;processDateValue($from);
+			$to = $this-&gt;processDateValue($to);
+			if(!$to or !$from){
+				return $this-&gt;failure_result(&quot;failed to read dates in date range: &quot;.$fact['value'][0].&quot; &quot; . $fact['value'].$this-&gt;errmsg, $this-&gt;errcode);
+			}
+			else {
+				$datevals = $this-&gt;processDateRange($from, $to);
+				if(!$datevals) return false;
+			}
+		}
+		elseif($fact['name'] == &quot;singledate&quot; &amp;&amp; isset($fact['value']['name']) &amp;&amp; $fact['value']['name'] == &quot;simpledate&quot;){
+			$normdate = $this-&gt;normaliseSuffix($fact['value']['text']);
+			if(!$normdate){
+				return $this-&gt;failure_result(&quot;failed to read date to find suffix &quot;.$fact['value']['text'], 500);
+			}
+			$datevals = array(&quot;type&quot; =&gt; &quot;simple&quot;, &quot;value&quot; =&gt; $normdate, &quot;comment&quot; =&gt; &quot;&quot;);
+		}
+		elseif($fact['name'] == &quot;disagreedate&quot; || ($fact['name'] == &quot;singledate&quot; &amp;&amp; $fact['value']['name'] == &quot;disagreedate&quot;)){
+			$base = ($fact['name'] == &quot;disagreedate&quot;)? $fact['value'] : $fact['value']['value'];
+			$date_ranges = array();
+			$date_units = array();
+			foreach($base as $frag){
+				if($frag['value']['name'] == &quot;simpledaterange&quot;){
+					$dr = $this-&gt;getDateRangeBounds($frag['value']['value'][0]['text'], $frag['value']['value'][1]['text']);
+					if(!$dr){
+						return false;
+					}
+					$date_ranges[] = $dr;
+				}
+				elseif($frag['value']['name'] == &quot;simpledate&quot;){
+					$normdate = $this-&gt;normaliseSuffix($frag['value']['text']);
+					$date_units[] = $normdate;
+				}
+			}
+			if(count($date_ranges) &gt;= count($date_units)){
+				$datevals = $this-&gt;consolidateDateRanges($date_ranges, $date_units);
+			}
+			else {
+				$datevals = $this-&gt;consolidateDates($base, &quot;disputed&quot;);
+			}
+		}
+		elseif($fact['name'] == &quot;uncertaindate&quot; || ($fact['name'] == &quot;singledate&quot; &amp;&amp; $fact['value']['name'] == &quot;uncertaindate&quot;)){
+			//just make a range from the first to the last..
+			$base = ($fact['name'] == &quot;uncertaindate&quot;)? $fact['value'] : $fact['value']['value'];
+			$date_ranges = array();
+			$date_units = array();
+			foreach($base as $frag){
+				if($frag['name'] == &quot;simpledaterange&quot;){
+					$dr = $this-&gt;getDateRangeBounds($frag['value'][0]['text'], $frag['value'][1]['text']);
+					if(!$dr){
+						return false;
+					}
+					$date_ranges[] = $dr; 
+						
+				}
+				elseif($frag['name'] == &quot;simpledate&quot;){
+					$date_units[] = $frag['text'];
+				}
+			}
+			if(count($date_ranges) &gt;= count($date_units)){
+				$datevals = $this-&gt;consolidateDateRanges($date_ranges, $date_units);
+			}
+			else {
+				$datevals = $this-&gt;consolidateDates($base, &quot;uncertain&quot;);
+			}
+		}
+		else {
+			return $this-&gt;failure_result(&quot;strange error parsing node: &quot;.$fact['name'], 500);
+		}
+		return $datevals;
+	}
+	
+	function normaliseSuffix($txt){
+		$pattern = &quot;/(\d{1,5})\s*(ce|bce|bc)?/i&quot;;
+		$matches = array();
+		if(preg_match($pattern, $txt, $matches)){
+			if(isset($matches[2])){
+				if(stristr($matches[2], &quot;bc&quot;) || stristr($matches[2], &quot;bce&quot;)){
+					return $matches[1].&quot;BCE&quot;;
+				}
+				else return $matches[1].&quot;CE&quot;;
+			}
+			return $matches[1];
+		}
+		return false;
+	}
+	
+	function consolidateDateRanges($ranges, $units){
+		$from = array(&quot;type&quot; =&gt; &quot;&quot;, &quot;value&quot; =&gt; &quot;&quot;, &quot;comment&quot; =&gt; &quot;&quot;);
+		$to = array(&quot;type&quot; =&gt; &quot;&quot;, &quot;value&quot; =&gt; &quot;&quot;, &quot;comment&quot; =&gt; &quot;&quot;);
+		foreach($units as $unit){
+			if($from['type'] == &quot;&quot;){
+				$from['type'] = &quot;simple&quot;;
+				$from['value'] = $unit;
+			}
+			else {
+				if($this-&gt;strToYear($from['value']) != $this-&gt;strToYear($unit)) $from['type'] = &quot;disputed&quot;;
+				if($this-&gt;strToYear($from['value']) &gt; $this-&gt;strToYear($unit)){
+					$from['value'] = $unit;
+				}
+			}	
+			if($to['type'] == &quot;&quot;){
+				$to['type'] = &quot;simple&quot;;
+				$to['value'] = $unit;
+			}
+			else {
+				if($this-&gt;strToYear($to['value']) != $this-&gt;strToYear($unit)) $to['type'] = &quot;disputed&quot;;
+				if($this-&gt;strToYear($to['value']) &lt; $this-&gt;strToYear($unit)){
+					$to['value'] = $unit;
+				}
+			}				
+		}
+		foreach($ranges as $range){
+			if($from['type'] == &quot;&quot;){
+				$from['type'] = &quot;simple&quot;;
+				$from['value'] = $range[0];
+			}
+			else {
+				if($this-&gt;strToYear($from['value']) != $this-&gt;strToYear($range[0])) $from['type'] = &quot;disputed&quot;;
+				if($this-&gt;strToYear($from['value']) &gt; $this-&gt;strToYear($range[0])){
+					$from['value'] = $range[0];
+				}
+			}	
+			if($to['type'] == &quot;&quot;){
+				$to['type'] = &quot;simple&quot;;
+				$to['value'] = $range[1];
+			}
+			else {
+				if($this-&gt;strToYear($to['value']) != $this-&gt;strToYear($range[1])) $to['type'] = &quot;disputed&quot;;
+				if($this-&gt;strToYear($to['value']) &lt; $this-&gt;strToYear($range[1])){
+					$to['value'] = $range[1];
+				}
+			}				
+		}
+		$date_comment = &quot;&quot;;
+		if($from['type'] == &quot;disputed&quot;){
+			$date_comment = &quot;The from date is disputed&quot;;
+		}		
+		if($to['type'] == &quot;disputed&quot;){
+			if($date_comment) $date_comment .= &quot; - &quot;;
+			$date_comment .= &quot;The to date is disputed&quot;;
+		}		
+		$datevals = array(&quot;from&quot; =&gt; $from['value'], &quot;to&quot; =&gt; $to['value'], &quot;type&quot; =&gt; &quot;range&quot;, &quot;comment&quot; =&gt; $date_comment);
+		return $datevals;
+	}
+	
+	function processDateRange($from, $to){
+		$date_comment = &quot;&quot;;
+		if($to['type'] == 'disputed' &amp;&amp; $from['type'] == 'disputed' ){
+			$date_comment = &quot;Both from and to dates are disputed&quot;;
+		}
+		elseif($from['type'] == 'disputed'){
+			$date_comment = &quot;The from date is disputed&quot;;
+		}
+		elseif($to['type'] == 'disputed'){
+			$date_comment = &quot;The to date is disputed&quot;;
+		}
+		if($from['type'] == &quot;uncertain&quot; &amp;&amp; $to['type'] == 'uncertain'){
+			$date_comment = &quot;Both from and to dates are uncertain&quot;;
+		}
+		elseif($from['type'] == 'uncertain'){
+			$str = &quot;The from date is uncertain&quot;;
+			$date_comment .= (strlen($date_comment) == 0) ? $str : &quot; - &quot; . $str;
+		}
+		elseif($to['type'] == 'uncertain'){
+			$str = &quot;The to date is uncertain&quot;;
+			$date_comment .= (strlen($date_comment) == 0) ? $str : &quot; - &quot; . $str;
+		}
+		//make sure that we have no unsuffixed values
+		if($from['type'] == &quot;simple&quot; ){
+			if(!$this-&gt;containsYearSuffix($from['value'])){
+				$sf = $this-&gt;getFirstYearSuffix($to['value']);
+				if($sf){
+					$from['value'].= $sf;
+				}
+			}
+		}
+		if($to['type'] == &quot;simple&quot; ){
+			if(!$this-&gt;containsYearSuffix($to['value'])){
+				$sf = $this-&gt;getLastYearSuffix($from['value']);
+				if($sf){
+					$to['value'].= $sf;
+				}
+			}
+		}
+		if(!isset($from['value']) or !isset($to['value'])){
+			$msg = &quot;Could not detect correct values in range&quot; . ((isset($from['value'])) ? &quot;From: &quot;.$from['value'] : &quot; no from detected&quot;);
+			$msg .= ((isset($to['value'])) ? &quot; To: &quot;.$to['value'] : &quot; no to detected&quot;);
+			return $this-&gt;failure_result($msg, 400);
+		}
+		elseif($this-&gt;strToYear($from['value']) &gt; $this-&gt;strToYear($to['value'])){
+			$datevals = array(&quot;from&quot; =&gt; $to['value'], &quot;to&quot; =&gt; $from['value'], &quot;type&quot; =&gt; &quot;range&quot;, &quot;comment&quot; =&gt; $date_comment);				
+		}
+		else {
+			$datevals = array(&quot;from&quot; =&gt; $from['value'], &quot;to&quot; =&gt; $to['value'], &quot;type&quot; =&gt; &quot;range&quot;, &quot;comment&quot; =&gt; $date_comment);
+		}
+		return $datevals;
+	}
+	
+	function containsYearSuffix($str){
+		$pattern = &quot;/(\d{1,5})\s*(ce|bce|bc)?/i&quot;;
+		$matches = array();
+		if(preg_match($pattern, $str, $matches)){
+			return (isset($matches[2]) &amp;&amp; $matches[2]);
+		}
+		return false;
+	}
+	
+	function getFirstYearSuffix($str){
+		$pattern = &quot;/(ce|bce|bc)/i&quot;;
+		$matches = array();
+		if(preg_match($pattern, $str, $matches)){
+			if(isset($matches[1]) &amp;&amp; $matches[1]){
+				if(stristr($matches[1], &quot;bc&quot;) || stristr($matches[1], &quot;bce&quot;)){
+					return &quot;BCE&quot;;
+				}
+				return &quot;CE&quot;;
+			}
+		}
+		return false;
+	}
+	
+	function getLastYearSuffix($str){
+		$pattern = &quot;/.*(ce|bce|bc)/i&quot;;
+		$matches = array();
+		if(preg_match($pattern, $str, $matches)){
+			if(isset($matches[1]) &amp;&amp; $matches[1]){
+				if(stristr($matches[1], &quot;bc&quot;) || stristr($matches[1], &quot;bce&quot;)){
+					return &quot;BCE&quot;;
+				}
+				return &quot;CE&quot;;
+			}
+		}
+		return false;
+	}
+	
+	function strToYear($str){
+		$pattern = &quot;/(\d{1,5})\s*(ce|bce|bc)?/i&quot;;
+		$matches = array();
+		if(preg_match($pattern, $str, $matches)){
+			if(isset($matches[2]) &amp;&amp; (stristr($matches[2], &quot;bc&quot;) || stristr($matches[2], &quot;bce&quot;))){
+				return (0 - $matches[1]);
+			}
+			else return $matches[1];
+		}
+		return false;
+	}
+	
+	/*
+	 * In either a disputed or an uncertain date - if they are all ranges, make it a range...
+	 */
+	function consolidateDates($fragments, $type){
+		$earliest = false;
+		$latest = false;
+		foreach($fragments as $frag){
+			$x = false;
+			if($type == &quot;disputed&quot; &amp;&amp; $frag['value']['name'] == &quot;simpledate&quot;){
+				$x = $this-&gt;strToYear($frag['value']['text']);
+			}
+			elseif(isset($frag['name']) &amp;&amp; $frag['name'] == &quot;simpledate&quot;) {
+				$x = $this-&gt;strToYear($frag['text']);
+			}
+			if($x !== false){
+				if(($earliest === false) &amp;&amp; ($latest === false)){
+					$earliest = $x;
+					$latest = $x;
+				}
+				else {
+					$earliest = ($earliest &lt; $x) ? $earliest : $x;
+					$latest = ($latest &gt; $x) ? $latest : $x;
+				}
+			}
+			else {
+				$bounds = false;
+				if($type == &quot;disputed&quot; &amp;&amp; $frag['value']['name'] == &quot;simpledaterange&quot;){
+					$bounds = $this-&gt;getDateRangeBounds($frag['value']['value'][0]['text'], $frag['value']['value'][1]['text']);
+				}
+				elseif(isset($frag['name'] ) &amp;&amp; $frag['name'] == &quot;simpledaterange&quot;) {
+					$bounds = $this-&gt;getDateRangeBounds($frag['value'][0]['text'], $frag['value'][1]['text']);
+				}
+				if($bounds){
+					if(($earliest === false) &amp;&amp; ($latest === false)){
+						$earliest = $this-&gt;strToYear($bounds[0]);
+						$latest = $this-&gt;strToYear($bounds[1]);
+					}
+					else {
+						$earliest = ($earliest &lt; $this-&gt;strToYear($bounds[0])) ? $earliest : $this-&gt;strToYear($bounds[0]);
+						$latest = ($latest &gt; $this-&gt;strToYear($bounds[1])) ? $latest : $this-&gt;strToYear($bounds[1]);
+					}		
+				}
+				else {
+					return false;	
+				}
+			}
+		}
+		if(($earliest === false) || ($latest === false)){
+			return false;
+		}
+		$str = &quot;&quot;;
+		if($earliest &lt; 0){
+			$str = (0 - $earliest) . &quot;BCE - &quot;;
+		}
+		else {
+			$str = $earliest .&quot;CE - &quot;;
+		}
+		if($latest &lt; 0){
+			$str .= (0 - $latest) . &quot;BCE&quot;;
+		}
+		else {
+			$str .= $latest.&quot;CE&quot;;
+		}
+		$date_val = &quot;$earliest - $latest&quot;;
+		return array(&quot;type&quot; =&gt; $type, &quot;value&quot; =&gt; $str, &quot;comment&quot; =&gt; &quot;Date is $type&quot;);
+	}
+	
+	/*
+	 * deals with the problem of missing suffixes in ranges
+	 * If a suffix is missing, copy it from the other half of the range
+	 * Also, ensure that left &lt; right
+	 */
+	function getDateRangeBounds($dr1, $dr2){
+		$bounds = array();
+		$pattern = &quot;/(\d{1,5})\s*(ce|bce|bc)?/i&quot;;
+		$matches = array();
+		$matches2 = array();
+		if(preg_match($pattern, $dr1, $matches)){
+			if(!isset($matches[2]) or !$matches[2]){
+				if(preg_match($pattern, $dr2, $matches2)){
+					if(isset($matches2[2])){
+						if(stristr($matches2[2], &quot;bc&quot;) || stristr($matches2[2], &quot;bce&quot;)){
+							$dr1 .= &quot;BCE&quot;;
+							$dr2 = $matches2[1].&quot;BCE&quot;;
+						}
+						else {
+							$dr1 .= &quot;CE&quot;;
+							$dr2 = $matches2[1].&quot;CE&quot;;
+						}
+					}
+					else {
+						return $this-&gt;failure_result(&quot;No era suffix found on either side of date-range&quot;, 400);
+					}
+				}
+				else {
+					return $this-&gt;failure_result(&quot;From side of date range is not a valid date&quot;, 400);
+				}
+			}
+			else {
+				if(stristr($matches[2], &quot;bc&quot;) || stristr($matches[2], &quot;bce&quot;)){
+					$dr1 = ($matches[1]).&quot;BCE&quot;;
+				}
+				else {
+					$dr1 = ($matches[1]).&quot;CE&quot;;						
+				}
+				if(preg_match($pattern, $dr2, $matches2)){
+					if(!isset($matches2[2]) || !$matches2[2]){
+						if(stristr($matches[2], &quot;bc&quot;) || stristr($matches[2], &quot;bce&quot;)){
+							$dr2 .= &quot;BCE&quot;;
+						}
+						else {
+							$dr2 .= &quot;CE&quot;;
+						}
+						$dr2 .= $matches[2];
+					}
+					else {
+						if(stristr($matches2[2], &quot;bc&quot;) || stristr($matches2[2], &quot;bce&quot;)){
+							$dr2 = ($matches2[1]).&quot;BCE&quot;;
+						}
+						else {
+							$dr2 = ($matches2[1]).&quot;CE&quot;;
+						}
+					}
+				}
+				else {
+					return $this-&gt;failure_result(&quot;From side of date range is not a valid date&quot;, 400);
+				}
+			}
+		}
+		if($this-&gt;strToYear($dr1) &gt; $this-&gt;strToYear($dr2)){
+			return array($dr2, $dr1);
+		}
+		return array($dr1, $dr2);
+	}
+	
+	/*
+	 * Functions for converting lists of facts into tabular format...
+	 */
+	
+	/**
+	 * @param string $nga - the name of the NGA that the factlist belongs to
+	 * @param url $polity - the url of the polity page that the factlist belongs to
+	 * @param factlist $fl - fact list object - as returned by getFactsFromPage
+	 * @param boolean  $include_empties - include variables with empty values
+	 * @return array of rows -&gt; each row is a factoid
+	 */
+	function factListToRows($nga, $polity, $fl, $include_empties = false){
+		$rows = array();
+		foreach($fl[&quot;variables&quot;] as $varname =&gt; $varvals){
+			if(is_array($varvals)){
+				foreach($varvals as $val){
+					$rows[] = array($nga, $polity, &quot;&quot;, &quot;&quot;, $varname, $val['value_from'], $val['value_to'], $val['date_from'], $val['date_to'], $val['fact_type'], $val['value_type'], $val['date_type'], $val['comment']);
+				}
+			}
+			else {//empty
+				if($include_empties){
+					$rows[] = array($nga, $polity, &quot;&quot;, &quot;&quot;, $varname, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;empty&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;);
+				}
+			}
+		}
+		if(!isset($fl[&quot;sections&quot;]) or count($fl[&quot;sections&quot;]) == 0){
+			return $rows;
+		}
+		foreach($fl[&quot;sections&quot;] as $sname =&gt; $section){
+			foreach($section[&quot;variables&quot;] as $varname =&gt; $varvals){
+				if(is_array($varvals)){
+					foreach($varvals as $val){
+						$rows[] = array($nga, $polity, $sname, &quot;&quot;, $varname, $val['value_from'], $val['value_to'], $val['date_from'], $val['date_to'], $val['fact_type'], $val['value_type'], $val['date_type'], $val['comment']);
+					}
+				}
+				else {//empty
+					if($include_empties){
+						$rows[] = array($nga, $polity, $sname, &quot;&quot;, $varname, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;empty&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;);
+					}
+				}
+			}
+			if(isset($section[&quot;sections&quot;])){
+				foreach($section[&quot;sections&quot;] as $subsname =&gt; $subsection){
+					foreach($subsection[&quot;variables&quot;] as $varname =&gt; $varvals){
+						if(is_array($varvals)){
+							foreach($varvals as $val){
+								$rows[] = array($nga, $polity, $sname, $subsname, $varname, $val['value_from'], $val['value_to'], $val['date_from'], $val['date_to'], $val['fact_type'], $val['value_type'], $val['date_type'], $val['comment']);
+							}
+						}
+						else {//empty
+							if($include_empties){
+								$rows[] = array($nga, $polity, $sname, $subsname, $varname, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;empty&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;);
+							}
+						}
+					}
+				}
+			}
+		}
+		return $rows;
+	}	
+
+	
+
+	
+	/*
+	 * Log into the Seshat Wiki....
+	 */
+	function login(){
+		$this-&gt;ch = curl_init();
+		//initial curl setting
+		curl_setopt($this-&gt;ch, CURLOPT_URL, $this-&gt;settings['scraper']['loginUrl']);
+		curl_setopt($this-&gt;ch, CURLOPT_COOKIEJAR, $this-&gt;settings['scraper']['cookiejar']);
+		curl_setopt($this-&gt;ch, CURLOPT_RETURNTRANSFER, 1);
+		if(isset ($this-&gt;settings['http_proxy']) &amp;&amp; $this-&gt;settings['http_proxy']){
+			curl_setopt($this-&gt;ch, CURLOPT_PROXY, $this-&gt;settings['http_proxy']);
+		}
+		
+		$this-&gt;timeEvent(&quot;Start Login&quot;, &quot;debug&quot;);
+		//get token from login page
+		$store = curl_exec($this-&gt;ch);
+		if(curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE) != 200 || !$store){
+			$this-&gt;ucontext-&gt;logger-&gt;timeEvent(&quot;Logging in Failed&quot;);				
+			return $this-&gt;failure_result(&quot;Failed to retrieve login page &quot;.$this-&gt;settings['scraper']['loginUrl'], curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE), &quot;warning&quot;);				
+		}
+		$this-&gt;timeEvent(&quot;Login Page Retrieved&quot;, &quot;debug&quot;);				
+		$loginToken = false;
+		$dom = new DOMDocument;
+		libxml_use_internal_errors(true);
+		$dom-&gt;loadHTML($store);
+		$xpath = new DOMXPath($dom);
+		$nodes = $xpath-&gt;query('//input');
+		foreach($nodes as $node) {
+			$nodename = $node-&gt;getAttribute('name');
+			if($nodename == 'wpLoginToken'){
+				$loginToken = $node-&gt;getAttribute('value');
+			}
+		}
+		$this-&gt;timeEvent(&quot;Login Page Parsed&quot;, &quot;debug&quot;);		
+		if(!$loginToken){
+			return $this-&gt;failure_result(&quot;Failed to find login token on login page &quot;.$this-&gt;settings['scraper']['loginUrl'], 404, &quot;error&quot;);				
+		}
+		libxml_clear_errors();
+		//login
+		curl_setopt($this-&gt;ch, CURLOPT_POST, 1);
+		curl_setopt($this-&gt;ch, CURLOPT_POSTFIELDS, 'wpName='.$this-&gt;settings['scraper']['username'].'&amp;wpPassword='.$this-&gt;settings['scraper']['password'].'&amp;wpLoginAttempt=Log+in&amp;wpLoginToken='.$loginToken);
+		$store = curl_exec($this-&gt;ch);
+		$http_status = curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE);
+		if($http_status &gt;= 400){
+			$this-&gt;ucontext-&gt;logger-&gt;timeEvent(&quot;Login Failed&quot;);				
+			return $this-&gt;failure_result(&quot;Failed to login to wiki&quot;, 400, &quot;warning&quot;);
+		}
+		$this-&gt;timeEvent(&quot;Login Successful&quot;, &quot;info&quot;);				
+		return true;
+	}
+	
+
+	/**
+	 * Produces a monthly series of historical dumps of the data in the wiki
+	 *
+	 */
+	function getHistory(){
+		$dates_list = array();
+		//$step_size = isset($date_info['step_size']) ? $date_info['step_size'] : &quot;m&quot;;
+		//$sd = isset($date_info['start_date']) ? $date_info['start_date'] : false;
+		//$ed = isset($date_info['end_date']) ? $date_info['end_date'] : strtotimedate();
+		$current_year = date(&quot;Y&quot;);
+		$current_month = date(&quot;m&quot;);
+		$dates_list[] = array(2012, 09);
+		$dates_list[] = array(2012, 10);
+		$dates_list[] = array(2012, 11);
+		$dates_list[] = array(2012, 12);
+		for($j = 2013; $j &lt; $current_year; $j++){
+			for($i = 1; $i &lt; 13; $i++){
+				$dates_list[] = array($j, $i);
+			}
+		}
+		for($k = 1; $k &lt; $current_month + 1; $k++){
+			$dates_list[] = array($current_year, $k);
+		}
+		foreach($dates_list as $i =&gt; $one_date){
+			$dates_list[$i][] = $this-&gt;getWikiURLforDate($this-&gt;settings['scraper']['mainPage'], $one_date[0], $one_date[1]);
+		}
+		return $dates_list;
+	}
+	
+	function getWikiURLforDate($page, $y, $m){
+		if($m &lt; 10) $m = &quot;0&quot;.$m;
+		$history_url = $page . &quot;?action=history&amp;offset=&quot;.$y.$m.&quot;01&quot;;
+		curl_setopt($this-&gt;ch, CURLOPT_URL, $history_url);
+		curl_setopt($this-&gt;ch, CURLOPT_RETURNTRANSFER, 1);
+		$content = curl_exec($this-&gt;ch);
+		if(curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+			return $this-&gt;failure_result(&quot;Failed to retrieve page $page history for year $y, month $m&quot;, curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE), &quot;warning&quot;);
+		}
+		//$matches = array();
+		preg_match(&quot;/oldid\=\d+/&quot;, $content, $matches);
+		if(count($matches) &gt; 0){
+			echo &quot;got a match &quot;;
+			opr($matches);
+			return $page . &quot;?&quot;. $matches[0];
+		}
+		echo $history_url.&quot;&lt;hr&gt;&lt;p&gt;&quot;.$content.&quot; bytes returned&quot;.&quot;&lt;hr&gt;&lt;P&gt;&quot;;
+		return false;
+	}
+	
+	/**
+	 *
+	 */
+	function generateSchema(){
+		curl_setopt($this-&gt;ch, CURLOPT_URL, $this-&gt;getServiceSetting('codeBook'));
+		$content = curl_exec($this-&gt;ch);
+		if(curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+			return $this-&gt;failure_result(&quot;Failed to retrieve url: $pageURL&quot;, curl_getinfo($this-&gt;ch, CURLINFO_HTTP_CODE), &quot;info&quot;);
+		}
+		echo(&quot;#Main Variables (polity-based)\n&quot;);
+		$bits = explode(&quot;Main Variables (polity-based)&quot;, $content);
+		$content = $bits[count($bits)-1];//ditch the early bit;
+		$bits = explode(&quot;&lt;/dl&gt;&quot;, $content);
+		array_pop($bits);
+		$content = implode(&quot;&lt;/dl&gt;&quot;, $bits);
+		$sections = explode(&quot;&lt;h2&gt;&quot;, $content);
+		foreach($sections as $sect){
+			$properties = array();
+			$sec_bits = explode(&quot;&lt;/span&gt;&lt;/h2&gt;&quot;, $sect);
+			if(count($sec_bits) == 2){
+				$sec_title = substr($sec_bits[0], strrpos($sec_bits[0], &quot;&gt;&quot;)+1);
+				echo(&quot;#$sec_title&quot;);
+				mb_regex_encoding('UTF-8');
+				$pieces = mb_split('&spades;', $sec_bits[1]);
+				foreach($pieces as $piece){
+					$sub_pieces = mb_split(&quot;&clubs;.*&hearts;&quot;, $piece);
+						
+					$property_name = trim(strip_tags($sub_pieces[0]));
+					if($property_name){
+						$property_comment = trim(strip_tags($sub_pieces[1]));
+						$property_nam = str_replace(array(&quot;(&quot;, &quot;)&quot;, &quot;-&quot;), &quot; &quot;, $property_name);
+						$names_pieces = preg_split(&quot;/\s+/&quot;, $property_nam);
+						//echo count($names_pieces);
+						$pname = &quot;&quot;;
+						foreach($names_pieces as $np){
+							$pname .= ucfirst($np);
+						}
+						$domain = $this-&gt;mapVariableToDomain($pname);
+						if($domain){
+							$range = $this-&gt;mapVariableToRange($pname);
+							$prop_assertions = array();
+							$prop_assertions[] = 'seshat:'.$pname.&quot; a &quot;.$range[0].&quot;;\n&quot;;
+							$prop_assertions[] = &quot;\trdfs:label \&quot;$property_name\&quot;;\n&quot;;
+							$prop_assertions[] = &quot;\trdfs:domain $domain;\n&quot;;
+							$prop_assertions[] = &quot;\trdfs:range  $range[1];\n&quot;;
+							if($this-&gt;allowsMultipleValues($pname) === false){
+							$prop_assertions[] = &quot;\trdfs:subClassOf [ a owl:Restriction ;\n&quot;;
+									$prop_assertions[] = &quot;\t\towl:maxCardinality 1 ;\n&quot;;
+											$prop_assertions[] = &quot;\t\towl:onProperty sghd:$pname\n&quot;;
+											$prop_assertions[] = &quot;\t\t] ;\n&quot;;
+							}
+							$prop_assertions[] = &quot;\trdfs:comment \&quot;$property_comment\&quot; .\n\n&quot;;
+							opr($prop_assertions);
+							foreach($prop_assertions as $p){
+								//echo $p;
+							}
+						}
+					}
+				}
+				//get rid of all text up to first variable...
+			}
+		}
+		//rdfs:subClassOf
+		//[ a       owl:Restriction ;
+		//owl:maxCardinality 1 ;
+		//owl:onProperty :hours
+		//] ;
+	
+		//$facts = $this-&gt;getFactsFromPage($content);
+		//mb_regex_encoding('UTF-8');
+		//$pieces = mb_split('&spades;', $content);
+		//get rid of all text up to first variable...
+		//array_shift($pieces);
+		//opr($pieces);
+		return true;
+	
+		//$cfacts = $this-&gt;getSchemaFromURL($this-&gt;settings['scraper']['codeBook']);
+	
+	}
+	
+	//The following 3 functions are mappings to rdf for each variable
+	
+	function allowsMultipleValues($property_name){
+		$map = array(
+				&quot;AlternativeNames&quot;
+		);
+		return in_array($property_name, $map);
+	}
+	
+	function mapVariableToDomain($property_name, $context = &quot;&quot;){
+		$map = array(
+				&quot;RA&quot; =&gt; false,
+				&quot;Expert&quot; =&gt; false,
+				&quot;Duration&quot; =&gt; &quot;seshat:TemporalEntity&quot;
+		);
+		if(isset($map[$property_name])) {
+			return $map[$property_name];
+		}
+		return &quot;seshat:SocialOrganisation&quot;;
+	}
+	
+	function mapVariableToRange($property_name){
+		$map = array(
+				&quot;Duration&quot; =&gt; array(&quot;owl:ObjectProperty&quot;, &quot;time:Interval&quot;),
+				&quot;UTMZone&quot; =&gt; array(&quot;owl:ObjectProperty&quot;, &quot;tzont:TimeZone&quot;),
+				&quot;PeakDate&quot; =&gt; array(&quot;owl:ObjectProperty&quot;, &quot;time:TemporalEntity&quot;)
+		);
+		return (isset($map[$property_name])) ? $map[$property_name] : array(&quot;owl:DataProperty&quot;, &quot;xsd:string&quot;);
+	}
+	
+	
+
+	/*
+	 * Functions for making url names of pages readable
+	 */
+	function formatNGAName($url){
+		$bits = explode(&quot;/&quot;, $url);
+		$x = $bits[count($bits) - 1];
+		return str_replace(array(&quot;_&quot;, &quot;,&quot;, &quot;#&quot;), array(&quot; &quot;, &quot;&quot;, &quot;&quot;), $x);
+		//return str_replace(&quot;_&quot;, &quot; &quot;, $x);
+	}
+	
+	function parsePolityName($url){
+		$p_details = array(
+			&quot;url&quot; =&gt; $url,
+			&quot;shorturl&quot; =&gt; substr($url, 0,40),
+			&quot;polityname&quot; =&gt; &quot;&quot;);
+		$bits = explode(&quot;/&quot;, $url);
+		$x = $bits[count($bits) - 1];
+		$p_details['polityname'] = str_replace(&quot;_&quot;, &quot; &quot;, $x);
+		return $p_details;
+	}
+	
+	function unformatSectionName($tit){
+		return str_replace(&quot; &quot;, &quot;_&quot;, $tit);
+	}
+
+}
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

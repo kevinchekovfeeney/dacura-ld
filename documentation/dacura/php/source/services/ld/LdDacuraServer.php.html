@@ -1,0 +1,917 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+include_once(&quot;phplib/PolicyEngine.php&quot;);
+include_once(&quot;lib/EntityCreateRequest.php&quot;);
+include_once(&quot;lib/EntityUpdate.php&quot;);
+include_once(&quot;lib/LDEntity.php&quot;);
+include_once(&quot;lib/Schema.php&quot;);
+include_once(&quot;lib/GraphManager.php&quot;);
+require_once(&quot;lib/AnalysisResults.php&quot;);
+require_once(&quot;lib/NSResolver.php&quot;);
+require_once(&quot;LdService.php&quot;);
+include_once(&quot;LDDBManager.php&quot;);
+
+
+/*
+* This class implements the basic processing pipeline of dacura linked data objects
+* Particular entity types can override whichever parts they want
+* It provides defered updates and version management / linked data conformance
+ */
+
+class LdDacuraServer extends DacuraServer {
+
+	var $dbclass = &quot;LDDBManager&quot;;
+	var $policy; //policy engine to decide what to do with incoming requests
+	var $graphman; //graph manager object
+	var $nsres; //the namespace resolving service - system wide
+	var $cwurlbase = false;
+	var $graphbase = false;
+	var $schema = false;
+
+	function __construct($service){
+		parent::__construct($service);
+		$this-&gt;policy = new PolicyEngine();
+		$this-&gt;graphman = new GraphManager($this-&gt;settings);
+		$this-&gt;loadNamespaces();
+	}
+	
+	function loadNamespaces(){
+		$onts = $this-&gt;getEntities(array(&quot;type&quot; =&gt; &quot;ontology&quot;));
+		//$onts = $this-&gt;getEntities(array(&quot;type&quot; =&gt; &quot;ontology&quot;, &quot;status&quot; =&gt; &quot;accept&quot;));//introduces bug of missing url in dependency listing.
+		$this-&gt;nsres = new NSResolver();
+		foreach($onts as $i =&gt; $ont){
+			$ont['meta'] = json_decode($ont['meta'], true);
+			if(isset($ont['id']) &amp;&amp; $ont['id'] &amp;&amp; isset($ont['meta']['url']) &amp;&amp; $ont['meta']['url']){
+				$this-&gt;nsres-&gt;prefixes[$ont['id']] = $ont['meta']['url'];
+			}
+		}
+	}
+	
+	function getEntityTypeFromClassname(){
+		$cname = get_class($this);
+		return substr($cname, -(strlen(&quot;DacuraServer&quot;)));
+	}
+	
+	
+	function createNewEntityObject($id, $type){
+	 	$this-&gt;update_type = $type;
+	 	$cname = ucfirst($type).&quot;CreateRequest&quot;;
+	 	$obj = new $cname($id);
+	 	$obj-&gt;setNamespaces($this-&gt;nsres);
+	 	return $obj; 
+	}
+	
+	function createNewEntityUpdateObject($oent, $type){
+	 	$this-&gt;update_type = $type;
+		$uclass = ucfirst($type).&quot;UpdateRequest&quot;;
+		$uent = new $uclass(false, $oent);
+		return $uent;
+	}
+	
+	function loadSchemaFromContext(){
+		$filter = array(&quot;type&quot; =&gt; &quot;graph&quot;, &quot;collectionid&quot; =&gt; $this-&gt;cid(), &quot;include_all&quot; =&gt; true);
+		$ents = $this-&gt;getEntities($filter);
+		$sc = new Schema($this-&gt;cid(), $this-&gt;durl());
+		if($ents){
+			$sc-&gt;load($ents);
+		}
+		elseif($this-&gt;errcode != 404){
+			return false;
+		}
+		$sc-&gt;nsres = $this-&gt;nsres;
+		return $sc;
+	}
+	
+	function getPolicyDecision($action, $args){
+		return $this-&gt;policy-&gt;getPolicyDecision($action, $this-&gt;update_type, $args);
+	}
+	
+	
+	/*
+	 * This is the LD Quality control interface
+	 * All of these methods return a graph analysis results object
+	 */
+	/*
+	 * Called when an entity's state changes to 'accept' 
+	 * It is then 'published' (what that means exactly depends on the type of the entity)
+	 * Takes a LdEntity object
+	 */
+	function publishEntityToGraph($ent, $is_test=false){
+		$ar = new GraphAnalysisResults(&quot;entity $ent-&gt;id published (test: $is_test)&quot;);
+		return $ar-&gt;accept();
+	}
+	
+	function deleteEntityFromGraph($ent, $is_test = false){
+		$ar = new GraphAnalysisResults(&quot;entity $ent-&gt;id removed (test: $is_test)&quot;);
+		return $ar-&gt;accept();
+	}
+	
+	/*
+	 * Take EntityUpdateRequest Object
+	 */
+	
+	/*
+	 * Called when an entity is updated 
+	 * The updates are then published 
+	 */
+	function updateEntityInGraph($uent, $is_test = false){
+		$ar = new GraphAnalysisResults(&quot;entity &quot; . $uent-&gt;original-&gt;id.&quot; updated (test: $is_test)&quot;);
+		return $ar-&gt;accept();
+	}
+	
+	function undoEntityUpdate($uent, $is_test = false){
+		$ar = new GraphAnalysisResults(&quot;rolling back update $ent-&gt;id to entity &quot;.$uent-&gt;original-&gt;id.&quot; (test: $is_test)&quot;);
+		return $ar-&gt;accept();		
+	}
+	
+	/*
+	 * Called to update an existing update (e.g. to make minor corrections to an update without creating a new revision.
+	 */
+	function updatePublishedUpdate($uenta, $uentb, $is_test = false){
+		$ar = new GraphAnalysisResults(&quot;update update $uenta-&gt;id to entity &quot;.$uenta-&gt;original-&gt;id.&quot; (test: $is_test)&quot;);
+		return $ar-&gt;accept();		
+	}
+	
+
+	/*
+	 * Loading lists of entities and updates
+	 */
+	function getEntities($filter){
+		$data = $this-&gt;dbman-&gt;loadEntityList($filter);
+		if(!$data){
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+		return $data;
+	}
+	
+	function getUpdates($filter){
+		$data = $this-&gt;dbman-&gt;loadUpdatesList($filter);
+		if($data){
+			return $data;
+		}
+		return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+	}
+
+	/*
+	 * the getEntity version returns a AR object to support direct API access
+	 * also loads things like history and updates -&gt; for UI 
+	 */
+	function getEntity($entity_id, $type, $fragment_id = false, $version = false, $options = array()){
+		$action = &quot;Fetching &quot; . ($fragment_id ? &quot;fragment $fragment_id from &quot; : &quot;&quot;);
+		$this-&gt;update_type = $type;
+		$action .= &quot;$type $entity_id&quot;. ($version ? &quot; version $version&quot; : &quot;&quot;);
+		$ar = new SimpleRequestResults($action);
+		$ent = $this-&gt;loadEntity($entity_id, $type, $this-&gt;cid(), $fragment_id, $version, $options);
+		if(!$ent){
+			return $ar-&gt;failure($this-&gt;errcode, &quot;Error loading $type $entity_id&quot;, $this-&gt;errmsg);
+		}
+		$ar-&gt;add($this-&gt;getPolicyDecision(&quot;view&quot;, $ent));
+		if($ar-&gt;is_accept()){
+			$ar-&gt;set_result($ent);
+		}
+		return $ar;
+	}
+	
+	/*
+	 * the load Entity version returns the normal dacura error codes...
+	 */
+	function loadEntity($entity_id, $type, $cid, $fragment_id = false, $version = false, $options = array()){
+		$ent = $this-&gt;dbman-&gt;loadEntity($entity_id, $type, $cid, $options);
+		if(!$ent){
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+		if($options &amp;&amp; in_array('history', $options)){
+			$ent-&gt;history = $this-&gt;loadHistoricalRecord($ent);
+			$updopts = array(&quot;include_all&quot; =&gt; true, 'type' =&gt; $type, &quot;collectionid&quot; =&gt; $this-&gt;cid(), &quot;entityid&quot; =&gt; $entity_id);
+			$ent-&gt;updates = $this-&gt;getUpdates($updopts);
+		}
+		$ent-&gt;nsres = $this-&gt;nsres;
+		if($version &amp;&amp; $ent-&gt;version() &gt; $version){
+			if(!$this-&gt;rollBackEntity($ent, $version)){
+				return false;
+			}
+		}
+		if($fragment_id){
+			$show_context = true;//should be in options
+			$ent-&gt;buildIndex();
+			if($this-&gt;cwurlbase){
+				$fid = $this-&gt;cwurlbase.&quot;/&quot;.$entity_id.&quot;/&quot;.$fragment_id;
+			}
+			else {
+				$fid = $fragment_id;
+			}
+			$frag = $ent-&gt;getFragment($fid);
+			$ent-&gt;fragment_id = $fid;
+			if($frag &amp;&amp; $show_context){
+				$ent-&gt;setContentsToFragment($fid);
+				$types = array();
+				foreach($frag as $fobj){
+					if(isset($fobj['rdf:type'])){
+						$types[] = $fobj['rdf:type'];
+					}
+				}
+				$ent-&gt;fragment_paths = $ent-&gt;getFragmentPaths($fid);
+				$ent-&gt;fragment_details = count($types) == 0 ? &quot;Undefined Type&quot; : &quot;Types: &quot;.implode(&quot;, &quot;, $types);
+			}
+			else {
+				if($frag){
+					$ent-&gt;ldprops = $frag;
+				}
+				else {
+					return $this-&gt;failure_result(&quot;Failed to load fragment $fid&quot;, 404);
+				}
+			}
+		}
+		return $ent;
+	}
+
+	function loadHistoricalRecord($oent, $from_version = 0, $to_version = 1){
+		$ent = clone $oent;
+		$histrecord = array(array(
+			'status' =&gt; $ent-&gt;status,
+			'version' =&gt; $ent-&gt;version,
+			'version_replaced' =&gt; 0				
+		));
+		$history = $this-&gt;getEntityHistory($ent, $to_version);
+		foreach($history as $i =&gt; $old){
+			$histrecord[count($histrecord) -1]['created_by'] = $old['eurid'];
+			$histrecord[count($histrecord) -1]['forward'] = $old['forward'];
+			$histrecord[count($histrecord) -1]['backward'] = $old['backward'];
+			$back_command = json_decode($old['backward'], true);
+			if(!$ent-&gt;update($back_command, true)){
+				return $this-&gt;failure_result($ent-&gt;errmsg, $ent-&gt;errcode);
+			}
+			$histrecord[count($histrecord) -1]['createtime'] = $old['modtime'];
+			$histrecord[] = array(
+				'status' =&gt; isset($ent-&gt;meta['status']) ? $ent-&gt;meta['status'] : $ent-&gt;status, 
+				&quot;version&quot; =&gt; $old['from_version'],
+				&quot;version_replaced&quot; =&gt; $old['modtime']
+			);
+		}
+		$histrecord[count($histrecord) -1]['forward'] = json_encode($ent-&gt;ldprops);
+		$histrecord[count($histrecord) -1]['backward'] = json_encode(array());
+		$histrecord[count($histrecord) -1]['createtime'] = $ent-&gt;created;
+		$histrecord[count($histrecord) -1]['created_by'] = 0;
+		//$histrecord[] 
+		return $histrecord;
+	}
+	
+	/*
+	 * Rolls an entity back to some particular version
+	 */
+	function rollBackEntity(&amp;$ent, $version){
+		$history = $this-&gt;getEntityHistory($ent, $version);
+		foreach($history as $i =&gt; $old){
+			if($old['from_version'] &lt; $version){
+				continue;
+			}
+			$back_command = json_decode($old['backward'], true);
+			if(!$ent-&gt;update($back_command, true)){
+				return $this-&gt;failure_result($ent-&gt;errmsg, $ent-&gt;errcode);
+			}
+			$ent-&gt;status = isset($ent-&gt;meta['status']) ? $ent-&gt;meta['status'] : $ent-&gt;status;
+			$ent-&gt;version = $old['from_version'];
+			$ent-&gt;version_created = $old['modtime'];
+			if($i == 0){
+				$ent-&gt;version_replaced = $ent-&gt;modified;
+			}
+			else {
+				$ent-&gt;version_replaced = $history[$i-1]['modtime'];
+			}
+		}
+		return $ent;
+	}
+	
+	/*
+	 * Returns a list of all the updates to an entity that have been accepted, organised in order of last to first...
+	 */
+	function getEntityHistory($ent, $version){
+		$history = $this-&gt;dbman-&gt;loadEntityUpdateHistory($ent, $version);
+		if($history === false){
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+		return $history;
+	}
+	
+	
+	/*
+	 * Same pattern applies for retreiving updates
+	 */
+	function getUpdate($id, $options = array()){
+		$ar = new SimpleRequestResults(&quot;Loading Update Request $id from DB&quot;, false);
+		$ur = $this-&gt;loadUpdate($id, $options);
+		if(!$ur){
+			return $ar-&gt;failure($this-&gt;errcode, &quot;Failed to load Update $id&quot;, $this-&gt;errmsg);
+		}
+		$ar-&gt;add($this-&gt;getPolicyDecision(&quot;view update&quot;, $ur));
+		if($ar-&gt;is_accept()){
+			$ar-&gt;set_result($ur);
+		}
+		return $ar;
+	}	
+	
+	function loadUpdate($id, $options = array(), $vfrom = false, $vto = false){
+		$eur = $this-&gt;dbman-&gt;loadEntityUpdateRequest($id, $options);
+		$vto = $vto ? $vto : $eur-&gt;to_version();
+		$vfrom = $vfrom ? $vfrom : $eur-&gt;from_version();
+		$orig = $this-&gt;loadEntity($eur-&gt;targetid, $eur-&gt;type, $eur-&gt;cid, $eur-&gt;did, false, $vfrom, $options);
+		if(!$orig){
+			return $this-&gt;failure_result(&quot;Failed to load Update $id - could not load original &quot; .$this-&gt;errmsg, $this-&gt;errcode);
+		}
+		$eur-&gt;setOriginal($orig);
+		$changed = false;
+		if($vto &gt; 0){
+			$changed = $this-&gt;loadEntity($eur-&gt;targetid, $eur-&gt;type, $eur-&gt;cid, $eur-&gt;did, false, $vto, $options);
+			if(!$changed){
+				return $this-&gt;failure_result(&quot;Loading of $this-&gt;entity_type update $id failed - could not load changed &quot;.$this-&gt;errmsg, $this-&gt;errcode);
+			}
+		}
+		if(!$eur-&gt;calculate($changed)){
+			return $this-&gt;failure_result($eur-&gt;errmsg, $eur-&gt;errcode);
+		}
+		return $eur;
+	}
+		
+	function createEntity($type, $create_obj, $demand_id, $options, $test_flag = false){
+		$ar = new UpdateAnalysisResults(&quot;Creating $type&quot;, $test_flag);
+		if($demand_id){
+			if($this-&gt;demandIDValid($demand_id, $type)){
+				$id = $this-&gt;generateNewEntityID($type, $demand_id);
+			}
+			else {
+				$id = $this-&gt;generateNewEntityID($type);
+			}
+			if($id != $demand_id){
+				$this-&gt;addIDAllocationWarning($ar, $type, $test_flag, $id);
+			}
+		}
+		else {
+			$id = $this-&gt;generateNewEntityID($type);
+		}
+		$nent = $this-&gt;createNewEntityObject($id, $type);
+		if(!$nent){
+			return $ar-&gt;failure($this-&gt;errcode, &quot;Request Create Error&quot;, &quot;New $type object sent to API had formatting errors. &quot;.$this-&gt;errmsg);				
+		}
+		$nent-&gt;setContext($this-&gt;cid());
+		if(!$nent-&gt;loadFromAPI($create_obj)){
+			return $ar-&gt;failure($nent-&gt;errcode, &quot;Protocol Error&quot;, &quot;New $type object sent to API had formatting errors. &quot;.$nent-&gt;errmsg);
+		}
+		elseif(!$nent-&gt;validate()){
+			return $ar-&gt;failure($nent-&gt;errcode, &quot;Invalid create $type request&quot;, &quot;The create request contained errors: &quot;.$nent-&gt;errmsg);
+		}
+		elseif(!$nent-&gt;expand($this-&gt;policy-&gt;demandIDAllowed(&quot;create&quot;, $type, $nent))){
+			return $ar-&gt;failure($nent-&gt;errcode, &quot;Invalid Create Request&quot;, $nent-&gt;errmsg);
+		}
+		$nent-&gt;expandNS();//use fully expanded urls internally - support prefixes in input
+		$ar-&gt;add($this-&gt;getPolicyDecision(&quot;create&quot;, $nent));
+		if($ar-&gt;is_reject()){
+			$nent-&gt;set_status($ar-&gt;decision);
+			if($this-&gt;policy-&gt;storeRejected($type, $nent) &amp;&amp; !$test_flag){
+				if(!$this-&gt;dbman-&gt;createEntity($nent, $type)){
+					$ar-&gt;addError($this-&gt;dbman-&gt;errcode, &quot;Usage Monitoring&quot;, &quot;Failed to store copy of rejected create of $type.&quot;, $this-&gt;dbman-&gt;errmsg);
+				}
+			}
+			return $ar;
+		}
+		$dont_publish = $ar-&gt;decision != &quot;accept&quot; || $test_flag;
+		$gu = $this-&gt;publishEntityToGraph($nent, $dont_publish);
+		if($gu-&gt;is_reject() &amp;&amp; $ar-&gt;is_accept() &amp;&amp; $this-&gt;policy-&gt;rollbackToPending(&quot;create&quot;, $type, $nent)){
+			$ar-&gt;addWarning(&quot;Publication&quot;, &quot;Rejected by Graph Management Service&quot;, &quot;State changed from accept to pending&quot;);
+			$nent-&gt;set_status(&quot;pending&quot;);
+			$gu = $this-&gt;publishEntityToGraph($nent, &quot;pending&quot;, $test_flag);
+			$ar-&gt;setReportGraphResult($gu, true);
+			$ar-&gt;decision = &quot;pending&quot;;
+		}
+		else {
+			$ar-&gt;setReportGraphResult($gu);
+		}
+		$nent-&gt;set_status($ar-&gt;decision);
+		//$ar-&gt;setCandidateGraphResult($nent-&gt;internalTriples());
+		$ar-&gt;setCandidateGraphResult($nent-&gt;triples());
+		if(!($test_flag || $ar-&gt;is_confirm())){
+			if(!$this-&gt;dbman-&gt;createEntity($nent, $type)){
+				$disaster = new AnalysisResults(&quot;Database Synchronisation&quot;);
+				$disaster-&gt;failure($this-&gt;dbman-&gt;errcode, &quot;Internal Error&quot;, &quot;Failed to create database candidate record &quot;. $this-&gt;dbman-&gt;errmsg);
+				$ar-&gt;add($disaster);
+				if($ar-&gt;includesGraphChanges()){
+					$recovery = $this-&gt;deleteEntityFromGraph($nent);
+					$ar-&gt;undoReportGraphResult($recovery);
+				}
+			}
+		}
+		$ar-&gt;set_result($nent-&gt;getDisplayFormat());
+		return $ar;
+	}
+
+	/*
+	 * Methods dealing with Entity ID generation
+	 */	
+	function generateNewEntityID($type, $demand = false){
+		if($demand){
+			return $demand;
+		}
+		return uniqid_base36(true);
+	}
+	
+	function addIDAllocationWarning(&amp;$ar, $type, $test_flag, $id){
+		$txt = &quot;Requested ID could not be granted (&quot;.$this-&gt;errmsg.&quot;).&quot;;
+		$extra = &quot;&quot;;
+		if($test_flag){
+			$txt = &quot;An ID will be randomly generated when the $type is created.&quot;;
+			$extra = &quot;$id is an example of a randomly generated ID, it will be replaced by another if the $type is created&quot;;
+		}
+		else {
+			$txt = &quot;The $type was allocated a randomly generated ID: $id&quot;;
+		}
+		$ar-&gt;addWarning(&quot;Generating id&quot;, $txt, $extra);
+	}
+	
+	function updateEntity($target_id, $type, $cnt, $meta, $fragment_id, $options = array(), $test_flag = false){
+		$ar = new UpdateAnalysisResults(&quot;Update $target_id&quot;, $test_flag);
+		$oent = $this-&gt;loadEntity($target_id, $type, $this-&gt;cid(), $fragment_id);
+		if(!$oent){
+			if($this-&gt;errcode){
+				return $ar-&gt;failure($this-&gt;errcode, &quot;Failed to load $target_id&quot;, $this-&gt;errmsg);
+			}
+			else {
+				return $ar-&gt;failure(404, &quot;No such $this-&gt;entity_type&quot;, &quot;$target_id does not exist.&quot;);
+			}
+		}
+		$uent = $this-&gt;createNewEntityUpdateObject($oent, $type);
+		if(!$uent){
+			return $ar-&gt;failure(403, &quot;Update Failed&quot;, &quot;Cant create update object for $oent-&gt;id&quot;);				
+		}
+		$uent-&gt;setNamespaces($this-&gt;nsres);	
+		$form = isset($options['format']) ? $options['format'] : &quot;json&quot;;
+		//is this entity being accessed through a legal collection context?
+		if(!$uent-&gt;isLegalContext($this-&gt;cid())){
+			return $ar-&gt;failure(403, &quot;Access Denied&quot;, &quot;Cannot update $oent-&gt;id through context &quot;.$this-&gt;cid());
+		}
+		elseif(!$uent-&gt;loadFromAPI($cnt, $meta, $form)){
+			return $ar-&gt;failure($uent-&gt;errcode, &quot;Protocol Error&quot;, &quot;Failed to load the update command from the API. &quot;, $uent-&gt;errmsg);
+		}
+		if($uent-&gt;nodelta()){
+			return $ar-&gt;reject(&quot;No Changes&quot;, &quot;The submitted version is identical to the current version.&quot;);
+		}
+		$ar-&gt;add($this-&gt;getPolicyDecision(&quot;update&quot;, $uent));
+		if($ar-&gt;is_reject()){
+			$uent-&gt;set_status($ar-&gt;decision);
+			if($this-&gt;policy-&gt;storeRejected(&quot;update &quot;.$type, $uent) &amp;&amp; !$test_flag){
+				if(!$this-&gt;dbman-&gt;updateEntity($uent, $ar-&gt;decision)){
+					$ar-&gt;addError($this-&gt;dbman-&gt;errcode, &quot;Usage Monitoring&quot;, &quot;Failed to store copy of rejected update.&quot;, $this-&gt;dbman-&gt;errmsg);
+				}
+			}
+			return $ar;
+		}
+		
+		$this-&gt;checkUpdate($ar, $uent, $test_flag);
+		if(($ar-&gt;is_accept() or $ar-&gt;is_pending()) &amp;&amp; !$test_flag){
+			if(!$this-&gt;dbman-&gt;updateEntity($uent, $ar-&gt;decision)){
+				$disaster = new AnalysisResults(&quot;Database Synchronisation&quot;);
+				$disaster-&gt;failure($this-&gt;dbman-&gt;errcode, &quot;Internal Error&quot;, &quot;Failed to update database candidate record &quot;. $this-&gt;dbman-&gt;errmsg);
+				$ar-&gt;add($disaster);
+				$this-&gt;rollBackUpdate($ar, $uent);
+			}
+		}
+		//get stuff out of options...
+		$format = isset($options['format']) ? $options['format'] : false;
+		$ar-&gt;set_result($uent-&gt;showUpdateResult($format, $this));
+		return $ar;
+	}
+	
+	function rollbackUpdate(&amp;$ar, &amp;$uent){
+		if($ar-&gt;includesGraphChanges()){
+			$recovery = $this-&gt;undoUpdatesToGraph($uent);
+			$ar-&gt;undoReportGraphResult($recovery);
+		}
+	}
+	
+	function checkUpdate(&amp;$ar, &amp;$uent, $test_flag){
+		if($ar-&gt;is_accept() or $ar-&gt;is_confirm()){
+			//unless the status of the candidate was accept, before or after, the change to the report graph is hypothetical
+			$hypo = !($uent-&gt;changedPublished() || $uent-&gt;originalPublished());
+			$gu = $this-&gt;publishUpdateToGraph($uent, $ar-&gt;decision, $hypo || $test_flag);
+			if($ar-&gt;is_accept() &amp;&amp; $uent-&gt;changedPublished() &amp;&amp; $gu-&gt;is_reject()
+					&amp;&amp; $this-&gt;policy-&gt;rollbackToPending(&quot;update&quot;, $uent)){
+				$ar-&gt;addWarning(&quot;Update Publication&quot;, &quot;Rejected by Quality Service&quot;, &quot;Update state changed from accept to pending&quot;);
+				$uent-&gt;set_status(&quot;pending&quot;);
+				$gu = $this-&gt;publishUpdateToGraph($uent, &quot;pending&quot;, true);
+				$hypo = true;
+				$ar-&gt;decision = &quot;pending&quot;;
+			}
+			$ar-&gt;setReportGraphResult($gu, $hypo);
+		}
+		elseif($ar-&gt;is_pending()){
+			$gu = $this-&gt;publishUpdateToGraph($uent, &quot;pending&quot;, true);
+			$ar-&gt;setReportGraphResult($gu, true);
+		}
+		$uent-&gt;set_status($ar-&gt;decision);
+		$ar-&gt;setUpdateGraphResult($uent-&gt;compare());
+		$meta_delta = $uent-&gt;getMetaUpdates();
+		$ar-&gt;setCandidateGraphResult($uent-&gt;addedCandidateTriples(), $uent-&gt;deletedCandidateTriples(), !($ar-&gt;is_accept() || $ar-&gt;is_confirm()), $meta_delta);
+	}
+	
+	function updateUpdate($id, $obj, $meta, $options, $test_flag = false){
+		$ar = new UpdateAnalysisResults(&quot;Update $this-&gt;update_type $id&quot;, $test_flag);
+		$orig_upd = $this-&gt;loadUpdate($id);
+		if(!$orig_upd){
+			return $ar-&gt;failure($this-&gt;errcode, &quot;Failed to load Update $id&quot;, $this-&gt;errmsg);
+		}
+		$new_upd = $this-&gt;loadUpdatedUpdate($orig_upd, $obj, $meta, $options);
+		if(!$new_upd){
+			return $ar-&gt;failure($this-&gt;errcode, &quot;Failed to load updated version of $id&quot;, $this-&gt;errmsg);
+		}
+		if($new_upd-&gt;sameAs($orig_upd)){
+			return $ar-&gt;reject(&quot;No Changes&quot;, &quot;The new update is identical to the existing update - it will be ignored.&quot;);
+		}
+		if(!$new_upd-&gt;isLegalContext($this-&gt;cid())){
+			return $ar-&gt;failure(403, &quot;Access Denied&quot;, &quot;Cannot update candidate $new_upd-&gt;targetid through context &quot;.$this-&gt;cid());
+		}
+		if($new_upd-&gt;nodelta()){
+			return $ar-&gt;reject(&quot;No changes&quot;, &quot;The submitted version removes all changes from the update - it has no effect.&quot;);
+		}
+		$ar-&gt;add($this-&gt;getPolicyDecision(&quot;update update&quot;, array($orig_upd, $new_upd)));
+		if($ar-&gt;is_reject()){
+			return $ar;
+		}
+		//3 types of changes can be caused by updates to updates
+		//1. Changes to the update itself (if ar-&gt;is_accept() and it is legal...)
+		//2. Changes to a candidate (if either new or old update == accept -&gt; there will be changes to the candidate graph
+		//3. Changes to a report -&gt; if updated candidate = accept or old candidate = accept
+		//if the update is unpublished in both new and old, the update to both graphs is hypothetical
+	
+		$meta_delta = $new_upd-&gt;getMetaUpdates();
+		$chypo = false;
+		$umode = &quot;normal&quot;;
+		if($new_upd-&gt;published() &amp;&amp; $orig_upd-&gt;published()){ //live edit
+			$ar-&gt;setUpdateGraphResult($orig_upd-&gt;compare($new_upd));
+			$trips = $new_upd-&gt;deltaAsTriples($orig_upd);
+			$ar-&gt;setCandidateGraphResult($trips['add'], $trips['del'], $chypo, $meta_delta);
+			$umode = &quot;live&quot;;
+		}
+		elseif($new_upd-&gt;published()){ //publish new update
+			$ar-&gt;setUpdateGraphResult($orig_upd-&gt;compare($new_upd));
+			$ar-&gt;setCandidateGraphResult($new_upd-&gt;addedCandidateTriples(), $new_upd-&gt;deletedCandidateTriples(), $chypo, $meta_delta);
+		}
+		elseif($orig_upd-&gt;published()){ //unpublish update
+			$umode = &quot;rollback&quot;;
+			//check here to see if there are any pending updates that are hanging off the latest version....
+			if($this-&gt;dbman-&gt;pendingUpdatesExist($orig_upd-&gt;targetid, $this-&gt;update_type, $this-&gt;cid(), $orig_upd-&gt;to_version()) || $this-&gt;dbman-&gt;errcode){
+				if($this-&gt;dbman-&gt;errcode){
+					return $ar-&gt;failure($this-&gt;dbman-&gt;errcode, &quot;Unpublishing of update $orig_upd-&gt;id failed&quot;, &quot;Failed to check for pending updates to current version of candidate&quot;);
+				}
+				return $ar-&gt;failure(400, &quot;Unpublishing of update $orig_upd-&gt;id not allowed&quot;, &quot;There are pending updates on version &quot;.$orig_upd-&gt;to_version().&quot; of candidate $orig_upd-&gt;targetid&quot;);
+			}
+			$ar-&gt;setUpdateGraphResult($orig_upd-&gt;compare($new_upd));
+			$ar-&gt;setCandidateGraphResult($orig_upd-&gt;deletedCandidateTriples(), $orig_upd-&gt;addedCandidateTriples(), $chypo, $meta_delta);
+		}
+		else { //edit unpublished
+			$chypo = true;
+			$ar-&gt;setUpdateGraphResult($orig_upd-&gt;compare($new_upd));
+			$ar-&gt;setCandidateGraphResult($new_upd-&gt;addedCandidateTriples(), $new_upd-&gt;deletedCandidateTriples(), $chypo, $meta_delta);
+		}
+		if($umode == &quot;rollback&quot;){
+			$hypo = $chypo || !($orig_upd-&gt;changedPublished() || $orig_upd-&gt;originalPublished());
+		}
+		else {
+			$hypo = $chypo || !($new_upd-&gt;changedPublished() || $new_upd-&gt;originalPublished());
+		}
+		if($hypo or $test_flag or $ar-&gt;is_confirm()){
+			$gu = $this-&gt;testUpdatedUpdate($new_upd, $orig_upd, $umode);
+		}
+		else {
+			$gu = $this-&gt;saveUpdatedUpdate($new_upd, $orig_upd, $umode);
+		}
+		$ar-&gt;setReportGraphResult($gu, $hypo);
+		if(!($ar-&gt;is_confirm() || $test_flag)){
+			if($umode == &quot;rollback&quot;){
+				$worked = $this-&gt;dbman-&gt;rollbackUpdate($orig_upd, $new_upd);
+			}
+			else {
+				$worked = $this-&gt;dbman-&gt;updateUpdate($new_upd, $orig_upd-&gt;get_status());
+			}
+			if(!$worked){
+				$disaster = new AnalysisResults(&quot;Database Synchronisation&quot;);
+				$disaster-&gt;failure($this-&gt;dbman-&gt;errcode, &quot;Internal Error&quot;, &quot;Failed to update database update record &quot;.$orig_upd-&gt;id.&quot;. &quot;. $this-&gt;dbman-&gt;errmsg);
+				$ar-&gt;add($disaster);
+				if($ar-&gt;includesGraphChanges()){
+					if($umode == &quot;rollback&quot;){
+						$recovery = $this-&gt;undoUpdatedUpdate($orig_upd, $new_upd);
+					}
+					else {
+						$recovery = $this-&gt;undoUpdatedUpdate($new_upd, $orig_upd);
+					}
+					$ar-&gt;undoReportGraphResult($recovery);
+				}
+			}
+		}
+		$format = isset($options['format']) ? $options['format'] : false;
+		$flags = isset($options['display']) ? $this-&gt;parseDisplayFlags($options['display']) : array();
+		$version = isset($options['version']) ? $options['version'] : false;
+		$ar-&gt;set_result($new_upd-&gt;showUpdateResult($format, $flags, $version, $this));
+		return $ar;
+	}
+	
+	function loadUpdatedUpdate($orig_upd, $obj, $meta, $options = array()){
+		if(isset($meta['from_version']) &amp;&amp; $meta['from_version'] &amp;&amp; $meta['from_version'] != $orig_upd-&gt;original-&gt;get_version()){
+			$norig = $this-&gt;loadEntity($orig_upd-&gt;targetid, $this-&gt;update_type, $this-&gt;cid(), false, $meta['version']);
+			if(!$norig)	return false;
+		}
+		else {
+			$norig = clone $orig_upd-&gt;original;
+		}
+		$ncur = $this-&gt;createNewEntityUpdateObject($norig, $this-&gt;update_type);
+		$ncur-&gt;to_version = $orig_upd-&gt;to_version;
+		if(isset($meta['status'])){
+			$ncur-&gt;set_status($meta['status']);
+		}
+		else {
+			$ncur-&gt;set_status($orig_upd-&gt;get_status());
+		}
+		$form = isset($options['format']) ? $options['format'] : &quot;json&quot;;
+		$opts = array(
+				&quot;demand_id_allowed&quot; =&gt; $this-&gt;policy-&gt;demandIDAllowed(&quot;update $this-&gt;update_type&quot;, $ncur),
+				&quot;force_inserts&quot; =&gt; true,
+				&quot;calculate_delta&quot; =&gt; true,
+				&quot;validate_delta&quot; =&gt; true
+		);
+		if(!$ncur-&gt;loadFromAPI($obj, $meta, $form, $opts)){
+			return $this-&gt;failure_result($ncur-&gt;errmsg, $ncur-&gt;errcode);
+		}
+		return $ncur;
+	}
+
+	function testUpdatedUpdate($ncur, $ocur, $umode){
+		if($umode == &quot;rollback&quot;){
+			return $this-&gt;updatedUpdate($ocur, $umode, true);
+		}
+		elseif($umode == &quot;live&quot;){
+			return $this-&gt;updatePublishedUpdate($ncur, $ocur, true);
+		}
+		else {
+			return $this-&gt;updatedUpdate($ncur, $umode, true);
+		}
+	}
+	
+	function saveUpdatedUpdate($ncur, $ocur, $umode){
+		if($umode == &quot;rollback&quot;){
+			return $this-&gt;updatedUpdate($ocur, $umode);
+		}
+		elseif($umode == &quot;live&quot;){
+			return $this-&gt;updatePublishedUpdate($ncur, $ocur);
+		}
+		else {
+			return $this-&gt;updatedUpdate($ncur, $umode);
+		}
+	}
+	
+	function updatedUpdate($cur, $umode, $testflag = false){
+		if($cur-&gt;bothPublished()){
+			if($umode == &quot;rollback&quot;){
+				return $this-&gt;undoEntityUpdate($cur, $testflag);
+			}
+			else {
+				return $this-&gt;updateEntityInGraph($cur, $testflag);
+			}
+		}
+		elseif($cur-&gt;originalPublished()){
+			if($umode == &quot;rollback&quot;){
+				return $this-&gt;deleteEntityFromGraph($cur-&gt;original, $testflag);
+			}
+			else {
+				return $this-&gt;deleteEntityFromGraph($cur-&gt;changed, $testflag);
+			}
+		}
+		elseif($cur-&gt;changedPublished() or $testflag) {
+			if($umode == &quot;rollback&quot;){
+				$dont_publish = ($testflag || $cur-&gt;original-&gt;status != &quot;accept&quot;);
+				return $this-&gt;publishEntityToGraph($cur-&gt;original, $dont_publish);
+			}
+			else {
+				$dont_publish = ($testflag || $cur-&gt;changed-&gt;status != &quot;accept&quot;);
+				return $this-&gt;publishEntityToGraph($cur-&gt;changed, $dont_publish);
+			}
+		}
+		else {
+			$ar = new GraphAnalysisResults(&quot;Nothing to save to report graph&quot;);
+			return $ar;
+		}
+	}
+	
+	/*
+	 * Methods for interactions with the Quality Service / Graph Manager
+	 */
+	function publishUpdateToGraph($uent, $decision, $testflag ){
+		if($uent-&gt;bothPublished()){
+			$gu = $this-&gt;updateEntityInGraph($uent, $testflag );
+		}
+		elseif($uent-&gt;originalPublished()){
+			$gu = $this-&gt;deleteEntityFromGraph($uent-&gt;original, $testflag);
+		}
+		else {
+			if($testflag || $uent-&gt;changedPublished()){
+				$dont_publish = ($testflag || $decision != &quot;accept&quot;);
+				$gu = $this-&gt;publishEntityToGraph($uent-&gt;changed, $dont_publish);
+			}
+			else {
+				$gu = new GraphAnalysisResults(&quot;Nothing to save to graph&quot;);
+			}
+		}
+		return $gu;
+	}
+		
+	function undoUpdatesToGraph($uent){
+		if($uent-&gt;bothPublished()){
+			return $this-&gt;undoEntityUpdate($uent, false);
+		}
+		elseif($uent-&gt;originalPublished()){
+			return $this-&gt;publishEntityToGraph($uent-&gt;original);//dr
+		}
+		elseif($uent-&gt;changedPublished()){
+			return $this-&gt;deleteEntityFromGraph($uent-&gt;changed);//wr
+		}
+		$ar = new GraphAnalysisResults(&quot;Nothing to undo in report graph&quot;);
+		return $ar;
+	}
+	
+	
+	function getInstanceGraph($graphname){
+		if($this-&gt;graphbase) return $this-&gt;graphbase .&quot;/&quot;. $graphname.&quot;_instance&quot;;
+		return $graphname.&quot;_instance&quot;;
+	}
+	
+	function getGraphSchemaGraph($graphname){
+		if($this-&gt;graphbase) return $this-&gt;graphbase .&quot;/&quot;. $graphname.&quot;_schema&quot;;
+		return $graphname.&quot;_schema&quot;;
+	}
+	
+	function getPendingUpdates($ent){
+		$updates = $this-&gt;dbman-&gt;get_relevant_updates($ent, $this-&gt;entity_type);
+		return $updates ? $updates : $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+	}
+	
+
+	/*
+	 * Output
+	 */
+	
+	function sendRetrievedUpdate($ar, $format, $display, $options, $version){
+		if($ar-&gt;is_error() or $ar-&gt;is_reject() or $ar-&gt;is_confirm() or $ar-&gt;is_pending()){
+			$this-&gt;writeDecision($ar);
+		}
+		else {
+			$this-&gt;sendUpdate($ar-&gt;result, $format, $display, $version);
+		}
+	}
+	
+	function sendRetrievedEntity($ar, $format, $display, $options, $version){
+		//opr($ar);
+		if($ar-&gt;is_error() or $ar-&gt;is_reject() or $ar-&gt;is_pending()){
+			$this-&gt;writeDecision($ar);
+		}
+		else {
+			if(!$this-&gt;sendEntity($ar-&gt;result, $format, $display, $version)){
+				$ar = new AnalysisResults(&quot;export entity&quot;);
+				$ar-&gt;failure($this-&gt;errcode, &quot;Failed to export data to $format&quot;, $this-&gt;errmsg);
+				$this-&gt;writeDecision($ar);
+			}
+		}
+	}
+	
+	function sendUpdate($update, $format, $display, $version = false){
+		$flags = $this-&gt;parseDisplayFlags($display);
+		$ar = $update-&gt;showUpdateResult($format, $flags, $display, $this);
+		return $this-&gt;write_json_result($ar, &quot;update &quot;.$update-&gt;id.&quot; dispatched&quot;);		
+	}
+	
+	function isNativeFormat($format){
+		return $format == &quot;&quot; or in_array($format, array(&quot;json&quot;, &quot;html&quot;, &quot;triples&quot;, &quot;quads&quot;, &quot;jsonld&quot;));
+	}
+	
+	function sendEntity($ent, $format, $display, $version){
+		$vstr = &quot;?version=&quot;.$version.&quot;&amp;format=&quot;.$format.&quot;&amp;display=&quot;.$display;
+		$opts = $this-&gt;parseDisplayFlags($display);
+		if($this-&gt;isNativeFormat($format)){
+			if(in_array('ns', $opts)) {
+				$ent-&gt;compressNS();
+			}
+			if($format == &quot;html&quot;){
+				$ent-&gt;displayHTML($opts, $vstr, $this);
+			}
+			elseif($format == &quot;triples&quot;){
+				$ent-&gt;displayTriples($opts, $vstr, $this);
+			}
+			elseif($format == &quot;quads&quot;){
+				$ent-&gt;displayQuads($opts, $vstr, $this);				
+			}
+			else{
+				$ent-&gt;displayJSON($opts, $vstr, $this, $format==&quot;jsonld&quot;);
+			}
+		}
+		else {
+			$ent-&gt;displayExport($format, $opts, $vstr, $this);
+		}
+		return $this-&gt;write_json_result($ent-&gt;forAPI(), &quot;Sent the candidate&quot;);
+	}
+	
+	/*
+	 * Methods for sending results to client
+	 */
+	function writeDecision($ar){
+		if($ar-&gt;is_error()){
+			http_response_code($ar-&gt;errcode);
+			$this-&gt;logResult($ar-&gt;errcode, $ar-&gt;decision.&quot; : &quot;.$ar-&gt;action);
+		}
+		elseif($ar-&gt;is_reject()){
+			http_response_code(401);
+			$this-&gt;logResult(401, $ar-&gt;decision.&quot; : &quot;.$ar-&gt;action);
+		}
+		elseif($ar-&gt;is_confirm()){
+			http_response_code(428);
+			$this-&gt;logResult(428, $ar-&gt;decision.&quot; : &quot;.$ar-&gt;action);
+		}
+		elseif($ar-&gt;is_pending()){
+			http_response_code(202);
+			$this-&gt;logResult(202, $ar-&gt;decision.&quot; : &quot;.$ar-&gt;action);
+		}
+		else {
+			$this-&gt;logResult(200, $ar-&gt;decision, $ar-&gt;action);
+		}
+		$json = json_encode($ar);
+		if($json){
+			echo $json;
+			return true;
+		}
+		else {
+			http_response_code(500);
+			echo &quot;JSON error: &quot;.json_last_error() . &quot; &quot; . json_last_error_msg();
+		}
+	}
+	
+	/*
+	 * Helper methods for dealing with display stuff
+	 */
+	function parseDisplayFlags($display){
+		$opts = explode(&quot;_&quot;, $display);
+		return $opts;
+	}
+	
+	function demandIDValid($demand, $type){
+		if(!$this-&gt;policy-&gt;demandIDAllowed(&quot;create&quot;, $type)){
+			return $this-&gt;failure_result(&quot;Policy does not allow specification of candidate IDs&quot;, 400);
+		}
+		if(!(ctype_alnum($demand) &amp;&amp; strlen($demand) &gt; 1 &amp;&amp; strlen($demand) &lt;= 40 )){
+			return $this-&gt;failure_result(&quot;Candidate IDs must be between 2 and 40 alphanumeric characters&quot;, 400);
+		}
+		if($this-&gt;dbman-&gt;hasEntity($demand, $type, $this-&gt;cid())){
+			return $this-&gt;failure_result(&quot;Candidate ID $demand exists already in the dataset&quot;, 400);
+		}
+		elseif($this-&gt;dbman-&gt;errcode){
+			return $this-&gt;failure_result(&quot;Failed to check for duplicate ID &quot;.$this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+		return true;
+	}
+}</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

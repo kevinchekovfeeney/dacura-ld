@@ -1,0 +1,144 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+class SimpleRequestResults extends AnalysisResults {
+	var $result;//candidate object / update request
+	function accept($res = false){
+		if($res){
+			$this-&gt;set_result($res);
+		}
+		$this-&gt;decision = &quot;accept&quot;;
+		return $this;
+	}
+	
+	function set_result($obj){
+		$this-&gt;result = $obj;
+		return $this;
+	}
+	
+}
+
+class UpdateAnalysisResults extends SimpleRequestResults {
+	var $candidate_graph_update;
+	var $report_graph_update;
+	var $update_graph_update;
+	var $sub_analyses = array();//only for testing...
+	var $result;//candidate object / update request
+
+
+	function add($other, $chain = true){
+		$this-&gt;sub_analyses[] = $other;
+		parent::add($other, $chain);
+	}
+
+	function setReportGraphResult($gu, $hypo = false){
+		$gu-&gt;setHypothetical($hypo);
+		$action = &quot;Data Quality Service&quot;;
+		if(!$hypo){
+			switch($gu-&gt;decision) {
+				case &quot;reject&quot; :
+					if($gu-&gt;is_error()){
+						if(!$this-&gt;is_error()){
+							$this-&gt;errcode = $gu-&gt;errcode;
+							$this-&gt;msg_title = &quot;Rejected by &quot;.$action;
+						}
+						$this-&gt;addError($gu-&gt;errcode, $action, $gu-&gt;getErrorsSummary(), $gu-&gt;getErrorsDetails(), &quot;graph&quot;);
+					}
+					else {
+						$this-&gt;addError(200, $action, $gu-&gt;getErrorsSummary(), $gu-&gt;getErrorsDetails(),  &quot;graph&quot;);
+						if(!$this-&gt;is_reject()){
+							$this-&gt;msg_title = &quot;Rejected by &quot;.$action;
+						}
+					}
+					$this-&gt;decision = &quot;reject&quot;;
+					break;
+				case &quot;accept&quot; :
+					if($this-&gt;is_accept()){
+						$this-&gt;decision = &quot;accept&quot;;
+					}
+					break;
+			}
+		}
+		elseif($gu-&gt;is_reject()) {
+			$txt = &quot;This candidate cannot be published as a report&quot;;
+			$body = $gu-&gt;getErrorsSummary();
+			$this-&gt;addWarning(&quot;Data Quality Service&quot;, $txt, $body);
+		}
+		if(!isset($this-&gt;report_graph_update)){
+			$this-&gt;report_graph_update = $gu;
+		}
+		else {
+			$this-&gt;report_graph_update-&gt;addGraphResult($gu);
+		}
+	}
+
+	function undoReportGraphResult($gu){
+		unset($this-&gt;candidate_graph_update);
+		$this-&gt;report_graph_update-&gt;addGraphResult($gu);
+	}
+
+	function setUpdateGraphResult($udelta){
+		$this-&gt;update_graph_update = new GraphAnalysisResults(&quot;Analysing Updates to Update Graph&quot;);
+		$this-&gt;update_graph_update-&gt;setInserts($udelta['add']);
+		$this-&gt;update_graph_update-&gt;setDeletes($udelta['del']);
+		$this-&gt;update_graph_update-&gt;setMeta($udelta['meta']);
+	}
+
+	function setCandidateGraphResult($itrips = array(), $dtrips = array(), $is_hypo = false, $meta = false){
+		$this-&gt;candidate_graph_update = new GraphAnalysisResults(&quot;Updating Candidate Graph&quot;);
+		$this-&gt;candidate_graph_update-&gt;setInserts($itrips);
+		$this-&gt;candidate_graph_update-&gt;setDeletes($dtrips);
+		$this-&gt;candidate_graph_update-&gt;setHypothetical($is_hypo);
+		if($meta){
+			$this-&gt;candidate_graph_update-&gt;setMeta($meta);
+		}
+	}
+
+	function includesGraphChanges(){
+		return isset($this-&gt;report_graph_update) &amp;&amp; $this-&gt;report_graph_update-&gt;includesGraphChanges();
+	}
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,94 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/*
+ * Users Service
+ */
+$settings = array(
+	&quot;add_user_status&quot; =&gt; &quot;accept&quot;,
+	&quot;show_deleted_users&quot; =&gt; false,
+	&quot;default_profile&quot; =&gt; array(),
+	&quot;messages&quot; =&gt; array(
+		&quot;update_details_intro&quot; =&gt; &quot;Edit the user's details in the form, then hit the update button to save the changes.&quot;, 
+		&quot;view_details_intro&quot; =&gt; &quot;&quot;, 
+		&quot;profile_intro&quot; =&gt; &quot;Edit your details in the form below, then hit the update button to save the changes.&quot;, 
+		&quot;history_intro&quot; =&gt; &quot;A record of the user's past activity on the site.&quot;,
+		&quot;invite_intro&quot; =&gt; &quot;Inviting users will generate an email which will allow the users to join this collection directly with the specified role.&quot;,
+		&quot;password_intro&quot; =&gt; &quot;Update the password in the form below.&quot;,
+		&quot;system_add&quot; =&gt; &quot;Enter the user's email address, choose a role and a password and hit the button to add them to the system&quot;,
+		&quot;collection_add&quot; =&gt; &quot;Enter the user's email address, choose a password and hit the button to add them to the system&quot;,
+		&quot;invite_email&quot; =&gt; &quot;Hi there!\n\nWe are using the Dacura platform to curate our datasets. You have been invited to join the team.&quot;,			
+	),
+	&quot;tables&quot; =&gt; array(
+		&quot;users&quot; =&gt; array(&quot;datatable_options&quot; =&gt; array(&quot;jQueryUI&quot; =&gt; true, &quot;searching&quot; =&gt; false, &quot;info&quot; =&gt; true, &quot;pageLength&quot; =&gt; 50, 
+			&quot;aoColumns&quot; =&gt; array(null, null, null, null, null, null, array(&quot;bSortable&quot; =&gt; false)))),
+		&quot;cusers&quot; =&gt; array(&quot;datatable_options&quot; =&gt; array(&quot;jQueryUI&quot; =&gt; true, &quot;searching&quot; =&gt; false, &quot;info&quot; =&gt; true, &quot;pageLength&quot; =&gt; 50, 
+			&quot;aoColumns&quot; =&gt; array(null, null, null, null, null, array(&quot;bVisible&quot; =&gt; false), array(&quot;bSortable&quot; =&gt; false)))),
+		&quot;roles&quot;	=&gt; array(&quot;datatable_options&quot; =&gt; array(&quot;searching&quot; =&gt; false, &quot;info&quot; =&gt; true, &quot;jQueryUI&quot; =&gt; true, 
+			&quot;aoColumns&quot; =&gt; array(array(&quot;bVisible&quot; =&gt; false), null, array(&quot;bSortable&quot; =&gt; false), array(&quot;bSortable&quot; =&gt; false)))),
+		&quot;history&quot; =&gt; array(&quot;datatable_options&quot; =&gt; array(&quot;searching&quot; =&gt; false, &quot;info&quot; =&gt; true, &quot;jQueryUI&quot; =&gt;  true, &quot;order&quot;=&gt; array(1, &quot;desc&quot;),
+			&quot;aoColumns&quot; =&gt; array(array(&quot;bVisible&quot; =&gt; false), array(&quot;iDataSort&quot; =&gt; 1), array(&quot;bVisible&quot; =&gt; false), array(&quot;iDataSort&quot; =&gt; 3), array(&quot;bVisible&quot; =&gt; false), array(&quot;iDataSort&quot; =&gt; 5, &quot;bVisible&quot; =&gt; false), null))),
+	),
+	&quot;forms&quot; =&gt; array(
+		&quot;csu&quot; =&gt; array(&quot;email&quot;, &quot;password&quot;),
+		&quot;ccu&quot; =&gt; array(&quot;email&quot;, &quot;password&quot;, &quot;role&quot;),
+		&quot;icu&quot; =&gt; array(&quot;emails&quot;, &quot;role&quot;, &quot;message&quot;),
+		&quot;uxp&quot; =&gt; array(&quot;password&quot;, &quot;confirmpassword&quot;),
+		&quot;uxu&quot; =&gt; array(&quot;id&quot;, &quot;email&quot;, &quot;name&quot;, &quot;status&quot;),
+		&quot;upu&quot; =&gt; array(&quot;id&quot;, &quot;email&quot;, &quot;name&quot;)	
+	),
+	&quot;form_fields&quot; =&gt; array(
+		&quot;email&quot; =&gt;	array(&quot;label&quot; =&gt; &quot;Email Address&quot;, &quot;type&quot; =&gt; &quot;email&quot;, &quot;help&quot; =&gt;&quot;The email address is the primary identifier of the user&quot;),
+		&quot;password&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Password&quot;, &quot;type&quot; =&gt; &quot;password&quot;, &quot;help&quot; =&gt; &quot;The user's initial password (they can change this later).&quot;),
+		&quot;confirmpassword&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Confirm Password&quot;, &quot;type&quot; =&gt; &quot;password&quot;, &quot;help&quot; =&gt; &quot;Confirm the new password.&quot;),
+		&quot;id&quot; =&gt; array(&quot;label&quot; =&gt; &quot;ID&quot;, &quot;disabled&quot; =&gt; true, &quot;length&quot; =&gt; &quot;tiny&quot;),
+		&quot;role&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Role&quot;, &quot;type&quot; =&gt; &quot;choice&quot;, &quot;help&quot; =&gt; &quot;You must give users a role in the collection to allow them to join it.&quot;),
+		&quot;status&quot; =&gt;	array(&quot;label&quot; =&gt; &quot;Status&quot;, &quot;help&quot; =&gt; &quot;The current status of the user&quot;, &quot;type&quot; =&gt; &quot;status&quot;),
+		&quot;name&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Name&quot;, &quot;help&quot; =&gt; &quot;The user's handle: a short string that will identify the user on the site&quot;),
+		&quot;message&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Message&quot;, &quot;input_type&quot; =&gt; &quot;textarea&quot;, &quot;help&quot; =&gt; &quot;An introductory message that will be sent to the users&quot;),			
+		&quot;emails&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Email Addresses&quot;, &quot;input_type&quot; =&gt; &quot;textarea&quot;, &quot;help&quot; =&gt;&quot;Type the email addresses of the people that you wish to invite to join the curation effort for your collection. Please separate addresses with white space&quot;),			
+	)
+);
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,170 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/** Login server 
+ * 
+ * supports lost password and registration interface too
+ * @package login
+ * @author Chekov
+ * @license GPL v2
+ */
+
+class LoginDacuraServer extends DacuraServer {
+	
+	/**
+	 * Login function
+	 * @param string $u user email
+	 * @param string $p password
+	 * @return DacuraUser|boolean - if login successful returns user object
+	 */
+	function login($email, $p){
+		$u = $this-&gt;userman-&gt;login($email, $p);
+		return ($u) ? $u : $this-&gt;failure_result($this-&gt;userman-&gt;errmsg, 401);
+	}
+	
+	/**
+	 * Registration function
+	 * 
+	 * Creates a new user account on the system and generates a confirm email
+	 * @param string $email email 
+	 * @param string $p password
+	 * @return boolean - registration successfully initiated
+	 */
+	function register($email, $p){
+		$code = $this-&gt;userman-&gt;register($email, $p);
+		if($code){
+			$address =  $this-&gt;durl().&quot;login/register/code/&quot;.$code;
+			ob_start();
+			include_once(&quot;screens/register_email.php&quot;);
+			$output = ob_get_contents();
+			ob_clean();
+			$htmloutput = $this-&gt;getRegisterUnderwayHTML($email);
+			sendemail($email, $this-&gt;getServiceSetting('register_email_subject', &quot;Dacura registration&quot;), $output, $this-&gt;getSystemSetting('mail_headers',&quot;&quot;));
+			return $htmloutput;
+		}
+		else {
+			return $this-&gt;failure_result($this-&gt;userman-&gt;errmsg, $this-&gt;userman-&gt;errcode);
+		}
+	}
+	
+	/**
+	 * Lost Password Functionality
+	 * 
+	 * Generates an email with a link in it which allows the user to change their password
+	 * @param string $email user email
+	 * @return string|boolean - html string with message for user or false on failure
+	 */
+	function lostpassword($email){
+		$code = $this-&gt;userman-&gt;requestResetPassword($email);
+		if($code){
+			$address =  $this-&gt;durl().&quot;login/lost/code/&quot;.$code;
+			ob_start();
+			include_once(&quot;screens/lost_password_email.php&quot;);
+			$output = ob_get_contents();
+			ob_clean();
+			$htmloutput = $this-&gt;getLostUnderwayHTML($email);
+			sendemail($email, $this-&gt;getServiceSetting('lost_email_subject', &quot;Lost password notification&quot;), $output, $this-&gt;getSystemSetting('mail_headers',&quot;&quot;));
+			return $htmloutput;
+		}
+		else {
+			return $this-&gt;failure_result(&quot;Failed to generate new password: &quot; . $this-&gt;userman-&gt;errmsg, 401);
+		}
+	}
+	
+	/**
+	 * Reset Password function 
+	 * 
+	 * Resets the user's password when they fill in the form after following the confirm link
+	 * @param number $uid user id
+	 * @param string $p password
+	 * @return string|boolean confirmation string on success, false on failure
+	 */
+	function resetpassword($uid, $p){
+		if($this-&gt;userman-&gt;resetPassword($uid, $p)){
+			return &quot;Your password has been successfully reset. You may now log into the system.&quot;;
+		}
+		else {
+			return $this-&gt;failure_result(&quot;Failed to reset password: &quot; . $this-&gt;userman-&gt;errmsg, 401);
+		}
+	}
+	
+	/**
+	 * Logout of the system
+	 * @return boolean true on success
+	 */
+	function logout(){
+		if($this-&gt;userman-&gt;isLoggedIn()){
+			$this-&gt;userman-&gt;logout();
+			return true;
+		}
+		else {
+			return $this-&gt;failure_result(&quot;Not logged in - Failed to logout&quot;, 401);
+		}
+	}
+	
+	/**
+	 * Get html to communicate instructions to user upon lost password
+	 * @param string $email
+	 * @return string html string
+	 */
+	private function getLostUnderwayHTML($email){
+		$html =&quot;&lt;p&gt;An email has been sent to &lt;strong&gt;$email&lt;/strong&gt;. It contains instructions on how to complete the resetting of your password.&lt;/p&gt;
+						&lt;p&gt;Complete the steps outlined in the email within the next 24 hours to reset your password.&lt;/p&gt;&quot;;
+		return $html;
+	}
+	
+	/**
+	 * Get html to communicate instructions to user upon registration
+	 * @param string $email
+	 * @return string html string
+	 */	
+	private function getRegisterUnderwayHTML($email){
+		$html = '&lt;P&gt;An email has been sent to &lt;strong&gt;'.$email.'&lt;/strong&gt;&lt;/P&gt;';
+		$html .= '&lt;P&gt;Please follow the instructions in that email to complete your registration. &lt;/P&gt;';
+		return $html;	
+	}	
+}
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

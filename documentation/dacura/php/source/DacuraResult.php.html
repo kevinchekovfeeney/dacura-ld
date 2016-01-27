@@ -1,0 +1,247 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/**
+ * A data structure that reports the result of an action in Dacura
+ * @author chekov
+ * @license GPL V2
+ */
+class DacuraResult extends DacuraObject {
+	/** @var string the action the user attempted */
+	var $action;
+	/** @var boolean whether the action was attempted in test mode */
+	var $test = false;
+	/** @var string the title of the message for error messages or special messages */
+	var $msg_title = &quot;&quot;;
+	/** @var string the body of the message for complex messages */
+	var $msg_body = &quot;&quot;;
+	/** @var array an array of errors that were encountered while calculating the result */
+	var $errors = array();
+	/** @var array an array of warning that were encountered while calculating the result */
+	var $warnings = array();
+
+	/**
+	 * Object constructor
+	 * @param string $action the action being carried out
+	 * @param boolean $test if true, the action is being carried out in test mode
+	 */
+	function __construct($action, $test = false){
+		$this-&gt;action = $action;
+		$this-&gt;test = $test;
+	}
+	
+	/**
+	 * Returns true if there are no errors encountered
+	 * @return boolean 
+	 */
+	function ok(){
+		return !($this-&gt;errcode &gt; 0);
+	}
+
+	/**
+	 * Add a warning to the result
+	 * @param string $action the action that provoked the warning
+	 * @param string $prompt the title of the warning message
+	 * @param string $txt the body of the warning message
+	 * @return void
+	 */
+	function addWarning($action, $prompt, $txt){
+		$this-&gt;warnings[] = array(&quot;action&quot; =&gt; $action, &quot;msg_title&quot; =&gt; $prompt, &quot;msg_body&quot; =&gt; $txt);
+	}			
+
+	/**
+	 * Add an incidental error to the result
+	 * 
+	 * @param number $errcode the http error code
+	 * @param string $action the action that provoked the warning
+	 * @param string $prompt the title of the warning message
+	 * @param string $txt the body of the warning message
+	 * @param string $type the type of the error (internal, permission, addressing, input, policy, unspecified)
+	 * @return void
+	 */
+	function addError($errcode, $action, $prompt, $txt = &quot;&quot;, $type = false){
+		if($type == false){
+			switch($errcode){
+				case 500:
+					$type = &quot;internal&quot;;
+					break;
+				case 403:
+					$type = &quot;permission&quot;;
+					break;
+				case 404:
+					$type = &quot;addressing&quot;;
+					break;
+				case 400:
+					$type = &quot;input&quot;;
+					break;
+				case 200:
+					$type = &quot;policy&quot;;
+					break;
+				default:
+					$type = &quot;unspecified&quot;;
+					break;
+			}
+		}
+		$this-&gt;errors[] = array(&quot;code&quot; =&gt; $errcode, &quot;type&quot; =&gt; $type, &quot;action&quot; =&gt; $action, &quot;msg_title&quot; =&gt; $prompt, &quot;msg_body&quot; =&gt; $txt);
+	}
+	
+	/**
+	 * Sets the result to 'accept' returns the object to allow chaining of such things
+	 * @return DacuraResult
+	 */	
+	function accept(){
+		$this-&gt;status(&quot;accept&quot;);
+		return $this;
+	}
+	
+	/**
+	 * Sets the result to $decision and returns the object to allow chaining of such things
+	 * @param string $decision a valid status @see DacuraObject::valid_statuses
+	 * @return DacuraResult
+	 */	
+	function success($decision){
+		$this-&gt;status($decision);
+		if($this-&gt;is_pending()){
+			$this-&gt;msg_title == $this-&gt;action .&quot; requires approval&quot;;
+		}
+		return $this;
+	}	
+	
+	/**
+	 * Sets the result to pending and sets the message title and body 
+	 * @param string $msg_title the message title
+	 * @param string $msg_body the message body
+	 * @return DacuraResult
+	 */
+	function pending($msg_title, $msg_body = false){
+		$this-&gt;status(&quot;pending&quot;);
+		$this-&gt;msg_title = $msg_title;
+		if($msg_body){
+			$this-&gt;msg_body = $msg_body;
+		}
+		return $this;
+	}
+
+	/**
+	 * Sets the result to reject and sets messages
+	 * @param string $msg_title
+	 * @param string $msg_body
+	 * @return DacuraResult
+	 */
+	function reject($msg_title, $msg_body = false){
+		$this-&gt;status(&quot;reject&quot;);
+		$this-&gt;msg_title = $msg_title;
+		if($msg_body){
+			$this-&gt;msg_body = $msg_body;
+		}
+		return $this;
+	}
+	
+	/**
+	 * Records a failure result
+	 * @param number $errcode
+	 * @param string $msg_title
+	 * @param string $msg_body
+	 * @param string $type
+	 * @return DacuraResult
+	 */
+	function failure($errcode, $msg_title, $msg_body = false){
+		$this-&gt;status(&quot;reject&quot;);
+		$this-&gt;errcode = $errcode;
+		$this-&gt;msg_title = $msg_title;
+		if($msg_body){
+			$this-&gt;msg_body = $msg_body;
+		}
+		return $this;
+	}
+	
+	/**
+	 * Adds a sub-result to this result
+	 * 
+	 * Results can be composite and consist of several results from different sub-systems.
+	 * This function allows a result to incorporate another result
+	 * @param DacuraResult $sub the sub-result object that will be added to this one
+	 * @param boolean $chain should the results be merged?
+	 */
+	function add($sub, $chain = true){
+		if($chain){
+			$this-&gt;errors = array_merge($this-&gt;errors, $sub-&gt;errors);
+			$this-&gt;warnings = array_merge($this-&gt;warnings, $sub-&gt;warnings);
+		}
+		switch($sub-&gt;status()) {
+			case &quot;reject&quot; :
+				if($sub-&gt;is_error()){
+					$this-&gt;addError($sub-&gt;errcode, $sub-&gt;action, $sub-&gt;msg_title, $sub-&gt;msg_body);
+					if(!$this-&gt;is_error()){
+						$this-&gt;errcode = $sub-&gt;errcode;
+						$this-&gt;msg_title = &quot;Error in &quot;.$sub-&gt;action;						
+					}
+				}
+				else { //if the sub is already in reject state, we save details of second reject
+					$this-&gt;addError(200, $sub-&gt;action, $sub-&gt;msg_title, $sub-&gt;msg_body);
+					if(!$this-&gt;is_reject()){
+						$this-&gt;msg_title = &quot;Rejected by &quot;.$sub-&gt;action;
+					}
+				}
+				$this-&gt;status(&quot;reject&quot;);
+			break;
+			case &quot;pending&quot; :
+				$this-&gt;addWarning($sub-&gt;action, $sub-&gt;msg_title.&quot; requires approval.&quot;, $sub-&gt;msg_body);
+				if($this-&gt;is_accept()){
+					$this-&gt;status(&quot;pending&quot;);
+					$this-&gt;msg_title = $sub-&gt;action . &quot; requires approval&quot;;
+				}
+			break;
+			case &quot;accept&quot; :
+				if($this-&gt;is_accept()){
+					$this-&gt;status(&quot;accept&quot;);
+				}
+			break;
+		}
+	}	
+}
+
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

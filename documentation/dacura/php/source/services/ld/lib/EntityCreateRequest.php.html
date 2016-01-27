@@ -1,0 +1,142 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+require_once(&quot;LDEntity.php&quot;);
+
+/**
+ * entity create request has form:
+ * graphname: {
+ * 	property: string
+ *  property: [string]
+ *  property: [{@id=...},...]
+ *
+ * }
+ *
+ * Represents a request to create a new instance of an entity class with specified property values in the curated dataset
+ * @author chekov
+ *
+*/
+
+
+class EntityCreateRequest extends LDEntity {
+
+	function __construct($id){
+		$this-&gt;version = 1;
+		parent::__construct($id);
+	}
+
+	function loadFromAPI($obj){
+		if(!isset($obj['contents']) &amp;&amp; !isset($obj['meta'])){
+			return $this-&gt;failure_result(&quot;Create Object was malformed : both meta and contents are missing&quot;, 400);
+		}
+		$this-&gt;ldprops = isset($obj['contents']) ? $obj['contents'] : array();
+		$this-&gt;meta = isset($obj['meta']) ? $obj['meta'] : array();
+		$this-&gt;version = 1;
+		return true;
+	}
+
+	/*
+	 * Called to hide whatever internal parts of the object we do not wish to send as json through the api
+	 */
+	function getDisplayFormat() {
+		$other = clone($this);
+		unset($other-&gt;index);
+		unset($other-&gt;errmsg);
+		return $other;
+	}
+
+	function validate($obj=false){
+		if($obj === false) $obj = $this-&gt;ldprops;
+		if(!is_array($obj)){
+			return $this-&gt;failure_result(&quot;Input is not an array object&quot;, 500);
+		}
+		foreach($obj as $k =&gt; $v){
+			$pv = new LDPropertyValue($v, $this-&gt;cwurl);
+			if($pv-&gt;illegal()) {
+				return $this-&gt;failure_result(&quot;Illegal JSON LD structure passed (property of $k) &quot;.$pv-&gt;errmsg, $pv-&gt;errcode);
+			}
+			//elseif($pv-&gt;isempty()){
+			//	return $this-&gt;failure_result(&quot;Illegal JSON LD structure passed: $k has an empty value - not supported in create requests&quot;, 400);
+			//}
+			if($pv-&gt;embeddedlist()){
+				$cwlinks = $pv-&gt;getupdates();
+				if(count($cwlinks) &gt; 0){
+					return $this-&gt;failure_result(&quot;New candidates cannot update anything but their own properties: $k has closed world links &quot;.$cwlinks[0], 400);
+				}
+				foreach($v as $id =&gt; $emb){
+					if(!$this-&gt;validate($emb)){
+						return false;
+					}
+				}
+			}
+			elseif($pv-&gt;embedded()){
+				if(count($v) == 1 &amp;&amp; isset($v['@id'])){
+					return $this-&gt;failure_result(&quot;Embedded objects cannot have @id as their only property ($k).&quot;, 400);
+				}
+				if(!$this-&gt;validate($v)){
+					return false;
+				}
+			}
+			elseif($pv-&gt;objectlist()){
+				foreach($v as $emb){
+					if(count($emb) == 1 &amp;&amp; isset($emb['@id'])){
+						return $this-&gt;failure_result(&quot;Embedded objects cannot have @id as their only property ($k).&quot;, 400);
+					}
+					if(!$this-&gt;validate($emb)){
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	function showCreateResult(){
+		$other = clone($this);
+		unset($other-&gt;idmap);
+		return $other-&gt;getDisplayFormat();
+	}
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

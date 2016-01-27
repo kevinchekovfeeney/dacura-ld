@@ -1,0 +1,945 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php $entity = isset($params['entity']) ? $params['entity'] : &quot;Entity&quot;;?&gt;
+&lt;script src='&lt;?=$service-&gt;furl(&quot;js&quot;, &quot;jquery.json-editor.js&quot;)?&gt;'&gt;&lt;/script&gt;
+&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;furl(&quot;css&quot;, &quot;jquery.json-editor.css&quot;)?&gt;&quot; /&gt;
+
+
+&lt;div class='dacura-ld-editor dch'&gt;
+	&lt;div id='ld-view-page'&gt;
+		&lt;div class='ld-meta' id='ld-view-header'&gt;&lt;/div&gt;
+		&lt;div class='ld-bar' id='ld-view-header'&gt;
+			&lt;div id='ld-view-bar'&gt;
+				&lt;table class='ld-bar'&gt;
+					&lt;tr&gt;
+						&lt;td class='ld-bar ld-bar-left' id=&quot;ld-view-bar-left&quot;&gt;
+							&lt;span class='view-options'&gt;
+								    &lt;input type=&quot;radio&quot; class='noption foption' checked=&quot;checked&quot; id=&quot;format_json&quot; name=&quot;nformat&quot;&gt;&lt;label title=&quot;Native Dacura JSON Linked Data Format&quot; for=&quot;format_json&quot;&gt;Native&lt;/label&gt;
+									&lt;input type=&quot;radio&quot; class=&quot;noption foption&quot; id=&quot;format_jsonld&quot; name=&quot;nformat&quot;&gt;&lt;label title=&quot;JSON-LD&quot; for=&quot;format_jsonld&quot;&gt;JSON-LD&lt;/label&gt;
+									&lt;input type=&quot;radio&quot; class=&quot;noption foption&quot; id=&quot;format_turtle&quot; name=&quot;nformat&quot;&gt;&lt;label title=&quot;Turtle&quot; for=&quot;format_turtle&quot;&gt;Turtle&lt;/label&gt;
+									&lt;input type=&quot;radio&quot; class='noption foption' id=&quot;format_quads&quot; name=&quot;nformat&quot;&gt;&lt;label title=&quot;Triples with named graphs: [Subject - Predicate - Object - Graph]&quot; for=&quot;format_quads&quot;&gt;Quads&lt;/label&gt;
+								    &lt;input type=&quot;radio&quot; class='noption foption' id=&quot;format_html&quot; name=&quot;nformat&quot;&gt;&lt;label title=&quot;Dacura's Generated HTML views&quot; for=&quot;format_html&quot;&gt;HTML&lt;/label&gt;
+									&lt;input type=&quot;radio&quot; class=&quot;noption foption&quot; id='format_ntriples' name=&quot;nformat&quot;&gt;&lt;label title=&quot;N-triples format&quot; for=&quot;format_ntriples&quot;&gt;N-Triples&lt;/label&gt;
+									&lt;input type=&quot;radio&quot; class=&quot;noption foption&quot; id=&quot;format_rdfxml&quot; name=&quot;nformat&quot;&gt;&lt;label title=&quot;RDF/XML serialisation&quot; for=&quot;format_rdfxml&quot;&gt;XML&lt;/label&gt;
+									&lt;input type=&quot;radio&quot; class=&quot;noption foption&quot; id=&quot;format_dot&quot; name=&quot;nformat&quot;&gt;&lt;label title=&quot;Graphviz graphic visualisation&quot; for=&quot;format_dot&quot;&gt;Graphviz&lt;/label&gt;
+									&lt;input type=&quot;radio&quot; class=&quot;noption foption&quot; id=&quot;format_n3&quot; name=&quot;nformat&quot;&gt;&lt;label title=&quot;Notation 3&quot; for=&quot;format_n3&quot;&gt;N3&lt;/label&gt;
+									&lt;input type=&quot;radio&quot; class=&quot;noption foption&quot; id=&quot;format_gif&quot; name=&quot;nformat&quot;&gt;&lt;label title=&quot;Graphic Interchange Format&quot; for=&quot;format_gif&quot;&gt;Gif&lt;/label&gt;
+									&lt;input type=&quot;radio&quot; class=&quot;noption foption&quot; id=&quot;format_png&quot; name=&quot;nformat&quot;&gt;&lt;label title=&quot;Portable Network Graphics&quot; for=&quot;format_png&quot;&gt;PNG&lt;/label&gt;
+									&lt;input type=&quot;radio&quot; class=&quot;noption foption&quot; id=&quot;format_svg&quot; name=&quot;nformat&quot;&gt;&lt;label title=&quot;Scalable Vector Graphics&quot; for=&quot;format_svg&quot;&gt;SVG&lt;/label&gt;
+							&lt;/span&gt;
+						&lt;/td&gt;
+						&lt;td class='ld-bar ld-bar-centre' id=&quot;ld-view-bar-centre&quot;&gt;
+							
+						&lt;/td&gt;					
+						&lt;td class='ld-bar ld-bar-right' id=&quot;ld-view-bar-right&quot;&gt;
+							&lt;span class='ld-update-actions'&gt;
+								&lt;button title=&quot;Make this version the live version of the &lt;?=$entity?&gt;&quot; id=&quot;action-restore&quot;&gt;Restore&lt;/button&gt;
+								&lt;button title=&quot;Modify this update to the &lt;?=$entity?&gt; - beware this is changing the past!&quot; id=&quot;action-modify&quot;&gt;Modify&lt;/button&gt;					
+								&lt;input type=&quot;checkbox&quot; id=&quot;show-version-controls&quot;&gt;&lt;label for='show-version-controls' title=&quot;Show Version Browser Controls&quot;&gt;History&lt;/label&gt;
+								&lt;button title=&quot;Edit this &lt;?=$entity?&gt;&quot; id=&quot;action-edit&quot;&gt;Edit&lt;/button&gt;
+							&lt;/span&gt;
+						&lt;/td&gt;
+					&lt;/tr&gt;	
+				&lt;/table&gt;
+				&lt;span class=&quot;browsermax editor-max ui-icon ui-icon-arrow-4-diag&quot;&gt;&lt;/span&gt;
+				&lt;span class=&quot;browsermin dch editor-min ui-icon ui-icon-closethick&quot;&gt;&lt;/span&gt;				
+			&lt;/div&gt;
+			&lt;div class='ld-bar dch' id='ld-action-bar'&gt;
+				&lt;table class='ld-bar' id='ld-action-table'&gt;
+					&lt;tr&gt;
+						&lt;td class='ld-bar ld-bar-left' id='ld-action-bar-left'&gt;
+							&lt;div id=&quot;ld-update-controls&quot;&gt;
+								&lt;button id=&quot;ld-update-freeze&quot;&gt;Freezes this update&lt;/button&gt;
+								&lt;button id=&quot;ld-update-first&quot;&gt;Show update that cause the &lt;?=$entity?&gt; to be created.&lt;/button&gt;
+								&lt;button id=&quot;ld-update-previous&quot;&gt;Show the previous update to the &lt;?=$entity?&gt;&lt;/button&gt;
+								&lt;button id=&quot;ld-update-current&quot;&gt;Update&lt;/button&gt;
+								&lt;button id=&quot;ld-update-next&quot;&gt;Show next update to the &lt;?=$entity?&gt;&lt;/button&gt;
+								&lt;button id=&quot;ld-update-last&quot;&gt;Show most recent update to the &lt;?=$entity?&gt;&lt;/button&gt;
+							&lt;/div&gt;
+							&lt;div id=&quot;ld-version-controls&quot;&gt;
+								&lt;button id=&quot;ld-freeze&quot;&gt;Freezes the version at this version&lt;/button&gt;
+								&lt;button id=&quot;ld-beginning&quot;&gt;Show original version of &lt;?=$entity?&gt;&lt;/button&gt;
+								&lt;button id=&quot;ld-rewind&quot;&gt;Show previous version of &lt;?=$entity?&gt;&lt;/button&gt;
+								&lt;button id=&quot;ld-current&quot;&gt;Version&lt;/button&gt;
+								&lt;button id=&quot;ld-forward&quot;&gt;Show next version of &lt;?=$entity?&gt;&lt;/button&gt;
+								&lt;button id=&quot;ld-end&quot;&gt;Show latest version of &lt;?=$entity?&gt;&lt;/button&gt;
+							&lt;/div&gt;	
+						&lt;/td&gt;
+						&lt;td class='ld-bar ld-bar-centre' id='ld-action-bar-centre'&gt;
+
+						&lt;/td&gt;
+						&lt;td class='ld-bar ld-bar-right' id='ld-action-bar-right'&gt;
+							&lt;span class=&quot;view-update-stage&quot;&gt;
+								&lt;span id=&quot;view-update-label&quot;&gt;Update View&lt;/span&gt;
+								&lt;input type=&quot;radio&quot; class=&quot;uview&quot; id=&quot;stage_before&quot; name=&quot;jformat&quot;&gt;&lt;label for=&quot;stage_before&quot;&gt;State of the &lt;?=$entity?&gt; before update&lt;/label&gt;
+								&lt;input type=&quot;radio&quot; class=&quot;uview&quot; id=&quot;stage_forward&quot; name=&quot;jformat&quot;&gt;&lt;label for=&quot;stage_forward&quot;&gt;Change that caused the &lt;?=$entity?&gt; to be updated&lt;/label&gt;
+								&lt;input type=&quot;radio&quot; class=&quot;uview&quot; id=&quot;stage_full&quot; name=&quot;jformat&quot;&gt;&lt;label for=&quot;stage_full&quot;&gt;Display what has changed in the &lt;?=$entity?&gt;.&lt;/label&gt;
+								&lt;input type=&quot;radio&quot; class=&quot;uview&quot; id=&quot;stage_backward&quot; name=&quot;jformat&quot;&gt;&lt;label for=&quot;stage_backward&quot;&gt;The change that would undo the change to the &lt;?=$entity?&gt;&lt;/label&gt;
+								&lt;input type=&quot;radio&quot; class=&quot;uview&quot; id=&quot;stage_after&quot; name=&quot;jformat&quot;&gt;&lt;label for=&quot;stage_after&quot;&gt;State of the &lt;?=$entity?&gt; after update&lt;/label&gt;					
+							&lt;/span&gt;					
+						&lt;/td&gt;
+					&lt;/tr&gt;
+				&lt;/table&gt;
+			&lt;/div&gt;
+		&lt;/div&gt;
+		&lt;div class=&quot;ld-main-body&quot;&gt;
+			&lt;div id=&quot;ld-viewer&quot;&gt;&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;
+	
+	&lt;div id=&quot;ld-edit-page&quot;&gt;
+		&lt;div class='ld-bar' id='ld-edit-bar'&gt;
+			&lt;table class='ld-bar' id='ld-edit-table'&gt;
+				&lt;tr&gt;
+					&lt;td class='ld-bar ld-bar-left' id='ld-edit-bar-left'&gt;
+						&lt;span class='edit-options'&gt;
+						    &lt;input type=&quot;radio&quot; class='eoption' checked=&quot;checked&quot; id=&quot;input_json&quot; name=&quot;eformat&quot;&gt;&lt;label title=&quot;Native Dacura JSON Linked Data Format&quot; for=&quot;input_json&quot;&gt;Native&lt;/label&gt;
+						    &lt;input type=&quot;radio&quot; class='eoption' id=&quot;input_jsonld&quot; name=&quot;eformat&quot;&gt;&lt;label title=&quot;JSON Linked Data Format&quot; for=&quot;input_jsonld&quot;&gt;JSON-LD&lt;/label&gt;
+						    &lt;input type=&quot;radio&quot; class='eoption' id=&quot;input_rdfxml&quot; name=&quot;eformat&quot;&gt;&lt;label title=&quot;RDF/XML&quot; for=&quot;input_rdfxml&quot;&gt;XML&lt;/label&gt;
+						    &lt;input type=&quot;radio&quot; class='eoption' id=&quot;input_turtle&quot; name=&quot;eformat&quot;&gt;&lt;label title=&quot;Turtle Terse RDF Language&quot; for=&quot;input_turtle&quot;&gt;Turtle&lt;/label&gt;
+						    &lt;input type=&quot;radio&quot; class='eoption' id=&quot;input_html&quot; name=&quot;eformat&quot;&gt;&lt;label title=&quot;HTML&quot; for=&quot;input_html&quot;&gt;HTML&lt;/label&gt;
+						&lt;/span&gt;
+					&lt;/td&gt;
+					&lt;td class='ld-bar ld-bar-centre' id='ld-edit-bar-centre'&gt;
+						&lt;span id=&quot;ld-edit-update-meta&quot;&gt;
+									
+						&lt;/span&gt;
+					&lt;/td&gt;
+					&lt;td class='ld-bar ld-bar-right' id='ld-edit-bar-right'&gt;
+	    	    		&lt;button class='edit-action cancel_edit'&gt;Finish Editing&lt;/button&gt;
+			    		&lt;button class='edit-action test_edit'&gt;Test Changes&lt;/button&gt;
+			    		&lt;button class='edit-action save_edit'&gt;Submit Changes&lt;/button&gt;
+					&lt;/td&gt;
+				&lt;/tr&gt;
+			&lt;/table&gt;
+			&lt;span class=&quot;browsermax editor-max ui-icon ui-icon-arrow-4-diag&quot;&gt;&lt;/span&gt;				
+			&lt;span class=&quot;browsermin editor-min dch ui-icon ui-icon-closethick&quot;&gt;&lt;/span&gt;				
+		&lt;/div&gt;	
+		&lt;div class=&quot;ld-meta-bar&quot;&gt;
+			&lt;ul id='meta-edit-table' class='dch'&gt;
+				&lt;li&gt;&lt;span class='meta-label'&gt;Status&lt;/span&gt;&lt;span class='meta-value'&gt;
+					&lt;select id='entstatus'&gt;&lt;?php echo $service-&gt;getEntityStatusOptions();?&gt;&lt;/select&gt;
+				&lt;/span&gt;&lt;/li&gt; 
+				&lt;/ul&gt;			
+			&lt;div id=&quot;ld-editor&quot;&gt;&lt;/div&gt;
+		&lt;/div&gt;
+	
+		&lt;div class='ld-bar' id=&quot;ld-footer-bar&quot;&gt;
+			&lt;table class='ld-bar' id='ld-footer-table'&gt;
+				&lt;tr&gt;
+					&lt;td class='ld-bar ld-bar-left' id='ld-footer-bar-left'&gt;
+						&lt;span id=&quot;ld-edit-status&quot;&gt;
+						&lt;/span&gt;
+					&lt;/td&gt;
+					&lt;td class='ld-bar ld-bar-centre' id='ld-footer-bar-centre'&gt;
+						&lt;span id=&quot;ld-edit-update-status&quot;&gt;
+						&lt;/span&gt;
+					&lt;/td&gt;
+					&lt;td class='ld-bar ld-bar-right' id='ld-footer-bar-right'&gt;
+	    	    		&lt;button class='edit-action cancel_edit'&gt;Finish Editing&lt;/button&gt;
+			    		&lt;button class='edit-action test_edit'&gt;Test Changes&lt;/button&gt;
+			    		&lt;button class='edit-action save_edit'&gt;Submit Changes&lt;/button&gt;
+					&lt;/td&gt;
+				&lt;/tr&gt;
+			&lt;/table&gt;
+		&lt;/div&gt;
+
+	&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+
+dacura.editor = {
+	viewMode: &quot;view&quot;,
+	editMode: &quot;edit&quot;,
+	testMode: false,
+	nformat : &quot;html&quot;, //for saving last setting of native format
+	eformat : &quot;turtle&quot;, //... of export format
+	mode: &quot;view&quot;,
+	currentID: 	&quot;&lt;?=isset($params['id'])? $params['id'] : &quot;&quot; ?&gt;&quot;,
+	currentEntity: {},
+	stage : &quot;&quot;,
+	updateid : 0,
+	editorheight: &quot;400&quot;,
+	editorwidth: &quot;100%&quot;,
+	entity_type: &quot;candidate&quot;,
+	targets: dacura.system.targets,
+	
+	
+	decisionTexts: {
+		&quot;create&quot;: {
+			&quot;reject&quot;: &quot;Your submission was not accepted by the System&quot;,		
+			&quot;candidate&quot;: &quot;Your submission has been accepted as a candidate entity. It has not been published to the evidence base.&quot;,			
+			&quot;report&quot;: &quot;Your submission has been accepted as a report and published to the evidence base&quot;,
+			&quot;interpretation&quot;: &quot;Your submission has been accepted as an interpetation and added to the analysis base&quot;
+		},
+		&quot;update&quot;: {
+			&quot;reject&quot;: &quot;Your update was rejected by the System&quot;,		
+			&quot;accept&quot;: &quot;Your update has been accepted by the system and the entity has been updated&quot;,		
+			&quot;pending&quot;: &quot;Your update is awaiting approval&quot;,
+			&quot;interpretation&quot;: &quot;Your submission has been accepted as an interpretation by the system and added to the analysis base&quot;				
+		}
+	},
+
+	clearMessages: function(){
+		$(dced.targets.resultbox).html(&quot;&quot;);	
+		$(dced.targets.errorbox).html(&quot;&quot;);	
+	},
+		
+	drawUpdateResult: function(res){
+		if(typeof(dacura.ldresult) != &quot;undefined&quot;){
+			var cancel = function(){
+				$('.dacura-ld-editor').show();
+				$(dced.targets.resultbox).html(&quot;&quot;);
+			};
+			
+			var upd = function(){
+				dced.submit(res.action);
+			};
+
+			res.format = dced.options.format;
+			
+			dacura.ldresult.showDecision(res, dced.targets.resultbox, cancel, upd);			
+			$('.dacura-ld-editor').hide();
+		}
+		else {
+			if(res.decision == &quot;reject&quot; || res.errcode &gt; 0){
+				dacura.system.showErrorResult(res.msg_body, res, res.decision, dced.targets.errorbox);
+			}
+			else if(typeof res.warnings == &quot;object&quot; &amp;&amp; res.warnings.length &gt; 0){
+				dacura.system.showWarningResult(res.msg_body, res, res.decision, dced.targets.resultbox);		
+			}
+			else {
+				dacura.system.showSuccessResult(res.msg_body, res, res.decision, dced.targets.resultbox);		
+			}
+		}
+	},
+	
+	//the next two are options for sending to the API
+	
+	options: {
+		version: 0,
+		format: &quot;json&quot;,
+		flags: {
+			ns: true,
+			problems: true,
+			links: true,
+			typed: true
+	 	}
+ 	},
+ 	
+	setViewArgs: function(args){
+		if(typeof args.version != &quot;undefined&quot;){
+			dced.options.version = args.version;
+		}
+		if(typeof args.format != &quot;undefined&quot;){
+			dced.options.format = args.format;
+		}
+		if(typeof args.mode != &quot;undefined&quot;){
+			dced.mode = args.mode;
+		}
+		if(typeof args.flags != &quot;undefined&quot;){
+			dced.mode.flags = args.flags;
+		}
+	},
+ 	
+ 	setEditorOptions: function(opts){
+		if(typeof opts.args != &quot;undefined&quot;){
+			dced.setViewArgs(opts.args);
+		}
+		if(typeof opts.editorheight != &quot;undefined&quot;){
+			dced.editorheight = opts.editorheight ;
+		}
+		if(typeof opts.editorwidth != &quot;undefined&quot;){
+			dced.editorwidth = opts.editorwidth;
+		}
+		if(typeof opts.entity_type != &quot;undefined&quot;){
+			dced.entity_type = opts.entity_type;
+		}
+		if(typeof opts.targets != &quot;undefined&quot;){
+			dced.targets = opts.targets;
+		}
+	},
+
+	display: function(){
+		dced.setFormatOption(dced.options.format);
+		$('.dacura-ld-editor').show();		
+	},
+
+	getDisplayFlagsAsString: function(){
+		var display = [];
+		if(dced.options.flags.ns) display[display.length] = &quot;ns&quot;;
+		if(dced.options.flags.problems) display[display.length] = &quot;problems&quot;;
+		if(dced.options.flags.links) display[display.length] = &quot;links&quot;;
+		if(dced.options.flags.typed) display[display.length] = &quot;typed&quot;;
+		return display.join(&quot;_&quot;);
+	},
+
+	getQueryString: function() {
+		return &quot;?version=&quot; + dced.options.version + &quot;&amp;format=&quot; + dced.options.format + &quot;&amp;display=&quot; + dced.getDisplayFlagsAsString(); 
+	},
+
+	load: function(i, f, u, prefetch){
+		if(i == false &amp;&amp; f == false){
+			dced.mode = &quot;edit new&quot;;
+			dced.setCreateMode();
+			dced.update = u;
+			$('.dacura-ld-editor').show();		
+		}
+		else {
+			dced.fetch = f;
+			dced.update = u;
+			dced.currentID = i;
+			var opts = jQuery.extend({}, dced.options);
+			opts.display = dced.getDisplayFlagsAsString();
+			if(typeof prefetch == &quot;undefined&quot;){
+				dced.fetch(i, opts, dced.loadEntity, dced.targets);
+			}
+			else {
+				dced.loadEntity(prefetch);
+			}
+		}
+	},
+
+	loadSkeleton: function(obj){
+		dced.drawBody(obj.display); 
+		dced.display();
+	},
+	
+	fetch: function(){
+		alert(&quot;No fetch function defined &quot; + dced.getQueryString());	
+	},		
+
+	update: function(){
+		alert(&quot;No update function defined &quot; + dced.getQueryString());			
+	},
+
+	readInputObject: function(){
+		try {
+			uobj = {};
+			uobj.meta = dced.getInputMeta();
+			uobj.contents = dced.getInputContents();
+			if(dced.options.format == &quot;json&quot;){
+				uobj.contents = JSON.parse(uobj.contents);				
+			}
+			else {
+				//alert(dced.options.format); 
+			}
+			return uobj;
+		}
+		catch(e){
+			dacura.system.showErrorResult(&quot;your input data has json formatting errors.&quot;, e.message, &quot;JSON Parsing Error&quot;, dced.targets.errorbox);
+			return;
+		}	
+	},
+
+
+	getMetaEditHTML: function(meta){
+		if(dced.options.format == &quot;json&quot;){
+			var html = &quot;&lt;textarea id='ldmeta-input'&gt;&quot;;
+			if(typeof meta == 'undefined'){
+				meta = {};
+			} 
+			$('#meta-edit-table').hide();
+			html += JSON.stringify(meta, null, 4) + &quot;&lt;/textarea&gt;&quot;;
+			return html; 				
+		}
+		else {
+			$('#meta-edit-table').html(&quot;&quot;);
+			$('#meta-edit-table').append(&quot;&lt;li&gt;&lt;span class='meta-label'&gt;Status&lt;/span&gt;&lt;span class='meta-value'&gt;&quot; + 
+				&quot;&lt;select id='entstatus'&gt;&lt;?php echo $service-&gt;getEntityStatusOptions();?&gt;&lt;/select&gt;&lt;/span&gt;&lt;/li&gt;&quot;);
+			if(typeof meta != &quot;undefined&quot; &amp;&amp; typeof meta.status != &quot;undefined&quot;){
+				$('#entstatus').val(meta.status);	
+			}
+			$('#meta-edit-table').show();
+			//$('#entstatus').val(meta.status);	
+			return &quot;&quot;;
+		}
+	},	
+
+	getBodyEditHTML: function(obj){
+		var html = &quot;&lt;textarea id='ldprops-input'&gt;&quot;;
+		if(dced.options.format == &quot;json&quot; || dced.options.format == &quot;jsonld&quot;){
+			if(typeof obj == 'undefined'){
+				bd = {};
+			} 
+			else {
+				bd = obj.ldprops;
+			}
+			html += JSON.stringify(bd, null, 4); 			
+		} 
+		else {
+			html += obj.display;
+		}
+		html += &quot;&lt;/textarea&gt;&quot;;
+		return html; 	
+	},
+
+	drawMeta: function(ent){
+		$('#entstatus').val(ent.status);	
+	},
+	
+
+	getInputMeta: function(){
+		if(dced.options.format == &quot;json&quot;){
+			return 	JSON.parse($('#ldmeta-input').val());
+		}
+		else {
+			var meta = {&quot;status&quot;: $('#entstatus').val()};
+			return meta;
+		}		
+	},
+	
+	getInputContents: function(){
+		return 	$('#ldprops-input').val();		
+	},
+ 	
+	submit: function(type, test){
+		dced.clearMessages();
+		var uobj = dced.readInputObject();
+		if(typeof uobj != &quot;undefined&quot;){
+			uobj.options = {&quot;format&quot;: dced.options.format };
+			if(typeof test != &quot;undefined&quot;){
+				uobj.test = true;
+			}
+			else if(typeof uobj.test != &quot;undefined&quot;) {
+				delete uobj.test;
+			}
+			if(typeof dced.currentEntity.delta != &quot;undefined&quot; &amp;&amp; $('#set-update-status').val() != dced.currentEntity.delta.status){
+				uobj.updatemeta = { &quot;status&quot;: $('#set-update-status').val() };
+			}
+			if(dced.mode == &quot;edit new&quot;){
+				var entity_type = $('#set-status').val();
+				uobj.type = entity_type;
+				dced.update(uobj, dced.drawUpdateResult, dced.targets, test);
+			}
+			else {
+				//if($('#set-status').val() &amp;&amp; $('#set-status').val() != dced.currentEntity.status){
+				//	uobj.meta.status = $('#set-status').val();
+				//}
+				dced.update(dced.currentID, uobj, dced.drawUpdateResult, type, dced.targets, test);
+			} 
+		}
+	},
+ 	
+	refresh: function(source){
+		dced.clearMessages();
+		var opts = jQuery.extend({}, dced.options);
+		opts.display = dced.getDisplayFlagsAsString();
+		dced.fetch(dced.currentID, opts, dced.drawEntity, dced.targets, source);
+	},
+
+	//called first time the entity is loaded - hides display until everything is ready
+	loadEntity: function(ent){
+		dced.drawEntity(ent);
+		dced.display();
+	},
+	
+	drawEntity: function(ent){
+		dced.currentEntity = ent;
+		dced.options.version = ent.version;
+		dced.setVersion(ent.version, ent.latest_version);
+		dced.drawMeta(ent);
+		$('#ld-editor').html(&quot;&lt;div class='dacura-json-editor'&gt;&quot; + dced.getMetaEditHTML(dced.currentEntity.meta) + dced.getBodyEditHTML(dced.currentEntity) + &quot;&lt;/div&gt;&quot;);
+		dced.setMode();
+		dced.drawBody(ent.display); 
+	},
+
+	drawBody: function(contents){
+		if(dced.options.format == &quot;json&quot; || dced.options.format == &quot;jsonld&quot;){
+			$('#ld-viewer').html(&quot;&lt;div class='dacura-json-viewer'&gt;&quot; + JSON.stringify(contents, null, 4) + &quot;&lt;/div&gt;&quot;);
+		}
+		else if(dced.options.format == &quot;triples&quot;){
+			var html = &quot;&lt;div class='ld-table-viewer'&gt;&lt;table class='ld-triples-viewer'&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Subject&lt;/th&gt;&lt;th&gt;Predicate&lt;/th&gt;&lt;th&gt;Object&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&quot;;
+			for (var i in contents) {
+				var row = &quot;&lt;tr&gt;&lt;td&gt;&quot; + contents[i][0] + &quot;&lt;/td&gt;&quot;;
+				row += &quot;&lt;td&gt;&quot; + contents[i][1] + &quot;&lt;/td&gt;&quot;;
+				row += &quot;&lt;td&gt;&quot; + contents[i][2] + &quot;&lt;/td&gt;&lt;/tr&gt;&quot;;
+				html += row;
+			}
+			$('#ld-viewer').html(html + &quot;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&quot;);	
+		}
+		else if(dced.options.format == &quot;quads&quot;){
+			var html = &quot;&lt;div class='ld-table-viewer'&gt;&lt;table class='ld-triples-viewer'&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Subject&lt;/th&gt;&lt;th&gt;Predicate&lt;/th&gt;&lt;th&gt;Object&lt;/th&gt;&lt;th&gt;Graph&lt;/th&gt;&lt;/tr&gt;&lt;thead&gt;&lt;tbody&gt;&quot;;
+			for (var i in contents) {
+				var row = &quot;&lt;tr&gt;&lt;td&gt;&quot; + contents[i][0] + &quot;&lt;/td&gt;&quot;;
+				row += &quot;&lt;td&gt;&quot; + contents[i][1] + &quot;&lt;/td&gt;&quot;;
+				row += &quot;&lt;td&gt;&quot; + contents[i][2] + &quot;&lt;/td&gt;&quot;;
+				row += &quot;&lt;td&gt;&quot; + contents[i][3] + &quot;&lt;/td&gt;&lt;/tr&gt;&quot;;
+				html += row;
+			}
+			$('#ld-viewer').html(html + &quot;&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&quot;);	
+		}
+		else if(dced.options.format == &quot;html&quot;){
+				var html = &quot;&lt;div class='dacura-html-viewer'&gt;&quot;;
+				html += contents;
+				$('#ld-viewer').html(html + &quot;&lt;/table&gt;&lt;/div&gt;&quot;);	
+				//dacura.candidate.collapseAllEmbedded();
+				$('.pidembedded').click(function(event){
+					$('#'+ event.target.id + &quot;_objrow&quot;).toggle();
+				});
+		}
+		else {
+			if(dced.options.format == &quot;svg&quot;){
+				var html = &quot;&lt;object id='svg' type='image/svg+xml'&gt;&quot; + contents + &quot;&lt;/object&gt;&quot;;
+			}
+			else {
+				var html = &quot;&lt;div class='dacura-export-viewer'&gt;&quot; + contents + &quot;&lt;/div&gt;&quot;;
+			}
+			$('#ld-viewer').html(html);	
+					
+		}
+		$('#ld-viewer').show();
+	},
+	
+	init: function(opts){
+		if(typeof opts != &quot;undefined&quot;){
+			dced.setEditorOptions(opts);
+		}
+		
+		function initEditor(){
+			JSONEditor.prototype.ADD_IMG = '&lt;?=$service-&gt;furl(&quot;image&quot;, &quot;add.png&quot;)?&gt;';
+			JSONEditor.prototype.DELETE_IMG = '&lt;?=$service-&gt;furl(&quot;image&quot;, &quot;delete.png&quot;)?&gt;';
+		}
+		
+		function initVersionNavigation(options){
+			$( &quot;#ld-version-controls&quot;).buttonset();
+			$( &quot;#ld-freeze&quot; ).button({
+				text: false,
+		      	icons: {
+		        	primary: &quot;ui-icon-pin-s&quot;
+		      	}
+	      	}).click(function(){
+				if(dced.mode == &quot;view_history_frozen&quot;){
+					dced.setMode(&quot;view_history&quot;);
+				}
+				else {
+					dced.setMode(&quot;view_history_frozen&quot;);
+				}
+			});			    						
+			$( &quot;#ld-beginning&quot; ).button({
+		      	text: false,
+		      	icons: {
+		        	primary: &quot;ui-icon-seek-start&quot;
+		      	}
+		    }).click(function(){
+		    	dced.options.version = 1;
+		    	dced.refresh(&quot;loading version 1&quot;);
+		    });
+			$( &quot;#ld-rewind&quot; ).button({
+		      	text: false,
+			    icons: {
+			        primary: &quot;ui-icon-seek-prev&quot;
+			    }
+		    }).click(function(){
+		    	dced.options.version--;
+		    	dced.refresh(&quot;loading version &quot; + dced.options.version);
+		    });
+		    $(&quot;#ld-current&quot;).button().click(function(){
+				dced.setMode(&quot;view_history&quot;);
+			});			    
+		    $(&quot;#ld-forward&quot;).button({
+		      	text: false,
+		      	icons: {
+		        	primary: &quot;ui-icon-seek-next&quot;
+		    	}
+		    }).click(function(){
+		    	dced.options.version++;
+		    	dced.refresh(&quot;loading version &quot; + dced.options.version);
+		    });
+		    $( &quot;#ld-end&quot; ).button({
+		      	text: false,
+		      	icons: {
+		        	primary: &quot;ui-icon-seek-end&quot;
+		      	}
+		    }).click(function(){
+		    	dced.options.version = 0;
+		    	dced.refresh(&quot;loading latest version&quot;);
+		    });
+		}
+		
+		function initUpdateNavigation(){
+			$( &quot;#ld-update-controls&quot;).buttonset();
+			$( &quot;#ld-update-first&quot; ).button({
+		      	text: false,
+		      	icons: {
+		        	primary: &quot;ui-icon-seek-start&quot;
+		      	}
+		    }).click(function(){
+		    	dced.options.version = 1;
+		    	dced.refresh(&quot;version&quot;);
+		    });
+			$( &quot;#ld-update-freeze&quot; ).button({
+				text: false,
+		      	icons: {
+		        	primary: &quot;ui-icon-pin-s&quot;
+		      	}
+	      	}).click(function(){
+				if(dced.mode == &quot;view_update_frozen&quot;){
+					dced.setMode(&quot;view_update&quot;);
+				}
+				else {
+					dced.setMode(&quot;view_update_frozen&quot;);
+				}
+			});			    
+			
+			$( &quot;#ld-update-current&quot; ).button().click(function(){
+				dced.setMode(&quot;view_update&quot;);
+			});			    
+			$( &quot;#ld-update-previous&quot; ).button({
+		      	text: false,
+			    icons: {
+			        primary: &quot;ui-icon-seek-prev&quot;
+			    }
+		    }).click(function(){
+		    	dced.options.version--;
+		    	dced.refresh(&quot;version&quot;);
+		    });
+		    $(&quot;#ld-update-next&quot;).button({
+		      	text: false,
+		      	icons: {
+		        	primary: &quot;ui-icon-seek-next&quot;
+		    	}
+		    }).click(function(){
+		    	dced.options.version++;
+		    	dced.refresh(&quot;version&quot;);
+		    });
+		    $( &quot;#ld-update-last&quot; ).button({
+		      	text: false,
+		      	icons: {
+		        	primary: &quot;ui-icon-seek-end&quot;
+		      	}
+		    }).click(function(){
+		    	dced.options.version = 0;
+		    	dced.refresh(&quot;version&quot;);
+		    });
+		}
+		
+		function initStageButtons(){
+			$( &quot;.view-update-stage&quot; ).buttonset();
+			
+			$( &quot;#stage_before&quot; ).button({
+		      	text: false,
+		      	icons: {
+		        	primary: &quot;ui-icon-seek-start&quot;
+		      	}
+		    });
+			$( &quot;#stage_backward&quot; ).button({
+		      	text: false,
+			    icons: {
+			        primary: &quot;ui-icon-seek-prev&quot;
+			    }
+		    });
+		    $(&quot;#stage_forward&quot;).button({
+		      	text: false,
+		      	icons: {
+		        	primary: &quot;ui-icon-seek-next&quot;
+		    	}
+		    });
+		    $( &quot;#stage_after&quot; ).button({
+		      	text: false,
+		      	icons: {
+		        	primary: &quot;ui-icon-seek-end&quot;
+		      	}
+		    });	
+		    $( &quot;#stage_full&quot; ).button({
+		      	text: false,
+		      	icons: {
+		        	primary: &quot;ui-icon-shuffle&quot;
+		      	}
+		    });	
+		    $(&quot;.uview&quot;).button().click(function(event){
+				dced.showUpdateStage(event.target.id.substr(6));
+			});	
+		}
+
+		function initFormatButtons(){ 			
+			//view format choices
+			$(&quot;.edit-options&quot;).buttonset();
+			$( &quot;.view-options&quot; ).buttonset();
+			$( &quot;.foption&quot; ).click(function(event){
+				dced.options.format = event.target.id.substr(7);
+				dced.setFormatOption(event.target.id.substr(7));
+				dced.refresh(&quot;loading &quot; + event.target.id.substr(7) + &quot; format&quot;);
+		    });
+			$( &quot;.eoption&quot; ).click(function(event){
+				dced.options.format = event.target.id.substr(6);
+				dced.setFormatOption(event.target.id.substr(6));
+				dced.refresh(&quot;loading &quot; + event.target.id.substr(6) + &quot; edit format&quot;);
+		    });
+		    $( &quot;.ifoption&quot; ).click(function(event){
+				dced.options.stage = event.target.id.substr(7);
+				dced.refresh(&quot;stage&quot;);
+			});
+			$( &quot;.doption&quot; ).click(function(event){
+				dced.options.flags[event.target.id.substr(8)] = $('#'+event.target.id).is(&quot;:checked&quot;);
+				dced.refresh(&quot;highlight&quot;);
+			});
+		}
+
+		function initActionButtons(){
+		    $( &quot;.test_edit&quot; ).button({
+		      	icons: {
+		        	primary: &quot;ui-icon-help&quot;
+		      	}
+		  	}).click(function(){
+				dced.submit(dced.editMode, true);
+			});
+			$( &quot;.save_edit&quot; ).button({
+		      	icons: {
+		        	primary: &quot;ui-icon-check&quot;
+		      	}
+		  	}).click(function(){
+				dced.submit(dced.editMode);
+			});
+		  	$('.cancel_edit').button({
+		      	icons: {
+		        	primary: &quot;ui-icon-closethick&quot;
+		      	}
+		  	}).click(function(){
+				dced.setMode(dced.viewMode);
+			});		
+			$('#show-version-controls').button({
+		      	icons: {
+		        	primary: &quot;ui-icon-clipboard&quot;
+		      	}
+		  	}).click(function(){
+			  	if($('#show-version-controls').is(&quot;:checked&quot;)){
+					$('#ld-action-bar').show();
+				}
+			  	else {
+					$('#ld-action-bar').hide();			  	
+				}
+			});
+			$('#action-edit').button({
+		      	icons: {
+		        	primary: &quot;ui-icon-pencil&quot;
+		      	}
+		  	}).click(function(){
+				dced.setMode(dced.editMode);
+			});
+			$('#action-modify').button({
+		      	icons: {
+		        	primary: &quot;ui-icon-pencil&quot;
+		      	}
+		  	}).click(function(){
+				dced.setMode(&quot;edit_update&quot;);
+			});
+			$('#action-restore').button({
+		      	icons: {
+		        	primary: &quot;ui-icon-refresh&quot;
+		      	}
+		  	}).click(function(){
+				dced.submit(&quot;restore&quot;);
+			});	
+			$('.editor-max').click(function(){
+				dacura.system.goFullBrowser(dced.targets.busybox);
+				$('.browsermin').show();
+				$('.browsermax').hide();
+			});			  
+			$('.editor-min').click(function(){
+				dacura.system.leaveFullBrowser(dced.targets.busybox);
+				$('.browsermax').show();
+				$('.browsermin').hide();
+			});			  
+		}	
+		initVersionNavigation();
+		initUpdateNavigation();
+		initFormatButtons();
+		initActionButtons();
+		initStageButtons();
+		initEditor();
+		//$('.dacura-ld-editor').tooltip();
+	},//init
+
+	setFormatOption: function(opt){
+		$(&quot;#format_&quot; + opt).prop('checked', true).button(&quot;refresh&quot;);					
+	},
+
+
+	
+	setCreateMode: function(obj){
+		$('#ld-view-page').hide();
+		$(&quot;.view-update-stage&quot;).hide();		
+		$('#set-update-status').hide();							
+		$('#ld-edit-page').show();
+		if(typeof obj != &quot;undefined&quot;){
+			$('#ld-editor').append(&quot;&lt;div class='dacura-json-editor'&gt;&quot; + this.getMetaEditHTML(obj.meta) + this.getBodyEditHTML(obj) + &quot;&lt;/div&gt;&quot;);
+		}
+		else {
+			$('#ld-editor').append(&quot;&lt;div class='dacura-json-editor'&gt;&quot; + this.getMetaEditHTML() + this.getBodyEditHTML() + &quot;&lt;/div&gt;&quot;);
+		}
+		//dced.jsoneditor = new JSONEditor($(&quot;#ldprops-input&quot;), dced.editorwidth, dced.editorheight);
+		//dced.jsoneditor.doTruncation(true);
+		//dced.jsoneditor.showFunctionButtons();
+		$('.cancel_edit').hide();
+		$('.test_edit span').text(&quot;Test entity creation&quot;);
+		$('.save_edit span').text(&quot;Submit new entity&quot;);	
+	},
+
+	setMode: function(mode){
+		if(typeof mode != &quot;undefined&quot;){
+			dced.mode = mode;					
+		}
+
+		if(dced.mode.substring(0,4) == &quot;view&quot;){
+			$('.dacura-json-editor').remove();
+			dced.viewMode = dced.mode;
+			$('#ld-view-page').show();
+			$('#ld-edit-page').hide();
+			if(dced.mode == &quot;view_update&quot;){
+				$(&quot;.view-update-stage&quot;).show();
+			}
+			else {
+				$(&quot;.view-update-stage&quot;).hide();				
+			}
+			//$('#ld-version-controls button').button( &quot;option&quot;, &quot;disabled&quot;, false);
+			//$('#ld-update-controls button').button( &quot;option&quot;, &quot;disabled&quot;, false);									
+			if(dced.mode == &quot;view&quot;){
+				$('#action-modify').hide();
+				$('#action-restore').hide();
+				$('#action-edit').show();
+			}
+			else if(dced.mode == &quot;view_update&quot;){
+				$('#action-modify').show();
+				$('#action-restore').hide();
+				$('#action-edit').hide();
+				$('#ld-current').show();
+			}
+			else if(dced.mode == &quot;view_history&quot;){
+				$('#action-modify').hide();
+				$('#action-restore').show();
+				$('#action-edit').hide();										
+			}
+			else if(dced.mode == &quot;view_history_frozen&quot;){
+				$('#action-modify').show();
+				$('#action-restore').hide();
+				$('#action-edit').hide();
+				$('#ld-version-controls button').button( &quot;option&quot;, &quot;disabled&quot;, true);
+				$('#ld-freeze').button( &quot;option&quot;, &quot;disabled&quot;, false);				
+			}
+			else if(dced.mode == &quot;view_update_frozen&quot;){
+				$('#action-modify').hide();
+				$('#action-restore').show();
+				$('#action-edit').show();													
+				$('#ld-update-controls button').button( &quot;option&quot;, &quot;disabled&quot;, true);									
+				$('#ld-update-freeze').button( &quot;option&quot;, &quot;disabled&quot;, false);				
+			}
+		}
+		else if(dced.mode.substring(0,4) == &quot;edit&quot;){
+			dced.editMode = dced.mode;
+			//var meta = JSON.stringify(dced.currentEntity.meta, null, 4);
+			//var content = JSON.stringify(dced.currentEntity.ldprops, null, 4);
+			$('#ld-editor').html(&quot;&lt;div class='dacura-json-editor'&gt;&quot; + dced.getMetaEditHTML(dced.currentEntity.meta) + dced.getBodyEditHTML(dced.currentEntity) + &quot;&lt;/div&gt;&quot;);
+			$('#ld-edit-page').show();
+			$('#ld-view-page').hide();
+			//dced.jsoneditor = new JSONEditor($(&quot;#ldprops-input&quot;), dced.editorwidth, dced.editorheight);
+			//dced.jsoneditor.doTruncation(true);
+			//dced.jsoneditor.showFunctionButtons();
+		}	
+	},
+	
+	setVersion: function(v, lv){
+		dced.options.version = v;
+		if(typeof lv != &quot;undefined&quot; &amp;&amp; !(v == 1 &amp;&amp; v == lv)){
+			if (v == 1){
+				$(&quot;#ld-rewind&quot; ).button(&quot;disable&quot;);
+				$(&quot;#ld-beginning&quot; ).button(&quot;disable&quot;);
+				$(&quot;#ld-update-previous&quot; ).button(&quot;disable&quot;);
+				$(&quot;#ld-update-first&quot; ).button(&quot;disable&quot;);
+			}
+			else {
+				$(&quot;#ld-update-previous&quot;).button(&quot;enable&quot;);
+				$(&quot;#ld-update-first&quot; ).button(&quot;enable&quot;);
+				$(&quot;#ld-rewind&quot;).button(&quot;enable&quot;);
+				$(&quot;#ld-beginning&quot; ).button(&quot;enable&quot;);
+			}
+			if(v == lv){
+				$(&quot;#ld-forward&quot; ).button(&quot;disable&quot;);
+				$(&quot;#ld-end&quot; ).button(&quot;disable&quot;);
+				$(&quot;#ld-update-next&quot; ).button(&quot;disable&quot;);
+				$(&quot;#ld-update-last&quot; ).button(&quot;disable&quot;);
+				dacura.system.removeServiceBreadcrumb(&quot;bcversion&quot;);							
+			}
+			else {
+				$(&quot;#ld-forward&quot;).button(&quot;enable&quot;);
+				$(&quot;#ld-end&quot;).button(&quot;enable&quot;);
+				$(&quot;#ld-update-next&quot;).button(&quot;enable&quot;);
+				$(&quot;#ld-update-last&quot;).button(&quot;enable&quot;);
+				dacura.system.addServiceBreadcrumb(&quot;&lt;?=$service-&gt;my_url()?&gt;/&quot; + this.currentID + &quot;?version=&quot; + v, &quot;Version &quot; + v, &quot;bcversion&quot;);									
+			}
+		}
+		else {
+			$('#ld-version-controls').hide();
+			$('#ld-update-controls').hide();
+			$('#show-version-controls').button( &quot;option&quot;, &quot;disabled&quot;, true);							
+		}
+		$('#ld-current span').text(&quot;Version &quot; + dced.options.version);
+		$('#ld-update-current span').text(&quot;Update &quot; + dced.updateid);
+				
+	},
+
+	showUpdateStage: function(stage){
+		if(stage == &quot;backward&quot;){
+			dced.drawBody(dced.currentEntity.delta.backward);
+		}
+		else if(stage == &quot;forward&quot;){
+			dced.drawBody(dced.currentEntity.delta.forward);		
+		}
+		else if(stage == &quot;before&quot;){
+			dced.drawBody(dced.currentEntity.original);		
+		}
+		else if(stage == &quot;after&quot;){
+			dced.drawBody(dced.currentEntity.display);			
+		}
+		else {
+			dced.drawBody(dced.currentEntity.delta.display);				
+		}
+		//dacura.candidate.display(screen);
+	}
+};//editor object
+var dced = dacura.editor;//shorthand to avoid typing whole object name or worrying about binding on callbacks
+&lt;/script&gt;
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

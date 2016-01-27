@@ -1,0 +1,152 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/**
+ * A class which produces policy responses to actions in the linked data api
+ * 
+ * Basically this class is supposed to tell us what is allowed when users do stuff
+ * @author chekov
+ * @license GPL V2
+ */
+class PolicyEngine extends DacuraObject {
+	/** @var array true for a given type if users are allowed to specify their own ids for entities */
+	var $demand_id_allowed = array(&quot;default&quot; =&gt; true, &quot;graph&quot; =&gt; false);
+	/** @var array if this is true for a given entity type then entities and updates that are rejected will still be stored in the db */
+	var $store_rejected = array(&quot;default&quot; =&gt; true, &quot;ontology&quot; =&gt; false);
+	/** @var array An array of decisions for actions */
+	var $decisions = array(
+		&quot;view&quot; =&gt; array(&quot;default&quot; =&gt; &quot;accept&quot;),	
+		&quot;update&quot; =&gt; array(&quot;default&quot; =&gt; &quot;accept&quot;),	
+		&quot;create&quot; =&gt; array(&quot;default&quot; =&gt; &quot;accept&quot;),	
+		&quot;delete&quot; =&gt; array(&quot;default&quot; =&gt; &quot;accept&quot;),	
+		&quot;view update&quot; =&gt; array(&quot;default&quot; =&gt; &quot;accept&quot;),	
+		&quot;update update&quot; =&gt; array(&quot;default&quot; =&gt; &quot;accept&quot;),	
+		&quot;delete update&quot; =&gt; array(&quot;default&quot; =&gt; &quot;accept&quot;),	
+	);
+	/** @var array An array of which types should be rolled back*/
+	var $rollbacks = array(&quot;default&quot; =&gt; true, &quot;ontology&quot; =&gt; false);
+	
+	/**
+	 * Loads the default decision for a particular action and object type
+	 * @param string $action
+	 * @param string $type
+	 * @return string 
+	 */
+	function getPolicyDefaultDecision($action, $type){
+		$decisions = $this-&gt;decision[$action];
+		if(isset($decision[$type]))return $decisions[$type];
+		return $decisions[&quot;default&quot;];
+	}
+	
+	/**
+	 * Returns a decision in response to an attempt to carry out an action 
+	 * @param string $action create, update, delete, view, update update, view update, delete update
+	 * @param string $type what type of thing is being actioned on 
+	 * @param mixed $context any important contextual information goes in here
+	 * @return DacuraResult
+	 */
+	function getPolicyDecision($action, $type, $context){
+		$ar = new DacuraResult(&quot;System policy for $action&quot;);
+		$ar-&gt;status($this-&gt;getPolicyDefaultDecision($action, $type));
+		if($action == &quot;update update&quot;){
+			return $this-&gt;updateUpdate($context[0], $context[1], $ar);
+		}
+		return $ar;
+	}
+
+	/**
+	 * Updates to updates are special and can beprocessed generically ...
+	 * @param EntityUpdate $orig the original update object
+	 * @param EntityUpdate $upd the modified update object
+	 * @param DacuraResult $ar the result object that this result will be added to
+	 */
+	function updateUpdate($orig, $upd, &amp;$ar){
+		if($orig-&gt;is_accept() &amp;&amp; $orig-&gt;to_version() &amp;&amp; ($orig-&gt;to_version() != $orig-&gt;original-&gt;latest_version)){
+			//old published version - disallow
+			return $ar-&gt;failure(400, &quot;Illegal Update&quot;, &quot;Old updates that have been accepted cannot be changed.&quot;);
+		}
+		elseif($upd-&gt;published() &amp;&amp; $upd-&gt;to_version()){
+			if($upd-&gt;to_version() != $upd-&gt;original-&gt;latest_version){
+				return $ar-&gt;failure(400, &quot;Illegal Update&quot;, &quot;Updates can only be enacted against the latest version.&quot;);
+			}
+		}
+		return $ar-&gt;accept();
+	}
+
+	/**
+	 * Should we store rejected entities?
+	 * @param string $type the type of thing 
+	 * @param LDEntity $ent the entity itself
+	 * @return boolean true if rejected should be stored
+	 */
+	function storeRejected($type, $ent = false){
+		if(isset($this-&gt;store_rejected[$type])) return $this-&gt;store_rejected[$type];
+		return $this-&gt;store_rejected['default'];
+	}
+
+	/**
+	 * Should we roll back to pending when a update is accepted by policy but rejected by graph analysis?
+	 * @param string $type the type of thing
+	 * @param LDEntity $ent the thing itself
+	 * @return boolean true if it should be rolled back
+	 */
+	function rollbackToPending($type, $ent = false){
+		if(isset($this-&gt;rollbacks[$type])) return $this-&gt;rollbacks[$type];
+		return $this-&gt;rollbacks['default'];
+	}
+	
+	/**
+	 * Should we allow the specification of ids in input?
+	 * @param string $type the type of thing
+	 * @param LDEntity $ent the thing itself
+	 * @return boolean true if it should be rolled back
+	 */
+	function demandIDAllowed($type = false, $ent = false){
+		if(isset($this-&gt;demand_id_allowed[$type])) return $this-&gt;demand_id_allowed[$type];
+		return $this-&gt;demand_id_allowed['default'];
+	}
+}
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

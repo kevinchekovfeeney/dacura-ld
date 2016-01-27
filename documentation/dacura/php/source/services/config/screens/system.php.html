@@ -1,0 +1,143 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;div class='dacura-screen' id='system-config'&gt;
+	&lt;?php if(in_array(&quot;system-configuration&quot;, $params['subscreens'])) { ?&gt;
+	&lt;div class='dacura-subscreen' id=&quot;system-configuration&quot; title=&quot;System Settings&quot;&gt;
+		&lt;div class='subscreen-intro-message'&gt;system wide settings for this dacura server&lt;/div&gt;
+		&lt;?php echo $service-&gt;getInputTableHTML(&quot;sysconfig&quot;, &quot;view&quot;, $params['sysconfig_fields']);
+			foreach($params['service_tables'] as $id =&gt; $fields){
+				echo &quot;&lt;h3&gt;&quot;.ucfirst($id).&quot; Service Configuration&lt;/h3&gt;&quot;;
+				echo $service-&gt;getInputTableHTML($id.&quot;-service-table&quot;, &quot;view&quot;, $fields);
+			}
+		?&gt;		
+	&lt;/div&gt;
+	&lt;?php } if(in_array(&quot;list-collections&quot;, $params['subscreens'])) { ?&gt;
+	&lt;div class='dacura-subscreen' id='list-collections' title=&quot;Configure Collections&quot;&gt;
+		&lt;table id=&quot;collections-table&quot; class=&quot;dacura-api-listing&quot;&gt;
+			&lt;thead&gt;
+			&lt;tr&gt;
+				&lt;th id=&quot;dlo-id&quot; title=&quot;The internal ID of the collection - a component in all collection internal URLs&quot;&gt;ID&lt;/th&gt;
+				&lt;th id=&quot;dlo-name&quot; title=&quot;The title of the collection - expressed in natural language&quot;&gt;Title&lt;/th&gt;
+				&lt;th id=&quot;dlo-status&quot; title=&quot;Only collections with status 'accept' are in use.&quot;&gt;Status&lt;/th&gt;
+			&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	&lt;?php } if(in_array(&quot;add-collection&quot;, $params['subscreens'])) { ?&gt;
+	&lt;div class='dacura-subscreen' id=&quot;add-collection&quot; title=&quot;Create New Collection&quot;&gt;
+		&lt;div class='subscreen-intro-message'&gt;Choose a title and id for the new collection, then hit the create button&lt;/div&gt;
+		&lt;?php echo $service-&gt;getInputTableHTML(&quot;collection-details&quot;, &quot;create&quot;, $params['create_collection_fields']);?&gt;
+		&lt;div class=&quot;subscreen-buttons&quot;&gt;
+			&lt;button id='collectioncreate' class='dacura-create subscreen-button'&gt;Create New Collection&lt;/button&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;
+	&lt;?php } if(in_array(&quot;view-logs&quot;, $params['subscreens'])) { ?&gt;
+	&lt;div class='dacura-subscreen' id=&quot;view-logs&quot; title=&quot;View Server Logs&quot;&gt;
+		&lt;div class='subscreen-intro-message'&gt;View the Dacura request and event logs.&lt;/div&gt;
+		&lt;?php echo RequestLog::getAsListingTable(&quot;logtable&quot;)?&gt;
+	&lt;/div&gt;	
+	&lt;?php } ?&gt;
+&lt;/div&gt;
+&lt;script&gt;
+
+function loadCollection(id){
+	dacura.system.switchContext(id);	
+}
+
+function inputError(obj){
+	if(typeof obj.id == &quot;undefined&quot; || typeof obj.title == &quot;undefined&quot;){
+		return &quot;bad reading of object from input&quot;;
+	}
+	if(obj.id.length &lt; 2 || obj.title.length &lt; 5){
+		return &quot;The ID must be at least 2 characters long and the title must be at least 5&quot;;
+	}
+	return false;
+}
+
+function showCreateSuccess(txt, targets){
+	dacura.system.showSuccessResult(&quot;You will now be able to configure and activate this collection&quot;, false, &quot;Collection with id: &quot; + txt + &quot; successfully created&quot;, targets.resultbox);
+	setTimeout(dacura.system.switchContext(txt), 3000);
+}
+
+function showUpdateSuccess(txt, targets){
+	dacura.system.showSuccessResult(&quot;Updates successfully saved&quot;, txt, false, targets.resultbox);
+}
+
+$(function() {
+	dacura.system.init({
+		&quot;mode&quot;: &quot;tool&quot;, 
+		&quot;tabbed&quot;: 'system-config', 
+		&quot;listings&quot;: {
+			&quot;collections-table&quot;: {
+				&quot;screen&quot;: &quot;list-collections&quot;, 
+				&quot;fetch&quot;: dacura.config.getCollections,
+				&quot;rowClick&quot;: loadCollection, 
+				&quot;settings&quot;: &lt;?=$params['dacura_table_settings']?&gt;
+			},
+			&quot;logtable&quot;: {
+				&quot;screen&quot;: &quot;view-logs&quot;, 
+				&quot;fetch&quot;: dacura.config.getLogs,
+				&quot;rowClick&quot;: function(){ alert(&quot;clicked row&quot;)},
+				&quot;settings&quot;: &lt;?=$params['log_table_settings']?&gt;				
+			}
+		}, 
+		&quot;buttons&quot;: {
+			&quot;collectioncreate&quot;: {
+				&quot;screen&quot;: &quot;add-collection&quot;,
+				&quot;source&quot;: &quot;collection-details&quot;,
+				&quot;validate&quot;: inputError, 
+				&quot;submit&quot;: dacura.config.addCollection, 
+				&quot;result&quot;: showCreateSuccess
+			},
+			&quot;systemconfigupdate&quot;: {
+				&quot;screen&quot;: &quot;system-configuration&quot;,			
+				&quot;source&quot;: &quot;sysconfig&quot;,
+				&quot;result&quot;: showUpdateSuccess
+			}
+		}
+	});
+});
+&lt;/script&gt;</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

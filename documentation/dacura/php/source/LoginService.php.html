@@ -1,0 +1,167 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+include_once(&quot;LoginDacuraServer.php&quot;);
+/** Dacura's Login Service 
+ * 
+ * Overrides the base service class for login functionality
+ * @package login
+ * @author chekov
+ * @license GPL V2
+ */
+class LoginService extends DacuraService {
+	/** @var string login @see DacuraService::default_screen */
+	var $default_screen = &quot;login&quot;;
+	/** @var string[] @see DacuraService::public_screens */
+	var $public_screens = array(&quot;login&quot;, &quot;home&quot;, &quot;register&quot;, &quot;lost&quot;, &quot;invite&quot;);
+	/** @var array @see DacuraService::protected_screens */
+	var $protected_screens = array(&quot;logout&quot; =&gt; array(&quot;nobody&quot;, &quot;any&quot;));
+	
+	/**
+	 * Loads the stylesheet
+	 * @see DacuraService::init()
+	 */
+	function init(){
+		$this-&gt;included_css[] = $this-&gt;get_service_file_url('style.css');
+	}
+	
+	/**
+	 * Wraps content in maincontrol div
+	 * @see DacuraService::writeBodyHeader()
+	 */
+	protected function writeBodyHeader(){
+		echo &quot;&lt;div id='maincontrol'&gt;&quot;;
+	}
+	
+	/**
+	 * closes maincontrol div
+	 * @see DacuraService::writeBodyFooter()
+	 */
+	protected function writeBodyFooter(){
+		echo &quot;&lt;/div&gt;&quot;;
+	}
+
+	/**
+	 * Supress drawing of topbar
+	 * @see DacuraService::renderTopbarSnippet()
+	 */
+	protected function renderTopbarSnippet(){}	
+	
+	/**
+	 * The page-drawing logic
+	 * 
+	 * Distinguishes between registrations, logins, logouts and the various type of confirm codes
+	 * all of which are handled by the login service
+	 * * login
+	 * * logout
+	 * * register
+	 * * confirm register
+	 * * reset password
+	 * * confirm reset password
+	 * * confirm invite (the generation of the invitation itself is handled by the users service). 
+	 * @param LoginDacuraServer $lds the dacura server object
+	 * @see DacuraService::handlePageLoad()
+	 */
+	function handlePageLoad(LoginDacuraServer &amp;$lds){
+		$dcuser = $lds-&gt;getUser(0);
+		if($dcuser){
+			$params = array(&quot;username&quot; =&gt; $dcuser-&gt;handle, &quot;execute&quot; =&gt; false);
+			if($this-&gt;screen == &quot;logout&quot;){
+				$params['execute'] = true;	
+			}
+			$this-&gt;renderScreen(&quot;logout&quot;, $params);
+		}
+		else{
+			if($this-&gt;screen == &quot;home&quot; or $this-&gt;screen == &quot;&quot; or $this-&gt;screen == 'login'){
+				$params = array(&quot;active_function&quot; =&gt; &quot;login&quot;);
+				$this-&gt;renderScreen(&quot;login&quot;, $params);
+			}
+			elseif(($this-&gt;screen == &quot;register&quot; or $this-&gt;screen == 'lost') &amp;&amp; (!isset($this-&gt;args[&quot;code&quot;]))){
+				$params = array(&quot;active_function&quot; =&gt; $this-&gt;screen);
+				$this-&gt;renderScreen(&quot;login&quot;, $params);				
+			}
+			elseif($this-&gt;screen == 'register'){
+				$code = $this-&gt;args[&quot;code&quot;];
+				$user = $lds-&gt;userman-&gt;confirmRegistration($code);
+				if(!$user){
+					$this-&gt;renderScreen(&quot;error&quot;, array(&quot;title&quot; =&gt; &quot;Error in registration confirmation&quot;, 
+							&quot;message&quot; =&gt; $lds-&gt;userman-&gt;errmsg, 
+							&quot;showlogin&quot; =&gt; &quot;If you have already confirmed this registration, please proceed to login&quot;));
+				}
+				else {
+					$this-&gt;renderScreen(&quot;register_success&quot;, array(&quot;message&quot; =&gt; &quot;Good to have you on board &quot;.$user-&gt;handle));
+				}
+			}
+			elseif($this-&gt;screen == 'invite'){
+				$code = $this-&gt;args[&quot;code&quot;];
+				$user = $lds-&gt;userman-&gt;confirmInvite($code);
+				if(!$user){
+					$this-&gt;renderScreen(&quot;error&quot;, array(&quot;title&quot; =&gt; &quot;Error in invitation confirmation&quot;, &quot;message&quot; =&gt; $lds-&gt;userman-&gt;errmsg));
+				}
+				else {
+					$this-&gt;renderScreen(&quot;invite_success&quot;, array(&quot;message&quot; =&gt; &quot;Good to have you on board &quot;.$user-&gt;email));
+				}
+			}
+			elseif($this-&gt;screen == 'lost'){
+				$code = $this-&gt;args[&quot;code&quot;];
+				$user = $lds-&gt;userman-&gt;confirmLostPassword($code);
+				if(!$user){
+					$this-&gt;renderScreen(&quot;error&quot;, array(&quot;title&quot; =&gt; &quot;Password reset failed&quot;, &quot;message&quot; =&gt; $lds-&gt;userman-&gt;errmsg));
+				}
+				else {
+					$this-&gt;renderScreen(&quot;lost&quot;, array(
+							&quot;greeting&quot;=&gt;&quot;&lt;strong&gt;Hi $user-&gt;handle&lt;/strong&gt;&lt;br&gt;&quot;, 
+							&quot;userid&quot; =&gt; $user-&gt;id,
+							&quot;reset_instruction&quot; =&gt; $this-&gt;getServiceSetting('reset_instruction')
+					));
+				}			
+			}
+			else {
+				$this-&gt;renderScreen(&quot;error&quot;, array(&quot;title&quot; =&gt; &quot;Unknown Screen&quot;, &quot;message&quot; =&gt; &quot;The login service does not have a $this-&gt;screen page&quot;));
+			}
+		}
+	}
+	
+}</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

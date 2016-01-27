@@ -1,0 +1,190 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+include_once(&quot;UsersDacuraServer.php&quot;);
+/**
+ * Users Service - provides access to updating / editing / viewing users and roles, etc. 
+ *
+ * * Creation Date: 15/01/2015
+ * @package users
+ * @author Chekov
+ * @license: GPL v2
+ */
+class UsersService extends DacuraService {
+	/** @var array(roles) three pages, profile (any user can view), list (only collection admins), view (only collection admins) */	
+	var $protected_screens = array(&quot;profile&quot; =&gt; array(&quot;user&quot;), &quot;list&quot; =&gt; array(&quot;admin&quot;), &quot;view&quot; =&gt; array(&quot;admin&quot;));
+	/** @var string the list page is the default screen - the front page of the service */
+	var $default_screen = &quot;list&quot;;
+	
+	/*
+	 * The only argument is userid
+	 */
+	function loadArgsFromBrowserURL($sections){
+		if(count($sections)){
+			if($sections[0] == 'profile'){
+				$this-&gt;screen = 'profile';
+			}
+			else {
+				$this-&gt;screen = &quot;view&quot;;
+				$this-&gt;args['userid'] = $sections[0];				
+			}
+		}
+		else {
+			$this-&gt;screen = &quot;list&quot;;
+			$this-&gt;args['userid'] = &quot;&quot;;
+		}
+	}
+	
+	function getRolenameOptions($ds){
+		$html = &quot;&quot;;
+		foreach($ds-&gt;userman-&gt;getAvailableRoles($ds-&gt;cid()) as $rv =&gt; $rname){
+			$html .= &quot;&lt;option value='$rv'&gt;$rname&lt;/option&gt;\n&quot;;
+		}
+		return $html;
+	}
+	
+	/*
+	 * We override the render screen function to swap in the view page for the profile page
+	 */
+	function renderScreen($screen, $params, $other_service = false){
+		if($screen == &quot;profile&quot;){
+			$screen = &quot;view&quot;;
+		}
+		return parent::renderScreen($screen, $params, $other_service);
+	}
+	
+	function getParamsForScreen($screen, UsersDacuraServer &amp;$dacura_server){
+		$params = array(&quot;contexts&quot; =&gt; $dacura_server-&gt;getUserAvailableContexts(&quot;admin&quot;, true));
+		$u = $dacura_server-&gt;getUser();
+		if($screen == &quot;profile&quot;){
+			$params[&quot;userid&quot;] = $u-&gt;id;			
+		}
+		else {
+			$params[&quot;userid&quot;] = $this-&gt;args['userid'];
+		}
+		$params['role_options']	= $dacura_server-&gt;getRoleCreateOptions($params[&quot;userid&quot;]);	
+		$params[&quot;dt&quot;] = true;
+		$params['image'] = $this-&gt;furl(&quot;image&quot;, &quot;buttons/users.png&quot;);
+		$params['collectionbreadcrumb'] = &quot;users&quot;;
+		if($screen == 'profile'){
+			$params[&quot;title&quot;] = &quot;User Profile&quot;;
+			$params[&quot;subtitle&quot;] = &quot;Manage your account details&quot;;
+		}
+		else {
+			$params[&quot;title&quot;] = &quot;User Management Tool&quot;;
+			$params[&quot;subtitle&quot;] = &quot;Manage users and their roles in the system&quot;;				
+			if($u-&gt;rolesSpanCollections()){
+				$params['topbreadcrumb'] = &quot;All Users&quot;;
+				$params[&quot;breadcrumbs&quot;] = array(array(), array());
+			}
+			elseif($screen == &quot;view&quot;){
+				//$params['topbreadcrumb'] = &quot;All Users&quot;;
+				$params[&quot;breadcrumbs&quot;] = array(array(), array());				
+			}			
+		}
+		$params['role_name_options'] = $this-&gt;getRolenameOptions($dacura_server);
+		if($screen == &quot;list&quot;){
+			$roles = $dacura_server-&gt;userman-&gt;getAvailableRoles($dacura_server-&gt;cid());
+			$params['selection_options'] = json_encode(DacuraObject::$valid_statuses);
+				
+			if($dacura_server-&gt;cid() != &quot;all&quot;){
+				$params['subscreens'] = array(&quot;list-users&quot;, &quot;add-user&quot;, &quot;invite-users&quot;);				
+				$iform = $this-&gt;sform(&quot;icu&quot;);
+				$cform = $this-&gt;sform(&quot;ccu&quot;);
+				$cform['role'][&quot;options&quot;] = $roles;
+				$iform['role'][&quot;options&quot;] = $roles;
+				$params[&quot;invite_intro_msg&quot;] = $this-&gt;smsg(&quot;invite_intro&quot;);
+				$params['add_intro_msg'] = $this-&gt;smsg(&quot;system_add&quot;);
+				$params['invite_email_template'] = $this-&gt;smsg(&quot;invite_email&quot;);
+				$iform['message']['value'] = $params['invite_email_template'];					
+				$params['invite_users_fields'] = array_values($iform);
+				$params['dacura_table_settings'] = $this-&gt;getDatatableSetting(&quot;cusers&quot;);				
+			}
+			else {
+				$params['dacura_table_settings'] = $this-&gt;getDatatableSetting(&quot;users&quot;);
+				$params['add_intro_msg'] = $this-&gt;smsg(&quot;collection_add&quot;);
+				$params['subscreens'] = array(&quot;list-users&quot;, &quot;add-user&quot;);				
+				$cform = $this-&gt;sform(&quot;csu&quot;);
+			}
+			$params['create_user_fields'] = array_values($cform);
+		}
+		else { //view / profile screeens
+			$params['roles_table_settings'] = $this-&gt;getDatatableSetting(&quot;roles&quot;);
+			$params['history_table_settings'] = $this-&gt;getDatatableSetting(&quot;history&quot;);
+			$params['update_password_fields'] = array_values($this-&gt;sform('uxp'));
+			$params[&quot;password_intro_msg&quot;] = $this-&gt;smsg(&quot;password_intro&quot;);
+			if($screen == &quot;profile&quot;){ 
+				$params['subscreens'] = array(&quot;user-password&quot;, &quot;user-details&quot;);				
+				$params['update_details_fields'] = array_values($this-&gt;sform('upu'));
+				$params[&quot;details_intro_msg&quot;] = $this-&gt;smsg(&quot;profile_intro&quot;);
+				$params['showdelete'] = false;
+				$params['showupdate'] = true;
+				$params['update_button_text'] = &quot;Save Updated Profile&quot;;
+			}
+			else {
+				$ub = $dacura_server-&gt;getUser($params[&quot;userid&quot;]);
+				if(!$ub){return $params;}
+				$params['subscreens'] = array(&quot;user-history&quot;, &quot;user-roles&quot;, &quot;user-details&quot;);
+				$params['update_details_fields'] = array_values($this-&gt;sform('uxu'));						
+				if($dacura_server-&gt;canUpdatePassword($ub)){
+					$params['subscreens'][] = &quot;user-password&quot;;
+					$params[&quot;details_intro_msg&quot;] = $this-&gt;smsg(&quot;update_details_intro&quot;);
+					$params[&quot;showupdate&quot;] = true;
+					$params['update_form_type'] = &quot;update&quot;;
+				}
+				else {
+					$params[&quot;showupdate&quot;] = false;
+					$params['update_form_type'] = &quot;view&quot;;
+					$params[&quot;details_intro_msg&quot;] = $this-&gt;smsg(&quot;view_details_intro&quot;);						
+				}
+				$params[&quot;showdelete&quot;] = $dacura_server-&gt;canUpdateUserStatus($u, $ub);				
+				$params[&quot;history_intro_msg&quot;] = $this-&gt;smsg(&quot;history_intro&quot;);
+				$params[&quot;roles_intro_msg&quot;] = $this-&gt;smsg(&quot;roles_intro&quot;);
+				$params['update_button_text'] = &quot;Update User Details&quot;;
+			}
+		}
+		return $params;
+	}
+}</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

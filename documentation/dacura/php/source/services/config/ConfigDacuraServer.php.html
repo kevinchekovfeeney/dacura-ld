@@ -1,0 +1,212 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/*
+ * Config Server
+ *
+ * Created By: Chekov
+ * Contributors:
+ * Creation Date: 12/01/2015
+ * Licence: GPL v2
+ */
+
+class ConfigDacuraServer extends DacuraServer {
+	
+	var $context_loaded = false;
+	
+	//to prevent failure on create...
+	function loadContextConfiguration() {
+		$this-&gt;context_loaded = parent::loadContextConfiguration();
+		$this-&gt;errcode = false;
+		return true;
+	}
+	
+	function isValidCollectionID($id, $title){
+		if(!$this-&gt;isValidDacuraID($id)){
+			return $this-&gt;failure_result(&quot;fuck you $id&quot;, 405);
+			//return false;
+		}
+		if($this-&gt;isDacuraBannedPhrase($title)){
+			return $this-&gt;failure_result(&quot;$title is not permitted to be used as a collection title&quot;, 400);				
+		}
+		elseif($this-&gt;dbman-&gt;hasCollection($id)){
+			return $this-&gt;failure_result(&quot;$id is already taken. Two dacura collections cannot share the same ID.&quot;, 400);				
+		}
+		return true;
+	}
+	
+	function createNewCollection($id, $title){
+		if(!$this-&gt;isValidCollectionID($id, $title)){
+			return false;
+		}
+		$obj = $this-&gt;getServiceSetting(&quot;default_collection_config&quot;, &quot;{}&quot;);
+		if($this-&gt;dbman-&gt;createNewCollection($id, $title, $obj, &quot;pending&quot;)){
+			if($this-&gt;createCollectionPaths($id)){
+				return $id;
+			}
+			else {
+				return false;				
+			}
+		}
+		else {
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+	}
+
+	function createCollectionPaths($id){
+		$colbase = $this-&gt;getSystemSetting(&quot;path_to_collections&quot;, &quot;&quot;).$id;
+		if(file_exists($colbase)){
+			return $this-&gt;failure_result(&quot;Collection directory $colbase for collection $id already exists&quot;, 400);				
+		}
+		if(!mkdir($colbase)){
+			return $this-&gt;failure_result(&quot;Failed to create collection directory $colbase for collection $id&quot;, 500);
+		}
+		$paths_to_create = $this-&gt;getServiceSetting(&quot;collection_paths_to_create&quot;, array());
+		foreach($paths_to_create as $p){
+			if(!mkdir($colbase.&quot;/&quot;.$p)){
+				return $this-&gt;failure_result(&quot;Failed to create collection directory $colbase/$p&quot;, 500);
+			}
+		}
+		//finally have to create main graph
+		if(!$this-&gt;dbman-&gt;createCollectionInitialEntities($id)){
+			return $this-&gt;failure_result(&quot;Failed to create collection default linked data entities&quot;, 500);				
+		}
+		return true;
+	}
+	
+	function updateCollection($id, $obj){
+		$oname = false;
+		$ostat = false;
+		if(isset($obj['name'])){
+			$oname = $obj['name'];
+			unset($obj['name']);
+		}
+		if(isset($obj['status'])){
+			$ostat = $obj['status'];
+			unset($obj['status']);
+		}
+		if($x = $this-&gt;dbman-&gt;updateCollection($id, $oname, $ostat, $obj)){
+			return $x;
+		}
+		return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+	}
+		
+	function deleteCollection($id){
+		if($this-&gt;dbman-&gt;deleteCollection($id, true)){
+			return true;
+		}
+	}
+	
+	function flattenArray($arr){
+		if(isAssoc($arr)) return false;
+		foreach(array_values($arr) as $v){
+			if(is_array($v)){
+				return false;
+			}
+		}
+		return &quot;[&quot;.implode(&quot;, &quot;, $arr).&quot;]&quot;;
+	}
+	
+	// Transforms a system config setting into a dacura form object
+	function sysconfig_to_form($arr){
+		$fields = array();
+		foreach($arr as $key =&gt; $v){
+			if($key == 'config') continue; //skip the config of the service itself. 
+			if(is_array($v)){
+				if($flat = $this-&gt;flattenArray($v)){
+					$fields[] = array(&quot;label&quot; =&gt; $key, &quot;value&quot; =&gt; $flat, &quot;id&quot; =&gt; &quot;sca-&quot;.$key);						
+				}
+				else {
+					$section = array(&quot;label&quot; =&gt; $key, &quot;type&quot; =&gt; &quot;section&quot;, &quot;id&quot; =&gt; &quot;sca-&quot;.$key);
+					$section['fields'] = $this-&gt;sysconfig_to_form($v);
+					$fields[] = $section;
+				}
+			}
+			else {
+				$fields[] = array(&quot;label&quot; =&gt; $key, &quot;value&quot; =&gt; $v, &quot;id&quot; =&gt; &quot;sca-&quot;.$key);				
+			}
+		}
+		return $fields;
+	}
+	
+	function getSysconfigFields(){
+		$fields = $this-&gt;sysconfig_to_form($this-&gt;settings);
+		return $fields;
+	}
+	
+	function getServiceConfigFields($sname){
+		$dacura_settings = $this-&gt;settings;
+		include($this-&gt;settings['path_to_services'].$sname.&quot;/&quot;.$sname.&quot;_settings.php&quot;);
+		$fields = $this-&gt;sysconfig_to_form($settings);
+		return $fields;
+	}
+	
+	function getServiceConfigTables(){
+		$services = $this-&gt;getServiceList();
+		$stables = array();
+		foreach($services as $s){
+			if(file_exists($this-&gt;settings['path_to_services'].$s.&quot;/&quot;.$s.&quot;_settings.php&quot;)){
+				$stables[$s] = $this-&gt;getServiceConfigFields($s);
+			}
+		}
+		return $stables;
+	}
+	
+	function getLogsAsListingObject(){
+		return $this-&gt;service-&gt;logger-&gt;lastRowsAsListingObjects();
+	}
+	
+	function saveUploadedFile($fname, $f){
+		$fpath = $this-&gt;getSystemSetting('path_to_collections');
+		if($this-&gt;cid() == &quot;all&quot;){
+			$fpath .= &quot;all/&quot;;
+		}
+		else {
+			$fpath .= $this-&gt;cid().&quot;/&quot;;
+		}
+		$fpath .= $this-&gt;getSystemSetting('files_directory').&quot;/&quot;.$fname;		
+	}
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

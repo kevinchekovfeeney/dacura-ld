@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: media/js/DataTables-1.9.4/DataTables-1.9.4/media/src/model/model.defaults.columns.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: media/js/DataTables-1.9.4/DataTables-1.9.4/media/src/model/model.defaults.columns.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>
+
+/**
+ * Column options that can be given to DataTables at initialisation time.
+ *  @namespace
+ */
+DataTable.defaults.columns = {
+	/**
+	 * Allows a column's sorting to take multiple columns into account when 
+	 * doing a sort. For example first name / last name columns make sense to 
+	 * do a multi-column sort over the two columns.
+	 *  @type array
+	 *  @default null &lt;i>Takes the value of the column index automatically&lt;/i>
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [
+	 *          { "aDataSort": [ 0, 1 ], "aTargets": [ 0 ] },
+	 *          { "aDataSort": [ 1, 0 ], "aTargets": [ 1 ] },
+	 *          { "aDataSort": [ 2, 3, 4 ], "aTargets": [ 2 ] }
+	 *        ]
+	 *      } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [
+	 *          { "aDataSort": [ 0, 1 ] },
+	 *          { "aDataSort": [ 1, 0 ] },
+	 *          { "aDataSort": [ 2, 3, 4 ] },
+	 *          null,
+	 *          null
+	 *        ]
+	 *      } );
+	 *    } );
+	 */
+	"aDataSort": null,
+
+
+	/**
+	 * You can control the default sorting direction, and even alter the behaviour
+	 * of the sort handler (i.e. only allow ascending sorting etc) using this
+	 * parameter.
+	 *  @type array
+	 *  @default [ 'asc', 'desc' ]
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [
+	 *          { "asSorting": [ "asc" ], "aTargets": [ 1 ] },
+	 *          { "asSorting": [ "desc", "asc", "asc" ], "aTargets": [ 2 ] },
+	 *          { "asSorting": [ "desc" ], "aTargets": [ 3 ] }
+	 *        ]
+	 *      } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [
+	 *          null,
+	 *          { "asSorting": [ "asc" ] },
+	 *          { "asSorting": [ "desc", "asc", "asc" ] },
+	 *          { "asSorting": [ "desc" ] },
+	 *          null
+	 *        ]
+	 *      } );
+	 *    } );
+	 */
+	"asSorting": [ 'asc', 'desc' ],
+
+
+	/**
+	 * Enable or disable filtering on the data in this column.
+	 *  @type boolean
+	 *  @default true
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [ 
+	 *          { "bSearchable": false, "aTargets": [ 0 ] }
+	 *        ] } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [ 
+	 *          { "bSearchable": false },
+	 *          null,
+	 *          null,
+	 *          null,
+	 *          null
+	 *        ] } );
+	 *    } );
+	 */
+	"bSearchable": true,
+
+
+	/**
+	 * Enable or disable sorting on this column.
+	 *  @type boolean
+	 *  @default true
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [ 
+	 *          { "bSortable": false, "aTargets": [ 0 ] }
+	 *        ] } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [ 
+	 *          { "bSortable": false },
+	 *          null,
+	 *          null,
+	 *          null,
+	 *          null
+	 *        ] } );
+	 *    } );
+	 */
+	"bSortable": true,
+
+
+	/**
+	 * &lt;code>Deprecated&lt;/code> When using fnRender() for a column, you may wish 
+	 * to use the original data (before rendering) for sorting and filtering 
+	 * (the default is to used the rendered data that the user can see). This 
+	 * may be useful for dates etc.
+	 * 
+	 * Please note that this option has now been deprecated and will be removed
+	 * in the next version of DataTables. Please use mRender / mData rather than
+	 * fnRender.
+	 *  @type boolean
+	 *  @default true
+	 *  @dtopt Columns
+	 *  @deprecated
+	 */
+	"bUseRendered": true,
+
+
+	/**
+	 * Enable or disable the display of this column.
+	 *  @type boolean
+	 *  @default true
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [ 
+	 *          { "bVisible": false, "aTargets": [ 0 ] }
+	 *        ] } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [ 
+	 *          { "bVisible": false },
+	 *          null,
+	 *          null,
+	 *          null,
+	 *          null
+	 *        ] } );
+	 *    } );
+	 */
+	"bVisible": true,
+	
+	
+	/**
+	 * Developer definable function that is called whenever a cell is created (Ajax source,
+	 * etc) or processed for input (DOM source). This can be used as a compliment to mRender
+	 * allowing you to modify the DOM element (add background colour for example) when the
+	 * element is available.
+	 *  @type function
+	 *  @param {element} nTd The TD node that has been created
+	 *  @param {*} sData The Data for the cell
+	 *  @param {array|object} oData The data for the whole row
+	 *  @param {int} iRow The row index for the aoData data store
+	 *  @param {int} iCol The column index for aoColumns
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [ {
+	 *          "aTargets": [3],
+	 *          "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
+	 *            if ( sData == "1.7" ) {
+	 *              $(nTd).css('color', 'blue')
+	 *            }
+	 *          }
+	 *        } ]
+	 *      });
+	 *    } );
+	 */
+	"fnCreatedCell": null,
+
+
+	/**
+	 * &lt;code>Deprecated&lt;/code> Custom display function that will be called for the 
+	 * display of each cell in this column.
+	 *
+	 * Please note that this option has now been deprecated and will be removed
+	 * in the next version of DataTables. Please use mRender / mData rather than
+	 * fnRender.
+	 *  @type function
+	 *  @param {object} o Object with the following parameters:
+	 *  @param {int}    o.iDataRow The row in aoData
+	 *  @param {int}    o.iDataColumn The column in question
+	 *  @param {array}  o.aData The data for the row in question
+	 *  @param {object} o.oSettings The settings object for this DataTables instance
+	 *  @param {object} o.mDataProp The data property used for this column
+	 *  @param {*}      val The current cell value
+	 *  @returns {string} The string you which to use in the display
+	 *  @dtopt Columns
+	 *  @deprecated
+	 */
+	"fnRender": null,
+
+
+	/**
+	 * The column index (starting from 0!) that you wish a sort to be performed
+	 * upon when this column is selected for sorting. This can be used for sorting
+	 * on hidden columns for example.
+	 *  @type int
+	 *  @default -1 &lt;i>Use automatically calculated column index&lt;/i>
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [ 
+	 *          { "iDataSort": 1, "aTargets": [ 0 ] }
+	 *        ]
+	 *      } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [ 
+	 *          { "iDataSort": 1 },
+	 *          null,
+	 *          null,
+	 *          null,
+	 *          null
+	 *        ]
+	 *      } );
+	 *    } );
+	 */
+	"iDataSort": -1,
+
+
+	/**
+	 * This parameter has been replaced by mData in DataTables to ensure naming
+	 * consistency. mDataProp can still be used, as there is backwards compatibility
+	 * in DataTables for this option, but it is strongly recommended that you use
+	 * mData in preference to mDataProp.
+	 *  @name DataTable.defaults.columns.mDataProp
+	 */
+
+
+	/**
+	 * This property can be used to read data from any JSON data source property,
+	 * including deeply nested objects / properties. mData can be given in a
+	 * number of different ways which effect its behaviour:
+	 *   &lt;ul>
+	 *     &lt;li>integer - treated as an array index for the data source. This is the
+	 *       default that DataTables uses (incrementally increased for each column).&lt;/li>
+	 *     &lt;li>string - read an object property from the data source. Note that you can
+	 *       use Javascript dotted notation to read deep properties / arrays from the
+	 *       data source.&lt;/li>
+	 *     &lt;li>null - the sDefaultContent option will be used for the cell (null
+	 *       by default, so you will need to specify the default content you want -
+	 *       typically an empty string). This can be useful on generated columns such 
+	 *       as edit / delete action columns.&lt;/li>
+	 *     &lt;li>function - the function given will be executed whenever DataTables 
+	 *       needs to set or get the data for a cell in the column. The function 
+	 *       takes three parameters:
+	 *       &lt;ul>
+	 *         &lt;li>{array|object} The data source for the row&lt;/li>
+	 *         &lt;li>{string} The type call data requested - this will be 'set' when
+	 *           setting data or 'filter', 'display', 'type', 'sort' or undefined when 
+	 *           gathering data. Note that when &lt;i>undefined&lt;/i> is given for the type
+	 *           DataTables expects to get the raw data for the object back&lt;/li>
+	 *         &lt;li>{*} Data to set when the second parameter is 'set'.&lt;/li>
+	 *       &lt;/ul>
+	 *       The return value from the function is not required when 'set' is the type
+	 *       of call, but otherwise the return is what will be used for the data
+	 *       requested.&lt;/li>
+	 *    &lt;/ul>
+	 *
+	 * Note that prior to DataTables 1.9.2 mData was called mDataProp. The name change
+	 * reflects the flexibility of this property and is consistent with the naming of
+	 * mRender. If 'mDataProp' is given, then it will still be used by DataTables, as
+	 * it automatically maps the old name to the new if required.
+	 *  @type string|int|function|null
+	 *  @default null &lt;i>Use automatically calculated column index&lt;/i>
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Read table data from objects
+	 *    $(document).ready( function() {
+	 *      var oTable = $('#example').dataTable( {
+	 *        "sAjaxSource": "sources/deep.txt",
+	 *        "aoColumns": [
+	 *          { "mData": "engine" },
+	 *          { "mData": "browser" },
+	 *          { "mData": "platform.inner" },
+	 *          { "mData": "platform.details.0" },
+	 *          { "mData": "platform.details.1" }
+	 *        ]
+	 *      } );
+	 *    } );
+	 * 
+	 *  @example
+	 *    // Using mData as a function to provide different information for
+	 *    // sorting, filtering and display. In this case, currency (price)
+	 *    $(document).ready( function() {
+	 *      var oTable = $('#example').dataTable( {
+	 *        "aoColumnDefs": [ {
+	 *          "aTargets": [ 0 ],
+	 *          "mData": function ( source, type, val ) {
+	 *            if (type === 'set') {
+	 *              source.price = val;
+	 *              // Store the computed dislay and filter values for efficiency
+	 *              source.price_display = val=="" ? "" : "$"+numberFormat(val);
+	 *              source.price_filter  = val=="" ? "" : "$"+numberFormat(val)+" "+val;
+	 *              return;
+	 *            }
+	 *            else if (type === 'display') {
+	 *              return source.price_display;
+	 *            }
+	 *            else if (type === 'filter') {
+	 *              return source.price_filter;
+	 *            }
+	 *            // 'sort', 'type' and undefined all just use the integer
+	 *            return source.price;
+	 *          }
+	 *        } ]
+	 *      } );
+	 *    } );
+	 */
+	"mData": null,
+
+
+	/**
+	 * This property is the rendering partner to mData and it is suggested that
+	 * when you want to manipulate data for display (including filtering, sorting etc)
+	 * but not altering the underlying data for the table, use this property. mData
+	 * can actually do everything this property can and more, but this parameter is
+	 * easier to use since there is no 'set' option. Like mData is can be given
+	 * in a number of different ways to effect its behaviour, with the addition of 
+	 * supporting array syntax for easy outputting of arrays (including arrays of
+	 * objects):
+	 *   &lt;ul>
+	 *     &lt;li>integer - treated as an array index for the data source. This is the
+	 *       default that DataTables uses (incrementally increased for each column).&lt;/li>
+	 *     &lt;li>string - read an object property from the data source. Note that you can
+	 *       use Javascript dotted notation to read deep properties / arrays from the
+	 *       data source and also array brackets to indicate that the data reader should
+	 *       loop over the data source array. When characters are given between the array
+	 *       brackets, these characters are used to join the data source array together.
+	 *       For example: "accounts[, ].name" would result in a comma separated list with
+	 *       the 'name' value from the 'accounts' array of objects.&lt;/li>
+	 *     &lt;li>function - the function given will be executed whenever DataTables 
+	 *       needs to set or get the data for a cell in the column. The function 
+	 *       takes three parameters:
+	 *       &lt;ul>
+	 *         &lt;li>{array|object} The data source for the row (based on mData)&lt;/li>
+	 *         &lt;li>{string} The type call data requested - this will be 'filter', 'display', 
+	 *           'type' or 'sort'.&lt;/li>
+	 *         &lt;li>{array|object} The full data source for the row (not based on mData)&lt;/li>
+	 *       &lt;/ul>
+	 *       The return value from the function is what will be used for the data
+	 *       requested.&lt;/li>
+	 *    &lt;/ul>
+	 *  @type string|int|function|null
+	 *  @default null &lt;i>Use mData&lt;/i>
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Create a comma separated list from an array of objects
+	 *    $(document).ready( function() {
+	 *      var oTable = $('#example').dataTable( {
+	 *        "sAjaxSource": "sources/deep.txt",
+	 *        "aoColumns": [
+	 *          { "mData": "engine" },
+	 *          { "mData": "browser" },
+	 *          {
+	 *            "mData": "platform",
+	 *            "mRender": "[, ].name"
+	 *          }
+	 *        ]
+	 *      } );
+	 *    } );
+	 * 
+	 *  @example
+	 *    // Use as a function to create a link from the data source
+	 *    $(document).ready( function() {
+	 *      var oTable = $('#example').dataTable( {
+	 *        "aoColumnDefs": [
+	 *        {
+	 *          "aTargets": [ 0 ],
+	 *          "mData": "download_link",
+	 *          "mRender": function ( data, type, full ) {
+	 *            return '&lt;a href="'+data+'">Download&lt;/a>';
+	 *          }
+	 *        ]
+	 *      } );
+	 *    } );
+	 */
+	"mRender": null,
+
+
+	/**
+	 * Change the cell type created for the column - either TD cells or TH cells. This
+	 * can be useful as TH cells have semantic meaning in the table body, allowing them
+	 * to act as a header for a row (you may wish to add scope='row' to the TH elements).
+	 *  @type string
+	 *  @default td
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Make the first column use TH cells
+	 *    $(document).ready( function() {
+	 *      var oTable = $('#example').dataTable( {
+	 *        "aoColumnDefs": [ {
+	 *          "aTargets": [ 0 ],
+	 *          "sCellType": "th"
+	 *        } ]
+	 *      } );
+	 *    } );
+	 */
+	"sCellType": "td",
+
+
+	/**
+	 * Class to give to each cell in this column.
+	 *  @type string
+	 *  @default &lt;i>Empty string&lt;/i>
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [ 
+	 *          { "sClass": "my_class", "aTargets": [ 0 ] }
+	 *        ]
+	 *      } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [ 
+	 *          { "sClass": "my_class" },
+	 *          null,
+	 *          null,
+	 *          null,
+	 *          null
+	 *        ]
+	 *      } );
+	 *    } );
+	 */
+	"sClass": "",
+	
+	/**
+	 * When DataTables calculates the column widths to assign to each column,
+	 * it finds the longest string in each column and then constructs a
+	 * temporary table and reads the widths from that. The problem with this
+	 * is that "mmm" is much wider then "iiii", but the latter is a longer 
+	 * string - thus the calculation can go wrong (doing it properly and putting
+	 * it into an DOM object and measuring that is horribly(!) slow). Thus as
+	 * a "work around" we provide this option. It will append its value to the
+	 * text that is found to be the longest string for the column - i.e. padding.
+	 * Generally you shouldn't need this, and it is not documented on the 
+	 * general DataTables.net documentation
+	 *  @type string
+	 *  @default &lt;i>Empty string&lt;i>
+	 *  @dtopt Columns
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [ 
+	 *          null,
+	 *          null,
+	 *          null,
+	 *          {
+	 *            "sContentPadding": "mmm"
+	 *          }
+	 *        ]
+	 *      } );
+	 *    } );
+	 */
+	"sContentPadding": "",
+
+
+	/**
+	 * Allows a default value to be given for a column's data, and will be used
+	 * whenever a null data source is encountered (this can be because mData
+	 * is set to null, or because the data source itself is null).
+	 *  @type string
+	 *  @default null
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [ 
+	 *          {
+	 *            "mData": null,
+	 *            "sDefaultContent": "Edit",
+	 *            "aTargets": [ -1 ]
+	 *          }
+	 *        ]
+	 *      } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [ 
+	 *          null,
+	 *          null,
+	 *          null,
+	 *          {
+	 *            "mData": null,
+	 *            "sDefaultContent": "Edit"
+	 *          }
+	 *        ]
+	 *      } );
+	 *    } );
+	 */
+	"sDefaultContent": null,
+
+
+	/**
+	 * This parameter is only used in DataTables' server-side processing. It can
+	 * be exceptionally useful to know what columns are being displayed on the
+	 * client side, and to map these to database fields. When defined, the names
+	 * also allow DataTables to reorder information from the server if it comes
+	 * back in an unexpected order (i.e. if you switch your columns around on the
+	 * client-side, your server-side code does not also need updating).
+	 *  @type string
+	 *  @default &lt;i>Empty string&lt;/i>
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [ 
+	 *          { "sName": "engine", "aTargets": [ 0 ] },
+	 *          { "sName": "browser", "aTargets": [ 1 ] },
+	 *          { "sName": "platform", "aTargets": [ 2 ] },
+	 *          { "sName": "version", "aTargets": [ 3 ] },
+	 *          { "sName": "grade", "aTargets": [ 4 ] }
+	 *        ]
+	 *      } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [ 
+	 *          { "sName": "engine" },
+	 *          { "sName": "browser" },
+	 *          { "sName": "platform" },
+	 *          { "sName": "version" },
+	 *          { "sName": "grade" }
+	 *        ]
+	 *      } );
+	 *    } );
+	 */
+	"sName": "",
+
+
+	/**
+	 * Defines a data source type for the sorting which can be used to read
+	 * real-time information from the table (updating the internally cached
+	 * version) prior to sorting. This allows sorting to occur on user editable
+	 * elements such as form inputs.
+	 *  @type string
+	 *  @default std
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [
+	 *          { "sSortDataType": "dom-text", "aTargets": [ 2, 3 ] },
+	 *          { "sType": "numeric", "aTargets": [ 3 ] },
+	 *          { "sSortDataType": "dom-select", "aTargets": [ 4 ] },
+	 *          { "sSortDataType": "dom-checkbox", "aTargets": [ 5 ] }
+	 *        ]
+	 *      } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [
+	 *          null,
+	 *          null,
+	 *          { "sSortDataType": "dom-text" },
+	 *          { "sSortDataType": "dom-text", "sType": "numeric" },
+	 *          { "sSortDataType": "dom-select" },
+	 *          { "sSortDataType": "dom-checkbox" }
+	 *        ]
+	 *      } );
+	 *    } );
+	 */
+	"sSortDataType": "std",
+
+
+	/**
+	 * The title of this column.
+	 *  @type string
+	 *  @default null &lt;i>Derived from the 'TH' value for this column in the 
+	 *    original HTML table.&lt;/i>
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [ 
+	 *          { "sTitle": "My column title", "aTargets": [ 0 ] }
+	 *        ]
+	 *      } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [ 
+	 *          { "sTitle": "My column title" },
+	 *          null,
+	 *          null,
+	 *          null,
+	 *          null
+	 *        ]
+	 *      } );
+	 *    } );
+	 */
+	"sTitle": null,
+
+
+	/**
+	 * The type allows you to specify how the data for this column will be sorted.
+	 * Four types (string, numeric, date and html (which will strip HTML tags
+	 * before sorting)) are currently available. Note that only date formats
+	 * understood by Javascript's Date() object will be accepted as type date. For
+	 * example: "Mar 26, 2008 5:03 PM". May take the values: 'string', 'numeric',
+	 * 'date' or 'html' (by default). Further types can be adding through
+	 * plug-ins.
+	 *  @type string
+	 *  @default null &lt;i>Auto-detected from raw data&lt;/i>
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [ 
+	 *          { "sType": "html", "aTargets": [ 0 ] }
+	 *        ]
+	 *      } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [ 
+	 *          { "sType": "html" },
+	 *          null,
+	 *          null,
+	 *          null,
+	 *          null
+	 *        ]
+	 *      } );
+	 *    } );
+	 */
+	"sType": null,
+
+
+	/**
+	 * Defining the width of the column, this parameter may take any CSS value
+	 * (3em, 20px etc). DataTables apples 'smart' widths to columns which have not
+	 * been given a specific width through this interface ensuring that the table
+	 * remains readable.
+	 *  @type string
+	 *  @default null &lt;i>Automatic&lt;/i>
+	 *  @dtopt Columns
+	 * 
+	 *  @example
+	 *    // Using aoColumnDefs
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumnDefs": [ 
+	 *          { "sWidth": "20%", "aTargets": [ 0 ] }
+	 *        ]
+	 *      } );
+	 *    } );
+	 *    
+	 *  @example
+	 *    // Using aoColumns
+	 *    $(document).ready( function() {
+	 *      $('#example').dataTable( {
+	 *        "aoColumns": [ 
+	 *          { "sWidth": "20%" },
+	 *          null,
+	 *          null,
+	 *          null,
+	 *          null
+	 *        ]
+	 *      } );
+	 *    } );
+	 */
+	"sWidth": null
+};
+
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="-_anonymous_-factory-AutoFill.html">AutoFill</a></li><li><a href="-_anonymous_-factory-ColReorder.html">ColReorder</a></li><li><a href="-_anonymous_-factory-ColVis.html">ColVis</a></li><li><a href="-_anonymous_-factory-Responsive.html">Responsive</a></li><li><a href="-_anonymous_-sh.Highlighter.html">Highlighter</a></li><li><a href="DataTable.Api.html">Api</a></li><li><a href="FixedColumns.html">FixedColumns</a></li><li><a href="Scroller.html">Scroller</a></li><li><a href="DataTable_.html">~DataTable</a></li><li><a href="Scroller_.html">~Scroller</a></li></ul><h3>Events</h3><ul><li><a href="DataTable_column-sizing.html#.event:dt">dt</a></li><li><a href="DataTable_column-visibility.html#.event:dt">dt</a></li><li><a href="DataTable_destroy.html#.event:dt">dt</a></li><li><a href="DataTable_draw.html#.event:dt">dt</a></li><li><a href="DataTable.html#event:destroy">destroy</a></li><li><a href="DataTable.html#event:draw">draw</a></li><li><a href="DataTable.html#event:filter">filter</a></li><li><a href="DataTable.html#event:init">init</a></li><li><a href="DataTable.html#event:page">page</a></li><li><a href="DataTable.html#event:processing">processing</a></li><li><a href="DataTable.html#event:sort">sort</a></li><li><a href="DataTable.html#event:stateLoaded">stateLoaded</a></li><li><a href="DataTable.html#event:stateLoadParams">stateLoadParams</a></li><li><a href="DataTable.html#event:stateSaveParams">stateSaveParams</a></li><li><a href="DataTable.html#event:xhr">xhr</a></li><li><a href="DataTable_init.html#.event:dt">dt</a></li><li><a href="DataTable_length.html#.event:dt">dt</a></li><li><a href="DataTable_order.html#.event:dt">dt</a></li><li><a href="DataTable_page.html#.event:dt">dt</a></li><li><a href="DataTable_processing.html#.event:dt">dt</a></li><li><a href="DataTable_search.html#.event:dt">dt</a></li><li><a href="DataTable_stateLoaded.html#.event:dt">dt</a></li><li><a href="DataTable_stateLoadParams.html#.event:dt">dt</a></li><li><a href="DataTable_stateSaveParams.html#.event:dt">dt</a></li><li><a href="DataTable_xhr.html#.event:dt">dt</a></li><li><a href="FixedColumns_draw.html#.event:dtfc">dtfc</a></li><li><a href="FixedColumns.html#event:draw">draw</a></li></ul><h3>Namespaces</h3><ul><li><a href="-_anonymous_-factory-AutoFill.defaults.html">defaults</a></li><li><a href="-_anonymous_-factory-AutoFill.defaults.column.html">column</a></li><li><a href="-_anonymous_-factory-ColReorder.defaults.html">defaults</a></li><li><a href="-_anonymous_-FixedColumns.defaults.html">defaults</a></li><li><a href="-_anonymous_-FixedColumns_dom.html">dom</a></li><li><a href="-_anonymous_-FixedColumns_dom.clone.html">clone</a></li><li><a href="-_anonymous_-FixedColumns_dom.clone.left.html">left</a></li><li><a href="-_anonymous_-FixedColumns_dom.clone.right.html">right</a></li><li><a href="-_anonymous_-FixedColumns_dom.grid.html">grid</a></li><li><a href="-_anonymous_-FixedColumns_dom.grid.left.html">left</a></li><li><a href="-_anonymous_-FixedColumns_dom.grid.right.html">right</a></li><li><a href="-_anonymous_-FixedColumns_s.html">s</a></li><li><a href="-_ext.type.html">type</a></li><li><a href="Cached%252520information%252520about%252520the%252520border%252520display.html">Cached information about the border display</a></li><li><a href="Cached%252520information%252520about%252520the%252520little%252520dragging%252520icon%252520.html">Cached information about the little dragging icon </a></li><li><a href="Classes%252520used%252520by%252520TableTools%252520-%252520allows%252520the%252520styles%252520to%252520be%252520override%252520easily.%25250A%252520%252520Note%252520that%252520when%252520TableTools%252520initialises%252520it%252520will%252520take%252520a%252520copy%252520of%252520the%252520classes%252520object%25250A%252520%252520and%252520will%252520use%252520its%252520internal%252520copy%252520for%252520the%252520remainder%252520of%252520its%252520run%252520time..html">Classes used by TableTools - allows the styles to be override easily.
+  Note that when TableTools initialises it will take a copy of the classes object
+  and will use its internal copy for the remainder of its run time.</a></li><li><a href="Common%252525252525252520and%252525252525252520useful%252525252525252520DOM%252525252525252520elements%252525252525252520for%252525252525252520the%252525252525252520class%252525252525252520instance.html">Common and useful DOM elements for the class instance</a></li><li><a href="Data%252520cache%252520for%252520information%252520that%252520we%252520need%252520for%252520scrolling%252520the%252520screen%252520when%252520we%252520near%25250A%252520%252520the%252520edges.html">Data cache for information that we need for scrolling the screen when we near
+  the edges</a></li><li><a href="Data%252520cache%252520for%252520the%252520position%252520of%252520the%252520DataTables%252520scrolling%252520element%252520.html">Data cache for the position of the DataTables scrolling element (when scrolling
+  is enabled)</a></li><li><a href="DataTable.defaults.html">defaults</a></li><li><a href="DataTable.defaults.classes.html">classes</a></li><li><a href="DataTable.defaults.html#.column">column</a></li><li><a href="DataTable.defaults.columns.html">columns</a></li><li><a href="DataTable.defaults.language.html">language</a></li><li><a href="DataTable.defaults.language.aria.html">aria</a></li><li><a href="DataTable.defaults.language.paginate.html">paginate</a></li><li><a href="DataTable.defaults.oLanguage.html">oLanguage</a></li><li><a href="DataTable.defaults.oLanguage.oAria.html">oAria</a></li><li><a href="DataTable.defaults.oLanguage.oPaginate.html">oPaginate</a></li><li><a href="DataTable.defaults.oSearch.html">oSearch</a></li><li><a href="DataTable.defaults.search.html">search</a></li><li><a href="DataTable.ext.html">ext</a></li><li><a href="DataTable.models.html">models</a></li><li><a href="DataTable.models.ext.html">ext</a></li><li><a href="DataTable.models.oColumn.html">oColumn</a></li><li><a href="DataTable.models.oRow.html">oRow</a></li><li><a href="DataTable.models.oSearch.html">oSearch</a></li><li><a href="DataTable.models.oSettings.html">oSettings</a></li><li><a href="DataTable.models.oSettings.oBrowser.html">oBrowser</a></li><li><a href="DataTable.models.oSettings.oFeatures.html">oFeatures</a></li><li><a href="DataTable.models.oSettings.oLanguage.html">oLanguage</a></li><li><a href="DataTable.models.oSettings.oPreviousSearch.html">oPreviousSearch</a></li><li><a href="DataTable.models.oSettings.oScroll.html">oScroll</a></li><li><a href="DataTable.render.html">render</a></li><li><a href="DataTable.util.html">util</a></li><li><a href="Default%252520button%252520configurations.html">Default button configurations</a></li><li><a href="FixedColumns.defaults.html">defaults</a></li><li><a href="FixedColumns_dom.clone.html">clone</a></li><li><a href="FixedColumns_dom.clone.left.html">left</a></li><li><a href="FixedColumns_dom.clone.right.html">right</a></li><li><a href="FixedColumns_dom.grid.html">grid</a></li><li><a href="FixedColumns_dom.grid.left.html">left</a></li><li><a href="FixedColumns_dom.grid.right.html">right</a></li><li><a href="Information%252520stored%252520for%252520each%252520column.%252520An%252520array%252520of%252520objects.html"> An array of objects</a></li><li><a href="Information%252520used%252520for%252520the%252520mouse%252520drag.html">Information used for the mouse drag</a></li><li><a href="Name%252520space%252520for%252520the%252520classes%252520that%252520this%252520TableTools%252520instance%252520will%252520use.html">Name space for the classes that this TableTools instance will use</a></li><li><a href="Nodes%252520used%252520for%252520a%252520collection%252520display.%252520This%252520contains%252520the%252520currently%252520used%252520collection.html"> This contains the currently used collection</a></li><li><a href="Nodes%252520used%252520for%252520the%252520print%252520display.html">Nodes used for the print display</a></li><li><a href="oApi.html">oApi</a></li><li><a href="Print%252520specific%252520information.html">Print specific information</a></li><li><a href="Responsive.defaults.html">defaults</a></li><li><a href="Scroller.defaults.html">defaults</a></li><li><a href="Select%252520rows%252520specific%252520information.html">Select rows specific information</a></li><li><a href="Settings%2520object%2520which%2520contains%2520customisable%2520information%2520for%250A%2520%2520%2520%2520ColVis%2520instance.%2520Augmented%2520by%2520ColVis.defaults.html">Settings object which contains customisable information for
+    ColVis instance. Augmented by ColVis.defaults</a></li><li><a href="Settings%252520object%252520which%252520contains%252520customisable%252520information%252520for%252520AutoFill%252520instance.html">Settings object which contains customisable information for AutoFill instance</a></li><li><a href="Settings%252520object%252520which%252520contains%252520customisable%252520information%252520for%252520ColReorder%252520instance.html">Settings object which contains customisable information for ColReorder instance</a></li><li><a href="Settings%2520object%2520which%2520contains%2520customisable%2520information%2520for%2520ColVis%2520instance.html">Settings object which contains customisable information for ColVis instance</a></li><li><a href="Settings%252520object%252520which%252520contains%252520customisable%252520information%252520for%252520TableTools%252520instance.html">Settings object which contains customisable information for TableTools instance</a></li><li><a href="Store%252520for%252520live%252520information%252520for%252520the%252520current%252520drag.html">Store for live information for the current drag</a></li><li><a href="TableTools%252520default%252520settings%252520for%252520initialisation.html">TableTools default settings for initialisation</a></li><li><a href="ThemeRoller%252520classes%252520-%252520built%252520in%252520for%252520compatibility%252520with%252520DataTables_%252520%25250A%252520%252520bJQueryUI%252520option..html">ThemeRoller classes - built in for compatibility with DataTables' 
+  bJQueryUI option.</a></li><li><a href="DataTable.defaults_.html">defaults</a></li><li><a href="DataTable.defaults.columns_.html">defaults.columns</a></li><li><a href="DataTable.defaults.oLanguage_.html">oLanguage</a></li><li><a href="DataTable.defaults.oLanguage.oAria_.html">oAria</a></li><li><a href="DataTable.defaults.oLanguage.oPaginate_.html">oPaginate</a></li><li><a href="DataTable.defaults.oSearch_.html">oSearch</a></li><li><a href="DataTable.ext_.html">ext</a></li><li><a href="DataTable.models_.html">models</a></li><li><a href="DataTable.models.ext_.html">models.ext</a></li><li><a href="DataTable.models.oColumn_.html">models.oColumn</a></li><li><a href="DataTable.models.oRow_.html">models.oRow</a></li><li><a href="DataTable.models.oSearch_.html">models.oSearch</a></li><li><a href="DataTable.models.oSettings_.html">models.oSettings</a></li><li><a href="DataTable.models.oSettings.oBrowser_.html">oBrowser</a></li><li><a href="DataTable.models.oSettings.oFeatures_.html">oFeatures</a></li><li><a href="DataTable.models.oSettings.oLanguage_.html">oLanguage</a></li><li><a href="DataTable.models.oSettings.oPreviousSearch_.html">oPreviousSearch</a></li><li><a href="DataTable.models.oSettings.oScroll_.html">oScroll</a></li><li><a href="DataTable_oApi_.html">oApi</a></li><li><a href="Scroller.oDefaults.html">oDefaults</a></li><li><a href="Scroller_dom.html">dom</a></li><li><a href="Scroller_s_.html">s</a></li></ul><h3>Global</h3><ul><li><a href="global.html#$">$</a></li><li><a href="global.html#_">_</a></li><li><a href="global.html#_fnFillerDisplay">_fnFillerDisplay</a></li><li><a href="global.html#_fnFillerDragMove">_fnFillerDragMove</a></li><li><a href="global.html#_fnFillerDragStart">_fnFillerDragStart</a></li><li><a href="global.html#_fnFillerFinish">_fnFillerFinish</a></li><li><a href="global.html#_fnFillerPosition">_fnFillerPosition</a></li><li><a href="global.html#_fnInit">_fnInit</a></li><li><a href="global.html#_fnPrep">_fnPrep</a></li><li><a href="global.html#_fnReadCell">_fnReadCell</a></li><li><a href="global.html#_fnStep">_fnStep</a></li><li><a href="global.html#_fnTargetCoords">_fnTargetCoords</a></li><li><a href="global.html#_fnUpdateBorder">_fnUpdateBorder</a></li><li><a href="global.html#_fnWriteCell">_fnWriteCell</a></li><li><a href="global.html#api">api</a></li><li><a href="global.html#button">button</a></li><li><a href="global.html#CLASS">CLASS</a></li><li><a href="global.html#fnAddData">fnAddData</a></li><li><a href="global.html#fnAdjustColumnSizing">fnAdjustColumnSizing</a></li><li><a href="global.html#fnArraySwitch">fnArraySwitch</a></li><li><a href="global.html#fnClearTable">fnClearTable</a></li><li><a href="global.html#fnClose">fnClose</a></li><li><a href="global.html#fnDeleteRow">fnDeleteRow</a></li><li><a href="global.html#fnDestroy">fnDestroy</a></li><li><a href="global.html#fnDomSwitch">fnDomSwitch</a></li><li><a href="global.html#fnDraw">fnDraw</a></li><li><a href="global.html#fnFilter">fnFilter</a></li><li><a href="global.html#fnGetData">fnGetData</a></li><li><a href="global.html">fnGetInstance</a></li><li><a href="global.html">fnGetMasters</a></li><li><a href="global.html#fnGetNodes">fnGetNodes</a></li><li><a href="global.html#fnGetPosition">fnGetPosition</a></li><li><a href="global.html#fnInvertKeyValues">fnInvertKeyValues</a></li><li><a href="global.html#fnIsOpen">fnIsOpen</a></li><li><a href="global.html#fnOpen">fnOpen</a></li><li><a href="global.html#fnPageChange">fnPageChange</a></li><li><a href="global.html#fnRebuild">fnRebuild</a></li><li><a href="global.html#fnSetColumnVis">fnSetColumnVis</a></li><li><a href="global.html#fnSettings">fnSettings</a></li><li><a href="global.html#fnSort">fnSort</a></li><li><a href="global.html#fnSortListener">fnSortListener</a></li><li><a href="global.html#fnUpdate">fnUpdate</a></li><li><a href="global.html#fnVersionCheck">fnVersionCheck</a></li><li><a href="global.html#Jeditable">Jeditable</a></li><li><a href="global.html#method">method</a></li><li><a href="global.html#VERSION">VERSION</a></li><li><a href="global.html#version">version</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Dec 09 2015 20:53:56 GMT+0000 (GMT Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

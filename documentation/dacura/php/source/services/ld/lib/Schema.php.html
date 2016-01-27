@@ -1,0 +1,223 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/*
+*/
+
+require_once(&quot;NSResolver.php&quot;);
+require_once(&quot;LDEntity.php&quot;);
+require_once(&quot;phplib/services/schema/Graph.php&quot;);
+require_once(&quot;phplib/services/schema/Ontology.php&quot;);
+
+class Schema extends DacuraObject {
+	var $cid;
+	var $idbase;
+	var $instance_prefix;
+	var $ns_prefix;
+	var $graphs = array();
+	var $ontologies = array();
+	var $nsres;
+	
+	function __construct($cid, $base_url){
+		$this-&gt;cid = $cid;
+		if($cid == &quot;all&quot;){
+			$this-&gt;idbase = $base_url;
+		}
+		else {
+			$this-&gt;idbase = $base_url.$cid.&quot;/&quot;;
+		}
+		$this-&gt;instance_prefix = $this-&gt;idbase.&quot;candidate&quot;;
+		$this-&gt;ns_prefix = $this-&gt;idbase.&quot;ns#&quot;;
+	}
+	
+	function load($graphrecords){
+		if($graphrecords &amp;&amp; is_array($graphrecords)){
+			foreach($graphrecords as $row){
+				$graph = new Graph($row[&quot;id&quot;]);
+				$graph-&gt;loadFromDBRow($row);
+				$this-&gt;graphs[$row[&quot;id&quot;]] = $graph;
+			}
+		}
+	}
+	
+	function loadOntologies(&amp;$srvr, $status = false, $graphid= false){
+		$ontids = array();
+		if($graphid){
+			$graph = $this-&gt;getGraph($graphid);
+			if(!$graph){
+				return false;
+			}				
+			$ontids = $graph-&gt;getImportedOntologies();
+			if($graph-&gt;hasLocalOntology()){
+				$ont = $graph-&gt;getLocalOntology($srvr);
+				$this-&gt;ontologies[$ont-&gt;id] = $ont;				
+			}
+		}
+		else {
+			$graphs = $this-&gt;getGraphs($status);
+			foreach($graphs as $graphid =&gt; $graph){
+				$ontids = array_merge($ontids, $graph-&gt;getImportedOntologies());
+				if($graph-&gt;hasLocalOntology()){
+					$ont = $graph-&gt;getLocalOntology($srvr);
+					$this-&gt;ontologies[$ont-&gt;id] = $ont;
+				}				
+			}
+		}
+		foreach($ontids as $id){
+			$ont = $srvr-&gt;loadEntity($id, &quot;ontology&quot;, &quot;all&quot;, &quot;all&quot;);
+			if($ont){
+				$this-&gt;ontologies[$id] = $ont;
+			}
+			else {
+				return $this-&gt;failure_result(&quot;Failed loading ontology $id &quot;.$srvr-&gt;errmsg, $srvr-&gt;errcode);
+			}
+		}
+		return true;		
+	}
+	/*
+	 * graph =&gt; (classname, classname...)
+	 */
+	function adornGraphClasses($entclasses){
+		$results = array();
+		foreach($entclasses as $gid =&gt; $classes){
+			$results[$gid] = array();
+			foreach($classes as $cls){
+				$res = $this-&gt;adornClass($cls);
+				if($res){
+					$results[$gid][$cls] = $res;
+				}
+				else {
+					//return false;
+				}
+			}
+		}
+		$simple = array();
+		foreach($results as $gid =&gt; $clist){
+			$simple[$gid] = array();
+			foreach($clist as $cls =&gt; $frags){
+				$scls = array(&quot;name&quot; =&gt; $cls);
+				foreach($frags as $i =&gt; $frag){
+					if(isset($frag['rdfs:label'])){
+						$scls['label'] = decodeScalar($frag['rdfs:label']);
+					}
+					if(isset($frag['rdf:type'])){
+						$scls['type'] = $frag['rdf:type'];
+					}
+					if(isset($frag['rdfs:subClassOf'])){
+						$scls['subclass'] = $frag['rdfs:subClassOf'];
+					}
+					if(isset($frag['rdfs:comment'])){
+						$scls['comment'] = decodeScalar($frag['rdfs:comment']);
+					}
+				}
+				$simple[$gid][] = $scls;
+			}
+		}
+		return $simple;		
+	}
+	
+	function adornClass($cls){
+		if(!isNamespacedURL($cls)){
+			$nsurl = $this-&gt;nsres-&gt;compress($cls);
+			if(!$nsurl){
+				return $this-&gt;failure_result(&quot;No ontology found for class $cls&quot;, 400);
+			}
+			$cls = $nsurl;
+		}
+		$ns = getNamespacePortion($cls);
+		if(!isset($this-&gt;ontologies[$ns])){
+			//return $this-&gt;failure_result(&quot;Ontology $ns not loaded for class $cls&quot;, 400);				
+		}
+		else {
+			$ont = $this-&gt;ontologies[$ns];
+			$ont-&gt;compressNS();
+			$expanded = $this-&gt;nsres-&gt;expand($cls);
+			if($expanded){
+				$fragment = $ont-&gt;getFragment($cls);
+				if($fragment) return $fragment;
+				return $this-&gt;failure_result(&quot;Class $cls not found in &quot;.$ont-&gt;id, 404); 				
+			}
+		}
+		//return $this-&gt;failure_result(&quot;Unknown $cls not known by system&quot;, 400);
+		//get the ontology, then ask the ontology what is in it...
+	}
+	
+	function hasGraph($id){
+		return isset($this-&gt;graphs[$id]);
+	}
+	
+	function getGraph($id){
+		if(isset($this-&gt;graphs[$id])){
+			return $this-&gt;graphs[$id];
+		}
+		return $this-&gt;failure_result(&quot;Graph $id does not exist&quot;, 404);
+	}
+	
+	function getGraphs($status = false){
+		if($status == false){
+			return $this-&gt;graphs;
+		}
+		else {
+			$graphs = array();
+			foreach($this-&gt;graphs as $id =&gt; $graph){
+				if($graph-&gt;status == $status){
+					$graphs[$id] = $graph;
+				}
+			}
+			return $graphs;
+		}
+	}
+	
+	function getNGSkeleton(){
+		$skel = array(&quot;ldprops&quot; =&gt; array(), &quot;meta&quot; =&gt; array());
+		foreach($this-&gt;graphs as $ent){
+			$skel[&quot;ldprops&quot;][$ent[&quot;id&quot;]] = array();
+		}
+		return $skel;
+	}
+	
+	
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

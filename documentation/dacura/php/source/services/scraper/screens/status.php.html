@@ -1,0 +1,598 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;div id=&quot;showmain&quot; class=&quot;dch&quot;&gt;
+	&lt;div class=&quot;maintitle&quot;&gt;Seshat World Sample 30&lt;/div&gt;
+	&lt;table class=&quot;status-stats&quot; id='overall-stats'&gt;
+		&lt;thead&gt;
+			&lt;tr&gt;
+				&lt;th&gt;NGAs&lt;/th&gt;
+				&lt;th&gt;Polities&lt;/th&gt;
+				&lt;th&gt;Variables&lt;/th&gt;
+				&lt;th&gt;Datapoints&lt;/th&gt;
+				&lt;th&gt;Missing&lt;/th&gt;
+				&lt;th&gt;Errors&lt;/th&gt;
+				&lt;th&gt;Warnings&lt;/th&gt;
+			&lt;/tr&gt;
+		&lt;/thead&gt;
+		&lt;tbody&gt;
+		&lt;/tbody&gt;
+	&lt;/table&gt;
+	&lt;div class=&quot;maintitle&quot;&gt;Natural Geographic Areas&lt;/div&gt;
+	&lt;table id='nga-list' class='nga-list seshat-list'&gt;
+		&lt;thead&gt;
+			&lt;tr&gt;
+				&lt;th&gt;NGA&lt;/th&gt;
+				&lt;th&gt;Polities&lt;/th&gt;
+				&lt;th&gt;Variables&lt;/th&gt;
+				&lt;th&gt;Datapoints&lt;/th&gt;
+				&lt;th&gt;Missing&lt;/th&gt;
+				&lt;th&gt;Errors&lt;/th&gt;
+				&lt;th&gt;Warnings&lt;/th&gt;
+			&lt;/tr&gt;
+		&lt;/thead&gt;
+		&lt;tbody&gt;
+		&lt;/tbody&gt;
+	&lt;/table&gt;
+	&lt;div id=&quot;mainrebuild&quot;&gt;
+		Last full dataset rebuild: &lt;span class=&quot;lastrebuild&quot; id=&quot;lastmainrebuild&quot;&gt;&lt;/span&gt;
+		&lt;button class=&quot;dacura-button&quot; id=&quot;rebuild&quot;&gt;Rebuild Full Dataset&lt;/button&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div id=&quot;shownga&quot; class=&quot;dch&quot;&gt;
+	&lt;div class=&quot;maintitle&quot;&gt;&lt;span class=&quot;entitytitle&quot; id=&quot;ngatitle&quot;&gt;&lt;/span&gt;&lt;span class=&quot;entityurl&quot; id=&quot;ngaurl&quot;&gt;&lt;/span&gt;&lt;/div&gt;
+	&lt;table class=&quot;status-stats&quot; id='nga-stats'&gt;
+		&lt;thead&gt;
+			&lt;tr&gt;
+				&lt;th&gt;Polities&lt;/th&gt;
+				&lt;th&gt;Variables&lt;/th&gt;
+				&lt;th&gt;Datapoints&lt;/th&gt;
+				&lt;th&gt;Missing&lt;/th&gt;
+				&lt;th&gt;Errors&lt;/th&gt;
+				&lt;th&gt;Warnings&lt;/th&gt;
+			&lt;/tr&gt;
+		&lt;/thead&gt;
+		&lt;tbody&gt;
+		&lt;/tbody&gt;
+	&lt;/table&gt;
+	&lt;div class=&quot;nosub&quot; id=&quot;nosubnga&quot;&gt;&lt;/div&gt;
+	&lt;div id=&quot;subnga&quot;&gt;
+		&lt;div id=&quot;nga-contents&quot; class=&quot;maintitle&quot;&gt;Polities and other pages in the NGA&lt;/div&gt;
+		&lt;table id='nga-page' class='polity-list seshat-list'&gt;
+		&lt;thead&gt;
+			&lt;tr&gt;
+				&lt;th&gt;Polity&lt;/th&gt;
+				&lt;th&gt;Period&lt;/th&gt;
+				&lt;th&gt;Variables&lt;/th&gt;
+				&lt;th&gt;Datapoints&lt;/th&gt;
+				&lt;th&gt;Missing&lt;/th&gt;
+				&lt;th&gt;Errors&lt;/th&gt;
+				&lt;th&gt;Warnings&lt;/th&gt;
+			&lt;/tr&gt;
+		&lt;/thead&gt;
+		&lt;tbody&gt;&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	&lt;div id=&quot;mainrebuild&quot;&gt;
+		Last NGA rebuild: &lt;span class=&quot;lastrebuild&quot; id=&quot;lastngarebuild&quot;&gt;&lt;/span&gt;
+		&lt;button class=&quot;dacura-button&quot; id=&quot;rebuildnga&quot;&gt;Rebuild NGA Dataset&lt;/button&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div id=&quot;showpolity&quot; class=&quot;dch&quot;&gt;
+	&lt;div class=&quot;maintitle&quot;&gt;&lt;span class=&quot;entitytitle&quot; id=&quot;politytitle&quot;&gt;&lt;/span&gt;&lt;span class=&quot;entityurl&quot; id=&quot;polityurl&quot;&gt;&lt;/span&gt;&lt;/div&gt;
+	&lt;table class=&quot;status-stats&quot; id='polity-stats'&gt;
+		&lt;thead&gt;
+			&lt;tr&gt;
+				&lt;th&gt;Variables&lt;/th&gt;
+				&lt;th&gt;Datapoints&lt;/th&gt;
+				&lt;th&gt;Missing&lt;/th&gt;
+				&lt;th&gt;Errors&lt;/th&gt;
+				&lt;th&gt;Warnings&lt;/th&gt;
+			&lt;/tr&gt;
+		&lt;/thead&gt;
+		&lt;tbody&gt;&lt;/tbody&gt;
+	&lt;/table&gt;
+	&lt;div class=&quot;nosub&quot; id=&quot;nopolity&quot;&gt;&lt;/div&gt;
+	&lt;div id=&quot;subpolity&quot;&gt;
+		&lt;div class=&quot;maintitle&quot;&gt;Variables&lt;/div&gt;
+		&lt;table id='polity-page' class='polity-page seshat-list'&gt;
+			&lt;thead&gt;
+				&lt;tr&gt;
+					&lt;th&gt;Section&lt;/th&gt;
+					&lt;th&gt;Subsection&lt;/th&gt; 
+					&lt;th&gt;Variable&lt;/th&gt;
+					&lt;th&gt;Value From&lt;/th&gt;
+					&lt;th&gt;Value To&lt;/th&gt;
+					&lt;th&gt;Date From&lt;/th&gt;
+					&lt;th&gt;Date To&lt;/th&gt;
+					&lt;th&gt;Fact Type&lt;/th&gt;
+					&lt;th&gt;Value Note&lt;/th&gt;
+					&lt;th&gt;Date Note&lt;/th&gt;
+					&lt;th&gt;Comment&lt;/th&gt;
+				&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	&lt;div id=&quot;mainrebuild&quot;&gt;
+		Last Page rebuild: &lt;span class=&quot;lastrebuild&quot; id=&quot;lastpagerebuild&quot;&gt;&lt;/span&gt;
+		&lt;button class=&quot;dacura-button&quot; id=&quot;get-page&quot;&gt;Rebuild Page&lt;/button&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+var currentStatus = null;
+var currentNGA = null;
+var currentPage = null;
+
+/**
+ * First the functions that interact with the server
+*/
+
+/*
+ 	Loads the system status from the server.
+ 	refresh -&gt; boolean - whether to force the system to refresh the status from the wiki (nuke cache)
+ 	complete, the function to call on completion
+ */
+function loadStatus(refresh, complete){
+	var ajs = dacura.scraper.api.getstatus(refresh);
+	var self=this;
+	ajs.beforeSend = function(){
+		dacura.system.showModal(&quot;&lt;p&gt;Loading System Status&lt;/p&gt;&lt;div class='indeterminate-progress'&gt;&lt;/div&gt;&quot;);
+		$('.indeterminate-progress').progressbar({
+			value: false
+		});
+	};
+	ajs.complete = function(){
+		dacura.system.removeModal();
+	};
+	dacura.system.setModalProperties({ 
+		&quot;buttons&quot;: [
+			{
+				&quot;text&quot;: &quot;Cancel&quot;,
+				&quot;click&quot;: function() {
+					jqax.responseText = &quot;Status Check Aborted by User&quot;;
+					jqax.abort();
+					$( this ).dialog( &quot;close&quot; );
+				}
+			}
+		], 
+	});			
+	var jqax =	$.ajax(ajs)
+		.done(function(response, textStatus, jqXHR) {				
+			try {
+				x = JSON.parse(response);
+				updateStatus(x);			
+				complete();
+			}
+			catch(e){				
+				dacura.system.showErrorResult(&quot;Retrieval of System Status failed&quot;, false, &quot;Error - Could not interpret the server response: &quot; + e.message, '#tool-info');
+			}
+		})
+		.fail(function (jqXHR, textStatus){
+			dacura.system.showErrorResult(&quot;Retrieval of System Status failed&quot;, false, &quot;Error - server response indicated failure &quot; + jqXHR.responseText, '#tool-info');
+		}
+	);
+};
+
+/**
+ * rebuilds the datasets from the seshat wiki 
+ * nga: the url of the nga to be rebuilt (if nga is not passed, a full system rebuild will take place)  
+ */
+function rebuild(complete, nga){
+	var rebuildStatus = {};
+	rebuildStatus.success = 0;
+	rebuildStatus.fail = 0;
+	rebuildStatus.error = 0;
+	dacura.system.setModalProperties({ 
+		&quot;width&quot;: 400,
+		&quot;minHeight&quot;: 300,
+		&quot;buttons&quot;: [{
+			&quot;text&quot;: &quot;Cancel&quot;,
+			&quot;click&quot;: function() {
+				dacura.system.showErrorResult(&quot;Rebuilding datasets aborted by user&quot;, false, &quot;A full dataset rebuild will be needed to avoid inconsistency&quot;, '#tool-info');
+				dacura.scraper.abortrebuild();
+				aborted = true;
+				$( this ).dialog( &quot;close&quot; );
+			}
+		}], 
+	});
+	var onm = function(msgs){
+		for(var i = 0; i &lt; msgs.length; i++){
+			try {
+				var res = JSON.parse(msgs[i]);
+				var msg = &quot;&quot;;
+				if(res &amp;&amp; res.message_type == &quot;comet_update&quot;){
+					if(res.status == &quot;error&quot;){
+						rebuildStatus.fail++;
+						msg = &quot;&lt;p class='seshat-error'&gt;&quot; + res.payload + &quot;&lt;/p&gt;&quot;;
+					}
+					else if(res.status == &quot;progress&quot;){
+						$('.determinate-progress').progressbar({
+							value: res.payload
+						});
+					}
+					else if(res.status == &quot;phase&quot;){
+						$('p.phase').html(res.payload);
+					}
+					else {
+						rebuildStatus.success++;
+						$('p.data-got').html(res.payload);
+					}												
+				}
+			}
+			catch(e) 
+			{							
+				$('.data-got').html(&quot;&lt;p class='seshat-error'&gt;Failed to parse message from server: &quot; + e.message + msgs[i] + &quot;&lt;/p&gt;&quot;);
+				rebuildStatus.error++;
+			}
+		}
+	};
+	var onc = function(res) {
+		try {
+			var pl = JSON.parse(res);
+			if(pl.status == &quot;error&quot;){		
+				dacura.system.showErrorResult(&quot;Dataset rebuilding failed&quot;, false, pl.payload, '#tool-info');
+			}
+			else {
+				updateStatus(pl.payload); 
+				complete(nga);
+				if(typeof nga != &quot;undefined&quot;){
+					msg = &quot;Rebuilt dataset for NGA &quot; + nga + &quot;. &quot;;
+				}
+				msg += rebuildStatus.success + &quot; OK, &quot; + rebuildStatus.fail + &quot; FAIL, &quot; + rebuildStatus.error + &quot; Error&quot;;
+				dacura.system.showSuccessResult(msg, &quot;&quot;, &quot;&quot;, '#tool-info');
+			}
+		}
+		catch(e){
+			dacura.system.showErrorResult(&quot;Dataset rebuilding failed&quot;, false, e.message, '#tool-info');
+		}						
+		dacura.system.removeModal();
+	};
+	dacura.system.showModal(&quot;&lt;p class='updatestatus-head'&gt;Rebuilding Datasets from Seshat Wiki&lt;/p&gt;&lt;p class='phase'&gt;&lt;/p&gt;&lt;div class='determinate-progress'&gt;&lt;/div&gt;&lt;p class='data-got'&gt;&lt;/p&gt;&quot;);
+	$('.determinate-progress').progressbar({
+		value: false
+	});
+	dacura.scraper.api.updatestatus(nga, onc, onm);
+};
+
+
+function loadPage(page, refresh, draw){
+	$('#subpolity').hide();
+	var ajs = dacura.scraper.api.parsePage(page, refresh);
+	ajs.data.url = page;
+	var self=this;
+	ajs.beforeSend = function(){
+		dacura.system.showModal(&quot;&lt;p&gt;Extracting variables from page&lt;/p&gt;&lt;div class='indeterminate-progress'&gt;&lt;/div&gt;&quot;);
+		$('.indeterminate-progress').progressbar({
+			value: false
+		});
+	};
+	ajs.complete = function(){
+		dacura.system.removeModal();
+	};
+	dacura.system.setModalProperties({ 
+		&quot;buttons&quot;: [
+			{
+				&quot;text&quot;: &quot;Cancel&quot;,
+				&quot;click&quot;: function() {
+					jqax.responseText = &quot;Dataset Extraction Aborted by User&quot;;
+					jqax.abort();
+					$( this ).dialog( &quot;close&quot; );
+				}
+			}
+		], 
+	});			
+	var jqax =	$.ajax(ajs)
+		.done(function(response, textStatus, jqXHR) {				
+			try {
+				$('#subpolity').show();
+				x = JSON.parse(response);
+				currentPage = page;
+				draw(x);
+				loadStatus(false, function(){}); 
+			}
+			catch(e) 
+			{
+				dacura.system.showErrorResult(&quot;Page parsing failed&quot;, false, e.message, '#tool-info');	
+			}
+		})
+		.fail(function (jqXHR, textStatus){
+			dacura.system.showErrorResult(&quot;Page retrieval failed&quot;, false, jqXHR.responseText, '#tool-info');	
+		}
+	);
+}
+
+var drawNGAList = function(){
+	$('#nga-list tbody').html();
+	var x = currentStatus[&quot;nga_list&quot;][1];
+	for(var i=0; i&lt;x.length;i++){
+		line = &quot;&lt;tr class='clicknga' id='nga_&quot; + i + &quot;'&gt;&lt;td title='&quot; + x[i] + &quot;'&gt;&quot; + dacura.scraper.tidyNGAString(x[i]) + &quot;&lt;/td&gt;&quot;;
+		line += getNGAStatsLine(x[i]);
+		$('#nga-list tbody').append(line);
+	}
+	$('.clicknga').hover(function(){
+		$(this).addClass('userhover');
+	}, function() {
+	    $(this).removeClass('userhover');
+	});
+	$('.clicknga').click( function (event){
+		showNGAPage(currentStatus[&quot;nga_list&quot;][1][this.id.substr(4)], false);
+    }); 
+}
+
+var drawPolityList = function(nga){
+	updateNGAStats(nga);
+	$('#ngatitle').html(dacura.scraper.tidyNGAString(nga));
+	$('#ngaurl').html(nga);
+	currentNGA = nga;
+	$('#nga-page tbody').html(&quot;&quot;);
+	var x = currentStatus[&quot;ngas&quot;][nga][1];
+	if(x.length == 0){
+		$('#subnga').hide();
+		dacura.system.showWarningResult(&quot;No polity or variable pages listed at &quot; + nga, &quot;&quot;, &quot;&quot;, '#nosubnga');
+	}
+	else {
+		$('#nosubnga').html(&quot;&quot;);
+		$('#subnga').show();
+		for(var i=0; i&lt;x.length;i++){
+			var pdet = dacura.scraper.parsePolityString(x[i]);
+			var addition = &quot;&lt;tr class='clickpage' id='polity&quot; + i + &quot;'&gt;&lt;td title='&quot; + pdet.url + &quot;'&gt;&quot; + pdet.polityname + &quot;&lt;/td&gt;&lt;td&gt;&quot;+pdet.period+&quot;&lt;/td&gt;&quot;;
+			addition += getPolityStatsLine(x[i]);
+			addition += &quot;&lt;/tr&gt;&quot;;
+			$('#nga-page tbody').append(addition);
+		}
+		$('.clickpage').hover(function(){
+			$(this).addClass('userhover');
+		}, function() {
+		    $(this).removeClass('userhover');
+		});
+		$('.clickpage').click( function (event){	
+			showPage(currentStatus[&quot;ngas&quot;][nga][1][this.id.substr(6)], false);
+	    }); 
+	}
+}
+
+var drawVariableList = function(x){
+	var upd = currentStatus[&quot;polities&quot;][currentPage][0];
+	var d = new Date(upd*1000);
+	$('#lastpagerebuild').html(d.toString());
+	updatePolityStats(currentPage);
+	$('#polity-page tbody').html();
+	if(x.length == 0){
+		$('#subpolity').hide();
+		dacura.system.showWarningResult(&quot;No variables found in &quot; + currentPage, false, &quot;&quot;, '#nosubpolity');
+	}
+	else {
+		$('#nosubpolity').html(&quot;&quot;);
+		$('#subpolity').show();
+		for(var i = 0; i &lt; x.length; i++){
+			var html = &quot;&lt;tr&gt;&quot;;
+			for(j=2; j&lt;x[i].length; j++) {
+				html += &quot;&lt;td&gt;&quot; + x[i][j] + &quot;&lt;/td&gt;&quot;;
+			}
+			html += &quot;&lt;/tr&gt;&quot;;
+			$('#polity-page tbody').append(html);
+		}
+	}
+}
+
+function showNGAList(){
+	var upd = currentStatus[&quot;nga_list&quot;][0];
+	var d = new Date(upd*1000);
+	$('ul.tool-breadcrumbs').html(&quot;&quot;);
+	$('#lastmainrebuild').html(d.toString());
+	$('#shownga').hide();
+	$('#tool-info').html(&quot;&quot;);
+	$('#showpolity').hide();
+	dacura.system.setToolSubtitle(&quot;View the status of the dataset by NGA&quot;);
+	drawNGAList();
+	$('#showmain').show();
+}
+
+function showNGAPage(nga, refresh){
+	$('#tool-info').html(&quot;&quot;);
+	var nganame = dacura.scraper.tidyNGAString(nga);
+	$('ul.tool-breadcrumbs').html(&quot;&lt;li class='bclink' id='bchome'&gt;&lt;a href='javascript:showNGAList()'&gt;Seshat dataset&lt;/a&gt;&lt;/li&gt;&lt;li class='bccontext'&gt;&lt;a href='javascript:showNGAPage(\&quot;&quot; + nga + &quot;\&quot;)'&gt;&quot; + nganame + &quot;&lt;/a&gt;&lt;/li&gt;&quot;);
+	if(typeof currentStatus[&quot;ngas&quot;] == &quot;undefined&quot; || typeof currentStatus[&quot;ngas&quot;][nga] == &quot;undefined&quot;){
+		rebuild(drawPolityList, nga);		
+	}
+	else {
+		var upd = currentStatus[&quot;ngas&quot;][nga][0];
+		var d = new Date(upd*1000);
+		$('#lastngarebuild').html(d.toString());
+		drawPolityList(nga, refresh);
+	}
+	$('#showmain').hide();
+	$('#showpolity').hide();
+	dacura.system.setToolSubtitle(&quot;View the Polities and other pages in the NGA&quot;);
+	$('#shownga').show();
+}
+
+
+function showPage(p, refresh){
+	var bchtml = &quot;&lt;li class='bclink' id='bchome'&gt;&lt;a href='javascript:showNGAList()'&gt;Seshat dataset&lt;/a&gt;&lt;/li&gt;&quot;;
+	if(typeof(currentNGA) != &quot;undefined&quot;){
+		var nganame = dacura.scraper.tidyNGAString(currentNGA);
+		var pdets = dacura.scraper.parsePolityString(p);
+		bchtml += &quot;&lt;li class='bccontext'&gt;&lt;a href='javascript:showNGAPage(\&quot;&quot; + currentNGA + &quot;\&quot;)'&gt;&quot; + nganame + &quot;&lt;/a&gt;&lt;/li&gt;&quot;;
+		bchtml += &quot;&lt;li class='bccontext'&gt;&lt;a href='javascript:showPage(\&quot;&quot; + p + &quot;\&quot;)'&gt;&quot; + pdets.polityname + &quot;&lt;/a&gt;&lt;/li&gt;&quot;;
+		$('#politytitle').html(pdets.polityname);
+		$('#polityurl').html(pdets.url);
+	}
+	$('ul.tool-breadcrumbs').html(bchtml);
+	if(typeof currentStatus[&quot;polities&quot;][p] == &quot;undefined&quot;){
+		//alert(&quot;should be user driven?&quot;);
+		loadPage(p, refresh, drawVariableList);
+	}
+	else {
+		var upd = currentStatus[&quot;polities&quot;][p][0];
+		var d = new Date(upd*1000);
+		$('#lastpagerebuild').html(d.toString());
+		updatePolityStats(p);
+		loadPage(p, refresh, drawVariableList);		
+	}
+	$('#showmain').hide();
+	$('#shownga').hide();
+	$('#tool-info').html(&quot;&quot;);
+	$('#showpolity').show();
+	dacura.system.setToolSubtitle(&quot;View the extracted variables&quot;);
+}    
+    
+
+
+
+function osize(obj) {
+    var size = 0, key;
+    for (key in obj) {
+        if (obj.hasOwnProperty(key)) size++;
+    }
+    return size;
+};
+
+var updatePolityStats = function(p) {
+	var html = &quot;&quot;;
+	var stats = currentStatus['polities'][p][1][&quot;stats&quot;];
+	for(var i = 0; i&lt;stats.length; i++){
+		html += &quot;&lt;td&gt;&quot; + stats[i] + &quot;&lt;/td&gt;&quot;;
+	}
+	$('#polity-stats tbody').html(&quot;&lt;tr&gt;&quot; + html + &quot;&lt;/tr&gt;&quot;);
+}
+
+var updateNGAStats = function(nga) {
+	var html = &quot;&quot;;
+	if(typeof currentStatus['ngas'][nga] != &quot;undefined&quot;){
+		var pols = currentStatus['ngas'][nga][1].length;
+		html = &quot;&lt;td&gt;&quot; + pols + &quot;&lt;/td&gt;&quot;;
+	}
+	else {
+		html = &quot;&lt;td&gt;?&lt;/td&gt;&quot;;
+	}
+	if(pols == 0){
+		html += &quot;&lt;td&gt;0&lt;/td&gt;&lt;td&gt;0&lt;/td&gt;&lt;td&gt;0&lt;/td&gt;&lt;td&gt;0&lt;/td&gt;&lt;td&gt;0&lt;/td&gt;&quot;;
+	}
+	else if(typeof(currentStatus['ngastats'][nga]) ==  &quot;undefined&quot;){
+		html += &quot;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&quot;;
+	}
+	else {
+		var stats = currentStatus['ngastats'][nga];
+		for(var i = 0; i&lt;stats.length; i++){
+			html += &quot;&lt;td&gt;&quot; + stats[i] + &quot;&lt;/td&gt;&quot;;
+		}
+	}
+	$('#nga-stats tbody').html(&quot;&lt;tr&gt;&quot; + html + &quot;&lt;/tr&gt;&quot;);
+};
+
+var updateStatus = function(status) {
+	currentStatus = status;
+	var ngas = status[&quot;nga_list&quot;][1].length;
+	var pols = osize(status[&quot;polities&quot;]);
+	var html = &quot;&lt;tr&gt;&lt;td&gt;&quot; + ngas + &quot;&lt;/td&gt;&lt;td&gt;&quot; + pols + &quot;&lt;/td&gt;&quot;;
+	if(typeof(status[&quot;stats&quot;]) != &quot;undefined&quot;){
+		for(var i = 0; i &lt; status[&quot;stats&quot;].length; i++){
+			html += &quot;&lt;td&gt;&quot; + status[&quot;stats&quot;][i] + &quot;&lt;/td&gt;&quot;;
+		}
+		$('#overall-stats tbody').html(html + &quot;&lt;/tr&gt;&quot;);
+	}
+	else {
+		$('#overall-stats tbody').html(&quot;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&quot;);
+	}
+};
+
+var getNGAStatsLine = function(nga){
+	if(typeof currentStatus[&quot;ngas&quot;] == &quot;undefined&quot; || typeof currentStatus[&quot;ngas&quot;][nga] == &quot;undefined&quot;){
+		return &quot;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&quot;;
+	}
+	var pols = currentStatus[&quot;ngas&quot;][nga][1].length;
+	var html = &quot;&lt;td&gt;&quot; + pols + &quot;&lt;/td&gt;&quot;;
+	if(pols == 0){
+		html += &quot;&lt;td&gt;0&lt;/td&gt;&lt;td&gt;0&lt;/td&gt;&lt;td&gt;0&lt;/td&gt;&lt;td&gt;0&lt;/td&gt;&lt;td&gt;0&lt;/td&gt;&quot;;
+	}
+	else if(typeof currentStatus[&quot;ngastats&quot;][nga] != &quot;undefined&quot;){
+		var stats = currentStatus[&quot;ngastats&quot;][nga];
+		for(var i = 0; i &lt; currentStatus[&quot;ngastats&quot;][nga].length; i++){
+			html += &quot;&lt;td&gt;&quot;  + currentStatus[&quot;ngastats&quot;][nga][i] + &quot;&lt;/td&gt;&quot;;
+		}
+	}
+	else {
+		html += &quot;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&quot;;
+	}
+	return html;
+}
+
+var getPolityStatsLine = function(p){
+	if(typeof currentStatus[&quot;polities&quot;][p] == &quot;undefined&quot; || typeof currentStatus[&quot;polities&quot;][p][1][&quot;stats&quot;] == &quot;undefined&quot;){
+		return &quot;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&lt;td&gt;?&lt;/td&gt;&quot;;
+	}
+	var stats = currentStatus[&quot;polities&quot;][p][1][&quot;stats&quot;];
+	var html = &quot;&quot;;
+	for(var i = 0; i &lt; stats.length; i++){
+		html += &quot;&lt;td&gt;&quot;  + stats[i] + &quot;&lt;/td&gt;&quot;;
+	}
+	return html;
+}
+
+$('document').ready(function(){
+	$(&quot;#get-page&quot;).click(function(){
+		loadPage(currentPage, true, drawVariableList);
+	});
+	$(&quot;#rebuild&quot;).click(function(){
+		rebuild(showNGAList);
+	});
+	$(&quot;#rebuildnga&quot;).click(function(){
+		rebuild(showNGAPage, currentNGA);
+	});
+	$(&quot;button&quot;).button();
+	loadStatus(false, showNGAList);	
+});
+
+&lt;/script&gt;
+
+
+
+
+&lt;?php
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

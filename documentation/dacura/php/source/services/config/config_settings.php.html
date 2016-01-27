@@ -1,0 +1,87 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/*
+ * Users Service
+ */
+$settings = array(
+	&quot;default_status&quot; =&gt; &quot;pending&quot;,
+	&quot;default_profile&quot; =&gt; array(),
+	&quot;default_collection_config&quot; =&gt; array(),
+	&quot;collection_paths_to_create&quot; =&gt; array(&quot;logs&quot;, &quot;cache&quot;, &quot;dumps&quot;, &quot;files&quot;),
+	&quot;messages&quot; =&gt; array(
+		&quot;settings_intro&quot; =&gt; &quot;Update the settings of the collection&quot;,
+	),
+	&quot;tables&quot; =&gt; array(
+		&quot;collections&quot; =&gt; array(&quot;datatable_options&quot; =&gt; array(&quot;jQueryUI&quot; =&gt; true, &quot;searching&quot; =&gt; false, &quot;info&quot; =&gt; true, &quot;pageLength&quot; =&gt; 50, 
+			&quot;aoColumns&quot; =&gt; array(null, null, null, array(&quot;bVisible&quot; =&gt; false)))),
+		&quot;logs&quot; =&gt; array(&quot;datatable_options&quot; =&gt; array(&quot;jQueryUI&quot; =&gt; true, &quot;searching&quot; =&gt; false, &quot;info&quot; =&gt; true, &quot;pageLength&quot; =&gt; 50))
+	),
+	&quot;forms&quot; =&gt; array(
+		&quot;sys&quot; =&gt; array(&quot;install_url&quot;, &quot;storage_base&quot;),
+		&quot;ccf&quot; =&gt; array(&quot;id&quot;, &quot;title&quot;),
+		&quot;ucf&quot; =&gt; array(&quot;did&quot;, &quot;name&quot;, &quot;image&quot;, &quot;background&quot;, &quot;description&quot;, &quot;icon&quot;, &quot;status&quot;),
+		&quot;cdf&quot; =&gt; array(&quot;collection_url&quot;, &quot;collection_path&quot;, &quot;instance_idbase&quot;, &quot;graph_idbase&quot;, &quot;dqs_url&quot;)
+	),
+	&quot;form_fields&quot; =&gt; array(
+		&quot;install_url&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Dacura Base URL&quot;, &quot;type&quot; =&gt; &quot;url&quot;, &quot;disabled&quot; =&gt; true, &quot;help&quot; =&gt; &quot;The URL that Dacura is installed at. All Dacura URLs will be relative to this base.&quot;),
+		&quot;storage_base&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Storage Base&quot;, &quot;disabled&quot; =&gt; true, &quot;help&quot; =&gt; &quot;The directory where the server stores its data.&quot;),
+		&quot;id&quot; =&gt; array(&quot;label&quot; =&gt; &quot;ID&quot;, &quot;length&quot; =&gt; &quot;short&quot;, &quot;help&quot; =&gt;&quot;The collection id is a short (minimum 3 characters, maximum 40 characters) alphanumeric string [a-z_0-9] which will identify the collection. It will appear in URLs so brevity is key.&quot;),
+		&quot;did&quot; =&gt; array(&quot;label&quot; =&gt; &quot;ID&quot;, &quot;id&quot; =&gt; &quot;id&quot;, &quot;disabled&quot; =&gt; true, &quot;length&quot; =&gt; &quot;short&quot;, &quot;help&quot; =&gt;&quot;The collection id is a short (minimum 3 characters, maximum 40 characters) alphanumeric string [a-z_0-9] which will identify the collection. It will appear in URLs so brevity is key.&quot;),
+		&quot;title&quot;	=&gt; array(&quot;label&quot; =&gt; &quot;Title&quot;, &quot;help&quot; =&gt; &quot;The full title of the data collection - may include spaces and punctuation.&quot;),	
+		&quot;name&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Title&quot;, &quot;help&quot; =&gt; &quot;The full title of the data collection - may include spaces and punctuation.&quot;),	
+		&quot;image&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Image&quot;, &quot;help&quot; =&gt; &quot;An image which will represent the collection on pages.&quot;),	
+		&quot;background&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Background Image&quot;, &quot;help&quot; =&gt; &quot;An image which will be the background of the collection's pages.&quot;),	
+		&quot;description&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Description&quot;, &quot;help&quot; =&gt; &quot;A brief description of the collection - what it is for, who it is.  This will appear on pages where collections are listed&quot;),	
+		&quot;icon&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Icon&quot;, &quot;help&quot; =&gt; &quot;An icon (16 x 16 pixels) which will represent the collection in menus, etc.&quot;),
+		&quot;status&quot; =&gt;	array(&quot;label&quot; =&gt; &quot;Status&quot;, &quot;help&quot; =&gt; &quot;The current status of the collection&quot;, &quot;type&quot; =&gt; &quot;status&quot;),
+		&quot;collection_url&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Collection Home&quot;, &quot;type&quot; =&gt; &quot;url&quot;, &quot;help&quot; =&gt; &quot;The Dacura URL for the collection&quot;),		
+		&quot;collection_path&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Collection Storage&quot;, &quot;help&quot; =&gt; &quot;The directory in which the collection's files are stored&quot;),		
+		&quot;instance_idbase&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Instance Data ID prefix&quot;, &quot;type&quot; =&gt; &quot;url&quot;, &quot;help&quot; =&gt; &quot;This URL will be prepended to the internal IDs of all collection instance data to make a global id&quot;),		
+		&quot;graph_idbase&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Named Graph ID prefix&quot;, &quot;type&quot; =&gt; &quot;url&quot;, &quot;help&quot; =&gt; &quot;This URL will be prepended to the internal IDs of all collection named graphs to make a global id&quot;),		
+		&quot;dqs_url&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Dacura Quality Service URL&quot;, &quot;type&quot; =&gt; &quot;url&quot;, &quot;help&quot; =&gt; &quot;The Dacura Quality Service has an independent endpoint from the rest of Dacura&quot;),		
+	)
+);
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

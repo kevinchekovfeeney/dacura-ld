@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: media/js/DataTables-1.9.4/DataTables-1.9.4/media/src/core/core.columns.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: media/js/DataTables-1.9.4/DataTables-1.9.4/media/src/core/core.columns.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>
+
+/**
+ * Add a column to the list used for the table with default values
+ *  @param {object} oSettings dataTables settings object
+ *  @param {node} nTh The th element for this column
+ *  @memberof DataTable#oApi
+ */
+function _fnAddColumn( oSettings, nTh )
+{
+	var oDefaults = DataTable.defaults.columns;
+	var iCol = oSettings.aoColumns.length;
+	var oCol = $.extend( {}, DataTable.models.oColumn, oDefaults, {
+		"sSortingClass": oSettings.oClasses.sSortable,
+		"sSortingClassJUI": oSettings.oClasses.sSortJUI,
+		"nTh": nTh ? nTh : document.createElement('th'),
+		"sTitle":    oDefaults.sTitle    ? oDefaults.sTitle    : nTh ? nTh.innerHTML : '',
+		"aDataSort": oDefaults.aDataSort ? oDefaults.aDataSort : [iCol],
+		"mData": oDefaults.mData ? oDefaults.oDefaults : iCol
+	} );
+	oSettings.aoColumns.push( oCol );
+	
+	/* Add a column specific filter */
+	if ( oSettings.aoPreSearchCols[ iCol ] === undefined || oSettings.aoPreSearchCols[ iCol ] === null )
+	{
+		oSettings.aoPreSearchCols[ iCol ] = $.extend( {}, DataTable.models.oSearch );
+	}
+	else
+	{
+		var oPre = oSettings.aoPreSearchCols[ iCol ];
+		
+		/* Don't require that the user must specify bRegex, bSmart or bCaseInsensitive */
+		if ( oPre.bRegex === undefined )
+		{
+			oPre.bRegex = true;
+		}
+		
+		if ( oPre.bSmart === undefined )
+		{
+			oPre.bSmart = true;
+		}
+		
+		if ( oPre.bCaseInsensitive === undefined )
+		{
+			oPre.bCaseInsensitive = true;
+		}
+	}
+	
+	/* Use the column options function to initialise classes etc */
+	_fnColumnOptions( oSettings, iCol, null );
+}
+
+
+/**
+ * Apply options for a column
+ *  @param {object} oSettings dataTables settings object
+ *  @param {int} iCol column index to consider
+ *  @param {object} oOptions object with sType, bVisible and bSearchable etc
+ *  @memberof DataTable#oApi
+ */
+function _fnColumnOptions( oSettings, iCol, oOptions )
+{
+	var oCol = oSettings.aoColumns[ iCol ];
+	
+	/* User specified column options */
+	if ( oOptions !== undefined &amp;&amp; oOptions !== null )
+	{
+		/* Backwards compatibility for mDataProp */
+		if ( oOptions.mDataProp &amp;&amp; !oOptions.mData )
+		{
+			oOptions.mData = oOptions.mDataProp;
+		}
+
+		if ( oOptions.sType !== undefined )
+		{
+			oCol.sType = oOptions.sType;
+			oCol._bAutoType = false;
+		}
+		
+		$.extend( oCol, oOptions );
+		_fnMap( oCol, oOptions, "sWidth", "sWidthOrig" );
+
+		/* iDataSort to be applied (backwards compatibility), but aDataSort will take
+		 * priority if defined
+		 */
+		if ( oOptions.iDataSort !== undefined )
+		{
+			oCol.aDataSort = [ oOptions.iDataSort ];
+		}
+		_fnMap( oCol, oOptions, "aDataSort" );
+	}
+
+	/* Cache the data get and set functions for speed */
+	var mRender = oCol.mRender ? _fnGetObjectDataFn( oCol.mRender ) : null;
+	var mData = _fnGetObjectDataFn( oCol.mData );
+
+	oCol.fnGetData = function (oData, sSpecific) {
+		var innerData = mData( oData, sSpecific );
+
+		if ( oCol.mRender &amp;&amp; (sSpecific &amp;&amp; sSpecific !== '') )
+		{
+			return mRender( innerData, sSpecific, oData );
+		}
+		return innerData;
+	};
+	oCol.fnSetData = _fnSetObjectDataFn( oCol.mData );
+	
+	/* Feature sorting overrides column specific when off */
+	if ( !oSettings.oFeatures.bSort )
+	{
+		oCol.bSortable = false;
+	}
+	
+	/* Check that the class assignment is correct for sorting */
+	if ( !oCol.bSortable ||
+		 ($.inArray('asc', oCol.asSorting) == -1 &amp;&amp; $.inArray('desc', oCol.asSorting) == -1) )
+	{
+		oCol.sSortingClass = oSettings.oClasses.sSortableNone;
+		oCol.sSortingClassJUI = "";
+	}
+	else if ( $.inArray('asc', oCol.asSorting) == -1 &amp;&amp; $.inArray('desc', oCol.asSorting) == -1 )
+	{
+		oCol.sSortingClass = oSettings.oClasses.sSortable;
+		oCol.sSortingClassJUI = oSettings.oClasses.sSortJUI;
+	}
+	else if ( $.inArray('asc', oCol.asSorting) != -1 &amp;&amp; $.inArray('desc', oCol.asSorting) == -1 )
+	{
+		oCol.sSortingClass = oSettings.oClasses.sSortableAsc;
+		oCol.sSortingClassJUI = oSettings.oClasses.sSortJUIAscAllowed;
+	}
+	else if ( $.inArray('asc', oCol.asSorting) == -1 &amp;&amp; $.inArray('desc', oCol.asSorting) != -1 )
+	{
+		oCol.sSortingClass = oSettings.oClasses.sSortableDesc;
+		oCol.sSortingClassJUI = oSettings.oClasses.sSortJUIDescAllowed;
+	}
+}
+
+
+/**
+ * Adjust the table column widths for new data. Note: you would probably want to 
+ * do a redraw after calling this function!
+ *  @param {object} oSettings dataTables settings object
+ *  @memberof DataTable#oApi
+ */
+function _fnAdjustColumnSizing ( oSettings )
+{
+	/* Not interested in doing column width calculation if auto-width is disabled */
+	if ( oSettings.oFeatures.bAutoWidth === false )
+	{
+		return false;
+	}
+	
+	_fnCalculateColumnWidths( oSettings );
+	for ( var i=0 , iLen=oSettings.aoColumns.length ; i&lt;iLen ; i++ )
+	{
+		oSettings.aoColumns[i].nTh.style.width = oSettings.aoColumns[i].sWidth;
+	}
+}
+
+
+/**
+ * Covert the index of a visible column to the index in the data array (take account
+ * of hidden columns)
+ *  @param {object} oSettings dataTables settings object
+ *  @param {int} iMatch Visible column index to lookup
+ *  @returns {int} i the data index
+ *  @memberof DataTable#oApi
+ */
+function _fnVisibleToColumnIndex( oSettings, iMatch )
+{
+	var aiVis = _fnGetColumns( oSettings, 'bVisible' );
+
+	return typeof aiVis[iMatch] === 'number' ?
+		aiVis[iMatch] :
+		null;
+}
+
+
+/**
+ * Covert the index of an index in the data array and convert it to the visible
+ *   column index (take account of hidden columns)
+ *  @param {int} iMatch Column index to lookup
+ *  @param {object} oSettings dataTables settings object
+ *  @returns {int} i the data index
+ *  @memberof DataTable#oApi
+ */
+function _fnColumnIndexToVisible( oSettings, iMatch )
+{
+	var aiVis = _fnGetColumns( oSettings, 'bVisible' );
+	var iPos = $.inArray( iMatch, aiVis );
+
+	return iPos !== -1 ? iPos : null;
+}
+
+
+/**
+ * Get the number of visible columns
+ *  @param {object} oSettings dataTables settings object
+ *  @returns {int} i the number of visible columns
+ *  @memberof DataTable#oApi
+ */
+function _fnVisbleColumns( oSettings )
+{
+	return _fnGetColumns( oSettings, 'bVisible' ).length;
+}
+
+
+/**
+ * Get an array of column indexes that match a given property
+ *  @param {object} oSettings dataTables settings object
+ *  @param {string} sParam Parameter in aoColumns to look for - typically 
+ *    bVisible or bSearchable
+ *  @returns {array} Array of indexes with matched properties
+ *  @memberof DataTable#oApi
+ */
+function _fnGetColumns( oSettings, sParam )
+{
+	var a = [];
+
+	$.map( oSettings.aoColumns, function(val, i) {
+		if ( val[sParam] ) {
+			a.push( i );
+		}
+	} );
+
+	return a;
+}
+
+
+/**
+ * Get the sort type based on an input string
+ *  @param {string} sData data we wish to know the type of
+ *  @returns {string} type (defaults to 'string' if no type can be detected)
+ *  @memberof DataTable#oApi
+ */
+function _fnDetectType( sData )
+{
+	var aTypes = DataTable.ext.aTypes;
+	var iLen = aTypes.length;
+	
+	for ( var i=0 ; i&lt;iLen ; i++ )
+	{
+		var sType = aTypes[i]( sData );
+		if ( sType !== null )
+		{
+			return sType;
+		}
+	}
+	
+	return 'string';
+}
+
+
+/**
+ * Figure out how to reorder a display list
+ *  @param {object} oSettings dataTables settings object
+ *  @returns array {int} aiReturn index list for reordering
+ *  @memberof DataTable#oApi
+ */
+function _fnReOrderIndex ( oSettings, sColumns )
+{
+	var aColumns = sColumns.split(',');
+	var aiReturn = [];
+	
+	for ( var i=0, iLen=oSettings.aoColumns.length ; i&lt;iLen ; i++ )
+	{
+		for ( var j=0 ; j&lt;iLen ; j++ )
+		{
+			if ( oSettings.aoColumns[i].sName == aColumns[j] )
+			{
+				aiReturn.push( j );
+				break;
+			}
+		}
+	}
+	
+	return aiReturn;
+}
+
+
+/**
+ * Get the column ordering that DataTables expects
+ *  @param {object} oSettings dataTables settings object
+ *  @returns {string} comma separated list of names
+ *  @memberof DataTable#oApi
+ */
+function _fnColumnOrdering ( oSettings )
+{
+	var sNames = '';
+	for ( var i=0, iLen=oSettings.aoColumns.length ; i&lt;iLen ; i++ )
+	{
+		sNames += oSettings.aoColumns[i].sName+',';
+	}
+	if ( sNames.length == iLen )
+	{
+		return "";
+	}
+	return sNames.slice(0, -1);
+}
+
+
+/**
+ * Take the column definitions and static columns arrays and calculate how
+ * they relate to column indexes. The callback function will then apply the
+ * definition found for a column to a suitable configuration object.
+ *  @param {object} oSettings dataTables settings object
+ *  @param {array} aoColDefs The aoColumnDefs array that is to be applied
+ *  @param {array} aoCols The aoColumns array that defines columns individually
+ *  @param {function} fn Callback function - takes two parameters, the calculated
+ *    column index and the definition for that column.
+ *  @memberof DataTable#oApi
+ */
+function _fnApplyColumnDefs( oSettings, aoColDefs, aoCols, fn )
+{
+	var i, iLen, j, jLen, k, kLen;
+
+	// Column definitions with aTargets
+	if ( aoColDefs )
+	{
+		/* Loop over the definitions array - loop in reverse so first instance has priority */
+		for ( i=aoColDefs.length-1 ; i>=0 ; i-- )
+		{
+			/* Each definition can target multiple columns, as it is an array */
+			var aTargets = aoColDefs[i].aTargets;
+			if ( !$.isArray( aTargets ) )
+			{
+				_fnLog( oSettings, 1, 'aTargets must be an array of targets, not a '+(typeof aTargets) );
+			}
+
+			for ( j=0, jLen=aTargets.length ; j&lt;jLen ; j++ )
+			{
+				if ( typeof aTargets[j] === 'number' &amp;&amp; aTargets[j] >= 0 )
+				{
+					/* Add columns that we don't yet know about */
+					while( oSettings.aoColumns.length &lt;= aTargets[j] )
+					{
+						_fnAddColumn( oSettings );
+					}
+
+					/* Integer, basic index */
+					fn( aTargets[j], aoColDefs[i] );
+				}
+				else if ( typeof aTargets[j] === 'number' &amp;&amp; aTargets[j] &lt; 0 )
+				{
+					/* Negative integer, right to left column counting */
+					fn( oSettings.aoColumns.length+aTargets[j], aoColDefs[i] );
+				}
+				else if ( typeof aTargets[j] === 'string' )
+				{
+					/* Class name matching on TH element */
+					for ( k=0, kLen=oSettings.aoColumns.length ; k&lt;kLen ; k++ )
+					{
+						if ( aTargets[j] == "_all" ||
+						     $(oSettings.aoColumns[k].nTh).hasClass( aTargets[j] ) )
+						{
+							fn( k, aoColDefs[i] );
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Statically defined columns array
+	if ( aoCols )
+	{
+		for ( i=0, iLen=aoCols.length ; i&lt;iLen ; i++ )
+		{
+			fn( i, aoCols[i] );
+		}
+	}
+}
+
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="-_anonymous_-factory-AutoFill.html">AutoFill</a></li><li><a href="-_anonymous_-factory-ColReorder.html">ColReorder</a></li><li><a href="-_anonymous_-factory-ColVis.html">ColVis</a></li><li><a href="-_anonymous_-factory-Responsive.html">Responsive</a></li><li><a href="-_anonymous_-sh.Highlighter.html">Highlighter</a></li><li><a href="DataTable.Api.html">Api</a></li><li><a href="FixedColumns.html">FixedColumns</a></li><li><a href="Scroller.html">Scroller</a></li><li><a href="DataTable_.html">~DataTable</a></li><li><a href="Scroller_.html">~Scroller</a></li></ul><h3>Events</h3><ul><li><a href="DataTable_column-sizing.html#.event:dt">dt</a></li><li><a href="DataTable_column-visibility.html#.event:dt">dt</a></li><li><a href="DataTable_destroy.html#.event:dt">dt</a></li><li><a href="DataTable_draw.html#.event:dt">dt</a></li><li><a href="DataTable.html#event:destroy">destroy</a></li><li><a href="DataTable.html#event:draw">draw</a></li><li><a href="DataTable.html#event:filter">filter</a></li><li><a href="DataTable.html#event:init">init</a></li><li><a href="DataTable.html#event:page">page</a></li><li><a href="DataTable.html#event:processing">processing</a></li><li><a href="DataTable.html#event:sort">sort</a></li><li><a href="DataTable.html#event:stateLoaded">stateLoaded</a></li><li><a href="DataTable.html#event:stateLoadParams">stateLoadParams</a></li><li><a href="DataTable.html#event:stateSaveParams">stateSaveParams</a></li><li><a href="DataTable.html#event:xhr">xhr</a></li><li><a href="DataTable_init.html#.event:dt">dt</a></li><li><a href="DataTable_length.html#.event:dt">dt</a></li><li><a href="DataTable_order.html#.event:dt">dt</a></li><li><a href="DataTable_page.html#.event:dt">dt</a></li><li><a href="DataTable_processing.html#.event:dt">dt</a></li><li><a href="DataTable_search.html#.event:dt">dt</a></li><li><a href="DataTable_stateLoaded.html#.event:dt">dt</a></li><li><a href="DataTable_stateLoadParams.html#.event:dt">dt</a></li><li><a href="DataTable_stateSaveParams.html#.event:dt">dt</a></li><li><a href="DataTable_xhr.html#.event:dt">dt</a></li><li><a href="FixedColumns_draw.html#.event:dtfc">dtfc</a></li><li><a href="FixedColumns.html#event:draw">draw</a></li></ul><h3>Namespaces</h3><ul><li><a href="-_anonymous_-factory-AutoFill.defaults.html">defaults</a></li><li><a href="-_anonymous_-factory-AutoFill.defaults.column.html">column</a></li><li><a href="-_anonymous_-factory-ColReorder.defaults.html">defaults</a></li><li><a href="-_anonymous_-FixedColumns.defaults.html">defaults</a></li><li><a href="-_anonymous_-FixedColumns_dom.html">dom</a></li><li><a href="-_anonymous_-FixedColumns_dom.clone.html">clone</a></li><li><a href="-_anonymous_-FixedColumns_dom.clone.left.html">left</a></li><li><a href="-_anonymous_-FixedColumns_dom.clone.right.html">right</a></li><li><a href="-_anonymous_-FixedColumns_dom.grid.html">grid</a></li><li><a href="-_anonymous_-FixedColumns_dom.grid.left.html">left</a></li><li><a href="-_anonymous_-FixedColumns_dom.grid.right.html">right</a></li><li><a href="-_anonymous_-FixedColumns_s.html">s</a></li><li><a href="-_ext.type.html">type</a></li><li><a href="Cached%252520information%252520about%252520the%252520border%252520display.html">Cached information about the border display</a></li><li><a href="Cached%252520information%252520about%252520the%252520little%252520dragging%252520icon%252520.html">Cached information about the little dragging icon </a></li><li><a href="Classes%252520used%252520by%252520TableTools%252520-%252520allows%252520the%252520styles%252520to%252520be%252520override%252520easily.%25250A%252520%252520Note%252520that%252520when%252520TableTools%252520initialises%252520it%252520will%252520take%252520a%252520copy%252520of%252520the%252520classes%252520object%25250A%252520%252520and%252520will%252520use%252520its%252520internal%252520copy%252520for%252520the%252520remainder%252520of%252520its%252520run%252520time..html">Classes used by TableTools - allows the styles to be override easily.
+  Note that when TableTools initialises it will take a copy of the classes object
+  and will use its internal copy for the remainder of its run time.</a></li><li><a href="Common%252525252525252520and%252525252525252520useful%252525252525252520DOM%252525252525252520elements%252525252525252520for%252525252525252520the%252525252525252520class%252525252525252520instance.html">Common and useful DOM elements for the class instance</a></li><li><a href="Data%252520cache%252520for%252520information%252520that%252520we%252520need%252520for%252520scrolling%252520the%252520screen%252520when%252520we%252520near%25250A%252520%252520the%252520edges.html">Data cache for information that we need for scrolling the screen when we near
+  the edges</a></li><li><a href="Data%252520cache%252520for%252520the%252520position%252520of%252520the%252520DataTables%252520scrolling%252520element%252520.html">Data cache for the position of the DataTables scrolling element (when scrolling
+  is enabled)</a></li><li><a href="DataTable.defaults.html">defaults</a></li><li><a href="DataTable.defaults.classes.html">classes</a></li><li><a href="DataTable.defaults.html#.column">column</a></li><li><a href="DataTable.defaults.columns.html">columns</a></li><li><a href="DataTable.defaults.language.html">language</a></li><li><a href="DataTable.defaults.language.aria.html">aria</a></li><li><a href="DataTable.defaults.language.paginate.html">paginate</a></li><li><a href="DataTable.defaults.oLanguage.html">oLanguage</a></li><li><a href="DataTable.defaults.oLanguage.oAria.html">oAria</a></li><li><a href="DataTable.defaults.oLanguage.oPaginate.html">oPaginate</a></li><li><a href="DataTable.defaults.oSearch.html">oSearch</a></li><li><a href="DataTable.defaults.search.html">search</a></li><li><a href="DataTable.ext.html">ext</a></li><li><a href="DataTable.models.html">models</a></li><li><a href="DataTable.models.ext.html">ext</a></li><li><a href="DataTable.models.oColumn.html">oColumn</a></li><li><a href="DataTable.models.oRow.html">oRow</a></li><li><a href="DataTable.models.oSearch.html">oSearch</a></li><li><a href="DataTable.models.oSettings.html">oSettings</a></li><li><a href="DataTable.models.oSettings.oBrowser.html">oBrowser</a></li><li><a href="DataTable.models.oSettings.oFeatures.html">oFeatures</a></li><li><a href="DataTable.models.oSettings.oLanguage.html">oLanguage</a></li><li><a href="DataTable.models.oSettings.oPreviousSearch.html">oPreviousSearch</a></li><li><a href="DataTable.models.oSettings.oScroll.html">oScroll</a></li><li><a href="DataTable.render.html">render</a></li><li><a href="DataTable.util.html">util</a></li><li><a href="Default%252520button%252520configurations.html">Default button configurations</a></li><li><a href="FixedColumns.defaults.html">defaults</a></li><li><a href="FixedColumns_dom.clone.html">clone</a></li><li><a href="FixedColumns_dom.clone.left.html">left</a></li><li><a href="FixedColumns_dom.clone.right.html">right</a></li><li><a href="FixedColumns_dom.grid.html">grid</a></li><li><a href="FixedColumns_dom.grid.left.html">left</a></li><li><a href="FixedColumns_dom.grid.right.html">right</a></li><li><a href="Information%252520stored%252520for%252520each%252520column.%252520An%252520array%252520of%252520objects.html"> An array of objects</a></li><li><a href="Information%252520used%252520for%252520the%252520mouse%252520drag.html">Information used for the mouse drag</a></li><li><a href="Name%252520space%252520for%252520the%252520classes%252520that%252520this%252520TableTools%252520instance%252520will%252520use.html">Name space for the classes that this TableTools instance will use</a></li><li><a href="Nodes%252520used%252520for%252520a%252520collection%252520display.%252520This%252520contains%252520the%252520currently%252520used%252520collection.html"> This contains the currently used collection</a></li><li><a href="Nodes%252520used%252520for%252520the%252520print%252520display.html">Nodes used for the print display</a></li><li><a href="oApi.html">oApi</a></li><li><a href="Print%252520specific%252520information.html">Print specific information</a></li><li><a href="Responsive.defaults.html">defaults</a></li><li><a href="Scroller.defaults.html">defaults</a></li><li><a href="Select%252520rows%252520specific%252520information.html">Select rows specific information</a></li><li><a href="Settings%2520object%2520which%2520contains%2520customisable%2520information%2520for%250A%2520%2520%2520%2520ColVis%2520instance.%2520Augmented%2520by%2520ColVis.defaults.html">Settings object which contains customisable information for
+    ColVis instance. Augmented by ColVis.defaults</a></li><li><a href="Settings%252520object%252520which%252520contains%252520customisable%252520information%252520for%252520AutoFill%252520instance.html">Settings object which contains customisable information for AutoFill instance</a></li><li><a href="Settings%252520object%252520which%252520contains%252520customisable%252520information%252520for%252520ColReorder%252520instance.html">Settings object which contains customisable information for ColReorder instance</a></li><li><a href="Settings%2520object%2520which%2520contains%2520customisable%2520information%2520for%2520ColVis%2520instance.html">Settings object which contains customisable information for ColVis instance</a></li><li><a href="Settings%252520object%252520which%252520contains%252520customisable%252520information%252520for%252520TableTools%252520instance.html">Settings object which contains customisable information for TableTools instance</a></li><li><a href="Store%252520for%252520live%252520information%252520for%252520the%252520current%252520drag.html">Store for live information for the current drag</a></li><li><a href="TableTools%252520default%252520settings%252520for%252520initialisation.html">TableTools default settings for initialisation</a></li><li><a href="ThemeRoller%252520classes%252520-%252520built%252520in%252520for%252520compatibility%252520with%252520DataTables_%252520%25250A%252520%252520bJQueryUI%252520option..html">ThemeRoller classes - built in for compatibility with DataTables' 
+  bJQueryUI option.</a></li><li><a href="DataTable.defaults_.html">defaults</a></li><li><a href="DataTable.defaults.columns_.html">defaults.columns</a></li><li><a href="DataTable.defaults.oLanguage_.html">oLanguage</a></li><li><a href="DataTable.defaults.oLanguage.oAria_.html">oAria</a></li><li><a href="DataTable.defaults.oLanguage.oPaginate_.html">oPaginate</a></li><li><a href="DataTable.defaults.oSearch_.html">oSearch</a></li><li><a href="DataTable.ext_.html">ext</a></li><li><a href="DataTable.models_.html">models</a></li><li><a href="DataTable.models.ext_.html">models.ext</a></li><li><a href="DataTable.models.oColumn_.html">models.oColumn</a></li><li><a href="DataTable.models.oRow_.html">models.oRow</a></li><li><a href="DataTable.models.oSearch_.html">models.oSearch</a></li><li><a href="DataTable.models.oSettings_.html">models.oSettings</a></li><li><a href="DataTable.models.oSettings.oBrowser_.html">oBrowser</a></li><li><a href="DataTable.models.oSettings.oFeatures_.html">oFeatures</a></li><li><a href="DataTable.models.oSettings.oLanguage_.html">oLanguage</a></li><li><a href="DataTable.models.oSettings.oPreviousSearch_.html">oPreviousSearch</a></li><li><a href="DataTable.models.oSettings.oScroll_.html">oScroll</a></li><li><a href="DataTable_oApi_.html">oApi</a></li><li><a href="Scroller.oDefaults.html">oDefaults</a></li><li><a href="Scroller_dom.html">dom</a></li><li><a href="Scroller_s_.html">s</a></li></ul><h3>Global</h3><ul><li><a href="global.html#$">$</a></li><li><a href="global.html#_">_</a></li><li><a href="global.html#_fnFillerDisplay">_fnFillerDisplay</a></li><li><a href="global.html#_fnFillerDragMove">_fnFillerDragMove</a></li><li><a href="global.html#_fnFillerDragStart">_fnFillerDragStart</a></li><li><a href="global.html#_fnFillerFinish">_fnFillerFinish</a></li><li><a href="global.html#_fnFillerPosition">_fnFillerPosition</a></li><li><a href="global.html#_fnInit">_fnInit</a></li><li><a href="global.html#_fnPrep">_fnPrep</a></li><li><a href="global.html#_fnReadCell">_fnReadCell</a></li><li><a href="global.html#_fnStep">_fnStep</a></li><li><a href="global.html#_fnTargetCoords">_fnTargetCoords</a></li><li><a href="global.html#_fnUpdateBorder">_fnUpdateBorder</a></li><li><a href="global.html#_fnWriteCell">_fnWriteCell</a></li><li><a href="global.html#api">api</a></li><li><a href="global.html#button">button</a></li><li><a href="global.html#CLASS">CLASS</a></li><li><a href="global.html#fnAddData">fnAddData</a></li><li><a href="global.html#fnAdjustColumnSizing">fnAdjustColumnSizing</a></li><li><a href="global.html#fnArraySwitch">fnArraySwitch</a></li><li><a href="global.html#fnClearTable">fnClearTable</a></li><li><a href="global.html#fnClose">fnClose</a></li><li><a href="global.html#fnDeleteRow">fnDeleteRow</a></li><li><a href="global.html#fnDestroy">fnDestroy</a></li><li><a href="global.html#fnDomSwitch">fnDomSwitch</a></li><li><a href="global.html#fnDraw">fnDraw</a></li><li><a href="global.html#fnFilter">fnFilter</a></li><li><a href="global.html#fnGetData">fnGetData</a></li><li><a href="global.html">fnGetInstance</a></li><li><a href="global.html">fnGetMasters</a></li><li><a href="global.html#fnGetNodes">fnGetNodes</a></li><li><a href="global.html#fnGetPosition">fnGetPosition</a></li><li><a href="global.html#fnInvertKeyValues">fnInvertKeyValues</a></li><li><a href="global.html#fnIsOpen">fnIsOpen</a></li><li><a href="global.html#fnOpen">fnOpen</a></li><li><a href="global.html#fnPageChange">fnPageChange</a></li><li><a href="global.html#fnRebuild">fnRebuild</a></li><li><a href="global.html#fnSetColumnVis">fnSetColumnVis</a></li><li><a href="global.html#fnSettings">fnSettings</a></li><li><a href="global.html#fnSort">fnSort</a></li><li><a href="global.html#fnSortListener">fnSortListener</a></li><li><a href="global.html#fnUpdate">fnUpdate</a></li><li><a href="global.html#fnVersionCheck">fnVersionCheck</a></li><li><a href="global.html#Jeditable">Jeditable</a></li><li><a href="global.html#method">method</a></li><li><a href="global.html#VERSION">VERSION</a></li><li><a href="global.html#version">version</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Dec 09 2015 20:53:56 GMT+0000 (GMT Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

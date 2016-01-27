@@ -1,0 +1,135 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php 
+/**
+ * Dacura home page
+ * 
+ * This is the screen that users arrive at immediately after they log in.  
+ * It shows them the services available to them
+ * @package browse/screens
+ * @author chekov
+ * @copyright GPL v2
+ */
+?&gt;
+&lt;div id='dashboard-container'&gt;
+	&lt;table id='dashboard'&gt;
+		&lt;tr class='dashboard-header'&gt;&lt;td colspan=&quot;2&quot; id='dashboard-header'&gt;&lt;/td&gt;&lt;/tr&gt;
+		&lt;tr&gt;
+			&lt;td id='dashboard-menu'&gt;
+				&lt;div id=&quot;dashboard-menu-logo&quot;&gt;
+					&lt;img src=&quot;&lt;?=$params['collection_logo']['img']?&gt;&quot; title=&quot;&lt;?=$params['collection_logo']['title']?&gt;&quot;&gt;
+				&lt;/div&gt;
+				&lt;div id=&quot;dashboard-menu-title&quot;&gt;
+					&lt;?=$params['collection_logo']['title']?&gt;
+					&lt;div class='control-panel-title'&gt;Control Panel&lt;/div&gt;
+				&lt;/div&gt;
+				&lt;div id=&quot;dashboard-menu-blurb&quot;&gt;
+					&lt;?=$params['collection_blurb']?&gt;
+				&lt;/div&gt;
+				&lt;ul class='dashboard-menu'&gt;
+					&lt;?php foreach($params['menu_items'] as $mi) {?&gt;
+					&lt;li id=&quot;&lt;?=$mi[&quot;id&quot;]?&gt;&quot; class=&quot;dashboard-menu-item &lt;?php if($mi['selected']) echo &quot; dashboard-menu-selected&quot;?&gt;&quot;&gt;
+						&lt;a href=&quot;&lt;?=$mi['link']?&gt;&quot; title=&quot;&lt;?=$mi['contents']?&gt;&quot;&gt;&lt;?=$mi['contents']?&gt;&lt;/a&gt;
+					&lt;/li&gt;						
+					&lt;?php }?&gt;
+				&lt;/UL&gt;
+				&lt;div id=&quot;dashboard-menu-panes&quot;&gt;
+				&lt;?php
+					if(isset($params['dashboard_panes'])){ 
+						foreach($params['dashboard_panes'] as $dp) {
+							echo $dp;
+						}
+					}?&gt;
+				&lt;/div&gt;
+			&lt;/td&gt;
+			&lt;td id='dashboard-content'&gt;
+				&lt;table id='dashboard-lanes'&gt;
+					&lt;tr class=&quot;internal-panel&quot;&gt;
+						&lt;td id=&quot;internal-panel&quot;&gt;
+							&lt;?php if(isset($params['internal_services'])){foreach($params['internal_services'] as $serv) {?&gt;
+							&lt;a href='&lt;?=$serv[&quot;url&quot;]?&gt;' title='&lt;?=$serv[&quot;help&quot;]?&gt;' alt='&lt;?=$serv[&quot;title&quot;]?&gt;'&gt;
+								&lt;div class='dacura-dashboard-button'&gt;
+									&lt;img class='dacura-button-img' src=&quot;&lt;?=$serv[&quot;img&quot;]?&gt;&quot;&gt;
+									&lt;div class=&quot;dacura-button-title&quot;&gt;&lt;?=$serv[&quot;title&quot;]?&gt;&lt;/div&gt;
+								&lt;/div&gt;
+							&lt;/a&gt;
+							&lt;?php }} ?&gt;
+						&lt;/td&gt;
+					&lt;/tr&gt;
+					&lt;tr class=&quot;data-panel&quot;&gt;
+						&lt;td id=&quot;data-panel&quot;&gt;
+							&lt;?php if(isset($params['data_services'])){foreach($params['data_services'] as $serv) {?&gt;
+							&lt;a href='&lt;?=$serv[&quot;url&quot;]?&gt;' title='&lt;?=$serv[&quot;help&quot;]?&gt;' alt='&lt;?=$serv[&quot;title&quot;]?&gt;'&gt;
+								&lt;div class='dacura-dashboard-button'&gt;
+									&lt;img class='dacura-button-img' src=&quot;&lt;?=$serv[&quot;img&quot;]?&gt;&quot;&gt;
+									&lt;div class=&quot;dacura-button-title&quot;&gt;&lt;?=$serv[&quot;title&quot;]?&gt;&lt;/div&gt;
+								&lt;/div&gt;
+							&lt;/a&gt;
+							&lt;?php }} ?&gt;
+						&lt;/td&gt;
+					&lt;/tr&gt;
+					&lt;tr class=&quot;tool-panel&quot;&gt;
+						&lt;td id=&quot;tool-panel&quot;&gt;
+							&lt;?php if(isset($params['tool_services'])){foreach($params['tool_services'] as $serv) {?&gt;
+							&lt;a href='&lt;?=$serv[&quot;url&quot;]?&gt;' title='&lt;?=$serv[&quot;help&quot;]?&gt;' alt='&lt;?=$serv[&quot;title&quot;]?&gt;'&gt;
+								&lt;div class='dacura-dashboard-button-wide'&gt;
+									&lt;img class='dacura-button-img' src=&quot;&lt;?=$serv[&quot;img&quot;]?&gt;&quot;&gt;
+									&lt;div class=&quot;dacura-button-title&quot;&gt;&lt;?=$serv[&quot;title&quot;]?&gt;&lt;/div&gt;
+								&lt;/div&gt;
+							&lt;/a&gt;
+							&lt;?php }} ?&gt;
+						&lt;/td&gt;
+					&lt;/tr&gt;
+				&lt;/table&gt;
+			&lt;/td&gt;
+		&lt;/tr&gt;
+	&lt;/table&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+	//$(function() {});
+&lt;/script&gt;
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

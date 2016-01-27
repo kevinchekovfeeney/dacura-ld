@@ -1,0 +1,323 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;div class='dacura-screen' id='user-home'&gt;
+	&lt;?php if(in_array(&quot;user-details&quot;, $params['subscreens'])) { ?&gt;
+	&lt;div class='dacura-subscreen' id='user-details' title=&quot;Details&quot;&gt;
+		&lt;div class='subscreen-intro-message'&gt;&lt;?=$params['details_intro_msg']?&gt;&lt;/div&gt;
+		&lt;?php echo $service-&gt;getInputTableHTML(&quot;udetails&quot;, $params['update_form_type'], $params['update_details_fields']);?&gt;
+		&lt;div class=&quot;subscreen-buttons&quot;&gt;
+			&lt;?php if($params['showdelete']){?&gt;
+			&lt;button id='userdelete' class='dacura-delete subscreen-button'&gt;Delete User&lt;/button&gt;
+			&lt;?php }if($params['showupdate']){?&gt;
+			&lt;button id='userupdate' class='dacura-update subscreen-button'&gt;&lt;?=$params['update_button_text']?&gt;&lt;/button&gt;
+			&lt;?php }?&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;
+	&lt;?php } if(in_array(&quot;user-roles&quot;, $params['subscreens'])) { ?&gt;	
+	&lt;div class='dacura-subscreen' id='user-roles' title=&quot;Roles&quot;&gt;
+		&lt;div class='subscreen-intro-message'&gt;&lt;?=$params['roles_intro_msg']?&gt;&lt;/div&gt;		
+		&lt;?php if(count($params['role_options']) &gt; 0){?&gt;
+			&lt;div id=&quot;user-role-add&quot;&gt;
+				&lt;table class='create-role-table'&gt;&lt;tr&gt;
+					&lt;td class='option'&gt;&lt;select class='dacura-select' id=&quot;rolenameip&quot;&gt;&lt;?=$params['role_name_options']?&gt;&lt;/select&gt;&lt;/td&gt;
+					&lt;td class='option'&gt;&lt;select class='dacura-select' id=&quot;rolecollectionip&quot;&gt;&lt;/select&gt;&lt;/td&gt;
+					&lt;td&gt;&lt;button id='rolecreate' class='dacura-create subscreen-button'&gt;Add Role&lt;/button&gt;
+				&lt;/tr&gt;&lt;/table&gt;
+			&lt;/div&gt;	
+		&lt;?php }?&gt;
+		&lt;div id='roles-listing'&gt;
+			&lt;div id='roles-table-holder'&gt;
+				&lt;table id=&quot;roles-table&quot; class=&quot;dacura-api-listing&quot;&gt;
+					&lt;thead&gt;
+					&lt;tr&gt;
+						&lt;th id=&quot;dxo-id&quot; title=&quot;The internal ID of the role&quot;&gt;Role ID&lt;/th&gt;
+						&lt;th id=&quot;dxo-collection_id&quot; title=&quot;The collection id that the role is associated with&quot;&gt;Collection&lt;/th&gt;
+						&lt;th id=&quot;dxo-role&quot; title=&quot;The dacura role allocated to the user.&quot;&gt;Role&lt;/th&gt;
+						&lt;th id=&quot;dfn-rowselector&quot;&gt;Select&lt;/th&gt;
+					&lt;/tr&gt;
+					&lt;/thead&gt;
+					&lt;tbody&gt;&lt;/tbody&gt;
+				&lt;/table&gt;
+			&lt;/div&gt;
+			&lt;div class=&quot;subscreen-buttons role-buttons&quot;&gt;
+				&lt;button id='deleteroles' class='dacura-delete subscreen-button'&gt;Delete Selected Roles&lt;/button&gt;
+			&lt;/div&gt;
+		&lt;/div&gt;		
+	&lt;/div&gt;
+	&lt;?php } if(in_array(&quot;user-password&quot;, $params['subscreens'])) { ?&gt;	
+	&lt;div class='dacura-subscreen' id='user-password' title=&quot;Password&quot;&gt;
+		&lt;div class='subscreen-intro-message'&gt;&lt;?=$params['password_intro_msg']?&gt;&lt;/div&gt;
+		&lt;?php echo $service-&gt;getInputTableHTML(&quot;upassword&quot;, &quot;create&quot;, $params['update_password_fields']);?&gt;		
+		&lt;div class=&quot;subscreen-buttons&quot;&gt;
+			&lt;button id='passwordupdate' class='dacura-update subscreen-button'&gt;Update Password&lt;/button&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;
+	&lt;?php } if(in_array(&quot;user-history&quot;, $params['subscreens'])) { ?&gt;		
+	&lt;div class='dacura-subscreen' id='user-history' title=&quot;History&quot;&gt;
+		&lt;div class='subscreen-intro-message'&gt;&lt;?=$params['history_intro_msg']?&gt;&lt;/div&gt;
+		&lt;div id='history-table-holder'&gt;
+			&lt;table id=&quot;history-table&quot; class=&quot;dacura-api-listing&quot;&gt;
+				&lt;thead&gt;
+				&lt;tr&gt;
+					&lt;th id=&quot;dlo-start&quot;&gt;&lt;/th&gt;
+					&lt;th id=&quot;dfn-printStart&quot; title=&quot;The timestamp when the session started&quot;&gt;Session Started&lt;/th&gt;
+					&lt;th id=&quot;dlo-end&quot;&gt;&lt;/th&gt;
+					&lt;th id=&quot;dfn-printEnd&quot; title=&quot;The timestamp when the session ended&quot;&gt;Session Ended&lt;/th&gt;
+					&lt;th id=&quot;dlo-duration&quot;&gt;&lt;/th&gt;
+					&lt;th id=&quot;dfn-printDuration&quot; title=&quot;The session's duration&quot;&gt;Duration&lt;/th&gt;
+					&lt;th id=&quot;dlo-service&quot; title=&quot;The Dacura service involved&quot;&gt;Service&lt;/th&gt;
+				&lt;/tr&gt;
+				&lt;/thead&gt;
+				&lt;tbody&gt;&lt;/tbody&gt;
+			&lt;/table&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;	
+	&lt;?php } ?&gt;	
+&lt;/div&gt;
+
+&lt;script&gt;
+var user_loaded = false;
+var roles_loaded = false;
+var history_loaded = false;
+
+var roleoptions = &lt;?=json_encode($params['role_options'])?&gt;;
+
+function printEnd(obj){
+	return timeConverter(obj.end);
+}
+
+function printStart(obj){
+	return timeConverter(obj.start);
+}
+
+function printDuration(obj){
+	return durationConverter(obj.duration);
+}
+
+function showCreateRoleResult(obj, targets){
+	drawRoles(obj);
+	dacura.system.showSuccessResult(&quot;New role successfully added&quot;, &quot;User roles updated&quot;, targets.resultbox, obj);
+}
+
+function showDeleteRoleResult(obj, targets){
+	drawRoles(obj);
+	dacura.system.showSuccessResult(&quot;Roles successfully removed&quot;, &quot;User roles updated&quot;, targets.resultbox, obj);
+}
+
+function showDeleteResult(obj, targets){
+	dacura.system.showWarningResult(&quot;This user has been deleted&quot;, &quot;User &lt;?=$params['userid']?&gt; deleted&quot;, targets.resultbox);
+}
+
+function showUpdatePasswordResult(obj, targets){
+	dacura.system.showSuccessResult(&quot;This user's password has been successfully updated&quot;, &quot;User &lt;?=$params['userid']?&gt; password updated&quot;, targets.resultbox);
+}
+
+function showUpdatedUser(obj, targets){
+	drawDetails(obj);
+	dacura.system.showSuccessResult(&quot;Updates successfully saved&quot;, &quot;User &quot; + obj.handle + &quot; updated&quot;, targets.resultbox, obj);
+}
+
+function drawDetails(obj){
+	var nobj = obj.profile;
+	nobj.id = obj.id;
+	nobj.name = obj.name;
+	nobj.status = obj.status;
+	nobj.email = obj.email;
+	dacura.tool.form.populate(&quot;udetails&quot;, nobj);	
+}
+
+function drawHistory(obj){
+	if(typeof obj.history == &quot;undefined&quot; || obj.history.length == 0){
+		dacura.system.showWarningResult(obj.handle + &quot; has no registered no sessions with the system&quot;, &quot;No history&quot;, &quot;#user-history-msgs&quot;);
+	}
+	else {
+		var hconfig = {
+			&quot;screen&quot;: &quot;user-history&quot;, 
+			&quot;mode&quot;: &quot;html&quot;,
+			&quot;dtsettings&quot;: &lt;?= $params['history_table_settings']?&gt;
+		};
+		if(history_loaded){		
+			dacura.tool.table.reincarnate(&quot;history-table&quot;, &quot;history-table-holder&quot;, obj.history, hconfig);
+		}
+		else {
+			dacura.tool.table.init(&quot;history-table&quot;, hconfig, obj.history);	
+		}
+		history_loaded = true;
+	}	
+}
+
+function drawRoles(obj){
+	if(typeof obj.roles == &quot;undefined&quot; || obj.roles.length == 0){
+		dacura.system.showWarningResult(obj.handle + &quot; has no roles configured in this context&quot;, &quot;No roles&quot;, &quot;#user-roles-msgs&quot;);
+		$('#roles-listing').hide();
+	}
+	else {
+		$('#roles-listing').show();
+		var rconfig = {
+			&quot;screen&quot;: &quot;user-roles&quot;, 
+			&quot;mode&quot;: &quot;html&quot;,
+			&quot;dtsettings&quot;: &lt;?= $params['roles_table_settings']?&gt;
+		};
+		if(roles_loaded){		
+			dacura.tool.table.reincarnate(&quot;roles-table&quot;, &quot;roles-table-holder&quot;, obj.roles, rconfig);		
+		}
+		else {
+			dacura.tool.table.init(&quot;roles-table&quot;, rconfig, obj.roles);
+		}	
+		roles_loaded = true;
+	}
+}
+
+function drawUser(obj, targets){
+	if(!user_loaded){
+		dacura.tool.initScreens(&quot;user-home&quot;);
+		dacura.tool.header.addBreadcrumb(&quot;&lt;?=$service-&gt;my_url().&quot;/&quot;.$params['userid']?&gt;&quot;, &quot;User &quot; + obj.handle, &quot;selected-user&quot;);
+	}
+	drawDetails(obj);
+	drawHistory(obj);
+	drawRoles(obj);
+	user_loaded = &quot;&lt;?=$params['userid']?&gt;&quot;;
+}
+
+function getRoleDeletes(){
+	var obj = {};
+	obj.rids = [];
+	obj.uid = &quot;&lt;?=$params['userid']?&gt;&quot;;
+	$('#roles-table input:checkbox').each(function(){
+		if($(this).is(&quot;:checked&quot;)){
+	        obj.rids.push(this.id.substring(4));
+	    }
+	});
+	return obj;
+}
+
+function validatePasswords(obj){
+	if(obj.password.length &lt; 6) {
+		return &quot;The password must be at least six characters long&quot;;
+	}
+	if(obj.password != obj.confirmpassword){
+		return &quot;The two passwords do not match&quot;;
+	}
+	return &quot;&quot;;
+}
+
+function validateRoleDeletes(obj){
+	if(obj.rids.length == 0){
+		return &quot;You have not selected any roles to delete&quot;;
+	}
+	return &quot;&quot;;
+}
+
+function getRoleInputs(){
+	var obj = {};
+	obj.collection = $('#rolecollectionip option:selected').val();
+	obj.role = $('#rolenameip option:selected').val();
+	obj.uid = &quot;&lt;?=$params['userid']?&gt;&quot;;
+	return obj;
+}
+
+function setupRoleOptions(){
+	var num = 0;
+	$.each(roleoptions, function(i, obj) {
+		num++;
+		var selected = &quot;&quot;;
+		if(num == 1){
+			selected = &quot;selected &quot;;
+		}
+		$('#rolecollectionip').append(&quot;&lt;option &quot; + selected  + &quot;value='&quot;+ i + &quot;'&gt;&quot; + obj.title + &quot;&lt;/option&gt;&quot;);
+		$('#rolecollectionip').selectmenu( &quot;refresh&quot; );
+	});
+}
+
+$(function() {
+	dacura.tool.init({
+		&quot;buttons&quot;: {
+			&quot;userupdate&quot;: {
+				&quot;screen&quot;: &quot;user-details&quot;,
+				&quot;source&quot;: &quot;udetails&quot;,
+				&quot;submit&quot;: dacura.users.updateUser, 
+				&quot;result&quot;: showUpdatedUser
+			},
+			&quot;userdelete&quot;: {
+				&quot;screen&quot;: &quot;user-details&quot;,
+				&quot;gather&quot;: function(){ return &quot;&lt;?=$params['userid']?&gt;&quot;},
+				&quot;submit&quot;: dacura.users.deleteUser, 
+				&quot;result&quot;: showDeleteResult
+			},
+			&quot;rolecreate&quot;: {
+				&quot;screen&quot;: &quot;user-roles&quot;,
+				&quot;gather&quot;: getRoleInputs,
+				&quot;submit&quot;: dacura.users.createRole,
+				&quot;result&quot;: showCreateRoleResult
+			},
+			&quot;deleteroles&quot;: {
+				&quot;screen&quot;: &quot;user-roles&quot;,
+				&quot;gather&quot;: getRoleDeletes,
+				&quot;submit&quot;: dacura.users.deleteRoles,
+				&quot;validate&quot;: validateRoleDeletes,
+				&quot;result&quot;: showDeleteRoleResult				
+			},
+			&quot;passwordupdate&quot;:  {
+				&quot;screen&quot;: &quot;user-password&quot;,
+				&quot;source&quot;: &quot;upassword&quot;,
+				&quot;submit&quot;: function (obj, onwards, targets) { obj.uid = &quot;&lt;?=$params['userid']?&gt;&quot;, dacura.users.updatePassword(obj, onwards, targets)},
+				&quot;validate&quot;: validatePasswords,
+				&quot;result&quot;: showUpdatePasswordResult				
+			}
+		}
+	});
+	var pconf = { resultbox: &quot;.tool-info&quot;, busybox: &quot;#user-home&quot; };
+	dacura.users.fetchUser(&quot;&lt;?=$params['userid']?&gt;&quot;, drawUser, pconf);
+	if(roleoptions){
+		setupRoleOptions();
+	}
+	else {
+		$('#user-role-add').empty();
+	}
+	
+});
+&lt;/script&gt;
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

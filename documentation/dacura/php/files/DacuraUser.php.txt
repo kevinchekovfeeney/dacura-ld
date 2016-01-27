@@ -1,0 +1,353 @@
+<?php
+require_once("DacuraSession.php");
+require_once("UserRole.php");
+
+/**
+ * Class representing user of the Dacura System
+ * 
+ * User Object contains user roles and sessions
+ * * Creation Date: 20/11/2014
+ * 
+ * @author Chekov
+ * @License GPL v2
+ */
+class DacuraUser extends DacuraObject {
+	/** @var string the users email address */
+	var $email;
+	/** @var string the users name */
+	var $name;
+	/** @var string the users handle is the user's name if it is set, email address otherwise*/
+	var $handle;
+	/** @var array name-value profile settings for the user */
+	var $profile;
+	/** @var string directory where sessions live */
+	var $session_dump;	
+	/** @var array an array of DacuraSession objects representing current user sessions */
+	var $sessions = array(); 
+	/** @var array an array of DacuraSession objects representing historical user sessions */
+	var $history = array(); 
+	/** @var array the list of roles that this user possesses */
+	var $roles = array();
+
+	/**
+	 * 
+	 * @param number $id the id of the user
+	 * @param string $e the user's email address
+	 * @param string $n the user's name 
+	 * @param string $status one of DacuraObject::$valid_statuses
+	 * @param array $prof a name-value array of profile settings 
+	 */
+	function __construct($id, $e, $n, $status, $prof = ""){
+		$this->id = $id;
+		$this->email = $e;
+		$this->name = $n;
+		$this->status = $status;
+		$this->profile = $prof;
+		$this->handle = ($this->name) ? $this->name : $this->email;
+	}
+	
+	/**
+	 * Returns the name of the user 
+	 * @return string username
+	 */
+	function getName(){
+		return $this->handle;
+	}
+	
+	/**
+ 	 * Does the user have the god role for the given collection?
+	 * @param string $cid collection id for which the question is asked
+	 * @return boolean true if the user has the god role
+	 */
+	function isGod($cid = "all"){
+		foreach($this->roles as $r){
+			if($r->isGod() && ($r->cid() == $cid || $r->cid() == "all")) return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * Is the user an admin of the collection?
+	 * @param string $cid the collection id
+	 * @return boolean true if the user is an admin
+	 */
+	function isCollectionAdmin($cid){
+		return $this->hasCollectionRole($cid, "admin");
+	}
+	
+	/**
+	 * Does the user have a role in the collection
+	 * @param string $cid collection id
+	 * @param string $role minimum role required (defaults to nobody)
+	 * @return boolean true if the user has a collection role that is equal or greater to the passed role
+	 */
+	function hasCollectionRole($cid, $role = false){
+		$role = $role ? $role : "nobody";
+		foreach($this->roles as $r){
+			if($r->covers($role, $cid, "all")){
+				return true;				
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Has the user got the minimum role (or greater) in the collection 
+	 * 
+	 * This is just a synonym of hasCollectionRole
+	 * @param string $minimum_role
+	 * @param string $collection_id
+	 * @return boolean
+	 */
+	function hasSufficientRole($minimum_role, $collection_id){
+		return $this->hasCollectionRole($collection_id, $minimum_role);
+	}
+	
+	/**
+	 * Fetches a list of all the collection ids in which the user has 'admin' role
+	 * @return string[] a list of the administered collection ids
+	 */
+	function getAdministeredCollections(){
+		$cids = array();
+		foreach($this->roles as $r){
+			if(($r->isGod() || $r->isAdmin()) && $r->collection_id != "" && $r->collection_id != "all"){
+				if(!in_array($r->collection_id, $cids)) $cids[] = $r->collection_id;
+			}
+		}
+		return $cids;
+	}
+
+	/**
+	 * Fetches a list of all the collection ids in which the user has a role
+	 * @return string[] a list of the collection ids that they user has a role in
+	 */
+	function getCollectionsWithRole(){
+		$cids = array();
+		foreach($this->roles as $r){
+			if($r->collection_id != "" && $r->collection_id != "all"){
+				if(!in_array($r->collection_id, $cids)) $cids[] = $r->collection_id;
+			}
+		}
+		return $cids;
+	}
+	
+	/**
+	 * Add a new role to the user
+	 * @param UserRole $r
+	 */
+	function addRole($r){
+		$this->roles[] = $r;
+	}
+
+	/**
+	 * Return a particular role object
+	 * @param string $rid the role id
+	 * @return UserRole|boolean
+	 */
+	function getRole($rid){
+		foreach($this->roles as $i => $role){
+			if($role->id == $rid){
+				return $role;
+			}
+		}
+		return $this->failure_result("User $this->id does not have a role with id $rid", 404);
+	}
+	
+	/**
+	 * Does the user have roles in more than one collection?
+	 * @param string $role the minimum role required
+	 * @return boolean true if the user has the minimum role or greater in more than one collection
+	 */
+	function rolesSpanCollections($role = false){
+		if($this->isGod()) return true;
+		if(count($this->roles) <= 1) return false;
+		$r1 = $this->roles[0];
+		$r1c = $r1->collection_id;
+		foreach($this->roles as $r){
+			if($r->collection_id != $r1c && (!$role or $role == $r->role)) return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * Which is the collection id of the user's primary role?
+	 * @return string the collection id
+	 */
+	function getRoleCollectionId(){
+		if(count($this->roles) < 1) return false;
+		$r1 = $this->roles[0];
+		return $r1->cid();
+	}
+	
+	/* Session Management Functions */
+
+	/**
+	 * Set the user's session directory and create it if it does not exist
+	 * @param string $dir the directory where sessions are to be stored
+	 * @return boolean true if the session exists
+	 */
+	function setSessionDirectory($dir){
+		$this->session_dump = $dir."/";
+		if (!file_exists($dir)) {
+			if(!mkdir($dir, 0777, true)){
+				return $this->failure_result("User directory does not exist and could not be created", 500);
+			}
+		}
+		return true;
+	}	
+	
+	/**
+	 * Creates a new session and optionally starts it
+	 * @param string $id session id
+	 * @param boolean $autostart if set to true, the session will start immediately
+	 * @return boolean true if the session was created ok
+	 */
+	function createSession($id, $autostart=true){
+		if(!isset($this->sessions[$id])){
+			$this->sessions[$id] = new DacuraSession($id, $autostart);			
+		}
+		else {
+			$this->sessions[$id]->registerEvent(array("action" => "abort"));
+			$this->dumpSession($id);
+			$this->sessions[$id] = new DacuraSession($id, $autostart);
+		}
+		return true;
+	}
+	
+	/**
+	 * Ends a session
+	 * @param string $id session id
+	 * @param string $action the action which is terminating the session (abort | end)
+	 * @return boolean true if session ended ok
+	 */
+	function endSession($id, $action = "end"){
+		if(isset($this->sessions[$id])){
+			$this->sessions[$id]->registerEvent(array("action" => $action));
+			$this->dumpSession($id);
+			unset($this->sessions[$id]);
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * Writes the session to file (normally because it is complete)
+	 * @param string $id session id
+	 * @return boolean true on success
+	 */
+	function dumpSession($id){
+		//make sure directory is there...
+		if(isset($this->sessions[$id])){
+			$record = json_encode($this->sessions[$id]->events);
+			file_put_contents($this->session_dump."$id.session", $record."\n", FILE_APPEND | LOCK_EX);				
+		}
+		return $this->failure_result("No session $id to pause", 404);		
+	}
+	
+	/**
+	 * Pauses a session
+	 * @param string $id session id
+	 * @return boolean true on success
+	 */
+	function pauseSession($id){
+		if(isset($this->sessions[$id])){
+			$this->sessions[$id]->pause();
+			return true;
+		}
+		return $this->failure_result("No session $id to pause", 404);
+	}
+
+	/**
+	 * Unpause the session - make it active
+	 * @param string $id session id
+	 * @return boolean true on success
+	 */
+	function unpauseSession($id){
+		if(isset($this->sessions[$id])){
+			$this->sessions[$id]->unpause();
+			return true;
+		}
+		return $this->failure_result("No session $id to unpause", 404);
+	}
+	
+	/**
+	 * Gets the details of the session 
+	 * @param string $id session id
+	 * @return array with [duration: secs, assigned: n, accepted: n, rejected: n] where n is the count of entities
+	 */
+	function getSessionDetails($id){
+		if(isset($this->sessions[$id])){
+			$s = $this->sessions[$id];
+			$res = array("duration" => gmdate("H:i:s", $s->activeDuration()),
+					"assigned" => $s->eventCount("assign"), 
+					"accepted" => $s->eventCount("accept"), 
+					"rejected"=> $s->eventCount("reject"));
+			return $res;
+		}
+		return $this->failure_result("session $id does not exist", 404);
+	}
+	
+	/**
+	 * Records a particular user action to the session
+	 * @param string $id session id
+	 * @param string $type the type of action 
+	 * @param boolean $dump if true, the session will be saved to file
+	 */
+	function recordAction($id, $type, $dump = false){
+		if(!isset($this->sessions[$id])){
+			$this->sessions[$id] = new DacuraSession($id);
+		}
+		$this->sessions[$id]->registerEvent(array("action" => $type));
+		if($dump){
+			$this->dumpSession($id);
+			unset($this->sessions[$id]);
+		}
+	}	
+	
+	/**
+	 * Register a particular event with a session
+	 * @param string $id session id
+	 * @param array $ev an event description array [action: myaction...]
+	 */
+	function setSessionEvent($id, $ev){
+		if(!isset($this->sessions[$id])){
+			$this->sessions[$id] = new DacuraSession($id);
+		}
+		$this->sessions[$id]->registerEvent($ev);
+	}
+	
+	/**
+	 * Does the user have any live sessions?
+	 * @param string $id session id
+	 * @return boolean
+	 */
+	function hasLiveSession($id){
+		return (isset($this->sessions[$id]) ? $this->sessions[$id]->hasLiveSession() : false); 
+	}
+	
+	/**
+	 * Terminates all a user's live sessions
+	 * @param string $action the action that cause the session termination
+	 */
+	function endLiveSessions($action){
+		foreach($this->sessions as $sid => $sess){
+			$this->endSession($sid, $action);
+			$this->dumpSession($sid);
+			unset($this->sessions[$sid]);	
+		}
+	}
+	/**
+	 * Unsets the entity that is currently assigned to the user's session
+	 * @param string $id session id
+	 */
+	function unsetCurrentEntity($id){
+		if(isset($this->sessions[$id])){
+			$this->sessions[$id]->current_entity = null;
+		}
+	}
+}
+
+
+
+
+

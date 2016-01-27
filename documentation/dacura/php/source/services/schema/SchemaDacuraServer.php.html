@@ -1,0 +1,622 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+include_once(&quot;phplib/services/ld/LdService.php&quot;);
+include_once(&quot;phplib/services/ld/LdDacuraServer.php&quot;);
+include_once(&quot;OntologyCreateRequest.php&quot;);
+include_once(&quot;OntologyUpdateRequest.php&quot;);
+include_once(&quot;Ontology.php&quot;);
+include_once(&quot;GraphUpdateRequest.php&quot;);
+include_once(&quot;GraphCreateRequest.php&quot;);
+include_once(&quot;Graph.php&quot;);
+
+
+class SchemaDacuraServer extends LdDacuraServer {
+	
+	var $schemadir;
+	var $schemaconfig = false;
+	var $graphman;
+	var $update_type = false;
+	
+	function __construct($s){
+		parent::__construct($s);
+		$this-&gt;schemadir = $this-&gt;getSysteSetting('path_to_collections').$this-&gt;cid().&quot;/schema/&quot;;
+		if($this-&gt;cid() != &quot;all&quot;){
+			$this-&gt;graphbase = $this-&gt;service-&gt;my_url();
+			$this-&gt;schema = $this-&gt;loadSchemaFromContext();				
+		}
+		$this-&gt;graphman = new GraphManager($this-&gt;settings);
+	}
+	
+	function createNewEntityObject($id, $type){
+		$this-&gt;update_type = $type;
+		if($type == &quot;ontology&quot;){
+			$obj = new OntologyCreateRequest($id);
+		}
+		elseif($type == &quot;graph&quot;){
+			$obj = new GraphCreateRequest($id);
+		}
+		else {
+			return $this-&gt;failure_result(&quot;Dacura Linked Data API does not support creation of $type&quot;, 400);
+		}
+		$obj-&gt;setNamespaces($this-&gt;nsres);
+		return $obj;
+	}
+	
+	function createNewEntityUpdateObject($oent, $type){
+		$this-&gt;update_type = $type;
+		if($type == &quot;ontology&quot;){
+			$obj = new OntologyUpdateRequest(false, $oent);
+		}
+		elseif($type == &quot;graph&quot;){
+			$obj = new GraphUpdateRequest(false, $oent);
+		}
+		else {
+			return $this-&gt;failure_result(&quot;Dacura API does not support creation of $type&quot;, 400);
+		}
+		return $obj;
+	}
+
+	/*
+	 * Called when we want to add the entity &quot;afresh&quot; to the graph
+	 * In the case of ontologies -&gt; we test it with the schema testing service, but only if it has a set of dqs_tests and imports specified.
+	 * In the case of graphs =&gt; we create the schema graph according to the rules in the dqs_tests... 
+	 */
+	function publishEntityToGraph($nent, $status, $is_test=false){
+		if(!$nent-&gt;dqsSpecified()){
+			$ar = new GraphAnalysisResults(&quot;Checking new $this-&gt;update_type with quality service&quot;);				
+			return $ar-&gt;accept(&quot;Tests must be specified before ontology can be checked with quality service&quot;);
+		}
+		$tests = $nent-&gt;getDQSTests(&quot;schema&quot;);
+		$imports = $nent-&gt;getImportedOntologies();
+		if($this-&gt;update_type == &quot;ontology&quot;){
+			$ar = new GraphAnalysisResults(&quot;Checking new ontology with quality service&quot;);				
+			$test_result = $this-&gt;validateOntologies($ids, $tests, $nent);
+			if($test_result === false){
+				return $ar-&gt;failure(500, &quot;System Error&quot;, &quot;Error in generating data quality service connection&quot;);
+			}
+			else {
+				$ar-&gt;addOneGraphTestResult($nent-&gt;id, array(), array(), $test_result);
+			}
+		}
+		else if($this-&gt;update_type == &quot;graph&quot;){
+			$ar = $this-&gt;publishFreshSchema($nent, $tests, $imports, $status, $is_test);				
+		}
+		else {
+			return $ar-&gt;failure(500, &quot;System Error&quot;, &quot;$this-&gt;update_type is not a valid type for entity creation&quot;);
+		}
+		return $ar;
+	}
+	
+	function publishFreshSchema($nent, $tests, $imports, $decision, $is_test){
+		$gu = new GraphAnalysisResults(&quot;Checking new graph configuration with quality service&quot;);
+		$aquads = $nent-&gt;getPropertyAsQuads($nent-&gt;id, $this-&gt;getGraphSchemaGraph($nent-&gt;id));
+		$dont_publish = ($is_test || $decision != &quot;accept&quot;);
+		foreach($imports as $ontid){
+			$ont = $this-&gt;loadEntity($ontid, &quot;ontology&quot;, &quot;all&quot;, &quot;all&quot;);
+			if($ont){
+				$quads = $ont-&gt;getPropertyAsQuads($ontid, $this-&gt;getGraphSchemaGraph($ontid));
+				if($quads){
+					$aquads = array_merge($aquads, $quads);
+				}
+			}
+			else {
+				return $gu-&gt;failure($this-&gt;errcode, &quot;Failed to load ontonlogy $ontid&quot;, $this-&gt;errmsg);
+			}				
+		}
+		$errs = $this-&gt;graphman-&gt;updateSchema($aquads, array(), $this-&gt;getInstanceGraph($nent-&gt;id), $this-&gt;getGraphSchemaGraph($nent-&gt;id), $dont_publish, $tests);
+		if($errs === false){
+			return $gu-&gt;failure($this-&gt;graphman-&gt;errcode, &quot;Quality Service Failure&quot;, &quot;Failed to load schema with quality service. &quot;.$this-&gt;graphman-&gt;errmsg);
+		}
+		else {
+			$gu-&gt;addOneGraphTestResult($nent-&gt;id, $aquads, array(), $errs);
+		}
+		return $gu;
+	}
+	
+	//should never be called for ontologies = they don't live in graphs
+	//may be called for graphs -&gt; when they change state we remove their ontologies from the schema...
+	function deleteEntityFromGraph($ent, $is_test = false){
+		$ar = new GraphAnalysisResults(&quot;Removing $this-&gt;update_type from Graph&quot;, $is_test);
+		if($this-&gt;update_type == &quot;ontology&quot;){
+			return $ar-&gt;failure(500, &quot;Ontology deleted from graph&quot;, &quot;$ent-&gt;id ontology was attempted to be deleted - this should not happen&quot;);
+		}
+		if(!$ent-&gt;dqsSpecified()){
+			$ar = new GraphAnalysisResults(&quot;Checking new $this-&gt;update_type with quality service&quot;);
+			return $ar-&gt;failure(&quot;Tests must be specified before graph can be unpublished&quot;);
+		}
+		$tests = $nent-&gt;getDQSTests(&quot;schema&quot;);
+		$imports = $nent-&gt;getImportedOntologies();
+		$aquads = $ent-&gt;getPropertyAsQuads($ent-&gt;id, $this-&gt;getGraphSchemaGraph($ent-&gt;id));
+		foreach($imports as $ontid){
+			$ont = $this-&gt;loadEntity($ontid, &quot;ontology&quot;, &quot;all&quot;, &quot;all&quot;);
+			if($ont){
+				$quads = $ont-&gt;getPropertyAsQuads($ontid, $this-&gt;getGraphSchemaGraph($ontid));
+				if($quads){
+					$aquads = array_merge($aquads, $quads);
+				}
+			}
+			else {
+				return $gu-&gt;failure($this-&gt;errcode, &quot;Failed to load ontonlogy $ontid&quot;, $this-&gt;errmsg);
+			}
+		}
+		$errs = $this-&gt;graphman-&gt;updateSchema(array(), $aquads, $this-&gt;getInstanceGraph($nent-&gt;id), $this-&gt;getGraphSchemaGraph($nent-&gt;id), $is_test, $tests);
+		if($errs === false){
+			return $gu-&gt;failure($this-&gt;graphman-&gt;errcode, &quot;Quality Service Failure&quot;, &quot;Failed to load schema with quality service. &quot;.$this-&gt;graphman-&gt;errmsg);
+		}
+		else {
+			$gu-&gt;addOneGraphTestResult($nent-&gt;id, $aquads, array(), $errs);
+		}
+		return $gu;
+	}
+	
+	function checkUpdate(&amp;$ar, &amp;$uent, $test_flag){
+		if(!$uent-&gt;changed-&gt;dqsSpecified()){
+			return $ar-&gt;accept(&quot;Tests must be specified before $this-&gt;update_type can be checked with quality service&quot;);
+		}
+		if($this-&gt;update_type == &quot;ontology&quot;){
+			$gu = new GraphAnalysisResults(&quot;Updating ontology&quot;, $is_test);
+			$tests = $uent-&gt;getDQSTests(&quot;schema&quot;);
+			$ids = $uent-&gt;changed-&gt;getImportedOntologies();		
+			$test_result = $this-&gt;validateOntologies($ids, $tests, $uent-&gt;changed);
+			if($test_result === false){
+				return $ar-&gt;failure(500, &quot;System Error&quot;, &quot;Error in generating data quality service connection&quot;);
+			}
+			else {
+				$gu-&gt;addOneGraphTestResult($uent-&gt;targetid, array(), array(), $test_result);
+			}
+			$ar-&gt;setReportGraphResult($gu, true);//for now don't prevent updates even with errors from graph tests		
+		}
+		else {
+			parent::checkUpdate($ar, $uent, $test_flag);
+		}
+	}
+	
+	function updateEntityInGraph($uent, $is_test){
+		$gu = new GraphAnalysisResults(&quot;Publishing Update to Graph $uent-&gt;targetid Schema&quot;);
+		$aquads = $uent-&gt;delta-&gt;getNamedGraphInsertQuads($uent-&gt;targetid, $this-&gt;getGraphSchemaGraph($uent-&gt;targetid));
+		$dquads = $uent-&gt;delta-&gt;getNamedGraphDeleteQuads($uent-&gt;targetid, $this-&gt;getGraphSchemaGraph($uent-&gt;targetid));
+		if($uent-&gt;importsChanged()){
+			$adds = $uent-&gt;importsAdded();
+			foreach($adds as $ontid){
+				$ont = $this-&gt;loadEntity($ontid, &quot;ontology&quot;, &quot;all&quot;, &quot;all&quot;);
+				if($ont){
+					$quads = $ont-&gt;getPropertyAsQuads($ontid, $this-&gt;getGraphSchemaGraph($uent-&gt;targetid));
+					if($quads){
+						$aquads = array_merge($aquads, $quads);
+					}
+				}
+				else {
+					return $gu-&gt;failure($this-&gt;errcode, &quot;Failed to load ontonlogy $ontid&quot;, $this-&gt;errmsg);
+				}
+			}
+			$dels = $uent-&gt;importsDeleted();
+			foreach($dels as $ontid){
+				$ont = $this-&gt;loadEntity($ontid, &quot;ontology&quot;, &quot;all&quot;, &quot;all&quot;);
+				if($ont){
+					$quads = $ont-&gt;getPropertyAsQuads($ontid, $this-&gt;getGraphSchemaGraph($uent-&gt;targetid));
+					if($quads){
+						$dquads = array_merge($dquads, $quads);
+					}
+				}
+				else {
+					return $gu-&gt;failure($this-&gt;errcode, &quot;Failed to load ontonlogy $ontid&quot;, $this-&gt;errmsg);
+				}
+			}
+		}
+		
+		$tests = $uent-&gt;getDQSTests();
+		$errs = $this-&gt;graphman-&gt;updateSchema($aquads, $dquads, $this-&gt;getInstanceGraph($uent-&gt;targetid), $this-&gt;getGraphSchemaGraph($uent-&gt;targetid), $is_test, $tests);
+		if($errs === false){
+			$gu-&gt;addOneGraphTestFail($uent-&gt;targetid, $aquads, $dquads, $this-&gt;graphman-&gt;errcode, $this-&gt;graphman-&gt;errmsg);
+		}
+		else {
+			$gu-&gt;addOneGraphTestResult($uent-&gt;targetid, $aquads, $dquads, $errs);
+		}
+		return $gu;
+	}
+	
+	function undoEntityUpdate($ent, $is_test = false){
+		$ar = new GraphAnalysisResults(&quot;Undoing Graph Update in Graph&quot;);
+		if($this-&gt;update_type == &quot;ontology&quot;){
+			return $ar-&gt;failure(500, &quot;System Error&quot;, &quot;Ontology is not saved in graph - no need for undo update&quot;);
+		}
+		$aquads = $uent-&gt;delta-&gt;getNamedGraphDeleteQuads($uent-&gt;targetid, $this-&gt;getInstanceGraph($uent-&gt;targetid));
+		$dquads = $uent-&gt;delta-&gt;getNamedGraphInsertQuads($uent-&gt;targetid, $this-&gt;getInstanceGraph($uent-&gt;targetid));
+		if($uent-&gt;importsChanged()){
+			$adds = $uent-&gt;importsDeleted();
+			foreach($adds as $ontid){
+				$ont = $this-&gt;loadEntity($ontid, &quot;ontology&quot;, &quot;all&quot;, &quot;all&quot;);
+				if($ont){
+					$quads = $ont-&gt;getPropertyAsQuads($ontid, $this-&gt;getGraphSchemaGraph($uent-&gt;targetid));
+					if($quads){
+						$aquads = array_merge($aquads, $quads);
+					}
+				}
+				else {
+					return $gu-&gt;failure($this-&gt;errcode, &quot;Failed to load ontonlogy $ontid&quot;, $this-&gt;errmsg);
+				}
+			}
+			$dels = $uent-&gt;importsAdded();
+			foreach($dels as $ontid){
+				$ont = $this-&gt;loadEntity($ontid, &quot;ontology&quot;, &quot;all&quot;, &quot;all&quot;);
+				if($ont){
+					$quads = $ont-&gt;getPropertyAsQuads($ontid, $this-&gt;getGraphSchemaGraph($uent-&gt;targetid));
+					if($quads){
+						$dquads = array_merge($dquads, $quads);
+					}
+				}
+				else {
+					return $gu-&gt;failure($this-&gt;errcode, &quot;Failed to load ontonlogy $ontid&quot;, $this-&gt;errmsg);
+				}
+			}
+		}
+		$tests = $uent-&gt;original-&gt;getDQSTests(&quot;schema&quot;);
+		$errs = $this-&gt;graphman-&gt;updateSchema($aquads, $dquads, $this-&gt;getInstanceGraph($uent-&gt;targetid), $this-&gt;getGraphSchemaGraph($uent-&gt;targetid), $is_test, $tests);
+		if($errs === false){
+			$gu-&gt;addOneGraphTestFail($uent-&gt;targetid, $aquads, $dquads, $this-&gt;graphman-&gt;errcode, $this-&gt;graphman-&gt;errmsg);
+		}
+		else {
+			$gu-&gt;addOneGraphTestResult($uent-&gt;targetid, $aquads, $dquads, $errs);
+		}
+		return $gu;
+	}
+	
+	function updatePublishedUpdate($nupd, $oupd, $is_test = false){
+		$ar = new GraphAnalysisResults(&quot;Updating published $update_type&quot;, $is_test);
+		if($this-&gt;update_type == &quot;ontology&quot;){
+			return $this-&gt;publishEntityToGraph($nupd-&gt;changed, &quot;accept&quot;, $is_test);
+		}
+		$quads = $cand-&gt;deltaAsNGQuads($oupd, $this-&gt;getGraphSchemaGraph($nupd-&gt;targetid));
+		//add and delete the imports...
+		$nadds = $nupd-&gt;importsAdded();
+		$ndels = $nupd-&gt;importsDeleted();
+		$oadds = $oupd-&gt;importsAdded();
+		$odels = $oupd-&gt;importsDeleted();
+		$dels = array();
+		$adds = array();
+		foreach($nadds as $nadd){
+			if(!in_array($nadd, $oadds)){
+				$adds[] = $nadd;
+			}
+		}
+		foreach($odels as $odel){
+			if(!in_array($odel, $ndels)){
+				$adds[] = $odel;
+			}
+		}
+		foreach($adds as $ontid){
+			$ont = $this-&gt;loadEntity($ontid, &quot;ontology&quot;, &quot;all&quot;, &quot;all&quot;);
+			if($ont){
+				$quads = $ont-&gt;getPropertyAsQuads($ontid, $this-&gt;getGraphSchemaGraph($nupd-&gt;targetid));
+				if($quads){
+					$aquads = array_merge($aquads, $quads);
+				}
+			}
+			else {
+				return $gu-&gt;failure($this-&gt;errcode, &quot;Failed to load ontonlogy $ontid&quot;, $this-&gt;errmsg);
+			}
+		}
+		foreach($oadds as $oadd){
+			if(!in_array($oadd, $nadds)){
+				$dels[] = $oadd;
+			}
+		}
+		foreach($ndels as $ndel){
+			if(!in_array($ndel, $odels)){
+				$dels[] = $ndel;
+			}
+		}
+		foreach($dels as $ontid){
+			$ont = $this-&gt;loadEntity($ontid, &quot;ontology&quot;, &quot;all&quot;, &quot;all&quot;);
+			if($ont){
+				$quads = $ont-&gt;getPropertyAsQuads($ontid, $this-&gt;getGraphSchemaGraph($nupd-&gt;targetid));
+				if($quads){
+					$dquads = array_merge($dquads, $quads);
+				}
+			}
+			else {
+				return $gu-&gt;failure($this-&gt;errcode, &quot;Failed to load ontonlogy $ontid&quot;, $this-&gt;errmsg);
+			}
+		}
+		$tests = $nupd-&gt;changed-&gt;getDQSTests(&quot;schema&quot;);
+		$errs = $this-&gt;graphman-&gt;updateSchema($aquads, $dquads, $this-&gt;getInstanceGraph($nupd-&gt;targetid), $this-&gt;getGraphSchemaGraph($nupd-&gt;targetid), $is_test, $tests);
+		if($errs === false){
+			$gu-&gt;addOneGraphTestFail($uent-&gt;targetid, $aquads, $dquads, $this-&gt;graphman-&gt;errcode, $this-&gt;graphman-&gt;errmsg);
+		}
+		else {
+			$gu-&gt;addOneGraphTestResult($uent-&gt;targetid, $aquads, $dquads, $errs);
+		}
+		return $gu;
+	}
+	
+	function updatedUpdate($cur, $umode, $testflag = false){
+		if($this-&gt;update_type == &quot;ontology&quot;){
+			return $this-&gt;publishEntityToGraph($cur-&gt;changed, &quot;accept&quot;, $testflag);
+		}
+		else {
+			return parent::updatedUpdate($cur,$umode, $testflag);
+		}
+	}
+	
+	/*
+	 * Now the schema specific calls
+	 */
+	function importOntology($format, $payload, $entid, $title = &quot;&quot;, $url = &quot;&quot;, $make_internal = false, $test_flag = false){
+		//check to see if entid is taken... if it is return a failure...
+		$ar = new UpdateAnalysisResults(&quot;importing ontology&quot;);
+		if($entid &amp;&amp; $this-&gt;dbman-&gt;hasEntity($entid, &quot;ontology&quot;, $this-&gt;cid())){
+			return $ar-&gt;failure(400, &quot;Ontology Already Exists&quot;, &quot;Dacura already has an ontology with id $entid&quot;);
+		}
+		else {
+			$entid = $this-&gt;generateNewEntityID(&quot;ontology&quot;, $entid);
+		}
+		if($format == &quot;url&quot;){
+			$ont = $this-&gt;downloadOntology($url, $entid);
+		}
+		else {
+			$ont = $this-&gt;createOntologyFromString($payload, $entid);
+		}
+		//		else {
+		//			$ont = $this-&gt;uploadOntology($payload, $entid);
+		//		}
+		if(!$ont){
+			return $ar-&gt;failure($this-&gt;errcode, &quot;Failed Import&quot;, $this-&gt;errmsg);
+		}
+		$ont-&gt;meta['title'] = $title;
+		$ont-&gt;meta['url'] = $url;
+		$create_obj = array(&quot;meta&quot; =&gt; $ont-&gt;meta, &quot;contents&quot; =&gt; $ont-&gt;ldprops);
+		$ar = $this-&gt;createEntity(&quot;ontology&quot;, $create_obj, $entid, array(), $test_flag);
+		return $ar;
+	}
+	
+	function downloadOntology($url, $entid){
+		$ontology = new Ontology($entid, $this-&gt;service-&gt;logger);
+		$ontology-&gt;nsres = $this-&gt;nsres;
+		if(!$ontology-&gt;import(&quot;url&quot;, $url)){
+			return $this-&gt;failure_result($ontology-&gt;errmsg, $ontology-&gt;errcode);
+		}
+		return $ontology;
+	}
+	
+	function uploadOntology($payload, $entid){
+		$fname = $this-&gt;schemadir.$entid.&quot;.ont&quot;;
+		$this-&gt;timeEvent(&quot;Start Upload&quot;, &quot;debug&quot;);
+		$xx = json_encode($payload);
+		if(!$xx){
+			return $this-&gt;failure_result(&quot;JSON error: &quot;.json_last_error() . &quot; &quot; . json_last_error_msg(), 400);
+		}
+		if(!file_put_contents($fname, $payload)){
+			return $this-&gt;failure_result(&quot;Failed to save to $fname&quot;, 500);
+		}
+		$this-&gt;timeEvent(&quot;Upload&quot;, &quot;debug&quot;);
+	
+		$ontology = new Ontology($entid, $this-&gt;service-&gt;logger);
+		$ontology-&gt;nsres = $this-&gt;nsres;
+		if(!$ontology-&gt;import(&quot;file&quot;, $fname, $entid)){
+			return $this-&gt;failure_result($ontology-&gt;errmsg, $ontology-&gt;errcode);
+		}
+		$xx = json_encode($ontology);
+		if(!$xx){
+			return $this-&gt;failure_result(&quot;JSON error 2: &quot;.json_last_error() . &quot; &quot; . json_last_error_msg(), 400);
+		}
+		return $ontology;
+	}
+	
+	function createOntologyFromString($string, $entid){
+		$string = utf8_encode($string);
+		$xx = json_encode($string);
+		if(!$xx){
+			return $this-&gt;failure_result(&quot;JSON error: &quot;.json_last_error() . &quot; &quot; . json_last_error_msg(), 400);
+		}
+		$ontology = new Ontology($entid, $this-&gt;service-&gt;logger);
+		$ontology-&gt;nsres = $this-&gt;nsres;
+		if(!$ontology-&gt;import(&quot;text&quot;, $string, $entid)){
+			return $this-&gt;failure_result($ontology-&gt;errmsg, $ontology-&gt;errcode);
+		}
+		return $ontology;
+	}
+	
+	function loadImportedOntologyList(){
+		$filter = array(&quot;type&quot; =&gt; &quot;ontology&quot;);
+		$onts = $this-&gt;getEntities($filter);
+		return $onts;
+	}
+	
+	function calculateOntologyDependencies($id){
+		//opr($this-&gt;nsres);
+		$ent = $this-&gt;loadEntity($id, &quot;ontology&quot;, $this-&gt;cid());
+		if(!$ent){
+			return false;
+		}
+		$deps = $ent-&gt;generateDependencies($this-&gt;nsres);
+		$incs = array($id, &quot;fix&quot;);
+		$deps['include_tree'] = array($id =&gt; $this-&gt;getOntologyIncludes($id, $incs));
+		$deps['includes'] = $incs;
+		return $deps;
+	}
+	
+	function getOntologyIncludes($id, &amp;$included){
+		$tree = array();
+		$ent = $this-&gt;loadEntity($id, &quot;ontology&quot;, $this-&gt;cid());
+		if(!$ent){
+			return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
+		}
+		$incs = $ent-&gt;getIncludedOntologies($this-&gt;nsres);
+		$onwards = array();
+		foreach($incs as $inc){
+			if(!in_array($inc, $included) &amp;&amp; $inc != $id &amp;&amp; !$this-&gt;nsres-&gt;isStructuralNamespace($inc)){
+				$onwards[] = $inc;
+				$included[] = $inc;
+			}
+		}
+		foreach($onwards as $onw){
+			$tree[$onw] = $this-&gt;getOntologyIncludes($onw, $included);
+		}
+		return $tree;
+	}
+	
+	function getEntityClasses($graphid = false, $adorn = false){
+		$entclasses = array();
+		if($graphid){
+			$graph = $this-&gt;schema-&gt;getGraph($graphid);
+			if($graph){
+				$this-&gt;schema-&gt;loadOntologies($this, &quot;accept&quot;, $graphid);
+				$classes = $this-&gt;graphman-&gt;getGraphEntityClasses($this-&gt;getGraphSchemaGraph($graphid));
+				if($classes !== false){
+					$entclasses[$graphid] = $classes;						
+				}
+				else {
+					return $this-&gt;failure_result(&quot;Graph ID $graphid &quot;.$this-&gt;graphman-&gt;errmsg, $this-&gt;graphman-&gt;errcode);
+				}
+			}
+		}
+		else {
+			$graphs = $this-&gt;schema-&gt;getGraphs(&quot;accept&quot;);
+			$this-&gt;schema-&gt;loadOntologies($this, &quot;accept&quot;);
+			foreach($graphs as $id =&gt; $graph){
+				$classes = $this-&gt;graphman-&gt;getGraphEntityClasses($this-&gt;getGraphSchemaGraph($id));				
+				if($classes !== false){
+					$entclasses[$id] = $classes;						
+				}
+				else {
+					return $this-&gt;failure_result(&quot;Graph ID $id &quot;.$this-&gt;graphman-&gt;errmsg, $this-&gt;graphman-&gt;errcode);
+				}
+			}			 		
+		}
+		if($adorn){
+			$res = $this-&gt;schema-&gt;adornGraphClasses($entclasses);
+			if(!$res){
+				return $this-&gt;failure_result($this-&gt;schema-&gt;errmsg, $this-&gt;schema-&gt;errcode);
+			}
+			return $res;
+		}
+		return $entclasses;
+	}
+	
+	//get class hierarchy...
+	//go through entire graphs ontology and pull out all subclass of relationships
+	
+	function getClassTemplate($graphid, $classname){
+		echo &quot;&lt;P&gt;Checking Graph $graphid class $classname&quot;;
+		$graph = $this-&gt;schema-&gt;getGraph($graphid);
+		if($graph){
+			$stub = $this-&gt;graphman-&gt;getClassStub($graphid, $classname);
+			if($stub){
+				return $stub;
+			}
+			return $this-&gt;failure_result($this-&gt;graphman-&gt;errmsg, $this-&gt;graphman-&gt;errcode);
+		}
+		return $this-&gt;failure_result(&quot;failed to load graph &quot;.$this-&gt;schema-&gt;errmsg, $this-&gt;schema-&gt;errcode);
+	}
+	
+	function getClassFrames($graphid = false, $save = false){
+		$frames = array();
+		$res = $this-&gt;getEntityClasses($graphid);
+		if($res){
+			foreach($res as $gid =&gt; $classes){
+				$frames[$gid] = array();
+				foreach($classes as $cls){
+					if(is_array($cls)){
+						opr($cls);
+					}
+					else {
+						$frame = $this-&gt;getClassTemplate($gid,$cls);
+						if($frame){
+							$frames[$gid][$cls] = $frame;
+						}
+						else {
+							echo &quot;&lt;P&gt;frame generation for $cls failed&quot;;
+							//return false;
+						}
+					}
+				}
+			}
+			if($save){
+				$config = $this-&gt;settings['schema']['framecache_config'];
+				foreach($frames as $gid =&gt; $clsarray){
+					$this-&gt;fileman-&gt;cache(&quot;schema&quot;, $gid.&quot;.frames&quot;, $clsarray, $config);						
+				}				
+			}
+			return $frames;
+		}
+		return false;
+	}
+	
+	
+	//extra ontology is for when we want to use a 'live' version of an ontology for checking rather than the stored one...
+	function validateOntologies($ids, $tests, $extra_ontology = false){
+		$temp_graph_id = genid(&quot;&quot;, false, false);
+		$aquads = array();
+		foreach($ids as $id){
+			$ont = $this-&gt;loadEntity($id, &quot;ontology&quot;, &quot;all&quot;, &quot;all&quot;);
+			if($ont){
+				$quads = $ont-&gt;getPropertyAsQuads($id, $temp_graph_id);
+				if($quads){
+					$aquads = array_merge($aquads, $quads);
+				}
+			}
+			else {
+				return false;
+			}
+		}
+		if($extra_ontology){
+			$quads = $extra_ontology-&gt;getPropertyAsQuads($extra_ontology-&gt;id, $temp_graph_id);
+			if($quads){
+				$aquads = array_merge($aquads, $quads);
+			}				
+		}
+		$x = $this-&gt;graphman-&gt;validateSchema($temp_graph_id, $aquads, $tests);
+		if($x === false){
+			return $this-&gt;failure_result($this-&gt;graphman-&gt;errmsg, $this-&gt;graphman-&gt;errcode);
+		}
+		elseif(is_array($x) &amp;&amp; count($x) == 0){
+			return true;
+		}
+		return $x;
+	}	
+	
+	
+}</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

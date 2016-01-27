@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: login/dacura.login.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: login/dacura.login.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file Javascript client code for login service
+ * @author Chekov
+ * @license GPL V2
+ */
+
+ /** 
+ * @namespace login
+ * @memberof dacura
+ * @summary dacura.login
+ * @description Dacura javascript login service module. provides client functions for accessing the dacura login api
+ */
+dacura.login = {}
+dacura.login.apiurl = dacura.system.apiURL();
+
+/**
+ * @function resetpassword
+ * @memberof dacura.login
+ * @summary dacura.login.resetpassword
+ * @description resets the user's password after they select a new one
+ * @param {Number} uid - the user id
+ * @param {DacuraPageConfig} - page configuration object with details of where to write messages
+ */
+dacura.login.resetpassword = function(uid, pconf){
+	dacura.system.clearResultMessage();
+	var pass = $('#dacura-login-password').val();
+	var cpass = $('#dacura-login-password-confirm').val();
+	if(cpass != pass){
+		dacura.system.showErrorResult("Please try again, making sure that you enter the same password in both boxes", "Error - passwords don't match", pconf.resultbox);	
+		return;
+	}
+	if(!this.isvalidp(pass)){
+		dacura.system.showErrorResult("passwords must be at least 6 characters long", "Error - selected password is invalid", pconf.resultbox);	
+		return;
+	}
+	var ajs = dacura.login.api.reset(uid, pass);
+	var self=this;
+	ajs.handleResult = function(msg, pconf){
+		dacura.system.showSuccessResult(msg, "Password Successfully Reset", pconf.resultbox);
+		$('.dc-dialog').hide();
+		$('#dacura-reset-password-button').hide();
+		$('#dacura-login-button').show();
+	};
+	var msgs = {"busy": "Reseting password", "fail": "Password update failed"};
+	dacura.system.invoke(ajs, msgs, pconf);
+};
+
+
+/**
+ * @function login
+ * @memberof dacura.login
+ * @summary called to log into system
+ * @param {DacuraPageConfig} [ltargets] - communication configuration for the API call
+ */
+dacura.login.login = function(surl, ltargets){
+	dacura.system.clearResultMessage();
+	var uname = $('#dacura-login-email').val();
+	var pass = $('#dacura-login-password').val();
+	if(!this.isvalidup(uname, pass)){
+		dacura.system.showErrorResult("Invalid data entered", "User input Error", ltargets.resultbox, false, ltargets.mopts);
+		return;
+	}
+	var ajs = dacura.login.api.login();
+	ajs.data['login-email'] = uname;
+	ajs.data['login-password'] = pass;
+	var msgs = {"busy": "Checking credentials", "fail": "Login attempt failed - please try again"};
+	ajs.always = function(){};
+	ajs.fail = function(jqXHR){
+		dacura.system.clearBusyMessage(ltargets.busybox);
+		dacura.system.showErrorResult(jqXHR.responseText, msgs.fail, ltargets.resultbox, false, ltargets.mopts);										
+	}
+	ajs.handleResult = function(url){
+		if(url != ""){
+			window.location.replace(url);
+		}
+		else {
+     		window.location.replace(surl);
+		}		
+	}
+	dacura.system.invoke(ajs, msgs, ltargets);
+};
+
+/**
+ * @function logout
+ * @memberof dacura.login
+ * @summary called to log out of the system
+ * @param {string} lurl- the url to load if logout is successful
+ * @param {DacuraPageConfig} [ltargets] - communication configuration for the API call
+ */
+dacura.login.logout = function(lurl, ltargets){
+	var ajs = dacura.login.api.logout();
+	var msgs = {"busy": "Signing out"};
+	ajs.always = function(){};//leave busy in place
+	ajs.done = function(data, textStatus, jqXHR) {
+   		window.location.replace(lurl);
+	};
+	ajs.fail = function (jqXHR, textStatus){
+		dacura.system.showErrorResult("Failed to log out", jqXHR.responseText );
+		dacura.system.clearBusyMessage();
+	};
+	dacura.system.invoke(ajs, msgs, ltargets);
+};
+
+
+/**
+ * @function register
+ * @memberof dacura.login
+ * @summary called to register new user
+ * @param {DacuraPageConfig} [ltargets] - communication configuration for the API call
+ */
+dacura.login.register = function(ltargets){
+	dacura.system.clearResultMessage();
+	var uname = $('#dacura-login-email').val();
+	var pass = $('#dacura-login-password').val();
+	var cpass = $('#dacura-login-password-confirm').val();
+	if(!this.isvalidup(uname, pass)){
+		return;
+	}
+	if(cpass != pass){
+		dacura.system.showErrorResult("Registration Error", "Passwords do not match", ltargets.resultbox, false, ltargets.mopts);	
+		return;
+	}
+	var ajs = dacura.login.api.register();
+	ajs.data['login-email'] = uname;
+	ajs.data['login-password'] = pass;
+	ajs.handleResult = function(obj, targets){
+		dacura.login.showSuccessPage("Registration successfully initiated", obj);		
+	};
+	var msgs = { "busy": "Registering new account...", "fail": "Registration failed"};
+	dacura.system.invoke(ajs, msgs, ltargets);
+};
+
+/**
+ * @function lost
+ * @memberof dacura.login
+ * @summary called to request new password
+ * @param {DacuraPageConfig} [ltargets] - communication configuration for the API call
+ */
+dacura.login.lost = function(ltargets){
+	dacura.system.clearResultMessage();
+	var uname = $('#dacura-login-email').val();
+	if(!this.isvalidu(uname)){
+		return;
+	}
+	var ajs = dacura.login.api.lost();
+	ajs.data['login-email'] = uname;
+	var msgs = { "busy": "Requesting password reset...", "fail": "Password reset request failed"};
+	ajs.handleResult = function(msg, targets){
+		dacura.login.showSuccessPage("Password Rest Process Initiated", msg);				
+	};
+	dacura.system.invoke(ajs, msgs, ltargets);
+};
+
+/**
+ * @function isvalidu
+ * @memberof dacura.login
+ * @summary very basic client side validation of email address 
+ * @description just checks that it is at least 3 characters long - all real validation happens at server side
+ * @param {string} u email address entered by user
+ * @return {Boolean} true if the address is valid
+ */
+dacura.login.isvalidu = function(u){
+	if(u.length &lt; 3){
+		return false;
+	}
+	return true;
+};
+
+/**
+ * @function isvalidp
+ * @memberof dacura.login
+ * @summary client side validation of password
+ * @description does nothing all password validation happens at server side
+ * @param {string} p password entered by user
+ * @return {Boolean} true if the password is valid
+ */
+dacura.login.isvalidp = function(p){
+	return true;
+};
+
+/**
+ * @function isvalidup
+ * @memberof dacura.login
+ * @summary client side validation of username and password
+ * @description just checks minimum email length, all validation happens server-side
+ * @param {string} p password entered by user
+ * @return {Boolean} true if the password is valid
+ */
+dacura.login.isvalidup = function(u, p){
+	return (this.isvalidu(u) &amp;&amp; this.isvalidp(p));
+};
+
+/**
+ * @function showSuccessPage
+ * @memberof dacura.login
+ * @summary shows the success page after successfully reseting password or registering
+ * @param {string} tit - the message title
+ * @param {string} msg - the message body
+ */
+dacura.login.showSuccessPage = function(tit, msg){
+	$('.dacura-widget').html("&lt;div class='dacura-widget-title'>" + tit + "&lt;/div>&lt;div class='dacura-widget-fullmessage'>" + msg + "&lt;/div>");	
+};
+
+
+/** 
+ * @namespace api
+ * @memberof dacura.login
+ * @summary dacura.login.api
+ * @description Dacura login core api - each one returns an object with url, type and data set, ready for ajaxing
+ */
+dacura.login.api = {};
+
+/**
+ * @function login
+ * @memberof dacura.login.api
+ * @summary POST to login
+ */
+dacura.login.api.login = function (){
+	xhr = {};
+	xhr.data ={};
+	xhr.url = dacura.login.apiurl;
+	xhr.type = "POST";
+	return xhr;
+}
+
+/**
+ * @function logout
+ * @memberof dacura.login.api
+ * @summary DELETE to login
+ */
+dacura.login.api.logout = function (){
+	xhr = {};
+	xhr.data ={};
+	xhr.url = dacura.login.apiurl;
+	xhr.type = "DELETE";
+	return xhr;
+}
+
+/**
+ * @function register
+ * @memberof dacura.login.api
+ * @summary POST to login/register
+ */
+dacura.login.api.register = function (){
+	xhr = {};
+	xhr.data ={};
+	xhr.url = dacura.login.apiurl + "/register";
+	xhr.type = "POST";
+	return xhr;
+}
+
+/**
+ * @function lost
+ * @memberof dacura.login.api
+ * @summary POST to login/lost
+ */
+dacura.login.api.lost = function (){
+	xhr = {};
+	xhr.data ={};
+	xhr.url = dacura.login.apiurl + "/lost";
+	xhr.type = "POST";
+	return xhr;
+}
+
+/**
+ * @function reset
+ * @memberof dacura.login.api
+ * @summary POST to login/reset
+ * @param {Number} id - user id
+ * @param {string} pass - new password
+ */
+dacura.login.api.reset = function (id, pass){
+	xhr = {};
+	xhr.data = { 
+		'userid': id, 
+		'login-password': pass
+	};
+	xhr.url = dacura.login.apiurl + "/reset";
+	xhr.type = "POST";
+	return xhr;
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="dacura.html">dacura</a></li><li><a href="dacura.login.html">login</a></li><li><a href="dacura.login.api.html">api</a></li><li><a href="dacura.system.html">system</a></li></ul><h3>Global</h3><ul><li><a href="global.html#durationConverter">durationConverter</a></li><li><a href="global.html#getMetaProperty">getMetaProperty</a></li><li><a href="global.html#isEmpty">isEmpty</a></li><li><a href="global.html#size">size</a></li><li><a href="global.html#timeConverter">timeConverter</a></li><li><a href="global.html#validateURL">validateURL</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Thu Dec 10 2015 21:26:13 GMT+0000 (GMT Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

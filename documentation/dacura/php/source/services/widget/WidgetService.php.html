@@ -1,0 +1,102 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/*
+ * This is an example service designed to showcase the various features provided to services by the dacura platform
+ */
+
+include_once(&quot;WidgetDacuraServer.php&quot;);
+require_once(&quot;Widget.php&quot;);
+require_once(&quot;WidgetCreateRequest.php&quot;);
+require_once(&quot;WidgetUpdateRequest.php&quot;);
+
+class WidgetService extends LdService {
+	
+	function init(){
+		parent::init();
+		$ldscript = $this-&gt;get_service_script_url(&quot;dacura.ld.js&quot;, &quot;ld&quot;);
+		$this-&gt;included_scripts[] = $ldscript;
+	}
+	
+	function getParamsForScreen($screen, &amp;$dacura_server){
+		$params = array(&quot;image&quot; =&gt; $this-&gt;url(&quot;image&quot;, &quot;buttons/widget.png&quot;));
+		if($screen == &quot;list&quot;){
+			$params['widget_datatable'] = $this-&gt;getDatatableSetting(&quot;widget&quot;);				
+			$params[&quot;title&quot;] = &quot;User Interface Widgets&quot;;
+			$params[&quot;subtitle&quot;] = &quot;Forms which allow people to view and update the data&quot;;
+			$params['status_options'] = $this-&gt;getCreateStatusOptions();
+		}
+		else {
+			if($this-&gt;args &amp;&amp; $this-&gt;screen == 'update'){
+				$id = &quot;update/&quot;.implode(&quot;/&quot;, $this-&gt;args);
+			}
+			elseif($this-&gt;args){
+				$id = $this-&gt;screen.&quot;/&quot;.implode(&quot;/&quot;, $this-&gt;args);
+			}
+			else {
+				$id = $this-&gt;screen;
+			}
+			$params['dt'] = true;
+			$params[&quot;id&quot;] = $id;
+			$params[&quot;title&quot;] = &quot;Entity Data&quot;;
+			$params[&quot;subtitle&quot;] = &quot;Entity View&quot;;
+			$params[&quot;breadcrumbs&quot;] = array(array(), array());
+			$params[&quot;description&quot;] = &quot;Navigate, view and update your managed entities&quot;;
+			if($this-&gt;screen == 'update'){
+				$params['status_options'] = $this-&gt;getUpdateStatusOptions();
+			}
+			else {
+				$params['status_options'] = $this-&gt;getEntityStatusOptions();
+			}
+			if(isset($_GET['mode'])) $params['mode'] = $_GET['mode'];
+			if(isset($_GET['version'])) $params['version'] = $_GET['version'];
+			if(isset($_GET['format'])) $params['format'] = $_GET['format'];
+			if(isset($_GET['display'])) $params['display'] = $_GET['display'];				
+		}
+		return $params;
+	}
+	
+		
+}</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,44 @@
+<?php
+/**
+ * Class representing a collection of data in the Dacura System
+ * 
+ * Collections are the basic unit of dacura administration. 
+ * Creation Date: 20/11/2014
+ * @author Chekov
+ * @license GPL V2
+ */
+
+class Collection extends DacuraObject {
+	/** @var string the human readable name of the collection */
+	var $name;
+	/** @var array an associative array containing the collections configuration variables */
+	var $config;
+	
+	/**
+	 * Create a collection object
+	 * @param string $i collection id (alphanumeric_-)
+	 * @param string $n collection name (human readable)
+	 * @param array $c configuration name-value array
+	 * @param string $s collection status
+	 */
+	function __construct($i, $n, $c, $s='pending'){
+		$this->id = $i;
+		$this->name = $n;
+		$this->config = $c;
+		$this->status = $s;
+	}
+	
+	/**
+	 * Fetch the value of a configuration variable
+	 * @param string $var the name of the configuration variable whose value is required
+	 * @return boolean|mixed the value of the configuration variable or false (with errcode set) if not existant
+	 */
+	function getConfig($var){
+		if(isset($this->config[$var])) {
+			return $this->config[$var];
+		}
+		return $this->failure_result("No variable $var found in $this->id collection configuration", 404);		
+	}
+}
+
+

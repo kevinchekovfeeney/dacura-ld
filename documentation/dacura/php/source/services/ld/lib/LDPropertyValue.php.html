@@ -1,0 +1,348 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+/*
+ * Class representing the value of a linked data property
+ * At the highest level, values are broken down into:
+ * 1. literal: v
+ * 	1.5 objectliteral (type: string, value: ...}
+ * 2. value list [v, v, ]
+ * 2.5 object literal list[{v}, {v}, ]
+ * 3. embedded object {}
+ * 4. object list [{}, {}]
+ * 5. embedded object list { id: {}, id: {} }
+ * This depends on strongly typed property ranges and (somewhat) on the allocation of ids to all nodes in the dataset.
+ *
+ * Created By: Chekov
+ * Creation Date: 13/03/2015
+ * Contributors:
+ * Modified:
+ * Licence: GPL v2
+ */
+
+class LDPropertyValue extends DacuraObject {
+	var $json_type;//empty, scalar, array, object
+	var $scalar_type;//BN (blank node id), CW (Closed World ID), OW (URL), L (Literal)
+	var $array_type;//literal, object
+	var $object_type;//literal, EO, EOL -&gt; embedded object, embedded object list
+	var $cwurl;//closed world url
+
+	function __construct($val, $cwurl = false){
+		$this-&gt;cwurl = $cwurl;
+		$this-&gt;load($val);
+	}
+
+	/*
+	 * Loads the value, parses it and returns its type information...
+	 */
+	function load($val){
+		if(!is_array($val)) {
+			$this-&gt;json_type = &quot;scalar&quot;;
+			$this-&gt;scalar_type = $this-&gt;getScalarType($val);
+		}
+		else {
+			if(count($val) == 0){
+				$this-&gt;json_type = &quot;empty&quot;;
+			}
+			elseif(isAssoc($val)){
+				$this-&gt;json_type = &quot;object&quot;;
+				$this-&gt;loadObjectDetails($val);
+			}
+			else {
+				$this-&gt;json_type = &quot;array&quot;;
+				$this-&gt;loadArrayDetails($val);
+			}
+		}
+	}
+	
+	/*
+	 * Loads and parses any embedded objects
+	 */
+	function loadObjectDetails($obj){
+		if($this-&gt;isObjectLiteral($obj)){
+			$this-&gt;object_type = &quot;literal&quot;;
+			return true;
+		}
+		//big requirement to be able to distinguish between closed world ids and BN ids and property names -
+		//they can't share the same url base
+		//this is needed to distinguish embedded object lists and embedded objects.
+		$p = 0;
+		$ids = array(&quot;BN&quot; =&gt; array(), &quot;CW&quot; =&gt; array(), &quot;DEL&quot; =&gt; array(), &quot;UPD&quot; =&gt; array());
+		foreach($obj as $id =&gt; $val){
+			//note: if it is embedded object list id can't point to [] -&gt; not allowed in JSON LD
+			if(isBlankNode($id)){
+				$ids[&quot;BN&quot;][] = $id;
+				if((!is_array($val) or count($val) == 0) &amp;&amp; $id != &quot;_:meta&quot; &amp;&amp; $id != &quot;_:candidate&quot;){
+					return $this-&gt;failure_result(&quot;Blank node $id has empty value - it must contain an embedded object&quot;, 400);
+				}
+			}
+			elseif(!$this-&gt;cwurl){
+				if(!is_array($val) or !isAssoc($val)){
+					$p++;
+				}
+				elseif(is_array($val) &amp;&amp; count($val) == 0){
+					$ids[&quot;DEL&quot;][] = $id;						
+				}
+				else {	
+					$ids[&quot;UPD&quot;][] = $id;
+				}
+			}
+			elseif($this-&gt;isCWLink($id)){
+				$ids[&quot;CW&quot;][] = $id;
+				if(!is_array($val) or count($val) == 0){
+					$ids[&quot;DEL&quot;][] = $id;
+				}
+				else {
+					$ids[&quot;UPD&quot;][] = $id;
+				}
+			}
+			else {
+				$p++;
+			}
+		}
+		if($this-&gt;cwurl &amp;&amp; ($p &gt; 0 &amp;&amp; (count($ids[&quot;BN&quot;]) &gt; 0 or count($ids[&quot;CW&quot;]) &gt; 0))){
+			return $this-&gt;failure_result(&quot;Illegal construct - internal ids cannot be mixed with external urls as node IDs&quot;, 400);
+		}
+		elseif($p &gt; 0){
+			$this-&gt;object_type = &quot;EO&quot;;
+		}
+		else {
+			$this-&gt;object_type = &quot;EOL&quot;;
+			$this-&gt;obj_id_types = $ids;
+		}
+		return true;
+	}
+	
+	function loadArrayDetails($arr){
+		$vtypes = array(&quot;scalar&quot; =&gt; 0, &quot;array&quot; =&gt; 0, &quot;object&quot; =&gt; 0, &quot;objectliteral&quot; =&gt; 0);//scalar, array, object
+		foreach($arr as $wun){
+			if(!is_array($wun)){
+				$vtypes[&quot;scalar&quot;]++;
+			}
+			elseif(isAssoc($wun)){
+				if($this-&gt;isObjectLiteral($wun)){
+					$vtypes['objectliteral']++;
+				}
+				else {
+					$vtypes['object']++;
+				}
+			}
+			else {
+				$vtypes['array']++;
+			}
+		}
+		if($vtypes[&quot;array&quot;] &gt; 0){
+			return $this-&gt;failure_result(&quot;Arrays cannot directly contain other arrays in Dacura LD&quot;, 400);
+		}
+		if(($vtypes[&quot;scalar&quot;] &gt; 0 or $vtypes['objectliteral'] &gt; 0) &amp;&amp; $vtypes[&quot;object&quot;] &gt; 0){
+			return $this-&gt;failure_result(&quot;Arrays cannot contain a mix of scalars and embedded objects in Dacura LD&quot;, 400);
+		}
+		if($vtypes['object'] &gt; 0){
+			$this-&gt;array_type = &quot;object&quot;;
+		}
+		elseif($vtypes['scalar'] &gt; 0){
+			$this-&gt;array_type = &quot;scalar&quot;;
+		}
+		elseif($vtypes['objectliteral'] &gt; 0){
+			$this-&gt;array_type = &quot;literal&quot;;
+		}
+		else {
+			return $this-&gt;failure_result(&quot;No valid types found in LD property array - strange&quot;, 500);
+		}
+		return true;
+	}
+	
+	function isObjectLiteral($obj){
+		$allowedproperties = array(&quot;datatype&quot;, &quot;type&quot;, &quot;value&quot;, &quot;data&quot;, &quot;lang&quot;);
+		if(!$obj or !is_array($obj) or count($obj) &lt; 1 or count($obj) &gt; 5){
+			return false;
+		} 
+		$keys = array_keys($obj);
+		foreach($keys as $key){
+			if(!in_array($key, $allowedproperties)){
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	/*
+	 * Is a scalar a literal or an id (open world, blank node, closed world)
+	 */
+	function getScalarType($val){
+		if(isBlankNode($val)){
+			return &quot;BN&quot;;
+		}
+		elseif($this-&gt;isCWLink($val)){
+			return &quot;CW&quot;;
+		}
+		elseif($this-&gt;isOWLink($val)){
+			return &quot;OW&quot;;
+		}
+		else {
+			return &quot;L&quot;;
+		}
+	}
+	
+	function isOWLink($val){
+		if(isURL($val) or isNamespacedURL($val)){
+			return !$this-&gt;isCWLink($val);
+		}
+		return false;
+	}
+	
+	function isCWLink($v){
+		if(!$this-&gt;cwurl) return false;
+		$id = substr($this-&gt;cwurl, strrpos($this-&gt;cwurl, '/') + 1);
+		return ((substr($v, 0, 6) == &quot;local:&quot;) || (substr($v, 0, strlen($id) + 1) == $id.&quot;:&quot;) || (substr($v, 0, strlen($this-&gt;cwurl)) == $this-&gt;cwurl));
+	}
+
+	function sameLDType($other){
+		return $this-&gt;ldtype() == $other-&gt;ldtype();
+	}
+
+	/*
+	 * Reporting on state
+	 */
+	function ldtype($compress_scalars = false){
+		if($this-&gt;isempty()) return &quot;empty&quot;;
+		if($compress_scalars){
+			if($this-&gt;scalar()) return &quot;scalar&quot;;
+		}
+		else {
+			if($this-&gt;literal()) return &quot;literal&quot;;
+			if($this-&gt;link()) return &quot;link&quot;;
+		}
+		if($this-&gt;objectliteral()) return &quot;objectliteral&quot;;
+		if($this-&gt;objectliterallist()) return &quot;objectliterallist&quot;;
+		if($this-&gt;valuelist()) return &quot;valuelist&quot;;
+		if($this-&gt;embedded()) return &quot;embedded&quot;;
+		if($this-&gt;objectlist()) return &quot;objectlist&quot;;
+		if($this-&gt;embeddedlist()) return &quot;embeddedobjectlist&quot;;
+	}
+	
+	function legal(){
+		return $this-&gt;errcode &lt;= 0;
+	}
+
+	function illegal(){
+		return $this-&gt;errcode &gt; 0;
+	}
+	
+	/*
+	 * Scalar types
+	 */
+	function scalar(){
+		return $this-&gt;json_type == &quot;scalar&quot;;
+	}
+
+	function cwlink(){
+		return $this-&gt;json_type == &quot;scalar&quot; &amp;&amp; $this-&gt;scalar_type == &quot;CW&quot;;
+	}
+
+	function owlink(){
+		return $this-&gt;json_type == &quot;scalar&quot; &amp;&amp; $this-&gt;scalar_type == &quot;OW&quot;;
+	}
+	
+	function link(){
+		return $this-&gt;json_type == &quot;scalar&quot; &amp;&amp; $this-&gt;scalar_type != &quot;L&quot;;
+	}
+
+	function literal(){
+		return $this-&gt;json_type == &quot;scalar&quot; &amp;&amp; $this-&gt;scalar_type == &quot;L&quot;;
+	}
+	
+	function bn(){
+		return $this-&gt;json_type == &quot;scalar&quot; &amp;&amp; $this-&gt;scalar_type == &quot;BN&quot;;
+	}
+		
+	//structured types
+	function objectliteral(){
+		return $this-&gt;json_type == &quot;object&quot; &amp;&amp; $this-&gt;object_type == &quot;literal&quot;;
+	}
+	
+	function objectliterallist(){
+		return $this-&gt;json_type == &quot;array&quot; &amp;&amp; $this-&gt;array_type == &quot;literal&quot;;
+	}
+	
+	function embedded(){
+		return $this-&gt;json_type == &quot;object&quot; &amp;&amp; $this-&gt;object_type == &quot;EO&quot;;
+	}
+	
+	//is it an embedded object list? { id =&gt; {p =&gt; v}, id2 =&gt; {p =&gt; v2} }
+	function embeddedlist(){
+		return $this-&gt;json_type == &quot;object&quot; &amp;&amp; $this-&gt;object_type == &quot;EOL&quot;;
+	}
+	
+	function isempty(){
+		return $this-&gt;json_type == &quot;empty&quot;;
+	}
+
+	function valuelist(){
+		return $this-&gt;json_type == &quot;array&quot; &amp;&amp; $this-&gt;array_type == &quot;scalar&quot;;
+	}
+
+	function objectlist(){
+		return $this-&gt;json_type == &quot;array&quot; &amp;&amp; $this-&gt;array_type == &quot;object&quot;;
+	}
+
+	
+	/*
+	 * retrieving information about embedded object lists: what ids are to be updated, what are to be deleted and what are to be created.
+	 */
+	
+	function getupdates(){
+		return $this-&gt;obj_id_types[&quot;UPD&quot;];
+	}
+
+	function getbnids(){
+		return $this-&gt;obj_id_types['BN'];
+	}
+
+	function getdelids(){
+		return $this-&gt;obj_id_types['DEL'];
+	}
+}</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

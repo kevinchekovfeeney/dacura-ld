@@ -1,0 +1,66 @@
+<?php
+require_once("DacuraFormElement.php");
+/**
+ * Class representing a user interface (html) form 
+ * 
+ * Forms can be read-only (view), read-write (update) or write-only (create)
+ * Creation Date: 15/11/2015
+ * @author Chekov
+ * @license GPL V2
+ */
+class DacuraForm extends DacuraObject {
+	/** @var array(DacuraFormElement) an array of form elements, each representing a line in the form */
+	var $elements = array();
+	/** @var array() a name-value array of settings for this form */
+	var $settings = array();
+	/** @var string the type of the form [update|view|create]*/
+	var $type; 
+	
+	/** 
+	 * @param string $id Dacura ID
+	 * @param string $type update | view | create - which type of form is this
+	 * @param array $settings the settings for the form
+	 */
+	function __construct($id, $type, $settings = array()){
+		$this->id = $id;
+		$this->type = $type;
+		$this->settings = $settings;
+	}
+	
+	/**
+	 * Adds an array of elements to the form
+	 * @param DacuraFormElement[] $rows form elements to be added to the form
+	 * @return boolean true if the elements were all legal, false otherwise
+	 */
+	function addElements(array $rows){
+		foreach($rows as $row){
+			$dfe = new DacuraFormElement();
+			if($dfe->load($row, $this->type)){
+				$this->elements[] = $dfe;
+			}
+			else {
+				return $this->failure_result($dfe->errmsg, $dfe->errcode);
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * Generage a html representation of the form
+	 * @param string $jdid the html id of the table that will be created to hold the form
+	 * @return string the html table of the form
+	 */
+	function html($jdid){
+		$html = "<table class='dacura-property-table dacura-".$this->type."-table' id='$jdid'>";
+		foreach($this->elements as $el){
+			$html .= $el->tr($this->type);			
+		}
+		$html .="</table>";		
+		return $html;
+	}
+}
+
+
+
+
+

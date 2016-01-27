@@ -1,0 +1,53 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+$settings = array(
+	&quot;tables&quot; =&gt; array(
+		&quot;widget&quot; =&gt; array(&quot;datatable_options&quot; =&gt; array(
+				&quot;jQueryUI&quot; =&gt; true, &quot;scrollX&quot; =&gt; false, &quot;pageLength&quot; =&gt; 20, &quot;lengthMenu&quot; =&gt; array(10, 20, 50, 75, 100),
+				&quot;info&quot; =&gt; true, &quot;order&quot; =&gt; array(8, &quot;desc&quot;),
+				&quot;aoColumns&quot; =&gt; array(null, null, null, array(&quot;bVisible&quot; =&gt; false), null, null, array(&quot;iDataSort&quot; =&gt; 7), array(&quot;bVisible&quot; =&gt; false), array(&quot;iDataSort&quot; =&gt; 9), array(&quot;bVisible&quot; =&gt; false))))
+	
+));</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

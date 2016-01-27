@@ -1,0 +1,297 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+require_once(&quot;phplib/libs/epiphany/src/Epi.php&quot;);
+
+getRoute()-&gt;get('/nga', 'getngas');
+getRoute()-&gt;get('/status', 'getstatus');
+getRoute()-&gt;get('/schema', 'schema');
+getRoute()-&gt;post('/status', 'updatestatus');
+getRoute()-&gt;post('/polities', 'getpolities');
+getRoute()-&gt;post('/dump', 'dump');
+getRoute()-&gt;get('/view/(.+)', 'viewReport');
+getRoute()-&gt;get('/grabscript', 'getGrabScript');
+getRoute()-&gt;get('/history', 'getHistory');
+getRoute()-&gt;post('/parse', 'parseVariable');
+getRoute()-&gt;post('/validate', 'parseVariables');
+getRoute()-&gt;post('/parsepage', 'parsePage');
+
+function updatestatus(){
+	global $dacura_server;
+	set_time_limit(0);
+	if($dacura_server-&gt;userHasRole(&quot;admin&quot;) &amp;&amp; $dacura_server-&gt;seshatInit(&quot;updatestatus&quot;)){
+		$id = isset($_POST['nga']) ? $_POST['nga'] : false;
+		$suppress_cache = true;
+		$dacura_server-&gt;updateStatus($id);
+	}
+	else {
+		$dacura_server-&gt;write_comet_error();
+	}
+}
+
+
+function getstatus(){
+	global $dacura_server;
+	if($dacura_server-&gt;userHasRole(&quot;admin&quot;) &amp;&amp; $dacura_server-&gt;seshatInit(&quot;getstatus&quot;)){
+		$id = isset($_GET['id']) ? $_GET['id'] : false;
+		$suppress_cache = isset($_GET['refresh']);
+		$status = $dacura_server-&gt;getStatus($id);
+		if($status){
+			$dacura_server-&gt;write_json_result($status, &quot;Returned status for $id&quot;);
+		}
+		else {
+			$dacura_server-&gt;write_http_error();		
+		}
+	}
+	else {
+		$dacura_server-&gt;write_http_error();
+	}
+}
+
+/*
+ * The api calls which access the seshat wiki data are accesss controlled
+ */
+function getngas(){
+	global $dacura_server;
+	if($dacura_server-&gt;userHasRole(&quot;admin&quot;) &amp;&amp; $dacura_server-&gt;seshatInit(&quot;getngas&quot;)){
+		$suppress_cache = isset($_GET['refresh']);
+		$x = $dacura_server-&gt;getNGAList($suppress_cache);
+		if($x){
+			$dacura_server-&gt;write_json_result($x, &quot;Returned list of &quot;.count($x).&quot; NGAs&quot;);
+		}
+		else {
+			$dacura_server-&gt;write_http_error();		
+		}
+	}
+	else {
+		$dacura_server-&gt;write_http_error();
+	}
+}
+
+
+/*
+ * Generate a RDFS schema from the Seshat Codebook page
+ */
+function schema(){
+	global $dacura_server;
+	if($dacura_server-&gt;userHasRole(&quot;admin&quot;) &amp;&amp; $dacura_server-&gt;seshatInit(&quot;schema&quot;)){
+		$x = $dacura_server-&gt;generateSchema();
+		if($x){
+			echo $x;
+		}
+		else {
+			$dacura_server-&gt;write_http_error();
+		}
+	}
+	else {
+		$dacura_server-&gt;write_http_error();
+	}
+	
+}
+
+function getpolities(){
+	global $dacura_server;
+	$nga = $_POST['nga'];
+	$suppress_cache = isset($_POST['refresh']);
+	if($dacura_server-&gt;userHasRole(&quot;admin&quot;) &amp;&amp; $dacura_server-&gt;seshatInit(&quot;getpolities&quot;, $nga)){
+		$x = $dacura_server-&gt;getPolities($nga, $suppress_cache);
+		if($x){
+			$dacura_server-&gt;write_json_result($x, &quot;Returned list of &quot;.count($x).&quot; Polities&quot;);
+		}
+	}
+	else {
+		$dacura_server-&gt;write_http_error();
+	}
+}
+
+/*
+ * returns a historical dump of the wiki as it was at a given date
+ */
+function getHistory(){
+	global $dacura_server;
+	set_time_limit(0);
+	$date_info = (isset($_POST['date_info'])) ? json_decode($_POST[&quot;date_info&quot;]) : false;
+	if($dacura_server-&gt;userHasRole(&quot;admin&quot;) &amp;&amp; $dacura_server-&gt;seshatInit(&quot;history&quot;)){
+		if($date_info){
+			$dacura_server-&gt;getHistory($date_info);
+			$dacura_server-&gt;logResult(200, &quot;Created Seshat for &quot;. count($data).&quot; NGAs&quot;);
+		}
+		else {
+			//$dacura_server-&gt;write_http_error(400, &quot;No date information included in call&quot;);
+			$dacura_server-&gt;write_json_result($dacura_server-&gt;getHistory(), &quot;Returned history of wiki&quot;);
+		}	
+	}
+	else {
+		$dacura_server-&gt;write_comet_error();
+	}
+	
+}
+
+
+function dump(){
+	global $dacura_server;
+	set_time_limit(0);
+	$data = json_decode($_POST[&quot;polities&quot;]);
+	if($dacura_server-&gt;userHasRole(&quot;admin&quot;) &amp;&amp; $dacura_server-&gt;seshatInit(&quot;dump&quot;)){
+		$dacura_server-&gt;getDump($data, false);
+		$dacura_server-&gt;logResult(200, &quot;Created Seshat for &quot;. count($data).&quot; NGAs&quot;);
+	}
+	else {
+		$dacura_server-&gt;write_comet_error();
+	}
+}
+
+function viewReport($rep){
+	global $dacura_server;
+	$dacura_server-&gt;init(&quot;viewreport&quot;, $rep);
+	set_time_limit(0);
+	if($dacura_server-&gt;userHasRole(&quot;admin&quot;)){
+		if($dacura_server-&gt;getReport($rep)){
+			$dacura_server-&gt;logResult(200, &quot;Returned Report $rep&quot;);
+		}
+		else {
+			$dacura_server-&gt;write_http_error();				
+		}
+	}
+	else {
+		$dacura_server-&gt;write_http_error();
+	}
+}
+
+function parsePage(){
+	global $dacura_server;
+	if($dacura_server-&gt;userHasRole(&quot;admin&quot;) &amp;&amp; $dacura_server-&gt;seshatInit(&quot;parsepage&quot;)){
+		$suppress_cache = isset($_POST['refresh']);
+		$url = $_POST[&quot;url&quot;];
+		$facts = $dacura_server-&gt;getFactsFromURL($url, $suppress_cache);
+		if($facts){
+			$rows = $dacura_server-&gt;factListToRows(&quot;NA&quot;, $dacura_server-&gt;formatNGAName($url), $facts, true);
+			$dacura_server-&gt;write_json_result($rows, &quot;Returned list of &quot;.count($facts).&quot; Facts&quot;);				
+		}
+		else {
+			$dacura_server-&gt;write_http_error();
+		}
+	}
+	else {
+		$dacura_server-&gt;write_http_error();
+	}
+}
+
+/*
+ * The api calls below are world accessible
+ */
+
+function getGrabScript(){
+	global $dacura_server, $service;
+	$dacura_server-&gt;init(&quot;grabscript&quot;);
+	ob_start();
+	if(isset($dacura_server-&gt;settings['scraper']['grabScriptFiles'])){}
+	foreach($dacura_server-&gt;settings['scraper']['grabScriptFiles'] as $f){
+		if(file_exists($f)){
+			include($f);
+		}
+		else {
+			ob_end_clean();	
+			return $dacura_server-&gt;write_http_error(500, &quot;File $f not found&quot;);
+		}
+	}
+	$f = $dacura_server-&gt;service-&gt;mydir.&quot;screens/grab.js&quot;;
+	if(file_exists($f)){
+		include_once($f);
+		$page = ob_get_contents();
+		ob_end_clean();	
+		echo $page;	
+		$dacura_server-&gt;service-&gt;logger-&gt;setResult(200, &quot;Served grab script to &quot;.$_SERVER['REMOTE_ADDR']);
+	}
+	else {
+		ob_end_clean();	
+		$dacura_server-&gt;write_http_error(500, &quot;grab javascript file $f not found&quot;);
+	}
+}
+
+/*
+ * Input: string in $_POST['data']
+ * { &quot;value&quot;: string, &quot;result_code&quot;: [&quot;empty&quot;|&quot;simple&quot;|&quot;complex&quot;|&quot;error&quot;], &quot;result_msg&quot;, &quot;datapoints&quot;: [{expanded content}]
+ */
+function parseVariable(){
+	global $dacura_server;
+	header(&quot;Access-Control-Allow-Origin: *&quot;);
+	$dacura_server-&gt;init(&quot;parseVariable&quot;);
+	if(isset($_POST[&quot;data&quot;]) &amp;&amp; $_POST[&quot;data&quot;]){
+		$var = $_POST[&quot;data&quot;];
+		$one_result = $dacura_server-&gt;parseVariableValue($var);
+		$dacura_server-&gt;write_json_result($one_result, &quot;Parsed value: $var: &quot;.$one_result[&quot;result_code&quot;]);				
+	}
+	else {
+		$dacura_server-&gt;write_http_result(400, &quot;No data included in post request for parsing&quot;, &quot;notice&quot;);
+	}
+}
+
+
+/*
+ * Input: json-encoded array of values in $_POST['data']
+ * [ &quot;{variable value string}&quot;, ....]
+ * Output: array of json objects:
+ * [
+ *
+ */
+function parseVariables(){
+	global $dacura_server;
+	header(&quot;Access-Control-Allow-Origin: *&quot;);
+	
+	$dacura_server-&gt;init(&quot;parseVariables&quot;);
+	if(isset($_POST[&quot;data&quot;]) &amp;&amp; $_POST[&quot;data&quot;] &amp;&amp; ($vars = json_decode($_POST['data'], true))){
+		$results = array();
+		foreach($vars as $var){
+			$results[] = $dacura_server-&gt;parseVariableValue($var);
+		}
+		$dacura_server-&gt;write_json_result($results, &quot;Parsed &quot;. count($results). &quot; variables&quot;);				
+	}
+	else {
+		$dacura_server-&gt;write_http_result(400, &quot;No parseable data found in post request&quot;, &quot;notice&quot;);
+	}	
+}
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>
