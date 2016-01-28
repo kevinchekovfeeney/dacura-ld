@@ -17,6 +17,8 @@ class DacuraResult extends DacuraObject {
 	var $errors = array();
 	/** @var array an array of warning that were encountered while calculating the result */
 	var $warnings = array();
+	
+	var $decision;
 
 	/**
 	 * Object constructor
