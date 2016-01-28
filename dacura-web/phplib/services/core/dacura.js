@@ -1166,7 +1166,13 @@ function nvArrayToOptions(nv, selected){
 	for(i in nv){
 	    var selhtml = "";
 	    if (typeof selected == "string" && i == selected) selhtml = " selected"; 
-		html += "<option value='" + i + "'" + selhtml + ">" + nv[i] + "</option>";
+	    opthtml = "<option value='" + i + "'" + selhtml + ">" + nv[i] + "</option>";
+	    if(i == ""){
+	    	html = opthtml + html;
+	    }
+	    else {
+	    	html += opthtml;
+	    }
 	}
 	return html;
 }

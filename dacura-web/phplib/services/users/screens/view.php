@@ -37,8 +37,8 @@
 		<?php if(count($params['role_options']) > 0){?>
 			<div id="user-role-add">
 				<table class='create-role-table'><tr>
-					<td class='option'><select id="rolecollectionip"></select></td>
-					<td class='option'><select id="rolenameip"></select></td>
+					<td class='option'><select class='dacura-select' id="rolecollectionip"></select></td>
+					<td class='option'><select class='dacura-select' id="rolenameip"></select></td>
 					<td><button id='rolecreate' class='dacura-create subscreen-button'>Add Role</button>
 				</tr></table>
 			</div>	
@@ -309,7 +309,6 @@ $(function() {
 			}
 		}
 	});
-	
 	var pconf = { resultbox: ".tool-info", busybox: "#user-home"};
 	dacura.users.fetchUser("<?=$params['userid']?>", drawUser, pconf);
 });

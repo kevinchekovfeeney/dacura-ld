@@ -346,23 +346,18 @@ dacura.users.roles = {
 		init: function (opts){
 			var num = 0;
 			if(typeof(opts) == "object") {
+				$('#rolecollectionip').append("<option selected value=''>Choose a collection</option>");
 				$.each(opts, function(i, obj) {
-					num++;
-					var selected = "";
-					if(num == 1){
-						selected = "selected ";
-					}
-					$('#rolecollectionip').append("<option " + selected  + "value='"+ i + "'>" + obj.title + "</option>");
-					if(selected == "selected "){
-						$('#rolenameip').html(nvArrayToOptions(obj.options));
-					}
+					$('#rolecollectionip').append("<option value='"+ i + "'>" + obj.title + "</option>");
 				});
-				$('#rolecollectionip').selectmenu();
-				$('#rolenameip').selectmenu();
+				var ropts = "<option value=''>Choose a role</option>";
+				$('#rolenameip').html(ropts).selectmenu( "refresh" );						
+				$('#rolecollectionip').selectmenu( "refresh" );						
 			}
 			$('#rolecollectionip').on('selectmenuchange', function() {
-				var l = this.value;
-				$('#rolenameip').html(nvArrayToOptions(opts[l].options)).selectmenu( "refresh" );		
+				var ropts = opts[this.value].options;
+				ropts[""] = "Choose a role";
+				$('#rolenameip').html(nvArrayToOptions(ropts)).selectmenu( "refresh" );		
 			});
 		},
 	

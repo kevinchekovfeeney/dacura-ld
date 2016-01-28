@@ -129,6 +129,7 @@ dacura.tool.initScreens = function(holder, forms){
 		$('#'+holder).tabs( {
 	        "activate": function(event, ui) {
 	            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
+	            $("select.dacura-select").selectmenu("refresh");
 	        }
 	    });
 	}
