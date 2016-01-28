@@ -96,7 +96,6 @@ $settings = array(
 		"config_form_fields" => array("hidden" => true, "type" => "complex", "label" => "This array!"),
 	),
 	"config_form_fields" => array(
-		"admin" =>	array("label" => "testing", "help" => "This is just a test of disabled help"),
 		"default_status" => array("label" => "Default status of new collections", "type" => "status"),
 		"service_form_fields" => array("hidden" => true, "type" => "complex", "label" => "config stuff"),
 		"create_collection_fields" => array("hidden" => true, "type" => "complex", "label" => "config stuff"),
