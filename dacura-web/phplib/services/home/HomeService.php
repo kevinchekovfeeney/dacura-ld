@@ -11,6 +11,8 @@ include_once("HomeDacuraServer.php");
  */
 class HomeService extends DacuraService {
 	
+	var $default_facets = array(array("facet" => "view", "role" => "admin"));
+		
 	/**
 	 * Figures out the url of the user's home page in dacura and redirects them to it
 	 * 

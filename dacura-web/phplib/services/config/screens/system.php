@@ -76,14 +76,12 @@ var service_subpage_conf;
 function updateServicesStatus(ids, status, cnt, pconf){
 	dacura.tool.clearResultMessages();
 	var obj = {"services": {}};
-	//jpr(serviceconf);
 	for(var i = 0; i < ids.length; i++){
 		obj.services[ids[i]] = lconfig.services[ids[i]]; 
 		obj.services[ids[i]].status = status;
 	}
 	var onwards = function(data, pconf){
 		showUpdateSuccess(data, pconf, cnt + " services updated to status " + status);
-		//refreshServiceList();
 	}
 	dacura.config.updateCollection(obj, onwards, pconf);
 }
@@ -96,7 +94,7 @@ function loadService(e, id){
 	dacura.tool.clearResultMessages();
 	if(!isEmpty(service_tables[id])){
 		$('#servicebox-contents').empty().append(service_tables[id].body);
-		//dacura.tool.form.init('service-'+id, {initselects: true, icon: "<?= $service->get_system_file_url("image", "help-icon.png")?>"});
+		dacura.tool.form.init('service-'+id, {initselects: true, icon: "<?= $service->get_system_file_url("image", "help-icon.png")?>"});
 		if(typeof lconfig.collection == "object" && typeof lconfig.collection.config == "object" && typeof lconfig.collection.config.servicesmeta == "object"){
 			dacura.tool.form.populate('service-'+id, lconfig.services[id], lconfig.collection.config.servicesmeta[id]);
 		}
@@ -108,7 +106,6 @@ function loadService(e, id){
 		dacura.system.showErrorResult("Found no service configuration information for " + id, "Error loading service", '#servicebox-contents');
 	}
 	service_subpage_conf = dacura.tool.loadSubscreen('servicelist', 'servicebox', "return to list of services", service_tables[id].header);
-	//$('#servicebox-contents select.dacura-select').selectmenu("refresh");	
 }
 
 function readServiceUpdate(screen){

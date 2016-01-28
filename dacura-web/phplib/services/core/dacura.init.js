@@ -42,5 +42,5 @@ dacura.system.resulticons = {
 
 $(document).ready(function() {
 	dacura.system.selects();
-	//dacura.system.selects("select.property-meta", {width: 100});
+	dacura.system.selects("select.property-meta", {width: 100});
 });

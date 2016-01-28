@@ -24,8 +24,13 @@ class DacuraForm extends DacuraObject {
 		$this->settings = $settings;
 	}
 	
-		
-	
+	/**
+	 * Adds a meta-data column to the form
+	 * @param string $name the name of the variable
+	 * @param string $val the value of the variable
+	 * @param string $type - the type (checkbox, select, text)
+	 * @param array $options options for the column
+	 */
 	function addMetaDataColumn($name, $val, $type, $options = array()){
 		foreach($this->elements as $i => $el){
 			$this->elements[$i]->addMeta($name, $val, $type, $options);
@@ -85,6 +90,11 @@ class DacuraForm extends DacuraObject {
 		return $html;
 	}
 	
+	/**
+	 * Generates a header for the form table
+	 * @param array $context an array of the ids of forms that we are embedded inside
+	 * @return string the html representation of the table header. 
+	 */
 	function table_header($context){
 		$html = "<thead>";
 		if(isset($this->settings['show-header']) && $this->settings['show-header'] > count($context)){
@@ -94,7 +104,3 @@ class DacuraForm extends DacuraObject {
 		return $html;
 	}
 }
-
-
-
-

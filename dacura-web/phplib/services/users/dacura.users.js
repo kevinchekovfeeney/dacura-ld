@@ -353,11 +353,12 @@ dacura.users.roles = {
 						selected = "selected ";
 					}
 					$('#rolecollectionip').append("<option " + selected  + "value='"+ i + "'>" + obj.title + "</option>");
-					$('#rolecollectionip').selectmenu( "refresh" );
 					if(selected == "selected "){
-						$('#rolenameip').html(nvArrayToOptions(obj.options)).selectmenu( "refresh" );
+						$('#rolenameip').html(nvArrayToOptions(obj.options));
 					}
 				});
+				$('#rolecollectionip').selectmenu();
+				$('#rolenameip').selectmenu();
 			}
 			$('#rolecollectionip').on('selectmenuchange', function() {
 				var l = this.value;

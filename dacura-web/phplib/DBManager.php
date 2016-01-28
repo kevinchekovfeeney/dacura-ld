@@ -66,11 +66,17 @@ class DBManager extends DacuraController {
 	/**
 	 * Does the collection with the given id exist?
 	 * @param string $id
+	 * @param boolean $supress_where suppress the normal where filters (for checking against deleted primary keys)
 	 * @return boolean
 	 */
-	function hasCollection($id){
+	function hasCollection($id, $supress_where = false){
 		try {
-			$stmt = $this->link->prepare("SELECT * FROM collections where collection_id=?".$this->where());
+			if($supress_where){
+				$stmt = $this->link->prepare("SELECT * FROM collections where collection_id=?");				
+			}
+			else {
+				$stmt = $this->link->prepare("SELECT * FROM collections where collection_id=?".$this->where());				
+			}
 			$stmt->execute(array($id));
 			if($stmt->rowCount()) {
 				return true;
@@ -198,7 +204,7 @@ class DBManager extends DacuraController {
 	 * @return boolean|Collection
 	 */
 	function createNewCollection($id, $title, $obj, $status = "accept"){
-		if($this->hasCollection($id)){
+		if($this->hasCollection($id, true)){
 			return $this->failure_result("Collection with ID $id already exists", 400);
 		}
 		try {

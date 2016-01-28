@@ -395,41 +395,52 @@ dacura.tool.form = {
 	 * @return {Object} obj - the object whose properties have been populated from the form inputs
 	 */
 	gather: function(key){
-		var vals = {};
 		var meta = {};
+		var vals = {};
+		function readMeta(obj, inputid){
+			if(typeof meta[inputid] != "object"){
+				meta[inputid] = {};
+			}
+			var metaid = obj.id.substring(5);
+			var metaname = metaid.substring(key.length + inputid.length + 2);
+			meta[inputid][metaname] = $('#' + metaid).val();
+		}
+		function readSubForm(tid, inputid){
+			var sform = dacura.tool.form.gather(tid);
+			if(typeof sform == "object" && typeof sform.values == "object"){
+				vals[inputid] = sform.values;
+				for(v in sform.meta){
+					if(typeof meta[v] == "undefined"){
+						meta[v] = sform.meta[v];
+					}
+				}
+			}
+			else {
+				vals[inputid] = sform;
+			}			
+		}
+		//section headers in forms with flat embedded styles need to be treated differently - their id and meta data rows are different
+		var secid = '#' + key + " > tbody > tr.dacura-property-section > th.dacura-property-meta";
+		$(secid).each(function(){
+			var inputid = this.id.substring(6+key.length, this.id.lastIndexOf("-"));
+			readMeta(this, inputid);
+		});	
 		var rjqid = '#' + key + " > tbody > tr.dacura-property";
 		$(rjqid).each(function(){
 			var inputid = this.id.substring(5+key.length);
 			nrqid = '#' + key + " > tbody > tr#"+this.id + " > td.dacura-property-meta";
-			alert(nrqid);
+			var f = false;
 			$(nrqid).each(function(){
-				alert("yus");
-				if(typeof meta[inputid] != "object"){
-					meta[inputid] = {};
-				}
-				var metaid = this.id.substring(5);
-				var metaname = metaid.substring(key.length + inputid.length + 2);
-				meta[inputid][metaname] = $('#' + metaid).val();
+				readMeta(this, inputid);
 			});
+
 			if($("table.dacura-property-table", this).length){
 				var tid = $("table.dacura-property-table", this).attr("id");
-				var sform = dacura.tool.form.gather(tid);
-				if(typeof sform == "object" && typeof sform.values == "object"){
-					vals[inputid] = sform.values;
-					for(v in sform.meta){
-						if(typeof meta[v] == "undefined"){
-							meta[v] = sform.meta[v];
-						}
-					}
-				}
-				else {
-					vals[inputid] = sform;
-				}
+				readSubForm(tid, inputid);
 			}
 			else {
 				vals[inputid] = dacura.tool.form.getVarValue(key, inputid);			
 			}
-			
 		});
 		if(isEmpty(meta)){
 			return vals;
@@ -488,12 +499,11 @@ dacura.tool.form = {
 	 */
 	populate: function(key, struct, meta, context){
 		context = (typeof context == "string") ? context : "";
-		metabase = key + "-";
+		var metabase = key + "-";
 		if(context.length > 0) {
 			metabase += context;
 		}
 		for(i in struct){
-			//if(i == "facet-list") jpr(meta);
 			if(typeof meta == "object" && typeof meta[i] == "object"){
 				for(f in meta[i]){
 					$('#' + metabase + i + "-" + f).val(meta[i][f]);	
@@ -507,14 +517,14 @@ dacura.tool.form = {
 				this.setValue(key, i, struct[i]);
 			}
 		}
-		//dacura.tool.form.refresh(key);
+		dacura.tool.form.refresh(key);
 		if(typeof meta == "object"){
-			//dacura.tool.form.refreshMeta(key);	
+			dacura.tool.form.refreshMeta(key);	
 		}
 	},
 	
 	refreshMeta: function(key){
-		//$('#'+key+" .property-meta").selectmenu("refresh");
+		$('#'+key+" .property-meta").selectmenu("refresh");
 	},
 	
 	refresh: function(key){
@@ -954,8 +964,7 @@ dacura.tool.table = {
 		$('#' + multi.container).html(html);
 		var ustate = "";
 		if(shtml.length){
-			//$('.dacura-select').selectmenu();
-			dacura.system.selects('#'+key + "-update-status" );//initialise dacura style selectmenus
+			$('#' + key + "-update-status").selectmenu({width: 120});//initialise dacura style selectmenus
 		}
 		$('#' + key + "-update-button").button({
 				icons: {"secondary": "ui-icon-arrowstop-1-e"}, 

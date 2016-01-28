@@ -37,8 +37,8 @@
 		<?php if(count($params['role_options']) > 0){?>
 			<div id="user-role-add">
 				<table class='create-role-table'><tr>
-					<td class='option'><select class='dacura-select' id="rolecollectionip"></select></td>
-					<td class='option'><select class='dacura-select' id="rolenameip"></select></td>
+					<td class='option'><select id="rolecollectionip"></select></td>
+					<td class='option'><select id="rolenameip"></select></td>
 					<td><button id='rolecreate' class='dacura-create subscreen-button'>Add Role</button>
 				</tr></table>
 			</div>	
@@ -110,7 +110,6 @@ var allroles = <?=isset($params['all_roles']) ? json_encode($params['all_roles']
 function sevents(obj){
 	session_events[obj.id] = obj;
 }
-
 
 /* simple callback functions for drawing data in table cells */
 function printEnd(obj){
@@ -204,14 +203,14 @@ function drawRoles(obj){
 	}
 	else {
 		var tconfig = {
-				"dtsettings": <?=$params['roles_table_settings']?>,
-				"screen": "user-roles",
-				"multiselect": {
-					label: "Delete Selected Roles",
-					container: "role-buttons",
-					update: deleteRoles 
-				},				
-			};					
+			"dtsettings": <?=$params['roles_table_settings']?>,
+			"screen": "user-roles",
+			"multiselect": {
+				label: "Delete Selected Roles",
+				container: "role-buttons",
+				update: deleteRoles 
+			},				
+		};					
 		dacura.users.roles.show("roles-table", obj.roles, tconfig, <?php echo ($params['showupdate'] == "true" ? "true": "false");?>);
 		roles_loaded = true;
 	}
@@ -279,8 +278,6 @@ function drawUser(obj, targets){
 	user_loaded = "<?=$params['userid']?>";
 }
 
-
-
 /* on page load initialise buttons, fetch user object from api and send results to drawUser*/
 $(function() {
 	dacura.tool.init({
@@ -312,6 +309,7 @@ $(function() {
 			}
 		}
 	});
+	
 	var pconf = { resultbox: ".tool-info", busybox: "#user-home"};
 	dacura.users.fetchUser("<?=$params['userid']?>", drawUser, pconf);
 });

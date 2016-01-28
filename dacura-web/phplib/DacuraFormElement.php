@@ -39,7 +39,7 @@ class DacuraFormElement extends DacuraObject {
 	var $options;
 	/** @var array associative name value array of state for complex fields */
 	var $complex; 
-	/** @var DacuraFormElement[] an array of sub-elements of this element (e.g. for elements of type "section" */
+	/** @var DacuraForm containing the sub-elements of this element (e.g. for elements of type "section" */
 	var $subfields;
 	/** @var array associative name value field of meta-data about this form field */
 	var $meta = array();
@@ -58,11 +58,11 @@ class DacuraFormElement extends DacuraObject {
 			return $this->failure_result("Dacura form elements must have a form id associated", 400);
 		}
 		$this->label = isset($row['label']) ? $row['label'] : false;
-		$this->hidden = isset($row['hidden']) ? $row['hidden'] : false;
+		$this->hidden = isset($row['hidden']) || isset($settings['hidden']) ? true : false;
 		$this->element_size = isset($row['length']) ? $row['length'] : 'regular';
 		$this->default_value = isset($row['default_value']) ? $row['default_value'] : "";
 		$this->value = isset($row['value'])  ? $row['value'] : $this->default_value;
-		$this->update_disabled = isset($row['disabled']) ? $row['disabled'] : false;
+		$this->update_disabled = isset($row['disabled']) || isset($settings['disabled'])? true : false;
 		$this->help = isset($row['help']) ? $row['help'] : "";
 		$this->options = isset($row['options']) ? $row['options'] : array();
 		$this->id = $row['id'];
@@ -94,6 +94,18 @@ class DacuraFormElement extends DacuraObject {
 		}
 		if($this->type == "section"){
 			$this->input_type = "section";
+			//subforms inherit disabled and hidden from parent forms
+			if($this->update_disabled){
+				if(isset($settings['disabled_view']) && $settings['disabled_view'] == "form"){
+					$settings['disabled'] = true;	
+				}
+				else {
+					$settings['display_type'] = "view";
+				}
+				if($this->hidden){
+					$settings['hidden'] = true;
+				}
+			}
 			$this->subfields = new DacuraForm($this->id, $settings);
 			if(isset($row['fields'])){
 				$this->subfields->addElements($row['fields']);
@@ -105,6 +117,13 @@ class DacuraFormElement extends DacuraObject {
 		return $this->hasValidSettings();
 	}
 	
+	/**
+	 * Adds a metadata column to the row
+	 * @param string $name the name of the metadata variable
+	 * @param unknown $val the value of the variable
+	 * @param unknown $type the variables type
+	 * @param unknown $options the options that are passed into to define the meta-variable
+	 */
 	function addMeta($name, $val, $type, $options){
 		$this->meta[$name] = array($val, $type, $options);
 		if($this->type == "section"){
@@ -190,11 +209,21 @@ class DacuraFormElement extends DacuraObject {
 		return $html;
 	}
 	
+	/**
+	 * Generates the html to represent a metadata variable
+	 * @param string $mk metadata key - the name of the variable
+	 * @param mixed $mv - metadata value - the value of the variable
+	 * @param string $prefix - the prefix that is applied to ids in this context
+	 * @param array $settings - a settings array that contains various settings for the variable
+	 * @return string - the html string
+	 */
 	function getMetaHTML($mk, $mv, $prefix = "", $settings = array()){
+		$html = "";
 		if(isset($settings['display_type']) && $settings['display_type'] == "update"){
+			$disabled = $this->update_disabled ? "disabled" : "";
 			$id = $this->id."-".$mk;
 			if($mv[1] == "choice"){
-				$html = "<select class='property-meta' id='$prefix"."$id'>";
+				$html = "<select class='property-meta' $disabled id='$prefix"."$id'>";
 				foreach($mv[2] as $v => $l){
 					if($mv[0] == $v){
 						$html .= "<option selected value='$v'>$l</option>";						
@@ -206,15 +235,15 @@ class DacuraFormElement extends DacuraObject {
 				$html .= "</select>";
 			}
 			elseif($mv[1] == "checkbox"){
-				$html = "<input class='property-meta' type='checkbox' id='$prefix"."$id' ";
+				$html = "<input class='property-meta' $disabled type='checkbox' id='$prefix"."$id' ";
 				if($mv[0]) $html .= " checked";
 				$html .= ">";	
 			}
 			else {
-				$html = "<input type='text' id='$prefix".$this->id."-".$mk."' value='".$mv[0]."'>";
+				$html = "<input type='text' id='$prefix".$this->id."-".$mk."' value='".$mv[0]."' $disabled>";
 			}
 		}
-		else {
+		elseif(isset($settings['show_meta'])) {
 			$html = $mv[0];
 		}
 		return $html;
@@ -275,7 +304,9 @@ class DacuraFormElement extends DacuraObject {
 			else {
 				if($v === true) $v = "true";
 				if($v === false) $v = "false";
-				$html = "<span id='$prefix"."$this->id' class='dacura-display-value'>$v</span>";
+				else $v = htmlspecialchars($v);
+				$html = "<span id='label_$prefix"."$this->id' class='dacura-display-value'>$v</span>
+					<input id='$prefix"."$this->id' type='hidden' value='$v'>";
 			}
 		}
 		return $html;
@@ -320,11 +351,9 @@ class DacuraFormElement extends DacuraObject {
 			$val = htmlspecialchars($this->value);
 			$html = "<input id=\"$prefix"."$this->id\" class=\"$cls\" $disabled type=\"password\" value=\"$val\"/>";
 		}
-		elseif( $this->input_type == "radio"){
-			$html = "";
-		}
 		elseif( $this->input_type == "checkbox"){
-			
+			$val = $val ? "checked" : "" ;
+			$html = "<input id=\"$prefix"."$this->id\" class=\"$cls\" $disabled type=\"checkbox\" $val/>";				
 		}		
 		elseif($this->input_type == "select"){
 			$html = "<select id=\"$prefix"."$this->id\" class=\"dacura-select $cls\" $disabled>";
@@ -361,6 +390,12 @@ class DacuraFormElement extends DacuraObject {
 		return $html;
 	}
 
+	/**
+	 * Draw a non-standard field - complex fields with special rules
+	 * @param array $settings - the optional settings for the form element
+	 * @param array $context - an array with the ids of the parent forms that this element is within
+	 * @return string - the html representation of the field
+	 */
 	function drawCustomInputField($settings, $context){
 		if($this->id == "facets"){
 			$html = $this->drawFacetsInput($settings, $context);	
@@ -381,6 +416,12 @@ class DacuraFormElement extends DacuraObject {
 		return $html;
 	}
 	
+	/**
+	 * The read only view of the display field
+	 * @param array $settings the options for the field
+	 * @param array $context - an array with the ids of the parent forms that this element is within
+	 * @return string - the html representation of the field
+	 */
 	function drawCustomDisplayField($settings, $context){
 		if(is_array($this->value)){
 			$html = "<div class='dacura-display-json raw-json'>" . json_encode($this->value, JSON_PRETTY_PRINT)."</div>";
@@ -391,7 +432,14 @@ class DacuraFormElement extends DacuraObject {
 		return $html;
 	}
 	
-	
+	/**
+	 * Generates the html to represent a facet on the facet editing control
+	 * @param string $rname the name of the role 
+	 * @param string $fname the name of the facet
+	 * @param boolean $active if true, the facet has links included
+	 * @param string $extra - extra text to be added to the end of the facet button (for added descriptions)
+	 * @return string - the html representation
+	 */	
 	function getFacetButtonHTML($rname, $fname, $active = false, $extra = ""){
 		$type = $active ? 'active' : "";
 		$divid = $rname."-".$fname."-".$this->id;
@@ -409,6 +457,12 @@ class DacuraFormElement extends DacuraObject {
 		return $html;
 	}
 	
+	/**
+	 * Draws the form input element to represent facets
+	 * @param array $settings the settings options for this element
+	 * @param array $context - an array with the ids of the parent forms that this element is within
+	 * @return string the html representation of the element
+	 */
 	function drawFacetsInput($settings, $context){
 		$prefix = $context[count($context)-1]."-";
 		if(count($this->value) == 0){
@@ -460,10 +514,6 @@ class DacuraFormElement extends DacuraObject {
 		else {
 			$html .= "<b>Could not do anything with $this->id no facets/roles</b>";
 		}
-		
-		
 	}
-	
-
 }
 
