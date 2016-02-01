@@ -291,7 +291,12 @@ class ConfigService extends DacuraService {
 	 * @see DacuraService::getScreenForCall()
 	 */
 	function getScreenForCall(){
-		return ($this->cid() == "all" ?  "system" : "collection");
+		if($this->screen == "view"){
+			return ($this->cid() == "all" ?  "system" : "collection");
+		}
+		else {
+			return "service";
+		}
 	}
 	
 	/**
@@ -325,6 +330,9 @@ class ConfigService extends DacuraService {
 			$params["title"] = "Dacura Platform Management";
 			$params["subtitle"] = "Manage the configuration of the Dacura Platform and all of its hosted collections";				
 			$params['subscreens'] = array("system-configuration", "view-services", "list-collections", "add-collection", "view-logs", "view-files");
+		}
+		elseif($screen == "service") {
+			
 		}
 		else {
 			$params["title"] = $col->id." settings";
