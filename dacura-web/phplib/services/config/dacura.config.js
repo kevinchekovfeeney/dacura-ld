@@ -13,6 +13,14 @@
 dacura.config = {};
 dacura.config.apiurl = dacura.system.apiURL();
 
+/**
+ * @function getServiceTableRows
+ * @memberof dacura.config
+ * @summary transforms the services object returned by the API into an array of rows, suitable for passing to dacura.table functions
+ * @param {Object} services a- n array, indexed by service ids of service configurations
+ * @param {Object} collection - jsonified Collection object
+ * @returns {Array} - an array of rows: {id, status, selector}
+ */
 dacura.config.getServiceTableRows = function(services, collection){
 	var rows = [];
 	for(s in services){
@@ -24,7 +32,7 @@ dacura.config.getServiceTableRows = function(services, collection){
 				continue;
 			}
 			else if(typeof services[s].status_locked != "undefined" && services[s].status_locked == true){
-				row.selector = "locked in server config";
+				row.selector = "<span class='locked'>locked</span>";
 			}
 			else if(stat == "reject"){
 				row.selector = "<button class='update-service' id='" + s + "-enable'>enable</button>";
@@ -38,6 +46,18 @@ dacura.config.getServiceTableRows = function(services, collection){
 	return rows;
 }
 
+/**
+ * @function getFacetButtonHTML
+ * @memberof dacura.config
+ * @summary Generates the button to represent facets on the service configuration page
+ * @param {String} id - the id of the button
+ * @param {String} role - the role 
+ * @param {String} rtitle - the title of the role
+ * @param {String} facet - the facet
+ * @param {String} facettitle  - the title of the facet
+ * @param {boolean} inactive - true if the button is to be inactive
+ * @returns {String} - html representation of button
+ */
 dacura.config.getFacetButtonHTML = function(id, role, rtitle, facet, facettitle, inactive){
 	html = "<div class='dacura-facet-button active' id='" + id + "'>";
 	html += "<span class='dacura-role " + role + "' title='" + rtitle + "'></span>";
@@ -67,13 +87,31 @@ dacura.config.getCollections = function(onwards, pconf){
 	dacura.system.invoke(ajs, msgs, pconf);
 };
 
-dacura.config.fetchCollection = function(id, onwards, targets, part){
+/**
+ * @function fetchCollection
+ * @memberof dacura.users
+ * @summary retrieve a collection settings
+ * @param {string} id - the id of the collection in question
+ * @param {function} onwards - the success callback function
+ * @param {DacuraPageConfig} pconf - page configuration object 
+ * @param {string} part - can be set to specify only a part of the collection config is required (settings, services...)
+ */
+dacura.config.fetchCollection = function(id, onwards, pconf, part){
 	var ajs = dacura.config.api.getCollection(id, part);
 	var msgs = {"busy": "Retrieving collection " + id + " configuration from server", "fail": "Failed to retrive configuration of collection "+ id};
 	ajs.handleResult = onwards;
-	dacura.system.invoke(ajs, msgs, targets);
+	dacura.system.invoke(ajs, msgs, pconf);
 }
 
+/**
+ * @function updateCollection
+ * @memberof dacura.users
+ * @summary retrieve a collection settings
+ * @param {string} id - the id of the collection in question
+ * @param {function} onwards - the success callback function
+ * @param {DacuraPageConfig} pconf - page configuration object 
+ * @param {string} part - can be set to specify only a part of the collection config is required (settings, services...)
+ */
 dacura.config.updateCollection = function(data, onwards, targets, part){
 	var ajs = dacura.config.api.updateCollection(data.id, data, part);
 	var msgs = {"busy": "Updating collection settings", "fail": "Failed to update collection " + data.id};

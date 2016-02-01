@@ -12,7 +12,7 @@ class LoginService extends DacuraService {
 	/** @var string login @see DacuraService::default_screen */
 	var $default_screen = "login";
 	/** @var string[] @see DacuraService::public_screens */
-	var $default_facets = array(array("facet" => "login", "role" => "public"));
+	var $default_facets = array(array("facet" => "login", "role" => "public"), array("facet" => "logout", "role" => "dacurauser"));
 	/**
 	 * Loads the stylesheet
 	 * @see DacuraService::init()

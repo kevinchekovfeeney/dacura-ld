@@ -10,8 +10,6 @@ include_once("ConfigDacuraServer.php");
  */
 
 class ConfigService extends DacuraService {
-	/** @var array(roles) two pages, system (system wide configuration - platform admins), collection (collection admins) */
-	//var $protected_screens = array("view" => array("admin"));
 	/** @var string the view page is the default screen - the only screen of the service (albeit divided into system / collection) */
 	var $default_screen = "view";
 	
@@ -46,7 +44,7 @@ class ConfigService extends DacuraService {
 	 */
 	function getServiceConfigPageHeaderHTML($sid, $configs){
 		$html = "<span class='service-icon'><img class='serivce-config-img' src='";
-		$html .= $this->get_system_file_url("image", "services/".$sid.".png")."'>";
+		$html .= $this->furl("images", "services/".$sid.".png")."'>";
 		$html .= "</span><span class='service-title'>";
 		if(isset($configs['service-title'])){
 			$html .= $configs['service-title']. " configuration";
@@ -91,7 +89,6 @@ class ConfigService extends DacuraService {
 			);
 		}
 		else {
-			//need to check facets
 			$settings = array("meta" => array(), "display_type" => "view", "embedstyle" => "flat", 
 				"show-header" => 2, "header-html" => $col->name ." collection Settings");
 			if($srvr->userHasFacet("manage")){
@@ -156,24 +153,18 @@ class ConfigService extends DacuraService {
 		else {
 			$basic_fields = array("id" => array("id" => "id", "length" => "short", "type" => "text", "value" => $dacura_server->cid(), "disabled" => true, "label" => "id", "help" => "The id of the collection - used in urls"));
 			$basic_fields = array_merge($basic_fields, $this->sform("update_collection_fields"));
-			/*$defs = $col->getDefaultSettings($dacura_server);
-			foreach($defs as $k => $v){
-				if(isset($basic_fields[$k]) && !isset($basic_fields[$k]['value'])){
-					$basic_fields[$k]['value'] = $defs[$k];
-				}
-			}*/
 			if(!$u or !$u->isPlatformAdmin()){
 				$basic_fields['status']['disabled'] = true;
 			}
-			if($dacura_server->userHasFacet("admin") || $dacura_server->userHasFacet("inspect")){
-				$sysform = $this->sform("sysconfig_form_fields");
-				foreach($sysform as $sid => $s){
-					if(!isset($basic_fields[$sid])){
-						$basic_fields[$sid] = $s;
-					}						
+			$sysfields = $dacura_server->getSysconfigFields($this->sform("sysconfig_form_fields"));
+			foreach($sysfields as $i => $sysfield){
+				if(isset($basic_fields[$sysfield['id']])){
+					$basic_fields[$sysfield['id']]['value'] = $sysfield['value'];
+					unset($sysfields[$i]);				
 				}
-				//opr($basic_fields);
-				$params['sysconfig_fields'] = $dacura_server->getSysconfigFields($basic_fields);
+			}
+			if($dacura_server->userHasFacet("admin") || $dacura_server->userHasFacet("inspect")){
+				$params['sysconfig_fields'] = array_merge(array_values($basic_fields), $sysfields);
 				if($u && $u->isPlatformAdmin()){
 					$params['candelete'] = true;
 				}
@@ -325,7 +316,7 @@ class ConfigService extends DacuraService {
 		}
 		$params['messages'] = $this->loadSubscreenMessages($params, $screen, $ss);
 		$params['subscreens'] = $ss;
-		$params['image'] = $this->furl("image", "services/config.png");
+		$params['image'] = $this->furl("images", "services/config.png");
 		$params['dt'] = true;
 		$params["breadcrumbs"] = array(array(), array());
 		

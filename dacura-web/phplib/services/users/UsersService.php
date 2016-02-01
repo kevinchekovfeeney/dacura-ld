@@ -40,7 +40,7 @@ class UsersService extends DacuraService {
 			$this->args['userid'] = "";
 		}
 	}
-	
+		
 	/**
 	 * We override the render screen function to swap in the view page for the profile page
 	 * @param string screen the name of the screen to render
@@ -54,6 +54,34 @@ class UsersService extends DacuraService {
 	}
 	
 	/**
+	 * Just a shortcut function to fill in some standard data for some form fields
+	 * @param string $formid the id of the html form being prepared
+	 * @param DacuraServer $dacura_server - the currently active server object. 
+	 */
+	function prepareFormFields($formid, DacuraServer $dacura_server){
+		$fields = $this->sform($formid);
+		if(isset($fields['password'])){
+			$fields['password']['help'] .= " " .  $this->smsg("password_rule").".";
+		}
+		if(isset($fields['role'])){
+			$fields['role']["options"] = $dacura_server->userman->getAvailableRoles($this->cid());						
+		}
+		return $fields;
+	}
+	
+	/**
+	 * Just a shortcut function to fill in the standard fields for a user
+	 * @param DacuraUser $ub the user being viewed / updated
+	 * @param array $ff an array of fields that are to be filled in
+	 */
+	function fillInFormFields(DacuraUser $ub, &$ff){
+		if(isset($ff['id'])) $ff['id']['value'] = $ub->id;
+		if(isset($ff['email'])) $ff['email']['value'] = $ub->email;
+		if(isset($ff['name'])) $ff['name']['value'] = $ub->handle;
+		if(isset($ff['status'])) $ff['status']['value'] = $ub->status;
+	}
+	
+	/**
 	 * Populates the parameters for the html screen subtitutions, etc
 	 * (non-PHPdoc)
 	 * @see DacuraService::getParamsForScreen()
@@ -63,6 +91,7 @@ class UsersService extends DacuraService {
 	 */
 	function getParamsForScreen($screen, UsersDacuraServer &$dacura_server){
 		$params = array("contexts" => $dacura_server->getUserAvailableContexts("admin", true));
+		$prule = $this->smsg("password_rule");
 		$u = $dacura_server->getUser();
 		$col = $dacura_server->getCollection();		
 		if($screen == "profile"){
@@ -73,7 +102,7 @@ class UsersService extends DacuraService {
 		}
 		$params['all_roles'] = UserRole::$dacura_roles;
 		$params["dt"] = true;
-		$params['image'] = $this->furl("image", "buttons/users.png");
+		$params['image'] = $this->furl("images", "services/users.png");
 		$params['collectionbreadcrumb'] = "users";
 		if($screen == 'profile'){
 			$params["title"] = "User Profile";
@@ -89,27 +118,23 @@ class UsersService extends DacuraService {
 				$params["subtitle"] = "Manage the users and roles of ".$col->name." collection";				
 			}				
 			if($u && $u->rolesSpanCollections()){
-				$params['topbreadcrumb'] = "All Users";
-				$params["breadcrumbs"] = array(array(), array());
+				$params["breadcrumbs"] = true;
 			}
 			elseif($screen == "view"){
-				$params["breadcrumbs"] = array(array(), array());				
+				$params["breadcrumbs"] = true;				
 			}			
 		}
 		if($screen == "list"){		
-			$roles = $dacura_server->userman->getAvailableRoles($dacura_server->cid());
 			$params['selection_options'] = json_encode(DacuraObject::$valid_statuses);
 			$params['subscreens'] = array("list-users");
-			if($dacura_server->userHasFacet("admin")){
+			if($dacura_server->userHasFacet("admin") && $u){
 				$params['admin_table_settings'] = ($this->cid() == "all") ? $this->getDatatableSetting("users"): $this->getDatatableSetting("cusers");
 				$params['subscreens'][] = "add-user";
 				$params['admin'] = true;
 				if($dacura_server->cid() != "all") {
-					$cform = $this->sform("ccu");
-					$cform['role']["options"] = $roles;
+					$cform = $this->prepareFormFields("ccu", $dacura_server);
 					$params['subscreens'][] = "invite-users";
-					$iform = $this->sform("icu");
-					$iform['role']["options"] = $roles;					
+					$iform = $this->prepareFormFields("icu", $dacura_server);
 					$params["invite_intro_msg"] = $this->smsg("invite_intro");
 					$params['invite_email_template'] = $this->smsg("invite_email");
 					$iform['message']['value'] = $params['invite_email_template'];					
@@ -117,7 +142,7 @@ class UsersService extends DacuraService {
 					$params['add_intro_msg'] = $this->smsg("collection_add");
 				}
 				else {
-					$cform = $this->sform("csu");						
+					$cform = $this->prepareFormFields("csu", $dacura_server);						
 					$params['add_intro_msg'] = $this->smsg("system_add");						
 				}
 				$params['create_user_fields'] = array_values($cform);				
@@ -128,6 +153,7 @@ class UsersService extends DacuraService {
 			}
 		}
 		elseif($screen == 'profile') {
+			$params['profile'] = true;
 			$params['subscreens'] = array("user-password", "user-details");				
 			$params['update_details_fields'] = array_values($this->sform('upu'));
 			$params["details_intro_msg"] = $this->smsg("profile_intro");
@@ -135,22 +161,27 @@ class UsersService extends DacuraService {
 			$params['showupdate'] = true;
 			$params['update_button_text'] = "Save Updated Profile";
 			$params['update_form_type'] = "update";
-			$params['update_password_fields'] = array_values($this->sform('uxp'));
-			$params["password_intro_msg"] = $this->smsg("password_intro");		
+			$params['update_password_fields'] = array_values($this->prepareFormFields("upp", $dacura_server));
+			$params["password_intro_msg"] = $this->smsg("profile_password_intro");		
 		}
 		else {//view screen
 			$ub = $dacura_server->getUser($params["userid"]);
+			$params['subscreens'] = array();
 			if(!$ub){return $params;}
-			$params['subscreens'] = array("user-details");
+			elseif($u && $u->id == $ub->id){
+				$params['self_update'] = true;
+			}
+			$params[] = "user-details";
 			if($dacura_server->userHasFacet("inspect")){
 				$params['roles_table_settings'] = $this->getDatatableSetting("roles");
-				$params['history_table_settings'] = $this->getDatatableSetting("history");					
 				$params['subscreens'][] = "user-history";
 				if($this->cid() == 'all'){
+					$params['history_table_settings'] = $this->getDatatableSetting("system_history");					
 					$params['subscreens'][] = "user-roles";
 					$params["roles_intro_msg"] = $this->smsg("roles_intro");
 				}
 				else {
+					$params['history_table_settings'] = $this->getDatatableSetting("collection_history");					
 					$params['subscreens'][] = "collection-roles";
 					$params["roles_intro_msg"] = $this->smsg("roles_intro");
 				}				
@@ -160,10 +191,10 @@ class UsersService extends DacuraService {
 				$params["details_intro_msg"] = $this->smsg("update_details_intro");
 				$params["showupdate"] = true;
 				$params['update_form_type'] = "update";
-				$params['update_password_fields'] = array_values($this->sform('uxp'));
+				$params['update_password_fields'] = array_values($this->prepareFormFields("uxp", $dacura_server));
 				$params["password_intro_msg"] = $this->smsg("password_intro");
 			}
-			elseif($dacura_server->userHasFacet("admin")){
+			elseif($u && $dacura_server->userHasFacet("admin")){
 				$params["showupdate"] = true;
 				$params['update_form_type'] = "view";
 				$params["details_intro_msg"] = $this->smsg("view_details_intro");						
@@ -173,7 +204,10 @@ class UsersService extends DacuraService {
 				$params['update_form_type'] = "view";
 				$params["details_intro_msg"] = $this->smsg("view_details_intro");						
 			}
-			$params['update_details_fields'] = array_values($this->sform('uxu'));					
+			$udf = $this->prepareFormFields("uxu", $dacura_server);
+			$this->fillInFormFields($ub,$udf);
+			$params['update_details_fields'] = array_values($udf);
+			
 			$params["showdelete"] = $u && $dacura_server->canUpdateUserStatus($u, $ub);				
 			$params["history_intro_msg"] = $this->smsg("history_intro");
 			$params['update_button_text'] = "Update User Details";

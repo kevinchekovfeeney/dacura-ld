@@ -36,7 +36,7 @@ class CandidateService extends LdService {
 		$params['collectionbreadcrumb'] = "instance data";
 		$params["title"] = "Instance Data Viewer";
 		$params['dt'] = true;
-		$params["image"] = $this->furl("image", "buttons/candidate.png");
+		$params["image"] = $this->furl("images", "services/candidate.png");
 		$params['status_options'] = $this->getCreateStatusOptions();
 		$params['args'] = $this->getOptionalArgs();
 		$params["entity_type"] = "Candidate";

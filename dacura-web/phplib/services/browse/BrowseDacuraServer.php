@@ -1,5 +1,6 @@
 <?php
 //include_once("phplib/services/ld/LdDacuraServer.php");
+include_once("phplib/services/config/ConfigDacuraServer.php");
 
 /**
  * The browse service shows the collection and system front pages
@@ -12,6 +13,28 @@
  * @license: GPL v2
  */
 class BrowseDacuraServer extends DacuraServer {
+	
+	/**
+	 * Generates a list of configuration objects which represent the services that can be accessed by the user from the browse screen
+	 * @return array<string:array> an array indexed by serviceids, each of which contains (title, help, id)
+	 */
+	function getServicesWidgetList(){
+		$wl = array();
+		$servs = $this->getServiceList();
+		foreach($servs as $sid){
+			if(in_array($sid, array("browse", "login", "home"))) continue;//have no widgets associated
+			$ns = $this->createDependantService($sid);
+			//get service setting to make sure it is enabled...
+			
+			if($ns->getServiceSetting("status") != "disable" && $this->userHasFacet(false, $ns)){
+				$wl[$sid] = array();
+				$wl[$sid]['title'] = $ns->getServiceSetting('service-button-title', ucfirst($sid));
+				$wl[$sid]['help'] = $ns->getServiceSetting('service-title', ucfirst($sid)." Service");
+				$wl[$sid]['help'] .= ". ".$ns->getServiceSetting('service-description', "");
+			}
+		}
+		return $wl;
+	}
 	
 	/**
 	 * Returns a list of the collections available to the user
@@ -52,6 +75,7 @@ class BrowseDacuraServer extends DacuraServer {
 			$params['type'] = "admin";
 			$params['user-count'] = 0;
 		}
+		/* this will be put back once the ld sub-system is back in place */
 		//$lds = $this->createDependantServer("ld"); 
 		//$filter = array("collection_id" => $this->cid(), "type" => "graph");
 		//$graphs = $lds->getEntities($filter);
@@ -72,22 +96,23 @@ class BrowseDacuraServer extends DacuraServer {
 	 */
 	function getMenuPanelParams(){
 		$params = array();
+		$widgets = $this->getServicesWidgetList();
 		$params['system_logo'] = array(
 			"blurb" => "", 
 			"title" => "Dacura Server", 
 			"link" => $this->getSystemSetting("install_url", "/")."system/", 
-			"img" => $this->service->get_system_file_url("image", "dacura-platform-logo-160w.png")
+			"img" => $this->service->get_system_file_url("images", "system/dacura-platform-logo-160w.png")
 		);
 		$params['dashboard_panes'] = array();
 		$params['menu_items'] = $this->getContextNavigationHierarchy();
 		if($this->cid() != "all"){
 			$col = $this->getCollection($this->cid());
-			$col_logo = ($col->getConfig("image")) ? $col->getConfig("image") : $this->service->get_system_file_url("image", "collection_bg.jpg");
+			$col_logo = $this->getSystemSetting("image", $this->service->furl("images", "system/default_collection.png"));
 			$params['collection_logo'] = array(
 				"link" => $this->getSystemSetting("install_url", "/").$this->cid(), 
 				"img" => $col_logo, 
 				"title" => $col->name,
-				"blurb" => $col->getConfig("description")
+				"blurb" => $this->getSystemSetting("description", "")
 			); 
 		}
 		return $params;

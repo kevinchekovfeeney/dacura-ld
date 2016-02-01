@@ -44,7 +44,7 @@
 				<table id='dashboard-lanes'>
 					<tr class="internal-panel">
 						<td id="internal-panel">
-							<?php if(isset($params['internal_services'])){foreach($params['internal_services'] as $serv) {?>
+							<?php if(isset($params['services'])){foreach($params['services'] as $serv) {?>
 							<a href='<?=$serv["url"]?>' title='<?=$serv["help"]?>' alt='<?=$serv["title"]?>'>
 								<div class='dacura-dashboard-button'>
 									<img class='dacura-button-img' src="<?=$serv["img"]?>">

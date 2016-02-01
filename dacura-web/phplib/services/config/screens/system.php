@@ -1,3 +1,12 @@
+<?php 
+/** 
+ * Platform / System level configuration page
+ * 
+ * @package config/screens
+ * @author chekov
+ * @copyright GPL v2
+ */
+?>
 <div class='dacura-screen' id='system-config'>
 	<?php if(in_array("system-configuration", $params['subscreens'])) { ?>
 	<div class='dacura-subscreen' id="system-configuration" title="System Settings">
@@ -70,6 +79,7 @@
 </div>
 
 <script>
+/* we pre-format the tables for all the services and embed them in the page as a javascript object */
 var service_tables = <?= json_encode($params['service_tables']); ?>;
 var service_subpage_conf;
 /* Updates each of the selected services statuses in sequence */
@@ -85,16 +95,18 @@ function updateServicesStatus(ids, status, cnt, pconf){
 	}
 	dacura.config.updateCollection(obj, onwards, pconf);
 }
-		
+
+/* to load a new collection, we just switch pages to it */
 function loadCollection(e, id){
 	dacura.system.switchContext(id);	
 }
 
+/* Loads an individual service following a click on it on the service configuration screen */
 function loadService(e, id){
 	dacura.tool.clearResultMessages();
 	if(!isEmpty(service_tables[id])){
 		$('#servicebox-contents').empty().append(service_tables[id].body);
-		dacura.tool.form.init('service-'+id, {initselects: true, icon: "<?= $service->get_system_file_url("image", "help-icon.png")?>"});
+		dacura.tool.form.init('service-'+id, {initselects: true, icon: "<?= $service->furl("images", "system/help-icon.png")?>"});
 		if(typeof lconfig.collection == "object" && typeof lconfig.collection.config == "object" && typeof lconfig.collection.config.servicesmeta == "object"){
 			dacura.tool.form.populate('service-'+id, lconfig.services[id], lconfig.collection.config.servicesmeta[id]);
 		}
@@ -108,6 +120,7 @@ function loadService(e, id){
 	service_subpage_conf = dacura.tool.loadSubscreen('servicelist', 'servicebox', "return to list of services", service_tables[id].header);
 }
 
+/* reads the updated state of a service configuration from the html form */
 function readServiceUpdate(screen){
 	if($('#servicebox-contents table').length){
 		var tid = $("#servicebox-contents table").attr("id");
@@ -121,6 +134,7 @@ function readServiceUpdate(screen){
 	return {};
 }
 
+/* called to check for illegal and obvious problems with creating collections */
 function inputError(obj){
 	if(typeof obj.id == "undefined" || typeof obj.title == "undefined"){
 		return "bad reading of object from input";
@@ -130,7 +144,7 @@ function inputError(obj){
 	}
 	return false;
 }
-
+/* marshalls the data from the passed object then sends it to the server for an update */
 function updateServiceConfig(obj, result, pconf){
 	var sid = obj.id;
 	delete(obj.id);
@@ -140,6 +154,14 @@ function updateServiceConfig(obj, result, pconf){
 	dacura.config.updateCollection(data, result, service_subpage_conf);
 }
 
+/* marshalls the data extracted from the update configuration form for passing to the api */
+function updateConfiguration(obj, result, pconf){
+	obj.settings = obj.values;
+	delete(obj.values);
+	dacura.config.updateCollection(obj, result, pconf);
+}
+
+/* just some result reporting */
 function showCreateSuccess(txt, targets){
 	dacura.system.showSuccessResult("You will now be able to configure and activate this collection", "Collection with id: " + txt + " successfully created", targets.resultbox, false, {'scrollTo': true, "icon": true});
 	setTimeout(dacura.system.switchContext(txt), 3000);
@@ -150,12 +172,7 @@ function showUpdateSuccess(data, pconf, msg){
 	drawCollection(data);
 }
 
-function updateConfiguration(obj, result, pconf){
-	obj.settings = obj.values;
-	delete(obj.values);
-	dacura.config.updateCollection(obj, result, pconf);
-}
-
+/* called when settings are received from a call to draw the page */
 function drawCollection(obj){
 	if(typeof lconfig == "object"){
 		for(var k in obj){
@@ -177,7 +194,7 @@ function drawCollection(obj){
 }
 
 var sloaded = false;//is the service table loaded
-
+/* draws the table listing the various services */ 
 function drawServiceTable(services){
 	var service_rows = dacura.config.getServiceTableRows(services);
 	if(!sloaded){
@@ -202,11 +219,17 @@ function drawServiceTable(services){
 }
 
 var fbloaded = false;//is the configuration loaded
-var lconfig;
+var lconfig;//the most recent configuration received from the api
 
+/* page initialisation - forms, tables, etc */
 $(function() {	
-	dacura.tool.init({"tabbed": 'system-config', forms: {ids:['sysconfig','collection-details'], 
-		icon: "<?= $service->get_system_file_url("image", "help-icon.png")?>"}}); 
+	dacura.tool.init({
+		"tabbed": 'system-config', 
+		forms: {
+			ids:['sysconfig','collection-details'], 
+			icon: "<?= $service->furl("images", "icons/help-icon.png")?>"}
+		}
+	); 
 	dacura.tool.table.init("collections-table", {
 		"screen": "list-collections", 
 		"fetch": dacura.config.getCollections,
@@ -240,12 +263,12 @@ $(function() {
 		"result": showCreateSuccess
 	});
     if(!fbloaded && $("#kcfilebrowser").is(':visible')){
-		dacura.system.openKCFinder("#kcfilebrowser", "<?php echo $service->getFileBrowserURL()?>", dacura.system.cid(), "images");	
+		dacura.tool.openKCFinder("#kcfilebrowser", "<?php echo $service->getFileBrowserURL()?>", dacura.system.cid(), "images");	
     }
 	$('#system-config').tabs( {
         "activate": function(event, ui) {
         	 if($("#kcfilebrowser").is(':visible')){
-        		dacura.system.openKCFinder("#kcfilebrowser", "<?php echo $service->getFileBrowserURL()?>", dacura.system.cid(), "images");	
+        		dacura.tool.openKCFinder("#kcfilebrowser", "<?php echo $service->getFileBrowserURL()?>", dacura.system.cid(), "images");	
         	 }
         	 else {
 				$("#kcfilebrowser").html("");
@@ -255,7 +278,5 @@ $(function() {
 	var pconf = { resultbox: ".tool-info", busybox: "#system-config"};
 	dacura.config.fetchCollection(dacura.system.cid(), drawCollection, pconf);
     fbloaded = true;
-	//$('#kcfilebrowser').bind('isVisible', isVisible);
-	//load kcfinder when it first becomes visible...
 });
 </script>

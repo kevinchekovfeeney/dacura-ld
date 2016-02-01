@@ -146,19 +146,3 @@ function showLogs(){
 	}
 }
 
-/*
- * Kcfinder library replaced this, kept here in case we revert
- * function upload(){
- global $dacura_server;
- if(!isset($_GET['filename'])){
- return $dacura_server->write_http_error(400, "No filename included in file upload request");
- }
- $payload = file_get_contents('php://input');
- if(!$payload){
- return $dacura_server->write_http_error(400, "No file included in file upload request");
- }
- if($furl = $dacura_server->saveUploadedFile($_GET['filename'], $payload)){
- return $dacura_server->write_json_result($furl, "Uploaded File $furl for ".$dacura_server->contextStr());
- }
- $dacura_server->write_http_error();
- }*/

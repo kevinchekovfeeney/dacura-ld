@@ -13,6 +13,21 @@
 class UsersDacuraServer extends DacuraServer {
 	
 	/**
+	 * Overrides the base class function to ensure that non-logged in users cannot edit their profile, even when allowed by a facet
+	 * as there is no profile to edit
+	 * @return boolean - if true, the user may view the page
+	 * (non-PHPdoc)
+	 * @see DacuraServer::userHasViewPagePermission()
+	 */
+	function userHasViewPagePermission(){
+		$f = $this->service->getMinimumFacetForAccess($this);
+		if($f == 'profile' && !$this->getUser()){
+			return false;		
+		}
+		return parent::userHasViewPagePermission();
+	}
+	
+	/**
 	 * Returns an array of users who have a role in the current collection context
 	 * @return array<DacuraUser>|boolean
 	 */

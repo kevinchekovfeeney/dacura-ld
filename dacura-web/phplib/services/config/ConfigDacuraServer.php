@@ -146,23 +146,6 @@ class ConfigDacuraServer extends DacuraServer {
 	}
 
 	/**
-	 * Fetches the configuration settings for a particular service by loading the service_settings file directly 
-	 * and then passing it to have contextual settings loaded. 
-	 * 
-	 * @param string $sname service name
-	 * @return array settings array (arbitrary json structure)
-	 */
-	function getServiceConfig($sname){
-		$dacura_settings = $this->service->settings;
-		$fp = $this->getSystemSetting('path_to_services').$sname."/".$sname."_settings.php";
-		if(file_exists($fp)) include($fp);
-		else { $settings = array();}
-		//incorporate settings from collection configurations
-		$this->service->loadServiceContextSettings($sname, $settings, $this);
-		return $settings;
-	}
-	
-	/**
 	 * Returns an array containing only system level variables (with their default values)
 	 * 
 	 * Used for distinguishing between collection and system level settings as they are all mixed up in the normal settings variable
@@ -453,7 +436,6 @@ class ConfigDacuraServer extends DacuraServer {
 	 * This means that whenever a new setting is added, it automatically shows up on the form (albeit in an ugly way)
 	 * @param array $sfields the form element templates indexed by arrays
 	 */
-	
 	function getServiceConfigFields($s, $sfields = array()){
 		$configs = $this->getServiceConfig($s);
 		if(isset($configs['config_form_fields'])){
@@ -465,19 +447,5 @@ class ConfigDacuraServer extends DacuraServer {
 		$cf = new ConfigForm($this);
 		return $cf->getServiceConfigFields($s, $configs, $nsfields);
 	}
-	
-	/* 
-	 	rendered obselete by kcfinder - kept here in case we want to revert
-		function saveUploadedFile($fname, $f){
-			$fpath = $this->getSystemSetting('path_to_collections');
-			if($this->cid() == "all"){
-				$fpath .= "all/";
-			}
-			else {
-				$fpath .= $this->cid()."/";
-			}
-			$fpath .= $this->getSystemSetting('files_directory')."/".$fname;
-		}
-	*/	
 }
 

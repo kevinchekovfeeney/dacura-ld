@@ -21,8 +21,7 @@ class browser extends uploader {
 
     public function __construct() {
         parent::__construct();
-
-        // SECURITY CHECK INPUT DIRECTORY
+		// SECURITY CHECK INPUT DIRECTORY
         if (isset($_POST['dir'])) {
             $dir = $this->checkInputDir($_POST['dir'], true, false);
             if ($dir === false) unset($_POST['dir']);

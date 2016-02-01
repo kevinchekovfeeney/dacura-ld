@@ -1,5 +1,5 @@
 <?php
-include_once("phplib/DacuraResult.php");
+include_once("DacuraResult.php");
 
 /**
  * A class which produces policy responses to actions in the linked data api

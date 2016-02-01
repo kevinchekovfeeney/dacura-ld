@@ -27,10 +27,7 @@
         <a href="kcact:about"><span><?php echo $this->label("About") ?></span></a>
         <div id="loading"></div>
         </div>
-        <div>
-        	<select><option>images</option><option>files</option><option>media</option></select>
-        </div>
-    </div>
+     </div>
 
     <div id="settings">
 

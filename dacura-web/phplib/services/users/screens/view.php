@@ -1,3 +1,12 @@
+<?php 
+/** 
+ * View user page (also covers profile)
+ * 
+ * @package users/screens
+ * @author chekov
+ * @copyright GPL v2
+ */
+?>
 <div class='dacura-screen' id='user-home'>
 	<?php if(in_array("user-details", $params['subscreens'])) { ?>
 	<div class='dacura-subscreen' id='user-details' title="Details">
@@ -153,7 +162,9 @@ function showUpdatedUser(obj, targets){
 		dacura.users.header(obj);
 		drawDetails(obj);
 		<?php if(in_array("user-roles", $params['subscreens']) || in_array("collection-roles", $params['subscreens'])) {?>
-			drawRoles(obj);
+		drawRoles(obj);
+		<?php } if(isset($params["profile"]) || isset($params['self_update'])) {?>
+		dacura.system.updateTopbar({uname: obj.handle});
 		<?php } ?>		
 		dacura.system.showSuccessResult("Updates successfully saved", "User " + obj.handle + " updated", targets.resultbox, false, targets.mopts);
 	}
@@ -170,11 +181,10 @@ function drawDetails(obj){
 	prof["email"] = obj.email;
 	dacura.tool.form.populate("udetails", prof);
 	$('#udetails select.dacura-select').selectmenu("refresh");
-		
 }
 
 <?php if(in_array("user-roles", $params['subscreens']) || in_array("collection-roles", $params['subscreens'])) {?>
-		/* <collectionid:[roles]> which roles in which collections are available to the user to dole out */
+/* <collectionid:[roles]> which roles in which collections are available to the user to dole out */
 var roleoptions = <?=isset($params['role_options']) ? json_encode($params['role_options']) : "{}"?>;
 
 /* add passed role to user */
@@ -184,7 +194,7 @@ dacura.users.roles.add = function(rname){
 		collection: dacura.system.cid(),
 		role: rname
 	};
-	dacura.users.createRole(data, showCreateRoleResult, dacura.tool.subscreens['user-roles']);
+	dacura.users.createRole(data, showCreateRoleResult, dacura.tool.subscreens['collection-roles']);
 }
 
 /* remove role with passed id from user */
@@ -193,25 +203,27 @@ dacura.users.roles.remove = function(id){
 		uid: "<?=$params['userid']?>", 
 		rids: [id]
 	};
-	dacura.users.deleteRoles(data, showDeleteRoleResult, dacura.tool.subscreens['user-roles']);
+	dacura.users.deleteRoles(data, showDeleteRoleResult, dacura.tool.subscreens['collection-roles'], <?php echo ($params['showupdate'] == "true" ? "true": "false");?>);
 }
 
 /* draw user roles screen */
 function drawRoles(obj){
+	var screen = "<?= in_array("collection-roles", $params["subscreens"]) ? "collection-roles" : "user-roles"; ?>";
+	var isedit = <?php echo ($params['showupdate'] == "true" ? "true": "false");?>;
 	if(roles_loaded){
-		dacura.users.roles.refresh("roles-table", obj.roles, "user-roles");
+		dacura.users.roles.refresh("roles-table", obj.roles, screen, isedit);
 	}
 	else {
 		var tconfig = {
 			"dtsettings": <?=$params['roles_table_settings']?>,
-			"screen": "user-roles",
+			"screen": screen,
 			"multiselect": {
 				label: "Delete Selected Roles",
 				container: "role-buttons",
 				update: deleteRoles 
 			},				
 		};					
-		dacura.users.roles.show("roles-table", obj.roles, tconfig, <?php echo ($params['showupdate'] == "true" ? "true": "false");?>);
+		dacura.users.roles.show("roles-table", obj.roles, tconfig, isedit);
 		roles_loaded = true;
 	}
 }
@@ -268,7 +280,7 @@ function drawUser(obj, targets){
 		}
 		dacura.tool.header.addBreadcrumb("<?=$service->my_url()."/".$params['userid']?>", "User " + obj.handle, "selected-user");		
 	}
-	dacura.users.header(obj);
+	dacura.users.header(obj, <?php echo (isset($params['profile']) ? "true" : "false");?>);
 	drawDetails(obj);
 	<?php if(in_array("user-history", $params['subscreens'])) {?>
 		drawHistory(obj);
@@ -307,8 +319,20 @@ $(function() {
 				"validate": dacura.users.validatePasswords,
 				"result": showUpdatePasswordResult				
 			}
+		},
+		"forms": {
+			ids:['udetails'<?php if(in_array("user-password", $params['subscreens'])) echo ", 'upassword'"?>], 
+			icon: "<?= $service->get_system_file_url("images", "icons/help-icon.png")?>"
 		}
+		
 	});
+	<?php if(in_array("user-password", $params['subscreens'])) { ?>
+		$('#upassword-confirmpassword').keypress(function(e) {
+			if (e.keyCode == $.ui.keyCode.ENTER) {
+				$('#passwordupdate').click();
+			}
+		});
+	<?php } ?>
 	var pconf = { resultbox: ".tool-info", busybox: "#user-home"};
 	dacura.users.fetchUser("<?=$params['userid']?>", drawUser, pconf);
 });

@@ -141,7 +141,6 @@ class EntityUpdate extends DacuraObject{
 		if($this->original->status != $this->changed->status) $meta['status'] = array($this->original->status, $this->changed->status);
 		//if($this->original->type != $this->changed->type) $meta['type'] = array($this->original->type, $this->changed->type);
 		if($this->original->cid != $this->changed->cid) $meta['cid'] = array($this->original->cid, $this->changed->cid);
-		if($this->original->did != $this->changed->did) $meta['did'] = array($this->original->did, $this->changed->did);
 		return $meta;
 	}
 

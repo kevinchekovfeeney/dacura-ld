@@ -496,8 +496,8 @@ dacura.editor = {
 		}
 		
 		function initEditor(){
-			JSONEditor.prototype.ADD_IMG = '<?=$service->furl("image", "add.png")?>';
-			JSONEditor.prototype.DELETE_IMG = '<?=$service->furl("image", "delete.png")?>';
+			JSONEditor.prototype.ADD_IMG = '<?=$service->furl("images", "icons/add.png")?>';
+			JSONEditor.prototype.DELETE_IMG = '<?=$service->furl("images", "icons/delete.png")?>';
 		}
 		
 		function initVersionNavigation(options){

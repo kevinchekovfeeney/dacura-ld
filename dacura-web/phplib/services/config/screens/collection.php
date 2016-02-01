@@ -1,3 +1,12 @@
+<?php 
+/** 
+ * Collection configuration page
+ * 
+ * @package config/screens
+ * @author chekov
+ * @copyright GPL v2
+ */
+?>
 <div class='dacura-screen' id='collection-config'>
 	<?php if(in_array("collection-configuration", $params['subscreens'])) { ?>
 	<div class='dacura-subscreen' id="collection-configuration" title="Settings">
@@ -52,7 +61,22 @@
 </div>
 <script>
 
+/* start with the main page */
+
 function showUpdateSuccess(data, pconf, msg){
+	opts = {};
+	if(typeof data.collection == "object" && typeof data.collection.name == "string"){
+		opts.cname = data.collection.name; 
+	}
+	if(typeof data.settings == "object" && typeof data.settings.icon == "string"){ 
+		opts.cicon = data.settings.icon;
+	}
+	if(!isEmpty(opts)){
+		dacura.system.updateTopbar(opts);
+	}
+	if(typeof data.settings == "object" && typeof data.settings.background == "string"){
+		dacura.system.updateHeader({background: data.settings.background});
+	}
 	dacura.system.showSuccessResult("Updates successfully saved", msg, pconf.resultbox, false, {'scrollTo': true, "icon": true, "closeable": true});
 	drawCollection(data);
 }
@@ -103,31 +127,7 @@ function drawCollection(obj){
 	<?php } ?>
 }
 
-<?php if(in_array("view-files", $params['subscreens'])) { ?>
-
-function openKCFinder(field) {
-    var div = document.getElementById('kcfinder_div');
-    if (div.style.display == "block") {
-        div.style.display = 'none';
-        div.innerHTML = '';
-        return;
-    }
-    window.KCFinder = {
-        callBack: function(url) {
-            window.KCFinder = null;
-            field.value = url;
-            div.style.display = 'none';
-            div.innerHTML = '';
-            $('#kcfinder_div').dialog("close");
-        }
-    };
-    div.innerHTML = '<iframe name="kcfinder_iframe" src="<?php echo $service->getFileBrowserURL()?>?type=images&dir=images/' + dacura.system.cid() + '/"' +
-        'frameborder="0" width="100%" height="100%" marginwidth="0" marginheight="0" scrolling="no" />';
-    div.style.display = 'block';
-    $('#kcfinder_div').dialog({modal: true, width: "700", "height": "400", title: "Choose a file"});
-}
-
-<?php } if(in_array("view-services", $params['subscreens'])) { ?>
+<?php if(in_array("view-services", $params['subscreens'])) { ?>
 var allroles = <?=isset($params['all_roles']) ? json_encode($params['all_roles']) : "{}"?>;
 var service_tables = <?= json_encode($params['service_tables']); ?>;
 
@@ -176,7 +176,7 @@ function loadService(id){
 	dacura.tool.clearResultMessages();
 	if(!isEmpty(service_tables[id])){
 		$('#servicebox-contents').empty().append(service_tables[id].body);
-		$('#servicebox-contents select.dacura-select').selectmenu();
+		dacura.tool.form.init('service-'+id, {initselects: true, icon: "<?= $service->furl("images", "icons/help-icon.png")?>"});
 		$('.addfacet').button().click(function(event){
 			var f = $('.facet-maker select.facets').val();
 			var r = $('.facet-maker select.roles').val();
@@ -260,7 +260,15 @@ var fbloaded = false;
 var sloaded = false;
 var lconfig;
 $(function() {
-	dacura.tool.init({"tabbed": 'collection-config'}); 
+	dacura.tool.init({
+		"tabbed": 'collection-config', 
+		"forms": {
+			ids: ['sysconfig'], 
+			icon: "<?= $service->furl("images", "icons/help-icon.png")?>",
+			fburl: "<?php echo $service->getFileBrowserURL()?>"
+		}
+	}); 
+	
     <?php if(in_array("view-logs", $params['subscreens'])) { ?>
     dacura.tool.table.init("logtable", {
 		"screen": "view-logs", 
@@ -291,12 +299,12 @@ $(function() {
 	});
 	<?php } if(in_array("view-files", $params['subscreens'])) { ?>
     if(!fbloaded && $("#kcfilebrowser").is(':visible')){
-		dacura.system.openKCFinder("#kcfilebrowser", "<?php echo $service->getFileBrowserURL()?>", dacura.system.cid(), "images");	
+		dacura.tool.openKCFinder("#kcfilebrowser", "<?php echo $service->getFileBrowserURL()?>", dacura.system.cid(), "images");	
     }
 	$('#collection-config').tabs( {
         "activate": function(event, ui) {
         	 if($("#kcfilebrowser").is(':visible')){
-        		dacura.system.openKCFinder("#kcfilebrowser", "<?php echo $service->getFileBrowserURL()?>", dacura.system.cid(), "images");	
+        		dacura.tool.openKCFinder("#kcfilebrowser", "<?php echo $service->getFileBrowserURL()?>", dacura.system.cid(), "images");	
         	 }
         	 else {
 				$("#kcfilebrowser").html("");
@@ -306,13 +314,7 @@ $(function() {
 	<?php } ?>	
         
 	var pconf = { resultbox: ".tool-info", errorbox: ".tool-info", busybox: "#collection-config"};
-	dacura.tool.form.init('sysconfig');
     dacura.config.fetchCollection(dacura.system.cid(), drawCollection, pconf);
     fbloaded = true;
-	$('td.dacura-property-help').each(function(){
-		$(this).html("<img class='helpicon' title=\"" + escapeQuotes($(this).html()) + "\" src=\"<?= $service->get_system_file_url("image", "help-icon.png")?>\">");
-	});
-	$('.helpicon').tooltip();
-	
 });
 </script>

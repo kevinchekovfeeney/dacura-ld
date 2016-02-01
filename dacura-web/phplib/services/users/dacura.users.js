@@ -205,9 +205,10 @@ dacura.users.deleteRoles = function(obj, onwards, pconf){
  * @param {string} obj.email - current user's email address
  * @param {string} obj.status - the user's status
  */
-dacura.users.header = function(obj){
+dacura.users.header = function(obj, isprofile){
 	var params = {id: obj.id, email: obj.email, status: obj.status};
-	dacura.tool.header.showEntityHeader("Manage user " + obj.handle, params);	
+	var msg = isprofile ? obj.handle + " profile" : "User " + obj.handle;
+	dacura.tool.header.showEntityHeader(msg, params);	
 }
 
 /**
@@ -412,7 +413,7 @@ dacura.users.roles = {
 	 * @param {Object} roles - array of roles to draw into table 
 	 * @param {string} screen - jquery id of the screen to use for the table configuration
 	 */
-	refresh: function(key, roles, screen){
+	refresh: function(key, roles, screen, isedit){
 		if(typeof roles == "undefined" || roles.length == 0){
 			dacura.system.showWarningResult("No roles configured in this context", "No roles", dacura.tool.subscreens[screen].resultbox, false, dacura.tool.subscreens[screen].mopts);
 			$('#'+key).hide();
@@ -423,7 +424,7 @@ dacura.users.roles = {
 			dacura.users.roles.table(key, roles, tconfig);
 		}
 		else {
-			dacura.users.roles.simpletable(key, roles);			
+			dacura.users.roles.simpletable(key, roles, {"screen": screen}, isedit);			
 		}
 	},
 	

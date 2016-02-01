@@ -1,3 +1,12 @@
+<?php 
+/** 
+ * List users page
+ * 
+ * @package users/screens
+ * @author chekov
+ * @copyright GPL v2
+ */
+?>
 <div class='dacura-screen' id='users-home'>
 	<?php if(in_array("list-users", $params['subscreens'])) { ?>
 	<div class='dacura-subscreen' id='list-users' title="List Users">
@@ -40,6 +49,13 @@
 </div>
 
 <script>
+formids = [];
+<?php if(in_array("invite-users", $params['subscreens'])){?>
+formids.push("uinvites");
+<?php } if(in_array("add-user", $params['subscreens'])){?>
+formids.push("user-details");
+<?php } ?>
+
 /*
  * Page Configuration Settings for each subscreen 
  */
@@ -143,35 +159,44 @@
 
 	/* on page load initialise tool, table and buttons */
 	$(function() {
-		dacura.tool.init({"tabbed": 'users-home'});
+		var initarg = {
+			"tabbed": 'users-home',
+		}
+		if(formids.length){
+			initarg.forms = { 
+				ids: formids, 			
+				icon: "<?= $service->get_system_file_url("images", "icons/help-icon.png")?>"
+			};
+		}		
+		dacura.tool.init(initarg);
 		<?php if(isset($params['admin']) && $params['admin']){?>
-			dacura.tool.table.init("users-table", {
-				"screen": "list-users", 
-				"fetch": dacura.users.getUsers,
-				"multiselect": {
-					options: <?=$params['selection_options']?> , 
-					intro: "Update Selected Users, Set Status to ", 
-					container: "user-table-updates",
-					label: "Update",
-					update: updateUsersStatus 
-				},
-				"refresh": {label: "Refresh User List"},
-				"cellClick": function(event, entid) {window.location.href = dacura.system.pageURL() + "/" + entid},
-				"dtsettings": <?=$params['admin_table_settings']?>
-			});
-			dacura.tool.button.init("usercreate", {
-				"screen": "add-user",
-				"source": "user-details",
-				"validate": inputError, 
-				"submit": dacura.users.addUser, 
-				"result": showCreateSuccess
-			});
-			dacura.tool.button.init("usersinvite", {
-				"screen": "invite-users",
-				"source": "uinvites",
-				"submit": dacura.users.inviteUsers,
-				"result": showInviteResult				
-			});
+		dacura.tool.table.init("users-table", {
+			"screen": "list-users", 
+			"fetch": dacura.users.getUsers,
+			"multiselect": {
+				options: <?=$params['selection_options']?> , 
+				intro: "Update Selected Users, Set Status to ", 
+				container: "user-table-updates",
+				label: "Update",
+				update: updateUsersStatus 
+			},
+			"refresh": {label: "Refresh User List"},
+			"cellClick": function(event, entid) {window.location.href = dacura.system.pageURL() + "/" + entid},
+			"dtsettings": <?=$params['admin_table_settings']?>
+		});
+		dacura.tool.button.init("usercreate", {
+			"screen": "add-user",
+			"source": "user-details",
+			"validate": inputError, 
+			"submit": dacura.users.addUser, 
+			"result": showCreateSuccess
+		});
+		dacura.tool.button.init("usersinvite", {
+			"screen": "invite-users",
+			"source": "uinvites",
+			"submit": dacura.users.inviteUsers,
+			"result": showInviteResult				
+		});
 		<?php } else { ?>
 		dacura.tool.table.init("users-table", {
 			"screen": "list-users", 

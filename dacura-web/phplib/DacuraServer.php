@@ -74,8 +74,8 @@ class DacuraServer extends DacuraController {
 	 * 
 	 * This is the mechanism that allows servers to overcome their isolation from one another.  
 	 * When a dacura server wants to access the capabilities of another server, it calls this function
-	 * and can then use the methods of that service.  The dependant service shares the same service context object
-	 * so, the service and the server will be of different types.  I don't think this causes a problem anywhere, 
+	 * and can then use the methods of that service.  The dependant server shares the same service context object, 
+	 * the service and the server will be of different types.  I don't think this causes a problem anywhere, 
 	 * but it might :)
 	 * @param string $sname the id of the secondary server to load
 	 * @return DacuraServer|boolean
@@ -89,6 +89,36 @@ class DacuraServer extends DacuraController {
 		catch (Exception $e){
 			return $this->failure_result("Failed to create new $sname server ".$e->getMessage(), 500);
 		}
+	}
+	
+	/**
+	 * Creates another dacura service that is dependant on the current service
+	 *
+	 * This is the mechanism that allows servers to create service objects on top of the one that invoked them.
+	 * When a dacura server wants to access the capabilities of another service, it calls this function
+	 * and can then use the methods of that service.  
+	 * @param string $sid the id of the service to load
+	 * @return DacuraService|boolean
+	 */
+	function createDependantService($sid){
+		$scls = ucfirst($sid)."Service";
+		$sfile = $this->getSystemSetting("path_to_services")."$sid/$scls.php";
+		if(!file_exists($sfile)){
+			return $this->failure_result("Service file $sfile not found for service $sid", 500);
+		}
+		try {
+			include_once($sfile);
+			$settings = deepArrCopy($this->service->settings);
+			$settings[$sid] = $this->getServiceConfig($sid);
+			if(!$ns = new $scls($settings)){
+				return $this->failure_result("Service class created $scls failed for service $sid", 500);				
+			}
+		}
+		catch (Exception $e){
+			return $this->failure_result("Failed to create new $sname service ".$e->getMessage(), 500);
+		}
+		$ns->loadAsDependant($sid, $this->service);
+		return $ns;			
 	}
 	
 	/**
@@ -118,6 +148,23 @@ class DacuraServer extends DacuraController {
 		}
 		return $config;
 	}
+	
+	/**
+	 * Fetches the configuration settings for a particular service by loading the service_settings file directly
+	 * and then passing it to have contextual settings loaded.
+	 *
+	 * @param string $sname service name
+	 * @return array settings array (arbitrary json structure)
+	 */
+	function getServiceConfig($sname){
+		$dacura_settings = $this->service->settings;
+		$fp = $this->getSystemSetting('path_to_services').$sname."/".$sname."_settings.php";
+		if(file_exists($fp)) include($fp);
+		else { $settings = array();}
+		//incorporate settings from collection configurations
+		$this->service->loadServiceContextSettings($sname, $settings, $this);
+		return $settings;
+	}	
 	
 	/**
 	 * Fetch the collection object which contains the collection's configuration
@@ -159,12 +206,12 @@ class DacuraServer extends DacuraController {
 		$params = array();
 		if($this->cid() != "all"){
 			$col = $this->getCollection();
-			$icon = $col->getConfig("icon") ? $col->getConfig("icon") : $this->service->furl("image", "collection_icon.png");
+			$icon = $this->getSystemSetting("icon", $this->service->furl("images", "system/collection_icon.png"));
 			$params[] = array(
 					"name" => $col->name,
 					"icon" => $icon,
 					"url" => $this->durl().$this->cid(),
-					"class" => "ucontext first");
+					"class" => "ucontext first collection-context");
 		}
 		return $params;
 	}
@@ -250,7 +297,7 @@ class DacuraServer extends DacuraController {
 	
 	/**
 	 * checks to see if the user invoking the server has permission to view the page specified in the service context
-	 * @return boolean if true, the user has permission
+	 * @return boolean if true, meaning the user has permission to view the current screen
 	 */
 	function userHasViewPagePermission(){
 		if(!$this->contextIsValid()){
@@ -288,19 +335,20 @@ class DacuraServer extends DacuraController {
 	 * @param string $f the facet name
 	 * @return true if the user has >= facet to that requested
 	 */
-	function userHasFacet($f = false){
+	function userHasFacet($f = false, $srvc = false){
+		$srvc = $srvc ? $srvc : $this->service;
 		$u = $this->getUser();
 		if($u && $u->isPlatformAdmin()) return true;
 		if($f){
-			$facets = $this->service->getActiveFacets($u);
+			$facets = $srvc->getActiveFacets($u);
 			foreach($facets as $onef){
-				if($this->service->compareFacets($onef['facet'], $f)){
+				if($srvc->compareFacets($onef['facet'], $f)){
 					return true;
 				}
 			}
 			return false;
 		}
-		return $this->service->getActiveFacets($u);
+		return $srvc->getActiveFacets($u);
 	}
 	
 	/**

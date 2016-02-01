@@ -122,6 +122,21 @@ class DacuraService extends DacuraObject {
 	}
 	
 	/**
+	 * Loads the service as a dependant service of another service (i.e. the other service is the one being called by the user
+	 * and using this service incidentally)
+	 * @param string $sid the id of the service being loaded
+	 * @param DacuraService $other the controlling service doing the loading
+	 */
+	function loadAsDependant($sid, DacuraService &$other){
+		$this->servicename = $sid;
+		$this->collection_id = $other->cid();
+		$this->connection_type = $other->connection_type;
+		$this->mydir = $this->getSystemSetting('path_to_services').$sid."/";
+		$this->logger =& $other->logger;
+		$this->init();
+	}
+	
+	/**
 	 * Loads the appropriate server for this service
 	 * 
 	 * Every Dacura Service has an associated Server which serves as an interface between the service and the rest 
@@ -311,14 +326,14 @@ class DacuraService extends DacuraObject {
 	}
 	
 	/**
-	 * What is the minimum facet required to access a service
+	 * What is the minimum facet required to access the service at the given screen?
 	 * @param DacuraServer $dacura_server
 	 * @return string the facet name required
 	 */
 	function getMinimumFacetForAccess(DacuraServer &$dacura_server){
 		return $this->getScreenForAC($dacura_server);
 	}
-	
+		
 	/**
 	 * Load any URL arguments from the browser into the service context
 	 * 
@@ -499,13 +514,7 @@ class DacuraService extends DacuraObject {
 	 */
 	protected function renderHeaderSnippet(DacuraServer &$dacura_server){
 		$service = &$this;
-		$params = array();
-		if($this->cid() != "all"){
-			$col = $dacura_server->getCollection($dacura_server->cid());
-			if($col && $col->getConfig("background")){
-				$params['bgimage'] = $col->getConfig("background");
-			}
-		}
+		$params = $this->settings;
 		$this->includeSnippet("header", $params);
 	}
 	
@@ -534,7 +543,7 @@ class DacuraService extends DacuraObject {
 		$u = $dacura_server->getUser();
 		if($u){
 			$params["username"] = $u->handle;
-			$params["usericon"] = $this->furl("image", "user_icon.png");
+			$params["usericon"] = $this->furl("image", "icons/user_icon.png");
 			if($u->rolesSpanCollections()){
 				$params["profileurl"] = $this->get_service_url("users", array(), "html", "all", "all")."/profile";
 			}
@@ -543,7 +552,7 @@ class DacuraService extends DacuraObject {
 				$params["profileurl"] = $this->get_service_url("users", array(), "html", $cid, "all")."/profile";
 			}
 			$params["logouturl"] = $this->getSystemSetting("install_url")."login/logout";
-			if(isset($u->sesssion['syste'])){
+			if(isset($u->sesssion['system'])){
 				$sys = $u->sessions["system"];
 				$params["activity"] = "logged in for ".gmdate("H:i", $sys->activeDuration());
 			}
@@ -558,12 +567,12 @@ class DacuraService extends DacuraObject {
 	 * @return array parameter array("class": css class, "url": service url, "icon": service icon file, "name": service name)
 	 */
 	protected function getServiceContextLinks(){
-		$cls = ($this->getCollectionID() == "all") ? "ucontext first" : "ucontext";
+		$cls = ($this->getCollectionID() == "all") ? "service-context ucontext first" : "service-context ucontext";
 		$sparams = array(
 				"class" => $cls,
 				"url" => $this->get_service_url(),
-				"icon" => $this->furl("image", "buttons/".$this->servicename."_icon.png"),
-				"name" => $this->getTitle()
+				"icon" => $this->furl("image", "services/".$this->servicename."_icon.png"),
+				"name" => $this->getServiceSetting("service-title", $this->getTitle())
 		);
 		return $sparams;
 	}
@@ -977,6 +986,9 @@ class DacuraService extends DacuraObject {
 		$fu = $this->getSystemSetting("files_url");
 		if($type == "js" || $type == "css"){
 			$ext_bit = $fu.$type."/";
+		}
+		elseif($type == "master"){
+			return $fu."master.css";
 		}
 		else {
 			$ext_bit = $fu."images/";

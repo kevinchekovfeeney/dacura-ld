@@ -171,7 +171,7 @@ class DacuraSession extends DacuraObject {
 	 * @return number session active duration seconds
 	 */
 	function activeDuration(){
-		$now = time();
+		$end = $this->end ? $this->end : time();
 		$paused_total = 0;
 		$paused_time = 0;
 		foreach($this->events as $t => $event){
@@ -184,9 +184,9 @@ class DacuraSession extends DacuraObject {
 			}
 		}
 		if($paused_time){
-			$paused_total += $now - $paused_time;
+			$paused_total += $end - $paused_time;
 		}
-		return $now - $this->start - $paused_total;
+		return $end - $this->start - $paused_total;
 	}
 	
 	/**

@@ -85,7 +85,7 @@ dacura.tool.init = function(options){
 		dacura.tool.initTables(options.tables);
 	}
 	if(typeof options.forms != "undefined"){
-		var opts = { icon: options.forms.icon };
+		var opts = { icon: options.forms.icon, fburl: options.forms.fburl };
 		for(var i = 0; i < options.forms.ids.length; i++){
 			dacura.tool.form.init(options.forms.ids[i], opts);		
 		}
@@ -434,7 +434,6 @@ dacura.tool.form = {
 			$(nrqid).each(function(){
 				readMeta(this, inputid);
 			});
-
 			if($("table.dacura-property-table", this).length){
 				var tid = $("table.dacura-property-table", this).attr("id");
 				readSubForm(tid, inputid);
@@ -476,19 +475,59 @@ dacura.tool.form = {
 	 */
 	init: function(key, opts){
 		if(typeof opts == "object" && typeof opts.icon == "string"){
-			icon = opts.icon;
-		}
-		else {
-			icon = "media/images/icon_help.png";
+			$('#'+key+' td.dacura-property-help').each(function(){
+				$(this).html("<img class='helpicon' title=\"" + escapeQuotes($(this).html()) + "\" src=\"" + opts.icon + "\">");
+			});
+			$('#'+key+' .helpicon').tooltip();
 		}
 		if(typeof opts == "object" && typeof opts.initselects != "undefined"){
 			dacura.system.selects();
 			dacura.system.selects("select.property-meta", {width: 100});
 		}
-		$('#'+key+' td.dacura-property-help').each(function(){
-			$(this).html("<img class='helpicon' title=\"" + escapeQuotes($(this).html()) + "\" src=\"" + icon + "\">");
+		$('#'+key+' .image-input-preview').click( function(event) {
+			var inputid = this.id.substring(0, this.id.indexOf("-preview"));
+			var val = $('#' +inputid ).val();
+			dacura.tool.form.fileChooser(opts.fburl, inputid, val, "images", "Choose an image from the collection's files or upload a new one");
 		});
-		$('#'+key+' .helpicon').tooltip();
+		if(typeof opts.fburl != "undefined"){
+			$('#'+key+' .image-input').click( function(event) {
+				dacura.tool.form.fileChooser(opts.fburl, this.id, this.val, "images", "Choose an image from the collection's files or upload a new one");
+			});
+		}
+	},
+	
+	/**
+	 * @function fileChooser
+	 * @summary launches the file chooser mini-app to allow users to choose a file from the collection area to fill in a form
+	 * @memberof dacura.tool.form
+	 * @param {string} inputid = the html id of the text box containing the url of the file
+	 * @param {string} val = the url of the currently selected file
+	 * @param {string} type = the type of file required ('images', 'files', 'media')
+	 * @param {string} cid = the current collection id
+	 * 
+	 */
+	fileChooser: function(fburl, inputid, val, type, msg){
+		$('body').append("<div id=\""+ inputid + "_kcfinder\">");
+		var div = document.getElementById(inputid + '_kcfinder');
+		if (div.style.display == "block") {
+	        div.style.display = 'none';
+	        div.innerHTML = '';
+	        return;
+	    }
+	    window.KCFinder = {
+	        callBack: function(url) {
+	            window.KCFinder = null;
+	            $('#' + inputid).val(url);
+	            $('#' + inputid+"-preview img").attr("src", url);
+	            div.style.display = 'none';
+	            div.innerHTML = '';
+	            $('#'+inputid + '_kcfinder').dialog("close");
+	        }
+	    };
+	    var iframeurl = fburl + "?cid="+dacura.system.cid()+"&type="+type+"&dir=" + type + "/" + dacura.system.cid() + "/";
+	    div.innerHTML = "<iframe src=\"" + iframeurl + "\" name=\"kcfinder_iframe\" frameborder=\"0\" width=\"100%\" height=\"100%\" marginwidth=\"0\" marginheight=\"0\" scrolling=\"no\" />";
+	    div.style.display = 'block';
+	    $('#'+inputid + '_kcfinder').dialog({modal: true, width: "700", "height": "400", title: msg});
 	},
 
 	/**
@@ -524,10 +563,23 @@ dacura.tool.form = {
 		}
 	},
 	
+	
+	/**
+	 * @function refreshMeta
+	 * @memberof dacura.tool.form
+	 * @summary refreshes the dynamic UI meta-elements on the form 
+	 * @param {string} key - the html id of the table to be refreshed
+	 */
 	refreshMeta: function(key){
 		$('#'+key+" .property-meta").selectmenu("refresh");
 	},
 	
+	/**
+	 * @function refreshMeta
+	 * @memberof dacura.tool.form
+	 * @summary refreshes the dynamic UI elements on the form 
+	 * @param {string} key - the html id of the table to be refreshed
+	 */
 	refresh: function(key){
 		$('#'+key+" .dacura-select").selectmenu("refresh");
 	},
@@ -541,6 +593,7 @@ dacura.tool.form = {
 	 * @param {mixed} val - a value (possibly complex)
 	 */
 	setValue: function(key, row, val){
+		//alert (key + " " + row + " " + val);
 		var rowid = 'row-' + key + "-" + row;
 		var jqid = '#' + key + " tr#"+rowid;
 		if(typeof val == "string"){
@@ -551,6 +604,7 @@ dacura.tool.form = {
 		$(jqid + ' .dacura-property-input select').each(function(){
 			$('#'+this.id).val(val);
 		});
+		//ert($(jqid).html());
 		$(jqid + ' .dacura-display-value').html(val);
 	}
 }
@@ -1042,7 +1096,6 @@ dacura.tool.table = {
 		tab.fetch(drawLTable, dacura.tool.subscreens[tab.screen]);
 	},
 	
-	
 	/**
 	 * @function reincarnate
 	 * @memberof dacura.tool.table
@@ -1163,8 +1216,16 @@ dacura.tool.table = {
 	}
 };
 
-
-dacura.system.openKCFinder = function(field, src, dir, type) {
+/**
+ * @function openKCFinder
+ * @memberof dacura.tool
+ * @summary Opens the KC finder file browser 
+ * @param {string} field - the jquery selector for the field that the browser will be written into
+ * @param {string} src - the url of the kcfinder server side
+ * @param {string} dir - the sub-directory to open initially
+ * @param {string} type - the type of the file to be uploaded...
+ */
+dacura.tool.openKCFinder = function(field, src, dir, type) {
 
     if(typeof type == "string"){
     	src += "?type=" + type;
@@ -1172,7 +1233,6 @@ dacura.system.openKCFinder = function(field, src, dir, type) {
         	src += "&dir=" + type + "/" + dir;
         }
     }
-    //src = src + "?type=files";
     $(field).html('<div id="kcfinder_div"><iframe name="kcfinder_iframe" src="' + src + '" frameborder="0" width="100%" height="100%" marginwidth="0" marginheight="0" scrolling="no" /></div>');
 }
 

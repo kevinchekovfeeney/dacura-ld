@@ -58,7 +58,7 @@ function createRandomKey($length){
  */
 function isAssoc($arr)
 {
-	return array_keys($arr) !== range(0, count($arr) - 1);
+	return is_array($arr) && array_keys($arr) !== range(0, count($arr) - 1);
 }
 
 /**
@@ -314,7 +314,11 @@ function xstrim($ent){
 	return trim($ent, "[]");
 } 
 
-function default_settings(&$dacura_settings){
+/**
+ * Sets up the default system settings by building various other settings from the ones defined in localsettings.php
+ * @param array $dacura_settings - a settings array 
+ */
+ function default_settings(&$dacura_settings){
 	if(!isset($dacura_settings['dacura_sessions'])){
 		$dacura_settings['dacura_sessions'] = $dacura_settings['storage_base'].'sessions/';
 	}

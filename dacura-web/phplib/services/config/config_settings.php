@@ -6,11 +6,14 @@
  * @license GPL V2
  */
 $settings = array(
+	/* standard fields for services */
+	"service-title" => "Configuration Manager",
+	"service-button-title" => "Configuration",
+	"service-description" => "View and update the settings of the platform and its collections",
+	/* the list of all facets supported by the service */
 	"facet-list" => array("admin" => "Administer Collection", "manage" => "Manage collection", "inspect" => "Auditing", "view" => "view details"),
 	"default_status" => "pending",
 	"default_profile" => array(),
-	"service-title" => "Configuration Manager",
-	"service-description" => "View and update the settings of the platform and its collections",
 	"default_collection_config" => array(),
 	"collection_paths_to_create" => array("logs", "cache", "dumps", "files"),
 	"messages" => array(
@@ -34,17 +37,19 @@ $settings = array(
 		"id" => array("id" => "id", "label" => "ID", "length" => "short", "help" =>"The collection id is a short (minimum 3 characters, maximum 40 characters) alphanumeric string [a-z_0-9] which will identify the collection. It will appear in URLs so brevity is key."),
 		"title"	=> array("id" => "title", "label" => "Title", "help" => "The full title of the data collection - may include spaces and punctuation."),				
 	),
+	/* collection configuration fields that will appear on the collection configuration form */	
 	"update_collection_fields" => array(
-		"name" => array("id" => "name", "label" => "Title", "help" => "The full title of the data collection - may include spaces and punctuation."),
-		"status" =>	array("id" => "status", "label" => "Status", "help" => "The current status of the collection", "type" => "status"),
-		"image" => array("id" => "image", "type" => "image", "label" => "Image", "help" => "An image which will represent the collection on pages."),
-		"background" => array("id" => "background", "type" => "image", "label" => "Background Image", "help" => "An image which will be the background of the collection's pages."),		
-		"icon" => array("id" => "icon", "type" => "image", "label" => "Icon", "help" => "An icon (16 x 16 pixels) which will represent the collection in menus, etc."),
-		"collection_url" => array("id" => "collection_url", "label" => "Collection Home", "type" => "url", "help" => "The Dacura URL for the collection"),		
-		"collection_path" => array("id" => "collection_path", "label" => "Collection Storage", "help" => "The directory in which the collection's files are stored"),		
+		"name" => array("label" => "Title", "help" => "The full title of the data collection - may include spaces and punctuation."),
+		"status" =>	array("label" => "Status", "help" => "The current status of the collection", "type" => "status"),
+		"image" => array("type" => "image", "label" => "Image", "help" => "An image which will represent the collection on pages."),
+		"background" => array("type" => "image", "label" => "Background Image", "help" => "An image which will be the background of the collection's pages."),		
+		"icon" => array("type" => "image", "label" => "Icon", "help" => "An icon (16 x 16 pixels) which will represent the collection in menus, etc."),
+		"collection_url" => array("label" => "Collection Home", "type" => "url", "help" => "The Dacura URL for the collection"),		
+		"collection_path" => array("label" => "Collection Storage", "help" => "The directory in which the collection's files are stored"),		
 	//	"instance_idbase" => array("hidden" => true, "label" => "Instance Data ID prefix", "type" => "url", "help" => "This URL will be prepended to the internal IDs of all collection instance data to make a global id"),		
 	//	"graph_idbase" => array("hidden" => true, "label" => "Named Graph ID prefix", "type" => "url", "help" => "This URL will be prepended to the internal IDs of all collection named graphs to make a global id"),		
 	),
+	/* System configuration fields that will appear on the collection / system configuration form */
 	"sysconfig_form_fields" => array(
 		"install_url" => array("disabled" => true, "label" => "Dacura Base URL", "type" => "url", "help" => "The URL that Dacura is installed at. All Dacura URLs will be relative to this base."),
 		"storage_base" => array("disabled" => true, "label" => "Storage Base", "help" => "The directory where the server stores its data."),
@@ -86,15 +91,18 @@ $settings = array(
 		"path_to_collections" => array("label" => "Path to collections' file storage area", "type" => "text"),
 		"collections_urlbase" => array("label" => "URL of collections' web-files", "type" => "text"),
 	),
+	/* field settings that apply to all services */
 	"service_form_fields" => array(
 		"status" =>	array("label" => "Status", "help" => "Is the service currently enabled?", "type" => "choice", "options" => array("enable" => "Enabled", "disable" => "Disabled")),			
 		"facets" =>	array("label" => "Access Control", "input_type" => "custom", "extras" => array(), "help" => "What facets of the service are available to which users", "type" => "complex"),			
 		"facet-list" =>	array("label" => "Access Control Facets", "disabled" => true),
 		"service-title" => array("hidden" => true),
+		"service-button-title" => array("hidden" => true),
 		"status_locked" => array("hidden" => true),
 		"service-description" => array("hidden" => true),				
 		"config_form_fields" => array("hidden" => true, "type" => "complex", "label" => "This array!"),
 	),
+	/* field settings that will appear on configuration form of this service */
 	"config_form_fields" => array(
 		"default_status" => array("label" => "Default status of new collections", "type" => "status"),
 		"service_form_fields" => array("hidden" => true, "type" => "complex", "label" => "config stuff"),

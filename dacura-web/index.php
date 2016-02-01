@@ -38,8 +38,13 @@ if($service){
 		$request_log->setResult(200, "Page rendered");
 	}
 	else {
-		$service->renderScreen("denied", array("title" => "Access Denied " .$dacura_server->errcode, "message" => $dacura_server->errmsg ), "core");
-		$request_log->setResult(401, "Access Denied: $dacura_server->errcode | $dacura_server->errmsg");
+		if($dacura_server->getUser()){
+			$service->renderScreen("denied", array("title" => "Access Denied " .$dacura_server->errcode, "message" => $dacura_server->errmsg ), "core");
+			$request_log->setResult(401, "Access Denied: $dacura_server->errcode | $dacura_server->errmsg");				
+		}
+		else {
+			header("Location: ".$service->get_service_url("login"));
+		}
 	}
 }
 else {

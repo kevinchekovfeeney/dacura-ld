@@ -539,7 +539,7 @@ dacura.system.showBusyOverlay = function(jqueryid, msg, uopts){
 	    height: "100%",
 	    left: 0,
 	    top: 0,
-	    zIndex: 1000000,  // to be on the safe side
+	    zIndex: 9999,  // to be on the safe side
 		background: "rgba(255, 255, 255, .8)"
 	}).appendTo($(jqueryid).css("position", "relative"));
 	
@@ -1014,6 +1014,43 @@ dacura.system.init = function(opts){
 	dacura.system.msgs = dacura.system.getMessages(opts.msgs);
 };
 
+/**
+ * @function updateTopbar
+ * @memberof dacura.system
+ * @summary Update whatever elements on the top bar have changed - called when user's change handle or they change the collection name
+ * @param {Object} opts an options array
+ * @param {string} opts.uname - update user name
+ * @param {string} opts.uicon - update user icon
+ * @param {string} opts.cname - update collection name
+ * @param {string} opts.cicon - update collection icon
+ */
+dacura.system.updateTopbar = function(opts){
+	if(typeof opts.uname == "string"){
+		$('div.topbar-user-context label#uname').html(opts.uname);
+	}
+	if(typeof opts.cname == "string"){
+		$('ul#utopbar-context li.collection-context').attr("title", opts.cname);
+		$('ul#utopbar-context li.collection-context a').html(opts.cname);
+	}	
+	if(typeof opts.cicon == "string"){
+		$('li.collection-context img.topbar-icon').attr("src", opts.cicon);
+	}	
+}
+
+/**
+ * @function updateHeader
+ * @memberof dacura.system
+ * @summary Update whatever elements on the header have changed - currently only happens when collection updates background
+ * @param {Object} opts an options array
+ * @param {string} opts.background - update background image
+ */
+dacura.system.updateHeader = function(opts){
+	if(typeof opts.background == "string"){
+		$('#content-container').css('background-image', 'url(' + opts.background  + ')');
+	}
+}
+
+
 /* some simple utility functions */
 /**
  * @function validateURL
@@ -1180,7 +1217,7 @@ function nvArrayToOptions(nv, selected){
 /**
  * @function jpr
  * @summary a short cut to alerting a json stringified version of a javascript object - basic debugging 
- * @param obj the object to be show in the alert box
+ * @param obj - the object to be show in the alert box
  */
 function jpr(obj){
 	alert(JSON.stringify(obj));

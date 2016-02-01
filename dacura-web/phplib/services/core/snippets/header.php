@@ -8,7 +8,7 @@
  * @author chekov
  * @copyright GPL v2
  */
-$bgimage = isset($params['bgimage']) ? $params['bgimage'] : $service->furl("image", "Trinity-college-library-dub2.jpg");?>
+$bgimage = isset($params['background']) && $params['background'] ? $params['background'] : $service->furl("images", "system/Trinity-college-library-dub2.jpg");?>
 <!DOCTYPE html>
 <html>
 	<head>
@@ -17,8 +17,8 @@ $bgimage = isset($params['bgimage']) ? $params['bgimage'] : $service->furl("imag
 		<title>Dacura</title>
 		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->furl("css", "opensans.css")?>" />
 		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->furl("css", "jquery-ui.css")?>" />
-		<link rel="shortcut icon" href="<?=$service->furl("images", "favicon2.ico")?>" />
-		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->get_service_file_url('master.css', "core")?>"/>
+		<link rel="shortcut icon" href="<?=$service->furl("images", "system/favicon.ico")?>" />
+		<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->furl("master", false)?>"/>
 		<script src="<?=$service->furl("js", "jquery-2.1.4.min.js")?>"></script>
 		<script src="<?=$service->furl("js", "jquery-ui.js")?>"></script>
 		<script>

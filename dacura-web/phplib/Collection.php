@@ -35,9 +35,9 @@ class Collection extends DacuraObject {
 			"collection_path" => $srvr->getSystemSetting("path_to_collections").$cid."/",
 			"status" => $this->status,
 			"name" => $this->name,
-			"image" => $srvr->service->furl("image", "collection_bg.jpg"),
-			"background" => $srvr->service->furl("image", "background.jpg"),
-			"icon" => $srvr->service->furl("image", "candidate_icon.png"),
+			"image" => $srvr->service->furl("images", "system/collection_bg.jpg"),
+			"background" => $srvr->service->furl("images", "system/background.jpg"),
+			"icon" => $srvr->service->furl("images", "system/candidate_icon.png"),
 			"description" => ""
 		);
 		return $settings;

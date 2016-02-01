@@ -260,7 +260,8 @@ class DacuraFormElement extends DacuraObject {
 	 * @return string The TABLE html
 	 */
 	function getValueTable($settings, $context, $help = false){
-		$html = "<table class='dacura-property-value-bundle'><tr><td class='dacura-property-input'>";
+		$html = "<table class='dacura-property-value-bundle'><tr>";
+		$html .= ($this->display_type == 'view') ? "<td class='dacura-property-display'>" : "<td class='dacura-property-input'>";
 		if(isset($settings['display_type']) &&  $settings['display_type'] == "view"){
 			$html .= $this->getDisplayElementHTML($settings, $context);
 		}
@@ -290,10 +291,10 @@ class DacuraFormElement extends DacuraObject {
 			return $this->drawCustomDisplayField($settings, $context);
 		}
 		elseif(is_array($this->value)){
-			$html = "<div class='dacura-display-json raw-json'>" . json_encode($this->value, JSON_PRETTY_PRINT)."</div>";
+			$html = "<div id='$prefix"."$this->id' class='dacura-display-json raw-json'>" . json_encode($this->value, JSON_PRETTY_PRINT)."</div>";
 		}
 		elseif($this->value === ""){
-			$html = "<span class='dacura-display-empty'>empty</span>";
+			$html = "<span id='$prefix"."$this->id' class='dacura-display-value'></span>";
 		}
 		else {
 			$prefix = $context[count($context)-1]."-";
@@ -305,8 +306,7 @@ class DacuraFormElement extends DacuraObject {
 				if($v === true) $v = "true";
 				if($v === false) $v = "false";
 				else $v = htmlspecialchars($v);
-				$html = "<span id='label_$prefix"."$this->id' class='dacura-display-value'>$v</span>
-					<input id='$prefix"."$this->id' type='hidden' value='$v'>";
+				$html = "<span class='dacura-display-value'>$v</span><input id='$prefix"."$this->id' type='hidden' value='$v'>";
 			}
 		}
 		return $html;
@@ -331,7 +331,7 @@ class DacuraFormElement extends DacuraObject {
 		if($this->input_type == "input"){
 			$val = htmlspecialchars($this->value);
 			if($this->type == "image"){
-				$html = "<input onclick=\"openKCFinder(this)\" id=\"$prefix"."$this->id\" class=\"$cls image-input\" $disabled type='text' value=\"$val\">";
+				$html = $this->drawImageInputField($settings, $context);
 			}
 			else {
 				$html = "<input id=\"$prefix"."$this->id\" class=\"$cls\" $disabled type='text' value=\"$val\">";				
@@ -387,6 +387,32 @@ class DacuraFormElement extends DacuraObject {
 		else {
 			$html = "<span class='dacura-error'>Value: $this->value</span>";
 		}
+		return $html;
+	}
+	
+	/**
+	 * Draw an image input field - basic text field with a few wrappings 
+	 * @param array $settings - the optional settings for the form element
+	 * @param array $context - an array with the ids of the parent forms that this element is within
+	 * @return string - the html representation of the field
+	 */
+	function drawImageInputField($settings, $context){
+		$val = htmlspecialchars($this->value);
+		$prefix = $context[count($context)-1]."-";
+		$html = "<div class='dacura-image-input'>";
+		$html .= "<span id=\"$prefix".$this->id."-preview\" class='image-input-preview'>";
+		if($this->update_disabled){
+			$html .= "<img id=\"$prefix".$this->id."-img\" class='input-preview-disabled' src='$val'>";				
+		}
+		else {
+			$html .= "<img id=\"$prefix".$this->id."-img\" class='input-preview' src='$val' title='Click to change the file'>";
+		}
+		$html .= "</span>";
+		$cls = 'dacura-'.$this->element_size.'-input';
+		$disabled = $this->update_disabled ? "disabled" : "";
+		$html .= "<span class='image-input-text'>";
+		$html .= "<input id=\"$prefix"."$this->id\" class=\"$cls image-input\" $disabled type='text' value=\"$val\">";
+		$html .= "</span></div>";
 		return $html;
 	}
 

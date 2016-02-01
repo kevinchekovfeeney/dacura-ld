@@ -70,7 +70,7 @@ ul {
 
 #dacura-header {
   height: 36px;
-  z-index: 100000;
+  z-index: 1000000;
   width: 100%;
   background: rgb(28, 16, 19); /* The Fallback */
   background: rgba(28, 16, 19, 0.85);
@@ -82,30 +82,29 @@ ul {
 #dacura-header div.dacura-logo {	
   z-index: 100000;
   display: inline-block;
-  border-color: 2px solid blue;
-  height: 30px;
-  padding-left: 4px; 
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-right: 8px;
+  height: 28px;
+  padding: 4px; 
+  vertical-align: 6px;
 }
 
-#dacura-header div.topbar-user-actions {
-  z-index: 100000;
-  float: right;
-  margin-right: 8px; 
-  padding-top: 2px;
+#dacura-header div.dacura-logo:hover {
+	background: rgba(38, 66, 140, 0.8);
 }
 
 div.topbar-context {
 	display: inline-block;
 	margin-bottom: -3px;
   }
+  
+img.topbar-icon {
+	max-height: 20px;
+}
 
 /*
 Menu bar at the top of pages
 */
 #utopbar-context {
+	font-size: 0.9em;
 	margin-left: 0px;
 	padding: 0px;
 }
@@ -120,19 +119,25 @@ Menu bar at the top of pages
 	text-decoration: none;
 }
 
-.topbar-user-context a:hover,
-#utopbar-context li a:hover {
-  	background: rgba(58, 66, 119, 0.5);
+#utopbar-context li:hover {
+  	background: rgba(38, 66, 140, 0.8);
 	cursor: pointer;
+}
+#utopbar-context li.ucontext-active {
+  	background: rgba(38, 66, 140, 0.8);
 }
 
 #utopbar-context li {
-	float: left; 
-	padding-left: 0px;
-	margin-right: 10px;
-	background-repeat: no-repeat;
-    background-position: 0% 90%;
+	float: left;
+	display: inline-block;
+	vertical-align: -4px;
+	height: 28px;
+	margin-bottom: 1px;
+	padding-left: 6px;
+	padding-right: 12px;
+	padding-top: 8px;
 }
+
 
 #utopbar-context img {
 	margin-bottom: -2px;
@@ -141,7 +146,7 @@ Menu bar at the top of pages
 div.topbar-user-context {
 	float: right;
 	color: #aaa;
-	margin-right: 6px;
+	margin-right: 0px;
 }
 
 .topbar-user-context .username {
@@ -149,7 +154,7 @@ div.topbar-user-context {
 	padding-left: 12px;
 }
 
-.topbar-user-context .username img {
+.topbar-user-context .username img.uicon {
 	margin-top: 8px;
 }
 
@@ -162,31 +167,66 @@ div.topbar-user-context {
 	padding-top: 12px;
 } 
 
-.topbar-user-context .usersettings {
-	float: right;
-	height: 36px;
-	padding-left: 12px;
-	border-left: 1px solid #333;
-	margin-left: 0px;
-}
-
-.topbar-user-context .usersettings label {
-	padding-right: 6px;
-	display: inline-block;
-	font-size: 0.85em;
-	margin-top: -4px;
-	vertical-align: top;
-	padding-top: 12px;
-	cursor: pointer;
+.topbar-user-context .username img.uconfigicon {
+	margin-left: 6px;
 }
 
 .topbar-user-context .usersettings img {
 	padding-top: 10px;
 }
 
-.topbar-user-context .useractivity {
+.topbar-user-menu {
+	position: absolute;
+	right: 8px;
+	max-width: 300px;
+	font-size: 0.8em;	
+}
+
+.topbar-user-login {
+	float: right;
+	font-size: 0.9em;
+	padding: 6px;
+	color: #eee;
+}
+
+.topbar-user-login:hover {
+	text-decoration: none;
+	background: rgba(38, 66, 140, 0.8);
+}
+
+.topbar-user-login label {
+	padding-left: 6px;
+}
+
+a.topbarlogin {
+	color: #eee;
+	text-decoration: none;
+	margin-left: 8px;
+	margin-right: 8px;
+	border: 1px solid #eee;
+	padding: 1px 6px;
+	font-size: 0.9em;
+	border-radius: 3px;
+	background-color: #444;
+}
+
+a.topbar-goto-login {
+	text-decoration: none;
+	padding: 4px 16px;
+	color: #eee;
+}
+
+a.topbar-goto-login:hover {
+	text-decoration: none;
+}	
+
+.topbar-user-login input {
+	height: 14px;
+	padding: 1px;
+	width: 100px;
 	font-size: 0.8em;
-	color: #888;
+	border-radius: 4px;
+	background-color: #eAe5d7;
 }
 
 .topbar-user-context .useroptions {
@@ -1140,7 +1180,7 @@ div.tool-close a {
 }
 
 .tool-header-image {
-	height: 24px;
+	height: 32px;
 	float: left;
 	margin-right: 8px;
 }
@@ -1490,7 +1530,7 @@ span.dacura-role {
 	height: 24px;
 }
 
-.dacura-role.dacurauser {
+.dacura-.dacurauser {
 	  background: url("dacurauser.png") no-repeat center top;
   	  background-size:24px 24px;
 }
@@ -1740,6 +1780,26 @@ table.entity-headers td {
 	border-left: #888 solid 1px;
 	font-weight: bold;
 	color: #111;
+}
+
+span.image-input-preview {
+	display: inline-block;
+	width: 52px;
+	height: 52px;
+	margin: 6px 12px 0px 0px;
+	vertical-align: 6px;
+}
+
+img.input-preview {
+	max-width: 48px;
+	max-height: 48px;
+	vertical-align: middle;
+	text-align: center;
+	border: 1px solid #aabbff;
+	padding: 2px;
+}
+
+div.dacura-image-input {
 }
 
 #kcfinder_div {
