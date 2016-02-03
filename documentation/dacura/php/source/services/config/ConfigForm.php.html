@@ -1,0 +1,250 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php 
+/**
+ * Class representing a dacura settings object as an array of dacura form element initialisation arrays
+ *
+ * Creation Date: 25/01/2016
+ * @author Chekov
+ * @license GPL V2
+ */
+
+class ConfigForm extends DacuraObject {
+	/** @var $sys the system level configuration object */
+	var $sys;
+	/** @var $col the collection level configuration object */
+	var $col;
+	
+	/**
+	 * Constructor: loads the current configuration objects from the passed server object
+	 * @param DacuraServer $srvr the controlling dacura server object
+	 */
+	function __construct(DacuraServer &amp;$srvr){
+		$this-&gt;sys = $srvr-&gt;getCollection(&quot;all&quot;);
+		if($srvr-&gt;cid() != &quot;all&quot;){
+			$this-&gt;col = $srvr-&gt;getCollection($srvr-&gt;cid());	
+		}
+	}
+	
+	/**
+	 * Current collection id
+	 * @return string the current contextual collection id (all for platform level)
+	 */
+	function cid(){
+		return ($this-&gt;col) ? $this-&gt;col-&gt;id : &quot;all&quot;; 
+	}
+	
+	/**
+	 * Generates an array of DacuraFormElement configurations corresponding with the passed settings 
+	 * and field configuration objects 
+	 * 
+	 * @param array $settings an arbitrary json array - represents a setting for something
+	 * @param array $sfields an array of fields indexed by ids (corresponding to setting names) each field 
+	 * is the input values to a DacuraFormElement
+	 * @return array list of DacuraFormElement initialisation arrays ready to be passed to drawInputTable function
+	 */
+	function generateFieldsFromSettings($settings, $sfields, $depth = 0){
+		$fields = array();
+		$sfield_id_map = array();
+		if(!is_array($settings)){
+			return $fields;
+		}
+		//do fields first to respect ordering...
+		foreach($sfields as $sid =&gt; $sf){
+			if(!isset($sf['id'])){
+				$sf['id'] = $sid;
+			}
+			elseif($sid != $sf['id']) {
+				$sfield_id_map[$sid] = $sf['id'];				
+			}
+			if(isset($settings[$sf['id']]) &amp;&amp; isset($settings[$sid])){				
+				$fields[] = $this-&gt;loadField($sf['id'], $settings[$sid], $depth, $sf, $sfields);
+				unset($settings[$sid]);				
+			}
+		}
+		foreach($settings as $key =&gt; $v){
+			$field = false;
+			if(isset($sfields[$key])){
+				$field = $sfields[$key];
+				unset($sfields[$key]);
+			}
+			else{
+				$findex = array_search($key, $sfield_id_map);
+				if($findex){
+					$field = $sfields[$findex];
+					unset($sfields[$findex]);
+				}
+			}
+			$fields[] = $this-&gt;loadField($key, $v, $depth, $field, $sfields);
+			unset($settings[$key]);				
+		}
+		return $fields;
+	}
+	
+	function loadField($k, $v, $d, $field = false, $sfields){
+		if(!$field){
+			$field = array(&quot;label&quot; =&gt; $k);
+		}
+		if(!isset($field['id'])){
+			$field['id'] = $k;
+		}
+		$field['value'] = $v;
+		$field['depth'] = $d;
+		if(is_array($v) &amp;&amp; (!isset($field['type']) || $field['type'] == &quot;section&quot;)){
+			if(!isset($field['type'])) $field['type'] = &quot;section&quot;;
+			$field['fields'] = $this-&gt;generateFieldsFromSettings($v, $sfields, $d++);
+		}
+		return $field;
+	}
+	
+	/**
+	 * Generates an array of DacuraFormElement configurations corresponding with the passed system configuration settings
+	 * 
+	 * Adds meta data settings to platform level fields and removed hidden fields from input fields
+	 *
+	 * @param array $ds an arbitrary json array - represents a system configuration settings array
+	 * @param array $sfields an array of fields indexed by ids (corresponding to setting names) each field
+	 * is the input values to a DacuraFormElement
+	 * @return array list of DacuraFormElement initialisation arrays ready to be passed to drawInputTable function
+	 */
+	function getSystemConfigFields($ds, $sfields = array()){
+		$fields = $this-&gt;generateFieldsFromSettings($ds, $sfields);
+		$nfields = array();
+		foreach($fields as $onef){
+			if($this-&gt;cid() != &quot;all&quot;){
+				$fmeta = $this-&gt;sys-&gt;getConfig(&quot;meta&quot;);
+				$nfield = $this-&gt;getConfigField($onef, $fmeta);
+			}
+			else {
+				$nfield = $onef;
+			}
+			if($nfield &amp;&amp; !isset($nfield['hidden'])){
+				$nfields[] = $nfield;
+			}
+		}
+		return $nfields;
+	}
+	
+	/**
+	 * Generates an array of DacuraFormElement configurations corresponding with the passed service configuration settings
+	 *
+	 * adds meta data settings to platform level fields and removed hidden fields from input fields
+	 * also sets up special facets input type element
+	 *
+	 * @param string $sname the name of the service in question
+	 * @param array $settings an arbitrary json array - represents the setting for a service 
+	 * @param array $sfields an array of fields indexed by ids (corresponding to setting names) each field
+	 * @return array list of DacuraFormElement initialisation arrays ready to be passed to drawInputTable function
+	 */
+	function getServiceConfigFields($sname, $settings, $sfields){
+		if(!isset($settings['status'])){
+			$settings['status'] = &quot;enable&quot;;
+		}
+		if($this-&gt;cid() !== &quot;all&quot; &amp;&amp; !isset($settings['facets'])){
+			$settings['facets'] = array();
+		}
+		$fields = $this-&gt;generateFieldsFromSettings($settings, $sfields);
+		//if($sname == &quot;config&quot;) opr ($fields);
+		$nfields = array();
+		foreach($fields as $onef){
+			if($this-&gt;cid() != &quot;all&quot;){
+				$fmeta = $this-&gt;sys-&gt;getConfig(&quot;servicesmeta.&quot;.$sname);
+				$nfield = $this-&gt;getConfigField($onef, $fmeta);
+			}
+			else {
+				$nfield = $onef;
+			}
+			if(isset($nfield['id']) &amp;&amp; $nfield['id']  == &quot;facets&quot;){
+				$nfield['options'] = isset($settings['facet-list']) ? $settings['facet-list'] : array(&quot;view&quot;);
+			}
+			if($nfield &amp;&amp; !isset($nfield['hidden'])){
+				if($nfield['id'] == &quot;status&quot; || $nfield['id'] == &quot;facets&quot;){
+					array_unshift($nfields, $nfield);
+				}
+				else {
+					$nfields[] = $nfield;
+				}
+			}
+		}
+		return $nfields;
+	}
+
+	/**
+	 * Generates a DacuraFormElement configuration corresponding with the passed field specification
+	 * includes embedded fields in the field property
+	 * 
+	 * Sets various meta-data about fields: fixed, disabled, changeable, hidden
+	 *
+	 * @param string $onef the DacuraFormElement configuration initialisation setting
+	 * @param array $fmeta an array of metadata about the fields - from system configuration settings
+	 * @return array list of DacuraFormElement initialisation arrays ready to be passed to drawInputTable function
+	 */
+	function getConfigField($onef, $fmeta, $fixed = false){
+		if($fixed) $onef['disabled'] = true;
+		if(isset($fmeta[$onef['id']]) &amp;&amp; isset($fmeta[$onef['id']]['changeable'])){
+			if($fmeta[$onef['id']]['changeable'] == &quot;hidden&quot;) {
+				$onef['hidden'] = true;
+			}
+			elseif($fmeta[$onef['id']]['changeable'] == &quot;fixed&quot;) {
+				$onef['disabled'] = true;
+				$fixed = true;
+			}
+		}
+		if(isset($onef['type']) &amp;&amp; $onef['type'] == &quot;section&quot;){
+			$nfields = array();
+			foreach($onef['fields'] as $i =&gt; $f){
+				$oneres = $this-&gt;getConfigField($f, $fmeta, $fixed);
+				if($oneres &amp;&amp; !isset($oneres['hidden'])) $nfields[] = $oneres;
+			}
+			$onef['fields'] = $nfields;
+			return $onef;
+		}
+		if(!isset($onef['type'])){
+			$onef['type'] = &quot;text&quot;;
+		}
+		return $onef;
+	}	
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

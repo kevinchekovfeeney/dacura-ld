@@ -89,7 +89,7 @@ dacura.schema.showHeader = function(gra){
 	}
 	///gra.subtitle = ont.meta.title;
 	options.description = $('#toolheader-template').html();
-	dacura.system.updateToolHeader(options);
+	dacura.tool.header.update(options);
 	metadetails = timeConverter(gra.created);
 	$('.graph_uri').html("<span class='graph-uri'>" + gra.meta.url + "</span>");
 	$('.graph_created').html("<span class='graph-details'>" + metadetails + "</span>");
@@ -222,7 +222,7 @@ $(function() {
 	
 	var onw = function (obj){
 		dacura.editor.load("<?=$params['id']?>", dacura.schema.fetch, dacura.schema.update, obj);
-		dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);	
+		//dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);	
 		dacura.schema.showGraph(obj);
 	    $('#graph-pane-list').show();
 	};

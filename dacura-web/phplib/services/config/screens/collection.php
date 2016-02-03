@@ -61,7 +61,7 @@
 </div>
 <script>
 
-/* start with the main page */
+/* result reporting */
 
 function showUpdateSuccess(data, pconf, msg){
 	opts = {};
@@ -81,11 +81,13 @@ function showUpdateSuccess(data, pconf, msg){
 	drawCollection(data);
 }
 
+/* updates the current settings of a collection - called by collection configuration button */
 function updateSettings(obj, result, pconf){
 	data = {settings: obj};
 	dacura.config.updateCollection(data, result, pconf);
 }
 
+/* Draws the collection screens - including all the subscreens*/
 function drawCollection(obj){
 	if(typeof lconfig == "object"){
 		for(var k in obj){
@@ -127,14 +129,17 @@ function drawCollection(obj){
 	<?php } ?>
 }
 
+/* Storing various data in javascript variables for access by screens */
 <?php if(in_array("view-services", $params['subscreens'])) { ?>
 var allroles = <?=isset($params['all_roles']) ? json_encode($params['all_roles']) : "{}"?>;
 var service_tables = <?= json_encode($params['service_tables']); ?>;
 
+/* result reporting */ 
 function showDeleteResult(obj, targets){
 	dacura.system.showWarningResult("This collection has been deleted", "Collection " + dacura.system.cid() + " deleted", targets.resultbox, false, targets.mopts);
 }
 
+/* Called when user clicks 'remove' link of facet page */
 function facet_remove(divid, r, f){
 	id = current_service;
 	var nfacets = [];
@@ -156,6 +161,7 @@ function facet_remove(divid, r, f){
 	dacura.config.updateCollection(ndata, onwards, service_subpage_conf);	
 }
 
+/* Called when user updates list of facets for a service */
 function updateFacetList(key, facets, pconf, allfacets){
 	var html = "";
 	for(var i = 0; i < facets.length; i++){
@@ -171,6 +177,7 @@ function updateFacetList(key, facets, pconf, allfacets){
 	$('#' + key + ' .dacura-facets-listing').html(html);
 }
 
+/* Loads the service with the passed id into the screen */
 function loadService(id){
 	current_service = id;
 	dacura.tool.clearResultMessages();
@@ -200,6 +207,7 @@ function loadService(id){
 	service_subpage_conf = dacura.tool.loadSubscreen('servicelist', 'servicebox', "return to list of services", service_tables[id].header);
 }
 
+/* updates the config of a particular service */
 function updateServiceConfig(obj, result, pconf){
 	var sid = obj.id;
 	delete(obj.id);
@@ -209,6 +217,7 @@ function updateServiceConfig(obj, result, pconf){
 	dacura.config.updateCollection(data, result, pconf);
 }
 
+/* reads the data from the form, marshalls it and sends it to the update api */
 function readServiceUpdate(screen){
 	//get id of currently loaded serviced
 	if($('#servicebox-contents table').length){
@@ -226,6 +235,7 @@ function readServiceUpdate(screen){
 	return {};
 }
 
+/* draws the table which lists the services available */
 function drawServiceTable(services, col){
 	var service_rows = dacura.config.getServiceTableRows(services, col);
 	if(!sloaded){
@@ -255,11 +265,12 @@ function drawServiceTable(services, col){
 }
 
 <?php } ?>
+var fbloaded = false;//is the configuration loaded
+var lconfig;//the most recent configuration received from the api
+var sloaded = false; // the currently loaded service
 
-var fbloaded = false;
-var sloaded = false;
-var lconfig;
-$(function() {
+ /* page initialisation - forms, tables, etc */
+ $(function() {
 	dacura.tool.init({
 		"tabbed": 'collection-config', 
 		"forms": {

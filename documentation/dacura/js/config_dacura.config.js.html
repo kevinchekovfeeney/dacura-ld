@@ -1,4 +1,32 @@
-/**
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: config/dacura.config.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: config/dacura.config.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
  * @file Javascript client code for config management service
  * @author Chekov
  * @license GPL V2
@@ -24,21 +52,21 @@ dacura.config.apiurl = dacura.system.apiURL();
 dacura.config.getServiceTableRows = function(services, collection){
 	var rows = [];
 	for(s in services){
-		var stat = (typeof services[s].status == "string" && services[s].status != "enable") ? "reject" : "accept";
+		var stat = (typeof services[s].status == "string" &amp;&amp; services[s].status != "enable") ? "reject" : "accept";
 		var row = {id: s, status: stat};
 		if(typeof collection == "object"){
-			if(stat == "reject" && (typeof collection.config != "object" || typeof collection.config.services != 'object' || typeof collection.config.services[s] != "object" || typeof collection.config.services[s].status != "string" || collection.config.services[s].status != "disable")){
+			if(stat == "reject" &amp;&amp; (typeof collection.config != "object" || typeof collection.config.services != 'object' || typeof collection.config.services[s] != "object" || typeof collection.config.services[s].status != "string" || collection.config.services[s].status != "disable")){
 				//row.selector = "disabled in server config";
 				continue;
 			}
-			else if(typeof services[s].status_locked != "undefined" && services[s].status_locked == true){
-				row.selector = "<span class='locked'>locked</span>";
+			else if(typeof services[s].status_locked != "undefined" &amp;&amp; services[s].status_locked == true){
+				row.selector = "&lt;span class='locked'>locked&lt;/span>";
 			}
 			else if(stat == "reject"){
-				row.selector = "<button class='update-service' id='" + s + "-enable'>enable</button>";
+				row.selector = "&lt;button class='update-service' id='" + s + "-enable'>enable&lt;/button>";
 			}
 			else {
-				row.selector = "<button class='update-service' id='" + s + "-disable'>disable</button>";					
+				row.selector = "&lt;button class='update-service' id='" + s + "-disable'>disable&lt;/button>";					
 			}
 		}
 		rows.push(row);
@@ -59,17 +87,17 @@ dacura.config.getServiceTableRows = function(services, collection){
  * @returns {String} - html representation of button
  */
 dacura.config.getFacetButtonHTML = function(id, role, rtitle, facet, facettitle, inactive){
-	html = "<div class='dacura-facet-button active' id='" + id + "'>";
-	html += "<span class='dacura-role " + role + "' title='" + rtitle + "'></span>";
-	html += "<span class='dacura-role-label'>" + rtitle + "</span>";
-	html += "<span class='facet-text'>" + facettitle + "</span>";
+	html = "&lt;div class='dacura-facet-button active' id='" + id + "'>";
+	html += "&lt;span class='dacura-role " + role + "' title='" + rtitle + "'>&lt;/span>";
+	html += "&lt;span class='dacura-role-label'>" + rtitle + "&lt;/span>";
+	html += "&lt;span class='facet-text'>" + facettitle + "&lt;/span>";
 	if(typeof inactive == "undefined" || inactive == false){
-		html += "<span class='dacura-facet-action'>";
-		html += "<a href='javascript:facet_remove(\"" + id + "\", \"" + role + "\", \"" + facet + "\")'";
-		html += "class='dacura-role-remove'>Remove Access</a>";
-		html += "</span>";
+		html += "&lt;span class='dacura-facet-action'>";
+		html += "&lt;a href='javascript:facet_remove(\"" + id + "\", \"" + role + "\", \"" + facet + "\")'";
+		html += "class='dacura-role-remove'>Remove Access&lt;/a>";
+		html += "&lt;/span>";
 	}
-	html += "</div>";
+	html += "&lt;/div>";
 	return html;
 }
 
@@ -261,3 +289,26 @@ dacura.config.api.updateCollection = function(id, data, part){
 	xhr.dataType = "json";
     return xhr;	
 }
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="dacura.html">dacura</a></li><li><a href="dacura.config.html">config</a></li><li><a href="dacura.config.api.html">api</a></li><li><a href="dacura.login.html">login</a></li><li><a href="dacura.login.api.html">api</a></li><li><a href="dacura.system.html">system</a></li><li><a href="dacura.tool.html">tool</a></li><li><a href="dacura.tool.button.html">button</a></li><li><a href="dacura.tool.form.html">form</a></li><li><a href="dacura.tool.header.html">header</a></li><li><a href="dacura.tool.table.html">table</a></li><li><a href="dacura.users.html">users</a></li><li><a href="dacura.users.api.html">api</a></li><li><a href="dacura.users.roles.html">roles</a></li><li><a href="dacura.users.roles.createbox.html">createbox</a></li></ul><h3>Global</h3><ul><li><a href="global.html#durationConverter">durationConverter</a></li><li><a href="global.html#escapeHtml">escapeHtml</a></li><li><a href="global.html#escapeQuotes">escapeQuotes</a></li><li><a href="global.html#getMetaProperty">getMetaProperty</a></li><li><a href="global.html#isEmpty">isEmpty</a></li><li><a href="global.html#jpr">jpr</a></li><li><a href="global.html#nvArrayToOptions">nvArrayToOptions</a></li><li><a href="global.html#size">size</a></li><li><a href="global.html#timeConverter">timeConverter</a></li><li><a href="global.html#toggleCheckbox">toggleCheckbox</a></li><li><a href="global.html#validateURL">validateURL</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Feb 03 2016 20:23:26 GMT+0000 (GMT Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

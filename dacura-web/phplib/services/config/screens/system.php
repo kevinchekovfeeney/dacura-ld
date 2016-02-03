@@ -106,7 +106,7 @@ function loadService(e, id){
 	dacura.tool.clearResultMessages();
 	if(!isEmpty(service_tables[id])){
 		$('#servicebox-contents').empty().append(service_tables[id].body);
-		dacura.tool.form.init('service-'+id, {initselects: true, icon: "<?= $service->furl("images", "system/help-icon.png")?>"});
+		dacura.tool.form.init('service-'+id, {initselects: true, icon: "<?= $service->furl("images", "icons/help-icon.png")?>"});
 		if(typeof lconfig.collection == "object" && typeof lconfig.collection.config == "object" && typeof lconfig.collection.config.servicesmeta == "object"){
 			dacura.tool.form.populate('service-'+id, lconfig.services[id], lconfig.collection.config.servicesmeta[id]);
 		}
