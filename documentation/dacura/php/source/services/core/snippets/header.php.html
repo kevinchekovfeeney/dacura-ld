@@ -44,17 +44,17 @@
  * @author chekov
  * @copyright GPL v2
  */
-$bgimage = isset($params['bgimage']) ? $params['bgimage'] : $service-&gt;furl(&quot;image&quot;, &quot;Trinity-college-library-dub2.jpg&quot;);?&gt;
+$bgimage = isset($params['background']) &amp;&amp; $params['background'] ? $params['background'] : $service-&gt;furl(&quot;images&quot;, &quot;system/Trinity-college-library-dub2.jpg&quot;);?&gt;
 &lt;!DOCTYPE html&gt;
 &lt;html&gt;
 	&lt;head&gt;
 		&lt;meta charset=utf-8 /&gt;
 		&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0, maximum-scale=1.0&quot; /&gt;
 		&lt;title&gt;Dacura&lt;/title&gt;
-		&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;furl(&quot;css&quot;, &quot;jquery-ui.css&quot;)?&gt;&quot; /&gt;
-		&lt;link rel=&quot;shortcut icon&quot; href=&quot;&lt;?=$service-&gt;furl(&quot;images&quot;, &quot;favicon2.ico&quot;)?&gt;&quot; /&gt;
-		&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;get_service_file_url('master.css', &quot;core&quot;)?&gt;&quot;/&gt;
 		&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;furl(&quot;css&quot;, &quot;opensans.css&quot;)?&gt;&quot; /&gt;
+		&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;furl(&quot;css&quot;, &quot;jquery-ui.css&quot;)?&gt;&quot; /&gt;
+		&lt;link rel=&quot;shortcut icon&quot; href=&quot;&lt;?=$service-&gt;furl(&quot;images&quot;, &quot;system/favicon.ico&quot;)?&gt;&quot; /&gt;
+		&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;furl(&quot;master&quot;, false)?&gt;&quot;/&gt;
 		&lt;script src=&quot;&lt;?=$service-&gt;furl(&quot;js&quot;, &quot;jquery-2.1.4.min.js&quot;)?&gt;&quot;&gt;&lt;/script&gt;
 		&lt;script src=&quot;&lt;?=$service-&gt;furl(&quot;js&quot;, &quot;jquery-ui.js&quot;)?&gt;&quot;&gt;&lt;/script&gt;
 		&lt;script&gt;

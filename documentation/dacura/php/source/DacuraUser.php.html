@@ -97,20 +97,8 @@ class DacuraUser extends DacuraObject {
 		unset($this-&gt;sessions);
 		unset($this-&gt;history);
 		return $this; 
-	}
-	
-	/**
- 	 * Does the user have the god role for the given collection?
-	 * @param string $cid collection id for which the question is asked
-	 * @return boolean true if the user has the god role
-	 */
-	function isGod($cid = &quot;all&quot;){
-		foreach($this-&gt;roles as $r){
-			if($r-&gt;isGod() &amp;&amp; ($r-&gt;cid() == $cid || $r-&gt;cid() == &quot;all&quot;)) return true;
-		}
-		return false;
-	}
-	
+	}	
+
 	/**
 	 * Is the user an admin of the collection?
 	 * @param string $cid the collection id
@@ -155,7 +143,7 @@ class DacuraUser extends DacuraObject {
 	function getAdministeredCollections(){
 		$cids = array();
 		foreach($this-&gt;roles as $r){
-			if(($r-&gt;isGod() || $r-&gt;isAdmin()) &amp;&amp; $r-&gt;collection_id != &quot;&quot; &amp;&amp; $r-&gt;collection_id != &quot;all&quot;){
+			if(($r-&gt;isAdmin()) &amp;&amp; $r-&gt;collection_id != &quot;&quot; &amp;&amp; $r-&gt;collection_id != &quot;all&quot;){
 				if(!in_array($r-&gt;collection_id, $cids)) $cids[] = $r-&gt;collection_id;
 			}
 		}
@@ -180,7 +168,7 @@ class DacuraUser extends DacuraObject {
 	 * Add a new role to the user
 	 * @param UserRole $r
 	 */
-	function addRole($r){
+	function addRole(UserRole $r){
 		$this-&gt;roles[] = $r;
 	}
 
@@ -204,7 +192,6 @@ class DacuraUser extends DacuraObject {
 	 * @return boolean true if the user has the minimum role or greater in more than one collection
 	 */
 	function rolesSpanCollections($role = false){
-		if($this-&gt;isGod()) return true;
 		if(count($this-&gt;roles) == 0) return false;
 		$r1 = $this-&gt;roles[0];
 		$r1c = $r1-&gt;cid();
@@ -243,13 +230,20 @@ class DacuraUser extends DacuraObject {
 	/**
 	 * Returns a structure summarising the set of roles possessed by the user
 	 * 
-	 * 
+	 * @return array&lt;string:string&gt; rolename to role title associative array
 	 */
 	function roleSummary(){
 		$roles = array();
 		foreach($this-&gt;roles as $i =&gt; $role){
 			if(!isset($roles[$role-&gt;role()])){
-				$roles[$role-&gt;role()] = UserRole::$dacura_roles[$role-&gt;role()] . &quot; in &quot;.$role-&gt;cid();
+				if(isset(UserRole::$dacura_roles[$role-&gt;role()])){
+					if($role-&gt;cid() == &quot;all&quot; &amp;&amp; $role-&gt;role() == &quot;admin&quot;){
+						$roles[&quot;god&quot;] = &quot;Platform Administrator&quot;;
+					}
+					else {
+						$roles[$role-&gt;role()] = UserRole::$dacura_roles[$role-&gt;role()] . &quot; in &quot;.$role-&gt;cid();
+					}
+				}
 			}
 			else {
 				$roles[$role-&gt;role()] .= &quot;, &quot;.$role-&gt;cid();
@@ -258,14 +252,21 @@ class DacuraUser extends DacuraObject {
 		return $roles;
 	}
 	
+	/**
+	 * Returns a structure representing the set of roles that the user has on a per collection basis
+	 * @return array&lt;string:array&lt;string:string&gt;&gt; map of collection ids to roles roleid:roleTitle
+	 */
 	function collectionSummary(){
 		$collections = array();
 		foreach($this-&gt;roles as $id =&gt; $role){
+			if($role-&gt;cid() == &quot;all&quot;) continue;
 			if(!isset($collections[$role-&gt;cid()])){
 				$collections[$role-&gt;cid()] = array();
 			}
 			if(!isset($collections[$role-&gt;cid()][$role-&gt;role()])){
-				$collections[$role-&gt;cid()][] = UserRole::$dacura_roles[$role-&gt;role()];
+				if(isset(UserRole::$dacura_roles[$role-&gt;role()])){
+					$collections[$role-&gt;cid()][] = UserRole::$dacura_roles[$role-&gt;role()];
+				}
 			}				
 		}
 		return $collections;		
@@ -276,9 +277,9 @@ class DacuraUser extends DacuraObject {
 	 * What category is the user
 	 * 
 	 * Users are divided into categories depending on the distribution of roles that they have
+	 * @return a string representing the category of the user 
 	 */
 	function rcategory(){
-		if($this-&gt;isGod(&quot;all&quot;)) return &quot;god&quot;; 
 		if($this-&gt;isCollectionAdmin(&quot;all&quot;)) return &quot;platform administrator&quot;;
 		if($this-&gt;hasCollectionRole(&quot;all&quot;, &quot;user&quot;)) return &quot;platform user&quot;;
 		if($this-&gt;rolesSpanCollections(&quot;user&quot;)) return &quot;multi-collection user&quot;;
@@ -304,18 +305,27 @@ class DacuraUser extends DacuraObject {
 		return &quot;banjaxed&quot;;		
 	}
 	
+	/**
+	 * returns true if the user has server admin rights
+	 * @return boolean
+	 */
 	function isPlatformAdmin(){
 		$x = $this-&gt;rcategory();
-		return ($x == &quot;platform administrator&quot; || $x == &quot;god&quot;);
+		return ($x == &quot;platform administrator&quot;);
 	}
 
+	/**
+	 * Returns true if the user has a role &gt;= user in the server admin scope
+	 * 
+	 * This is currently not allowed - only admin is allowed at server scope
+	 * @return boolean true if the user has a role in all
+	 */
 	function isPlatformUser(){
 		$x = $this-&gt;rcategory();
 		return ($x == &quot;platform user&quot;);
 	}	
 	
 	/* Session Management Functions */
-
 
 	/**
 	 * Creates a new session and optionally starts it
@@ -366,17 +376,14 @@ class DacuraUser extends DacuraObject {
 		if(!isset($this-&gt;sessions[$cid][$sid])){
 			return $this-&gt;failure_result(&quot;No session to dump session $sid in collection $cid does not exist&quot;, 404);
 		}
-		//this is bad - we use the global dacura-server object to get our path to the dump file
-		//this is so that we don't have to pass the server object all the way along to the user object
-		global $dacura_server;
-		$sdir = $dacura_server-&gt;getSystemSetting(&quot;path_to_collections&quot;).$cid.&quot;/sessions/&quot;.$this-&gt;id;
+		$sdir = $this-&gt;session_directory($cid);
 		if(!file_exists($sdir)){
 			if(!mkdir($sdir, 0777, true)){
 				return $this-&gt;failure_result(&quot;User session dump directory $sdir does not exist and could not be created - check file permissions to ensure that the webserver can write to that directory&quot;, 500);
 			}			
 		}
 		//now we just append to the service session file, creating the file if it does not exist
-		$sfile = $sdir.&quot;/&quot;.$sid.&quot;.session&quot;;
+		$sfile = $this-&gt;session_file($sid, $cid);
 		$srecord = json_encode($this-&gt;sessions[$cid][$sid]-&gt;events);
 		if(!file_put_contents($sfile, $srecord.&quot;\n&quot;, FILE_APPEND | LOCK_EX)){
 			return $this-&gt;failure_result(&quot;Failed to write session $sid in collection $cid to dump file&quot;, 500);
@@ -384,6 +391,95 @@ class DacuraUser extends DacuraObject {
 		return true;				
 	}
 	
+	/**
+	 * Loads the history of the user from their session directories
+	 * @param string $cid the collection id of sessions to load
+	 * @param string $sid the id of the session itself
+	 * @return array&lt;session array&gt; an array of sessions arrays
+	 */
+	function loadHistory($cid, $sid = false){
+		$sessdirs = array();
+		$history = array();
+		if($cid == &quot;all&quot;){ //find all the collections in which the user has sessions...
+			global $dacura_server;
+			$cdir = $dacura_server-&gt;getSystemSetting(&quot;path_to_collections&quot;);
+			if ($handle = opendir($cdir)) {
+				while (false !== ($entry = readdir($handle))) {
+					if(is_dir($cdir.$entry) &amp;&amp; $entry != &quot;.&quot; &amp;&amp; $entry != &quot;..&quot;){
+						$sdir = $cdir.$entry.&quot;/sessions/&quot;.$this-&gt;id;
+						if(file_exists($sdir)){
+							if($sid == false || file_exists($sdir.&quot;/&quot;.$sid.&quot;.session&quot;)){
+								$sessdirs[$entry] = $sdir;
+							}
+						}
+					}
+				}
+			}			
+		}
+		else {
+			$sdir = $this-&gt;session_directory($cid);
+			if($sid == false || file_exists($sdir.&quot;/&quot;.$sid.&quot;.session&quot;)){
+				$sessdirs[$cid] = $sdir;
+			}
+		}
+		$hco = 0;
+		foreach($sessdirs as $colid =&gt; $sdir){
+			if (file_exists($sdir) &amp;&amp; $handle = opendir($sdir)) {
+				while (false !== ($entry = readdir($handle))) {
+					$ext = substr($entry, strrpos($entry, '.') +1);
+					if ($ext == &quot;session&quot;){
+						$sess_id = substr($entry, 0, strrpos($entry, '.'));
+						$sfile = $sdir.&quot;/&quot;.$entry;
+						if(file_exists($sfile) &amp;&amp; ($fhandle = fopen($sfile, &quot;r&quot;))){
+							while (($line = fgets($fhandle)) !== false) {
+								$ds = new DacuraSession($sess_id, $colid, false);
+								if($ds-&gt;loadFromJSON($line)){
+									$hco++;
+									$one_history = $ds-&gt;summary();
+									$one_history['id'] = &quot;history_&quot;.($hco + 1);
+									$one_history['service'] = $sess_id;
+									$one_history['collection'] = $colid;
+									$one_history['events'] = $ds-&gt;events;
+									$history[] = $one_history;
+								}
+							}
+							fclose($fhandle);
+						}
+					}
+				}
+				closedir($handle);
+			}
+		}
+		$this-&gt;history = $history;
+		return $history;
+	}
+	
+	
+	/**
+	 * Returns the path to the session file
+	 * @param string $sid the session id
+	 * @param string $cid the collection id in which the session takes place
+	 * @return string the full path to the session file
+	 */
+	function session_file($sid, $cid){
+		$sdir = $this-&gt;session_directory($cid);
+		$sfile = $sdir.&quot;/&quot;.$sid.&quot;.session&quot;;
+		return $sfile;
+	}
+	
+	/**
+	 * Returns the path to the session directory for the given collection ids
+	 * @param collection $cid the collection id
+	 * @return string the full path to the sessio directory
+	 */
+	function session_directory($cid){
+		//this is bad - we use the global dacura-server object to get our path to the dump file
+		//this is so that we don't have to pass the server object all the way along to the user object
+		global $dacura_server;
+		$sdir = $dacura_server-&gt;getSystemSetting(&quot;path_to_collections&quot;).$cid.&quot;/sessions/&quot;.$this-&gt;id;
+		return $sdir;		
+	}
+		
 	/**
 	 * Pauses a session
 	 * @param string $sid session id
@@ -464,6 +560,10 @@ class DacuraUser extends DacuraObject {
 			$this-&gt;sessions[$cid] = array();
 		}
 		if(!isset($this-&gt;sessions[$cid][$sid])){
+			$this-&gt;sessions[$cid][$sid] = new DacuraSession($sid, $cid);
+		}
+		elseif($this-&gt;sessions[$cid][$sid]-&gt;expired()){
+			$this-&gt;endSession($sid, $cid, &quot;expired&quot;);
 			$this-&gt;sessions[$cid][$sid] = new DacuraSession($sid, $cid);
 		}
 		$this-&gt;sessions[$cid][$sid]-&gt;registerEvent($ev);

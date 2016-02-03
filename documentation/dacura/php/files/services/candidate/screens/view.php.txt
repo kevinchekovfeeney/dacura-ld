@@ -1,6 +1,6 @@
 <script src='<?=$service->furl("js", "jquery.dataTables.js")?>'></script>
 <script src='<?=$service->furl("js", "dataTables.jqueryui.js")?>'></script>
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->url("css", "dataTables.jqueryui.css")?>" />
+<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->get_system_file_url("css", "dataTables.jqueryui.css")?>" />
 
 <div id='fragment-header' class="dch">
 	<span class='candidate-subhead fragment-title'></span>
@@ -111,13 +111,8 @@ dacura.candidate.showHeader = function(cand){
 		options.image = cand.image;
 	}
 	options.description = $('#toolheader-template').html();
-	dacura.system.updateToolHeader(options);
-	if(typeof cand.dataset_title != "undefined"){
-		dtit = cand.dataset_title;			
-	}
-	else if(cand.did == "all"){
-		dtit = cand.cid;
-	}
+	dacura.tool.header.update(options);
+	dtit = cand.cid;
 	if(typeof cand.metadetails != "undefined"){
 		metadetails = cand.metadetails;
 	}
@@ -283,7 +278,7 @@ $('document').ready(function(){
 			$('#update-holder').show();
 		}
 		dacura.editor.load("<?=$params['id']?>", dacura.candidate.fetch, dacura.candidate.update, obj);
-		dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);
+		//dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);
 		dacura.system.styleJSONLD();		
 		$('#cand-pane-list').show();
 	};

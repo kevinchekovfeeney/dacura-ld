@@ -45,22 +45,19 @@
 </div>
 <script>
 $(function() {
-	dacura.system.init({
-		"mode": "tool", 
-		"tabbed": "ld-tool-home",
-		"listings": {
-			"ld_table": {
-				"screen": "entity-list", 
-				"fetch": dacura.ld.fetchentitylist,
-				"settings": <?=$params['entity_datatable']?>
-			},
-			"update_table": {
-				"screen": "update-list", 
-				"fetch": dacura.ld.fetchupdatelist,
-				"settings": <?=$params['update_datatable']?>				
-			}
-		}, 
-		});
+	dacura.tool.init({"tabbed": "ld-tool-home"});
+	dacura.tool.table.init("ld_table", {
+		"screen": "entity-list", 
+		"rowClick": function(event, entid) {window.location.href = dacura.system.pageURL() + "/" + entid},		
+		"fetch": dacura.ld.fetchentitylist,
+		"dtsettings": <?=$params['entity_datatable']?>
+	});		
+	dacura.tool.table.init("update_table", {
+		"screen": "update-list", 
+		"fetch": dacura.ld.fetchupdatelist,
+		"dtsettings": <?=$params['update_datatable']?>
+	});		
+	
 	dacura.editor.init({"editorheight": "300px", "targets": {resultbox: "#create-entity-msgs", busybox: "#create-entity"}});
 	dacura.editor.load(false, false, dacura.ld.create);
 

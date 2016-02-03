@@ -1,6 +1,5 @@
 <?php 
-/**
- * Main login page
+/** Main login page
  * 
  * Includes scripts for switching between functions: register, reset password, login
  * @package login/screens

@@ -18,7 +18,7 @@ class SchemaDacuraServer extends LdDacuraServer {
 	
 	function __construct($s){
 		parent::__construct($s);
-		$this->schemadir = $this->getSysteSetting('path_to_collections').$this->cid()."/schema/";
+		$this->schemadir = $this->getSystemSetting('path_to_collections').$this->cid()."/schema/";
 		if($this->cid() != "all"){
 			$this->graphbase = $this->service->my_url();
 			$this->schema = $this->loadSchemaFromContext();				

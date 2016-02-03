@@ -1,10 +1,9 @@
 <?php 
-/**
- * Error screen for login
+/** Error screen for login
  * 
  * The login service has its own error screens and does not use those from core because the user isn't logged in and we don't 
  * want to load the system until they are.
- * @package Login/Screens
+ * @package login/screens
  * @author chekov
  * @copyright GPL v2
  */

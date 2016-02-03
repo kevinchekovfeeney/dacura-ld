@@ -107,7 +107,7 @@ dacura.ld.showHeader = function(ent){
 		options.image = ent.image;
 	}
 	options.description = $('#header-template').html();
-	dacura.system.updateToolHeader(options);
+	dacura.tool.update(options);
 	if(typeof ent.dataset_title != "undefined"){
 		dtit = ent.dataset_title;			
 	}

@@ -1,6 +1,5 @@
 <?php 
-/**
- * Logout page
+/** Logout page
  * 
  * If $params['exexute'] is set, the user will be logged out automatically, 
  * otherwise they will be presented with a button giving them the option of doing so. 

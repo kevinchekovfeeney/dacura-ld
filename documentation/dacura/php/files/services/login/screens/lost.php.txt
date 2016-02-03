@@ -1,5 +1,5 @@
 <?php 
-/**
+/** 
  * Password reset page
  * 
  * Presents the user with two password inputs which must match and submits them to the dacura api
@@ -25,10 +25,6 @@
 
 <script>
 
-function resetpassword(){
-	dacura.login.resetpassword('<?=$params['userid']?>', pconf);
-}
-
 $(function() {
 	var pconf = {
 			"resultbox": "#resetbox-status", 
@@ -38,12 +34,12 @@ $(function() {
 	};
 	$('#dacura-login-password-confirm').keypress(function(e) {
 		if (e.keyCode == $.ui.keyCode.ENTER) {
-			dacura.login.resetpassword('<?=$params['userid']?>', pconf);
+			dacura.login.resetpassword('<?=$params['userid']?>', pconf, "lost");
 		}
 	});
 	$('#dacura-reset-password-button').click(function(e){
 		e.preventDefault();
-		dacura.login.resetpassword('<?=$params['userid']?>', pconf);
+		dacura.login.resetpassword('<?=$params['userid']?>', pconf, "lost");
 	});		
 	$('#dacura-login-button').hide();
 	dacura.system.showInfoResult('<?=$params['reset_instruction']?>', '<?=$params['greeting']?>', pconf.resultbox, false, {closeable:false, icon:true});

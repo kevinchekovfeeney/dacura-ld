@@ -14,15 +14,25 @@ class UserRole extends DacuraObject {
 	var $role;
 	/** @var array name value array of rolename: role title (human readable) */
 	public static $dacura_roles = array(
-		"user" => "Data User",
+		"user" => "Data Consumer",
 		"harvester" => "Data Harvester", 
 		"expert" => "Domain Expert", 
 		"architect" => "Schema Architect",  
-		"analyst" => "Data Analyst", 
 		"admin" => "Administrator", 
-		"nobody" => "No access",
-		"god" => "Deity",
+		"nobody" => "Slave",
 	);
+
+	public static $extended_dacura_roles = array(
+			"user" => "Data Consumer",
+			"harvester" => "Data Harvester",
+			"expert" => "Domain Expert",
+			"architect" => "Schema Architect",
+			"admin" => "Administrator",
+			"nobody" => "Slave",
+			"dacurauser" => "Any Registered Dacura User",
+			"public" => "Any member of the public"
+	);
+	
 	
 	/**
 	 * @param string $id role id
@@ -33,6 +43,11 @@ class UserRole extends DacuraObject {
 		$this->id = $id;
 		$this->collection_id = $cid;
 		$this->role = $role;
+	}
+	
+	function forapi(){
+		unset($this->status);
+		return parent::forapi();
 	}
 
 	/**
@@ -51,13 +66,19 @@ class UserRole extends DacuraObject {
 		return $this->collection_id;
 	}
 	
-
-	/* role hierarchy..
+	/**
+	 * Get the name of the role
+	 * @return string the name of the role (one of UserRole::$dacura_roles)
 	 */
+	function role(){
+		return $this->role;
+	}
+	
+	/* role hierarchy..	 */
 	/**
 	 * Compares two roles according to the role hierarchy
 	 * 
-	 * god > admin > [other roles] > user > nobody
+	 * admin > [other roles] > user > nobody
 	 * 
 	 * @param string $r1 first role name
 	 * @param string $r2 second role name
@@ -68,8 +89,7 @@ class UserRole extends DacuraObject {
 	 */
 	function roleCompare($r1, $r2){
 		if($r1 == $r2) return 0;
-		elseif($r1 == "god") return 1;
-		elseif($r1 == "admin" && $r2 != "god") return 1;
+		elseif($r1 == "admin") return 1;
 		elseif($r2 == "nobody") return 1;
 		elseif($r2 == "user" && $r1 != "nobody") return 1;
 		else return -1;
@@ -85,13 +105,13 @@ class UserRole extends DacuraObject {
 		if($this->roleCompare($this->role, $r) < 0){
 			return false;
 		}
-		if(($this->collection_id == "all" or $cid == 'any')){
+		if(($this->cid() == "all" or $cid == 'any')){
 			return true;
 		}
-		elseif($this->collection_id != $cid){
+		elseif($this->cid() != $cid){
 			return false;
 		}
-		return false;
+		return true;
 	}
 	
 	/**
@@ -108,14 +128,6 @@ class UserRole extends DacuraObject {
 	 * @return boolean
 	 */
 	function isAdmin(){
-		return ($this->role == "admin");
-	}
-	
-	/**
-	 * Is this a good role?
-	 * @return boolean
-	 */
-	function isGod(){
-		return ($this->collection_id == "all" && $this->role == "god"); 
+		return ($this->role() == "admin");
 	}
 }

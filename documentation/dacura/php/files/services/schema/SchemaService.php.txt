@@ -137,7 +137,7 @@ class SchemaService extends LdService {
 		$params = array();
 		$params['ontology_datatable'] = $this->getDatatableSetting("ontology");
 		$params['dt'] = true;
-		$params["image"] = $this->furl("image", "buttons/schema.png");
+		$params["image"] = $this->furl("images", "services/schema.png");
 		if($screen == "ontology"){
 			$params['topbreadcrumb'] = "All Ontologies";
 			$params["title"] = "Ontology Viewer";

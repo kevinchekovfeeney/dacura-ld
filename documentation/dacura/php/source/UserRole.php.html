@@ -54,11 +54,21 @@ class UserRole extends DacuraObject {
 		&quot;harvester&quot; =&gt; &quot;Data Harvester&quot;, 
 		&quot;expert&quot; =&gt; &quot;Domain Expert&quot;, 
 		&quot;architect&quot; =&gt; &quot;Schema Architect&quot;,  
-		&quot;analyst&quot; =&gt; &quot;Data Analyst&quot;, 
 		&quot;admin&quot; =&gt; &quot;Administrator&quot;, 
-		&quot;nobody&quot; =&gt; &quot;No access&quot;,
-		&quot;god&quot; =&gt; &quot;Deity&quot;,
+		&quot;nobody&quot; =&gt; &quot;Slave&quot;,
 	);
+
+	public static $extended_dacura_roles = array(
+			&quot;user&quot; =&gt; &quot;Data Consumer&quot;,
+			&quot;harvester&quot; =&gt; &quot;Data Harvester&quot;,
+			&quot;expert&quot; =&gt; &quot;Domain Expert&quot;,
+			&quot;architect&quot; =&gt; &quot;Schema Architect&quot;,
+			&quot;admin&quot; =&gt; &quot;Administrator&quot;,
+			&quot;nobody&quot; =&gt; &quot;Slave&quot;,
+			&quot;dacurauser&quot; =&gt; &quot;Any Registered Dacura User&quot;,
+			&quot;public&quot; =&gt; &quot;Any member of the public&quot;
+	);
+	
 	
 	/**
 	 * @param string $id role id
@@ -69,6 +79,11 @@ class UserRole extends DacuraObject {
 		$this-&gt;id = $id;
 		$this-&gt;collection_id = $cid;
 		$this-&gt;role = $role;
+	}
+	
+	function forapi(){
+		unset($this-&gt;status);
+		return parent::forapi();
 	}
 
 	/**
@@ -99,7 +114,7 @@ class UserRole extends DacuraObject {
 	/**
 	 * Compares two roles according to the role hierarchy
 	 * 
-	 * god &gt; admin &gt; [other roles] &gt; user &gt; nobody
+	 * admin &gt; [other roles] &gt; user &gt; nobody
 	 * 
 	 * @param string $r1 first role name
 	 * @param string $r2 second role name
@@ -110,8 +125,7 @@ class UserRole extends DacuraObject {
 	 */
 	function roleCompare($r1, $r2){
 		if($r1 == $r2) return 0;
-		elseif($r1 == &quot;god&quot;) return 1;
-		elseif($r1 == &quot;admin&quot; &amp;&amp; $r2 != &quot;god&quot;) return 1;
+		elseif($r1 == &quot;admin&quot;) return 1;
 		elseif($r2 == &quot;nobody&quot;) return 1;
 		elseif($r2 == &quot;user&quot; &amp;&amp; $r1 != &quot;nobody&quot;) return 1;
 		else return -1;
@@ -151,14 +165,6 @@ class UserRole extends DacuraObject {
 	 */
 	function isAdmin(){
 		return ($this-&gt;role() == &quot;admin&quot;);
-	}
-	
-	/**
-	 * Is this a good role?
-	 * @return boolean
-	 */
-	function isGod(){
-		return ($this-&gt;cid() == &quot;all&quot; &amp;&amp; $this-&gt;role() == &quot;god&quot;); 
 	}
 }</pre>
         <script type="text/javascript">

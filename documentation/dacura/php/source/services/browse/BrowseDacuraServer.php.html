@@ -35,7 +35,8 @@
     </head>
     <body>
         <pre class="brush: php">&lt;?php
-include_once(&quot;phplib/services/ld/LdDacuraServer.php&quot;);
+//include_once(&quot;phplib/services/ld/LdDacuraServer.php&quot;);
+include_once(&quot;phplib/services/config/ConfigDacuraServer.php&quot;);
 
 /**
  * The browse service shows the collection and system front pages
@@ -48,6 +49,28 @@ include_once(&quot;phplib/services/ld/LdDacuraServer.php&quot;);
  * @license: GPL v2
  */
 class BrowseDacuraServer extends DacuraServer {
+	
+	/**
+	 * Generates a list of configuration objects which represent the services that can be accessed by the user from the browse screen
+	 * @return array&lt;string:array&gt; an array indexed by serviceids, each of which contains (title, help, id)
+	 */
+	function getServicesWidgetList(){
+		$wl = array();
+		$servs = $this-&gt;getServiceList();
+		foreach($servs as $sid){
+			if(in_array($sid, array(&quot;browse&quot;, &quot;login&quot;, &quot;home&quot;))) continue;//have no widgets associated
+			$ns = $this-&gt;createDependantService($sid);
+			//get service setting to make sure it is enabled...
+			
+			if($ns-&gt;getServiceSetting(&quot;status&quot;) != &quot;disable&quot; &amp;&amp; $this-&gt;userHasFacet(false, $ns)){
+				$wl[$sid] = array();
+				$wl[$sid]['title'] = $ns-&gt;getServiceSetting('service-button-title', ucfirst($sid));
+				$wl[$sid]['help'] = $ns-&gt;getServiceSetting('service-title', ucfirst($sid).&quot; Service&quot;);
+				$wl[$sid]['help'] .= &quot;. &quot;.$ns-&gt;getServiceSetting('service-description', &quot;&quot;);
+			}
+		}
+		return $wl;
+	}
 	
 	/**
 	 * Returns a list of the collections available to the user
@@ -88,15 +111,17 @@ class BrowseDacuraServer extends DacuraServer {
 			$params['type'] = &quot;admin&quot;;
 			$params['user-count'] = 0;
 		}
-		$lds = $this-&gt;createDependantServer(&quot;ld&quot;); 
-		$filter = array(&quot;collection_id&quot; =&gt; $this-&gt;cid(), &quot;type&quot; =&gt; &quot;graph&quot;);
-		$graphs = $lds-&gt;getEntities($filter);
-		$params['graph-count'] = count($graphs);
-		$filter['type'] = &quot;ontology&quot;;
-		$ontologies = $lds-&gt;getEntities($filter);
-		$params['ontology-count'] = count($ontologies);
+		/* this will be put back once the ld sub-system is back in place */
+		//$lds = $this-&gt;createDependantServer(&quot;ld&quot;); 
+		//$filter = array(&quot;collection_id&quot; =&gt; $this-&gt;cid(), &quot;type&quot; =&gt; &quot;graph&quot;);
+		//$graphs = $lds-&gt;getEntities($filter);
+		//$params['graph-count'] = count($graphs);
+		//filter['type'] = &quot;ontology&quot;;
+		//$ontologies = $lds-&gt;getEntities($filter);
+		$params['ontology-count'] = 0;//count($ontologies);
 		$params['instance-count'] = 0;
 		$params['schema-count'] = 0;
+		$params['graph-count'] = 0;
 		return $params;
 	}
 	
@@ -107,22 +132,23 @@ class BrowseDacuraServer extends DacuraServer {
 	 */
 	function getMenuPanelParams(){
 		$params = array();
+		$widgets = $this-&gt;getServicesWidgetList();
 		$params['system_logo'] = array(
 			&quot;blurb&quot; =&gt; &quot;&quot;, 
 			&quot;title&quot; =&gt; &quot;Dacura Server&quot;, 
 			&quot;link&quot; =&gt; $this-&gt;getSystemSetting(&quot;install_url&quot;, &quot;/&quot;).&quot;system/&quot;, 
-			&quot;img&quot; =&gt; $this-&gt;service-&gt;get_system_file_url(&quot;image&quot;, &quot;dacura-platform-logo-160w.png&quot;)
+			&quot;img&quot; =&gt; $this-&gt;service-&gt;get_system_file_url(&quot;images&quot;, &quot;system/dacura-platform-logo-160w.png&quot;)
 		);
 		$params['dashboard_panes'] = array();
 		$params['menu_items'] = $this-&gt;getContextNavigationHierarchy();
 		if($this-&gt;cid() != &quot;all&quot;){
 			$col = $this-&gt;getCollection($this-&gt;cid());
-			$col_logo = ($col-&gt;getConfig(&quot;image&quot;)) ? $col-&gt;getConfig(&quot;image&quot;) : $this-&gt;service-&gt;get_system_file_url(&quot;image&quot;, &quot;collection_bg.jpg&quot;);
+			$col_logo = $this-&gt;getSystemSetting(&quot;image&quot;, $this-&gt;service-&gt;furl(&quot;images&quot;, &quot;system/default_collection.png&quot;));
 			$params['collection_logo'] = array(
 				&quot;link&quot; =&gt; $this-&gt;getSystemSetting(&quot;install_url&quot;, &quot;/&quot;).$this-&gt;cid(), 
 				&quot;img&quot; =&gt; $col_logo, 
 				&quot;title&quot; =&gt; $col-&gt;name,
-				&quot;blurb&quot; =&gt; $col-&gt;getConfig(&quot;description&quot;)
+				&quot;blurb&quot; =&gt; $this-&gt;getSystemSetting(&quot;description&quot;, &quot;&quot;)
 			); 
 		}
 		return $params;

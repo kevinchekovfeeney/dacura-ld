@@ -32,10 +32,10 @@ class EntityUpdate extends DacuraObject{
 	}
 
 	function __clone(){
-		$this->original = deepArrCopy($this->original);
-		$this->changed = deepArrCopy($this->changed);
-		$this->delta = deepArrCopy($this->delta);
-		$this->meta = deepArrCopy($this->meta);
+		$this->original = $this->original;
+		$this->changed = $this->changed;
+		$this->delta = $this->delta;
+		$this->meta = $this->meta;
 		$this->forward = deepArrCopy($this->forward);
 		$this->backward = deepArrCopy($this->backward);
 	}
@@ -141,7 +141,6 @@ class EntityUpdate extends DacuraObject{
 		if($this->original->status != $this->changed->status) $meta['status'] = array($this->original->status, $this->changed->status);
 		//if($this->original->type != $this->changed->type) $meta['type'] = array($this->original->type, $this->changed->type);
 		if($this->original->cid != $this->changed->cid) $meta['cid'] = array($this->original->cid, $this->changed->cid);
-		if($this->original->did != $this->changed->did) $meta['did'] = array($this->original->did, $this->changed->did);
 		return $meta;
 	}
 
@@ -191,7 +190,6 @@ class EntityUpdate extends DacuraObject{
 		$this->modified = time();
 		$this->from_version = $this->original->version();
 		$this->cid = $this->original->cid;
-		$this->did = $this->original->did;
 	}
 
 	/*

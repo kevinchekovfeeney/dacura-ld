@@ -44,7 +44,15 @@ $settings = array(
 	'register_email_subject' =&gt; &quot;Dacura Registration&quot;,
 	'lost_email_subject' =&gt; &quot;Dacura Password Reset&quot;,
 	'reset_instruction' =&gt; &quot;Enter a new password in the boxes below. Make sure that the passwords match&quot;,
-	'set_instruction' =&gt; &quot;In order to accept your invitation, you must set up a password for logging into the Dacura System. Please choose a password in the form below&quot;	
+	'set_instruction' =&gt; &quot;In order to accept your invitation, you must set up a password for logging into the Dacura System. Please choose a password in the form below&quot;,
+	&quot;facet-list&quot; =&gt; array(&quot;login&quot; =&gt; &quot;Login to the system&quot;),
+	&quot;config_form_fields&quot; =&gt; array(
+		&quot;facets&quot; =&gt; array(&quot;hidden&quot; =&gt; true),
+		&quot;register_email_subject&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Email registration subject&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;help&quot; =&gt; &quot;The text that will be positioned in the subject line of emails in response to new account registrations&quot;),
+		&quot;lost_email_subject&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Lost password subject&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;help&quot; =&gt; &quot;The text that will be placed in the subject line of emails in response to lost password requests&quot;),
+		&quot;reset_instruction&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Reset page message&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;input_type&quot; =&gt; &quot;textarea&quot;, &quot;help&quot; =&gt; &quot;The text that appears on the top of pages where users reset their password&quot;),
+		&quot;set_instruction&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Set password message&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;input_type&quot; =&gt; &quot;textarea&quot;, &quot;help&quot; =&gt; &quot;The text that appears on the top of pages where users must set a password&quot;),
+	)	
 );</pre>
         <script type="text/javascript">
              SyntaxHighlighter.all();

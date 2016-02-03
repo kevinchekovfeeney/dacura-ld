@@ -62,9 +62,12 @@
 			&lt;?=$params['close-msg']?&gt;&lt;/a&gt;
 		&lt;/div&gt;
 		&lt;span class='tool-image'&gt;
-			&lt;?php if($params['image']){?&gt;
+			&lt;?php if($params['image']){
+					if($params['image-link']){?&gt;
+						&lt;a href='&lt;?=$params['image-link']?&gt;'&gt;&lt;img class='tool-header-image' src=&quot;&lt;?=$params['image']?&gt;&quot; title=&quot;&lt;?=$params['title']?&gt;&quot; /&gt;&lt;/a&gt;
+					&lt;?php } else { ?&gt;
 			&lt;img class='tool-header-image' src=&quot;&lt;?=$params['image']?&gt;&quot; title=&quot;&lt;?=$params['title']?&gt;&quot; /&gt;
-			&lt;?php }?&gt;
+			&lt;?php }}?&gt;
 		&lt;/span&gt;
 		&lt;span class='tool-title'&gt;&lt;?= $params['title']?&gt;&lt;/span&gt;
 		&lt;span class='tool-subtitle'&gt;&lt;?=$params['subtitle']?&gt;&lt;/span&gt;

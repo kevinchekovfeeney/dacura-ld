@@ -36,7 +36,7 @@
     <body>
         <pre class="brush: php">&lt;script src='&lt;?=$service-&gt;furl(&quot;js&quot;, &quot;jquery.dataTables.js&quot;)?&gt;'&gt;&lt;/script&gt;
 &lt;script src='&lt;?=$service-&gt;furl(&quot;js&quot;, &quot;dataTables.jqueryui.js&quot;)?&gt;'&gt;&lt;/script&gt;
-&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;url(&quot;css&quot;, &quot;dataTables.jqueryui.css&quot;)?&gt;&quot; /&gt;
+&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;get_system_file_url(&quot;css&quot;, &quot;dataTables.jqueryui.css&quot;)?&gt;&quot; /&gt;
 
 &lt;div id='fragment-header' class=&quot;dch&quot;&gt;
 	&lt;span class='candidate-subhead fragment-title'&gt;&lt;/span&gt;
@@ -147,13 +147,8 @@ dacura.candidate.showHeader = function(cand){
 		options.image = cand.image;
 	}
 	options.description = $('#toolheader-template').html();
-	dacura.system.updateToolHeader(options);
-	if(typeof cand.dataset_title != &quot;undefined&quot;){
-		dtit = cand.dataset_title;			
-	}
-	else if(cand.did == &quot;all&quot;){
-		dtit = cand.cid;
-	}
+	dacura.tool.header.update(options);
+	dtit = cand.cid;
 	if(typeof cand.metadetails != &quot;undefined&quot;){
 		metadetails = cand.metadetails;
 	}
@@ -319,7 +314,7 @@ $('document').ready(function(){
 			$('#update-holder').show();
 		}
 		dacura.editor.load(&quot;&lt;?=$params['id']?&gt;&quot;, dacura.candidate.fetch, dacura.candidate.update, obj);
-		dacura.system.addServiceBreadcrumb(&quot;&lt;?=$service-&gt;my_url()?&gt;/&quot; + obj.id , obj.id);
+		//dacura.system.addServiceBreadcrumb(&quot;&lt;?=$service-&gt;my_url()?&gt;/&quot; + obj.id , obj.id);
 		dacura.system.styleJSONLD();		
 		$('#cand-pane-list').show();
 	};

@@ -68,10 +68,10 @@ class EntityUpdate extends DacuraObject{
 	}
 
 	function __clone(){
-		$this-&gt;original = deepArrCopy($this-&gt;original);
-		$this-&gt;changed = deepArrCopy($this-&gt;changed);
-		$this-&gt;delta = deepArrCopy($this-&gt;delta);
-		$this-&gt;meta = deepArrCopy($this-&gt;meta);
+		$this-&gt;original = $this-&gt;original;
+		$this-&gt;changed = $this-&gt;changed;
+		$this-&gt;delta = $this-&gt;delta;
+		$this-&gt;meta = $this-&gt;meta;
 		$this-&gt;forward = deepArrCopy($this-&gt;forward);
 		$this-&gt;backward = deepArrCopy($this-&gt;backward);
 	}
@@ -177,7 +177,6 @@ class EntityUpdate extends DacuraObject{
 		if($this-&gt;original-&gt;status != $this-&gt;changed-&gt;status) $meta['status'] = array($this-&gt;original-&gt;status, $this-&gt;changed-&gt;status);
 		//if($this-&gt;original-&gt;type != $this-&gt;changed-&gt;type) $meta['type'] = array($this-&gt;original-&gt;type, $this-&gt;changed-&gt;type);
 		if($this-&gt;original-&gt;cid != $this-&gt;changed-&gt;cid) $meta['cid'] = array($this-&gt;original-&gt;cid, $this-&gt;changed-&gt;cid);
-		if($this-&gt;original-&gt;did != $this-&gt;changed-&gt;did) $meta['did'] = array($this-&gt;original-&gt;did, $this-&gt;changed-&gt;did);
 		return $meta;
 	}
 
@@ -227,7 +226,6 @@ class EntityUpdate extends DacuraObject{
 		$this-&gt;modified = time();
 		$this-&gt;from_version = $this-&gt;original-&gt;version();
 		$this-&gt;cid = $this-&gt;original-&gt;cid;
-		$this-&gt;did = $this-&gt;original-&gt;did;
 	}
 
 	/*

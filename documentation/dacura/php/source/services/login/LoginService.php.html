@@ -36,7 +36,8 @@
     <body>
         <pre class="brush: php">&lt;?php
 include_once(&quot;LoginDacuraServer.php&quot;);
-/** Dacura's Login Service 
+/** 
+ * Dacura's Login Service 
  * 
  * Overrides the base service class for login functionality
  * @package login
@@ -47,10 +48,7 @@ class LoginService extends DacuraService {
 	/** @var string login @see DacuraService::default_screen */
 	var $default_screen = &quot;login&quot;;
 	/** @var string[] @see DacuraService::public_screens */
-	var $public_screens = array(&quot;login&quot;, &quot;home&quot;, &quot;register&quot;, &quot;lost&quot;, &quot;invite&quot;);
-	/** @var array @see DacuraService::protected_screens */
-	var $protected_screens = array(&quot;logout&quot; =&gt; array(&quot;nobody&quot;, &quot;any&quot;));
-	
+	var $default_facets = array(array(&quot;facet&quot; =&gt; &quot;login&quot;, &quot;role&quot; =&gt; &quot;public&quot;), array(&quot;facet&quot; =&gt; &quot;logout&quot;, &quot;role&quot; =&gt; &quot;dacurauser&quot;));
 	/**
 	 * Loads the stylesheet
 	 * @see DacuraService::init()

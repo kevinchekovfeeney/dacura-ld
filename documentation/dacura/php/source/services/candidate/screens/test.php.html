@@ -234,8 +234,8 @@ pvco.annotation = {
 $('document').ready(function(){
 	
 	$('#jsoninput_ta').val(JSON.stringify(sco));
-	JSONEditor.prototype.ADD_IMG = '&lt;?=$service-&gt;url(&quot;image&quot;, &quot;add.png&quot;)?&gt;';
-    JSONEditor.prototype.DELETE_IMG = '&lt;?=$service-&gt;url(&quot;image&quot;, &quot;delete.png&quot;)?&gt;';
+	JSONEditor.prototype.ADD_IMG = '&lt;?=$service-&gt;url(&quot;image&quot;, &quot;icons/add.png&quot;)?&gt;';
+    JSONEditor.prototype.DELETE_IMG = '&lt;?=$service-&gt;url(&quot;image&quot;, &quot;icons/delete.png&quot;)?&gt;';
     var j = new JSONEditor($(&quot;#jsoninput_ta&quot;), &quot;800&quot;, &quot;400&quot;);
     j.doTruncation(true);
     j.showText();

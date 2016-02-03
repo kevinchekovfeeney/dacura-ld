@@ -175,6 +175,26 @@ class CandidateDacuraServer extends LdDacuraServer {
 		}
 		return $ar;
 	}
+	
+	function getCandidateEntityClasses(){
+		return $this-&gt;graphman-&gt;getGraphEntityClasses(&quot;seshat&quot;);
+	}
+	
+	function getClassFrame($cls){
+		$graphs = $this-&gt;getMainGraphForEntityId($entid);
+		$frame = $this-&gt;graphman-&gt;getClassFrame($cls, $graphs[1]);		
+	}
+	
+	function getEntityClassFrame($entid){
+		$cls = $this-&gt;getClassFromEntity($entid);
+		$frame = $this-&gt;getClassFrame($cls);
+		$filled_frame = $this-&gt;fillFrame($entid, $frame);		
+	}
+	
+	function getMainGraphForEntityId($entid){
+		return array(&quot;main_instance&quot;, &quot;main_schema&quot;);
+	}
+	
 }
 
 </pre>

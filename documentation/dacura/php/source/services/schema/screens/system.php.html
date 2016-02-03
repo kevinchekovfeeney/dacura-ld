@@ -170,17 +170,14 @@ function clearResultMessage(){
 $(function() {
 	initDecorations();
 	setImportFormat(&quot;url&quot;);
-	dacura.system.init({
-		&quot;mode&quot;: &quot;tool&quot;, 
-		&quot;tabbed&quot;: &quot;system-schema&quot;,
-		&quot;listings&quot;: {
-			&quot;ontology_table&quot; : {
-				&quot;screen&quot;: &quot;ontology-list&quot;, 
-				&quot;fetch&quot;: dacura.ld.fetchentitylist,
-				&quot;settings&quot;: &lt;?=$params['ontology_datatable']?&gt;	
-			}
+	dacura.tool.init({&quot;tabbed&quot;: &quot;system-schema&quot;});
+	dacura.tool.table.init(&quot;ontology_table&quot;, {
+			&quot;screen&quot;: &quot;ontology-list&quot;, 
+			&quot;fetch&quot;: dacura.ld.fetchentitylist,
+			&quot;rowClick&quot;: function(event, entid) {window.location.href = dacura.system.pageURL() + &quot;/&quot; + entid},					
+			&quot;settings&quot;: &lt;?=$params['ontology_datatable']?&gt;	
 		}
-	});
+	);
 	//dacura.schema.fetchentitylist(drawOntologies, {resultbox: &quot;#ontology-msgs&quot;, errorbox: &quot;#ontology-msgs&quot;, busybox: &quot;#ontology-list&quot;}); 
 });
 &lt;/script&gt;</pre>

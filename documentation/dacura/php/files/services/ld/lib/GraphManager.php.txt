@@ -40,12 +40,12 @@ class GraphManager extends DacuraObject {
 		else {
 			$classes = array();
 		}*/
-		$classes = $this->invokeDCS("seshat");
+		$classes = $this->invokeDCS($schema_gname);
 		return $classes;
 	}
 	
-	function getClassStub($schema_gname, $classname){
-		$classes = $this->invokeDCS("seshat", $classname);
+	function getClassFrame($schema_gname, $classname){
+		$classes = $this->invokeDCS($schema_gname, $classname);
 		return $classes;
 	}
 	

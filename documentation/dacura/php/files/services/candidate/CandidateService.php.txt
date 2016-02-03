@@ -35,13 +35,14 @@ class CandidateService extends LdService {
 		$params['topbreadcrumb'] = "All Instance Data";
 		$params['collectionbreadcrumb'] = "instance data";
 		$params["title"] = "Instance Data Viewer";
-		$params["image"] = $this->furl("image", "buttons/candidate.png");
+		$params['dt'] = true;
+		$params["image"] = $this->furl("images", "services/candidate.png");
 		$params['status_options'] = $this->getCreateStatusOptions();
 		$params['args'] = $this->getOptionalArgs();
 		$params["entity_type"] = "Candidate";
 		if($this->getCollectionID() != "all"){
-			$this->dacura_tables['candidate']['datatable_options']['aoColumns'][2] = array("bVisible" => false);
-			$this->dacura_tables['updates']['datatable_options']['aoColumns'][3] = array("bVisible" => false);
+			//$this->dacura_tables['candidate']['datatable_options']['aoColumns'][2] = array("bVisible" => false);
+			//$this->dacura_tables['updates']['datatable_options']['aoColumns'][3] = array("bVisible" => false);
 		}
 		$params['candidate_datatable'] = $this->getDatatableSetting("candidate");
 		$params['update_datatable'] = $this->getDatatableSetting("updates");				

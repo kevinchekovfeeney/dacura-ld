@@ -1,3 +1,13 @@
+<?php 
+/**
+ * Status pane in the menu on dacura home page
+ * 
+ * Shows various statistics about the collection
+ * @package browse/screens
+ * @author chekov
+ * @copyright GPL v2
+ */
+?>
 <table class='dacura-status'>
 	<tr><th>Users</th><td class='user-count'><?=$params['user-count']?></td>
 	<tr><th>Schema Triples</th><td class='schema-count'><?=$params['schema-count']?></td>

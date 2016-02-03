@@ -532,8 +532,8 @@ dacura.editor = {
 		}
 		
 		function initEditor(){
-			JSONEditor.prototype.ADD_IMG = '&lt;?=$service-&gt;furl(&quot;image&quot;, &quot;add.png&quot;)?&gt;';
-			JSONEditor.prototype.DELETE_IMG = '&lt;?=$service-&gt;furl(&quot;image&quot;, &quot;delete.png&quot;)?&gt;';
+			JSONEditor.prototype.ADD_IMG = '&lt;?=$service-&gt;furl(&quot;images&quot;, &quot;icons/add.png&quot;)?&gt;';
+			JSONEditor.prototype.DELETE_IMG = '&lt;?=$service-&gt;furl(&quot;images&quot;, &quot;icons/delete.png&quot;)?&gt;';
 		}
 		
 		function initVersionNavigation(options){
@@ -893,14 +893,14 @@ dacura.editor = {
 				$(&quot;#ld-end&quot; ).button(&quot;disable&quot;);
 				$(&quot;#ld-update-next&quot; ).button(&quot;disable&quot;);
 				$(&quot;#ld-update-last&quot; ).button(&quot;disable&quot;);
-				dacura.system.removeServiceBreadcrumb(&quot;bcversion&quot;);							
+				//dacura.system.removeServiceBreadcrumb(&quot;bcversion&quot;);							
 			}
 			else {
 				$(&quot;#ld-forward&quot;).button(&quot;enable&quot;);
 				$(&quot;#ld-end&quot;).button(&quot;enable&quot;);
 				$(&quot;#ld-update-next&quot;).button(&quot;enable&quot;);
 				$(&quot;#ld-update-last&quot;).button(&quot;enable&quot;);
-				dacura.system.addServiceBreadcrumb(&quot;&lt;?=$service-&gt;my_url()?&gt;/&quot; + this.currentID + &quot;?version=&quot; + v, &quot;Version &quot; + v, &quot;bcversion&quot;);									
+				//dacura.system.addServiceBreadcrumb(&quot;&lt;?=$service-&gt;my_url()?&gt;/&quot; + this.currentID + &quot;?version=&quot; + v, &quot;Version &quot; + v, &quot;bcversion&quot;);									
 			}
 		}
 		else {

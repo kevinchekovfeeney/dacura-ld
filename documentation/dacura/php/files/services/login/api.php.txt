@@ -1,5 +1,5 @@
 <?php
-/**
+/** 
  * API for login service - supports lost password and registration interface too
  *
  * * Creation Date: 12/01/2015
@@ -97,7 +97,7 @@ function lost(){
  * This is called when a user updates their password after following the link...
  *
  * POST login/reset
- * Requires $_POST['login-password'] && $_POST['userid']
+ * Requires $_POST['login-password'] && $_POST['userid'] && $_POST['action']
  * @api
  */
 function resetpassword(){
@@ -107,8 +107,8 @@ function resetpassword(){
 	if($u){
 		return $dacura_server->write_http_result(401, "User is logged in - cannot reset password", "notice");
 	}
-	if(isset($_POST['userid']) &&  isset($_POST['login-password'])){
-		$u = $dacura_server->resetpassword($_POST['userid'], $_POST['login-password']);
+	if(isset($_POST['userid']) &&  isset($_POST['login-password']) && isset($_POST['action'])){
+		$u = $dacura_server->resetPassword($_POST['userid'], $_POST['login-password'], $_POST['action']);
 		if($u) $dacura_server->write_json_result($u, "Password Reset Successfully");
 		else $dacura_server->write_http_result(false, false, "notice");
 	}

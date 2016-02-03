@@ -81,22 +81,19 @@
 &lt;/div&gt;
 &lt;script&gt;
 $(function() {
-	dacura.system.init({
-		&quot;mode&quot;: &quot;tool&quot;, 
-		&quot;tabbed&quot;: &quot;ld-tool-home&quot;,
-		&quot;listings&quot;: {
-			&quot;ld_table&quot;: {
-				&quot;screen&quot;: &quot;entity-list&quot;, 
-				&quot;fetch&quot;: dacura.ld.fetchentitylist,
-				&quot;settings&quot;: &lt;?=$params['entity_datatable']?&gt;
-			},
-			&quot;update_table&quot;: {
-				&quot;screen&quot;: &quot;update-list&quot;, 
-				&quot;fetch&quot;: dacura.ld.fetchupdatelist,
-				&quot;settings&quot;: &lt;?=$params['update_datatable']?&gt;				
-			}
-		}, 
-		});
+	dacura.tool.init({&quot;tabbed&quot;: &quot;ld-tool-home&quot;});
+	dacura.tool.table.init(&quot;ld_table&quot;, {
+		&quot;screen&quot;: &quot;entity-list&quot;, 
+		&quot;rowClick&quot;: function(event, entid) {window.location.href = dacura.system.pageURL() + &quot;/&quot; + entid},		
+		&quot;fetch&quot;: dacura.ld.fetchentitylist,
+		&quot;dtsettings&quot;: &lt;?=$params['entity_datatable']?&gt;
+	});		
+	dacura.tool.table.init(&quot;update_table&quot;, {
+		&quot;screen&quot;: &quot;update-list&quot;, 
+		&quot;fetch&quot;: dacura.ld.fetchupdatelist,
+		&quot;dtsettings&quot;: &lt;?=$params['update_datatable']?&gt;
+	});		
+	
 	dacura.editor.init({&quot;editorheight&quot;: &quot;300px&quot;, &quot;targets&quot;: {resultbox: &quot;#create-entity-msgs&quot;, busybox: &quot;#create-entity&quot;}});
 	dacura.editor.load(false, false, dacura.ld.create);
 

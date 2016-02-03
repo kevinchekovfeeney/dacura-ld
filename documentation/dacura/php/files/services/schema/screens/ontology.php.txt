@@ -188,7 +188,7 @@ dacura.schema.showHeader = function(ont){
 	}
 	options.subtitle = ont.meta.title;
 	options.description = $('#toolheader-template').html();
-	dacura.system.updateToolHeader(options);
+	dacura.tool.header.update(options);
 	metadetails = timeConverter(ont.created);
 	$('.ont_uri').html("<span class='ontology-uri'>" + ont.meta.url + "</span>");
 	$('.ont_created').html("<span class='ontology-details'>" + metadetails + "</span>");
@@ -462,7 +462,7 @@ function initDecorations(){
 $(function() {
 	initDecorations();
 	dacura.schema.entity_type = "ontology";
-	dacura.system.init({"mode": "tool"});
+	dacura.tool.init({"tabbed": "tab-holder"});
 	dacura.editor.init({"entity_type": "ontology", 
 		"targets": {resultbox: "#lded-msgs", errorbox: "#lded-msgs"}, 
 		"args": <?=json_encode($params['args']);?>});
@@ -487,7 +487,7 @@ $(function() {
 	
 	var onw = function (obj){
 		dacura.editor.load("<?=$params['id']?>", dacura.schema.fetch, dacura.schema.update, obj);
-	    dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);
+	    //dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + obj.id , obj.id);
 	    dacura.system.styleJSONLD();
 	    $('#ontology-pane-list').show();
 		dacura.schema.calculateDependencies("<?=$params['id']?>", {resultbox: "#deps-msgs", errorbox: "#deps-msgs", busybox: "#ontology-meta"});		

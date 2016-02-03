@@ -496,8 +496,8 @@ dacura.editor = {
 		}
 		
 		function initEditor(){
-			JSONEditor.prototype.ADD_IMG = '<?=$service->furl("image", "add.png")?>';
-			JSONEditor.prototype.DELETE_IMG = '<?=$service->furl("image", "delete.png")?>';
+			JSONEditor.prototype.ADD_IMG = '<?=$service->furl("images", "icons/add.png")?>';
+			JSONEditor.prototype.DELETE_IMG = '<?=$service->furl("images", "icons/delete.png")?>';
 		}
 		
 		function initVersionNavigation(options){
@@ -857,14 +857,14 @@ dacura.editor = {
 				$("#ld-end" ).button("disable");
 				$("#ld-update-next" ).button("disable");
 				$("#ld-update-last" ).button("disable");
-				dacura.system.removeServiceBreadcrumb("bcversion");							
+				//dacura.system.removeServiceBreadcrumb("bcversion");							
 			}
 			else {
 				$("#ld-forward").button("enable");
 				$("#ld-end").button("enable");
 				$("#ld-update-next").button("enable");
 				$("#ld-update-last").button("enable");
-				dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + this.currentID + "?version=" + v, "Version " + v, "bcversion");									
+				//dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + this.currentID + "?version=" + v, "Version " + v, "bcversion");									
 			}
 		}
 		else {

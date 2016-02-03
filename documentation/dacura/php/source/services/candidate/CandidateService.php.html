@@ -71,13 +71,14 @@ class CandidateService extends LdService {
 		$params['topbreadcrumb'] = &quot;All Instance Data&quot;;
 		$params['collectionbreadcrumb'] = &quot;instance data&quot;;
 		$params[&quot;title&quot;] = &quot;Instance Data Viewer&quot;;
-		$params[&quot;image&quot;] = $this-&gt;furl(&quot;image&quot;, &quot;buttons/candidate.png&quot;);
+		$params['dt'] = true;
+		$params[&quot;image&quot;] = $this-&gt;furl(&quot;images&quot;, &quot;services/candidate.png&quot;);
 		$params['status_options'] = $this-&gt;getCreateStatusOptions();
 		$params['args'] = $this-&gt;getOptionalArgs();
 		$params[&quot;entity_type&quot;] = &quot;Candidate&quot;;
 		if($this-&gt;getCollectionID() != &quot;all&quot;){
-			$this-&gt;dacura_tables['candidate']['datatable_options']['aoColumns'][2] = array(&quot;bVisible&quot; =&gt; false);
-			$this-&gt;dacura_tables['updates']['datatable_options']['aoColumns'][3] = array(&quot;bVisible&quot; =&gt; false);
+			//$this-&gt;dacura_tables['candidate']['datatable_options']['aoColumns'][2] = array(&quot;bVisible&quot; =&gt; false);
+			//$this-&gt;dacura_tables['updates']['datatable_options']['aoColumns'][3] = array(&quot;bVisible&quot; =&gt; false);
 		}
 		$params['candidate_datatable'] = $this-&gt;getDatatableSetting(&quot;candidate&quot;);
 		$params['update_datatable'] = $this-&gt;getDatatableSetting(&quot;updates&quot;);				

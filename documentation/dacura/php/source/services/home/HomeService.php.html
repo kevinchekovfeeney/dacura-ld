@@ -47,6 +47,8 @@ include_once(&quot;HomeDacuraServer.php&quot;);
  */
 class HomeService extends DacuraService {
 	
+	var $default_facets = array(array(&quot;facet&quot; =&gt; &quot;view&quot;, &quot;role&quot; =&gt; &quot;admin&quot;));
+		
 	/**
 	 * Figures out the url of the user's home page in dacura and redirects them to it
 	 * 
@@ -55,13 +57,20 @@ class HomeService extends DacuraService {
 	 */
 	function renderFullPage(HomeDacuraServer $server){
 		$u = $server-&gt;getUser();
-		if($u) {
-			$cid = ($server-&gt;cid() == &quot;all&quot;) ? $server-&gt;getUserHomeContext($u) : $server-&gt;cid();
-			$url = $this-&gt;get_service_url($server-&gt;getUserHomeService(), array(), &quot;html&quot;, $cid);
-		}
+		$active_facets = $this-&gt;getActiveFacets($u);
+		if(!$active_facets){
+			if($u){
+				$colname = ($this-&gt;cid() == &quot;all&quot;) ? &quot;platform&quot; : $this-&gt;cid();
+				$this-&gt;renderScreen(&quot;denied&quot;, array(&quot;title&quot; =&gt; &quot;Access Denied&quot;, &quot;message&quot; =&gt; &quot;You do not have permission to view the $colname home page.&quot;), &quot;core&quot;);				
+			}
+			else {
+				$url = $this-&gt;get_service_url(&quot;login&quot;);				
+			}
+		}	
 		else {
-			$url = $this-&gt;get_service_url(&quot;login&quot;);
-		}
+			$cid = ($server-&gt;cid() == &quot;all&quot; &amp;&amp; $u) ? $server-&gt;getUserHomeContext($u) : $server-&gt;cid();
+			$url = $this-&gt;get_service_url($server-&gt;getUserHomeService($this-&gt;getServiceSetting(&quot;home&quot;)), array(), &quot;html&quot;, $cid);				
+		}	
 		header(&quot;Location: $url&quot;);
 	}
 }

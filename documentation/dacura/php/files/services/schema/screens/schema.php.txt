@@ -111,13 +111,7 @@ function showUpdateNSButton(){
 
 $(function() {
 	initDecorations();
-	dacura.system.init({"mode": "tool", "tabbed": true});
-	$('#schema-pane-list').show();
-	$("#tab-holder").tabs( {
-        "activate": function(event, ui) {
-            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
-        }
-    });
+	dacura.tool.init({"tabbed": "tab-holder"});
 	$('#create-holder').show();
 	dacura.schema.entity_type = "graph";
 	dacura.schema.fetchentitylist(drawGraphs, {resultbox: '#graphs-msgs', errorbox: '#graphs-msgs', busybox: '#graphs-lists'});

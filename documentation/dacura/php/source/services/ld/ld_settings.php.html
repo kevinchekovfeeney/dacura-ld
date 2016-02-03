@@ -36,6 +36,8 @@
     <body>
         <pre class="brush: php">&lt;?php
 $settings = array(
+	&quot;service-button-title&quot; =&gt; &quot;Linked Data&quot;,
+		
 	&quot;tables&quot; =&gt; array(
 		&quot;history&quot; =&gt; array(&quot;datatable_options&quot; =&gt; array(
 			&quot;jQueryUI&quot; =&gt; true, &quot;scrollX&quot; =&gt; true, &quot;info&quot; =&gt; true, &quot;order&quot; =&gt; array(0, &quot;desc&quot;), 
@@ -43,11 +45,12 @@ $settings = array(
 		&quot;ld&quot; =&gt; array(&quot;datatable_options&quot; =&gt; array(
 			&quot;jQueryUI&quot; =&gt; true, &quot;scrollX&quot; =&gt; false, &quot;pageLength&quot; =&gt; 20, &quot;lengthMenu&quot; =&gt; array(10, 20, 50, 75, 100), 
 			&quot;info&quot; =&gt; true, &quot;order&quot; =&gt; array(8, &quot;desc&quot;), 
-				&quot;aoColumns&quot; =&gt; array(null, null, null, array(&quot;bVisible&quot; =&gt; false), null, null, array(&quot;iDataSort&quot; =&gt; 7), array(&quot;bVisible&quot; =&gt; false), array(&quot;iDataSort&quot; =&gt; 9), array(&quot;bVisible&quot; =&gt; false)))),
+				&quot;aoColumns&quot; =&gt; array(null, null, null, null, null, array(&quot;iDataSort&quot; =&gt; 6), array(&quot;bVisible&quot; =&gt; false), array(&quot;iDataSort&quot; =&gt; 8), array(&quot;bVisible&quot; =&gt; false)))
+		), 
 		&quot;updates&quot; =&gt; array(&quot;datatable_options&quot; =&gt; array(
 			&quot;jQueryUI&quot; =&gt; true, &quot;scrollX&quot; =&gt; false, &quot;pageLength&quot; =&gt; 20, &quot;lengthMenu&quot; =&gt; array(10, 20, 50, 75, 100), 
 			&quot;info&quot; =&gt; true, &quot;order&quot; =&gt; array(10, &quot;desc&quot;), 
-				&quot;aoColumns&quot; =&gt; array(null, null, null, null, array(&quot;bVisible&quot; =&gt; false), null, null, null, array(&quot;iDataSort&quot; =&gt; 9), array(&quot;bVisible&quot; =&gt; false), array(&quot;iDataSort&quot; =&gt; 11), array(&quot;bVisible&quot; =&gt; false)))),
+				&quot;aoColumns&quot; =&gt; array(null, null, null, null, null, null, null, array(&quot;iDataSort&quot; =&gt; 8), array(&quot;bVisible&quot; =&gt; false), array(&quot;iDataSort&quot; =&gt; 10), array(&quot;bVisible&quot; =&gt; false)))),
 	),
 	&quot;pending_datatable_init_string&quot; =&gt; '{ 
 		&quot;order&quot;: [3, &quot;desc&quot;], 

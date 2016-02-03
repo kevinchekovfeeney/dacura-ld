@@ -53,7 +53,7 @@ class LdService extends DacuraService {
 	}
 	
 	function getEntityStatusOptions(){
-		$opts = DacuraObject::$statuses;
+		$opts = DacuraObject::$valid_statuses;
 		$html = &quot;&quot;;
 		foreach($opts as $v =&gt; $l){
 			$html .= &quot;&lt;option value='$v'&gt;$l&lt;/option&gt;&quot;;
@@ -106,7 +106,7 @@ class LdService extends DacuraService {
 	}
 	
 	function getParamsForScreen($screen, &amp;$dacura_server){
-		$params = array(&quot;image&quot; =&gt; $this-&gt;furl(&quot;image&quot;, &quot;buttons/ld.png&quot;));
+		$params = array(&quot;image&quot; =&gt; $this-&gt;furl(&quot;image&quot;, &quot;services/ld.png&quot;));
 		$params['dt'] = true;
 		if($screen == &quot;list&quot;){
 			$params[&quot;breadcrumbs&quot;] = array(array(), array());

@@ -316,7 +316,7 @@ class UserManager extends DacuraController {
 	/**
 	 * Returns the list of roles that a use may delegate in a given context
 	 * 
-	 * Only admin and god can give out access roles.
+	 * Only admin can give out access roles.
 	 * All users can give out nobody roles
 	 * 
 	 * @param string $cid collection id
@@ -333,10 +333,7 @@ class UserManager extends DacuraController {
 		$all_roles = UserRole::$dacura_roles;
 		foreach($u-&gt;roles as $i =&gt; $r){
 			if($r-&gt;coversRole($covered_role)){
-				if($r-&gt;role == &quot;god&quot;){
-					return $all_roles;
-				}
-				elseif($r-&gt;role == &quot;admin&quot;){
+				if($r-&gt;role == &quot;admin&quot;){
 					$top_role = &quot;admin&quot;;
 				}
 				elseif($r-&gt;role != &quot;nobody&quot; &amp;&amp; $top_role != &quot;admin&quot;){
@@ -347,7 +344,6 @@ class UserManager extends DacuraController {
 		if($top_role == 'nobody') return array();
 		if($top_role == 'user') return array(&quot;nobody&quot; =&gt; $all_roles['nobody']);
 		if($top_role == 'admin'){
-			unset($all_roles['god']);
 			return $all_roles;
 		}
 	}
@@ -355,46 +351,12 @@ class UserManager extends DacuraController {
 	/**
 	 * Loads a users session history from the user session directory 
 	 * @param DacuraUser $u the relevant user object
+	 * @param cid the relevant user object
 	 * @return boolean true is successful
 	 */
-	function loadUserHistory(DacuraUser &amp;$u){
-		if ($handle = opendir($u-&gt;session_dump)) {
-			while (false !== ($entry = readdir($handle))) {
-				$ext = substr($entry, strrpos($entry, '.') +1);
-				if ($ext == &quot;session&quot;){
-					$sess_id = substr($entry, 0, strrpos($entry, '.'));
-					$fhandle = fopen($u-&gt;session_dump.$entry, &quot;r&quot;);
-					if ($fhandle) {
-						while (($line = fgets($fhandle)) !== false) {
-							$ds = new DacuraSession($sess_id);
-							if($ds-&gt;loadFromJSON($line)){
-								$one_history = $ds-&gt;summary();
-								$one_history['service'] = $sess_id;
-								$one_history['events'] = $ds-&gt;events;
-								$u-&gt;history[] = $one_history;
-							}
-							else {
-								$this-&gt;logEvent(&quot;notice&quot;, 500, &quot;Failed to parse session dump [$line]&quot;);
-							}
-						}
-						fclose($fhandle);
-					}
-					else {
-						$this-&gt;logEvent(&quot;notice&quot;, 500, &quot;Failed to open file $entry in $this-&gt;session_dump&quot;);
-					}
-				}
-				else {
-					if($entry != &quot;.&quot; &amp;&amp; $entry != &quot;..&quot;){
-						$this-&gt;logEvent(&quot;notice&quot;, 500, &quot;Non session file $entry in session directory ($ext)&quot;);
-					}
-				}
-			}
-			closedir($handle);
-			return true;
-		}
-		else {
-			return $this-&gt;failure_result(&quot;Failed to open user session directory $u-&gt;session_dump&quot;, 500, &quot;warning&quot;);
-		}
+	function loadUserHistory(DacuraUser &amp;$u, $cid){
+		$u-&gt;loadHistory($cid);
+		return true;		
 	}
 	
 	/* Login / registration / invitation / lost password functions */	

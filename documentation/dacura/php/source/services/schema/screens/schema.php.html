@@ -147,13 +147,7 @@ function showUpdateNSButton(){
 
 $(function() {
 	initDecorations();
-	dacura.system.init({&quot;mode&quot;: &quot;tool&quot;, &quot;tabbed&quot;: true});
-	$('#schema-pane-list').show();
-	$(&quot;#tab-holder&quot;).tabs( {
-        &quot;activate&quot;: function(event, ui) {
-            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
-        }
-    });
+	dacura.tool.init({&quot;tabbed&quot;: &quot;tab-holder&quot;});
 	$('#create-holder').show();
 	dacura.schema.entity_type = &quot;graph&quot;;
 	dacura.schema.fetchentitylist(drawGraphs, {resultbox: '#graphs-msgs', errorbox: '#graphs-msgs', busybox: '#graphs-lists'});

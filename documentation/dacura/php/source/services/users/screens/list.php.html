@@ -34,10 +34,19 @@
         />
     </head>
     <body>
-        <pre class="brush: php">&lt;div class='dacura-screen' id='users-home'&gt;
+        <pre class="brush: php">&lt;?php 
+/** 
+ * List users page
+ * 
+ * @package users/screens
+ * @author chekov
+ * @copyright GPL v2
+ */
+?&gt;
+&lt;div class='dacura-screen' id='users-home'&gt;
 	&lt;?php if(in_array(&quot;list-users&quot;, $params['subscreens'])) { ?&gt;
 	&lt;div class='dacura-subscreen' id='list-users' title=&quot;List Users&quot;&gt;
-		&lt;div id='user-table-container'&gt;
+		&lt;div class='tholder' id='user-table-container'&gt;
 			&lt;table id=&quot;users-table&quot; class=&quot;dacura-api-listing&quot;&gt;
 				&lt;thead&gt;
 				&lt;tr&gt;
@@ -58,7 +67,7 @@
 	&lt;?php } if(in_array(&quot;add-user&quot;, $params['subscreens'])) { ?&gt;
 	&lt;div class='dacura-subscreen' id='add-user' title=&quot;Add User&quot;&gt;
 		&lt;div class='subscreen-intro-message'&gt;&lt;?=$params['add_intro_msg']?&gt;&lt;/div&gt;
-		&lt;?php echo $service-&gt;getInputTableHTML(&quot;user-details&quot;, &quot;create&quot;, $params['create_user_fields']);?&gt;
+		&lt;?php echo $service-&gt;getInputTableHTML(&quot;user-details&quot;, $params['create_user_fields'], array(&quot;display_type&quot; =&gt; &quot;create&quot;));?&gt;
 		&lt;div class=&quot;subscreen-buttons&quot;&gt;
 			&lt;button id='usercreate' class='dacura-create subscreen-button'&gt;Add New User&lt;/button&gt;
 		&lt;/div&gt;
@@ -67,7 +76,7 @@
 	&lt;div class='dacura-subscreen' id='invite-users' title=&quot;Invite Users&quot;&gt;
 		&lt;div class='subscreen-intro-message'&gt;&lt;?=$params['invite_intro_msg']?&gt;&lt;/div&gt;
 	
-		&lt;?php echo $service-&gt;getInputTableHTML(&quot;uinvites&quot;, &quot;create&quot;, $params['invite_users_fields']);?&gt;
+		&lt;?php echo $service-&gt;getInputTableHTML(&quot;uinvites&quot;, $params['invite_users_fields'], array(&quot;display_type&quot; =&gt; &quot;create&quot;));?&gt;
 		&lt;div class=&quot;subscreen-buttons&quot;&gt;
 			&lt;button id='usersinvite' class='dacura-update subscreen-button'&gt;Invite Users&lt;/button&gt;
 		&lt;/div&gt;
@@ -76,17 +85,22 @@
 &lt;/div&gt;
 
 &lt;script&gt;
-	function clearResultMessages(){
-		dacura.system.clearResultMessage(&quot;#invite-users-msgs&quot;);
-		dacura.system.clearResultMessage(&quot;#add-user-msgs&quot;);
-		dacura.system.clearResultMessage(&quot;#list-users-msgs&quot;);
-	}
+formids = [];
+&lt;?php if(in_array(&quot;invite-users&quot;, $params['subscreens'])){?&gt;
+formids.push(&quot;uinvites&quot;);
+&lt;?php } if(in_array(&quot;add-user&quot;, $params['subscreens'])){?&gt;
+formids.push(&quot;user-details&quot;);
+&lt;?php } ?&gt;
 
-	/* List subscreen */
+/*
+ * Page Configuration Settings for each subscreen 
+ */
+
+	/* List users subscreen */
 	
 	/* Updates each of the selected users' statuses in sequence */
 	function updateUsersStatus(ids, status, cnt, pconf){
-		clearResultMessages();
+		dacura.tool.clearResultMessages();
 		var nid = ids.shift();
 		var obj = {&quot;status&quot;: status, &quot;id&quot;: nid};
 		var onwards = function(){
@@ -108,41 +122,17 @@
 	
 	/*Gets the number of roles for each user*/ 	
 	function getRoleSummary(obj){
-		if(typeof obj.roles == &quot;undefined&quot;) return &quot;?&quot;;
-		var html = &quot;&lt;div class='dacura-role-list'&gt;&quot;;
-		if(typeof obj.category == 'zombie' || size(obj.roles) == 0) {
-			html += &quot;&lt;span class='dacura-role zombie' title='Zombie user has no roles'&gt;&lt;/span&gt;&quot;;
-		}
-		else {
-			for(var i in obj.roles){
-				html += &quot;&lt;span class='dacura-role &quot; + i + &quot;' title='&quot;+obj.roles[i] +&quot;'&gt;&lt;/span&gt;&quot;;
-			}
-		}
-		html += &quot;&lt;/div&gt;&quot;;
-		return html;
+		return dacura.users.roles.summary(obj.roles);
 	}
 
+	/* gets a summary of the users collection memberships */
 	function getCollectionSummary(obj){
-		if(typeof obj.collections == &quot;undefined&quot;) return &quot;&quot;;
-		if(size(obj.collections) == 0){
-			return &quot;&quot;;
-		}
-		var html = &quot;&lt;div class='dacura-collections-summary'&gt;&quot;;
-		if(typeof obj.collections['all'] != &quot;undefined&quot;) {
-			html += &quot;&lt;span class='dacura-platform-role' title='platform roles: &quot; + obj.collections['all'].join(&quot;, &quot;) + &quot;'&gt;system&lt;/span&gt;&quot;;
-		}
-		for(var i in obj.collections){
-			if(i != 'all') {
-				html += &quot;&lt;span class='dacura-collection-role' title='&quot; + i + &quot; collection roles: &quot; + obj.collections[i].join(&quot;, &quot;) + &quot;'&gt;&quot; + i + &quot;&lt;/span&gt;&quot;;
-			}
-		}
-		html += &quot;&lt;/div&gt;&quot;;
-		return html;
+		return dacura.users.roles.bycollection(obj.collections);
 	}
 
 	//refreshes the list of users from the server - called whenever a user is created or users have their status updated 
 	function refreshUserList(){
-		dacura.tool.refreshtable(&quot;users-table&quot;, &quot;user-table-container&quot;);
+		dacura.tool.table.refresh(&quot;users-table&quot;);
 	}
 	
 	/* Create user subscreen */
@@ -160,7 +150,7 @@
 
 	//displays a message to the user when they have successfully create a user
 	function showCreateSuccess(txt, targets){
-		clearResultMessages();
+		dacura.tool.clearResultMessages();
 		refreshUserList();
 		var usrurl = &quot;&lt;?= $service-&gt;my_url().&quot;/&quot;; ?&gt;&quot; + txt.id;
 		dacura.system.showSuccessResult(&quot;The users account has been created at: &lt;a href='&quot; + usrurl + &quot;'&gt;&quot; + usrurl + &quot;&lt;/a&gt;&quot;, &quot;User with id: &quot; + txt.id + &quot; successfully created&quot;, targets.resultbox);
@@ -181,7 +171,7 @@
 
 	//Display the result of an invitation request
 	function showInviteResult(json, targets){
-		clearResultMessages();
+		dacura.tool.clearResultMessages();
 		if(size(json.issued) &gt; 0){
 			refreshUserList();
 			var msg = size(json.issued) + &quot; invitations successfully issued&quot;;
@@ -202,23 +192,33 @@
 			dacura.system.showErrorResult(msg, &quot;Invite failed&quot;, targets.resultbox, html);
 		}
 	}
-	
+
+	/* on page load initialise tool, table and buttons */
 	$(function() {
-		dacura.tool.init({&quot;tabbed&quot;: 'users-home'});
+		var initarg = {
+			&quot;tabbed&quot;: 'users-home',
+		}
+		if(formids.length){
+			initarg.forms = { 
+				ids: formids, 			
+				icon: &quot;&lt;?= $service-&gt;get_system_file_url(&quot;images&quot;, &quot;icons/help-icon.png&quot;)?&gt;&quot;
+			};
+		}		
+		dacura.tool.init(initarg);
+		&lt;?php if(isset($params['admin']) &amp;&amp; $params['admin']){?&gt;
 		dacura.tool.table.init(&quot;users-table&quot;, {
 			&quot;screen&quot;: &quot;list-users&quot;, 
 			&quot;fetch&quot;: dacura.users.getUsers,
-			&quot;mode&quot;: &quot;html&quot;,
-			&quot;selected&quot;: {
+			&quot;multiselect&quot;: {
 				options: &lt;?=$params['selection_options']?&gt; , 
 				intro: &quot;Update Selected Users, Set Status to &quot;, 
 				container: &quot;user-table-updates&quot;,
 				label: &quot;Update&quot;,
 				update: updateUsersStatus 
 			},
-			&quot;refresh&quot;: {container: &quot;user-table-container&quot;, label: &quot;Refresh User List&quot; },
-			&quot;cellClick&quot;: function(entid) {window.location.href = dacura.system.pageURL() + &quot;/&quot; + entid},
-			&quot;dtsettings&quot;: &lt;?=$params['dacura_table_settings']?&gt;
+			&quot;refresh&quot;: {label: &quot;Refresh User List&quot;},
+			&quot;cellClick&quot;: function(event, entid) {window.location.href = dacura.system.pageURL() + &quot;/&quot; + entid},
+			&quot;dtsettings&quot;: &lt;?=$params['admin_table_settings']?&gt;
 		});
 		dacura.tool.button.init(&quot;usercreate&quot;, {
 			&quot;screen&quot;: &quot;add-user&quot;,
@@ -233,7 +233,20 @@
 			&quot;submit&quot;: dacura.users.inviteUsers,
 			&quot;result&quot;: showInviteResult				
 		});
-	});
+		&lt;?php } else { ?&gt;
+		dacura.tool.table.init(&quot;users-table&quot;, {
+			&quot;screen&quot;: &quot;list-users&quot;, 
+			&quot;fetch&quot;: dacura.users.getUsers,
+			&quot;refresh&quot;: {label: &quot;Refresh User List&quot;},
+			&lt;?php if($params['clickable_users']){ ?&gt;
+			&quot;cellClick&quot;: function(event, entid) {window.location.href = dacura.system.pageURL() + &quot;/&quot; + entid},
+			&lt;?php } else {?&gt;
+			&quot;nohover&quot;: true,
+			&lt;?php }?&gt;
+			&quot;dtsettings&quot;: &lt;?=$params['list_table_settings']?&gt;
+		});
+		&lt;?php } ?&gt;
+});
 &lt;/script&gt;
 </pre>
         <script type="text/javascript">

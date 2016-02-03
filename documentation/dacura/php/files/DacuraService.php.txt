@@ -28,10 +28,6 @@ class DacuraService extends DacuraObject {
 	var $default_screen = "view";
 	/** @var RequestLog the service logger object */
 	var $logger;
-	/** @var string[] An array of screens provided by the service that are publically accesible */
-	var $public_screens = array();
-	/** @var array(string=>roles) an array of screens provided by the service that require specific dacura roles..*/
-	var $protected_screens = array();
 	/** @var string[] An array of java script urls which will be included in service screens */
 	var $included_scripts = array();
 	/** @var string[] An array of stylesheet urls which will be included in screens */
@@ -82,9 +78,7 @@ class DacuraService extends DacuraObject {
 		return ucfirst($this->servicename)." Service";
 	}
 	
-	/*
-	 * Shorthand methods to access context details..
-	 */
+	/* Shorthand methods to access context details.*/
 	
 	/**
 	 * shorthand for get collection id
@@ -128,10 +122,27 @@ class DacuraService extends DacuraObject {
 	}
 	
 	/**
+	 * Loads the service as a dependant service of another service (i.e. the other service is the one being called by the user
+	 * and using this service incidentally)
+	 * @param string $sid the id of the service being loaded
+	 * @param DacuraService $other the controlling service doing the loading
+	 */
+	function loadAsDependant($sid, DacuraService &$other){
+		$this->servicename = $sid;
+		$this->collection_id = $other->cid();
+		$this->connection_type = $other->connection_type;
+		$this->mydir = $this->getSystemSetting('path_to_services').$sid."/";
+		$this->logger =& $other->logger;
+		$this->init();
+	}
+	
+	/**
 	 * Loads the appropriate server for this service
 	 * 
 	 * Every Dacura Service has an associated Server which serves as an interface between the service and the rest 
-	 * of the system. By convention, the server name is the service name followed by "DacuraServer"  
+	 * of the system. By convention, the server name is the service name followed by "DacuraServer" 
+	 * 
+	 *  At this stage we also load all of the configuration information in the system and local collections.
 	 */
 	function loadServer(){
 		$srvclass = ucfirst($this->servicename)."DacuraServer";
@@ -140,9 +151,20 @@ class DacuraService extends DacuraObject {
 			if($srvr->errcode){
 				return $this->failure_result($srvr->errmsg, $srvr->errcode);
 			}
+			if($this->cid() != "all"){
+				if(!$this->loadDefaultCollectionSettings($srvr)){
+					default_settings($this->settings);//must load them explicitly as they aren't loaded yet
+					return false;
+				}
+			}
+			$this->loadContextSettings($this->settings, $srvr);
+			$this->loadServiceContextSettings($this->servicename, $this->settings[$this->servicename], $srvr);
 			$u = $srvr->getUser();
 			if($u){
 				$this->logger->user_name = $u->getName();
+			}
+			else {
+				$this->logger->user_name = $_SERVER['REMOTE_ADDR'];				
 			}
 			return $srvr;
 		}
@@ -151,6 +173,167 @@ class DacuraService extends DacuraObject {
 		}
 	}
 	
+	/**
+	 * Loads the necessary settings for a collection from the default values if they have not already been set by
+	 * the configuration. 
+	 * @param DacuraServer $srvr
+	 * @return boolean true if success
+	 */
+	function loadDefaultCollectionSettings(DacuraServer $srvr){
+		if(!$col = $srvr->getCollection()){
+			return $this->failure_result($this->cid() . " is not a valid id of a dacura collection or service", 404);
+		}
+		if($col->status != "accept" && !$srvr->userHasRole("admin", "all")){
+			return $this->failure_result($this->cid() . " is currently in state $col->status and cannot be accessed", 401);
+		}
+		$defs = $col->getDefaultSettings($srvr);
+		foreach($defs as $k => $v){
+			if(!isset($this->settings[$k])){
+				$this->settings[$k] = $defs[$k];
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * Loads the settings for the context (collection)
+	 * @param array $settings the settings array to load
+	 * @param DacuraServer $srvr the active server
+	 */
+	function loadContextSettings(&$settings, DacuraServer $srvr){
+		$sys = $srvr->getCollection("all");
+		$this->applyCollectionSettings($settings, $sys);
+		if($this->cid() != "all"){
+			$c = $srvr->getCollection();
+			$this->applyCollectionSettings($settings, $c);
+		}
+		$this->overwriteLocked($settings, $sys->getConfig("settings"), $sys->getConfig("meta"));
+		default_settings($settings);
+	}
+
+	/**
+	 * Loads the service's settings for this context (collection)
+	 * @param string $sid the id of the service
+	 * @param array $settings the settings array to load
+	 * @param DacuraServer $srvr the active server
+	 */
+	function loadServiceContextSettings($sid, &$settings, DacuraServer $srvr){
+		$sys = $srvr->getCollection("all");
+		$this->applyServiceSettings($sid, $settings, $sys);
+		if($this->cid() != "all"){
+			$c = $srvr->getCollection();
+			$this->applyServiceSettings($sid, $settings, $c);
+		}
+		$sset = $sys->getConfig("services.".$sid);
+		$smeta = $sys->getConfig("servicesmeta.".$sid);
+		$this->overwriteLocked($settings, $sset, $smeta);
+		if(isset($sset['status']) && isset($smeta['status']) && isset($smeta['status']) && $smeta['status']['changeable'] != "changeable"){
+			$settings['status_locked'] = true;	
+		}
+		//opr($sset);
+		if(isset($sset['status']) && $sset['status'] != "enable"){
+			$settings['status'] = 'disable';
+		}
+	}
+	
+	/**
+	 * Overwrites any values in the settings that are locked at a system level with the corresponding system level values
+	 * 
+	 * Provides the basic ability to lock certain variables system wide 
+	 * @param array $arr collection settings array
+	 * @param array $lvals system level settings array
+	 * @param array $meta an array of metadata about the lvals - only those with a meta[changeable] = changeable can vary in collections
+	 */
+	function overwriteLocked(&$arr, $lvals, $meta){
+		if(!is_array($lvals)) return;
+		foreach($lvals as $i => $v){
+			if(isset($meta[$i]) && isset($meta[$i]['changeable']) && $meta[$i]['changeable'] != "changeable"){
+				$arr[$i] = $v;
+			}
+			if(is_array($lvals[$i])){
+				$this->overwriteLocked($arr[$i], $lvals[$i], $meta);
+			}
+		}
+	}
+	
+	/**
+	 * Applies the settings from the passed collection to a particular service's settings
+	 * @param string $sid the service id
+	 * @param array $ssettings the server level settings array
+	 * @param Collection $c the collection object to apply
+	 */
+	function applyServiceSettings($sid, &$ssettings, $c){
+		if($service_conf = $c->getConfig("services.".$sid)){
+			foreach($service_conf as $k => $v){
+				$ssettings[$k] = $v;
+			}
+		}
+	}
+	
+	/**
+	 * Applies the settings from the passed collection to the system settings
+	 * @param array $settings the settings array to be modified
+	 * @param Collection $c the collection object to apply
+	 */
+	function applyCollectionSettings(&$settings, $c){
+		if($csets = $c->getConfig("settings")){
+			foreach($csets as $k => $v){
+				$settings[$k] = $v;				
+			}
+		}
+	}
+	
+	/*  Service access control / facet related functions */
+	
+	/**
+	 * Returns a list of the facets that are considered active for the current user
+	 * @param DacuraUser $u (or false if not logged in)
+	 * @return array<string> the list of the facet names that are active
+	 */
+	function getActiveFacets($u = false){
+		if(!$facets = $this->getServiceSetting("facets")){
+			if(isset($this->default_facets) && is_array($this->default_facets)){
+				return $this->default_facets;
+			}
+			return array();
+		}
+		$allowed = array();
+		foreach($facets as $f){
+			if($f['role'] == "public"){
+				$allowed[] = $f;
+			}
+			elseif($u && $u->hasSufficientRole($f['role'], $this->cid())){
+				$allowed[] = $f;				
+			}
+		}
+		return $allowed;
+	}
+	
+	/**
+	 * Compares facets according to some hierarchy - returns true if the first is >= the second
+	 * @param string $a facet name
+	 * @param string $b facet name
+	 * @return true if $a >= $b
+	 */
+	function compareFacets($a, $b){
+		//hierarchy... admin->manage
+		//admin->inspect->view inspect->list
+		if($a == $b) return true;
+		if($a == "admin") return true;
+		elseif($b == "admin") return false;
+		if(($a == "manage" || $a == "inspect") && ($b == 'view' or $b == 'list')) return true;
+		return false;
+	}
+	
+	/**
+	 * What is the minimum facet required to access the service at the given screen?
+	 * @param DacuraServer $dacura_server
+	 * @return string the facet name required
+	 */
+	function getMinimumFacetForAccess(DacuraServer &$dacura_server){
+		return $this->getScreenForAC($dacura_server);
+	}
+		
 	/**
 	 * Load any URL arguments from the browser into the service context
 	 * 
@@ -173,37 +356,6 @@ class DacuraService extends DacuraObject {
 		}
 	}
 
-	/*
-	 * Access control related functions
-	 */
-
-	/**
-	 * Is the current screen a public screen (i.e. open access)?
-	 * @return boolean if it is a public screen
-	 */
-	function isPublicScreen(){
-		if($this->screen == "") $this->screen = "home";
-		return in_array($this->screen, $this->public_screens);
-	}
-	/**
-	 * Can the passed user view the requested screen? 
-	 * @param DacuraUser $user
-	 * @param DacuraServer $dacura_server
-	 * @return boolean true if the user has a role which allows him or her to view the screen
-	 */
-	function userCanViewScreen(DacuraUser &$user, DacuraServer &$dacura_server){
-		$screen = $this->getScreenForAC($dacura_server);
-		if(!isset($this->protected_screens[$screen])){
-			return $this->failure_result("Service: $this->servicename does not have an access rule for $screen", 401);
-		}
-		$req_role = $this->protected_screens[$screen];
-		if(!isset($req_role[1]) or $req_role[1] === false) $req_role[1] = $this->collection_id;
-		if($user->hasSufficientRole($req_role[0], $req_role[1])){
-			return true;
-		}
-		return $this->failure_result("User " . $user->handle . " does not have role required to view $screen screen.", 401);
-	}
-	
 	/*
 	 * Functions for getting configuration settings
 	 */
@@ -269,19 +421,14 @@ class DacuraService extends DacuraObject {
 	 * @see DacuraForm 
 	 */
 	protected function sform($id, $fillings = array()){
-		$forms = $this->getServiceSetting("forms", array());
-		if(!isset($forms[$id])){
+		$form = $this->getServiceSetting($id);
+		if(!$form){
 			return array();
 		}
-		$fields = $this->getServiceSetting("form_fields", array());
 		$sform = array();
-		foreach($forms[$id] as $fieldid){
-			$onef = $fields[$fieldid];
+		foreach($form as $fieldid => $onef){
 			if(!isset($onef['id'])){
-				$onef['id'] = $formid."-".$fieldid;
-			}
-			else {
-				$onef['id'] = $formid."-".$onef['id'];
+				$onef['id'] = $fieldid;
 			}
 			$sform[$fieldid] = $this->subParamsIntoConfigValue($onef, $fillings);
 		}
@@ -367,13 +514,7 @@ class DacuraService extends DacuraObject {
 	 */
 	protected function renderHeaderSnippet(DacuraServer &$dacura_server){
 		$service = &$this;
-		$params = array();
-		if($this->cid() != "all"){
-			$col = $dacura_server->getCollection($dacura_server->cid());
-			if($col && $col->getConfig("background")){
-				$params['bgimage'] = $col->getConfig("background");
-			}
-		}
+		$params = $this->settings;
 		$this->includeSnippet("header", $params);
 	}
 	
@@ -402,7 +543,7 @@ class DacuraService extends DacuraObject {
 		$u = $dacura_server->getUser();
 		if($u){
 			$params["username"] = $u->handle;
-			$params["usericon"] = $this->furl("image", "user_icon.png");
+			$params["usericon"] = $this->furl("image", "icons/user_icon.png");
 			if($u->rolesSpanCollections()){
 				$params["profileurl"] = $this->get_service_url("users", array(), "html", "all", "all")."/profile";
 			}
@@ -411,7 +552,7 @@ class DacuraService extends DacuraObject {
 				$params["profileurl"] = $this->get_service_url("users", array(), "html", $cid, "all")."/profile";
 			}
 			$params["logouturl"] = $this->getSystemSetting("install_url")."login/logout";
-			if(isset($u->sesssion['syste'])){
+			if(isset($u->sesssion['system'])){
 				$sys = $u->sessions["system"];
 				$params["activity"] = "logged in for ".gmdate("H:i", $sys->activeDuration());
 			}
@@ -426,12 +567,12 @@ class DacuraService extends DacuraObject {
 	 * @return array parameter array("class": css class, "url": service url, "icon": service icon file, "name": service name)
 	 */
 	protected function getServiceContextLinks(){
-		$cls = ($this->getCollectionID() == "all") ? "ucontext first" : "ucontext";
+		$cls = ($this->getCollectionID() == "all") ? "service-context ucontext first" : "service-context ucontext";
 		$sparams = array(
 				"class" => $cls,
 				"url" => $this->get_service_url(),
-				"icon" => $this->furl("image", "buttons/".$this->servicename."_icon.png"),
-				"name" => $this->getTitle()
+				"icon" => $this->furl("image", "services/".$this->servicename."_icon.png"),
+				"name" => $this->getServiceSetting("service-title", $this->getTitle())
 		);
 		return $sparams;
 	}
@@ -536,23 +677,24 @@ class DacuraService extends DacuraObject {
 	 * Writes the tool header html to the browser
 	 * @param array $option name value array of options to pass to tool
 	 */
-	private function renderToolHeader($option){
+	protected function renderToolHeader($option){
 		global $dacura_server;//make it available in the scope of the tool header template
 		$params = array();
-		$params['close-link'] = isset($option['close-link']) ? $option['close-link'] : $this->get_cds_url("", $this->collection_id);
+		$params['close-link'] = isset($option['close-link']) ? $option['close-link'] : $this->get_service_url("browse");
 		$params['close-msg'] = isset($option['close-tool-msg']) ? $option['close-tool-msg'] : "Close the tool and return to the main menu";
 		$params['title']= isset($option['title']) ? $option['title'] : "Dacura Tool";
 		$params['subtitle'] = isset($option['subtitle']) ? $option['subtitle'] : "";
 		$params['description'] = isset($option['description']) ? $option['description'] : "";
 		$params['image'] = isset($option['image']) ? $option['image'] : false;
+		$params['image-link'] = $dacura_server->userHasRole("admin", "all") ? $this->durl().$this->servicename : "";
 		$params['css_class'] = isset($option["css_class"]) ? $option["css_class"] : "";
 		$params['tabs'] = isset($option['tabs']) ? $option['tabs'] : false;
 		$params['jsoned'] = isset($option['jsoned']) ? true : false;
 		$params['dt'] = isset($option['dt']) ? true : false;
 		$params['init-msg'] = isset($option['msg']) ? $option['msg'] : "";
-		$tl = isset($option['topbreadcrumb']) ? $option['topbreadcrumb'] : false;
-		$tx = isset($option['collectionbreadcrumb']) ? $option['collectionbreadcrumb'] : false;
-		$params['breadcrumbs'] = isset($option['breadcrumbs']) ? $this->getBreadCrumbsHTML($option['breadcrumbs'][0], $option['breadcrumbs'][1], $tl, $tx) : false;
+		$tl = isset($option['breadcrumb_labels']) ? $option['breadcrumb_labels'] : false;
+		$tx = isset($option['breadcrumb_links']) ? $option['breadcrumb_links'] : false;
+		$params['breadcrumbs'] = isset($option['breadcrumbs']) ? $this->getBreadCrumbsHTML($tl, $tx) : false;
 		$this->includeSnippet("toolheader", $params);
 	}
 
@@ -614,7 +756,7 @@ class DacuraService extends DacuraObject {
 	 * Writes the tool footer html to the browser
 	 * @param array $params
 	 */
-	private function renderToolFooter($params){
+	protected function renderToolFooter($params){
 		$this->includeSnippet("toolfooter", $params);
 	}
 	
@@ -622,7 +764,7 @@ class DacuraService extends DacuraObject {
 	 * Render the html footer of a full page
 	 * @param DacuraServer $dacura_server
 	 */
-	private function renderFullPageFooter(DacuraServer &$dacura_server){
+	protected function renderFullPageFooter(DacuraServer &$dacura_server){
 		$service = &$this;
 		$this->writeBodyFooter($dacura_server);
 		$this->includeSnippet("footer");
@@ -632,7 +774,7 @@ class DacuraService extends DacuraObject {
 	 * Writes the footer of the page body
 	 * @param DacuraServer $dacura_server
 	 */
-	private function writeBodyFooter(DacuraServer &$dacura_server){
+	protected function writeBodyFooter(DacuraServer &$dacura_server){
 		echo "</div></div>";
 	}
 	
@@ -678,8 +820,8 @@ class DacuraService extends DacuraObject {
 	 * @param string $collection a string that is appended to the collection breadcrumb label (e.g. "users")
 	 * @return string html breadcrumbs (in a html ul element)
 	 */
-	function getBreadCrumbsHTML($xcrumbs = array(), $append = array(), $top_level = "", $collection = ""){
-		$paths = $this->get_service_breadcrumbs($top_level, $collection);
+	function getBreadCrumbsHTML($link_overrides = false){
+		$paths = $this->getBreadcrumbsPaths($link_overrides);
 		$html = "<ul class='service-breadcrumbs'>";
 		$z = 20;
 		$tot = 0;
@@ -693,18 +835,9 @@ class DacuraService extends DacuraObject {
 				$html .= "<li><a href='".$path['url']."' style='z-index:$n;'>".$path['title']."</a></li>";
 			}
 		}
-		foreach($xcrumbs as $onex){
-			$tot++;
-			$n = $z--;
-			$html .= "<li><a href='".$onex[0]."' style='z-index:" . ($z++). ";'>" .$onex[1]."</a></li>";				
-		}
-		foreach($append as $app){
-			$tot++;
-			$html .= "<li>$app</li>";
-		}
 		$html .= "</ul>";
 		if($tot > 0){
-			$html .= "<script>$('.pcbreadcrumbs').css('height', '29px')</script>";
+			$html .= "<script>$('.service-breadcrumbs').css('height', '29px')</script>";
 		}
 		return $html;
 	}
@@ -715,27 +848,39 @@ class DacuraService extends DacuraObject {
 	 * @param string $collection a string that is appended to the collection breadcrumb label (e.g. "users")
 	 * @return array an array where each entry is an associative array with 'url' & 'title' parameters
 	 */
-	private function get_service_breadcrumbs($top_level = "", $collection = ""){
+	protected function getBreadcrumbsPaths(){
 		$path = array();
-		if($top_level){
-			$path = array();
-			$path[] = array("url" => $this->durl().$this->servicename, "title" => $top_level);
-			if($this->cid() && $this->cid() != "all"){
-				$path[] = array("url" => $this->durl().$this->cid()."/".$this->servicename, "title" => $this->cid());
-			}
+		$stitle = $this->getServiceSetting("service-title");
+		if(!$stitle) $stitle = ucfirst($this->servicename)." service";
+		if($this->cid() != "all"){
+			$ctitle = $this->settings['name'];
+			$path[] = array("url" => $this->durl().$this->cid(), "title" => $ctitle);
+			$path[] = array("url" => $this->durl().$this->cid()."/".$this->servicename, "title" => $stitle);
 		}
 		else {
-			if($this->cid() && $this->cid() != "all"){
-				$path[] = array("url" => $this->durl().$this->cid()."/".$this->servicename, "title" => $this->cid()." " . $collection);
-			}
+			$path[] = array("url" => $this->durl(), "title" => "Dacura Platform");
+			$path[] = array("url" => $this->durl()."/".$this->servicename, "title" => $stitle);				
 		}
 		return $path;
 	}
-	
 
-	/*
-	 * functions to get the appropriate urls for stuff
-	 */
+	/**
+	 * Produces html for a given confirugation of table rows 
+	 * @param string $tid the html id of the table
+	 * @param string $ttype the type of table being shown one of DacuraForm::type
+	 * @param array<rows> $fields an array of filed configuration rows (name value pairs)
+ 	 */
+	function getInputTableHTML($tid, $fields, $settings = array()){
+		$df = new DacuraForm($tid, $settings);
+		if(is_array($fields) && $df->addElements($fields)){
+			return $df->html($tid);				
+		}
+		else {
+			return $this->renderScreenAsString("errormsg", array("title" => "failed to load dacura table $tid ".$df->errcode, "message" => $df->errmsg), "core");
+		}
+	}
+
+/* functions to get the appropriate urls for stuff */
 	
 	/**
 	 * Gets the url for this service 
@@ -841,6 +986,9 @@ class DacuraService extends DacuraObject {
 		$fu = $this->getSystemSetting("files_url");
 		if($type == "js" || $type == "css"){
 			$ext_bit = $fu.$type."/";
+		}
+		elseif($type == "master"){
+			return $fu."master.css";
 		}
 		else {
 			$ext_bit = $fu."images/";

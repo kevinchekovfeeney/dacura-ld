@@ -1,30 +1,40 @@
 <?php
-
-/*
+include_once("HomeDacuraServer.php");
+/**
  * A service that redirects a user to their appropriate home page
+ * 
  * Depending on the context and the user's state...
  *
- * Created By: Chekov
- * Creation Date: 20/11/2014
- * Contributors:
- * Licence: GPL v2
+ * @package home
+ * @author chekov
+ * @license GPL v2
  */
-
-include_once("HomeDacuraServer.php");
-
 class HomeService extends DacuraService {
-
-	function renderFullPage($server){
-		/* This will give an error. Note the output
-		 * above, which is before the header() call */
+	
+	var $default_facets = array(array("facet" => "view", "role" => "admin"));
+		
+	/**
+	 * Figures out the url of the user's home page in dacura and redirects them to it
+	 * 
+	 * @param HomeDacuraServer $server the dacura server object
+	 * @see DacuraService::renderFullPage()
+	 */
+	function renderFullPage(HomeDacuraServer $server){
 		$u = $server->getUser();
-		if($u) {
-			$cid = ($server->cid() == "all") ? $server->getUserHomeContext($u) : $server->cid();
-			$url = $this->get_service_url($server->getUserHomeService(), array(), "html", $cid);
-		}
+		$active_facets = $this->getActiveFacets($u);
+		if(!$active_facets){
+			if($u){
+				$colname = ($this->cid() == "all") ? "platform" : $this->cid();
+				$this->renderScreen("denied", array("title" => "Access Denied", "message" => "You do not have permission to view the $colname home page."), "core");				
+			}
+			else {
+				$url = $this->get_service_url("login");				
+			}
+		}	
 		else {
-			$url = $this->get_service_url("login");
-		}
+			$cid = ($server->cid() == "all" && $u) ? $server->getUserHomeContext($u) : $server->cid();
+			$url = $this->get_service_url($server->getUserHomeService($this->getServiceSetting("home")), array(), "html", $cid);				
+		}	
 		header("Location: $url");
 	}
 }

@@ -63,8 +63,8 @@ class DacuraServer extends DacuraController {
 	var $fileman; 
 	/** @var UserManager server's user &amp; session manager */
 	var $userman;	
-	/** @var array name-value associate array of configuration for the context -&gt; collection, schema, etc */
-	var $config; 
+	/** @var &lt;string:Collection&gt; associativee array of collection objects - just a cache to prevent reloading the same thing over and over */
+	var $loaded_configs; 
 	
 	/**
 	 * Creates the dacura server for the service invocation passed 
@@ -89,7 +89,6 @@ class DacuraServer extends DacuraController {
 		
 		$this-&gt;userman = new UserManager($service, $this-&gt;dbman);
 		$this-&gt;fileman = new FileManager($service);
-		$this-&gt;loadContextConfiguration();
 	}
 	
 	/**
@@ -102,7 +101,8 @@ class DacuraServer extends DacuraController {
 	function init($action, $object=&quot;&quot;){
 		$this-&gt;service-&gt;logger-&gt;setEvent($action, $object);
 		$user = $this-&gt;getUser();
-		if($user) $this-&gt;service-&gt;logger-&gt;user_name = $user-&gt;getName();
+		$name = $user ? $user-&gt;handle : $_SERVER['REMOTE_ADDR'];
+		$this-&gt;service-&gt;logger-&gt;user_name = $name;
 	}
 	
 	/**
@@ -110,8 +110,8 @@ class DacuraServer extends DacuraController {
 	 * 
 	 * This is the mechanism that allows servers to overcome their isolation from one another.  
 	 * When a dacura server wants to access the capabilities of another server, it calls this function
-	 * and can then use the methods of that service.  The dependant service shares the same service context object
-	 * so, the service and the server will be of different types.  I don't think this causes a problem anywhere, 
+	 * and can then use the methods of that service.  The dependant server shares the same service context object, 
+	 * the service and the server will be of different types.  I don't think this causes a problem anywhere, 
 	 * but it might :)
 	 * @param string $sname the id of the secondary server to load
 	 * @return DacuraServer|boolean
@@ -125,6 +125,36 @@ class DacuraServer extends DacuraController {
 		catch (Exception $e){
 			return $this-&gt;failure_result(&quot;Failed to create new $sname server &quot;.$e-&gt;getMessage(), 500);
 		}
+	}
+	
+	/**
+	 * Creates another dacura service that is dependant on the current service
+	 *
+	 * This is the mechanism that allows servers to create service objects on top of the one that invoked them.
+	 * When a dacura server wants to access the capabilities of another service, it calls this function
+	 * and can then use the methods of that service.  
+	 * @param string $sid the id of the service to load
+	 * @return DacuraService|boolean
+	 */
+	function createDependantService($sid){
+		$scls = ucfirst($sid).&quot;Service&quot;;
+		$sfile = $this-&gt;getSystemSetting(&quot;path_to_services&quot;).&quot;$sid/$scls.php&quot;;
+		if(!file_exists($sfile)){
+			return $this-&gt;failure_result(&quot;Service file $sfile not found for service $sid&quot;, 500);
+		}
+		try {
+			include_once($sfile);
+			$settings = deepArrCopy($this-&gt;service-&gt;settings);
+			$settings[$sid] = $this-&gt;getServiceConfig($sid);
+			if(!$ns = new $scls($settings)){
+				return $this-&gt;failure_result(&quot;Service class created $scls failed for service $sid&quot;, 500);				
+			}
+		}
+		catch (Exception $e){
+			return $this-&gt;failure_result(&quot;Failed to create new $sname service &quot;.$e-&gt;getMessage(), 500);
+		}
+		$ns-&gt;loadAsDependant($sid, $this-&gt;service);
+		return $ns;			
 	}
 	
 	/**
@@ -156,48 +186,37 @@ class DacuraServer extends DacuraController {
 	}
 	
 	/**
-	 * Loads the collection configuration according to where the service was invoked from
+	 * Fetches the configuration settings for a particular service by loading the service_settings file directly
+	 * and then passing it to have contextual settings loaded.
+	 *
+	 * @param string $sname service name
+	 * @return array settings array (arbitrary json structure)
 	 */
-	private function loadContextConfiguration(){
-		$this-&gt;loadServerConfiguration();
-		if($this-&gt;cid() != &quot;all&quot;){
-			$this-&gt;loadCollectionConfiguration($this-&gt;cid());
-		}
-	}
-
-	/**
-	 * Loads any configured system configuration variables
-	 */
-	private function loadServerConfiguration(){
-		$this-&gt;config = array();
-	}
-	
-	/**
-	 * Loads the configuration of the current collection
-	 * @param string $id collection id
-	 * @return boolean success | failure
-	 */
-	private function loadCollectionConfiguration($id = false){
-		if($id === false) $id = $this-&gt;cid();//current collection is default
-		$col = $this-&gt;getCollection($id);
-		if($col){
-			foreach($col-&gt;config as $k =&gt; $v){
-				$this-&gt;config[$k] = $v;
-			}
-			return true;
-		}
-		return false;
-	}
+	function getServiceConfig($sname){
+		$dacura_settings = $this-&gt;service-&gt;settings;
+		$fp = $this-&gt;getSystemSetting('path_to_services').$sname.&quot;/&quot;.$sname.&quot;_settings.php&quot;;
+		if(file_exists($fp)) include($fp);
+		else { $settings = array();}
+		//incorporate settings from collection configurations
+		$this-&gt;service-&gt;loadServiceContextSettings($sname, $settings, $this);
+		return $settings;
+	}	
 	
 	/**
 	 * Fetch the collection object which contains the collection's configuration
+	 * 
+	 * loaded collections are saved in a loaded_configs cache array to prevent reloading multiple times
 	 * @param string $id collection id
 	 * @return Collection|boolean
 	 */
 	function getCollection($id = false){
 		if($id === false) $id = $this-&gt;cid();//current collection is default
+		if(isset($this-&gt;loaded_configs[$id])){
+			return $this-&gt;loaded_configs[$id];
+		}
 		$obj = $this-&gt;dbman-&gt;getCollection($id);
 		if($obj){
+			$this-&gt;loaded_configs[$id] = $obj;
 			return $obj;
 		}
 		return $this-&gt;failure_result($this-&gt;dbman-&gt;errmsg, $this-&gt;dbman-&gt;errcode);
@@ -223,12 +242,12 @@ class DacuraServer extends DacuraController {
 		$params = array();
 		if($this-&gt;cid() != &quot;all&quot;){
 			$col = $this-&gt;getCollection();
-			$icon = $col-&gt;getConfig(&quot;icon&quot;) ? $col-&gt;getConfig(&quot;icon&quot;) : $this-&gt;service-&gt;furl(&quot;image&quot;, &quot;collection_icon.png&quot;);
+			$icon = $this-&gt;getSystemSetting(&quot;icon&quot;, $this-&gt;service-&gt;furl(&quot;images&quot;, &quot;system/collection_icon.png&quot;));
 			$params[] = array(
 					&quot;name&quot; =&gt; $col-&gt;name,
 					&quot;icon&quot; =&gt; $icon,
 					&quot;url&quot; =&gt; $this-&gt;durl().$this-&gt;cid(),
-					&quot;class&quot; =&gt; &quot;ucontext first&quot;);
+					&quot;class&quot; =&gt; &quot;ucontext first collection-context&quot;);
 		}
 		return $params;
 	}
@@ -244,8 +263,11 @@ class DacuraServer extends DacuraController {
 			while (false !== ($entry = readdir($handle))) {
 				if ($entry != &quot;.&quot; &amp;&amp; $entry != &quot;..&quot;) {
 					if(is_dir($sdir.$entry)
-							&amp;&amp; file_exists($sdir.$entry.&quot;/&quot;.ucfirst($entry).&quot;Service.php&quot;)){
-						$srvcs[] = $entry;
+							&amp;&amp; file_exists($sdir.$entry.&quot;/&quot;.ucfirst($entry).&quot;Service.php&quot;) &amp;&amp; $entry != &quot;core&quot;){
+						//only show login as a platform service
+						if($this-&gt;cid() == &quot;all&quot; or $entry != &quot;login&quot;){
+							$srvcs[] = $entry;
+						}
 					}
 				}
 			}
@@ -311,25 +333,21 @@ class DacuraServer extends DacuraController {
 	
 	/**
 	 * checks to see if the user invoking the server has permission to view the page specified in the service context
-	 * @return boolean if true, the user has permission
+	 * @return boolean if true, meaning the user has permission to view the current screen
 	 */
 	function userHasViewPagePermission(){
 		if(!$this-&gt;contextIsValid()){
 			return $this-&gt;failure_result(&quot;Invalid context &quot;.$this-&gt;contextStr(), 404);
 		}
-		if($this-&gt;service-&gt;isPublicScreen()){
-			return true;
+		//get service setting to make sure it is enabled...
+		if($this-&gt;getServiceSetting(&quot;status&quot;) == &quot;disable&quot;){
+			return $this-&gt;failure_result(&quot;The &quot;. $this-&gt;sname().&quot; service is not enabled for &quot;.$this-&gt;cid(), 401);							
 		}
-		$u = $this-&gt;getUser();
-		if(!$u) {
-			return $this-&gt;failure_result(&quot;User must be logged in to view this page&quot;, 401);
+		$facet = $this-&gt;service-&gt;getMinimumFacetForAccess($this);
+		if($facet === true || $this-&gt;userHasFacet($facet)){
+			return true;				
 		}
-		if($this-&gt;service-&gt;userCanViewScreen($u, $this)){
-			return true;
-		}
-		else {
-			return $this-&gt;failure_result($this-&gt;service-&gt;errmsg, $this-&gt;service-&gt;errcode);
-		}
+		return $this-&gt;failure_result(&quot;User does not have permission to view this page ($facet)&quot;, 401);
 	}
 	
 	/**
@@ -347,6 +365,27 @@ class DacuraServer extends DacuraController {
 		}
 		return $this-&gt;failure_result(&quot;User &quot;.$u-&gt;getName().&quot; does not have the required role $role for $cid&quot;, 401);
 	}
+
+	/**
+	 * Checks to see whether a user is entitled to a demanded facet 
+	 * @param string $f the facet name
+	 * @return true if the user has &gt;= facet to that requested
+	 */
+	function userHasFacet($f = false, $srvc = false){
+		$srvc = $srvc ? $srvc : $this-&gt;service;
+		$u = $this-&gt;getUser();
+		if($u &amp;&amp; $u-&gt;isPlatformAdmin()) return true;
+		if($f){
+			$facets = $srvc-&gt;getActiveFacets($u);
+			foreach($facets as $onef){
+				if($srvc-&gt;compareFacets($onef['facet'], $f)){
+					return true;
+				}
+			}
+			return false;
+		}
+		return $srvc-&gt;getActiveFacets($u);
+	}
 	
 	/**
 	 * Returns a data structure describing the collections available to the user 
@@ -355,14 +394,16 @@ class DacuraServer extends DacuraController {
 	 * @return array indexed by collection id with a collection data structure.
 	 */
 	function getUserAvailableContexts($role=false){
-		$u = $this-&gt;getUser();
+		if(!$u = $this-&gt;getUser()){
+			return $this-&gt;failure_result(&quot;User is not logged in - no roles&quot;, 400);
+		}
 		$cols = $this-&gt;getCollectionList();
 		$choices = array();
 		if($u-&gt;hasCollectionRole(&quot;all&quot;, $role)){
 			$choices[&quot;all&quot;] = array(&quot;title&quot; =&gt; &quot;All collections&quot;);
 		}	
 		foreach($cols as $colid =&gt; $col){
-			if($u-&gt;hasCollectionRole($colid, $role) or $u-&gt;isGod() or $u-&gt;hasCollectionRole(&quot;all&quot;, $role)){
+			if($u-&gt;hasCollectionRole($colid, $role) or $u-&gt;hasCollectionRole(&quot;all&quot;, $role)){
 				$choices[$colid] = array(&quot;title&quot; =&gt; $col-&gt;name);
 			}
 		}
@@ -376,10 +417,7 @@ class DacuraServer extends DacuraController {
 	 * @return boolean|string the id of the user's home collection or false if it does not exist
 	 */
 	function getUserHomeContext(DacuraUser $u){
-		if(!$u){
-			return false;
-		}
-		if($u-&gt;isGod() or $u-&gt;hasCollectionRole(&quot;all&quot;)){
+		if($u-&gt;hasCollectionRole(&quot;all&quot;)){
 			return &quot;all&quot;;
 		}
 		if(isset($u-&gt;roles[0])){
@@ -414,6 +452,8 @@ class DacuraServer extends DacuraController {
 	 */
 	function recordUserAction($action, $params = array(), $sid = false){
 		if(!($u = $this-&gt;getUser())){
+			//record anonymous session...
+			//$this-&gt;userman-&gt;recordAnonymousSession($sid, $this-&gt;cid(), $params);
 			return $this-&gt;failure_result(&quot;Current user is not logged in&quot;, 401);
 		}
 		$sid = $sid ? $sid : $this-&gt;my_service_id();
@@ -512,9 +552,9 @@ class DacuraServer extends DacuraController {
 	 */
 	function write_comet_update($status, $ting){
 		$struct = array(
-				&quot;message_type&quot; =&gt; &quot;comet_update&quot;,
-				&quot;status&quot; =&gt; $type,
-				&quot;payload&quot; =&gt; $ting
+			&quot;message_type&quot; =&gt; &quot;comet_update&quot;,
+			&quot;status&quot; =&gt; $type,
+			&quot;payload&quot; =&gt; $ting
 		);
 		echo json_encode($struct).&quot;\n&quot;;
 		ob_flush();

@@ -49,7 +49,7 @@ class HomeDacuraServer extends DacuraServer {
 	/**
 	 * Always returns true
 	 * 
-	 * non-logged in users are redirected to login, everybody else has a home page
+	 * non-logged in users are redirected to login, everybody else is sent to the collection home page
 	 */
 	function userHasViewPagePermission(){
 		return true;
@@ -61,12 +61,8 @@ class HomeDacuraServer extends DacuraServer {
 	 * Currently everybody goes to the browse service
 	 * @return string the name of the service to load as the user's home page
 	 */
-	function getUserHomeService(){
-		$u = $this-&gt;getUser();
-		if($u){
-			return &quot;browse&quot;;
-		}
-		return &quot;login&quot;;	
+	function getUserHomeService($s = &quot;browse&quot;){
+		return $s;
 	}	
 }
 

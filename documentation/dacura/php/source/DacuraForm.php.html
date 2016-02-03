@@ -49,18 +49,28 @@ class DacuraForm extends DacuraObject {
 	var $elements = array();
 	/** @var array() a name-value array of settings for this form */
 	var $settings = array();
-	/** @var string the type of the form [update|view|create]*/
-	var $type; 
 	
 	/** 
 	 * @param string $id Dacura ID
 	 * @param string $type update | view | create - which type of form is this
 	 * @param array $settings the settings for the form
 	 */
-	function __construct($id, $type, $settings = array()){
+	function __construct($id, $settings = array()){
 		$this-&gt;id = $id;
-		$this-&gt;type = $type;
 		$this-&gt;settings = $settings;
+	}
+	
+	/**
+	 * Adds a meta-data column to the form
+	 * @param string $name the name of the variable
+	 * @param string $val the value of the variable
+	 * @param string $type - the type (checkbox, select, text)
+	 * @param array $options options for the column
+	 */
+	function addMetaDataColumn($name, $val, $type, $options = array()){
+		foreach($this-&gt;elements as $i =&gt; $el){
+			$this-&gt;elements[$i]-&gt;addMeta($name, $val, $type, $options);
+		}
 	}
 	
 	/**
@@ -71,7 +81,12 @@ class DacuraForm extends DacuraObject {
 	function addElements(array $rows){
 		foreach($rows as $row){
 			$dfe = new DacuraFormElement();
-			if($dfe-&gt;load($row, $this-&gt;type)){
+			if($dfe-&gt;load($row, $this-&gt;settings)){
+				if(isset($this-&gt;settings['meta'])){
+					foreach($this-&gt;settings['meta'] as $mf =&gt; $mvals){
+						$dfe-&gt;addMeta($mf, $mvals[0], $mvals[1], $mvals[2]);		
+					}
+				}
 				$this-&gt;elements[] = $dfe;
 			}
 			else {
@@ -84,22 +99,47 @@ class DacuraForm extends DacuraObject {
 	/**
 	 * Generage a html representation of the form
 	 * @param string $jdid the html id of the table that will be created to hold the form
+	 * @param array $context context in which the form is being serialised - an array of html element ids within which the form finds itself 
 	 * @return string the html table of the form
 	 */
-	function html($jdid){
-		$html = &quot;&lt;table class='dacura-property-table dacura-&quot;.$this-&gt;type.&quot;-table' id='$jdid'&gt;&quot;;
-		foreach($this-&gt;elements as $el){
-			$html .= $el-&gt;tr($this-&gt;type);			
+	function html($jdid, $context = array()){
+		$context[] = $jdid;
+		if(count($context) == 1){
+			$cls_extra = &quot; property-table-top property-table-odd property-table-level-1&quot;;
 		}
-		$html .=&quot;&lt;/table&gt;&quot;;		
+		elseif(count($context) % 2 == 0){
+			$cls_extra = &quot; property-table-even property-table-level-&quot;.count($context);				
+		}
+		else {
+			$cls_extra = &quot; property-table-odd property-table-level-&quot;.count($context);				
+		}
+		$html = &quot;&lt;table class='dacura-property-table dacura-&quot;.$this-&gt;settings['display_type'].&quot;-table $cls_extra' id='$jdid'&gt;&quot;;
+		//echo htmlspecialchars($html);
+		$html.= $this-&gt;table_header($context);
+		$html .= &quot;&lt;tbody&gt;&quot;;
+		foreach($this-&gt;elements as $i =&gt; $el){
+			$rownum = $i + 1;
+			$is_last = ($rownum == count($this-&gt;elements) || isset($this-&gt;elements[$rownum]) &amp;&amp; $this-&gt;elements[$rownum]-&gt;isSection());
+			$html .= $el-&gt;tr($this-&gt;settings, $context, $rownum, $is_last);			
+		}
+		$html .=&quot;&lt;/tbody&gt;&lt;/table&gt;&quot;;		
 		return $html;
 	}
-}
-
-
-
-
-</pre>
+	
+	/**
+	 * Generates a header for the form table
+	 * @param array $context an array of the ids of forms that we are embedded inside
+	 * @return string the html representation of the table header. 
+	 */
+	function table_header($context){
+		$html = &quot;&lt;thead&gt;&quot;;
+		if(isset($this-&gt;settings['show-header']) &amp;&amp; $this-&gt;settings['show-header'] &gt; count($context)){
+			$html .= &quot;&lt;tr&gt;&lt;th colspan='&quot;. (2 + count($this-&gt;settings['meta'])) . &quot;' class='dacura-property-label'&gt;&quot; . $this-&gt;settings['header-html'].&quot;&lt;/th&gt;&lt;/tr&gt;&quot;;
+			$html .= &quot;&lt;/thead&gt;&quot;;
+		}
+		return $html;
+	}
+}</pre>
         <script type="text/javascript">
              SyntaxHighlighter.all();
              jQuery('.gutter div').each(function(key, data){

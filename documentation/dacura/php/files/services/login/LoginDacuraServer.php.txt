@@ -1,5 +1,5 @@
 <?php
-/**
+/** 
  * Login server 
  * 
  * supports lost password and registration interface too
@@ -17,7 +17,7 @@ class LoginDacuraServer extends DacuraServer {
 	 * @return DacuraUser|boolean - if login successful returns user object
 	 */
 	function login($email, $p){
-		$u = $this->userman->login($email, $p);
+		$u = $this->userman->login($email, $p, $this->cid());
 		return ($u) ? $u : $this->failure_result($this->userman->errmsg, 401);
 	}
 	
@@ -30,7 +30,7 @@ class LoginDacuraServer extends DacuraServer {
 	 * @return boolean - registration successfully initiated
 	 */
 	function register($email, $p){
-		$code = $this->userman->register($email, $p);
+		$code = $this->userman->register($email, $p, $this->cid());
 		if($code){
 			$address =  $this->durl()."login/register/code/".$code;
 			ob_start();
@@ -76,10 +76,11 @@ class LoginDacuraServer extends DacuraServer {
 	 * Resets the user's password when they fill in the form after following the confirm link
 	 * @param number $uid user id
 	 * @param string $p password
+	 * @param string $action the user-action that triggered the reset: lost|invite
 	 * @return string|boolean confirmation string on success, false on failure
 	 */
-	function resetpassword($uid, $p){
-		if($this->userman->resetPassword($uid, $p)){
+	function resetpassword($uid, $p, $action){
+		if($this->userman->resetPassword($uid, $p, $action)){
 			return "Your password has been successfully reset. You may now log into the system.";
 		}
 		else {

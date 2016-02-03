@@ -21,7 +21,6 @@ class UserManager extends DacuraController {
 	 */
 	function __construct(DacuraService &$service, DBManager &$dbman){
 		parent::__construct($service);
-		$this->user_dir = $this->getSystemSetting("dacura_sessions");
 		$this->user_var = $this->getSystemSetting('dacurauser');
 		$this->dbman = $dbman;
 	}
@@ -40,7 +39,7 @@ class UserManager extends DacuraController {
 	
 	/**
 	 * Fetch a user object 
-	 * @param string $n the id of the user to load (empty to load currently logged in user)
+	 * @param number $n the id of the user to load (default is to load currently logged in user)
 	 * @return boolean|DacuraUser the user object or false on failure
 	 */
 	function getUser($n = ""){
@@ -52,7 +51,6 @@ class UserManager extends DacuraController {
 			else {
 				return $this->failure_result("not logged in", 401);
 			}
-			return $u;
 		}
 		else {
 			return $this->loadUser($n);
@@ -65,9 +63,7 @@ class UserManager extends DacuraController {
 	 * @return DacuraUser|boolean
 	 */
 	function loadUser($id){
-		$u = $this->dbman->loadUser($id);
-		if($u){
-			$u->setSessionDirectory($this->user_dir.$u->id);
+		if($u = $this->dbman->loadUser($id)){
 			return $u;
 		}
 		else {
@@ -81,9 +77,7 @@ class UserManager extends DacuraController {
 	 * @return DacuraUser|boolean
 	 */
 	function loadUserByEmail($email){
-		$u = $this->dbman->loadUserByEmail($email);
-		if($u){
-			$u->setSessionDirectory($this->user_dir.$u->id);
+		if($u = $this->dbman->loadUserByEmail($email)){
 			return $u;
 		}
 		else {
@@ -96,9 +90,7 @@ class UserManager extends DacuraController {
 	 * @return array<id:DacuraUser> an array of users indexed by their ids
 	 */
 	function getUsers(){
-		$u = $this->dbman->loadUsers();
-		if($u){
-			$this->logEvent("debug", 200, "returning list of users: " .json_encode($u, true));
+		if($u = $this->dbman->loadUsers()){
 			return $u;
 		}
 		else {
@@ -113,6 +105,10 @@ class UserManager extends DacuraController {
 	 */
 	function saveUser($u){
 		if($this->dbman->saveUser($u)){
+			//if the user being updated is the currently logged in user, update the user object in the session 
+			if(isset($_SESSION[$this->user_var]) && $_SESSION[$this->user_var]->id == $u->id){
+				$this->refreshCurrentUser();
+			}
 			return $u;
 		}
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
@@ -140,7 +136,7 @@ class UserManager extends DacuraController {
 		!$prof && $prof = '{}';
 		$nu = $this->dbman->addUser($email, $n, $p, $status, $prof);
 		if($nu){
-			$nu->setSessionDirectory($this->user_dir.$nu->id);
+			$nu->recordAction("system", "all", "created", true);				
 			return $nu;
 		}
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
@@ -157,7 +153,7 @@ class UserManager extends DacuraController {
 			return false;
 		}
 		$du->setStatus("deleted");
-		$du->recordAction("system", "deleted");
+		$du->recordAction("system", "all", "deleted", true);
 		return $this->saveUser($du);
 	}
 	
@@ -234,6 +230,7 @@ class UserManager extends DacuraController {
 					return $this->failure_result("Failed to delete $rid role for $uid", 500);
 				}
 				unset($u->roles[$i]);
+				$u->recordAction("system", $role->cid(), "deleted role ".$role->role(), true);		
 				return $u;
 			}
 		}
@@ -252,33 +249,19 @@ class UserManager extends DacuraController {
 		if($u){
 			$u->addRole(new UserRole(0, $cid, $role));
 			if(!$this->dbman->updateUserRoles($u)){
-				return $this->failure_result("Failed to create new roles for $id collection", 500);
+				return $this->failure_result("Failed to create new roles for $id collection ".$this->dbman->errmsg, $this->dbman->errcode);
 			}
 			$roles = $this->dbman->loadUserRoles($uid);
 			if($roles === false){ return false; }
 			$u->roles = $roles;	
+			$u->recordAction("system", $cid, "created role ".$role);
 			return $u;
 		}
 		return $this->failure_result("Could not create role for user $uid." . " " . $this->errmsg, $this->errcode);
 	}	
 	
 	/**
-	 * Updates a user's stored roles to be those that are contained in the passed user object
-	 * 
-	 * This works by deleting all existing roles then adding all ones contained in the object
-	 * @param DacuraUser $u
-	 * @return boolean true if successful
-	 */
-	function updateUserRoles(DacuraUser &$u){
-		if($this->dbman->updateUserRoles($u)){
-			$_SESSION[$this->user_var] =& $u;
-			return true;
-		}
-		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
-	}
-	
-	/**
-	 * returns an array of userids that appear (i.e. have a role) in the given collection
+	 * returns an array of users that appear (i.e. have a role) in the given collection
 	 * @param string $cid collection id
 	 * @return array<DacuraUser> array of user objects
 	 */
@@ -286,58 +269,18 @@ class UserManager extends DacuraController {
 		//first figure out which cids to use for the given active user...
 		$cids = array();
 		if($cid == "all"){
-			//we are in top level context - all users are returned....
 			return $this->getUsers();
 		}
-		else{
-			//we are in a collection level context
-			$uids  = $this->dbman->getUsersInContext(array($cid), array());
-		}
-		if(!$uids){
+		if(!($users  = $this->dbman->getUsersInContext(array($cid), array()))){
 			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
-		}
-		$this->logEvent("debug", 200, "returning list of users: " .json_encode($uids, true));
-		$users = array();
-		foreach($uids as $id){
-			$u = $this->getUser($id);
-			if(!$u){
-				$this->logEvent("warning", $this->errcode, $this->errmsg);
-			}
-			else {
-				$users[] = $u;
-			}
 		}
 		return $users;
 	}
 	
 	/**
-	 * Returns a user object pruned so that it only has roles within the given context...
-	 * @param number $uid user id
-	 * @param string $cid collection id
-	 * @return DacuraUser pruned user object
-	 */
-	function getUserPrunedForContext($uid, $cid){
-		$u = $this->getUser($uid);
-		if(!$u){
-			return $this->failure_result("User $uid does not exist", 404);
-		}
-		$covering_role = new UserRole(0, $cid, "god");
-		$nroles = array();
-		foreach($u->roles as $i => $r){
-			if(!(!$covering_role->coversRole($r) || ($cid !="all" && $r->collection_id == "all"))){
-				$nroles[] = $r;
-			}
-		}
-		$u->roles = $nroles;
-		$this->loadUserHistory($u);
-		unset($u->session_dump);//mask it for external consumption
-		return $u;
-	}
-	
-	/**
 	 * Returns the list of roles that a use may delegate in a given context
 	 * 
-	 * Only admin and god can give out access roles.
+	 * Only admin can give out access roles.
 	 * All users can give out nobody roles
 	 * 
 	 * @param string $cid collection id
@@ -354,10 +297,7 @@ class UserManager extends DacuraController {
 		$all_roles = UserRole::$dacura_roles;
 		foreach($u->roles as $i => $r){
 			if($r->coversRole($covered_role)){
-				if($r->role == "god"){
-					return $all_roles;
-				}
-				elseif($r->role == "admin"){
+				if($r->role == "admin"){
 					$top_role = "admin";
 				}
 				elseif($r->role != "nobody" && $top_role != "admin"){
@@ -368,7 +308,6 @@ class UserManager extends DacuraController {
 		if($top_role == 'nobody') return array();
 		if($top_role == 'user') return array("nobody" => $all_roles['nobody']);
 		if($top_role == 'admin'){
-			unset($all_roles['god']);
 			return $all_roles;
 		}
 	}
@@ -376,46 +315,12 @@ class UserManager extends DacuraController {
 	/**
 	 * Loads a users session history from the user session directory 
 	 * @param DacuraUser $u the relevant user object
+	 * @param cid the relevant user object
 	 * @return boolean true is successful
 	 */
-	function loadUserHistory(DacuraUser &$u){
-		if ($handle = opendir($u->session_dump)) {
-			while (false !== ($entry = readdir($handle))) {
-				$ext = substr($entry, strrpos($entry, '.') +1);
-				if ($ext == "session"){
-					$sess_id = substr($entry, 0, strrpos($entry, '.'));
-					$fhandle = fopen($u->session_dump.$entry, "r");
-					if ($fhandle) {
-						while (($line = fgets($fhandle)) !== false) {
-							$ds = new DacuraSession($sess_id);
-							if($ds->loadFromJSON($line)){
-								$one_history = $ds->summary();
-								$one_history['service'] = $sess_id;
-								$one_history['events'] = $ds->events;
-								$u->history[] = $one_history;
-							}
-							else {
-								$this->logEvent("notice", 500, "Failed to parse session dump [$line]");
-							}
-						}
-						fclose($fhandle);
-					}
-					else {
-						$this->logEvent("notice", 500, "Failed to open file $entry in $this->session_dump");
-					}
-				}
-				else {
-					if($entry != "." && $entry != ".."){
-						$this->logEvent("notice", 500, "Non session file $entry in session directory ($ext)");
-					}
-				}
-			}
-			closedir($handle);
-			return true;
-		}
-		else {
-			return $this->failure_result("Failed to open user session directory $u->session_dump", 500, "warning");
-		}
+	function loadUserHistory(DacuraUser &$u, $cid){
+		$u->loadHistory($cid);
+		return true;		
 	}
 	
 	/* Login / registration / invitation / lost password functions */	
@@ -424,18 +329,18 @@ class UserManager extends DacuraController {
 	 * Login to the system
 	 * @param string $email email address
 	 * @param string $p password
+	 * @param string $cid collection id through which the login is being accessed
 	 * @return DacuraUser on success
 	 */
-	function login($email, $p){
+	function login($email, $p, $cid){
 		if($this->isLoggedIn()){
 			return $this->failure_result("user is already logged in - cannot log in again ", 401);
 		}
 		else {
 			$u = $this->dbman->testLogin($email, $p);
 			if($u){
-				$u->setSessionDirectory($this->user_dir.$u->id);
 				$_SESSION[$this->user_var]=& $u;
-				$u->recordAction("system", "login");
+				$u->recordAction("system", $cid, "login");
 				return $u;
 			}
 			else {
@@ -457,6 +362,7 @@ class UserManager extends DacuraController {
 	 */
 	function logout(){
 		$u = $this->getUser();
+		//opr($u);
 		$u->endLiveSessions("logout");
 		unset($_SESSION[$this->user_var]);
 	}
@@ -465,19 +371,20 @@ class UserManager extends DacuraController {
 	 * Register a new user with the system
 	 * @param string $email email address
 	 * @param string $p password
+	 * @param string $cid collection id through which the registration is being accessed
 	 * @return string|boolean if successful, returns a confirm code for the user to use to complete registration
 	 */
-	function register($email, $p){
+	function register($email, $p, $cid){
 		//if the user is pending, send them a fresh notification...
 		$eu = $this->loadUserbyEmail($email);
 		if($eu){
 			if($eu->status == "pending"){
 				if($code = $this->dbman->getUserConfirmCode($eu->id, "register")){
-					$eu->recordAction("register", "reregister", true);
+					$eu->recordAction("system", $cid, "reregister", true);
 					return $code;
 				}
 				elseif($code = $this->dbman->generateUserConfirmCode($eu->id, "register")){
-					$eu->recordAction("register", "regenerate_confirm", true);
+					$eu->recordAction("system", $cid, "regenerate_confirm", true);
 					return $code;
 				}
 				else {
@@ -498,7 +405,7 @@ class UserManager extends DacuraController {
 			$nu = $this->addUser($email, "", $p, "pending");
 			if($nu){
 				if($code = $this->dbman->generateUserConfirmCode($nu->id, "register")){
-					$nu->recordAction("register", "register", true);
+					$nu->recordAction("system", $cid, "register", true);
 					return $code;
 				}
 				else {
@@ -514,7 +421,7 @@ class UserManager extends DacuraController {
 	 * @param string $code the confirm code
 	 * @return DacuraUser the confirmed user
 	 */
-	function confirmRegistration($code){
+	function confirmRegistration($code, $cid){
 		$uid = $this->dbman->getConfirmCodeUid($code, "register");
 		if(!$uid){
 			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
@@ -522,11 +429,11 @@ class UserManager extends DacuraController {
 		if(!($du = $this->loadUser($uid))){
 			return false;				
 		}
-		if($du->status != "pending"){
+		if(!$du->is_pending()){
 			return $this->failure_result("This confirmation code is no longer valid", 401);
 		}
 		$du->setStatus("accept");
-		$du->recordAction("register", "confirm_register", true);
+		$du->recordAction("system", $cid, "confirm register", true);
 		if($this->saveUser($du)){
 			return $du;	
 		}
@@ -547,13 +454,13 @@ class UserManager extends DacuraController {
 			if($eu->status == "pending"){
 				$code = $this->dbman->getUserConfirmCode($eu->id, "invite");
 				if($code){
-					$eu->recordAction("invite", "reinvite", true);
+					$eu->recordAction("system", $cid, "reissue invite", true);
 					return $code;
 				}
 				else {
 					$code = $this->dbman->generateUserConfirmCode($eu->id, "invite");
 					if($code){
-						$eu->recordAction("invite", "regenerate_confirm", true);
+						$eu->recordAction("system", $cid, "regenerate invite", true);
 						return $code;
 					}
 					else {
@@ -570,8 +477,7 @@ class UserManager extends DacuraController {
 				return $this->failure_result("Invalid email address: you must enter a working email address to receive account confirmation", 401);
 			}
 			//give them a randomly generated password - will need to change it when they accept the invite...
-			//$nu = $this->addUser($email, "", "user". uniqid_base36(""), "pending");
-			$nu = $this->addUser($email, "", "aligned", "pending");
+			$nu = $this->addUser($email, "", "user". uniqid_base36(""), "pending");
 			if($nu){
 				$role = $this->createUserRole($nu->id, $cid, $role, 0);
 				if(!$role){
@@ -579,7 +485,7 @@ class UserManager extends DacuraController {
 				}
 				$code = $this->dbman->generateUserConfirmCode($nu->id, "invite");
 				if($code){
-					$nu->recordAction("invite", "invite", true);
+					$nu->recordAction("system", $cid, "invite", true);
 					return $code;
 				}
 				else {
@@ -605,6 +511,7 @@ class UserManager extends DacuraController {
 			return $this->failure_result("user $email is unknown cannot be invited to collection", 404);
 		}
 		return $this->createUserRole($eu->id, $cid, $role, 0);
+		$eu->recordAction("system", $cid, "invite to collection", true);
 	}
 	
 	/**
@@ -612,10 +519,9 @@ class UserManager extends DacuraController {
 	 * @param string $code
 	 * @return DacuraUser the invited user object
 	 */
-	function confirmInvite($code){
-		$uid = $this->dbman->getConfirmCodeUid($code, "invite");
-		if(!$uid){
-			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+	function confirmInvite($code, $cid){
+		if(!($uid = $this->dbman->getConfirmCodeUid($code, "invite"))){
+			return $this->failure_result($this->dbman->errmsg .$uid . " is the uid ($code)", $this->dbman->errcode);
 		}
 		if(!($du = $this->loadUser($uid))){
 			return false;
@@ -623,12 +529,14 @@ class UserManager extends DacuraController {
 		if($du->status != "pending"){
 			return $this->failure_result("This invitation code is no longer valid", 401);
 		}
-		$du->setStatus("accept");
-		$du->recordAction("invite", "confirm_invite", true);
-		if($this->saveUser($du)){
-			return $du;
+		if(!($rcid = $du->getRoleCollectionId())){
+			return $this->failure_result("This invitation code is invalid it is not associated with a role in any collection", 401);				
 		}
-		return false;
+		if($rcid != $cid && $cid != "all"){
+			return $this->failure_result("Mismatch between the collection that issued the invitation and the confirmation url", 401);
+		}
+		$du->recordAction("system", $rcid, "confirm invite", true);
+		return $du;
 	}
 	
 	/**
@@ -646,7 +554,7 @@ class UserManager extends DacuraController {
 			if(!$u){
 				return false;
 			}
-			$u->recordAction("users", "updated_password", true);
+			$u->recordAction("system", "all", "updated password", true);
 			return true;
 		}
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
@@ -656,20 +564,33 @@ class UserManager extends DacuraController {
 	 * Reset the user's password
 	 * @param number $uid user id
 	 * @param string $p password 
+	 * @param string $action the user action that triggered the reset: lost|invite
 	 * @return boolean true on success
 	 */
-	function resetPassword($uid, $p){
+	function resetPassword($uid, $p, $action){
 		if(!$this->isValidPassword($p)){
 			return $this->failure_result("Password is invalid: passwords must be at least six characters long", 400);
 		}
-		$code = $this->dbman->getUserConfirmCode($uid, "lost");
+		$u = $this->loadUser($uid);
+		if(!$u){
+			return false;
+		}
+		if($action == "invite" && $u->status() != 'pending'){
+			return $this->failure_result("The invitation has been aborted: ".$u->handle." has status ".$u->status(), 400);
+		}
+		if($action != "invite" && $u->status() != "accept"){
+			return $this->failure_result("Cannot reset password of user ".$u->handle." not an active user: ".$u->status(), 400);
+		}
+		$code = $this->dbman->getUserConfirmCode($uid, $action);
 		if($code){
 			if($this->dbman->updatePassword($uid, $p, true)){
-				$u = $this->loadUser($uid);
-				if(!$u){
-					return false;
+				if($action == 'invite'){
+					$u->setStatus("accept");
+					if(!$this->saveUser($u)){
+						return false;
+					}
 				}
-				$u->recordAction("register", "updated_password", true);
+				$u->recordAction("system", "all", "$action password reset", true);
 				return true;
 			}
 			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
@@ -687,20 +608,22 @@ class UserManager extends DacuraController {
 			return false;
 		}
 		if($u->status == "pending"){
-			$u->recordAction("register", "lost_password_failed", true);
+			$u->recordAction("system", "all", "pending user failed password reset", true);
 			return $this->failure_result("You must confirm your account before you can reset the password.", 401);
 		}
 		elseif($u->status == "reject"){
-			$u->recordAction("register", "lost_password_failed", true);
+			$u->recordAction("system", "all", "rejected user failed password reset", true);
 			return $this->failure_result("The account $u has been suspended, you cannot reset the password while suspended.", 401);
 		}
 		elseif($u->status == "deleted"){
-			$u->recordAction("register", "lost_password_failed", true);
+			$u->recordAction("system", "all", "deleted user failed password reset", true);
 			return $this->failure_result("The account $u has been deleted, you cannot reset the password of a deleted account.", 401);
 		}
-		$u->recordAction("register", "lost_password", true);
-		if($code = $this->dbman->generateUserConfirmCode($u->id, "lost", true)) return $code;
-		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+		$u->recordAction("register", "all", "password reset initiated", true);
+		if(!($code = $this->dbman->generateUserConfirmCode($u->id, "lost", true))){
+			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
+		}
+		return $code;
 	}	
 	
 	/**
@@ -719,7 +642,7 @@ class UserManager extends DacuraController {
 		if($du->status != "accept"){
 			return $this->failure_result("This confirmation code is invalid $du->email is not an active user", 401);
 		}
-		$du->recordAction("register", "confirm_lost", true);
+		$du->recordAction("system", "all", "confirm password reset", true);
 		return $du;
 	}
 }

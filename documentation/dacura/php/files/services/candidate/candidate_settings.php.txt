@@ -1,5 +1,6 @@
 <?php
 $settings = array(
+	"service-button-title" => "Data",
 	"tables" => array(
 			"history" => array("datatable_options" => array(
 					"jQueryUI" => true, "scrollX" => true, "info" => true, "order" => array(0, "desc"),

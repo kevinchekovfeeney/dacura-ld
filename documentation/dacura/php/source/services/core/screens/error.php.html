@@ -45,14 +45,7 @@
  */
 ?&gt;
 &lt;?php include_once(path_to_snippet(&quot;header&quot;));?&gt;
-&lt;div class='fullpage-message-container'&gt;
-	&lt;div class='fullpage-message'&gt;
-		&lt;div class='dacura-user-message-box dacura-error'&gt;
-			&lt;div class='mtitle'&gt;Error &lt;?=$params['title']?&gt;&lt;/div&gt;
-			&lt;div class='mbody'&gt;&lt;?=$params['message']?&gt;&lt;/div&gt;
-		&lt;/div&gt;
-	&lt;/div&gt;
-&lt;/div&gt;
+&lt;?php include_once(&quot;errormsg.php&quot;); ?&gt;
 &lt;?php include_once(path_to_snippet(&quot;footer&quot;));?&gt;
 </pre>
         <script type="text/javascript">

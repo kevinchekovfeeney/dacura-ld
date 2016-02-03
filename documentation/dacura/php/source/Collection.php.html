@@ -64,17 +64,115 @@ class Collection extends DacuraObject {
 		$this-&gt;status = $s;
 	}
 	
+	function getDefaultSettings(DacuraServer &amp;$srvr){
+		$cid = $srvr-&gt;cid();
+		$settings = array(
+			&quot;collection_url&quot; =&gt; $srvr-&gt;getSystemSetting(&quot;install_url&quot;).$cid.&quot;/&quot;,
+			&quot;collection_path&quot; =&gt; $srvr-&gt;getSystemSetting(&quot;path_to_collections&quot;).$cid.&quot;/&quot;,
+			&quot;status&quot; =&gt; $this-&gt;status,
+			&quot;name&quot; =&gt; $this-&gt;name,
+			&quot;image&quot; =&gt; $srvr-&gt;service-&gt;furl(&quot;images&quot;, &quot;system/collection_bg.jpg&quot;),
+			&quot;background&quot; =&gt; $srvr-&gt;service-&gt;furl(&quot;images&quot;, &quot;system/background.jpg&quot;),
+			&quot;icon&quot; =&gt; $srvr-&gt;service-&gt;furl(&quot;images&quot;, &quot;system/candidate_icon.png&quot;),
+			&quot;description&quot; =&gt; &quot;&quot;
+		);
+		return $settings;
+	}
+	
 	/**
 	 * Fetch the value of a configuration variable
 	 * @param string $var the name of the configuration variable whose value is required
 	 * @return boolean|mixed the value of the configuration variable or false (with errcode set) if not existant
 	 */
-	function getConfig($var){
-		if(isset($this-&gt;config[$var])) {
-			return $this-&gt;config[$var];
+	function getConfig($varpath){
+		$parts = explode(&quot;.&quot;, $varpath);
+		$x = $this-&gt;config;
+		foreach($parts as $p){
+			if(!isset($x[$p])){
+				return $this-&gt;failure_result(&quot;No variable $varpath found in $this-&gt;id collection configuration (search ended at $p)&quot;, 404);
+			}
+			$x = $x[$p];	
 		}
-		return $this-&gt;failure_result(&quot;No variable $var found in $this-&gt;id collection configuration&quot;, 404);		
+		return $x;
 	}
+	
+	/**
+	 * Does the configuration have a variable with a particular path
+	 * @param string $varpath '.' separated path through the json array structure
+	 * @return boolean true if there is a variable at the varpath
+	 */
+	function hasConfig($varpath){
+		$parts = explode(&quot;.&quot;, $varpath);
+		$x = $this-&gt;config;
+		foreach($parts as $p){
+			if(!isset($x[$p])){
+				return $this-&gt;failure_result(&quot;No variable $varpath found in $this-&gt;id collection configuration (search ended at $p)&quot;, 404);
+			}
+			$x = $x[$p];
+		}
+		return true;
+	}
+
+	/**
+	 * Sets a variable, along a particular path ('.' separated) in a json array
+	 * @param string $varpath '.' separated path through the json array structure
+	 * @param mixed $varval the value to set on the variable. 
+	 */
+	function setConfig($varpath, $varval){
+		$parts = explode(&quot;.&quot;, $varpath);
+		$x =&amp; $this-&gt;config;
+		foreach($parts as $p){
+			if(!isset($x[$p])){
+				$x[$p] = array();
+				$x =&amp; $x[$p];
+			}
+		}
+		$x = $varval;
+	}
+	
+	/**
+	 * Applies an update to the collection as specified in the passed update object
+	 * 
+	 * 
+	 * @param array $updobj a name value array of configs to set
+	 * @param string $target if present the update applies from this array offset
+	 */
+	function applyUpdate($updobj, $target = &quot;&quot;){
+		$oname = false;
+		$ostat = false;
+		if($target == &quot;&quot;){
+			foreach($updobj as $k =&gt; $v){
+				if($k == &quot;services&quot;){
+					foreach($v as $sid =&gt; $sobj){
+						$this-&gt;config[&quot;services&quot;][$sid] = $sobj;
+					}	
+				}
+				elseif($k == &quot;settings&quot;){					
+					if(isset($v['name'])){
+						$this-&gt;name = $v['name'];
+						unset($v['name']);
+					}
+					if(isset($updobj[$k]['status'])){
+						$this-&gt;status = $updobj[$k]['status'];
+						unset($v['status']);
+					}
+					if(isset($v['id'])){
+						unset($v['id']);							
+					}
+					foreach($v as $id =&gt; $f){		
+						$this-&gt;config[&quot;settings&quot;][$id] = $f;
+					}
+				}				
+				else {
+					$this-&gt;config[$k] = $v;
+				}
+			}
+		}
+		else {
+			$this-&gt;setConfig($target, $updobj);
+		}		
+	}
+	
 }
 
 </pre>

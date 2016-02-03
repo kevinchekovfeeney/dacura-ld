@@ -46,7 +46,7 @@ class DacuraObject {
 	 * @return string the object's status
 	 */
 	function status($s=false){
-		if($f !== false){
+		if($s !== false){
 			$this->status = $s;
 		}
 		return $this->status;
@@ -64,6 +64,17 @@ class DacuraObject {
 		return false;
 	}
 
+	/**
+	 * removes internal fields from objects that are being sent over the api
+	 */
+	function forapi(){
+		if($this->errcode == null){
+			unset($this->errcode);
+			unset($this->errmsg);
+		}
+		return $this;
+	}
+	
 	/**
 	 * Checks to ensure that requested ids for dacura objects are valid ids
 	 * @param string $id the requested id

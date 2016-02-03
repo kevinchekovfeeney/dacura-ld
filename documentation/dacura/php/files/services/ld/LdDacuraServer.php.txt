@@ -1,5 +1,5 @@
 <?php
-include_once("phplib/PolicyEngine.php");
+include_once("lib/PolicyEngine.php");
 include_once("lib/EntityCreateRequest.php");
 include_once("lib/EntityUpdate.php");
 include_once("lib/LDEntity.php");

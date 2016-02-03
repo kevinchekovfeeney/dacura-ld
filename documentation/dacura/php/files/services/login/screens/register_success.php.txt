@@ -1,6 +1,5 @@
 <?php 
-/**
- * Success screen for registration
+/** Success screen for registration
  * 
  * Screen to show to user when they successfully complete registration 
  * @package login/screens
