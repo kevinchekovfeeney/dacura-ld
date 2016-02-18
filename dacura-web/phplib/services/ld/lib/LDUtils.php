@@ -1,26 +1,33 @@
 <?php
-/*
+/** 
+ * The Core Dacura Linked Data Processing Functions
+ *
  * The structure of json ld objects is modeled as a normal associative array
  * This file contains functions that operate on arrays in LD format 
  * 
- * Created By: Chekov
  * Creation Date: 13/03/2015
- * Contributors:
- * Modified:
- * Licence: GPL v2
+ * @author Chekov
+ * @license GPL v2
  */
 
 require_once "LDPropertyValue.php";
 require_once "LDDelta.php";
 
-/*
- * Expand the structure, generate real ids for blank nodes and update any references to the blank nodes to the new ids
+/**
+ * Called to import an input LD array into an internal LD array 
+ * Expands the structure of the array by placing node ids as indexes to all embedded objects, 
+ * Generates real ids for blank nodes and updates any references to the blank nodes to the new ids
+ * 
+ * @param array $ldprops 
+ * @param array $rules an array of settings which specifies which transforms to execute on the properties
+ * @return boolean|array<'idmap': array, 'missing': array> - an array which contains a mapping 
+ * from the old ids to new ids of any nodes whose ids has been changed during expansion. 
  */
-function expandLD($idbase, &$ldprops, $cwurl, $allow_demand_id = false){
+function expandLD(&$ldprops, $rules){
 	$idmap = array();
-	generateBNIDS($idbase, $ldprops, $idmap, $cwurl, $allow_demand_id, true);
+	generateBNIDS($ldprops, $idmap, $rules, true);
 	if(count($idmap) > 0){
-		$missing_refs = updateBNReferences($ldprops, $idmap, $cwurl);
+		$missing_refs = updateBNReferences($ldprops, $idmap, $rules);
 		if($missing_refs === false){
 			return false;
 		}
@@ -31,51 +38,56 @@ function expandLD($idbase, &$ldprops, $cwurl, $allow_demand_id = false){
 	return array("idmap" => $idmap);	
 }
 
-/*
+/** 
  * Generates ids for blank nodes and alters the structure
  * We do not expand the meta field and do not generate BNIDs for the top level (graphname) indices.
  * to expand embedded objects and object lists with ld structure
+
+ * @param array $ldprops linked data property array
+ * @param array $idmap mapping of old ids to new ids for generated ids
+ * @param array $rules rules for how the ids are generated 
+ * @param boolean $top_level true if this is a top-level object (indexed by graph)
+ * @return boolean true if successful
  */
-function generateBNIDs($idbase, &$ldprops, &$idmap, $cwurl, $allow_demand_id = false, $top_level = false){
+function generateBNIDs(&$ldprops, &$idmap, $rules, $top_level = false){
 	$nprops = array();
 	if(!is_array($ldprops)){
 		return false;
 	}
 	foreach($ldprops as $p => $v){
-		$pv = new LDPropertyValue($v, $cwurl);
-		if($pv->embedded()){
+		$pv = new LDPropertyValue($v, $rules);
+		if($pv->embedded() && isset($rules['expand_embedded_objects']) && $rules['expand_embedded_objects']){
 			if(!$top_level){
-				$new_id = addAnonObj($idbase, $v, $nprops, $p, $idmap, $cwurl, $allow_demand_id);
-				generateBNIDs($idbase, $nprops[$p][$new_id], $idmap, $cwurl, $allow_demand_id);				
+				$new_id = addAnonObj($v, $nprops, $p, $idmap, $rules);
+				generateBNIDs($nprops[$p][$new_id], $idmap, $rules);				
 			}
-			else {
+			else { // have to deal with the top-level main graph in a special way
 				if($p == "main"){
-					$nprops[$p] = array($cwurl => $v);
-					generateBNIDs($idbase, $nprops[$p][$cwurl], $idmap, $cwurl, $allow_demand_id);
+					$nprops[$p] = array($rules['cwurl'] => $v);
+					generateBNIDs($nprops[$p][$rules['cwurl']], $idmap, $rules);
 				}
-				else 
-				{
+				else {
 					$nprops[$p] = $v;
-					generateBNIDs($idbase, $nprops, $idmap, $cwurl, $allow_demand_id);
+					generateBNIDs($nprops, $idmap, $rules);
 				}				
 			}
 		}
-		elseif($pv->objectlist()){
+		elseif($pv->objectlist() && isset($rules['expand_embedded_objects']) && $rules['expand_embedded_objects']){
 			foreach($ldprops[$p] as $obj){
-				$new_id = addAnonObj($idbase, $obj, $nprops, $p, $idmap, $cwurl, $allow_demand_id);
-				generateBNIDs($idbase, $nprops[$p][$new_id], $idmap, $cwurl, $allow_demand_id);
+				$new_id = addAnonObj($obj, $nprops, $p, $idmap, $rules);
+				generateBNIDs($nprops[$p][$new_id], $idmap, $rules);
 			}
 		}
 		elseif($pv->embeddedlist()){
 			$nprops[$p] = array();
 			foreach($v as $id => $obj){
-				if(isBlankNode($id)){
-					$nid = addAnonObj($idbase, $obj, $nprops, $p, $idmap, $cwurl, false, $id);
-					generateBNIDs($idbase, $nprops[$p][$nid], $idmap, $cwurl, $allow_demand_id);
+				if(isBlankNode($id) && isset($rules['replace_blank_ids']) && $rules['replace_blank_ids']){
+					$nid = addAnonObj($obj, $nprops, $p, $idmap, $rules, $id);
+					generateBNIDs($nprops[$p][$nid], $idmap, $rules);
 				}
 				else {
 					$nprops[$p][$id] = $obj;
-					generateBNIDs($idbase, $nprops[$p][$id], $idmap, $cwurl, $allow_demand_id);						
+					generateBNIDs($nprops[$p][$id], $idmap, $rules);						
 				}
 			}
 		}
@@ -88,15 +100,24 @@ function generateBNIDs($idbase, &$ldprops, &$idmap, $cwurl, $allow_demand_id = f
 
 /**
  * update internal references by replacing blank node values with newly generated ids..
+ * 
+ * Called after blank nodes have been generated - 
+ * updates any internal references to the old blank node id to the new node id.
+ * 
+ * @param array $ldprops - ld property array
+ * @param array $idmap - mapping from old ids to new ids
+ * @param array $rules - settings for this object
+ * @return array of unresolved references in the properties after all transformations 
+ * empty array indicates success and no unresolved links
  */
-function updateBNReferences(&$ldprops, $idmap, $cwurl){
+function updateBNReferences(&$ldprops, $idmap, $rules){
 	$unresolved = array();
 	$nprops = array();
 	if(!is_array($ldprops)){
 		return $unresolved;
 	}
 	foreach($ldprops as $p => $v){
-		$pv = new LDPropertyValue($v, $cwurl);
+		$pv = new LDPropertyValue($v, $rules['cwurl']);
 		if($pv->bn()){
 			if(isset($idmap[$v])){
 				$nprops[$p] = $idmap[$v];
@@ -126,21 +147,21 @@ function updateBNReferences(&$ldprops, $idmap, $cwurl){
 			$nprops[$p] = array();
 			foreach($v as $id => $obj){
 				$nprops[$p][$id] = $obj;
-				updateBNReferences($nprops[$p][$id], $idmap, $cwurl);
+				updateBNReferences($nprops[$p][$id], $idmap, $rules);
 			}
 		}
 		elseif($pv->embedded()){
 			$nprops[$p] = $v;
-			if(!$cwurl){
-				updateBNReferences($nprops, $idmap, $cwurl);
+			if(!$rules['cwurl']){
+				updateBNReferences($nprops, $idmap, $rules);
 			}				
 		}
 		elseif($pv->objectlist()){
-			if(!$cwurl){
+			if(!$rules['cwurl']){
 				$nprops[$p] = array();
 				foreach($v as $i => $obj){
 					$nprops[$p][$i] = $obj;
-					updateBNReferences($nprops[$p][$i], $idmap, $cwurl);
+					updateBNReferences($nprops[$p][$i], $idmap, $rules);
 				}
 			}
 			else {
@@ -155,227 +176,124 @@ function updateBNReferences(&$ldprops, $idmap, $cwurl){
 	return $unresolved;
 }
 
-/*
- * Basic validity check on a LD structure
+/**
+ * Adds a new anonymous embedded object as a value of propert p and generates an id for it
+ * 
+ * @param array $obj the json object 
+ * @param array $prop the property array that the object will be added to 
+ * @param string $p the id of the property that the object will be added to 
+ * @param array $idmap a mapping of old node ids to new node ids after the ld object was imported
+ * @param array $rules settings regarding how the id will be generated
+ * @param string $bnid the blanknode id that the object had in the structure of the document
+ * @return string the id of the added node
  */
-function validLD($ldprops, $cwurl = false){
+function addAnonObj($obj, &$prop, $p, &$idmap, $rules, $bnid = false){
+	if(!isset($prop[$p]) or !is_array($prop[$p])){
+		$prop[$p] = array();
+	}
+	$demand_id_token = isset($rules['demand_id_token']) ? $rules['demand_id_token'] : "@id";
+	if(isset($obj[$demand_id_token]) && $obj[$demand_id_token]){
+		$bnid = $obj[$demand_id_token];
+		unset($obj[$demand_id_token]);
+	}
+	elseif($bnid && isset($obj[$demand_id_token])){
+		unset($obj[$demand_id_token]);
+	}
+	if($bnid && isset($idmap[$bnid])){
+		$new_id = $idmap[$bnid];
+	}
+	else {
+		$new_id = genid($bnid, $rules);
+	}
+	if($bnid && $bnid != $new_id){
+		$idmap[$bnid] = $new_id;
+	}
+	$prop[$p][$new_id] = $obj;
+	return $new_id;
+}
+
+/**
+ * Generate an ID for a new LD fragment
+ * 
+ * Follows passed rules and requested id to generate a new node id
+
+ * @param string $bn the requested id / existing blank node id
+ * @param string $rules rules for id generation
+ * @return string the id of the new node.
+ */
+function genid($bn = false, $rules = false){
+	if($bn && substr($bn, 0, 2) == "_:"){
+		$bn = substr($bn, 2);
+	}
+	$min_id_length = isset($rules['mimimum_id_length']) ? $rules['mimimum_id_length'] : 1;
+	$max_id_length = isset($rules['maximum_id_length']) ? $rules['maximum_id_length'] : 40;
+	if($bn && $rules && isset($rules['allow_demand_id'])){
+		if(ctype_alnum($bn) && strlen($bn) > $min_id_length && strlen($bn) < $max_id_length ){
+			if($rules && isset($rules['cwurl']) && $rules['cwurl']){ //in closed world mode, we generate an addressable url based on the url of the object
+				return $rules['cwurl']."/".$bn;
+			}
+			else {
+				return "_:".$bn;
+			}					
+		}
+	}
+	
+	$idgenalgorithm = $rules && isset($rules['id_generator']) ? $rules['id_generator'] : "uniqid_base36";
+	$prefix = $rules && isset($rules['cwurl']) ? $rules['cwurl'] : "_:";
+	return $prefix.$idgenalgorithm();
+	/*		if($bn == "_:ldo"){
+				return $idbase;
+			}
+			elseif($bn == "_:meta"){
+				return $idbase."/meta";
+			}
+	}
+	return $idbase . "/" . uniqid_base36(false);*/
+}
+
+/**
+ * Performs Basic validity check on a passed LD structure according to the passed rules
+ * 
+ * @param array $ldprops linked data property array
+ * @param array $rules settings for validation
+ * @return boolean true if the property array has a valid structure according to the passed rules
+ */
+function validLD($ldprops, $rules){
 	$errs = array();
 	if(!$ldprops or !is_array($ldprops)) return true;
 	foreach($ldprops as $p => $v){
-		$pv = new LDPropertyValue($v, $cwurl);
+		$pv = new LDPropertyValue($v, $rules);
 		if($pv->illegal()){
 			$errs[] = array($p, "Illegal value ".$pv->errmsg);
 		}
 		elseif($pv->embedded()){
-			$errs = array_merge($errs, validLD($ldprops[$p], $cwurl));
+			$errs = array_merge($errs, validLD($ldprops[$p], $rules));
 		}
 		elseif($pv->objectlist()){
 			foreach($v as $obj){
-				$errs = array_merge($errs, validLD($obj, $cwurl));
+				$errs = array_merge($errs, validLD($obj, $rules));
 			}
 		}
 		elseif($pv->embeddedlist()){
 			foreach($v as $id => $obj){
-				$errs = array_merge($errs, validLD($obj, $cwurl));
+				$errs = array_merge($errs, validLD($obj, $rules));
 			}
 		}
 	}
 	return $errs;
 }
 
-function importEasyRDFPHP($easy){
-	$imported = array();
-	foreach($easy as $s => $ps){
-		$imported[$s] = array();
-		foreach($ps as $p => $vs){
-			if(count($vs) > 1){
-				$imported[$s][$p] = array();
-				foreach($vs as $v){
-					if($v['type'] == 'bnode' or $v['type'] == "uri"){
-						$imported[$s][$p][] = $v['value'];
-					}
-					elseif($v['type'] == 'literal'){
-						$v['type'] = isset($v['datatype']) ? $v['datatype'] : "string";
-						$v['data'] = $v['value'];
-						unset($v['value']);
-						unset($v['datatype']);
-						if(isset($v['lang'])){
-							unset($v['type']);
-						}
-						$imported[$s][$p][] = $v;						
-					}
-					else {
-						$imported[$s][$p][] = $v;						
-					}				
-				}
-			}
-			else {
-				foreach($vs as $v){
-					if($v['type'] == 'bnode' or $v['type'] == "uri"){
-						$imported[$s][$p] = $v['value'];
-					}
-					else {
-						$v['type'] = isset($v['datatype']) ? $v['datatype'] : "string";
-						$v['data'] = $v['value'];
-						unset($v['value']);
-						unset($v['datatype']);
-						if(isset($v['lang'])){
-							unset($v['type']);
-						}
-						$imported[$s][$p] = $v;
-					}
-				}				
-			}
-		}	
-	}
-	return $imported;
-}
-
-function unembed($ldprops, $rid, $cwurl = false){
-	$unem = array($rid => array());
-	if(!is_array($ldprops)) return $unem;
-	foreach($ldprops as $p => $v){
-		$unem[$rid][$p] = array();
-		$pv = new LDPropertyValue($v, $cwurl);
-		if($pv->embeddedlist()){
-			foreach($v as $vid => $vobj){
-				$unem[$rid][$p][] = $vid;
-				$unem = array_merge_recursive($unem, unembed($vobj, $vid, $cwurl));
-			}
-		}
-		elseif($pv->embedded()){
-			$bnid = "_:$rid";
-			$unem[$rid][$p][] = $bnid;
-			$unem = array_merge($unem, unembed($v, $bnid, $cwurl));			
-		}
-		elseif($pv->objectlist()){
-			foreach($v as $i => $obj){
-				$bnid = "_:$rid_$i";
-				$unem[$rid][$p][] = $bnid;
-				$unem = array_merge($unem, unembed($v, $bnid, $cwurl));
-			}
-		}
-		elseif($pv->valuelist() or $pv->objectliterallist()) {
-			$unem[$rid][$p] = $v;
-		}
-		else {
-			$unem[$rid][$p][] = $v;
-		}
-	}
-	return $unem;
-}
-
-function exportEasyRDFPHP($id, $ldprops){
-	$exported = array();
-	$easy = unembed($ldprops, $id);
-	unset($easy[$id]);
-	foreach($easy as $s => $ps){
-		$exported[$s] = array();
-		foreach($ps as $p => $vs){
-			$exported[$s][$p] = array();
-			foreach($vs as $v){
-				if(is_array($v)){
-					if(!isset($v['type'])){
-						$v['type'] = 'literal';
-					}
-					elseif($v['type'] != 'string' && $v['type'] != 'literal'){
-						$v['datatype'] = $v['type'];
-						$v['type'] = "literal";
-					}
-					if($v['type'] == 'string'){
-						$v['type'] = 'literal';
-					}
-					if(isset($v['data'])){
-						$v['value'] = $v['data'];
-						unset($v['data']);
-					}	
-					if(!isset($v['value'])){
-						$v['value'] = '';
-					}	
-					$exported[$s][$p][] = $v;						
-				}
-				else {
-					if(isBlankNode($v)){
-						$exported[$s][$p][] = array("type" => "bnode", "value" => $v);
-					}
-					elseif(isURL($v)){
-						$exported[$s][$p][] = array("type" => "uri", "value" => $v);
-					}
-					else {
-						$exported[$s][$p][] = array("type" => "literal", "value" => $v);
-					}
-				}
-			}
-		}
-	}
-	return $exported;
-}
-
-function toJSONLD($props, $cwurl){
-	$nprops = array();
-	foreach($props as $p => $v){
-		$pv = new LDPropertyValue($v, $cwurl);
-		if($pv->embedded()){
-			$nprops[$p] = toJSONLD($props[$p], $cwurl);
-		}
-		elseif($pv->objectlist()){
-			$nprops[$p] = array();
-			foreach($v as $obj){
-				$nprops[$p][] = toJSONLD($obj, $cwurl);
-			}
-		}
-		elseif($pv->embeddedlist()){
-			$nprops[$p] = array();
-			foreach($v as $id => $obj){
-				$nobj = toJSONLD($obj, $cwurl);
-				$nobj["@id"] = $id;
-				$nprops[$p][] = $nobj;
-			}
-		}
-		else {
-			$nprops[$p] = $v;
-		}
-	}
-	return $nprops;
-}
-
-/*
- * Generate an ID for a new LD fragment
- * We give the core dacura structures their own non randomly generated ids
+/**
+ * Build an index of a LD object's structure: array {id => [nodes]}
+ * 
+ * @param array $ldprops the property array
+ * @param array $index the index array which will be filled by this function
+ * @param array $rules settings for the indexing 
  */
-function genid($idbase, $bn = false, $allow_demand_id = false){
-	if(!$idbase){ //open world mode
-		if($bn){
-			return $bn;
-		}
-		else {
-			return "_:" .uniqid_base36(false);
-		}
-	}
-	if($bn && substr($bn, 0, 3) == "_:_"){
-		$bn = substr($bn, 3);
-	}
-	if($allow_demand_id && $bn && ctype_alnum($bn) && strlen($bn) > 1 && strlen($bn) < 40 ){
-		return $idbase."/".$bn;
-	}
-	elseif($bn){
-		if($bn == "_:entity"){
-			return $idbase;
-		}
-		elseif($bn == "_:meta"){
-			return $idbase."/meta";
-		}
-	}
-	return $idbase . "/" . uniqid_base36(false);
-}
-
-/*
- * Build an index of a LD structure: id => [nodes]
- */
-function indexLD($ldprops, &$index, $cwurl){
+function indexLD($ldprops, &$index, $rules){
 	if(!is_array($ldprops)) return;
 	foreach($ldprops as $p => $v){
-		$pv = new LDPropertyValue($v, $cwurl);
+		$pv = new LDPropertyValue($v, $rules);
 		if($pv->embeddedlist()){
 			foreach($v as $id => $obj){
 				if(!isset($index[$id])){
@@ -384,43 +302,26 @@ function indexLD($ldprops, &$index, $cwurl){
 				else {
 					$index[$id][] = $ldprops[$p][$id];
 				}
-				indexLD($obj, $index, $cwurl);
+				indexLD($obj, $index, $rules);
 			}
 		}
 	}
 }
 
-
-
-function getObjectAsTypedTriples($id, $ldprops, $cwurl){
-	return getPropertiesAsArray($id, $ldprops, $cwurl, "addTypes");
-}	
-
-function getObjectAsTriples($id, $ldprops, $cwurl){
-	return getPropertiesAsArray($id, $ldprops, $cwurl, "nop");
-}
-
-function getEOLAsTypedTriples($eol, $cwurl, $frag_id = false, $p = false){
-	return getEOLAsArray($eol, $cwurl, "addTypes", $frag_id, $p);
-}
-
-function getEOLAsTriples($eol, $cwurl, $frag_id = false, $p = false){
-	return getEOLAsArray($eol, $cwurl, "nop", $frag_id, $p);
-}
-
-function getValueAsTypedTriples($id, $p, $v, $cwurl){
-	return getValueAsArray($id, $p, $v, $cwurl, "addTypes");
-}
-
-function getValueAsTriples($id, $p, $v, $cwurl) {
-	return getValueAsArray($id, $p, $v, $cwurl, "nop");	
-}
-
-function getPropertiesAsArray($id, $ldprops, $cwurl, $callback){
+/**
+ * transforms an ld properties array into a flat array of triples
+ * 
+ * @param string $id the id of the subject node
+ * @param array $ldprops the ld property array
+ * @param array $rules settings for the transformation
+ * @param function $callback a function that will be called to transform the value into an array of triples
+ * @return boolean|array an array of triples representing the property value
+ */
+function getPropertiesAsArray($id, $ldprops, $rules, $callback, $callback_args=array()){
 	$props = array();
 	if($ldprops && is_array($ldprops)){
 		foreach($ldprops as $p => $v){
-			$nt = getValueAsArray($id, $p, $v, $cwurl, $callback);
+			$nt = getValueAsArray($id, $p, $v, $rules, $callback, $callback_args);
 			if($nt === false){
 				return false;
 			}
@@ -432,124 +333,223 @@ function getPropertiesAsArray($id, $ldprops, $cwurl, $callback){
 	return $props;
 }
 
-function getNodesWithPredicate($id, $ldprops, $preds, $cwurl = false){
-	$trips = array();
-	$bni = 0;
-	foreach($ldprops as $p => $v){
-		if(in_array($p, $preds)){
-			$pv = new PropertyValue($v, $cwurl);
-			if($pv->scalar() or $pv->valuelist() or $pv->objectliteral() or $pv->objectliterallist()){
-				$trips[] = array($id, $p, $v);
-			}
-			elseif($pv->embedded()){
-				$trips = array_merge_recursive($trips, getNodesWithPredicate("_:BN_".$id."_".++$bni, $v, $preds, $cwurl));
-			}
-			elseif($pv->objectlist()){
-				foreach($v as $i => $obj){
-					$trips = array_merge_recursive($trips, getNodesWithPredicate("_:BN_".$id ."_".++$bni, $obj, $preds, $cwurl));
-				}
-			}
-			elseif($pv->embeddedlist()){
-				foreach($v as $id => $obj){
-					$trips = array_merge_recursive($trips, getNodesWithPredicate("_:BN_".$id ."_".++$bni, $obj, $preds, $cwurl));						
-				}
-			}		
-		}
-	}
-	return $trips;
-}
-
-	
-
-
-function getEOLAsArray($eol, $cwurl, $callback, $frag_id = false, $p = false){
-	$props = array();
-	foreach($eol as $oid => $obj){
-		if($frag_id && $p){
-			$props = array_merge($props, $callback($frag_id, $p, $oid, "cwid"));
-		}
-		$props = array_merge($props, getPropertiesAsArray($oid, $obj, $cwurl, $callback));
-	}
-	return $props;
-}
-
-function getValueAsArray($id, $p, $v, $cwurl, $callback){
-	$pv = new LDPropertyValue($v, $cwurl);
+/**
+ * Transforms a property value into the equivalent array of triples
+ * @param string $id the node id of the subject node
+ * @param string $p the id of the property node
+ * @param mixed $v a value - could be any json 
+ * @param array $rules the rules in place for the transformation
+ * @param function $callback - a callback function that will be used to process the values
+ * @return array - an array of triples [s,p,o] 
+ */
+function getValueAsArray($id, $p, $v, $rules, Callable $callback, $args = array()){
+	$pv = new LDPropertyValue($v, $rules);
 	$anon = 0;
 	$triples = array();
 	if($pv->literal()){
-		$triples = array_merge($triples, $callback($id, $p, $v, 'literal'));
+		$triples = array_merge($triples, $callback($id, $p, $v, 'literal', $args));
 	}
 	elseif($pv->link()){
-		$triples = array_merge($triples, $callback($id, $p, $v, 'link'));
+		$triples = array_merge($triples, $callback($id, $p, $v, 'link', $args));
 	}
 	elseif($pv->objectliteral()){
-		$triples = array_merge($triples, $callback($id, $p, $v, 'objectliteral'));
+		$triples = array_merge($triples, $callback($id, $p, $v, 'objectliteral', $args));
 	}
 	elseif($pv->valuelist()){
 		foreach($v as $val){
 			if(isLiteral($val)){
-				$triples = array_merge($triples, $callback($id, $p, $val, 'literal'));
+				$triples = array_merge($triples, $callback($id, $p, $val, 'literal', $args));
 			}
 			else {
-				$triples = array_merge($triples, $callback($id, $p, $val, 'link'));
+				$triples = array_merge($triples, $callback($id, $p, $val, 'link', $args));
 			}
 		}
 	}
 	elseif($pv->objectliterallist()){
 		foreach($v as $obj){
-			$triples = array_merge($triples, $callback($id, $p, $obj, 'objectliteral'));
+			$triples = array_merge($triples, $callback($id, $p, $obj, 'objectliteral', $args));
 		}
 	}
 	elseif($pv->embedded()){
-		$aid = "_:BN".(++$anon); //need to generate an id to allow us to triplify it
-		$triples = array_merge($triples, $callback($id, $p, $aid, 'blank'));
-		$triples = array_merge($triples, getPropertiesAsArray($aid, $v, $cwurl, $callback));
+		$demand_id_token = isset($rules['demand_id_token']) ? $rules['demand_id_token'] : "@id";
+		$did = false;
+		if(isset($v[$demand_id_token])){
+			$did = $v[$demand_id_token];
+		}
+		$aid = genid($did, $rules);
+		$triples = array_merge($triples, $callback($id, $p, $aid, 'blank', $args));
+		$triples = array_merge($triples, getPropertiesAsArray($aid, $v, $rules, $callback, $args));
 	}
 	elseif($pv->objectlist()){
 		foreach($v as $obj){
-			$aid = "_:".(++$anon);
-			$triples = array_merge($triples, $callback($id, $p, $aid, 'blank'));
-			$triples = array_merge($triples, getPropertiesAsArray($aid, $obj, $cwurl, $callback));
+			$demand_id_token = isset($rules['demand_id_token']) ? $rules['demand_id_token'] : "@id";
+			$did = false;
+			if(isset($obj[$demand_id_token])){
+				$did = $obj[$demand_id_token];
+			}
+			$aid = genid($did, $rules);
+			$triples = array_merge($triples, $callback($id, $p, $aid, 'blank', $args));
+			$triples = array_merge($triples, getPropertiesAsArray($aid, $obj, $rules, $callback, $args));
 		}
 	}
 	elseif($pv->embeddedlist()){
-		$triples = getEOLAsArray($v, $cwurl, $callback, $id, $p);
+		$triples = getEOLAsArray($v, $rules, $callback, $args, $id, $p);
 	}
 	return $triples;
 }
 
-	
-function setFragment($f, &$dprops, $nprops, $cwurl){
-	foreach($dprops as $p => $v){
-		$pv = new LDPropertyValue($v, $cwurl);
-		if($pv->embeddedlist()){
-			foreach($v as $id => $obj){
-				if($id == $f){
-					$dprops[$p][$id] = $nprops;
-					return true;
-				}
-				else {
-					if(setFragment($f, $dprops[$p][$id], $nprops, $cwurl)){
-						return true;
-					}
-				}
-			}
+/**
+ * Transforms an embedded object list id: {object} into an array of triples
+ * @param array $eol embedded object list
+ * @param array $rules the settings which govern the transformation
+ * @param function $callback the function that will be used to flatten the values into an array
+ * @param string [$frag_id] optional current fragment identifier 
+ * @param string [$p] optional current property
+ * @return array<triples> an array of triples 
+ */
+function getEOLAsArray($eol, $rules, $callback, $callback_args = array(), $frag_id = false, $p = false){
+	$props = array();
+	foreach($eol as $oid => $obj){
+		if($frag_id && $p){
+			$props = array_merge($props, $callback($frag_id, $p, $oid, "cwid", $callback_args));
 		}
+		$props = array_merge($props, getPropertiesAsArray($oid, $obj, $rules, $callback, $callback_args));
 	}
-	return false;
+	return $props;
 }
 
-function getFragment($f, $ldprops, $cwurl){
+/* functions used to transform triples arrays into different formats by passing different callbacks */
+
+/**
+ * Returns an ld property value as an array of typed triples (i.e. with scalars typed as per dqs)
+ * @param string $id the id of the current node
+ * @param string $p the current property 
+ * @param mixed $v a linked data property value
+ * @param array $rules - settings governing the transformation
+ * @return array<triples> an array of triples [s,p,o]
+ */
+function getValueAsTypedTriples($id, $p, $v, $rules){
+	return getValueAsArray($id, $p, $v, $rules, "addTypes");
+}
+
+/**
+ * Returns an ld property value as an array of untyped triples (i.e. with scalars typed as per dqs)
+ * @param string $id the id of the current node
+ * @param string $p the current property 
+ * @param mixed $v a linked data property value
+ * @param array $rules - settings governing the transformation
+ * @return array<triples> an array of triples [s,p,o]
+ */
+function getValueAsTriples($id, $p, $v, $rules) {
+	return getValueAsArray($id, $p, $v, $rules, "nop");
+}
+
+/**
+ * Returns an ld properties array as an array of typed triples (i.e. with scalars typed as per dqs)
+ * @param string $id the id of the current node
+ * @param array $ldprops a linked data properties array
+ * @param array $rules - settings governing the transformation
+ * @return array<triples> an array of triples [s,p,o]
+ */
+function getObjectAsTypedTriples($id, $ldprops, $rules){
+	return getPropertiesAsArray($id, $ldprops, $rules, "addTypes");
+}
+
+/**
+ * Returns an ld properties array of untyped triples 
+ * @param string $id the id of the current node
+ * @param array $ldprops a linked data properties array
+ * @param array $rules - settings governing the transformation
+ * @return array<triples> an array of triples [s,p,o]
+ */
+function getObjectAsTriples($id, $ldprops, $rules){
+	return getPropertiesAsArray($id, $ldprops, $rules, "nop");
+}
+
+/**
+ * Returns an ld properties array of untyped triples
+ * @param string $id the id of the current node
+ * @param array $ldprops a linked data properties array
+ * @param array $rules - settings governing the transformation
+ * @return array<triples> an array of triples [s,p,o]
+ */
+function getObjectAsQuads($id, $ldprops, $rules){
+	$quadify = function($s, $p, $o, $t, $args){
+		return array(array($s, $p, $o, $args['graphid']));
+	};
+	$quads = array();	
+	foreach($ldprops as $gid => $props){
+		$args = array("graphid" => $gid);
+		foreach($props as $nid => $nprops){
+			$nquads = getPropertiesAsArray($nid, $nprops, $rules, $quadify, $args);
+			$quads = array_merge($quads, $nquads);
+		}
+	}
+	return $quads;
+}
+
+function getObjectAsTypedQuads($id, $ldprops, $rules){
+	$quadify = function($s, $p, $o, $t, $args){
+		$typed = addTypes($s, $p, $o, $t);
+		foreach($typed as $i => $t){
+			$typed[$i][] = $args['graphid'];	
+		}
+		return $typed;
+	};
+	$quads = array();
+	foreach($ldprops as $gid => $props){
+		$args = array("graphid" => $gid);
+		$nquads = getPropertiesAsArray($gid, $props, $rules, $quadify, $args);
+		$quads = array_merge($quads, $nquads);
+	}
+	return $quads;
+}
+
+
+
+/**
+ * Returns an ld embedded object list as an array of typed triples 
+ * @param array $eol the embedded object list
+ * @param array $rules - settings governing the transformation
+ * @param array [$frag_id] - current node id
+ * @param array [$p] - current property
+ * @return array<triples> an array of triples [s,p,o]
+ */
+function getEOLAsTypedTriples($eol, $rules, $frag_id = false, $p = false){
+	return getEOLAsArray($eol, $rules, "addTypes", array(), $frag_id, $p);
+}
+
+/**
+ * Returns an ld embedded object list as an array of untyped triples
+ * @param array $eol the embedded object list
+ * @param array $rules - settings governing the transformation
+ * @param array [$frag_id] - current node id
+ * @param array [$p] - current property
+ * @return array<triples> an array of triples [s,p,o]
+ */
+function getEOLAsTriples($eol, $rules, $frag_id = false, $p = false){
+	return getEOLAsArray($eol, $rules, "nop", array(), $frag_id, $p);
+}
+
+/* support for accessing fragment (LD Object internal ids) ids */
+
+/**
+ * Retrieves the contents of an LD Object with fragment id $f
+ * @param string $f the fragment id in question
+ * @param array $ldprops the ld property array to be searched for the fragment id
+ * @param array $rules transformation rules that will be used to find fragment
+ * @return mixed|boolean the fragment value if present, false otherwise
+ */
+function getFragment($f, $ldprops, $rules){
 	foreach($ldprops as $p => $v){
-		$pv = new LDPropertyValue($v, $cwurl);
+		$pv = new LDPropertyValue($v, $rules);
 		if($pv->embeddedlist()){
 			foreach($v as $id => $obj){
 				if($id == $f){
 					return $obj;
 				}
 				else {
-					return getFragment($f, $obj, $cwurl);
+					return getFragment($f, $obj, $rules);
 				}
 			}
 		}
@@ -557,31 +557,45 @@ function getFragment($f, $ldprops, $cwurl){
 	return false;
 }
 
-function getFragmentContext($f, $ldprops, $cwurl){
+/**
+ * Retrieves the context of an LD Object with fragment id $f
+ * @param string $f the fragment id in question
+ * @param array $ldprops the ld property array to be searched for the fragment id
+ * @param array $rules transformation rules that will be used to find fragment
+ * @return mixed|boolean an array of paths to the fragment if found, false otherwise
+ */
+function getFragmentContext($f, $ldprops, $rules){
 	$paths = array();
 	foreach($ldprops as $p => $v){
-		$pv = new LDPropertyValue($v, $cwurl);
+		$pv = new LDPropertyValue($v, $rules);
 		if($pv->embeddedlist()){
 			foreach($v as $id => $obj){
 				if($id == $f){
 					$paths[] = array($p);
 				}
 				else {
-					$cpaths = getFragmentContext($f, $obj, $cwurl);
+					$cpaths = getFragmentContext($f, $obj, $rules);
 					foreach($cpaths as $pat){
 						$paths[] = array_merge(array($p, $id), $pat);
-					}		
+					}
 				}
 			}
-		}	
+		}
 	}
 	return $paths;
 }
 
-function getFragmentInContext($f, $ldprops, $cwurl){
+/**
+ * Returns a fragment, within its full context back to the document root. this allows disambiguation of nodes which shared ids
+ * @param string $f the fragment id
+ * @param array $ldprops ld property array to search
+ * @param array $rules rules governing the property values
+ * @return array full ld property path value object
+ */
+function getFragmentInContext($f, $ldprops, $rules){
 	$nprops = array();
 	foreach($ldprops as $p => $v){
-		$pv = new LDPropertyValue($v, $cwurl);
+		$pv = new LDPropertyValue($v, $rules);
 		if($pv->embeddedlist()){
 			foreach($v as $id => $obj){
 				if($id == $f){
@@ -590,7 +604,7 @@ function getFragmentInContext($f, $ldprops, $cwurl){
 					return $nprops;
 				}
 				else {
-					$cprops = getFragmentInContext($f, $obj, $cwurl);
+					$cprops = getFragmentInContext($f, $obj, $rules);
 					if($cprops){
 						$nprops[$p] = array();
 						$nprops[$p][$id] = $cprops;
@@ -603,503 +617,143 @@ function getFragmentInContext($f, $ldprops, $cwurl){
 	return false;
 }
 
-/*
- * Adds a new object as a value of propert p and generates a non anonymous id for it
+/**
+ * Sets the value of the fragment in property array to a new value
+ * @param string $f fragment id
+ * @param array $dprops the ld property array that will be updated
+ * @param mixed $nval the new value of the fragment id
+ * @param array $rules rules governing the transformations
+ * @return boolean true if successful
  */
-function addAnonObj($idbase, $obj, &$prop, $p, &$idmap, $cwurl, $allow_demand_id = false, $bnid = false){
-	if(!isset($prop[$p]) or !is_array($prop[$p])){
-		$prop[$p] = array();
-	}
-	if(isset($obj['@id']) && $obj['@id']){
-		$bnid = $obj['@id'];
-		unset($obj['@id']);
-	}
-	elseif($bnid && isset($obj['@id'])){
-		unset($obj['@id']);
-	}
-	if($bnid && isset($idmap[$bnid])){
-		$new_id = $idmap[$bnid];
-	}
-	else {
-		$new_id = genid($cwurl, $bnid, $allow_demand_id);
-	}
-	if($bnid && $bnid != $new_id){
-		$idmap[$bnid] = $new_id;
-	}
-	
-	$prop[$p][$new_id] = $obj;
-	return $new_id;
-}
-
-/*
- * expanding / compressing namespaces according to a schema
- */
-function expandNamespaces(&$ldprops, $schema, $cwurl){
-	if(!is_array($ldprops)) return;
-	foreach($ldprops as $p => $v){
-		$pv = new LDPropertyValue($v, $cwurl);
-		if($pv->link() && isNamespacedURL($v) && ($expanded = $schema->expand($v))){
-			$nv = $expanded;
-		}
-		elseif($pv->valuelist()){
-			$nv = array();
-			foreach($v as $val){
-				if(isNamespacedURL($val) && ($expanded = $schema->expand($val))){
-					$nv[] = $expanded;
-				}
-				else {
-					$nv[] = $val;
-				}
-			}
-		}
-		elseif($pv->embeddedlist()){
-			$nv = array();
-			foreach($v as $id => $obj){
-				if(isNamespacedURL($id) && ($expanded = $schema->expand($id))){
-					$nv[$expanded] = $obj;
-					expandNamespaces($nv[$expanded], $schema, $cwurl);
-				}
-				else {
-					$nv[$id] = $obj;
-					expandNamespaces($nv[$id], $schema, $cwurl);
-				}
-			}
-		} 
-		elseif($pv->embedded()){
-			expandNamespaces($v, $schema, $cwurl);
-			$nv = $v;
-		}
-		elseif($pv->objectlist()){
-			$nv = array();
-			foreach($v as $one_obj){
-				expandNamespaces($one_obj, $schema, $cwurl);
-				$nv[] = $one_obj;
-			}
-		}
-		else {
-			$nv = $v;
-		}
-		if(isNamespacedURL($p) && ($expanded = $schema->expand($p))){
-			unset($ldprops[$p]);
-			$ldprops[$expanded] = $nv;
-		}
-		elseif(isNamespacedURL($p)){
-			$ldprops[$p] = $nv;
-		}
-		else {
-			$ldprops[$p] = $nv;
-		}
-	}
-}
-
-function getNamespaces($ldprops, $schema, $cwurl){
-	$ns = getNamespaceUtilisation($ldprops, $schema, $cwurl, "all");
-	$op = array();
-	foreach($ns as $pre => $urls){
-		$exp = $schema->getURL($pre);
-		if($exp){
-			$op[$pre] = $exp;
-		}
-		else {
-			$op[$pre] = $urls[0];
-		}
-	}
-	return $op;
-}
-
-//returns
-//prefix: [urls that use it]
-//unknown: [urls] is used too.
-function getNamespaceUtilisation($ldprops, $schema, $cwurl, $type = "all"){
-	$ns = array();
-	foreach($ldprops as $p => $v){
-		if($type == "predicate" or $type == "all"){
-			addToNSList($ns, $p, $schema);				
-		}
-		$pv = new LDPropertyValue($v, $cwurl);
-		if($pv->objectlist() or $pv->embeddedlist()){
-			foreach($v as $i => $obj){
-				if($pv->embeddedlist() and ($type == "all" or $type == "subject")){
-					addToNSList($ns, $i, $schema);
-				}
-				$ns = array_merge_recursive($ns, getNamespaceUtilisation($obj, $schema, $cwurl, $type));
-			}
-		}
-		elseif($pv->embedded()){
-			$ns = array_merge_recursive($ns, getNamespaceUtilisation($v, $schema, $cwurl, $type));				
-		}
-		elseif($type == "object" or $type == 'all'){
-			if($pv->valuelist() or $pv->objectliterallist()){
-				foreach($v as $val){
-					if($pv->valuelist()){
-						addToNSList($ns, $val, $schema);
-					}
-					elseif(isset($val['type']) && $val['type'] == "uri"){
-							addToNSList($ns, $val['value'], $schema);								
-					}
-				}
-			}
-			elseif($pv->link()){
-				addToNSList($ns, $v, $schema);
-			}
-			elseif($pv->objectliteral()){
-				if(isset($v['type']) && $v['type'] == "uri"){
-					addToNSList($ns, $v['value'], $schema);
-				}
-			}
-		}
-	}
-	return $ns;
-}
-
-function addPropertyToNSUtilisation(&$ns, $prop, $schema){
-	$parts = deconstructURL($prop, $schema);
-	if(!$parts) return false;
-	if(!isset($ns[$parts[0]])){
-		$ns[$parts[0]] = array("properties" => array(), "structural" => array(), "object" => array(), "subject" => array());
-	}
-	$p = $schema->compress($parts[1]);
-	$p = $p ? $p : $parts[1];
-	if(!isset($ns[$parts[0]]["properties"][$p])){
-		$ns[$parts[0]]["properties"][$p] = 1;
-	}
-	else {
-		$ns[$parts[0]]["properties"][$p]++;
-	}
-	return $parts;	
-}
-
-function compressTriple($s, $p, $o, $schema){
-	$ss = $schema->compress($s);
-	$ss = $ss ? $ss : $s;
-	$sp = $schema->compress($p);
-	$sp = $sp ? $sp : $p;
-	$so = $schema->compress($o);
-	$so = $so ? $so : $o;
-	return array($ss, $sp, $so);
-}
-
-function addSubjectToNSUtilisation(&$ns, $sid, $schema){
-	$parts = deconstructURL($sid, $schema);
-	if(!$parts) return false;
-	if(!isset($ns[$parts[0]])){
-		$ns[$parts[0]] = array("properties" => array(), "structural" => array(), "object" => array(), "subject" => array());
-	}
-	$s = $schema->compress($parts[1]);
-	$s = $s ? $s : $parts[1];
-	if(isset($ns[$parts[0]]["subject"][$s])){
-		$ns[$parts[0]]["subject"][$s]++;
-	}
-	else {
-		$ns[$parts[0]]["subject"][$s] = 1;
-	}
-	return $parts;
-}
-
-function addObjectToNSUtilisation(&$ns, $oid, $sid, $prop, $schema){
-	$parts = deconstructURL($oid, $schema);
-	if(!$parts) return false;
-	if(!isset($ns[$parts[0]])){
-		$ns[$parts[0]] = array("properties" => array(), "structural" => array(), "object" => array(), "subject" => array());
-	}
-	if($schema->isStructuralPredicate($prop)){
-		$ns[$parts[0]]["structural"][] = compressTriple($sid, $prop, $parts[1], $schema);
-	}
-	else {
-		$ns[$parts[0]]["object"][] = compressTriple($sid, $prop, $parts[1], $schema);
-	}
-	return $parts;	
-}
-
-
-function getDeepNamespaceUtilisation($eid, $ldprops, $schema, $cwurl, &$ns){
-	addSubjectToNSUtilisation($ns, $eid, $schema);
-	foreach($ldprops as $p => $v){
-		$pv = new LDPropertyValue($v, $cwurl);
+function setFragment($f, &$dprops, $nval, $rules){
+	foreach($dprops as $p => $v){
+		$pv = new LDPropertyValue($v, $rules);
 		if($pv->embeddedlist()){
-			foreach($v as $i => $obj){
-				addPropertyToNSUtilisation($ns, $p, $schema);
-				addObjectToNSUtilisation($ns, $i, $eid, $p, $schema);
-			}
-		}
-		elseif($pv->embedded()){
-			addPropertyToNSUtilisation($ns, $p, $schema);
-			getDeepNamespaceUtilisation($eid, $v, $schema, $cwurl, $ns);
-		}
-		elseif($pv->objectlist()){
-			foreach($v as $i => $obj){
-				addPropertyToNSUtilisation($ns, $p, $schema);
-				getDeepNamespaceUtilisation($eid, $obj, $schema, $cwurl, $ns);
-			}
-		}
-		else{
-			if($pv->valuelist() or $pv->objectliterallist()){
-				foreach($v as $val){
-					addPropertyToNSUtilisation($ns, $p, $schema);
-					if($pv->valuelist()){
-						addObjectToNSUtilisation($ns, $val, $eid, $p, $schema);
-					}
-					elseif(isset($val['type']) && $val['type'] == "uri"){
-						addObjectToNSUtilisation($ns, $val['value'], $eid, $p, $schema);
-					}
-				}
-			}
-			elseif($pv->link()){
-				addPropertyToNSUtilisation($ns, $p, $schema);				
-				addObjectToNSUtilisation($ns, $v, $eid, $p, $schema);
-			}
-			elseif($pv->objectliteral()){
-				addPropertyToNSUtilisation($ns, $p, $schema);				
-				if(isset($v['type']) && $v['type'] == "uri"){
-					addObjectToNSUtilisation($ns, $v['value'], $eid, $p, $schema);
-				}
-			}
-		}
-	}
-	return $ns;
-}
-
-/*
- * Helper for above
- */
-function addToNSList(&$ns, $p, $schema){
-	if(!$p) return;
-	if(isBlankNode($p)){
-		if(!isset($ns["_"])){
-			$ns["_"] = array();
-		}
-		$ns["_"][] = $p;
-	}
-	elseif(isNamespacedURL($p)){
-		$pre = getNamespacePortion($p);
-		if($url = $schema->expand($p)){
-			if(!isset($ns[$pre])){
-				$ns[$pre] = array();
-			}
-			$ns[$pre][] = $url;
-		}
-		else {
-			
-			if(!isset($ns["unknown"])){
-				$ns["unknown"] = array();
-			}
-			$ns["unknown"][] = $p;
-		}
-	}
-	elseif(isURL($p)){
-		if($short = $schema->compress($p)){
-			$pre = getNamespacePortion($short);
-			if(!isset($ns[$pre])){
-				$ns[$pre] = array();
-			}
-			$ns[$pre][] = $p;
-		}
-		else {
-			if(!isset($ns["unknown"])){
-				$ns["unknown"] = array();
-			}
-			$ns["unknown"][] = $p;
-		}	
-	}
-}
-
-function deconstructURL($p, $schema){
-	if(is_array($p)){
-		//opr($p);
-		return false;
-	}
-	$p = $schema->mapURL($p);
-	if(isBlankNode($p)){
-		return array("_", $p);
-	}
-	elseif(isNamespacedURL($p)){
-		$pre = getNamespacePortion($p);
-		if($url = $schema->expand($p)){
-			return array($pre, $url);
-		}
-		else {
-			return array("unknown", $p);
-		}
-	}
-	elseif(isURL($p)){
-		if($short = $schema->compress($p)){
-			$pre = getNamespacePortion($short);
-			return array($pre, $p);
-		}
-		else {
-			return array("unknown", $p);
-		}
-	}
-	else {
-		return array("unknown", $p);
-	}
-}
-
-
-function compressNamespaces(&$ldprops, $schema, $cwurl){
-	if(!is_array($ldprops)){
-		return;
-	} 
-	foreach($ldprops as $p => $v){
-		//first compress property values
-		$pv = new LDPropertyValue($v, $cwurl);
-		if($pv->link() && ($compressed = $schema->compress($v))){
-			$nv = $compressed;
-		}
-		elseif($pv->valuelist()){
-			$nv = array();
-			foreach($v as $val){
-				if(isURL($val) && ($compressed = $schema->compress($val))){
-					$nv[] = $compressed;
-				}
-				else {
-					$nv[] = $val;
-				}
-			}
-		}
-		elseif($pv->embeddedlist()){
-			$nv = array();
 			foreach($v as $id => $obj){
-				compressNamespaces($obj, $schema, $cwurl);
-				if(isURL($id) && ($compressed = $schema->compress($id))){
-					$nv[$compressed] = $obj;
+				if($id == $f){
+					$dprops[$p][$id] = $nval;
+					return true;
 				}
 				else {
-					$nv[$id] = $obj;
+					if(setFragment($f, $dprops[$p][$id], $nval, $rules)){
+						return true;
+					}
 				}
 			}
 		}
-		else {
-			$nv = $v;
-		}
-		//then compress properties
-		if(isURL($p) && ($compressed = $schema->compress($p))){
-			unset($ldprops[$p]);
-			$ldprops[$compressed] = $nv;
-		}
-		else {
-			$ldprops[$p] = $nv;
-		}
 	}
+	return false;
 }
 
-function expandNSTriples(&$trips, $schema, $cwurl, $has_gnames = false){
-	
-}
-
-function compressNSTriples(&$trips, $schema, $cwurl, $has_gnames = false){
-	if($has_gnames){
-		foreach($trips as $gname => $data){
-			compressNSTriples($trips[$gname], $schema, $cwurl);
-		}
-	}
-	else {
-		foreach($trips as $i => $v){
-			$changed = array();
-			if(isURL($v[0]) && ($compressed = $schema->compress($v[0]))){
-				$changed[] = $compressed;
-			}
-			else {
-				$changed[] = $v[0];
-			}	
-			if(isURL($v[1]) && ($compressed = $schema->compress($v[1]))){
-				$changed[] = $compressed;
-			}
-			else {
-				$changed[] = $v[1];				
-			}
-			if(!is_array($v[2]) && isURL($v[1]) && ($compressed = $schema->compress($v[1]))){
-				$changed[] = $compressed;
-			}	
-			else {
-				$changed[] = $v[2];				
-			}
-			$trips[$i] = $changed;
-		}
-	}			
-}
-
-
-//internal cw links have the form $cwurl/$id/extra or local:id/extra
-function isInternalLink($v, $id, $cwurl){
-	if(!$cwurl) return false;
-	return (substr($v, 0, 6) == "local:" && substr($v, 6, strlen($id)) == $id) 
-		|| (substr($v, 0, strlen($id)) == $id) 
-		|| $cwurl.$id == substr($v, 0, strlen($cwurl.$id));
-}
-
-
-function findInternalMissingLinks($ldprops, $legal_vals, $id, $cwurl){
+/**
+ * Finds any broken internal links within an ld object
+ * @param array $ldprops ld properties array
+ * @param array $legal_vals a list of all the valid ids in the object
+ * @param string $id the current node id
+ * @param array $rules rules governing transformations
+ * @return array<string> a list of all the non-existant internal ids that are used
+ */
+ function findInternalMissingLinks($ldprops, $legal_vals, $id, $rules){
 	$missing = array();
 	foreach($ldprops as $prop => $v){
-		$pv = new LDPropertyValue($v, $cwurl);
+		$pv = new LDPropertyValue($v, $rules);
 		if($pv->link()){
-			if(isInternalLink($v, $id, $cwurl) && !in_array($v, $legal_vals)){
+			if(isInternalLink($v, $id, $rules['cwurl']) && !in_array($v, $legal_vals)){
 				$missing[] = array($id, $prop, $v);
 			}
 		}
 		elseif($pv->valuelist()){
 			foreach($v as $val){
-				if(isInternalLink($val, $id, $cwurl) && !in_array($val, $legal_vals)){
+				if(isInternalLink($val, $id, $rules['cwurl']) && !in_array($val, $legal_vals)){
 					$missing[] = array($id, $prop, $val);
 				}
 			}
 		}
 		elseif($pv->embedded()){
-			$id = isset($v['@id']) ? $v['@id'] : "_:";
-			$missing = array_merge($missing, findInternalMissingLinks($ldprops, $legal_vals, $id));
+			$demand_id_token = isset($rules['demand_id_token']) ? $rules['demand_id_token'] : "@id";
+			$did = false;
+			if(isset($v[$demand_id_token])){
+				$did = $v[$demand_id_token];
+			}
+			$aid = genid($did, $rules);
+			$missing = array_merge($missing, findInternalMissingLinks($ldprops, $legal_vals, $aid, $rules));
 		}
 		elseif($pv->objectlist()){
+			$demand_id_token = isset($rules['demand_id_token']) ? $rules['demand_id_token'] : "@id";
 			foreach($v as $obj){
-				$id = isset($obj['@id']) ? $obj['@id'] : "_:";
-				$missing = array_merge($missing, findInternalMissingLinks($obj, $legal_vals, $id));
+				$did = false;
+				if(isset($obj[$demand_id_token])){
+					$did = $obj[$demand_id_token];
+				}
+				$aid = genid($did, $rules);
+				$missing = array_merge($missing, findInternalMissingLinks($obj, $legal_vals, $aid, $rules));
 			}
 		}
 		elseif($pv->embeddedlist()){
-			foreach($v as $id => $obj){
-				$missing = array_merge($missing, findInternalMissingLinks($obj, $legal_vals, $id));
+			foreach($v as $aid => $obj){
+				$missing = array_merge($missing, findInternalMissingLinks($obj, $legal_vals, $aid, $rules));
 			}
 		}
 	}
 	return $missing;
 }
 
-/*
- * Combining lists of properties about same subject into single property list
+
+/**
+ * Is the passed value the id of a node in this document?
+ * @param string $v the value
+ * @param string $id the local id of the object
+ * @param string $cwurl the closed world url of the object
+ * @return boolean true if $v is an internal id
  */
-function combineProperties(&$target, $nprops){
-	foreach($nprops as $prop => $val){
-		if(!isset($target[$prop])){
-			$target[$prop] = $val;		
-		}
-		else {
-			
+function isInternalLink($v, $id, $cwurl){
+	if(isBlankNode($v)) return true;
+	elseif(!$cwurl) return false;
+	elseif(isNamespacedURL($v)){
+		if(substr($v, 0, 6) == "local:" || (substr($v, 0, strlen($id) + 1)) == $id .":"){
+			return true;
 		}
 	}
+	else {
+		return $cwurl."/".$id == substr($v, 0, strlen($cwurl."/".$id));
+	}
+//	return (substr($v, 0, 6) == "local:" && substr($v, 6, strlen($id)) == $id)
+//	|| (substr($v, 0, strlen($id)) == $id)
+//	|| $cwurl.$id == substr($v, 0, strlen($cwurl.$id));
 }
 
+/* functions for comparing between two different ld structures */
 
 /*
- * assumes props are arranged as [graphname => [embedded object list]]
  */
-function compareLDGraphs($id, $aprops, $bprops, $cwurl, $top_level = false){
-	$delta = new LDDelta($cwurl);	
+/**
+ * compares two sets of ld graphs 
+ * assumes props are arranged as [graphname => [embedded object list]]
+ * @param string $id the subject id 
+ * @param array $aprops the left hand side of the comparison
+ * @param array $bprops the right hand side of the comparison
+ * @param array $rules rules governing the comparison
+ * @param boolean $top_level is this the top-level invocation?
+ * @return LDDelta a ld delta object describing the differences
+ */
+function compareLDGraphs($id, $aprops, $bprops, $rules, $top_level = false){
+	$delta = new LDDelta($rules);	
 	foreach($aprops as $gname => $eol){
 		if(count($eol) > 0){
 			if(!isset($bprops[$gname]) or count($bprops[$gname]) == 0 ){
-				$ndelta = new LDDelta($cwurl, $gname);
+				$ndelta = new LDDelta($rules, $gname);
 				$ndelta->del($id, $gname, $eol, !$top_level);
 				$delta->addNamedGraphDelta($ndelta);
 			}
 			else {
 				if($gname == 'meta'){
-					$ndd = compareLD($id, $eol, $bprops[$gname], $cwurl, $gname);
+					$ndd = compareLD($id, $eol, $bprops[$gname], $rules, $gname);
 					if($ndd->containsChanges()){
 						$delta->addNamedGraphDelta($ndd, $gname);
 					}
 				}
 				else {
-					$ndd = compareEOL($id, $gname, $eol, $bprops[$gname], $cwurl, $gname);
+					$ndd = compareEOL($id, $gname, $eol, $bprops[$gname], $rules, $gname);
 					$delta->addNamedGraphDelta($ndd);
 				}
 			}
@@ -1108,7 +762,7 @@ function compareLDGraphs($id, $aprops, $bprops, $cwurl, $top_level = false){
 	foreach($bprops as $gname => $eol){
 		if(count($eol) > 0){
 			if(!isset($aprops[$gname]) || count($aprops[$gname]) == 0){
-				$ndelta = new LDDelta($cwurl, $gname);
+				$ndelta = new LDDelta($rules, $gname);
 				$ndelta->add($id, $gname, $eol, !$top_level);
 				$delta->addNamedGraphDelta($ndelta);
 			}
@@ -1117,19 +771,27 @@ function compareLDGraphs($id, $aprops, $bprops, $cwurl, $top_level = false){
 	return $delta;
 }
 
-/*
+/**
+ * Compares two ld property arrays and reports on the differences
+ * 
  * Does a complex comparison of two ld structures and returns a LD delta object which contains a mapping between the two
+ * @param string $frag_id id of the current node id
+ * @param array $orig the left hand side of the comparison (unchanged version)
+ * @param array $upd the right hand side of the comparison (changed version)
+ * @param array $rules the rules governing the comparison
+ * @param string [$gname] the id of the named graph currently under investigation
+ * @return LDDelta description of the differences between $orig and $upd
  */
-function compareLD($frag_id, $orig, $upd, $cwurl, $gname = false){
-	$delta = new LDDelta($cwurl, $gname);
+function compareLD($frag_id, $orig, $upd, $rules, $gname = false){
+	$delta = new LDDelta($rules, $gname);
 	if(!$upd or !is_array($upd)){ 
 		return $delta;
 	}
 	//go through updated properties to pull out properties that are not in original which we will need to add
 	foreach($upd as $p => $v){
-		$pupd = new LDPropertyValue($v, $cwurl);
+		$pupd = new LDPropertyValue($v, $rules);
 		if(isset($orig[$p])){
-			$porig = new LDPropertyValue($orig[$p], $cwurl);
+			$porig = new LDPropertyValue($orig[$p], $rules);
 			if(!$porig->isempty()){
 				continue;
 			}
@@ -1140,7 +802,7 @@ function compareLD($frag_id, $orig, $upd, $cwurl, $gname = false){
 	}
 	//now we go through the original properties to pull out those which are not in the delta - we need to remove them
 	foreach($orig as $p => $vold){
-		$porig = new LDPropertyValue($vold, $cwurl);
+		$porig = new LDPropertyValue($vold, $rules);
 		if(!isset($upd[$p]) or (is_array($upd[$p]) && count($upd[$p]) == 0)){
 			if(!$porig->isempty()){//semantically equivalent, empty in original, don't do anything
 				$delta->del($frag_id, $p, $vold);
@@ -1148,7 +810,7 @@ function compareLD($frag_id, $orig, $upd, $cwurl, $gname = false){
 			continue;
 		}
 		$vnew = $upd[$p];
-		$pupd = new LDPropertyValue($vnew, $cwurl);
+		$pupd = new LDPropertyValue($vnew, $rules);
 		if($porig->isempty()){
 			continue; //we do nothing, we've caught this above
 		}
@@ -1180,7 +842,7 @@ function compareLD($frag_id, $orig, $upd, $cwurl, $gname = false){
 						$delta->delObject($frag_id, $p, $id, $obj);
 					}
 					else {
-						$delta->addSubDelta($frag_id, $p, $id, compareLD($id, $obj, $vnew[$id], $cwurl));
+						$delta->addSubDelta($frag_id, $p, $id, compareLD($id, $obj, $vnew[$id], $rules));
 					}
 				}
 				foreach($vnew as $nid => $nobj){
@@ -1190,8 +852,13 @@ function compareLD($frag_id, $orig, $upd, $cwurl, $gname = false){
 				}
 				break;
 			case 'embedded' :
-				$bnid = "_:$frag_id";
-				$delta->addSubDelta($frag_id, $p, $bnid, compareLD($bnid, $vold, $vnew, $cwurl));
+				$demand_id_token = isset($rules['demand_id_token']) ? $rules['demand_id_token'] : "@id";
+				$did = false;
+				if(isset($vold[$demand_id_token])){
+					$did = $vold[$demand_id_token];
+				}
+				$bnid = genid($did, $rules);
+				$delta->addSubDelta($frag_id, $p, $bnid, compareLD($bnid, $vold, $vnew, $rules));
 				break;
 			case 'embeddedlist' : //hard
 				$rems = array();
@@ -1199,28 +866,38 @@ function compareLD($frag_id, $orig, $upd, $cwurl, $gname = false){
 				foreach($vnew as $i => $nobj){
 					$there = false;
 					foreach($vold as $j => $oobj){
-						$pdelta = compareLD("", $oobj, $nobj, $cwurl);
+						$pdelta = compareLD("", $oobj, $nobj, $rules);
 						if(!$pdelta->containsChanges()){
 							$there = true;
 							break;
 						}						
 					}
 					if(!$there){
-						$bnid = "_:$frag_id"."_$i";
+						$demand_id_token = isset($rules['demand_id_token']) ? $rules['demand_id_token'] : "@id";
+						$did = false;
+						if(isset($vold[$demand_id_token])){
+							$did = $vold[$demand_id_token];
+						}
+						$bnid = genid($did, $rules);
 						$delta->addObject($frag_id, $p, $bnid, $nobj);
 					}						
 				}
 				foreach($vold as $i => $oobj){
 					$unchanged = false;
 					foreach($vnew as $i =>$nobj){
-						$pdelta = compareLD("", $oobj, $nobj, $cwurl);
+						$pdelta = compareLD("", $oobj, $nobj, $rules);
 						if(!$pdelta->containsChanges()){
 							$unchanged = true;
 						}
 					}
 					if(!$unchanged){
-						$bnid = "_:".$frag_id."_$i";
-						$delta->delObject($frag_id, $p, $bnid, $obj);
+						$demand_id_token = isset($rules['demand_id_token']) ? $rules['demand_id_token'] : "@id";
+						$did = false;
+						if(isset($vold[$demand_id_token])){
+							$did = $vold[$demand_id_token];
+						}
+						$bnid = genid($did, $rules);
+						$delta->delObject($frag_id, $p, $bnid, $oobj);
 					}
 				}
 				break;
@@ -1230,19 +907,40 @@ function compareLD($frag_id, $orig, $upd, $cwurl, $gname = false){
 	return $delta;
 }
 
-function compareEO($frag_id, $vold, $vnew, $cwurl, $gname = false){
-	$delta = new LDDelta($cwurl, $gname);
+/**
+ * Compares two ld embedded objects
+ *
+ * @param string $frag_id id of the current node id
+ * @param array $vold the left hand side of the comparison (unchanged version)
+ * @param array $vnew the right hand side of the comparison (changed version)
+ * @param array $rules the rules governing the comparison
+ * @param string [$gname] the id of the named graph currently under investigation
+ * @return LDDelta description of the differences between $vold and $vnew 
+ */
+function compareEO($frag_id, $vold, $vnew, $rules, $gname = false){
+	$delta = new LDDelta($rules, $gname);
 	$delta->addNamedGraphDelta($ndd);	
 }
 
-function compareEOL($frag_id, $p, $vold, $vnew, $cwurl, $gname = false){
-	$delta = new LDDelta($cwurl, $gname);
+/**
+ * Compares two ld embedded object lists
+ *
+ * @param string $frag_id id of the current node id
+ * @param string $p id of the current property
+ * @param array $vold the left hand side of the comparison (unchanged version)
+ * @param array $vnew the right hand side of the comparison (changed version)
+ * @param array $rules the rules governing the comparison
+ * @param string [$gname] the id of the named graph currently under investigation
+ * @return LDDelta description of the differences between $vold and $vnew
+ */
+function compareEOL($frag_id, $p, $vold, $vnew, $rules, $gname = false){
+	$delta = new LDDelta($rules, $gname);
 	foreach($vold as $id => $obj){
 		if(!isset($vnew[$id])){
 			$delta->delObject($frag_id, $p, $id, $obj, $gname);
 		}
 		else {
-			$delta->addSubDelta($frag_id, $p, $id, compareLD($id, $obj, $vnew[$id], $cwurl));
+			$delta->addSubDelta($frag_id, $p, $id, compareLD($id, $obj, $vnew[$id], $rules));
 		}
 	}
 	foreach($vnew as $nid => $nobj){
@@ -1253,9 +951,13 @@ function compareEOL($frag_id, $p, $vold, $vnew, $cwurl, $gname = false){
 	return $delta;
 }	
 
-/*
+/**
  * remove any triples where we are adding and deleting the same triple
  * (when we have list overwrites...)
+ * 
+ * @param array $add an array of triples to be added
+ * @param array $del an array of triples to be deleted
+ * @return array<triples> an array of the triples that were removed because they appeared in both add and del
  */
 function removeOverwrites(&$add, &$del){
 	$removed = array();
@@ -1295,6 +997,12 @@ function removeOverwrites(&$add, &$del){
 	return $removed;
 }
 
+/* simple functions to package triple values */
+
+/**
+ * Encodes a scalar - string literal by setting its data and lang properties
+ * @param string $s the string to be encoded
+ */
 function encodeScalar($s){
 	if(isLiteral($s)){
 		return array('data' => $s, "lang" => "en");
@@ -1302,6 +1010,10 @@ function encodeScalar($s){
 	return $s;
 }
 
+/**
+ * Decoes a scalar - retrieves value from object literal 
+ * @param string $s the string to be decoded
+ */
 function decodeScalar($s){
 	if(isLiteral($s)){
 		return $s;
@@ -1315,10 +1027,22 @@ function decodeScalar($s){
 	return "";
 }
 
+/**
+ * Compares two object literals - only considered the same if they have same properties, same values
+ * @param array $a object literal array lhs
+ * @param array $b object literal array rhs
+ * @return boolean true if they are the same
+ */
 function compareObjLiterals($a, $b){
 	return $a == $b;
 }
 
+/**
+ * Encodes an object of a triple
+ * @param mixed $o the object
+ * @param string $t the type of the value
+ * @return string the encoded version of the object value
+ */
 function encodeObject($o, $t){
 	if($t == "literal"){
 		return $o;
@@ -1329,17 +1053,38 @@ function encodeObject($o, $t){
 	else {
 		return $o;
 	}
-	
 }
 
+/**
+ * Add types to passed triples
+ * @param string $s subject
+ * @param string $p predicate
+ * @param string $o object
+ * @param string $t type 
+ * @return array [$s, $p, {$o}]
+ */
 function addTypes($s, $p, $o, $t){
 	return array(array($s, $p, encodeObject($o, $t)));
 }
 
+/**
+ * Pass triples through unaltered
+ * @param string $s subject
+ * @param string $p predicate
+ * @param string $o object
+ * @param string $t type 
+ * @return array [$s, $p, $o]
+ */
 function nop($s, $p, $o, $t){
 	return array(array($s, $p, $o));
 }
 
+/**
+ * Compares two arrays of triples to see if they are identical
+ * @param array $a array of triples
+ * @param array $b array of triples 2
+ * @return boolean true if all triples are identical
+ */
 function compareTrips($a, $b){
 	foreach($a as $i => $onea){
 		if(!isset($b[$i])) return false;
@@ -1353,6 +1098,192 @@ function compareTrips($a, $b){
 	}
 	return true;
 }
+
+/* import export related functions */
+
+
+/**
+ * Transforms an internal array as used by the easy rdf library into a form as used by dacura ld property arrays
+ * @param array $easy easy-rdf formated array 
+ * @return array dacura ld format array
+ */
+function importEasyRDFPHP($easy){
+	$imported = array();
+	foreach($easy as $s => $ps){
+		$imported[$s] = array();
+		foreach($ps as $p => $vs){
+			if(count($vs) > 1){
+				$imported[$s][$p] = array();
+				foreach($vs as $v){
+					if($v['type'] == 'bnode' or $v['type'] == "uri"){
+						$imported[$s][$p][] = $v['value'];
+					}
+					elseif($v['type'] == 'literal'){
+						$v['type'] = isset($v['datatype']) ? $v['datatype'] : "string";
+						$v['data'] = $v['value'];
+						unset($v['value']);
+						unset($v['datatype']);
+						if(isset($v['lang'])){
+							unset($v['type']);
+						}
+						$imported[$s][$p][] = $v;
+					}
+					else {
+						$imported[$s][$p][] = $v;
+					}
+				}
+			}
+			else {
+				foreach($vs as $v){
+					if($v['type'] == 'bnode' or $v['type'] == "uri"){
+						$imported[$s][$p] = $v['value'];
+					}
+					else {
+						$v['type'] = isset($v['datatype']) ? $v['datatype'] : "string";
+						$v['data'] = $v['value'];
+						unset($v['value']);
+						unset($v['datatype']);
+						if(isset($v['lang'])){
+							unset($v['type']);
+						}
+						$imported[$s][$p] = $v;
+					}
+				}
+			}
+		}
+	}
+	return $imported;
+}
+
+
+/**
+ * Transforms an ld property array into a form as used by the easy rdf library 
+ * @param string $id the id of the node
+ * @param array $ldprops the ld property array
+ * @return array easy rdf ld format array
+ */
+function exportEasyRDFPHP($id, $ldprops, $rules){
+	$exported = array();
+	$easy = unembed($ldprops, $id, $rules);
+	unset($easy[$id]);
+	foreach($easy as $s => $ps){
+		$exported[$s] = array();
+		foreach($ps as $p => $vs){
+			$exported[$s][$p] = array();
+			foreach($vs as $v){
+				if(is_array($v)){
+					if(!isset($v['type'])){
+						$v['type'] = 'literal';
+					}
+					elseif($v['type'] != 'string' && $v['type'] != 'literal'){
+						$v['datatype'] = $v['type'];
+						$v['type'] = "literal";
+					}
+					if($v['type'] == 'string'){
+						$v['type'] = 'literal';
+					}
+					if(isset($v['data'])){
+						$v['value'] = $v['data'];
+						unset($v['data']);
+					}
+					if(!isset($v['value'])){
+						$v['value'] = '';
+					}
+					$exported[$s][$p][] = $v;
+				}
+				else {
+					if(isBlankNode($v)){
+						$exported[$s][$p][] = array("type" => "bnode", "value" => $v);
+					}
+					elseif(isURL($v)){
+						$exported[$s][$p][] = array("type" => "uri", "value" => $v);
+					}
+					else {
+						$exported[$s][$p][] = array("type" => "literal", "value" => $v);
+					}
+				}
+			}
+		}
+	}
+	return $exported;
+}
+
+/**
+ * Remove an embedded object from its parent so that it can be exported as easyrdf
+ * @param array $ldprops the property array 
+ * @param string $rid the id to be unembedded
+ * @param array $rules the settings that will be used
+ * @return object as unembedded object 
+ */
+function unembed($ldprops, $rid, $rules = false){
+	$unem = array($rid => array());
+	if(!is_array($ldprops)) return $unem;
+	foreach($ldprops as $p => $v){
+		$unem[$rid][$p] = array();
+		$pv = new LDPropertyValue($v, $rules);
+		if($pv->embeddedlist()){
+			foreach($v as $vid => $vobj){
+				$unem[$rid][$p][] = $vid;
+				$unem = array_merge_recursive($unem, unembed($vobj, $vid, $rules));
+			}
+		}
+		elseif($pv->embedded()){
+			$bnid = "_:$rid";
+			$unem[$rid][$p][] = $bnid;
+			$unem = array_merge($unem, unembed($v, $bnid, $rules));
+		}
+		elseif($pv->objectlist()){
+			foreach($v as $i => $obj){
+				$bnid = "_:$rid_$i";
+				$unem[$rid][$p][] = $bnid;
+				$unem = array_merge($unem, unembed($v, $bnid, $rules));
+			}
+		}
+		elseif($pv->valuelist() or $pv->objectliterallist()) {
+			$unem[$rid][$p] = $v;
+		}
+		else {
+			$unem[$rid][$p][] = $v;
+		}
+	}
+	return $unem;
+}
+
+
+/**
+ * Transforms the built-in linked data property array into a json ld structure
+ * @param array $props an ld property array
+ * @param array $rules settings governing the transformation 
+ * @return array json-ld compliant array
+ */
+function toJSONLD($props, $rules){
+	$nprops = array();
+	foreach($props as $p => $v){
+		$pv = new LDPropertyValue($v, $rules);
+		if($pv->embedded()){
+			$nprops[$p] = toJSONLD($props[$p], $rules);
+		}
+		elseif($pv->objectlist()){
+			$nprops[$p] = array();
+			foreach($v as $obj){
+				$nprops[$p][] = toJSONLD($obj, $rules);
+			}
+		}
+		elseif($pv->embeddedlist()){
+			$nprops[$p] = array();
+			foreach($v as $id => $obj){
+				$nobj = toJSONLD($obj, $rules);
+				$nobj["@id"] = $id;
+				$nprops[$p][] = $nobj;
+			}
+		}
+		else {
+			$nprops[$p] = $v;
+		}
+	}
+	return $nprops;
+}
+
 
 /*
  * Functions for reverse engingeering embedded objects from triples
@@ -1377,7 +1308,7 @@ function compareTrips($a, $b){
  	}
  	$contents = $this->embedObjects($root_id, $objects);
  	if(count($objects) > 0){
- 		return $this->failure_result("Triples contained some values that could not be embedded in an entity", 400);
+ 		return $this->failure_result("Triples contained some values that could not be embedded in an ldo", 400);
  	}
  	return $contents;
  }
@@ -1413,7 +1344,37 @@ function compareTrips($a, $b){
  	return $obj;
  }
  
+ 
+
+function getNodesWithPredicate($id, $ldprops, $preds, $rules = false){
+	$trips = array();
+	$bni = 0;
+	foreach($ldprops as $p => $v){
+		if(in_array($p, $preds)){
+			$pv = new PropertyValue($v, $rules);
+			if($pv->scalar() or $pv->valuelist() or $pv->objectliteral() or $pv->objectliterallist()){
+				$trips[] = array($id, $p, $v);
+			}
+			elseif($pv->embedded()){
+				$trips = array_merge_recursive($trips, getNodesWithPredicate("_:BN_".$id."_".++$bni, $v, $preds, $rules['cwurl']));
+			}
+			elseif($pv->objectlist()){
+				foreach($v as $i => $obj){
+					$trips = array_merge_recursive($trips, getNodesWithPredicate("_:BN_".$id ."_".++$bni, $obj, $preds, $rules['cwurl']));
+				}
+			}
+			elseif($pv->embeddedlist()){
+				foreach($v as $id => $obj){
+					$trips = array_merge_recursive($trips, getNodesWithPredicate("_:BN_".$id ."_".++$bni, $obj, $preds, $cwurl));						
+				}
+			}		
+		}
+	}
+	return $trips;
+}
+
+	
+
+ 
 */
-
-
 

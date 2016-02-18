@@ -1,9 +1,9 @@
 <?php
 getRoute()->get('/ngskeleton', 'get_ngskeleton');
-getRoute()->get('/entity_classes', 'get_entity_classes');
-getRoute()->get('/entity_frame/(\w+)', 'get_entity_frame');
+getRoute()->get('/ldo_classes', 'get_ldo_classes');
+getRoute()->get('/ldo_frame/(\w+)', 'get_ldo_frame');
 
-$entity_type = "candidate";
+$ldo_type = "candidate";
 
 
 function get_ngskeleton(){
@@ -16,19 +16,19 @@ function get_ngskeleton(){
 	$dacura_server->write_http_error();
 }
 
-function get_entity_classes(){
+function get_ldo_classes(){
 	global $dacura_server;
-	$dacura_server->init("get.entity_classes");
-	$ents = $dacura_server->getCandidateEntityClasses();
+	$dacura_server->init("get.ldo_classes");
+	$ents = $dacura_server->getCandidateldoClasses();
 	if($ents){
 		return $dacura_server->write_json_result($ents, "Returned " . count($ents) . " " . $type. "s");
 	}
 	$dacura_server->write_http_error();
 }
 
-function get_entity_frame($entid){
+function get_ldo_frame($entid){
 	global $dacura_server;
-	$dacura_server->init("get.entity_stub");
+	$dacura_server->init("get.ldo_stub");
 	$frame = $dacura_server->getClassFrame($entid);
 	if($frame){
 		return $dacura_server->write_json_result($frame, "Returned $entid frame");

@@ -25,16 +25,16 @@
 		
 		<div class='ld-resultbox-options'>
 			<span class='rb-options'>
-			    <input type="radio" class='resoption roption' id="show_forward" name="rformat"><label class='resoption' title="Show forward delta to <?php echo $params['entity_type']?>" for="show_forward">Forward</label>
-				<input type="radio" class='resoption roption' id="show_backward" name="rformat"><label class='resoption' title="Show backward delta for rolling back update to <?php echo $params['entity_type']?>" for="show_backward">Backward</label>
-				<input type="radio" class='resoption roption' id="show_before" name="rformat"><label class='resoption' title="Show <?php echo $params['entity_type']?> before update" for="show_before">Before</label>
-				<input type="radio" class='resoption roption' id="show_after" name="rformat"><label class='resoption' title="Show <?php echo $params['entity_type']?> after update" for="show_after">After</label>
-				<input type="radio" class='resoption roption' checked="checked" id="show_change" name="rformat"><label class='resoption' title="Show what has changed in the <?php echo $params['entity_type']?>" for="show_change">Change</label>
-				<input type="radio" class='candoption roption' id="show_candidate" name="rformat"><label class='candoption' title="Show updates to stored linked data version of <?php echo $params['entity_type']?> " for="show_candidate">Linked Data Updates</label>
-				<input type="radio" class='metaoption roption' id="show_meta" name="rformat"><label class='metaoption' title="Show updates to <?php echo $params['entity_type']?> status" for="show_meta">Meta Updates</label>
-				<input type="radio" class='repoption roption' id="show_report" name="rformat"><label class='repoption' title="Show updates to triple-store graph of <?php echo $params['entity_type']?> " for="show_report">Triplestore Updates</label>
-				<input type="radio" class='updoptoin roption' id="show_updates" name="rformat"><label class='updoption' title="Show updates to triple-store graph of <?php echo $params['entity_type']?> " for="show_updates">Pending Updates</label>
-				<input type="radio" class='dqs roption' id="show_dqs" name="rformat"><label class='dqs' title="Show results of Data Quality Service <?php echo $params['entity_type']?> Checks" for="show_dqs">Quality Violations</label>
+			    <input type="radio" class='resoption roption' id="show_forward" name="rformat"><label class='resoption' title="Show forward delta to <?php echo $params['ldo_type']?>" for="show_forward">Forward</label>
+				<input type="radio" class='resoption roption' id="show_backward" name="rformat"><label class='resoption' title="Show backward delta for rolling back update to <?php echo $params['ldo_type']?>" for="show_backward">Backward</label>
+				<input type="radio" class='resoption roption' id="show_before" name="rformat"><label class='resoption' title="Show <?php echo $params['ldo_type']?> before update" for="show_before">Before</label>
+				<input type="radio" class='resoption roption' id="show_after" name="rformat"><label class='resoption' title="Show <?php echo $params['ldo_type']?> after update" for="show_after">After</label>
+				<input type="radio" class='resoption roption' checked="checked" id="show_change" name="rformat"><label class='resoption' title="Show what has changed in the <?php echo $params['ldo_type']?>" for="show_change">Change</label>
+				<input type="radio" class='candoption roption' id="show_candidate" name="rformat"><label class='candoption' title="Show updates to stored linked data version of <?php echo $params['ldo_type']?> " for="show_candidate">Linked Data Updates</label>
+				<input type="radio" class='metaoption roption' id="show_meta" name="rformat"><label class='metaoption' title="Show updates to <?php echo $params['ldo_type']?> status" for="show_meta">Meta Updates</label>
+				<input type="radio" class='repoption roption' id="show_report" name="rformat"><label class='repoption' title="Show updates to triple-store graph of <?php echo $params['ldo_type']?> " for="show_report">Triplestore Updates</label>
+				<input type="radio" class='updoptoin roption' id="show_updates" name="rformat"><label class='updoption' title="Show updates to triple-store graph of <?php echo $params['ldo_type']?> " for="show_updates">Pending Updates</label>
+				<input type="radio" class='dqs roption' id="show_dqs" name="rformat"><label class='dqs' title="Show results of Data Quality Service <?php echo $params['ldo_type']?> Checks" for="show_dqs">Quality Violations</label>
 			</span>
 		</div>
 	

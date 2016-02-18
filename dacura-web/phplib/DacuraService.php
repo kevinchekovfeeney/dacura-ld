@@ -462,12 +462,13 @@ class DacuraService extends DacuraObject {
 	/**
 	 * Return the services datatable settings for a particular table
 	 * @param string $id table id
+	 * @param boolean [$json_encode=true] if true, the response will be json-encoded, otherwise the array will be passed
 	 * @return string|boolean the json-encoded datatable setting string or false if not found
 	 */
-	protected function getDatatableSetting($id){
+	protected function getDatatableSetting($id, $json_encode = true){
 		$tab = $this->stab($id);
 		if(isset($tab['datatable_options'])){
-			return json_encode($tab["datatable_options"]);
+			return $json_encode ? json_encode($tab["datatable_options"]) : $tab["datatable_options"];
 		}
 		return false;
 	}
@@ -778,30 +779,6 @@ class DacuraService extends DacuraObject {
 		echo "</div></div>";
 	}
 	
-	/*
-	 * The next functions render snippets of html that are needed by multiple services
-	 */
-	
-	/**
-	 * Renders the LD editor screen (from the ld service)
-	 * @param array $params
-	 */
-	public function showLDEditor($params){
-		$service = $this;
-		$entity = isset($params['entity']) ? $params['entity'] : "Entity";
-		$this->renderScreen("editor", $params, "ld");
-	}
-	
-	/**
-	 * Renders the Linked Data Update Result box
-	 * @param array $params
-	 */
-	public function showLDResultbox($params){
-		$service = $this;
-		$entity = isset($params['entity']) ? $params['entity'] : "Entity";
-		$this->renderScreen("resultbox", $params, "ld");
-	}
-	
 	/**
 	 * Renders the Dacura Quality Service Control screen 
 	 * @param string $graph the name of the graph that it is being applied to 
@@ -995,4 +972,12 @@ class DacuraService extends DacuraObject {
 		}
 		return $ext_bit.$name;
 	}
+	
+	/**
+	 * Generates the url for the appropriate file browser url depending on the context
+	 * @return string the filebrowser url
+	 */
+	function getFileBrowserURL(){
+		return $this->durl().$this->getSystemSetting('filebrowser')."browse.php";
+	}	
 }

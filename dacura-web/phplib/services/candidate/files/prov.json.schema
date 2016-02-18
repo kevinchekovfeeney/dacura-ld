@@ -11,9 +11,9 @@
                         "^[a-zA-Z0-9_\\-]+$": { "type" : "string", "format": "uri" }
             }
         },
-        "entity": {
+        "ldo": {
             "type": "object",
-            "additionalProperties": { "$ref":"#/definitions/entity" }
+            "additionalProperties": { "$ref":"#/definitions/ldo" }
         },
         "activity": {
             "type": "object",
@@ -120,12 +120,12 @@
                 { "$ref": "#/definitions/literalArray" }
             ]
         },
-        "entity": {
+        "ldo": {
             "type": "object",
-            "title": "entity",
+            "title": "ldo",
             "additionalProperties": { "$ref": "#/definitions/attributeValues" }
         },
-        "agent": { "$ref": "#/definitions/entity" },
+        "agent": { "$ref": "#/definitions/ldo" },
         "activity": {
             "type": "object",
             "title": "activity",
@@ -137,11 +137,11 @@
             "type": "object",
             "title": "generation/usage",
             "properties": {
-                "prov:entity": { "type": "string", "format": "uri" },
+                "prov:ldo": { "type": "string", "format": "uri" },
                 "prov:activity": { "type": "string", "format": "uri" },
                 "prov:time": { "type": "string", "format": "date-time" }
             },
-            "required": ["prov:entity"],
+            "required": ["prov:ldo"],
             "additionalProperties": { "$ref": "#/definitions/attributeValues" }
         },
         "usage": {"$ref":"#/definitions/generation"},
@@ -171,34 +171,34 @@
             "type": "object",
             "title": "invalidation",
             "properties": {
-                "prov:entity": { "type": "string", "format": "uri" },
+                "prov:ldo": { "type": "string", "format": "uri" },
                 "prov:time": { "type": "string", "format": "date-time" },
                 "prov:activity": { "type": "string", "format": "uri" }
             },
-            "required": ["prov:entity"],
+            "required": ["prov:ldo"],
             "additionalProperties": { "$ref": "#/definitions/attributeValues" }
         },
         "derivation":{
             "type": "object",
             "title": "derivation",
             "properties": {
-                "prov:generatedEntity": { "type": "string", "format": "uri" },
-                "prov:usedEntity": { "type": "string", "format": "uri" },
+                "prov:generatedldo": { "type": "string", "format": "uri" },
+                "prov:usedldo": { "type": "string", "format": "uri" },
                 "prov:activity": { "type": "string", "format": "uri" },
                 "prov:generation": { "type": "string", "format": "uri" },
                 "prov:usage": { "type": "string", "format": "uri" }
             },
-            "required": ["prov:generatedEntity", "prov:usedEntity"],
+            "required": ["prov:generatedldo", "prov:usedldo"],
             "additionalProperties": { "$ref": "#/definitions/attributeValues" }
         },
         "attribution":{
             "type": "object",
             "title": "attribution",
             "properties": {
-                "prov:entity": { "type": "string", "format": "uri" },
+                "prov:ldo": { "type": "string", "format": "uri" },
                 "prov:agent": { "type": "string", "format": "uri" }
             },
-            "required": ["prov:entity", "prov:agent"],
+            "required": ["prov:ldo", "prov:agent"],
             "additionalProperties": { "$ref": "#/definitions/attributeValues" }
         },
         "association": {
@@ -237,10 +237,10 @@
             "type": "object",
             "title": "specialization",
             "properties": {
-                "prov:generalEntity": { "type": "string", "format": "uri" },
-                "prov:specificEntity": { "type": "string", "format": "uri" }
+                "prov:generalldo": { "type": "string", "format": "uri" },
+                "prov:specificldo": { "type": "string", "format": "uri" }
             },
-            "required": ["prov:generalEntity", "prov:specificEntity"],
+            "required": ["prov:generalldo", "prov:specificldo"],
             "additionalProperties": { "$ref": "#/definitions/attributeValues" }
         },
         "alternate": {
@@ -258,9 +258,9 @@
             "title": "membership",
             "properties": {
                 "prov:collection": { "type": "string", "format": "uri" },
-                "prov:entity": { "type": "string", "format": "uri" }
+                "prov:ldo": { "type": "string", "format": "uri" }
             },
-            "required": ["prov:collection", "prov:entity"],
+            "required": ["prov:collection", "prov:ldo"],
             "additionalProperties": { "$ref": "#/definitions/attributeValues" }
         },
         "bundle": {
@@ -273,9 +273,9 @@
                         "^[a-zA-Z0-9_\\-]+$": { "type" : "string", "format": "uri" }
                     }
                 },
-                "entity": {
+                "ldo": {
                     "type": "object",
-                    "additionalProperties": { "$ref":"#/definitions/entity" }
+                    "additionalProperties": { "$ref":"#/definitions/ldo" }
                 },
                 "activity": {
                     "type": "object",

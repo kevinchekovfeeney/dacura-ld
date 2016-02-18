@@ -171,7 +171,7 @@ class UsersService extends DacuraService {
 			elseif($u && $u->id == $ub->id){
 				$params['self_update'] = true;
 			}
-			$params[] = "user-details";
+			$params['subscreens'][] = "user-details";
 			if($dacura_server->userHasFacet("inspect")){
 				$params['roles_table_settings'] = $this->getDatatableSetting("roles");
 				$params['subscreens'][] = "user-history";

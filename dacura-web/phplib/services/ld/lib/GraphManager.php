@@ -17,9 +17,9 @@ class GraphManager extends DacuraObject {
 	/* 
 	 * all of these are just convenience interfaces to invoke DQS...
 	 */
-	function getGraphEntityClasses($schema_gname){
+	function getGraphldoClasses($schema_gname){
 		/*if(substr($schema_gname, -strlen("main_schema")) == "main_schema"){
-			$classes = array("seshat:Polity", "seshat:SupraculturalEntity", "seshat:SubPolity", "seshat:QuasiPolity", 
+			$classes = array("seshat:Polity", "seshat:Supraculturalldo", "seshat:SubPolity", "seshat:QuasiPolity", 
 					"seshat:InterestGroup", "seshat:Language", "seshat:Building", "seshat:Territory", 					
 					"seshat:CollectionOfTerritories", "seshat:FreeFormArea", "seshat:NGA", "seshat:Event", 
 					"seshat:War", "seshat:Battle", "seshat:NavalEngagement", "seshat:LandBattle", "seshat:Siege",	
@@ -28,7 +28,7 @@ class GraphManager extends DacuraObject {
 		elseif(substr($schema_gname, -strlen("provenance_schema")) == "provenance_schema"){
 			$classes = array("prov:Activity", "prov:AgentInfluence", "prov:Association", 
 				"prov:Attribution", "prov:Bundle", "prov:Collection", "prov:Delegation", "prov:Derivation", "prov:EmptyCollection", 
-				"prov:End", "prov:Entity", "prov:EntityInfluence", "prov:Generation", "prov:Influence", 
+				"prov:End", "prov:ldo", "prov:ldoInfluence", "prov:Generation", "prov:Influence", 
 				"prov:InstantaneousEvent", "prov:Invalidation", "prov:Location", "prov:Organization", "prov:Person", "prov:Plan", 
 				"prov:PrimarySource", "prov:Quotation", "prov:Revision", "prov:Role", "prov:SoftwareAgent", "prov:Start", 
 				"prov:Usage"
@@ -112,7 +112,7 @@ class GraphManager extends DacuraObject {
 			$args['class'] = $clsname;
 		}
 		else {
-			$srvc = $this->settings["dqs_service"]['entity'];		
+			$srvc = $this->settings["dqs_service"]['ldo'];		
 		}
 		$qstr = "";
 		foreach($args as $k => $v){

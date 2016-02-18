@@ -2,7 +2,7 @@
 
 include_once("Ontology.php");
 
-class Graph extends LDEntity {
+class Graph extends LDO {
 	
 	function getLocalOntology(&$srvr) {
 		$id = isset($this->meta['prefix'])? $this->meta['prefix'] : $this->id;

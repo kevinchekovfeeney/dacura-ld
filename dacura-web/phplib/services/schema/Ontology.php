@@ -1,6 +1,6 @@
 <?php
 
-class Ontology extends LDEntity {
+class Ontology extends LDO {
 	//var $url; //the id is the local id, this is the official id
 	//var $title;
 	//var $description;
@@ -38,7 +38,7 @@ class Ontology extends LDEntity {
 		$incs = array();
 		$nsutil = array();
 		foreach($this->ldprops[$this->id] as $subj => $props){
-			getDeepNamespaceUtilisation($subj, $props, $nsres, false, $nsutil);			
+			$nsres->getNamespaceUtilisation($subj, $props, false, $nsutil);			
 		}
 		foreach($nsutil as $sh => $contents){
 			if(count($contents["properties"]) > 0 or count($contents["structural"]) > 0){
@@ -54,7 +54,7 @@ class Ontology extends LDEntity {
 		//$nsres->setPrefixMap($nslist);
 		$nsutil = array();
 		foreach($this->ldprops[$this->id] as $subj => $props){
-			getDeepNamespaceUtilisation($subj, $props, $nsres, false, $nsutil);			
+			$nsres->getNamespaceUtilisation($subj, $props, false, $nsutil);			
 		}
 		if(isset($nsutil["_"])){
 			foreach($nsutil["_"]["properties"] as $prop => $c){

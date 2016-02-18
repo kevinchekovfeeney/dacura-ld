@@ -1,7 +1,7 @@
-<div class='entity-header'>
-	<span class='entity-label'><?php echo (isset($params['label']) ? $params['label'] : "~");?></span>
-	<span class='entity-id'><?php echo (isset($params['id']) ? $params['id'] : "~");?></span>
-	<span class='entity-type'><?php echo (isset($params['type']) ? $params['type'] : "~");?></span>
+<div class='ldo-header'>
+	<span class='ldo-label'><?php echo (isset($params['label']) ? $params['label'] : "~");?></span>
+	<span class='ldo-id'><?php echo (isset($params['id']) ? $params['id'] : "~");?></span>
+	<span class='ldo-type'><?php echo (isset($params['type']) ? $params['type'] : "~");?></span>
 </div>
 <?php if(isset($params['fragment_id'])) {?>
 <div class='fragment-context'>

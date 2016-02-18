@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Manages the state of linked data entities in the DB.
+ * Manages the state of linked data objects in the DB.
  *
  * Created By: Chekov
  * Creation Date: 20/11/2014
@@ -14,7 +14,7 @@ include_once("phplib/DBManager.php");
 
 class LDDBManager extends DBManager {
 	
-	function loadEntityList($filter){
+	function loadLDOList($filter){
 		//first work out the where clause
 		$params = array();
 		$sql = $this->getListSQL($filter, $params);
@@ -26,7 +26,7 @@ class LDDBManager extends DBManager {
 				return $rows;
 			}
 			else {
-				return $this->failure_result("No entities found in system", 404);
+				return $this->failure_result("No linked data objects found in system", 404);
 			}
 		}
 		catch(PDOException $e){
@@ -45,7 +45,7 @@ class LDDBManager extends DBManager {
 				return $rows;
 			}
 			else {
-				return $this->failure_result("No entity updates found in system", 404);
+				return $this->failure_result("No LDO updates found in system", 404);
 			}
 		}
 		catch(PDOException $e){
@@ -61,16 +61,16 @@ class LDDBManager extends DBManager {
 				$fields = ", meta, forward, backward";
 			}
 			$sql = "SELECT eurid, targetid, type, collectionid, status, from_version, to_version,
-				createtime, modtime".$fields." FROM entity_update_requests";		
+				createtime, modtime".$fields." FROM ldo_update_requests";		
 		}
 		else {
 			if(isset($filter['include_all'])){
 				$fields = ", contents";
 			}
-			$sql = "SELECT id, collectionid, version, type, status, createtime, modtime, meta". $fields." FROM ld_entities";				
+			$sql = "SELECT id, collectionid, version, type, status, createtime, modtime, meta". $fields." FROM ld_objects";				
 		}
 		$wheres = array();
-		if(isset($filter['type'])){
+		if(isset($filter['type']) && strtolower($filter['type']) != "ldo"){
 			$wheres['type'] = $filter['type'];
 		}
 		if(isset($filter['collectionid'])){
@@ -85,8 +85,8 @@ class LDDBManager extends DBManager {
 		if(isset($filter['createtime'])){
 			$wheres['createtime'] = $filter['createtime'];
 		}
-		if(isset($filter['entityid'])){
-			$wheres['targetid'] = $filter['entityid'];
+		if(isset($filter['ldoid'])){
+			$wheres['targetid'] = $filter['ldoid'];
 		}
 		$wsql = "";
 		if(count($wheres) > 0){
@@ -103,31 +103,36 @@ class LDDBManager extends DBManager {
 		return $sql;
 	}
 	
-	function loadEntity($entid, $type, $cid, $options){
+	function loadLDO($ldoid, $type, $cid, $options){
 		try {
-			$stmt = $this->link->prepare("SELECT collectionid, version, type, contents, meta, status, createtime, modtime FROM ld_entities where id=? and collectionid=? and type=?");
-			$stmt->execute(array($entid, $cid, $type));
+			$stmt = $this->link->prepare("SELECT collectionid, version, type, contents, meta, status, createtime, modtime FROM ld_objects where id=? and collectionid=? and type=?");
+			$stmt->execute(array($ldoid, $cid, $type));
 			$row = $stmt->fetch(PDO::FETCH_ASSOC);
 			if($row){
 				$ctype = ucfirst($row['type']);
-				$ent = new $ctype($entid);
-				$ent->loadFromDBRow($row);
+				if(class_exists($ctype)){
+					$ldo = new $ctype($ldoid);
+				}
+				else {
+					$ldo = new LDO($ldoid);
+				}
+				$ldo->loadFromDBRow($row);
 			}
 			else {
-				return $this->failure_result("No $type with id $entid in $cid", 404);
+				return $this->failure_result("No $type with id $ldoid in $cid", 404);
 			}
 		}
 		catch(PDOException $e){
 			return $this->failure_result("PDO Error".$e->getMessage(), 500);
 		}
-		return $ent;
+		return $ldo;
 	}
 	
-	function loadEntityUpdateHistory($ent, $version){
+	function loadLDOUpdateHistory($ldo, $version){
 		try {
-			$stmt = $this->link->prepare("SELECT * FROM entity_update_requests
+			$stmt = $this->link->prepare("SELECT * FROM ldo_update_requests
 				WHERE targetid=? AND to_version <= ? AND from_version >= ? AND status='accept' ORDER BY from_version DESC");
-			$stmt->execute(array($ent->id, $ent->version(), $version));
+			$stmt->execute(array($ldo->id, $ldo->version(), $version));
 			$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			return $rows;
 		}
@@ -136,9 +141,9 @@ class LDDBManager extends DBManager {
 		}
 	}
 	
-	function loadEntityUpdateRequest($id, $options){
+	function loadLDOUpdateRequest($id, $options){
 		try {
-			$stmt = $this->link->prepare("SELECT type, eurid, targetid, from_version, to_version, forward, backward, meta, collectionid, status, createtime, modtime FROM entity_update_requests where eurid=?");
+			$stmt = $this->link->prepare("SELECT type, eurid, targetid, from_version, to_version, forward, backward, meta, collectionid, status, createtime, modtime FROM ldo_update_requests where eurid=?");
 			$stmt->execute(array($id));
 			$row = $stmt->fetch(PDO::FETCH_ASSOC);
 			if($row){
@@ -157,28 +162,28 @@ class LDDBManager extends DBManager {
 	}
 	
 	/*
-	 * load Entity
+	 * load ldo
 	 * eur->load from db row
 	 */
 	
 	
-	function createEntity($ent, $type){
+	function createLDO($ldo, $type){
 		try {
-			$stmt = $this->link->prepare("INSERT INTO ld_entities
+			$stmt = $this->link->prepare("INSERT INTO ld_objects
 				(id, collectionid, type, version, contents, meta, status, createtime, modtime)
 				VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
-			$ld = json_encode($ent->ldprops);
+			$ld = json_encode($ldo->ldprops);
 			if(!$ld){
 				return $this->failure_result("JSON encoding error: ".json_last_error() . " " . json_last_error_msg(), 500);
 			}
 			$x = array(
-					$ent->id,
-					$ent->cid,
+					$ldo->id,
+					$ldo->cid,
 					$type,
-					$ent->version(),
+					$ldo->version(),
 					$ld,
-					json_encode($ent->meta),
-					$ent->get_status(),
+					json_encode($ldo->meta),
+					$ldo->get_status(),
 					time(),
 					time()
 			);
@@ -191,42 +196,42 @@ class LDDBManager extends DBManager {
 		}
 	}
 	
-	function updateEntity($uent, $res){
+	function updateLDO($uldo, $res){
 		if($res == "accept") {
-			if($uent->to_version == 0){
-				$uent->to_version = $uent->changed->version;
+			if($uldo->to_version == 0){
+				$uldo->to_version = $uldo->changed->version;
 			}
-			return ($this->insertEntityUpdate($uent) && $this->updateEntityRecord($uent->changed));
+			return ($this->insertLDOUpdate($uldo) && $this->updateLDORecord($uldo->changed));
 		}
 		elseif($res == "pending"){
-			return $this->deferEntityUpdate($uent, $res);
+			return $this->deferLDOUpdate($uldo, $res);
 		}
 		elseif($res == "reject"){
-			$uent->status = "reject";
-			$uent->changed->status = "reject";
-			$uent->changed->version = 0;
-			return $this->insertEntityUpdate($uent);
+			$uldo->status = "reject";
+			$uldo->changed->status = "reject";
+			$uldo->changed->version = 0;
+			return $this->insertLDOUpdate($uldo);
 		}
 	}
 
-	function deferEntityUpdate($uent, $res){
-		$uent->status = "pending";
-		$uent->changed->version = 0;
-		return $this->insertEntityUpdate($uent);
+	function deferLDOUpdate($uldo, $res){
+		$uldo->status = "pending";
+		$uldo->changed->version = 0;
+		return $this->insertLDOUpdate($uldo);
 	}
 	
-	function updateEntityRecord($ent){
+	function updateLDORecord($ldo){
 		try {
-			$stmt = $this->link->prepare("UPDATE ld_entities SET
+			$stmt = $this->link->prepare("UPDATE ld_objects SET
 					collectionid = ?, version = ?, contents = ?, meta = ?, status = ?, modtime = ? WHERE id = ?");
 			$res = $stmt->execute(array(
-					$ent->cid,
-					$ent->version(),
-					json_encode($ent->ldprops),
-					json_encode($ent->meta),
-					$ent->get_status(),
+					$ldo->cid,
+					$ldo->version(),
+					json_encode($ldo->ldprops),
+					json_encode($ldo->meta),
+					$ldo->get_status(),
 					time(),
-					$ent->id
+					$ldo->id
 			));
 			return true;
 		}
@@ -235,23 +240,23 @@ class LDDBManager extends DBManager {
 		}
 	}
 	
-	function insertEntityUpdate($uent){
+	function insertLDOUpdate($uldo){
 		try {
-			$stmt = $this->link->prepare("INSERT INTO entity_update_requests
+			$stmt = $this->link->prepare("INSERT INTO ldo_update_requests
 					(targetid, from_version, to_version, forward, backward, meta, createtime, modtime, status, type, collectionid)
 					VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 			$res = $stmt->execute(array(
-					$uent->targetid,
-					$uent->from_version(),
-					$uent->to_version(),
-					$uent->get_forward_json(),
-					$uent->get_backward_json(),
-					$uent->get_meta_json(),
-					$uent->created,
-					$uent->modified,
-					$uent->get_status(),
-					$uent->getEntityType(),
-					$uent->cid
+					$uldo->targetid,
+					$uldo->from_version(),
+					$uldo->to_version(),
+					$uldo->get_forward_json(),
+					$uldo->get_backward_json(),
+					$uldo->get_meta_json(),
+					$uldo->created,
+					$uldo->modified,
+					$uldo->get_status(),
+					$uldo->getLDOType(),
+					$uldo->cid
 			));
 			$id = $this->link->lastInsertId();
 			return $id;
@@ -261,39 +266,39 @@ class LDDBManager extends DBManager {
 		}
 	}
 	
-	function updateUpdate($uent, $ostatus = false){
-		if($uent->published()) {
-			if($uent->to_version == 0){
-				$uent->to_version = $uent->changed->version;
+	function updateUpdate($uldo, $ostatus = false){
+		if($uldo->published()) {
+			if($uldo->to_version == 0){
+				$uldo->to_version = $uldo->changed->version;
 			}
-			return ($this->updateEntityUpdate($uent) && $this->updateEntityRecord($uent->changed));
+			return ($this->updateLDOUpdate($uldo) && $this->updateLDORecord($uldo->changed));
 		}
 		elseif($ostatus == "accept"){
-			return ($this->updateEntityUpdate($uent) && $this->updateEntityRecord($uent->original));				
+			return ($this->updateLDOUpdate($uldo) && $this->updateLDORecord($uldo->original));				
 		}
 		else {
-			return $this->updateEntityUpdate($uent);
+			return $this->updateLDOUpdate($uldo);
 		}
 	}
 	
-	function updateEntityUpdate($uent){
+	function updateLDOUpdate($uldo){
 		try {
-			$stmt = $this->link->prepare("UPDATE entity_update_requests SET from_version = ?, to_version = ?, forward = ?,
+			$stmt = $this->link->prepare("UPDATE ldo_update_requests SET from_version = ?, to_version = ?, forward = ?,
 					backward = ?, meta=?, status=?, createtime=?, modtime=? WHERE eurid=?");
 			$args = array(
-					$uent->from_version(),
-					$uent->to_version(),
-					$uent->get_forward_json(),
-					$uent->get_backward_json(),
-					$uent->get_meta_json(),
-					$uent->get_status(),
-					$uent->created,
-					$uent->modified,
-					$uent->id
+					$uldo->from_version(),
+					$uldo->to_version(),
+					$uldo->get_forward_json(),
+					$uldo->get_backward_json(),
+					$uldo->get_meta_json(),
+					$uldo->get_status(),
+					$uldo->created,
+					$uldo->modified,
+					$uldo->id
 			);
 			$stmt->execute($args);
 			if($stmt->rowCount() == 0){
-				return $this->failure_result("Failed to update update ".$uent->id, 404);
+				return $this->failure_result("Failed to update update ".$uldo->id, 404);
 			}
 			return true;
 		}
@@ -305,15 +310,15 @@ class LDDBManager extends DBManager {
 	function rollbackUpdate($ocur, $ncur){
 		$ncur->from_version = $ocur->original->version;
 		$ncur->to_version = 0;
-		return ($this->updateEntityUpdate($ncur) && $this->updateEntityRecord($ocur->original));
+		return ($this->updateLDOUpdate($ncur) && $this->updateLDORecord($ocur->original));
 	}
 	
-	function pendingUpdatesExist($targetid, $type, $cid, $entversion){
+	function pendingUpdatesExist($targetid, $type, $cid, $ldoversion){
 		try {
-			$stmt = $this->link->prepare("SELECT eurid FROM ld_entities, entity_update_requests where ld_entities.id = ? AND ld_entities.id = entity_update_requests.targetid AND 
-					entity_update_request.status = 'pending' AND entity_update_requests.from_version = ? AND ld_entities.collectionid = ? AND
-					AND ld_entities.collectionid = entity_update_requests.collectionid AND ld_entities.type = ?");
-			$stmt->execute(array($targetid, $entversion, $cid, $type));
+			$stmt = $this->link->prepare("SELECT eurid FROM ld_objects, ldo_update_requests where ld_objects.id = ? AND ld_objects.id = ldo_update_requests.targetid AND 
+					ldo_update_request.status = 'pending' AND ldo_update_requests.from_version = ? AND ld_objects.collectionid = ? AND
+					AND ld_objects.collectionid = ldo_update_requests.collectionid AND ld_objects.type = ?");
+			$stmt->execute(array($targetid, $ldoversion, $cid, $type));
 			$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			if($rows && count($rows) > 0){
 				return $rows;
@@ -327,18 +332,18 @@ class LDDBManager extends DBManager {
 		}
 	}
 
-	function getRelevantUpdates($ent){
+	function getRelevantUpdates($ldo){
 		try {
-			if($ent->isLatestVersion()){
-				$stmt = $this->link->prepare("SELECT * FROM entity_update_requests WHERE targetid=? ORDER BY createtime DESC");
-				$stmt->execute(array($ent->id));
+			if($ldo->isLatestVersion()){
+				$stmt = $this->link->prepare("SELECT * FROM ldo_update_requests WHERE targetid=? ORDER BY createtime DESC");
+				$stmt->execute(array($ldo->id));
 				$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 				return $rows;
 			}
 			else {
-				$stmt = $this->link->prepare("SELECT * FROM entity_update_requests 
+				$stmt = $this->link->prepare("SELECT * FROM ldo_update_requests 
 					WHERE targetid=? AND from_version <= ? AND (to_version = 0 OR to_version = null OR to_version > ?)");
-				$stmt->execute(array($ent->id, $ent->version(), $ent->version()));
+				$stmt->execute(array($ldo->id, $ldo->version(), $ldo->version()));
 				$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 				return $rows;
 			}
@@ -348,9 +353,9 @@ class LDDBManager extends DBManager {
 		}	
 	}
 	
-	function hasEntity($id, $type, $cid){
+	function hasLDO($id, $type, $cid){
 		try {
-			$stmt = $this->link->prepare("SELECT id FROM ld_entities where id=? and type=? and collectionid=?");
+			$stmt = $this->link->prepare("SELECT id FROM ld_objects where id=? and type=? and collectionid=?");
 			$stmt->execute(array($id, $type, $cid));
 			if($stmt->rowCount()) {
 				return true;
@@ -358,7 +363,7 @@ class LDDBManager extends DBManager {
 			return false;
 		}
 		catch(PDOException $e){
-			return $this->failure_result("error retrieving entity $id ".$e->getMessage(), 500);
+			return $this->failure_result("error retrieving LDO $id ".$e->getMessage(), 500);
 		}
 	}
 }

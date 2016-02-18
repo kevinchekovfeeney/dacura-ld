@@ -8,9 +8,9 @@
  */
 class DacuraFormElement extends DacuraObject {
 	/** @var string[] the list of valid types of form element */
-	private static $valid_types = array("text", "url", "image", "password", "boolean", "choice", "status", "section", "email", "complex");
+	private static $valid_types = array("text", "file", "url", "image", "password", "boolean", "choice", "status", "section", "email", "complex");
 	/** @var string[] the list of valid input types of form element */
-	private static $valid_input_types = array("input", "select", "radio", "textarea", "checkbox", "password", "custom");
+	private static $valid_input_types = array("input", "file", "select", "radio", "textarea", "checkbox", "password", "custom");
 	/** @var string[] the list of valid sizes of form elements */
 	private static $valid_element_sizes = array("long", "regular", "short", "tiny");
 	/** @var string[] the list of valid display types of forms and form elements */
@@ -41,6 +41,9 @@ class DacuraFormElement extends DacuraObject {
 	var $complex; 
 	/** @var DacuraForm containing the sub-elements of this element (e.g. for elements of type "section" */
 	var $subfields;
+	/** @var array containing the actions that are available with this element */
+	var $actions;
+	
 	/** @var array associative name value field of meta-data about this form field */
 	var $meta = array();
 
@@ -66,6 +69,7 @@ class DacuraFormElement extends DacuraObject {
 		$this->help = isset($row['help']) ? $row['help'] : "";
 		$this->options = isset($row['options']) ? $row['options'] : array();
 		$this->id = $row['id'];
+		$this->actions = isset($row['actions']) ? $row['actions'] : array();
 		$this->type = isset($row['type']) ? $row['type'] : 'text';
 		if(isset($row['selected'])){
 			$this->selected = $row['selected'];
@@ -78,6 +82,9 @@ class DacuraFormElement extends DacuraObject {
 		}
 		elseif($this->type == 'password'){
 			$this->input_type = "password";
+		}
+		elseif($this->type == 'file'){
+			$this->input_type = "file";
 		}
 		elseif($this->type == 'status'){
 			$this->options = DacuraObject::$valid_statuses;
@@ -269,6 +276,15 @@ class DacuraFormElement extends DacuraObject {
 			$html .= $this->getInputElementHTML($settings, $context);
 		}
 		$html .= "</td>";
+		if($this->actions){
+			$fid = $context[count($context)-1]."-".$this->id;
+			$html .= "<td class='dacura-property-actions'>";
+			foreach($this->actions as $actid => $rules){
+				$html .= "<button class='dacura-formelement-action' id='$fid"."-".$actid."'>".$rules['title']."</button>";
+			}
+			$html .= "</td>";
+				
+		}
 		if($help){
 			$html .= "<td class='dacura-property-help'>".$help."</td>";
 		}
@@ -319,6 +335,7 @@ class DacuraFormElement extends DacuraObject {
 	 */
 	function getInputElementHTML($settings, $context){
 		$prefix = $context[count($context)-1]."-";
+		$fid = $prefix.$this->id;
 		if($this->input_type == "custom"){
 			return $this->drawCustomInputField($settings, $context);
 		}
@@ -351,35 +368,45 @@ class DacuraFormElement extends DacuraObject {
 			$val = htmlspecialchars($this->value);
 			$html = "<input id=\"$prefix"."$this->id\" class=\"$cls\" $disabled type=\"password\" value=\"$val\"/>";
 		}
+		elseif ($this->input_type == "file"){
+			$val = htmlspecialchars($this->value);
+			$html = "<input id=\"$prefix"."$this->id\" class=\"$cls\" $disabled type=\"file\" value=\"$val\"/>";
+		}
 		elseif( $this->input_type == "checkbox"){
 			$val = $val ? "checked" : "" ;
 			$html = "<input id=\"$prefix"."$this->id\" class=\"$cls\" $disabled type=\"checkbox\" $val/>";				
+		}
+		elseif($this->input_type == "radio"){
+			$opts = $this->options;
+			if(!isAssoc($opts)){
+				$opts = array();
+				foreach($this->options as $v){
+					$opts[$v] = $v;
+				}
+			}
+			$html = "<span class='dacura-radio' id=\"$fid\">";
+			$i = 0;
+			foreach($opts as $k => $v){
+				$checked = ($k == $this->value || ($i++ == 0 && $this->value == "")) ? 'checked="checked" ' : "";  
+				$html .= '<input type="radio" class="'.$cls.'" id="'.$fid.'-'.$k.'" name="'.$fid.'-radio" '.$checked.'><label for="'.$fid.'-'.$k.'">'.$v.'</label>';				
+			}
+			$html .= "</span>";
 		}		
 		elseif($this->input_type == "select"){
 			$html = "<select id=\"$prefix"."$this->id\" class=\"dacura-select $cls\" $disabled>";
 			if(isAssoc($this->options)){
-				foreach($this->options as $v => $title){
-					$selected = ($this->value && $this->value == $v) ? " selected" : "";
-					$val = htmlspecialchars($v);
-					$title = htmlspecialchars($title);
-					$html .= "<option value=\"$val\" $selected>$title</option>";
-				}
+				foreach($this->options as $k => $v ){
+					$selected = ($this->value && $this->value == $k) ? " selected" : "";
+					$k = htmlspecialchars($k);
+					$v = htmlspecialchars($v);
+					$html .= "<option value=\"$k\" $selected>$v</option>";
+				}						
 			}
 			else {
-				if(isAssoc($this->options)){
-					foreach($this->options as $k => $v ){
-						$selected = ($this->value && $this->value == $k) ? " selected" : "";
-						$k = htmlspecialchars($k);
-						$v = htmlspecialchars($v);
-						$html .= "<option value=\"$k\" $selected>$v</option>";
-					}						
-				}
-				else {
-					foreach($this->options as $v ){
-						$selected = ($this->value && $this->value == $v) ? " selected" : "";
-						$v = htmlspecialchars($v);
-						$html .= "<option value=\"$v\" $selected>$v</option>";
-					}
+				foreach($this->options as $v ){
+					$selected = ($this->value && $this->value == $v) ? " selected" : "";
+					$v = htmlspecialchars($v);
+					$html .= "<option value=\"$v\" $selected>$v</option>";
 				}
 			}
 			$html .= "</select>";
@@ -415,6 +442,22 @@ class DacuraFormElement extends DacuraObject {
 		$html .= "</span></div>";
 		return $html;
 	}
+	
+	/**
+	 * The read only view of the display field
+	 * @param array $settings the options for the field
+	 * @param array $context - an array with the ids of the parent forms that this element is within
+	 * @return string - the html representation of the field
+	 */
+	function drawCustomDisplayField($settings, $context){
+		if(is_array($this->value)){
+			$html = "<div class='dacura-display-json raw-json'>" . json_encode($this->value, JSON_PRETTY_PRINT)."</div>";
+		}
+		else {
+			$html = "Unknown thing to display (".$this->value.")";
+		}
+		return $html;
+	}
 
 	/**
 	 * Draw a non-standard field - complex fields with special rules
@@ -425,6 +468,9 @@ class DacuraFormElement extends DacuraObject {
 	function drawCustomInputField($settings, $context){
 		if($this->id == "facets"){
 			$html = $this->drawFacetsInput($settings, $context);	
+		}
+		elseif($this->id == "ldimport"){
+			$html = $this->drawLDFormatInput($settings, $context);
 		}
 		else {
 			$prefix = $context[count($context)-1]."-";
@@ -438,22 +484,6 @@ class DacuraFormElement extends DacuraObject {
 				$val = htmlspecialchars($this->value);
 			}			
 			$html = "<textarea id=\"$prefix"."$this->id\" class=\"$cls\" $disabled>$val</textarea>";
-		}
-		return $html;
-	}
-	
-	/**
-	 * The read only view of the display field
-	 * @param array $settings the options for the field
-	 * @param array $context - an array with the ids of the parent forms that this element is within
-	 * @return string - the html representation of the field
-	 */
-	function drawCustomDisplayField($settings, $context){
-		if(is_array($this->value)){
-			$html = "<div class='dacura-display-json raw-json'>" . json_encode($this->value, JSON_PRETTY_PRINT)."</div>";
-		}
-		else {
-			$html = "Unknown thing to display";
 		}
 		return $html;
 	}
@@ -530,7 +560,6 @@ class DacuraFormElement extends DacuraObject {
 			}
 			$rhtml .= "</select>";
 			$bhtml = "<button id='$prefix.".$this->id."-add' class='addfacet'>Grant Access</button>";
-				
 			$thtml = "<div class='facet-maker'>";
 			$thtml .= "<table class='facet-maker-table'><tr><td></td><td class='option'>$rhtml</td>";
 			$thtml .= "<td class='option'>$facetlist</td><td>$bhtml</td></tr></table>";
@@ -540,6 +569,15 @@ class DacuraFormElement extends DacuraObject {
 		else {
 			$html .= "<b>Could not do anything with $this->id no facets/roles</b>";
 		}
+	}
+	
+	function drawLDFormatInput($settings, $context){
+		$prefix = $context[count($context)-1]."-";
+		$fid = $prefix.$this->id;
+		$html = '<input type="radio" class="ldimportoption" checked="checked" id="'.$fid.'-importtext" name="'.$fid.'-importformat"><label for="'.$fid.'-importtext" >Textbox</label>';
+		$html .= '<input type="radio" class="ldimportoption" id="'.$fid.'-importurl" name="'.$fid.'-importformat"><label for="'.$fid.'-importurl">Import from URL</label>';
+		$html .= '<input type="radio" class="ldimportoption" id="'.$fid.'-importupload" name="'.$fid.'-importformat"><label for="'.$fid.'-importupload">File Upload</label>';
+ 		return $html;
 	}
 }
 

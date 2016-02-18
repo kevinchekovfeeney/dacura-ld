@@ -1,8 +1,8 @@
 <?php
-require_once("LDEntity.php");
+require_once("LDO.php");
 
 /**
- * entity create request has form:
+ * ldo create request has form:
  * graphname: {
  * 	property: string
  *  property: [string]
@@ -10,13 +10,13 @@ require_once("LDEntity.php");
  *
  * }
  *
- * Represents a request to create a new instance of an entity class with specified property values in the curated dataset
+ * Represents a request to create a new instance of an ldo class with specified property values in the curated dataset
  * @author chekov
  *
 */
 
 
-class EntityCreateRequest extends LDEntity {
+class LDOCreateRequest extends LDO {
 
 	function __construct($id){
 		$this->version = 1;

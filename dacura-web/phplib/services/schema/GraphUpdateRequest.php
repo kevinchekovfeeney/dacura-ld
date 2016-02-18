@@ -1,6 +1,6 @@
 <?php
 
-class GraphUpdateRequest extends EntityUpdate {
+class GraphUpdateRequest extends LDOUpdate {
 	
 	function importsChanged(){
 		$a = $this->importsAdded();

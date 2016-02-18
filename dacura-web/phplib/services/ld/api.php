@@ -1,84 +1,165 @@
 <?php
-/*
- * This is Dacura's generic, general purpose, Linked Data API
- * this module is not for normal access, only for administrators directly accessing linked data objects to repair them....
+
+
+/**
+ * API for ld service - Dacura's generic, general purpose, Linked Data API
+ *
+ * this service is not for normal access, only for administrators directly accessing linked data objects to repair them....
+ * @author chekov
+ * @package ld/api
+ * @license GPL v2
  */
-$x = @$entity_type;
+$x = @$ldo_type;
 if(!$x && !$dacura_server->userHasRole("admin", "all")){//meaning that this API is being accessed directly 
 	$dacura_server->write_http_error(403, "No permission to directly access linked data API");	
 }
 else {
-	getRoute()->get('/', 'list_entities');//list the entities of a certain type (or updates to them)
-	getRoute()->get('/(\w+)/update/(\w+)', 'get_update');
-	getRoute()->get('/(\w+)/(\w+)', 'get_entity');//with fragment id
-	getRoute()->get('/(\w+)', 'get_entity');//no fragment id
-	getRoute()->post('/(\w+)/update/(\w+)', 'update_update');
-	getRoute()->post('/(\w+)/(\w+)', 'update_entity');//with frag id
-	getRoute()->post('/', 'create_entity');//create a new entity of a given type
-	getRoute()->post('/(\w+)', 'update_entity');//no frag id
-	getRoute()->delete('/(\w+)/(\w+)', 'delete_entity');//with fragment id
-	getRoute()->delete('/(\w+)', 'delete_entity');//no fragment id
-	getRoute()->delete('/(\w+)/update/(\w+)', 'delete_update');//no fragment id	
+	if(!$x){
+		$ldo_type = isset($_GET['ldtype']) ? $_GET['ldtype'] : "LDO";
+	}
+	getRoute()->get('/', 'list_ldos');//list the linked data objects of a certain type (or updates to them)
+	getRoute()->get('/update', 'list_updates');//list the linked data objects of a certain type (or updates to them)
+	getRoute()->get('/update/(\w+)', 'get_update');
+	getRoute()->get('/(\w+)/(\w+)', 'get_ldo');//with fragment id
+	getRoute()->get('/(\w+)', 'get_ldo');//no fragment id
+	getRoute()->post('/update/(\w+)', 'update_update');
+	getRoute()->post('/(\w+)/(\w+)', 'update_ldo');//with frag id
+	getRoute()->post('/', 'create_ldo');//create a new ldo of a given type
+	getRoute()->post('/(\w+)', 'update_ldo');//no frag id
+	getRoute()->delete('/(\w+)/(\w+)', 'delete_ldo');//with fragment id
+	getRoute()->delete('/(\w+)', 'delete_ldo');//no fragment id
+	getRoute()->delete('//update/(\w+)', 'delete_update');//no fragment id	
 }
 
+
 /*
- * Returns a list of either entities, or updates to entities
- * Designed to accept filter requests from data tables module
+ * post requests take input as a application/json
  */
-function list_entities(){
-	global $dacura_server, $entity_type;
-	$dt_options = array();
-	if($entity_type){
-		$dt_options['type'] = $entity_type;
-		$type = $entity_type;
+function create_ldo(){
+	set_time_limit (0);
+	global $dacura_server, $ldo_type;
+	$dacura_server->init("create");
+	$ar = new AnalysisResults("Create");
+	$json = file_get_contents('php://input');
+	$obj = json_decode($json, true);
+	if(!$obj){
+		$ar->failure(400, "Communication Error", "create request does not have a valid json encoded body");
+		return $dacura_server->writeDecision($ar);
 	}
-	else {
-		$type = "entity";
+	$demand_id = false;
+	if(isset($obj[$dacura_server->getServiceSetting("demand_id_token", "@id")])){
+		$demand_id = $obj[$dacura_server->getServiceSetting("demand_id_token", "@id")];
 	}
-	if($dacura_server->cid() != "all"){
-		$dt_options['collectionid'] = $dacura_server->cid();
+	$format = (isset($obj['format'])) ? strtolower($obj['format']) : "json";
+	$options = (isset($obj['options'])) ? $obj['options'] : array();
+	$create_obj = array();
+	if(isset($obj['contents'])) $create_obj['contents'] = $obj['contents'];
+	if(isset($obj['meta'])) $create_obj['meta'] = $obj['meta'];
+	$ar = $dacura_server->createLDO($ldo_type, $create_obj, $demand_id, $format, $options, isset($obj['test']) && $obj['test']);
+	return $dacura_server->writeDecision($ar);
+}
+
+
+
+/**
+ * GET /
+ *
+ * accepts datatable ajax options accepted https://datatables.net/manual/server-side
+ * @return a list of linked data objects suitable for tabular viewing
+ * @api
+ */
+function list_ldos(){
+	global $dacura_server, $ldo_type;
+	//read datatable options from $_GET
+	$dt_options = get_dtoptions($dacura_server->cid());
+	if($ldo_type){
+		$dt_options['type'] = $ldo_type;
 	}
-	$options = isset($_GET['options']) ? $_GET['options'] : false;
-	isset($_GET['draw']) && $dt_options['draw'] = $_GET['draw'];
-	$dt_options['start'] = isset($_GET['start']) ? $_GET['start'] : 0;
-	$dt_options['length'] = isset($_GET['length']) ? $_GET['length'] : 0;	
-	$dt_options['search'] = isset($_GET['search']) ? $_GET['search'] : false;
-	$dt_options['columns'] = isset($_GET['columns']) ? $_GET['columns'] : false;
-	$dt_options['order'] = isset($_GET['order']) ? $_GET['order'] : false;
-	if(isset($_GET['type']) && $_GET['type'] == "updates"){
-		$dacura_server->init("list_".$type."_updates");
-		$ents = $dacura_server->getUpdates($dt_options);
-		if($ents){
-			return $dacura_server->write_json_result($ents, "Returned " . count($ents) . " updates");
+	//read dacura options from $_GET
+	$dcoptions = isset($_GET['options']) ? $_GET['options'] : false;
+	$dacura_server->init(($ldo_type ? $ldo_type : "ldo")."list");
+	$ldos = $dacura_server->getLDOs($dt_options, $dcoptions);
+	if($ldos){
+		foreach($ldos as $i => $row){
+			if(isset($row['meta']) && $row['meta']) $ldos[$i]['meta'] = json_decode($row['meta'], true);
+			if(isset($row['contents']) && $row['contents']) $ldos[$i]['contents'] = json_decode($row['contents'], true);
 		}
-	}
-	else {
-		$dacura_server->init("list_".$type);
-		$ents = $dacura_server->getEntities($dt_options);
-		if($ents){
-			foreach($ents as $i => $row){
-				if(isset($row['meta']) && $row['meta']) $ents[$i]['meta'] = json_decode($row['meta'], true);
-				if(isset($row['contents']) && $row['contents']) $ents[$i]['contents'] = json_decode($row['contents'], true);
-			}
-			return $dacura_server->write_json_result($ents, "Returned " . count($ents) . " " . $type. "s");
-		}
+		return $dacura_server->write_json_result($ldos, "Returned " . count($ldos) . " " . ($ldo_type ? $ldo_type : "ld objects"). "s");
 	}
 	$dacura_server->write_http_error();
 }
 
-function get_entity($entity_id, $fragment_id = false){
-	global $dacura_server, $entity_type;
+/**
+ * GET /
+ *
+ * accepts datatable ajax options accepted https://datatables.net/manual/server-side
+ * @return a list of linked data update objects suitable for tabular viewing
+ * @api
+ */
+function list_updates(){
+	global $dacura_server, $ldo_type;
+	$dt_options = get_dtoptions($dacura_server->cid());
+	if($ldo_type){
+		$dt_options['type'] = $ldo_type;
+	}
+	$dcoptions = isset($_GET['options']) ? $_GET['options'] : false;
+	$dacura_server->init(($ldo_type ? $ldo_type : "ldo")."list_updates");
+	$ldos = $dacura_server->getUpdates($dt_options, $dcoptions);
+	if($ldos){
+		return $dacura_server->write_json_result($ldos, "Returned " . count($ldos) . " updates");
+	}
+}
+
+/**
+ * Helper function: reads datatable options from GET requests
+ * @param string $cid the current collection id
+ * @return array<string:mixed> name value settings for datatable ajax filters
+ */
+function get_dtoptions($cid){
+	$dt_options = array();
+	isset($_GET['draw']) && $dt_options['draw'] = $_GET['draw'];
+	$dt_options['start'] = isset($_GET['start']) ? $_GET['start'] : 0;
+	$dt_options['length'] = isset($_GET['length']) ? $_GET['length'] : 0;
+	$dt_options['search'] = isset($_GET['search']) ? $_GET['search'] : false;
+	$dt_options['columns'] = isset($_GET['columns']) ? $_GET['columns'] : false;
+	$dt_options['order'] = isset($_GET['order']) ? $_GET['order'] : false;
+	if($cid != "all"){
+		$dt_options['collectionid'] = $cid;
+	}
+	return $dt_options;
+}
+
+/**
+ * GET /$ldo_id/[$fragment_id]
+ * 
+ * optional arguments: [options, version, format]
+ * Retrieve a json representation of a linked data object or a fragment of the object from the api
+ * @param string $ldo_id the id of the object
+ * @param string $fragment_id - the fragment id desired (only supported for dacura managed node ids)
+ * @return string json LDO / DacuraResult on error
+ */
+function get_ldo($ldo_id, $fragment_id = false){
+	global $dacura_server, $ldo_type;
 	$options = isset($_GET['options']) ? $_GET['options'] : false;
 	$version = isset($_GET['version']) ? $_GET['version'] : false;
 	$format = isset($_GET['format']) ? $_GET['format'] : false;
-	$display = isset($_GET['display']) ? $_GET['display'] : false;
-	$dacura_server->init("get", $entity_id, $fragment_id);
-	$ar = $dacura_server->getEntity($entity_id, $entity_type,$fragment_id, $version, $options);
-	return $dacura_server->sendRetrievedEntity($ar, $format, $display, $options, $version);
+	$dacura_server->init("get".($ldo_type ? $ldo_type : "ldo"), $ldo_id, $fragment_id);
+	$ar = $dacura_server->getLDO($ldo_id, $ldo_type, $fragment_id, $version, $options);
+	return $dacura_server->sendRetrievedLdo($ar, $format, $options);
 }
 
-function get_update($entity_id, $update_id){
-	global $dacura_server, $entity_type;
+/**
+ * GET /update/$update_id
+ * 
+ * optional arguments: [options, version, format]
+ * version represents the version of the associated linked data object that the update should be applied to to create a before and after display
+ * 
+ * Retrieve a json representation of a linked data object update from the api
+ * @param string $ldo_id the id of the object
+ * @return string json LDOUpdate / DacuraResult on error
+ */
+function get_update($update_id){
+	global $dacura_server, $ldo_type;
 	$options = isset($_GET['options']) ? $_GET['options'] : array();
 	$version = isset($_GET['version']) ? $_GET['version'] : false;
 	$format = isset($_GET['format']) ? $_GET['format'] : false;
@@ -88,47 +169,14 @@ function get_update($entity_id, $update_id){
 	return $dacura_server->sendRetrievedUpdate($ar, $format, $display, $options, $version);
 }
 
-/*
- * post requests take input as a application/json
- */
-function create_entity(){
-	set_time_limit (0);	
-	global $dacura_server, $entity_type;
-	$dacura_server->init("create");
-	$ar = new AnalysisResults("Create");
-	$json = file_get_contents('php://input');
-	$obj = json_decode($json, true);
-	if(!$obj){
-		$ar->failure(400, "Communication Error", "create request does not have a valid json encoded body");
-		return $dacura_server->writeDecision($ar);
-	}
-	$type = (isset($obj['type'])) ? strtolower($obj['type']) : $entity_type;
-	$options = (isset($obj['options'])) ? $obj['options'] : array();
-	$create_obj = array();
-	if(isset($obj['contents'])) $create_obj['contents'] = $obj['contents'];
-	if(isset($obj['meta'])) $create_obj['meta'] = $obj['meta'];
-	$demand_id = isset($create_obj['meta']['@id']) ? $create_obj['meta']['@id'] : false;
-	if($demand_id) {
-		unset($create_obj['meta']['@id']);
-	}
-	else {
-		$demand_id = isset($create_obj['contents']['@id']) ? $create_obj['contents']['@id'] : false;
-		if($demand_id) {
-			unset($create_obj['contents']['@id']);
-		}		
-	}
-	$ar = $dacura_server->createEntity($type, $create_obj, $demand_id, $options, isset($obj['test']));
-	return $dacura_server->writeDecision($ar);
-}
-
 /**
  *
- * @param string $target_id the id of the entity that is being updated
+ * @param string $target_id the id of the ldo that is being updated
  *
  */
-function update_entity($target_id, $fragment_id = false){
+function update_ldo($target_id, $fragment_id = false){
 	set_time_limit (0);
-	global $dacura_server, $entity_type;
+	global $dacura_server, $ldo_type;
 	$ar = new AnalysisResults("Update $target_id $fragment_id");
 	$json = file_get_contents('php://input');
 	$obj = json_decode($json, true);
@@ -147,13 +195,13 @@ function update_entity($target_id, $fragment_id = false){
 			$cnt = isset($obj['contents']) ? $obj['contents'] : "";
 			$meta = isset($obj['meta']) ? $obj['meta'] : "";
 			$options = (isset($obj['options'])) ? $obj['options'] : array();
-			$ar = $dacura_server->updateEntity($target_id, $entity_type, $cnt, $meta, $fragment_id, $options, isset($obj['test']));
+			$ar = $dacura_server->updateLDO($target_id, $ldo_type, $cnt, $meta, $fragment_id, $options, isset($obj['test']));
 		}
 	}
 	return $dacura_server->writeDecision($ar);
 }
 
-function update_update($entity_id, $upd_id){
+function update_update($ldo_id, $upd_id){
 	set_time_limit (0);
 	global $dacura_server;
 	$json = file_get_contents('php://input');
@@ -165,28 +213,28 @@ function update_update($entity_id, $upd_id){
 	}
 	else {
 		$umeta = isset($obj['updatemeta']) ? $obj['updatemeta'] : array();
-		$entmeta = isset($obj['meta']) ? $obj['meta'] : array();
-		$entcontents = isset($obj['contents']) ? $obj['contents'] : array();
-		if(count($umeta) == 0 && count($entmeta) == 0 && count($entcontents) == 0 ){
+		$ldometa = isset($obj['meta']) ? $obj['meta'] : array();
+		$ldocontents = isset($obj['contents']) ? $obj['contents'] : array();
+		if(count($umeta) == 0 && count($ldometa) == 0 && count($ldocontents) == 0 ){
 			$ar->failure(400, "Format Error", "Update Request must have at least one of a meta, a contents or an updatemeta property");				
 		}
 		else {
 			$options = (isset($obj['options'])) ? $obj['options'] : array();
-			$ar = $dacura_server->updateUpdate($upd_id, $entcontents, $entmeta, $umeta, $options, isset($obj['test']));				
+			$ar = $dacura_server->updateUpdate($upd_id, $ldocontents, $ldometa, $umeta, $options, isset($obj['test']));				
 		}
 	}
 	return $dacura_server->writeDecision($ar);
 }
 
-function delete_entity($entid, $fragment_id = false){
-	$dacura_server->init("delete entity $entid");
-	$ar = new AnalysisResults("Delete entity $entid");
+function delete_ldo($ldoid, $fragment_id = false){
+	$dacura_server->init("delete ldo $ldoid");
+	$ar = new AnalysisResults("Delete ldo $ldoid");
 	$options = (isset($_GET['options'])) ? $_GET['options'] : array();
-	$ar = $dacura_server->deleteEntity($entid, $fragment_id, $options, isset($_GET['test']));
+	$ar = $dacura_server->deleteLDO($ldoid, $fragment_id, $options, isset($_GET['test']));
 	return $dacura_server->write_decision($ar);
 }
 
-function delete_update($entity_id, $updid){
+function delete_update($ldo_id, $updid){
 	$dacura_server->init("delete update $updid");
 	$ar = new AnalysisResults("Delete update $updid");
 	$options = (isset($_GET['options'])) ? $_GET['options'] : array();

@@ -85,7 +85,7 @@ dacura.tool.init = function(options){
 		dacura.tool.initTables(options.tables);
 	}
 	if(typeof options.forms != "undefined"){
-		var opts = { icon: options.forms.icon, fburl: options.forms.fburl };
+		var opts = options.forms;
 		for(var i = 0; i < options.forms.ids.length; i++){
 			dacura.tool.form.init(options.forms.ids[i], opts);		
 		}
@@ -494,6 +494,17 @@ dacura.tool.form = {
 				dacura.tool.form.fileChooser(opts.fburl, this.id, this.val, "images", "Choose an image from the collection's files or upload a new one");
 			});
 		}
+		$('#' + key + " td.dacura-property-value span.dacura-radio").buttonset();
+		$('#' + key + " button.dacura-formelement-action").button().click( function(e){
+			var actid = this.id.substring(key.length + 1);
+			if(typeof opts == "object" && typeof opts.actions == "object" && typeof opts.actions[actid] == "function"){
+				opts.actions[actid]();
+			}
+			else {
+				jpr(opts.actions);
+				alert(actid + " action has no handler defined - must be specified in form initialisation");			
+			}
+		});
 	},
 	
 	/**
@@ -857,6 +868,7 @@ dacura.tool.table = {
 			//read the table structure from the html 
 			dacura.tool.tables[key].properties = dacura.tool.table.readprops(key);
 		}
+		dacura.tool.tables[key].rows = [];
 		var ids = [];//place to stash entity ids so that we can use html ids (tableid_rownumber) that will never cause problems.
 		for(var i = 0; i<objs.length; i++){
 			var html = dacura.tool.table.rowhtml(key + "_"+ ids.length, objs[i], dacura.tool.tables[key].properties);
@@ -867,9 +879,9 @@ dacura.tool.table = {
 			else {
 				ids[ids.length] = objs[i].id;
 			}
-			ids[ids.length] = objs[i].id;
+			dacura.tool.tables[key].rows[ids.length-1] = objs[i]; 
 		}
-
+		//alert(key + " " + dacura.tool.tables[key].rows.length);
 		$('#' + key).addClass("display");
 		$("#" + key).dataTable( tconfig.dtsettings );
 		$("#" + key + "_length select").addClass("dt-select");
@@ -885,7 +897,10 @@ dacura.tool.table = {
 		}
 		if(typeof tconfig.rowClick == "function"){ 
 			$("#" + key + ' .dacura-listing-row').click(function(e){
-				tconfig.rowClick(e, ids[this.id.substring(key.length+1)]);
+				var rowid = this.id.substring(key.length+1);
+				var entid = ids[rowid];
+				var rowdata = dacura.tool.tables[key].rows[rowid];
+				tconfig.rowClick(e, entid, rowdata);
 			});
 		}
 		else {//rowclicks override cell clicks
@@ -901,7 +916,7 @@ dacura.tool.table = {
 							var trid = $(event.target).closest('tr').attr('id'); // table row ID 
 							var index = parseInt(/[^_]*$/.exec(trid)[0]);
 							var entid = ids[index];
-							tconfig.cellClick(event, entid);
+							tconfig.cellClick(event, entid, dacura.tool.tables[key].properties[entid]);
 						});
 					}						
 				}
@@ -961,7 +976,10 @@ dacura.tool.table = {
 				dacura.tool.table.draw(key, obj, dacura.tool.tables[key]);
 			}
 		}
-		if(typeof data == "undefined" && typeof tconfig.fetch == "function"){
+		if(typeof data == "undefined" && typeof tconfig.fetch != "function"){
+			alert("table " + key + " is not properly configured - neither fetch function nor data defined");
+		}
+		else if(typeof data == "undefined" && typeof tconfig.fetch == "function"){
 			tconfig.fetch(drawLTable, dacura.tool.subscreens[tconfig.screen]);
 		}
 		else {
@@ -1160,7 +1178,7 @@ dacura.tool.table = {
 		for(var j = 0; j<props.length; j++){
 			var prop = props[j];
 			var fieldid = 	dacura.tool.table.getFieldIDFromColumnID(prop.id);
-			html += "<td class='" + prop.id + "'>";
+			html += "<td class='" + prop.id + " " + prop.cssclass + "'>";
 			if(prop.id.substring(0,2) == "df"){//indicates that a function is used to populate the field
 				html += dacura.tool.table.cellval("function", fieldid, obj);
 			}

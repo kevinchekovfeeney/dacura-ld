@@ -5,9 +5,164 @@
 
 dacura.ld = {}
 dacura.ld.apiurl = dacura.system.apiURL();
-dacura.ld.entity_type = "entity";
-dacura.ld.plurals = {"entity": "entities"};
+dacura.ld.ldo_type = "ldo";
+dacura.ld.plurals = {"ldo": "linked data objects"};
 dacura.ld.api = {};
+
+dacura.ld.header = function(obj){
+	if(obj.meta.latest_version == obj.meta.version){
+		params = {"status": obj.meta.latest_status, "version": obj.meta.latest_version};
+	}
+	else {
+		params = {"version": obj.meta.version, "status": obj.meta.status, "latest version": obj.meta.latest_version, "current status": obj.meta.latest_status};
+			
+	}
+	var msg = obj.ldtype + " " + obj.id;
+	dacura.tool.header.showEntityHeader(msg, params);	
+}
+
+dacura.ld.viewer = {
+	format: "json",
+	mode: "view",
+	div: "",
+	init: function(div, options, mode, format){
+		$('#'+div).html('<div class="ld-main-body"><div class="ld-viewer-header"></div><div class="ld-viewer-body"></div></div>');
+		if(typeof mode == "string"){
+			this.mode = mode;					
+		}
+		if(typeof format == "string"){
+			this.format = format;
+		}	
+		this.div = div;
+		if(typeof options.version_browser != "undefined"){
+			//draw version browser component
+		}
+		if(typeof options.can_update != "undefined"){
+			//draw update browser component
+		}	
+		if(mode == "view" && typeof options.formats == "object"){
+			//draw radio buttons for choosing format
+		}		
+	},
+	
+	initCreate: function(formdiv){
+		//ldsource 
+		var ldsourceid = formdiv + "-ldsource";
+		$("#" +ldsourceid + " :radio").click(function(e) {
+			var choice = this.id.substring(ldsourceid.length + 1);
+			dacura.ld.viewer.showLDInput(formdiv, choice); 
+		});
+		this.showLDInput(formdiv, $("#" +ldsourceid + " :checked").attr("id").substring(ldsourceid.length +1));
+	},
+	
+	hideLDInputs: function(formdiv){
+		$('tr#row-'+formdiv + "-ldurl").hide();
+		$('tr#row-'+formdiv + "-ldprops").hide();
+		$('tr#row-'+formdiv + "-ldfile").hide();
+	},
+	
+	showLDInput: function(formdiv, format){
+		this.hideLDInputs(formdiv); 
+		var ft = format == "text" ? "props" : format;
+		$('tr#row-'+formdiv + "-ld"+ft).show();	
+	},
+	
+	drawLDProps: function(ldprops, mode, format){
+		var jqkey = '#'+this.div + " .ld-viewer-body";
+		if(format == "json" || format== "jsonld"){
+			if(mode == "view"){
+				$(jqkey).html("<div class='dacura-json-viewer'>" + JSON.stringify(ldprops, null, 4) + "</div>");				
+			}
+			else {
+				$(jqkey).html("<div class='dacura-json-editor'>" + JSON.stringify(ldprops, null, 4) + "</div>");			
+				
+			}
+		}
+		else if(format == "triples"){
+			var html = "<div class='ld-table-viewer'><table class='ld-triples-viewer'><thead><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr></thead><tbody>";
+			for (var i in ldprops) {
+				var row = "<tr><td>" + ldprops[i][0] + "</td>";
+				row += "<td>" + ldprops[i][1] + "</td>";
+				if(typeof ldprops[i][2] == "object"){
+					row += "<td>" + JSON.stringify(ldprops[i][2]) + "</td>";			
+				}
+				else {
+					row += "<td>" + ldprops[i][2] + "</td></tr>";
+				}
+				html += row;
+			}
+			$(jqkey).html(html + "</tbody></table></div>");	
+		}
+		else if(format == "quads"){
+			var html = "<div class='ld-table-viewer'><table class='ld-triples-viewer'><thead><tr><th>Subject</th><th>Predicate</th><th>Object</th><th>Graph</th></tr><thead><tbody>";
+			for (var i in ldprops) {
+				var row = "<tr><td>" + ldprops[i][0] + "</td>";
+				row += "<td>" + ldprops[i][1] + "</td>";
+				if(typeof ldprops[i][2] == "object"){
+					row += "<td>" + JSON.stringify(ldprops[i][2]) + "</td>";			
+				}
+				else {
+					row += "<td>" + ldprops[i][2] + "</td>";
+				}
+				row += "<td>" + ldprops[i][3] + "</td></tr>";
+				html += row;
+			}
+			$(jqkey).html(html + "</tbody></table></div>");	
+		}
+		else if(format == "html"){
+			var html = "<div class='dacura-html-viewer'>";
+			html += contents;
+			$(jqkey).html(html + "</table></div>");	
+				$('.pidembedded').click(function(event){
+					$('#'+ event.target.id + "_objrow").toggle();
+				});
+		}
+		else {
+			if(format == "svg"){
+				var html = "<object id='svg' type='image/svg+xml'>" + ldprops + "</object>";
+			}
+			else {
+				var html = "<div class='dacura-export-viewer'>" + ldprops + "</div>";
+			}
+			$(jqkey).html(html);	
+					
+		}
+		$(jqkey).show();
+	},
+	
+	draw: function(ldo){
+		this.format = ldo.format;
+		this.mode = ldo.mode;
+		this.options = ldo.options;
+		this.drawLDProps(ldo.ldprops, this.mode, this.format);
+	},
+	
+	loadURL: function(ipfield, target){
+		//load url into textbox...
+		var url = $('#'+ipfield).val();
+		if(!url){
+			alert("You must enter a url before loading it");
+		}
+		else if(!validateURL(url)){
+			alert(escapeHtml(url) + " is not a valid url - please fix it and try again");
+		}
+		else {
+			$('#'+target).load($('#'+ipfield).val());
+		}
+	},
+	
+	loadFile: function(ipfield, target){
+		if (window.File && window.FileReader && window.FileList && window.Blob) {
+			alert($('#'+ipfield).val());
+			//
+			// Great success! All the File APIs are supported.
+		} else {
+			 alert('The File APIs are not fully supported by this browser - file will be loaded on object creation.');
+		}
+		//alert(file + tfield)	
+	}
+	
+}
 
 
 dacura.ld.api.create = function (data, test){
@@ -50,13 +205,11 @@ dacura.ld.api.view = function (id, args){
 	return xhr;
 }
 
-dacura.ld.api.list = function (type, fetch_updates){
-	xhr = {};
-	//xhr.data = {"entity_type" : type};
+dacura.ld.api.list = function (fetch_updates){
+	xhr = { url: dacura.ld.apiurl };
 	if(typeof fetch_updates != "undefined"){
-		xhr.data = {type: "updates"};
+		xhr.url += "/update";
 	}
-	xhr.url = dacura.ld.apiurl;
 	return xhr;
 }
 
@@ -72,7 +225,7 @@ dacura.ld.msg.fetch = function(id, type){
 	return { "busy": "Fetching " + type + " " + id + " from Server", "success": "Retrieved " + type + " " + id + " from server", "fail": "Failed to retrieve " + type + " " + id};	
 };
 
-dacura.ld.msg.fetchentitylist = function(type){
+dacura.ld.msg.fetchldolist = function(type){
 	return { "success": "Retrieved list of " + dacura.ld.msg.plural(type) + " from server", "busy": "Retrieving " + dacura.ld.msg.plural(type) + " list from server", "fail": "Failed to retrieve list of " + dacura.ld.msg.plural(type) + " from server"};
 };
 
@@ -101,27 +254,27 @@ dacura.ld.msg.update = function(id, istest, type){
 
 dacura.ld.fetchupdatelist = function(onwards, targets, type){
 	if(typeof type == "undefined"){
-		type = this.entity_type;
+		type = this.ldo_type;
 	}
-	var ajs = dacura.ld.api.list(type, "updates");
-	var msgs = dacura.ld.msg.fetchupdatelist(type);
+	var ajs = dacura.ld.api.list("updates");
+	var msgs = dacura.ld.msg.fetchupdatelist(true);
 	ajs.handleResult = onwards;
 	dacura.system.invoke(ajs, msgs, targets);
 }
 
-dacura.ld.fetchentitylist = function(onwards, targets, type){
+dacura.ld.fetchldolist = function(onwards, targets, type){
 	if(typeof type == "undefined"){
-		type = this.entity_type;
+		type = this.ldo_type;
 	}
-	var ajs = dacura.ld.api.list(type);
-	var msgs = dacura.ld.msg.fetchentitylist(type);
+	var ajs = dacura.ld.api.list();
+	var msgs = dacura.ld.msg.fetchldolist(type);
 	ajs.handleResult = onwards;
 	dacura.system.invoke(ajs, msgs, targets);
 };
 
 dacura.ld.fetch = function(id, args, onwards, targets, from){
 	var ajs = dacura.ld.api.view(id, args);
-	var msgs = dacura.ld.msg.fetch(id, this.entity_type);
+	var msgs = dacura.ld.msg.fetch(id, this.ldo_type);
 	if(typeof from != "undefined"){
 		if(from){
 			msgs.busy += ": " + from;
@@ -129,11 +282,11 @@ dacura.ld.fetch = function(id, args, onwards, targets, from){
 		}	
 	}
 	ajs.handleResult = function(obj){
-		if(typeof obj.decision != "undefined" && obj.decision != 'accept'){
+		if(typeof obj.status != "undefined" && obj.status != 'accept'){
 			ajs.handleJSONError(obj); 
 		}
 		else {
-			dacura.ld.showHeader(obj);
+			//dacura.ld.showHeader(obj);
 			if(typeof onwards != "undefined"){
 				onwards(obj);
 			}
@@ -159,7 +312,7 @@ dacura.ld.fetch = function(id, args, onwards, targets, from){
 
 dacura.ld.create = function(data, onwards, targets, istest){
 	var ajs = dacura.ld.api.create(data, istest);
-	var msgs = dacura.ld.msg.create(istest, this.entity_type);
+	var msgs = dacura.ld.msg.create(istest, this.ldo_type);
 	ajs.handleResult = onwards;
 	ajs.handleJSONError = onwards;
 	dacura.system.invoke(ajs, msgs, targets);
@@ -167,7 +320,7 @@ dacura.ld.create = function(data, onwards, targets, istest){
 
 dacura.ld.update = function(id, uobj, onwards, type, targets, istest){
 	var ajs = dacura.ld.api.update(id, uobj, istest);
-	var msgs = dacura.ld.msg.update(id, istest, this.entity_type);
+	var msgs = dacura.ld.msg.update(id, istest, this.ldo_type);
 	ajs.handleResult = onwards;
 	ajs.handleJSONError = onwards;
 	dacura.system.invoke(ajs, msgs, targets);
@@ -204,25 +357,25 @@ dacura.ld.setLDSingleValue = function(obj, key, val){
 
 
 
-dacura.ld.setLDEntityToolHeader = function(ent){
-	options = { subtitle: ent.id };
-	if(typeof ent.title != "undefined"){
-		options.subtitle = ent.title;
+dacura.ld.setLDToolHeader = function(ldo){
+	options = { subtitle: ldo.id };
+	if(typeof ldo.title != "undefined"){
+		options.subtitle = ldo.title;
 	}
-	if(typeof ent.image != "undefined"){
-		options.image = ent.image;
+	if(typeof ldo.image != "undefined"){
+		options.image = ldo.image;
 	}
-	options.description = $('#ldentity-header-template').html();
+	options.description = $('#ldldo-header-template').html();
 	dacura.tool.updateToolHeader(options);
-	if(typeof ent.metadetails != "undefined"){
-		metadetails = ent.metadetails;
+	if(typeof ldo.metadetails != "undefined"){
+		metadetails = ldo.metadetails;
 	}
 	else {
-		metadetails = timeConverter(ent.created);
+		metadetails = timeConverter(ldo.created);
 	}
-	$('.ent_type').html("<span class='entity-type'>" + ent.type + "</span>");
-	$('.ent_created').html("<span class='entity-details'>" + metadetails + "</span>");
-	$('.ent_status').html("<span class='entity-status entity-" + ent.latest_status + "'>" + ent.latest_status + "</span>");
+	$('.ldo_type').html("<span class='ldo-type'>" + ldo.type + "</span>");
+	$('.ldo_created').html("<span class='ldo-details'>" + metadetails + "</span>");
+	$('.ldo_status').html("<span class='ldo-status ldo-" + ldo.latest_status + "'>" + ldo.latest_status + "</span>");
 }
 
 

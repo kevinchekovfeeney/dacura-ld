@@ -199,15 +199,15 @@ function initDecorations(){
 
 $(function() {
 	dacura.schema.lastUpdateObject = false;
-	dacura.schema.entity_type = "graph";
+	dacura.schema.ldo_type = "graph";
 	initDecorations();
 	dacura.system.init({"mode": "tool"});
-	dacura.editor.init({"entity_type": "ontology", "targets": {resultbox: "#graph-msgs", busybox: "#graph-contents", scrollto: "#graph-msgs"},		
+	dacura.editor.init({"ldo_type": "ontology", "targets": {resultbox: "#graph-msgs", busybox: "#graph-contents", scrollto: "#graph-msgs"},		
 		"args": <?=json_encode($params['args']);?>});
 	dacura.editor.getMetaEditHTML = function(meta){
 		$('#meta-edit-table').html("");
 		$('#meta-edit-table').append("<li><span class='meta-label'>Status</span><span class='meta-value'>" + 
-			"<select id='entstatus'><?php echo $service->getEntityStatusOptions();?></select></span></li>");
+			"<select id='entstatus'><?php echo $service->getLDOStatusOptions();?></select></span></li>");
 		$('#entstatus').val(meta.status);	
 		$('#meta-edit-table').append("<li><span class='meta-label'>URL</span><span class='meta-value'>" + 
 				"<input type='text' id='enturl' value='" + meta.url + "'></span></li>");	

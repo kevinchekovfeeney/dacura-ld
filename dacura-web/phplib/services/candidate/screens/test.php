@@ -79,7 +79,7 @@ sco.candidate = {
 sco.provenance = [                  
 	    {	
 		    "prov:target": "_:candidate",
-			"rdf:type": "prov:Entity",
+			"rdf:type": "prov:ldo",
 			"prov:wasGeneratedBy": {
 				"rdf:type": "prov:Activity",
 				"@id": "_:act1",
@@ -91,7 +91,7 @@ sco.provenance = [
 	    }, 
 	    {
 		    "prov:target": "_:p2",
-	    	"rdf:type": "prov:Entity",
+	    	"rdf:type": "prov:ldo",
 			"prov:wasGeneratedBy": {
 				"rdf:type": "prov:Activity",
 				"startTime": "2011-11-16T16:05:00", 
@@ -140,7 +140,7 @@ suo.provenance = {
 		}
 	},
 	wasGeneratedBy: {"_:g1" : 
-		{"entity": "_:candidate", "activity": "_:a1"}
+		{"ldo": "_:candidate", "activity": "_:a1"}
 	},
 	wasAssociatedWith: {
 	   "_:ag1" : {"agent": "dacura:jim", "activity": "_:a1"}, 
@@ -183,7 +183,7 @@ pvco.provenance = {
 			"prov:type": "dacura:candidateCreation"
 		}
 	},
-	wasGeneratedBy: [{"entity": "_:candidate", "activity": "_:a1"}], 
+	wasGeneratedBy: [{"ldo": "_:candidate", "activity": "_:a1"}], 
 	wasAssociatedWith: [
 	   {"agent": "dacura:jane", "activity": "_:a1"}, {"agent": "dacura:dacuraAgent", "activity": "_:a1"}
 	] 

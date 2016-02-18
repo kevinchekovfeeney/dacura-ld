@@ -39,7 +39,7 @@ class CandidateService extends LdService {
 		$params["image"] = $this->furl("images", "services/candidate.png");
 		$params['status_options'] = $this->getCreateStatusOptions();
 		$params['args'] = $this->getOptionalArgs();
-		$params["entity_type"] = "Candidate";
+		$params["ldo_type"] = "Candidate";
 		if($this->getCollectionID() != "all"){
 			//$this->dacura_tables['candidate']['datatable_options']['aoColumns'][2] = array("bVisible" => false);
 			//$this->dacura_tables['updates']['datatable_options']['aoColumns'][3] = array("bVisible" => false);
@@ -63,7 +63,7 @@ class CandidateService extends LdService {
 				$params['status_options'] = $this->getUpdateStatusOptions();
 			}
 			else {
-				$params['status_options'] = $this->getEntityStatusOptions();
+				$params['status_options'] = $this->getLDOStatusOptions();
 			}				
 		}
 		return $params;

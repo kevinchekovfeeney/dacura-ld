@@ -17,8 +17,8 @@ class DacuraResult extends DacuraObject {
 	var $errors = array();
 	/** @var array an array of warning that were encountered while calculating the result */
 	var $warnings = array();
-	
-	var $decision;
+	/** @var mixed result - the linked data object returned as the result of the request */
+	var $result;
 
 	/**
 	 * Object constructor
@@ -89,7 +89,10 @@ class DacuraResult extends DacuraObject {
 	 * Sets the result to 'accept' returns the object to allow chaining of such things
 	 * @return DacuraResult
 	 */	
-	function accept(){
+	function accept($res = false){
+		if($res){
+			$this->set_result($res);
+		}
 		$this->status("accept");
 		return $this;
 	}
@@ -198,7 +201,203 @@ class DacuraResult extends DacuraObject {
 				}
 			break;
 		}
-	}	
+	}
+	
+
+	
+	function set_result($obj){
+		$this->result = $obj;
+		return $this;
+	}
+	
+
+	function is_pending(){
+		return ($this->status() == "pending");
+	}
+	
+	function is_accept(){
+		return ($this->status() == "accept" or !$this->status());
+	}
+	
+	function is_reject(){
+		return ($this->status() == "reject");
+	}
+	
+	function is_error(){
+		return $this->errcode > 0;
+	}
+	
+	function is_confirm(){
+		return $this->status() == "confirm";
+	}
+	
+
+	function setDQSResult($gu, $hypo = false){
+		$gu->setHypothetical($hypo);
+		$action = "Dacura Quality Service";
+		if(!$hypo){
+			switch($gu->decision) {
+				case "reject" :
+					if($gu->is_error()){
+						if(!$this->is_error()){
+							$this->errcode = $gu->errcode;
+							$this->msg_title = "Rejected by ".$action;
+						}
+						$this->addError($gu->errcode, $action, $gu->getErrorsSummary(), $gu->getErrorsDetails(), "graph");
+					}
+					else {
+						$this->addError(200, $action, $gu->getErrorsSummary(), $gu->getErrorsDetails(),  "graph");
+						if(!$this->is_reject()){
+							$this->msg_title = "Rejected by ".$action;
+						}
+					}
+					$this->decision = "reject";
+					break;
+				case "accept" :
+					if($this->is_accept()){
+						$this->decision = "accept";
+					}
+					break;
+			}
+		}
+		elseif($gu->is_reject()) {
+			$txt = "This candidate cannot be published as a report";
+			$body = $gu->getErrorsSummary();
+			$this->addWarning("Data Quality Service", $txt, $body);
+		}
+		if(!isset($this->report_graph_update)){
+			$this->report_graph_update = $gu;
+		}
+		else {
+			$this->report_graph_update->addGraphResult($gu);
+		}
+	}
+	
+	function undoDQSResult($gu){
+		unset($this->candidate_graph_update);
+		$this->report_graph_update->addGraphResult($gu);
+	}
+	
+	function setUpdateGraphResult($udelta){
+		$this->update_graph_update = new GraphAnalysisResults("Analysing Updates to Update Graph");
+		$this->update_graph_update->setInserts($udelta['add']);
+		$this->update_graph_update->setDeletes($udelta['del']);
+		$this->update_graph_update->setMeta($udelta['meta']);
+	}
+	
+	function setGraphResults($itrips, $dtrips, $is_hypo = false, $meta = false, $which = "candidate"){
+		
+	}
+	
+	function setLDGraphTriples($itrips = array(), $dtrips = array(), $is_hypo = false, $meta = false){
+		$this->ld_graph_update = new GraphAnalysisResults("Updating Candidate Graph");
+		$this->candidate_graph_update->setInserts($itrips);
+		$this->candidate_graph_update->setDeletes($dtrips);
+		$this->candidate_graph_update->setHypothetical($is_hypo);
+		if($meta){
+			$this->candidate_graph_update->setMeta($meta);
+		}
+	}
+	
 }
 
-
+class DQSResult {
+	var $inserts = array();
+	var $deletes = array();
+	var $meta = array();//state changes {variable: [old, new])
+	var $hypothetical = false;
+	
+	
+	function setMeta($meta){
+		$this->meta = $meta;
+	}
+	
+	function setMetaChange($var, $oval, $nval){
+		$this->meta[$var] = array($oval, $nval);
+	}
+	
+	function includesGraphChanges(){
+		return !$this->hypothetical &&
+		(count($this->inserts) > 0 || count($this->deletes) > 0);
+	}
+	
+	function getErrorsSummary() {
+		$cnt = 0;
+		foreach($this->errors as $gname => $errs){
+			$cnt += count($errs);
+		}
+		$tex = $cnt . " Quality Control Error";
+		if($cnt != 1) $tex .= "s";
+		return $tex;
+	}
+	
+	
+	function getErrorsDetails() {
+		$txt = "";
+		foreach($this->errors as $gname => $errs){
+			$txt .= count($errs) . " errors in $gname graph. ";
+		}
+		return $txt;
+	}
+	
+	function setHypothetical($ishypo){
+		$this->hypothetical = $ishypo;
+	}
+	
+	function setInserts($q){
+		$this->inserts = $q;
+	}
+	
+	function setDeletes($q){
+		$this->deletes = $q;
+	}
+	
+	function addGraphResult($other, $hypo = false){
+		$this->add($other);
+		$this->inserts = array_merge($this->inserts, $other->inserts);
+		$this->deletes = array_merge($this->deletes, $other->deletes);
+		if($hypo){
+			$this->hypothetical = true;
+		}
+	}
+	
+	function addOneGraphTestResult($gname, $iquads, $dquads, $errs){
+		if(count($errs) > 0){
+			if(!$this->errcode){
+				$this->errcode = 400;
+			}
+			$this->decision = 'reject';
+			if(isset($this->errors[$gname])){
+				$this->errors[$gname] = array_merge($this->errors[$gname], $errs);
+			}
+			else {
+				$this->errors[$gname] = $errs;
+			}
+		}
+		$this->inserts = array_merge($this->inserts, $iquads);
+		$this->deletes = array_merge($this->deletes, $dquads);
+	}
+	
+	function addOneGraphTestFail($gname, $iquads, $dquads, $errcode, $errmsg){
+		$this->errcode = $errcode;
+		$this->decision = 'reject';
+		$err = array("type" => "test fail",
+				"action" => "write to graph",
+				"errcode" => $errcode,
+				"msg_title" => "Failed data quality checks when writing to graph.",
+				"msg_body" => $errmsg);
+		if(isset($this->errors[$gname])){
+			$this->errors[$gname][] = $err;
+		}
+		else {
+			$this->errors[$gname] = $err;
+		}
+		$this->inserts = array_merge($this->inserts, $iquads);
+		$this->deletes = array_merge($this->deletes, $dquads);
+	}
+	
+	function graph_fail($gname, $errcode){
+		$this->decision = "reject";
+		$this->errcode = $errcode;
+	}
+}

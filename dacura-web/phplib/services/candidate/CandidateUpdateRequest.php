@@ -1,6 +1,6 @@
 <?php
 
-class CandidateUpdateRequest extends EntityUpdate {
+class CandidateUpdateRequest extends LDOUpdate {
 	
 	function schema_version(){
 		return ($this->changed)? $this->changed->get_class_version() : $this->original->get_class_version();

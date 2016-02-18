@@ -97,13 +97,13 @@ Editor
 	text-decoration: none;
 }
   
-  div#update-body, 
-  div#ld-body {
+div#update-body, 
+div#ld-body {
   	margin: 2px 8px;
-  }
+}
   
   
- #show-ld {
+#show-ld {
   	margin: 20px 10px;
   	padding: 0px 0px 20px 0px;
 }

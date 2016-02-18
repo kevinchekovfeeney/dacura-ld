@@ -1,102 +1,78 @@
-<script src='<?=$service->furl("js", "jquery.dataTables.js")?>'></script>
-<script src='<?=$service->furl("js", "dataTables.jqueryui.js")?>'></script>
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->furl("css", "dataTables.jqueryui.css")?>" />
-
-<div id='fragment-header' class="dch">
-	<span class='entity-subhead fragment-title'></span>
-	<span class='fragment-details'></span>
-	<span class='fragment-path'></span>
-</div>			
-<div id='version-header' class="dch">
-	<span class='entity-subhead version-title'></span>
-	<span class='version-created'></span>
-	<span class='version-replaced'></span>
-	<span class='version-details'></span>
-</div>			
-
-<div id='update-header' class="dch">
-	<span class='entity-subhead update-title'></span>
-	<span class='update-created'></span>
-	<span class='update-modified'></span>
-	<span class='update-details'></span>
-</div>			
-
-<div class="dch" id="show-entity">
-	<?php echo $service->showLDEditor($params);?>
-	<div id="entity-sub-sections" >
-		<div id="history-section" class="dch">
-			<div class="tool-section-header">
-				<span class="section-title">Entity History</span>
-			</div>
+<div class='dacura-screen' id='ld-view-home'>
+	<?php if(in_array("ldo-meta", $params['subscreens'])) { ?>
+	<div class="dacura-subscreen" id='ldo-meta' title='Metadata'>
+		<div class='subscreen-intro-message'><?=$params['meta_intro_msg']?></div>
+	</div>
+	<?php } if(in_array("ldo-contents", $params['subscreens'])) { ?>
+		<div class='subscreen-intro-message'><?=$params['contents_intro_msg']?></div>
+		<div id="show-ldo"></div>
+	</div>
+	<?php } if(in_array("ldo-history", $params['subscreens'])) { ?>		
+	<div class='dacura-subscreen' id='ldo-history' title="History">
+		<div class='subscreen-intro-message'><?=$params['history_intro_msg']?></div>
+		<div class='tholder' id='history-table-holder'>
+			<table id="history_table" class="dacura-api-listing">
+				<thead>
+				<tr>
+					<th id="hto-version" title="The Version Number">Version</th>
+					<th id="hto-status" title="<?=isset($params['ldtype']) ? $params['ldtype'] : "linked data object"?> status">Status</th>
+					<th id="hto-createtime">Sortable Created</th>
+					<th id="dfn-printCreated" title="Date and time of version creation">Created</th>
+					<th id="hto-created_by">Sortable Created By</th>
+					<th id="dfn-printCreatedBy" title="Created by update">Update ID</th>
+					<th id="hto-backward" title="Changed From" class="rawjson">Changed From</th>
+					<th id="hto-forward" title="Changed To" class="rawjson">Changed to</th>
+				</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
 		</div>
-		<div id="pending-section" class="dch">
-			<div class="tool-section-header">
-				<span class="section-title">Entity Update Queue</span>
-			</div>
-		</div>
-	</div>
-</div>
-	
-<div id="tabletemplates" class='dacura-templates'>
-	<div id="header-template">
-		<table class='entity-invariants'>
-			<thead>
-				<tr>
-					<th>Status</th>
-					<th>Type</th>
-					<th>Dataset</th>
-					<th>Details</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr>
-					<td class='cand_status'></td>
-					<td class='cand_type'></td>
-					<td class='cand_owner'></td>
-					<td class='cand_created'></td>
-				</tr>
-			</tbody>
-		</table>
-	</div>
-	<div id="history-template">
-		<table class="history_table display">
-			<thead>
-				<tr>
-					<th>Version</th>
-					<th>Schema Version</th>
-					<th>Created</th>
-					<th>Sortable Created</th>
-					<th>Changed From</th>
-					<th>Changed To</th>
-				</tr>
-			</thead>
-			<tbody>
-			</tbody>
-		</table>		
-	</div>
-	<div id="updates-template">
-		<table class="updates_table display">
-			<thead>
-			<tr>
-				<th>Status</th>
-				<th>From Version</th>
-				<th>To Version</th>
-				<th>Created</th>
-				<th>Sortable Created</th>
-				<th>Updated</th>
-				<th>Sortable Updated</th>
-				<th>Change From</th>
-				<th>Change To</th>
-			</tr>
-			</thead>
-			<tbody></tbody>
-		</table>			
 	</div>	
+
+	<?php } if(in_array("ldo-updates", $params['subscreens'])) { ?>		
+	<div class='dacura-subscreen' id='ldo-updates' title="Updates">
+		<div class='subscreen-intro-message'><?=$params['updates_intro_msg']?></div>
+		<div class='tholder' id='updates-table-holder'>
+			<table id="updates_table" class="dacura-api-listing">
+				<thead>
+				<tr>
+					<th id="uto-eurid" title='Update ID'>ID</th>
+					<th id="uto-status" title='current status of this update'>Status</th>
+					<th id="uto-targetid" title='current status of this update'>Target ID</th>
+					<th id="uto-from_version" title='Version that this update was applied to'>Applied to version</th>
+					<th id="uto-to_version" title='Version that this update created'>created version</th>
+					<th id="uto-createtime">Sortable Created</th>
+					<th id="dfx-printCreated" title="Date and time of update creation">Created</th>
+					<th id="uto-modtime">Sortable modified</th>
+					<th id="dfx-printModified" title="Date and time of last update modification">Last Modified</th>
+					</tr> 
+			</thead>
+			<tbody>
+			</tbody>
+			</table>		
+		</div>
+	</div>
+	<?php } ?>	
 </div>
 <script>
+function printCreated(obj){
+	return timeConverter(obj.createtime);
+}
+
+function printModified(obj){
+	return timeConverter(obj.modtime);
+}
+
+function printCreatedBy(obj){
+	return "<a href='../update/" + obj.created_by + "'>" + obj.created_by + "</a>";
+}
+
+var ldo_loaded = false;
+var updates_loaded = false;
+var history_loaded = false;
 
 /*
- * Called once per page load - sets the entity context of the view page
+ * Called once per page load - sets the ldo context of the view page
  */
 dacura.ld.showHeader = function(ent){
 	options = { subtitle: ent.id };
@@ -120,10 +96,10 @@ dacura.ld.showHeader = function(ent){
 	else {
 		metadetails = timeConverter(ent.created);
 	}
-	$('.cand_type').html("<span class='entity-type'>" + ent.type + "</span>");
-	$('.cand_owner').html("<span class='entity-owner'>" + dtit + "</span>");
-	$('.cand_created').html("<span class='entity-details'>" + metadetails + "</span>");
-	$('.cand_status').html("<span class='entity-status entity-" + ent.latest_status + "'>" + ent.latest_status + "</span>");
+	$('.cand_type').html("<span class='ldo-type'>" + ent.type + "</span>");
+	$('.cand_owner').html("<span class='ldo-owner'>" + dtit + "</span>");
+	$('.cand_created').html("<span class='ldo-details'>" + metadetails + "</span>");
+	$('.cand_status').html("<span class='ldo-status ldo-" + ent.latest_status + "'>" + ent.latest_status + "</span>");
     dacura.system.addServiceBreadcrumb("<?=$service->my_url()?>/" + ent.id , options.subtitle);	
 }
 
@@ -160,11 +136,30 @@ function isUpdateID(id){
 	return id.substr(0,7) == "update/";
 }
 
+function drawLDO(data){
+	dacura.tool.initScreens("ld-view-home");
+	dacura.ld.header(data);
+	dacura.tool.table.init("history_table", {
+		"screen": "ldo-history", 
+		"dtsettings": <?=$params['history_datatable']?>
+	}, data.history);		
+
+	dacura.tool.table.init("updates_table", {
+		"screen": "ldo-updates", 
+		"dtsettings": <?=$params['updates_datatable']?>
+	}, data.updates);		
+	dacura.system.styleJSONLD("td.rawjson");	
+	dacura.ld.viewer.init("show-ldo", "view", data.format, data.options);
+	dacura.ld.viewer.draw(data);
+	//dacura.editor.load("<?=$params['id']?>", dacura.ld.fetch, dacura.ld.update);
+	//jpr(data);
+}
+
 $('document').ready(function(){
-	dacura.system.init({"mode": "tool"});
-	dacura.editor.init();
-	dacura.editor.load("<?=$params['id']?>", dacura.ld.fetch, dacura.ld.update);
-	$('#show-entity').show();
+	var pconf = { resultbox: ".tool-info", busybox: "#ld-view-home"};
+	dacura.ld.fetch("<?=$params['id']?>", <?=$params['fetch_args']?>, drawLDO, pconf);
+	//dacura.editor.load("<?=$params['id']?>", dacura.ld.fetch, dacura.ld.update);
+	//$('#show-ldo').show();
 });
 </script>
 

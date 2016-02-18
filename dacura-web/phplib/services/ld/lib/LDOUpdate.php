@@ -3,7 +3,7 @@
 include_once("phplib/libs/easyrdf-0.9.0/lib/EasyRdf.php");
 include_once("LDUtils.php");
 
-class EntityUpdate extends DacuraObject{
+class LDOUpdate extends DacuraObject{
 	var $id;
 	var $cid;
 	var $type;
@@ -17,7 +17,7 @@ class EntityUpdate extends DacuraObject{
 	var $to_version = 0;
 	var $meta; //meta data about the update itself
 
-	var $cwurl;//closed world url of the entity being updated
+	var $cwurl;//closed world url of the ldo being updated
 	var $nsres;//name space resolver
 	//complex objects - any of them can be calculated from 1.5. (original + delta.forward = changed) (changed + delta.backward = original)
 	var $original; //the original state of the target candidate
@@ -58,7 +58,7 @@ class EntityUpdate extends DacuraObject{
 		$this->meta = json_decode($row['meta'], true);
 	}
 	
-	function getEntityType(){
+	function getLDOType(){
 		if($this->type) return $this->type;
 		return strtolower(substr(get_class($this), 0, strlen(get_class($this)) - strlen("UpdateRequest")));
 	}

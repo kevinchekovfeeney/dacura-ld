@@ -372,4 +372,43 @@ function xstrim($ent){
 	}
 }
 
+/**
+ * Performs content negotiation to figure out which is the best available mime type for the data
+ * @param array $mimeTypes array of mime types that are available on the server in order of precedence
+ * @param string $acceptedTypes accept string, as passed in accept http header
+ * @return array|string either the mime type or the list of acceptable types for the client
+ */
+function getBestSupportedMimeType($mimeTypes = null, $acceptedTypes = FALSE) {
+	// Values will be stored in this array
+	$AcceptTypes = Array ();
+	if ($acceptedTypes === FALSE){ $acceptedTypes = $_SERVER['HTTP_ACCEPT']; }
+	// Accept header is case insensitive, and whitespace isn’t important
+	$accept = strtolower(str_replace(' ', '', $acceptedTypes));
+	// divide it into parts in the place of a ","
+	$accept = explode(',', $accept);
+	foreach ($accept as $a) {
+		// the default quality is 1.
+		$q = 1;
+		// check if there is a different quality
+		if (strpos($a, ';q=')) {
+			// divide "mime/type;q=X" into two parts: "mime/type" i "X"
+			list($a, $q) = explode(';q=', $a);
+		}
+		// mime-type $a is accepted with the quality $q
+		// WARNING: $q == 0 means, that mime-type isn’t supported!
+		$AcceptTypes[$a] = $q;
+	}
+	arsort($AcceptTypes);
 
+	// if no parameter was passed, just return parsed data
+	if (!$mimeTypes) return $AcceptTypes;
+
+	$mimeTypes = array_map('strtolower', (array)$mimeTypes);
+
+	// let’s check our supported types:
+	foreach ($AcceptTypes as $mime => $q) {
+		if ($q && in_array($mime, $mimeTypes)) return $mime;
+	}
+	// no mime-type found
+	return null;
+}

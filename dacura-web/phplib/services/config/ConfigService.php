@@ -60,14 +60,6 @@ class ConfigService extends DacuraService {
 		return $html;
 	}
 	
-	/**
-	 * Generates the url for the appropriate file browser url depending on the context
-	 * @return string the filebrowser url
-	 */
-	function getFileBrowserURL(){
-		return $this->durl().$this->getSystemSetting('filebrowser')."browse.php";
-	}
-	
 	/* generating the settings for the dacura forms, depending on the facet, etc */
 	
 	/**

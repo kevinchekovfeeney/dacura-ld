@@ -137,11 +137,11 @@ $(function() {
 	dacura.tool.init({"tabbed": "system-schema"});
 	dacura.tool.table.init("ontology_table", {
 			"screen": "ontology-list", 
-			"fetch": dacura.ld.fetchentitylist,
+			"fetch": dacura.ld.fetchldolist,
 			"rowClick": function(event, entid) {window.location.href = dacura.system.pageURL() + "/" + entid},					
 			"settings": <?=$params['ontology_datatable']?>	
 		}
 	);
-	//dacura.schema.fetchentitylist(drawOntologies, {resultbox: "#ontology-msgs", errorbox: "#ontology-msgs", busybox: "#ontology-list"}); 
+	//dacura.schema.fetchldolist(drawOntologies, {resultbox: "#ontology-msgs", errorbox: "#ontology-msgs", busybox: "#ontology-list"}); 
 });
 </script>

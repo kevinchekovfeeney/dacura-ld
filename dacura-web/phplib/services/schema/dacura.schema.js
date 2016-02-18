@@ -1,25 +1,25 @@
 dacura.schema = dacura.ld;
 dacura.schema.plurals = {"ontology": "ontologies", "graph": "graphs"};
 
-dacura.schema.api.import_ontology = function(format, entid, title, url, payload){
+dacura.schema.api.import_ontology = function(format, ldoid, title, url, payload){
 	xhr = {};
 	xhr.url = dacura.schema.apiurl + "/import";
 	xhr.type = "POST";
 	if(format == 'upload'){
-		xhr.url += "?id=" + encodeURIComponent(entid) + "&title=" + encodeURIComponent(title) + "&url=" + encodeURIComponent(url);
+		xhr.url += "?id=" + encodeURIComponent(ldoid) + "&title=" + encodeURIComponent(title) + "&url=" + encodeURIComponent(url);
 		xhr.data = payload;
 		xhr.processData= false;
 	    xhr.contentType = payload.type
 	}
 	else {
-		xhr.data ={ "format": format, "id": entid, "payload": payload, "title" : title, "url": url};		
+		xhr.data ={ "format": format, "id": ldoid, "payload": payload, "title" : title, "url": url};		
 	}
 	return xhr;	
 }
 
-dacura.schema.api.calculateDependencies = function(entid){
+dacura.schema.api.calculateDependencies = function(ldoid){
 	xhr = {};
-	xhr.url = dacura.schema.apiurl + "/" + entid + "/dependencies";
+	xhr.url = dacura.schema.apiurl + "/" + ldoid + "/dependencies";
 	return xhr;
 }
 
@@ -56,8 +56,8 @@ dacura.schema.calculateDependencies = function(id, ownwards, targets){
 	dacura.system.invoke(ajs, msgs, targets);
 }
 
-dacura.schema.importOntology = function(format, entid, enttitle, enturl, payload, targets){
-	var ajs = dacura.schema.api.import_ontology(format, entid, enttitle, enturl, payload);
+dacura.schema.importOntology = function(format, ldoid, ldotitle, ldourl, payload, targets){
+	var ajs = dacura.schema.api.import_ontology(format, ldoid, ldotitle, ldourl, payload);
 	var msgs = { "busy": "Importing new ontology.", "fail": "Failed to import Ontology", "success": "Ontology successfully imported"};
 	ajs.handleResult = function(obj){
 		dacura.system.showSuccessResult();
@@ -224,7 +224,7 @@ dacura.schema.fetchGraph = function(id, args, onwards, targets, from){
 //signature of calls produced by the editor
 dacura.schema.fetchOntology = function(id, args, onwards, targets, from){
 	var ajs = dacura.schema.api.get_ontology(id, args);
-	var msgs = { "busy": "Fetching entity " + id + " from Server", "fail": "Failed to retrieve entity " + id};
+	var msgs = { "busy": "Fetching ldo " + id + " from Server", "fail": "Failed to retrieve ldo " + id};
 	if(typeof from != "undefined"){
 		if(from){
 			msgs.busy += ": " + from;

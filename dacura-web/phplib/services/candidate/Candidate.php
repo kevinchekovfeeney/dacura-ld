@@ -1,6 +1,6 @@
 <?php
 
-class Candidate extends LDEntity {
+class Candidate extends LDO {
 	//maps to candidates db structure
 
 	/*

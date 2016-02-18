@@ -1,6 +1,6 @@
 <?php
 
-class OntologyCreateRequest extends EntityCreateRequest {
+class OntologyCreateRequest extends LDOCreateRequest {
 	
 	function validate($obj = false){
 		return true;

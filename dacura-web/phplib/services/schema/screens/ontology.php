@@ -87,7 +87,7 @@ $(function() {
 	</div>
 </div>
 <div id="tabletemplates" class='dacura-templates'>
-	<?php echo $service->includeSnippet("ldentity-header")?>
+	<?php echo $service->includeSnippet("ldo-header")?>
 	 <div id="depend-template">
 	 	<table class='ont-depend'>
 			<thead>
@@ -461,16 +461,16 @@ function initDecorations(){
 
 $(function() {
 	initDecorations();
-	dacura.schema.entity_type = "ontology";
+	dacura.schema.ldo_type = "ontology";
 	dacura.tool.init({"tabbed": "tab-holder"});
-	dacura.editor.init({"entity_type": "ontology", 
+	dacura.editor.init({"ldo_type": "ontology", 
 		"targets": {resultbox: "#lded-msgs", errorbox: "#lded-msgs"}, 
 		"args": <?=json_encode($params['args']);?>});
 
 	dacura.editor.getMetaEditHTML = function(meta){
 		$('#meta-edit-table').html("");
 		$('#meta-edit-table').append("<li><span class='meta-label'>Status</span><span class='meta-value'>" + 
-			"<select id='entstatus'><?php echo $service->getEntityStatusOptions();?></select></span></li>");
+			"<select id='entstatus'><?php echo $service->getLDOStatusOptions();?></select></span></li>");
 		$('#entstatus').val(meta.status);	
 		$('#meta-edit-table').append("<li><span class='meta-label'>URL</span><span class='meta-value'>" + 
 				"<input type='text' id='enturl' value='" + meta.url + "'></span></li>");	

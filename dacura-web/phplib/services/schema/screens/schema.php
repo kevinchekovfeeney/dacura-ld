@@ -113,7 +113,7 @@ $(function() {
 	initDecorations();
 	dacura.tool.init({"tabbed": "tab-holder"});
 	$('#create-holder').show();
-	dacura.schema.entity_type = "graph";
-	dacura.schema.fetchentitylist(drawGraphs, {resultbox: '#graphs-msgs', errorbox: '#graphs-msgs', busybox: '#graphs-lists'});
+	dacura.schema.ldo_type = "graph";
+	dacura.schema.fetchldolist(drawGraphs, {resultbox: '#graphs-msgs', errorbox: '#graphs-msgs', busybox: '#graphs-lists'});
 });
 </script>

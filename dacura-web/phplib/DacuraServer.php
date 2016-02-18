@@ -7,7 +7,8 @@ require_once("UserManager.php");
 require_once("utilities.php");
 require_once("FileManager.php");
 
-/** The Core Dacura Server Class
+/** 
+ * The Core Dacura Server Class
  * 
  * It includes functionality that is used by multiple services
  * It provides common logging functions, path and url generation, etc

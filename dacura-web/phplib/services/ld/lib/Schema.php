@@ -3,7 +3,7 @@
 */
 
 require_once("NSResolver.php");
-require_once("LDEntity.php");
+require_once("LDO.php");
 require_once("phplib/services/schema/Graph.php");
 require_once("phplib/services/schema/Ontology.php");
 
@@ -62,7 +62,7 @@ class Schema extends DacuraObject {
 			}
 		}
 		foreach($ontids as $id){
-			$ont = $srvr->loadEntity($id, "ontology", "all", "all");
+			$ont = $srvr->loadLDO($id, "ontology", "all", "all");
 			if($ont){
 				$this->ontologies[$id] = $ont;
 			}
@@ -75,9 +75,9 @@ class Schema extends DacuraObject {
 	/*
 	 * graph => (classname, classname...)
 	 */
-	function adornGraphClasses($entclasses){
+	function adornGraphClasses($ldoclasses){
 		$results = array();
-		foreach($entclasses as $gid => $classes){
+		foreach($ldoclasses as $gid => $classes){
 			$results[$gid] = array();
 			foreach($classes as $cls){
 				$res = $this->adornClass($cls);
@@ -168,8 +168,8 @@ class Schema extends DacuraObject {
 	
 	function getNGSkeleton(){
 		$skel = array("ldprops" => array(), "meta" => array());
-		foreach($this->graphs as $ent){
-			$skel["ldprops"][$ent["id"]] = array();
+		foreach($this->graphs as $ldo){
+			$skel["ldprops"][$ldo["id"]] = array();
 		}
 		return $skel;
 	}

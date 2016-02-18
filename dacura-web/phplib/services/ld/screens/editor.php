@@ -1,7 +1,4 @@
-<?php $entity = isset($params['entity']) ? $params['entity'] : "Entity";?>
-<script src='<?=$service->furl("js", "jquery.json-editor.js")?>'></script>
-<link rel="stylesheet" type="text/css" media="screen" href="<?=$service->furl("css", "jquery.json-editor.css")?>" />
-
+<?php $ldo = isset($params['ldo']) ? $params['ldo'] : "ldo";?>
 
 <div class='dacura-ld-editor dch'>
 	<div id='ld-view-page'>
@@ -12,18 +9,9 @@
 					<tr>
 						<td class='ld-bar ld-bar-left' id="ld-view-bar-left">
 							<span class='view-options'>
-								    <input type="radio" class='noption foption' checked="checked" id="format_json" name="nformat"><label title="Native Dacura JSON Linked Data Format" for="format_json">Native</label>
-									<input type="radio" class="noption foption" id="format_jsonld" name="nformat"><label title="JSON-LD" for="format_jsonld">JSON-LD</label>
-									<input type="radio" class="noption foption" id="format_turtle" name="nformat"><label title="Turtle" for="format_turtle">Turtle</label>
-									<input type="radio" class='noption foption' id="format_quads" name="nformat"><label title="Triples with named graphs: [Subject - Predicate - Object - Graph]" for="format_quads">Quads</label>
-								    <input type="radio" class='noption foption' id="format_html" name="nformat"><label title="Dacura's Generated HTML views" for="format_html">HTML</label>
-									<input type="radio" class="noption foption" id='format_ntriples' name="nformat"><label title="N-triples format" for="format_ntriples">N-Triples</label>
-									<input type="radio" class="noption foption" id="format_rdfxml" name="nformat"><label title="RDF/XML serialisation" for="format_rdfxml">XML</label>
-									<input type="radio" class="noption foption" id="format_dot" name="nformat"><label title="Graphviz graphic visualisation" for="format_dot">Graphviz</label>
-									<input type="radio" class="noption foption" id="format_n3" name="nformat"><label title="Notation 3" for="format_n3">N3</label>
-									<input type="radio" class="noption foption" id="format_gif" name="nformat"><label title="Graphic Interchange Format" for="format_gif">Gif</label>
-									<input type="radio" class="noption foption" id="format_png" name="nformat"><label title="Portable Network Graphics" for="format_png">PNG</label>
-									<input type="radio" class="noption foption" id="format_svg" name="nformat"><label title="Scalable Vector Graphics" for="format_svg">SVG</label>
+							<?php foreach($params["display_formats"] as $fid => $fdetails){?>
+								<input type="radio" class='noption foption' id="format_<?=$fid?>" name="nformat"><label title="<?=$fdetails['description']?>" for="format_<?=$fid?>"><?=$fdetails['title']?></label>							
+							<?php } ?>
 							</span>
 						</td>
 						<td class='ld-bar ld-bar-centre' id="ld-view-bar-centre">
@@ -31,10 +19,10 @@
 						</td>					
 						<td class='ld-bar ld-bar-right' id="ld-view-bar-right">
 							<span class='ld-update-actions'>
-								<button title="Make this version the live version of the <?=$entity?>" id="action-restore">Restore</button>
-								<button title="Modify this update to the <?=$entity?> - beware this is changing the past!" id="action-modify">Modify</button>					
+								<button title="Make this version the live version of the <?=$ldo?>" id="action-restore">Restore</button>
+								<button title="Modify this update to the <?=$ldo?> - beware this is changing the past!" id="action-modify">Modify</button>					
 								<input type="checkbox" id="show-version-controls"><label for='show-version-controls' title="Show Version Browser Controls">History</label>
-								<button title="Edit this <?=$entity?>" id="action-edit">Edit</button>
+								<button title="Edit this <?=$ldo?>" id="action-edit">Edit</button>
 							</span>
 						</td>
 					</tr>	
@@ -48,19 +36,19 @@
 						<td class='ld-bar ld-bar-left' id='ld-action-bar-left'>
 							<div id="ld-update-controls">
 								<button id="ld-update-freeze">Freezes this update</button>
-								<button id="ld-update-first">Show update that cause the <?=$entity?> to be created.</button>
-								<button id="ld-update-previous">Show the previous update to the <?=$entity?></button>
+								<button id="ld-update-first">Show update that cause the <?=$ldo?> to be created.</button>
+								<button id="ld-update-previous">Show the previous update to the <?=$ldo?></button>
 								<button id="ld-update-current">Update</button>
-								<button id="ld-update-next">Show next update to the <?=$entity?></button>
-								<button id="ld-update-last">Show most recent update to the <?=$entity?></button>
+								<button id="ld-update-next">Show next update to the <?=$ldo?></button>
+								<button id="ld-update-last">Show most recent update to the <?=$ldo?></button>
 							</div>
 							<div id="ld-version-controls">
 								<button id="ld-freeze">Freezes the version at this version</button>
-								<button id="ld-beginning">Show original version of <?=$entity?></button>
-								<button id="ld-rewind">Show previous version of <?=$entity?></button>
+								<button id="ld-beginning">Show original version of <?=$ldo?></button>
+								<button id="ld-rewind">Show previous version of <?=$ldo?></button>
 								<button id="ld-current">Version</button>
-								<button id="ld-forward">Show next version of <?=$entity?></button>
-								<button id="ld-end">Show latest version of <?=$entity?></button>
+								<button id="ld-forward">Show next version of <?=$ldo?></button>
+								<button id="ld-end">Show latest version of <?=$ldo?></button>
 							</div>	
 						</td>
 						<td class='ld-bar ld-bar-centre' id='ld-action-bar-centre'>
@@ -69,11 +57,11 @@
 						<td class='ld-bar ld-bar-right' id='ld-action-bar-right'>
 							<span class="view-update-stage">
 								<span id="view-update-label">Update View</span>
-								<input type="radio" class="uview" id="stage_before" name="jformat"><label for="stage_before">State of the <?=$entity?> before update</label>
-								<input type="radio" class="uview" id="stage_forward" name="jformat"><label for="stage_forward">Change that caused the <?=$entity?> to be updated</label>
-								<input type="radio" class="uview" id="stage_full" name="jformat"><label for="stage_full">Display what has changed in the <?=$entity?>.</label>
-								<input type="radio" class="uview" id="stage_backward" name="jformat"><label for="stage_backward">The change that would undo the change to the <?=$entity?></label>
-								<input type="radio" class="uview" id="stage_after" name="jformat"><label for="stage_after">State of the <?=$entity?> after update</label>					
+								<input type="radio" class="uview" id="stage_before" name="jformat"><label for="stage_before">State of the <?=$ldo?> before update</label>
+								<input type="radio" class="uview" id="stage_forward" name="jformat"><label for="stage_forward">Change that caused the <?=$ldo?> to be updated</label>
+								<input type="radio" class="uview" id="stage_full" name="jformat"><label for="stage_full">Display what has changed in the <?=$ldo?>.</label>
+								<input type="radio" class="uview" id="stage_backward" name="jformat"><label for="stage_backward">The change that would undo the change to the <?=$ldo?></label>
+								<input type="radio" class="uview" id="stage_after" name="jformat"><label for="stage_after">State of the <?=$ldo?> after update</label>					
 							</span>					
 						</td>
 					</tr>
@@ -116,7 +104,7 @@
 		<div class="ld-meta-bar">
 			<ul id='meta-edit-table' class='dch'>
 				<li><span class='meta-label'>Status</span><span class='meta-value'>
-					<select id='entstatus'><?php echo $service->getEntityStatusOptions();?></select>
+					<select id='entstatus'><?php echo $service->getLDOStatusOptions();?></select>
 				</span></li> 
 				</ul>			
 			<div id="ld-editor"></div>
@@ -155,25 +143,25 @@ dacura.editor = {
 	eformat : "turtle", //... of export format
 	mode: "view",
 	currentID: 	"<?=isset($params['id'])? $params['id'] : "" ?>",
-	currentEntity: {},
+	currentldo: {},
 	stage : "",
 	updateid : 0,
 	editorheight: "400",
 	editorwidth: "100%",
-	entity_type: "candidate",
+	ldo_type: "candidate",
 	targets: dacura.system.targets,
 	
 	
 	decisionTexts: {
 		"create": {
 			"reject": "Your submission was not accepted by the System",		
-			"candidate": "Your submission has been accepted as a candidate entity. It has not been published to the evidence base.",			
+			"candidate": "Your submission has been accepted as a candidate. It has not been published to the evidence base.",			
 			"report": "Your submission has been accepted as a report and published to the evidence base",
 			"interpretation": "Your submission has been accepted as an interpetation and added to the analysis base"
 		},
 		"update": {
 			"reject": "Your update was rejected by the System",		
-			"accept": "Your update has been accepted by the system and the entity has been updated",		
+			"accept": "Your update has been accepted by the system and the linked data object has been updated",		
 			"pending": "Your update is awaiting approval",
 			"interpretation": "Your submission has been accepted as an interpretation by the system and added to the analysis base"				
 		}
@@ -251,8 +239,8 @@ dacura.editor = {
 		if(typeof opts.editorwidth != "undefined"){
 			dced.editorwidth = opts.editorwidth;
 		}
-		if(typeof opts.entity_type != "undefined"){
-			dced.entity_type = opts.entity_type;
+		if(typeof opts.ldo_type != "undefined"){
+			dced.ldo_type = opts.ldo_type;
 		}
 		if(typeof opts.targets != "undefined"){
 			dced.targets = opts.targets;
@@ -291,10 +279,10 @@ dacura.editor = {
 			var opts = jQuery.extend({}, dced.options);
 			opts.display = dced.getDisplayFlagsAsString();
 			if(typeof prefetch == "undefined"){
-				dced.fetch(i, opts, dced.loadEntity, dced.targets);
+				dced.fetch(i, opts, dced.loadldo, dced.targets);
 			}
 			else {
-				dced.loadEntity(prefetch);
+				dced.loadldo(prefetch);
 			}
 		}
 	},
@@ -345,7 +333,7 @@ dacura.editor = {
 		else {
 			$('#meta-edit-table').html("");
 			$('#meta-edit-table').append("<li><span class='meta-label'>Status</span><span class='meta-value'>" + 
-				"<select id='entstatus'><?php echo $service->getEntityStatusOptions();?></select></span></li>");
+				"<select id='entstatus'><?php echo $service->getLDOStatusOptions();?></select></span></li>");
 			if(typeof meta != "undefined" && typeof meta.status != "undefined"){
 				$('#entstatus').val(meta.status);	
 			}
@@ -403,16 +391,16 @@ dacura.editor = {
 			else if(typeof uobj.test != "undefined") {
 				delete uobj.test;
 			}
-			if(typeof dced.currentEntity.delta != "undefined" && $('#set-update-status').val() != dced.currentEntity.delta.status){
+			if(typeof dced.currentldo.delta != "undefined" && $('#set-update-status').val() != dced.currentldo.delta.status){
 				uobj.updatemeta = { "status": $('#set-update-status').val() };
 			}
 			if(dced.mode == "edit new"){
-				var entity_type = $('#set-status').val();
-				uobj.type = entity_type;
+				var ldo_type = $('#set-status').val();
+				uobj.type = ldo_type;
 				dced.update(uobj, dced.drawUpdateResult, dced.targets, test);
 			}
 			else {
-				//if($('#set-status').val() && $('#set-status').val() != dced.currentEntity.status){
+				//if($('#set-status').val() && $('#set-status').val() != dced.currentldo.status){
 				//	uobj.meta.status = $('#set-status').val();
 				//}
 				dced.update(dced.currentID, uobj, dced.drawUpdateResult, type, dced.targets, test);
@@ -424,21 +412,21 @@ dacura.editor = {
 		dced.clearMessages();
 		var opts = jQuery.extend({}, dced.options);
 		opts.display = dced.getDisplayFlagsAsString();
-		dced.fetch(dced.currentID, opts, dced.drawEntity, dced.targets, source);
+		dced.fetch(dced.currentID, opts, dced.drawldo, dced.targets, source);
 	},
 
-	//called first time the entity is loaded - hides display until everything is ready
-	loadEntity: function(ent){
-		dced.drawEntity(ent);
+	//called first time the ldo is loaded - hides display until everything is ready
+	loadldo: function(ent){
+		dced.drawldo(ent);
 		dced.display();
 	},
 	
-	drawEntity: function(ent){
-		dced.currentEntity = ent;
+	drawldo: function(ent){
+		dced.currentldo = ent;
 		dced.options.version = ent.version;
 		dced.setVersion(ent.version, ent.latest_version);
 		dced.drawMeta(ent);
-		$('#ld-editor').html("<div class='dacura-json-editor'>" + dced.getMetaEditHTML(dced.currentEntity.meta) + dced.getBodyEditHTML(dced.currentEntity) + "</div>");
+		$('#ld-editor').html("<div class='dacura-json-editor'>" + dced.getMetaEditHTML(dced.currentldo.meta) + dced.getBodyEditHTML(dced.currentldo) + "</div>");
 		dced.setMode();
 		dced.drawBody(ent.display); 
 	},
@@ -496,8 +484,8 @@ dacura.editor = {
 		}
 		
 		function initEditor(){
-			JSONEditor.prototype.ADD_IMG = '<?=$service->furl("images", "icons/add.png")?>';
-			JSONEditor.prototype.DELETE_IMG = '<?=$service->furl("images", "icons/delete.png")?>';
+			//JSONEditor.prototype.ADD_IMG = '<?=$service->furl("images", "icons/add.png")?>';
+			//JSONEditor.prototype.DELETE_IMG = '<?=$service->furl("images", "icons/delete.png")?>';
 		}
 		
 		function initVersionNavigation(options){
@@ -771,8 +759,8 @@ dacura.editor = {
 		//dced.jsoneditor.doTruncation(true);
 		//dced.jsoneditor.showFunctionButtons();
 		$('.cancel_edit').hide();
-		$('.test_edit span').text("Test entity creation");
-		$('.save_edit span').text("Submit new entity");	
+		$('.test_edit span').text("Test ldo creation");
+		$('.save_edit span').text("Submit new ldo");	
 	},
 
 	setMode: function(mode){
@@ -826,9 +814,9 @@ dacura.editor = {
 		}
 		else if(dced.mode.substring(0,4) == "edit"){
 			dced.editMode = dced.mode;
-			//var meta = JSON.stringify(dced.currentEntity.meta, null, 4);
-			//var content = JSON.stringify(dced.currentEntity.ldprops, null, 4);
-			$('#ld-editor').html("<div class='dacura-json-editor'>" + dced.getMetaEditHTML(dced.currentEntity.meta) + dced.getBodyEditHTML(dced.currentEntity) + "</div>");
+			//var meta = JSON.stringify(dced.currentldo.meta, null, 4);
+			//var content = JSON.stringify(dced.currentldo.ldprops, null, 4);
+			$('#ld-editor').html("<div class='dacura-json-editor'>" + dced.getMetaEditHTML(dced.currentldo.meta) + dced.getBodyEditHTML(dced.currentldo) + "</div>");
 			$('#ld-edit-page').show();
 			$('#ld-view-page').hide();
 			//dced.jsoneditor = new JSONEditor($("#ldprops-input"), dced.editorwidth, dced.editorheight);
@@ -879,19 +867,19 @@ dacura.editor = {
 
 	showUpdateStage: function(stage){
 		if(stage == "backward"){
-			dced.drawBody(dced.currentEntity.delta.backward);
+			dced.drawBody(dced.currentldo.delta.backward);
 		}
 		else if(stage == "forward"){
-			dced.drawBody(dced.currentEntity.delta.forward);		
+			dced.drawBody(dced.currentldo.delta.forward);		
 		}
 		else if(stage == "before"){
-			dced.drawBody(dced.currentEntity.original);		
+			dced.drawBody(dced.currentldo.original);		
 		}
 		else if(stage == "after"){
-			dced.drawBody(dced.currentEntity.display);			
+			dced.drawBody(dced.currentldo.display);			
 		}
 		else {
-			dced.drawBody(dced.currentEntity.delta.display);				
+			dced.drawBody(dced.currentldo.delta.display);				
 		}
 		//dacura.candidate.display(screen);
 	}

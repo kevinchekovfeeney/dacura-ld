@@ -1,6 +1,6 @@
 <?php
 
-class GraphCreateRequest extends EntityCreateRequest {
+class GraphCreateRequest extends LDOCreateRequest {
 
 	function loadFromAPI($create_obj){
 		if(!isset($create_obj['contents']) && !isset($create_obj['meta'])){

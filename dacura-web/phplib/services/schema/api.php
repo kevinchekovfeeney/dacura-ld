@@ -4,7 +4,7 @@ getRoute()->get('/(\w+)/dependencies', 'calculate_dependencies');
 getRoute()->post('/validate_ontologies', 'validate_ontologies');
 
 getRoute()->get('/structure', 'get_entity_classes');
-//getRoute()->get('/structure/(\w+)', 'get_entity_classes');//with graph id
+//getRoute()->get('/structure/(\w+)', 'get_ldo_classes');//with graph id
 //getRoute()->get('/structure/(\w+)/(.+)', 'get_class_template');//with graph id
 
 function import_ontology(){
@@ -13,18 +13,18 @@ function import_ontology(){
 	if(!isset($_POST['format'])){
 		$payload = file_get_contents('php://input');
 		$format = "upload";
-		$entid = (isset($_GET['id']) && $_GET['id']) ? $_GET['id']: "";
-		$enttitle = (isset($_GET['title']) && $_GET['title']) ? $_GET['title']: "";
-		$enturl = (isset($_GET['url']) && $_GET['url']) ? $_GET['url']: "";
+		$ldoid = (isset($_GET['id']) && $_GET['id']) ? $_GET['id']: "";
+		$ldotitle = (isset($_GET['title']) && $_GET['title']) ? $_GET['title']: "";
+		$ldourl = (isset($_GET['url']) && $_GET['url']) ? $_GET['url']: "";
 	}
 	else {
 		$payload = isset($_POST['payload']) ? $_POST['payload'] : "";
 		$format = isset($_POST['format']) ? $_POST['format'] : "";
-		$entid = isset($_POST['id']) ? $_POST['id'] : "";
-		$enturl = isset($_POST['url']) ? $_POST['url'] : "";
-		$enttitle = isset($_POST['title']) ? $_POST['title'] : "";
+		$ldoid = isset($_POST['id']) ? $_POST['id'] : "";
+		$ldourl = isset($_POST['url']) ? $_POST['url'] : "";
+		$ldotitle = isset($_POST['title']) ? $_POST['title'] : "";
 	}
-	$ar = $dacura_server->importOntology($format, $payload, $entid, $enttitle, $enturl);
+	$ar = $dacura_server->importOntology($format, $payload, $ldoid, $ldotitle, $ldourl);
 	if($ar){
 		return $dacura_server->writeDecision($ar);
 		//return $dacura_server->write_json_result($ont, "Imported Ontology $ont->id");
@@ -100,11 +100,11 @@ function get_class_template($graphid, $classname){
 	//return $dacura_server->write_http_error(500, $graphid);
 	
 	if(!$dacura_server->schema){
-		return $dacura_server->write_http_error(400, "Get entity classes can only be called in a collection context");		
+		return $dacura_server->write_http_error(400, "Get class template can only be called in a collection context");		
 	}
 	$res = $dacura_server->getClassTemplate($graphid, $classname);
 	if($res){
-		return $dacura_server->write_json_result($res, "Returned classe template");
+		return $dacura_server->write_json_result($res, "Returned $classname class template");
 	}
 	else {
 		$dacura_server->write_http_error();
@@ -113,10 +113,10 @@ function get_class_template($graphid, $classname){
 
 
 if($dacura_server->cid() == "all"){
-	$entity_type = "ontology";
+	$ldo_type = "ontology";
 }
 else {
-	$entity_type = "graph";
+	$ldo_type = "graph";
 }
 include_once "phplib/services/ld/api.php";
 
@@ -174,7 +174,7 @@ function get_ontology($ontid){
 	$display = isset($_GET['display']) ? $_GET['display'] : false;
 	$dacura_server->init("get_ontology", $ontid);
 	$ar = $dacura_server->getOntology($ontid, $version, $format, $display);
-	return $dacura_server->send_retrieved_entity($ar, $format, $display, $options, $version);
+	return $dacura_server->send_retrieved_ldo($ar, $format, $display, $options, $version);
 }
 
 function get_ontology_update($update_id){

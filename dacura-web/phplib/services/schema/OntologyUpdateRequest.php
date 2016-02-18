@@ -1,6 +1,6 @@
 <?php
 
-class OntologyUpdateRequest extends EntityUpdate {
+class OntologyUpdateRequest extends LDOUpdate {
 	
 	function makeMetaChanges($stuff){
 		$changes = array();

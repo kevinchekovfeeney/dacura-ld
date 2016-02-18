@@ -9,9 +9,9 @@ include_once("DacuraResult.php");
  * @license GPL V2
  */
 class PolicyEngine extends DacuraObject {
-	/** @var array true for a given type if users are allowed to specify their own ids for entities */
+	/** @var array true for a given type if users are allowed to specify their own ids for ldos */
 	var $demand_id_allowed = array("default" => true, "graph" => false);
-	/** @var array if this is true for a given entity type then entities and updates that are rejected will still be stored in the db */
+	/** @var array if this is true for a given ldo type then ldos and updates that are rejected will still be stored in the db */
 	var $store_rejected = array("default" => true, "ontology" => false);
 	/** @var array An array of decisions for actions */
 	var $decisions = array(
@@ -58,8 +58,8 @@ class PolicyEngine extends DacuraObject {
 
 	/**
 	 * Updates to updates are special and can beprocessed generically ...
-	 * @param EntityUpdate $orig the original update object
-	 * @param EntityUpdate $upd the modified update object
+	 * @param ldoUpdate $orig the original update object
+	 * @param ldoUpdate $upd the modified update object
 	 * @param DacuraResult $ar the result object that this result will be added to
 	 */
 	function updateUpdate($orig, $upd, &$ar){
@@ -76,12 +76,12 @@ class PolicyEngine extends DacuraObject {
 	}
 
 	/**
-	 * Should we store rejected entities?
+	 * Should we store rejected ldos?
 	 * @param string $type the type of thing 
-	 * @param LDEntity $ent the entity itself
+	 * @param LDO $ldo the ldo itself
 	 * @return boolean true if rejected should be stored
 	 */
-	function storeRejected($type, $ent = false){
+	function storeRejected($type, $ldo = false){
 		if(isset($this->store_rejected[$type])) return $this->store_rejected[$type];
 		return $this->store_rejected['default'];
 	}
@@ -89,10 +89,10 @@ class PolicyEngine extends DacuraObject {
 	/**
 	 * Should we roll back to pending when a update is accepted by policy but rejected by graph analysis?
 	 * @param string $type the type of thing
-	 * @param LDEntity $ent the thing itself
+	 * @param LDldo $ldo the thing itself
 	 * @return boolean true if it should be rolled back
 	 */
-	function rollbackToPending($type, $ent = false){
+	function rollbackToPending($type, $ldo = false){
 		if(isset($this->rollbacks[$type])) return $this->rollbacks[$type];
 		return $this->rollbacks['default'];
 	}
@@ -100,10 +100,10 @@ class PolicyEngine extends DacuraObject {
 	/**
 	 * Should we allow the specification of ids in input?
 	 * @param string $type the type of thing
-	 * @param LDEntity $ent the thing itself
+	 * @param LDldo $ldo the thing itself
 	 * @return boolean true if it should be rolled back
 	 */
-	function demandIDAllowed($type = false, $ent = false){
+	function demandIDAllowed($type = false, $ldo = false){
 		if(isset($this->demand_id_allowed[$type])) return $this->demand_id_allowed[$type];
 		return $this->demand_id_allowed['default'];
 	}

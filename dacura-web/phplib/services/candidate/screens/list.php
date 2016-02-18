@@ -1,5 +1,5 @@
 <div class='dacura-screen' id='candidate-page'>
-	<div id="candidate-list" class='dacura-subscreen ld-list' title="Instance Data Entities">
+	<div id="candidate-list" class='dacura-subscreen ld-list' title="Instances">
 		<table id="candidate_table" class="dcdt display">
 			<thead>
 			<tr>
@@ -18,7 +18,7 @@
 			<tbody></tbody>
 		</table>
 	</div>
-	<div id="update-list" class='dacura-subscreen ld-list' title="Updates to Instance Data">
+	<div id="update-list" class='dacura-subscreen ld-list' title="Updates to Instances">
 		<table id="update_table" class="dcdt display">
 			<thead>
 			<tr>
@@ -38,7 +38,7 @@
 			<tbody></tbody>
 		</table>
 	</div>
-	<div class='dacura-subscreen' id="create-candidate" title="Create New Instance Data Entity">
+	<div class='dacura-subscreen' id="create-candidate" title="Create New Instance">
 		<?php echo $service->showLDResultbox($params);?>
 		<?php echo $service->showLDEditor($params);?>		
 	</div>
@@ -56,16 +56,16 @@ function getPrintableModified(obj){
 
 $(function() {
 	dacura.tool.init({"tabbed": "candidate-page"}); 
-	dacura.tool.table.init("ld_table", {
+	dacura.tool.table.init("candidate_table", {
 		"screen": "candidate-list", 
-		"fetch": dacura.ld.fetchcandidatelist,
+		"fetch": dacura.ld.fetchldolist,
 		"rowClick": function(event, entid) {window.location.href = dacura.system.pageURL() + "/" + entid},		
 		"settings": <?=$params['candidate_datatable']?>
 	});
 	dacura.tool.table.init("update_table", {
 		"screen": "update-list", 
 		"fetch": dacura.ld.fetchupdatelist,
-		"rowClick": function(event, entid) {window.location.href = dacura.system.pageURL() + "/" + entid},				
+		"rowClick": function(event, entid) { window.location.href = dacura.system.pageURL() + "/update/" + entid},				
 		"settings": <?=$params['update_datatable']?>				
 	});
 	dacura.editor.init({"editorheight": "400px", "targets": { resultbox: "#create-candidate-msgs", errorbox: "#create-candidate-msgs", busybox: '#create-holder'}, 

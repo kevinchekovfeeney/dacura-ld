@@ -148,17 +148,17 @@ class SchemaService extends LdService {
 			
 		}
 		elseif($screen == "schema"){
-			$params["entity_type"] = "graph";							
+			$params["ldo_type"] = "graph";							
 			$params["title"] = "Schema Management";
 			$params["subtitle"] = "Manage the graphs where instance data is stored";
 		}
 		elseif($screen == "system"){
 			$params["title"] = "Manage Imported Ontologies";
-			$params["entity_type"] = "ontology";
+			$params["ldo_type"] = "ontology";
 				
 		}
 		if($screen == "graph" or $screen == "ontology"){
-			$params["entity_type"] = $screen;				
+			$params["ldo_type"] = $screen;				
 			$params["breadcrumbs"] = array(array(), array());
 			$params['args'] = $this->getOptionalArgs();
 			$params['id'] = $this->screen;	

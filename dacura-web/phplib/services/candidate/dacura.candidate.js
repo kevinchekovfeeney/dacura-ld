@@ -1,7 +1,7 @@
 dacura.candidate = dacura.ld;
-dacura.candidate.entity_type = "candidate";
+dacura.candidate.ldo_type = "candidate";
 dacura.ld.plurals.candidate = "candidates";
-dacura.candidate.fetchcandidatelist = dacura.ld.fetchentitylist;
+dacura.candidate.fetchcandidatelist = dacura.ld.fetchldolist;
 
 
 /*{}
@@ -17,7 +17,7 @@ dacura.candidate.api.create = function (data, test){
 	if(typeof test != "undefined"){
 		data.test = true;
 	}
-	data.entity_type == "candidate";
+	data.ldo_type == "candidate";
 	xhr.data = JSON.stringify(data);
     xhr.dataType = "json";
     return xhr;
@@ -134,7 +134,7 @@ dacura.candidate.update = function(id, uobj, onwards, type, targets, test){
 		msgs = { "busy": "Testing update of " + id + " with Dacura Quality Service", "fail": "Server communication failure in testing update of " + id};
 	}
 	else {
-		var msgs = { "busy": "Updating entity " + id, "fail": "Server communication failure in updating " + id};
+		var msgs = { "busy": "Updating ldo " + id, "fail": "Server communication failure in updating " + id};
 	}
 	ajs.handleResult = onwards;
 	ajs.handleJSONError = onwards;
