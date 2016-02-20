@@ -50,6 +50,9 @@ class LdService extends DacuraService {
 		if($this->screen == "list"){
 			return "list";
 		}
+		elseif($this->screen == "update"){
+			return "update";
+		}
 		return "view";
 	}
 	
@@ -223,6 +226,9 @@ class LdService extends DacuraService {
 			}
 			$this->loadParamsForViewScreen($id, $params, $dacura_server);				
 		}
+		elseif($screen == "update"){
+			
+		}
 		else {
 			return $this->failure_result("Attempt to load unknown LD screen $screen", 404);
 		}
@@ -277,7 +283,7 @@ class LdService extends DacuraService {
 			if(in_array("ldo-updates", $subscreens)){
 				$params['updates_intro_msg'] = $this->smsg('view_updates_intro', $mappings);
 			}
-			if(in_array("ldo-details", $subscreens)){
+			if(in_array("ldo-contents", $subscreens)){
 				$params['contents_intro_msg'] = $this->smsg('view_contents_intro', $mappings);
 			}				
 			if(in_array("ldo-meta", $subscreens)){
@@ -312,6 +318,7 @@ class LdService extends DacuraService {
 		$params['create_ldo_fields']['ldtype']['options'] = LDO::$ldo_types;
 		$params['create_ldo_fields']['ldformat']['options'] = LDO::$valid_input_formats;
 		$params['direct_create_allowed'] = true;
+		$params["demand_id_token"] = $this->getServiceSetting("demand_id_token", "@id");
 	}
 
 	function getListSubscreens($dacura_server, $u){
@@ -319,7 +326,7 @@ class LdService extends DacuraService {
 	}
 	
 	function getViewSubscreens(){
-		return array("ldo-meta", "ldo-history", "ldo-details", "ldo-updates");		
+		return array("ldo-meta", "ldo-history", "ldo-contents", "ldo-updates");		
 	}
 	
 	function loadParamsForViewScreen($id, &$params, &$dacura_server){

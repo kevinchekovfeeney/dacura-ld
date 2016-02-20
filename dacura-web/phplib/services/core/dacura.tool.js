@@ -459,8 +459,14 @@ dacura.tool.form = {
 	 * @returns {mixed} the possibly complex value of the element
 	 */
 	getVarValue: function(key, inputid){
-		var val = $('#'+key + "-" + inputid).val();
-		if($('#'+key + "-" + inputid).hasClass("dacura-display-json")){
+		var val = $('#'+key + "-" + inputid).val(); 
+		if(!val){
+			var jx = $('#'+key + "-" + inputid + " :checked").attr("id");
+			if(jx){
+				val = jx.substring(jx.lastIndexOf("-")+1);				
+			}
+		}
+		else if($('#'+key + "-" + inputid).hasClass("dacura-display-json")){
 			val = JSON.parse(val);
 		}
 		return val;

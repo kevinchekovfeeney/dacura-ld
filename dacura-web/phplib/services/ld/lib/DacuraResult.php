@@ -30,6 +30,37 @@ class DacuraResult extends DacuraObject {
 		$this->test = $test;
 	}
 	
+	function forAPI($format, $options, $srvr){
+		$apiobj = array("status" => $this->status(), "test" => $this->test);
+		if($this->msg_title || $this->msg_body){
+			if($this->msg_title && $this->msg_body){
+				$apiobj['message'] = array("title" => $this->msg_title, "body" => $this->msg_body);
+			}
+			elseif($this->msg_title){
+				$apiobj['message'] = $this->msg_title;
+			} 
+			else {
+				$apiobj['message'] = $this->msg_body;
+			}
+		}
+		if(count($this->errors) > 0){
+			$apiobj['errors'] = $this->errors;
+		}
+		if(count($this->warnings) > 0){
+			$apiobj['warnings'] = $this->warnings;
+		}
+		if($this->result){
+			if($this->result->display($format, $options, $srvr)){
+				$apiobj['result'] = $this->result->forAPI($format, $options);
+			}
+			else {
+				$apiobj['status'] = 'reject';
+				$apiobj['message'] = array("title" => "Failed to create $format display for ".$this->result->ldtype." ".$this->result->id, "body" => $this->result->errcode . ": ".$this->result->errmsg);
+			}
+		}
+		return $apiobj;
+	}
+	
 	/**
 	 * Returns true if there are no errors encountered
 	 * @return boolean 
@@ -168,8 +199,8 @@ class DacuraResult extends DacuraObject {
 	 */
 	function add($sub, $chain = true){
 		if($chain){
-			$this->errors = array_merge($this->errors, $sub->errors);
-			$this->warnings = array_merge($this->warnings, $sub->warnings);
+			if($sub->errors) $this->errors = array_merge($this->errors, $sub->errors);
+			if($sub->warnings) $this->warnings = array_merge($this->warnings, $sub->warnings);
 		}
 		switch($sub->status()) {
 			case "reject" :
@@ -202,9 +233,7 @@ class DacuraResult extends DacuraObject {
 			break;
 		}
 	}
-	
-
-	
+		
 	function set_result($obj){
 		$this->result = $obj;
 		return $this;
@@ -230,13 +259,12 @@ class DacuraResult extends DacuraObject {
 	function is_confirm(){
 		return $this->status() == "confirm";
 	}
-	
 
-	function setDQSResult($gu, $hypo = false){
+	function setGraphResult($gu, $hypo = false){
 		$gu->setHypothetical($hypo);
 		$action = "Dacura Quality Service";
 		if(!$hypo){
-			switch($gu->decision) {
+			switch($gu->status()) {
 				case "reject" :
 					if($gu->is_error()){
 						if(!$this->is_error()){
@@ -251,11 +279,11 @@ class DacuraResult extends DacuraObject {
 							$this->msg_title = "Rejected by ".$action;
 						}
 					}
-					$this->decision = "reject";
+					$this->status("reject");
 					break;
 				case "accept" :
 					if($this->is_accept()){
-						$this->decision = "accept";
+						$this->status("accept");
 					}
 					break;
 			}
@@ -273,7 +301,7 @@ class DacuraResult extends DacuraObject {
 		}
 	}
 	
-	function undoDQSResult($gu){
+	function undoGraphResult($gu){
 		unset($this->candidate_graph_update);
 		$this->report_graph_update->addGraphResult($gu);
 	}
@@ -298,10 +326,14 @@ class DacuraResult extends DacuraObject {
 			$this->candidate_graph_update->setMeta($meta);
 		}
 	}
-	
 }
 
-class DQSResult {
+/**
+ * Represents the state changes that are caused by an update to the dacura api for a particular graph....
+ * @author chekov
+ *
+ */
+class GraphResult extends DacuraResult {
 	var $inserts = array();
 	var $deletes = array();
 	var $meta = array();//state changes {variable: [old, new])
@@ -366,7 +398,7 @@ class DQSResult {
 			if(!$this->errcode){
 				$this->errcode = 400;
 			}
-			$this->decision = 'reject';
+			$this->status('reject');
 			if(isset($this->errors[$gname])){
 				$this->errors[$gname] = array_merge($this->errors[$gname], $errs);
 			}
@@ -380,7 +412,7 @@ class DQSResult {
 	
 	function addOneGraphTestFail($gname, $iquads, $dquads, $errcode, $errmsg){
 		$this->errcode = $errcode;
-		$this->decision = 'reject';
+		$this->status('reject');
 		$err = array("type" => "test fail",
 				"action" => "write to graph",
 				"errcode" => $errcode,
@@ -397,7 +429,7 @@ class DQSResult {
 	}
 	
 	function graph_fail($gname, $errcode){
-		$this->decision = "reject";
+		$this->status("reject");
 		$this->errcode = $errcode;
 	}
 }

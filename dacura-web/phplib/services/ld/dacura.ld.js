@@ -57,20 +57,26 @@ dacura.ld.viewer = {
 	
 	hideLDInputs: function(formdiv){
 		$('tr#row-'+formdiv + "-ldurl").hide();
-		$('tr#row-'+formdiv + "-ldprops").hide();
+		$('tr#row-'+formdiv + "-contents").hide();
 		$('tr#row-'+formdiv + "-ldfile").hide();
+	},
+	
+	gatherNew: function(jqid){
+		alert(jqid);
+		var obj = dacura.tool.form.gather(jqid);
+		jpr(obj);
 	},
 	
 	showLDInput: function(formdiv, format){
 		this.hideLDInputs(formdiv); 
-		var ft = format == "text" ? "props" : format;
-		$('tr#row-'+formdiv + "-ld"+ft).show();	
+		var ft = format == "text" ? "-contents" : "-ld" + format;
+		$('tr#row-'+formdiv + ft).show();	
 	},
 	
 	drawLDProps: function(ldprops, mode, format){
 		var jqkey = '#'+this.div + " .ld-viewer-body";
 		if(format == "json" || format== "jsonld"){
-			if(mode == "view"){
+			if(!mode || mode == "view"){
 				$(jqkey).html("<div class='dacura-json-viewer'>" + JSON.stringify(ldprops, null, 4) + "</div>");				
 			}
 			else {
@@ -134,7 +140,7 @@ dacura.ld.viewer = {
 		this.format = ldo.format;
 		this.mode = ldo.mode;
 		this.options = ldo.options;
-		this.drawLDProps(ldo.ldprops, this.mode, this.format);
+		this.drawLDProps(ldo.contents, this.mode, this.format);
 	},
 	
 	loadURL: function(ipfield, target){
@@ -160,6 +166,14 @@ dacura.ld.viewer = {
 			 alert('The File APIs are not fully supported by this browser - file will be loaded on object creation.');
 		}
 		//alert(file + tfield)	
+	},
+	
+	validateNew: function(obj){
+		var errs = [];
+		//if(typeof obj.id != "string" || obj.id == ""){
+		//	return "Object ID must be set";
+		//}
+		return "";
 	}
 	
 }

@@ -7,6 +7,21 @@
  * @license GPL v2
  */
 class FileManager extends DacuraController {
+	
+	function fetchFileFromURL($url){
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		if($proxy = $this->getSystemSetting('http_proxy', false)){
+			curl_setopt($ch, CURLOPT_PROXY, $proxy);
+		}
+		$content = curl_exec($ch);
+		if(curl_getinfo($ch, CURLINFO_HTTP_CODE) != 200 || !$content){
+			return $this->failure_result("Failed to retrieve url: ".htmlspecialchars($url), curl_getinfo($ch, CURLINFO_HTTP_CODE), "info");
+		}
+		return $content;
+	}
+	
+	
 	/**
 	 * Caches data for later reuse
 	 * @param string $cname cache name

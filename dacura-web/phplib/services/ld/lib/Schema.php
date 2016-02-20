@@ -4,8 +4,8 @@
 
 require_once("NSResolver.php");
 require_once("LDO.php");
-require_once("phplib/services/schema/Graph.php");
-require_once("phplib/services/schema/Ontology.php");
+//require_once("phplib/services/schema/Graph.php");
+//require_once("phplib/services/schema/Ontology.php");
 
 class Schema extends DacuraObject {
 	var $cid;

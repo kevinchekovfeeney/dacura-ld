@@ -23,9 +23,15 @@ require_once "LDDelta.php";
  * @return boolean|array<'idmap': array, 'missing': array> - an array which contains a mapping 
  * from the old ids to new ids of any nodes whose ids has been changed during expansion. 
  */
-function expandLD(&$ldprops, $rules){
+function expandLD(&$ldprops, $rules, $multigraph = false){
 	$idmap = array();
-	generateBNIDS($ldprops, $idmap, $rules, true);
+	foreach($ldprops as $s => $obj){
+		if(isBlankNode($s) && isset($rules['replace_blank_ids']) && $rules['replace_blank_ids']){
+			unset($ldprops[$s]);				
+			$s = addAnonObj($obj, $ldprops, false, $idmap, $rules, getPrefixedURLLocalID($s));
+		}
+		generateBNIDS($ldprops[$s], $idmap, $rules);		
+	}
 	if(count($idmap) > 0){
 		$missing_refs = updateBNReferences($ldprops, $idmap, $rules);
 		if($missing_refs === false){
@@ -187,28 +193,34 @@ function updateBNReferences(&$ldprops, $idmap, $rules){
  * @param string $bnid the blanknode id that the object had in the structure of the document
  * @return string the id of the added node
  */
-function addAnonObj($obj, &$prop, $p, &$idmap, $rules, $bnid = false){
+function addAnonObj($obj, &$prop, $p, &$idmap, $rules, $oldid = false){
 	if(!isset($prop[$p]) or !is_array($prop[$p])){
 		$prop[$p] = array();
 	}
 	$demand_id_token = isset($rules['demand_id_token']) ? $rules['demand_id_token'] : "@id";
 	if(isset($obj[$demand_id_token]) && $obj[$demand_id_token]){
-		$bnid = $obj[$demand_id_token];
+		$demid = $obj[$demand_id_token];
 		unset($obj[$demand_id_token]);
-	}
-	elseif($bnid && isset($obj[$demand_id_token])){
-		unset($obj[$demand_id_token]);
-	}
-	if($bnid && isset($idmap[$bnid])){
-		$new_id = $idmap[$bnid];
 	}
 	else {
-		$new_id = genid($bnid, $rules);
+		$demid = false;
 	}
-	if($bnid && $bnid != $new_id){
-		$idmap[$bnid] = $new_id;
+	if($oldid && isset($idmap[$oldid])){
+		$new_id = $idmap[$oldid];
 	}
-	$prop[$p][$new_id] = $obj;
+	else {
+		$new_id = genid($demid, $rules, $oldid);
+	}
+	if($oldid && $oldid != $new_id){
+		$idmap[$oldid] = $new_id;
+	}
+	$new_id = "_:".$new_id;
+	if($p){
+		$prop[$p][$new_id] = $obj;
+	}
+	else {
+		$prop[$new_id] = $obj;
+	}
 	return $new_id;
 }
 
@@ -221,34 +233,19 @@ function addAnonObj($obj, &$prop, $p, &$idmap, $rules, $bnid = false){
  * @param string $rules rules for id generation
  * @return string the id of the new node.
  */
-function genid($bn = false, $rules = false){
+function genid($bn = false, $rules = false, $oldid = false){
 	if($bn && substr($bn, 0, 2) == "_:"){
 		$bn = substr($bn, 2);
 	}
 	$min_id_length = isset($rules['mimimum_id_length']) ? $rules['mimimum_id_length'] : 1;
 	$max_id_length = isset($rules['maximum_id_length']) ? $rules['maximum_id_length'] : 40;
-	if($bn && $rules && isset($rules['allow_demand_id'])){
+	if($bn && $rules && isset($rules['allow_demand_id']) && $rules['allow_demand_id']){
 		if(ctype_alnum($bn) && strlen($bn) > $min_id_length && strlen($bn) < $max_id_length ){
-			if($rules && isset($rules['cwurl']) && $rules['cwurl']){ //in closed world mode, we generate an addressable url based on the url of the object
-				return $rules['cwurl']."/".$bn;
-			}
-			else {
-				return "_:".$bn;
-			}					
-		}
+			return $bn;
+		}					
 	}
-	
 	$idgenalgorithm = $rules && isset($rules['id_generator']) ? $rules['id_generator'] : "uniqid_base36";
-	$prefix = $rules && isset($rules['cwurl']) ? $rules['cwurl'] : "_:";
-	return $prefix.$idgenalgorithm();
-	/*		if($bn == "_:ldo"){
-				return $idbase;
-			}
-			elseif($bn == "_:meta"){
-				return $idbase."/meta";
-			}
-	}
-	return $idbase . "/" . uniqid_base36(false);*/
+	return $idgenalgorithm(isset($rules['extra_entropy']) && $rules['extra_entropy'], $oldid);
 }
 
 /**
@@ -1284,7 +1281,9 @@ function toJSONLD($props, $rules){
 	return $nprops;
 }
 
-
+function fromJSONLD($jsonld, $rules){
+	
+}
 /*
  * Functions for reverse engingeering embedded objects from triples
  * Not a general purpose solution!

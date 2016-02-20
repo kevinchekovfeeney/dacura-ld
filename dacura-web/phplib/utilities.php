@@ -176,6 +176,17 @@ function getNamespacePortion($str){
 }
 
 /**
+ * Returns the local portion of a namespaced url
+ * @param string $str the string
+ * @return string the local id portion (false if it does not exist)
+ */
+function getPrefixedURLLocalID($str){
+	if(is_array($str)) return false;
+	if(!($x = strpos($str, ":"))) return false;
+	return substr($str, $x);
+}
+
+/**
  * Tests for a string being a blank node url (_:...)
  * @param string $str the string to test
  * @return boolean

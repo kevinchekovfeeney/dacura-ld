@@ -109,12 +109,13 @@ class LDDBManager extends DBManager {
 			$stmt->execute(array($ldoid, $cid, $type));
 			$row = $stmt->fetch(PDO::FETCH_ASSOC);
 			if($row){
+				$cwbase = $this->getSystemSetting("install_url").$cid."/".$type."/";
 				$ctype = ucfirst($row['type']);
 				if(class_exists($ctype)){
-					$ldo = new $ctype($ldoid);
+					$ldo = new $ctype($ldoid, $cwbase, $this->service->logger);
 				}
 				else {
-					$ldo = new LDO($ldoid);
+					$ldo = new LDO($ldoid, $cwbase, $this->service->logger);
 				}
 				$ldo->loadFromDBRow($row);
 			}

@@ -4,6 +4,7 @@
 		<div class='subscreen-intro-message'><?=$params['meta_intro_msg']?></div>
 	</div>
 	<?php } if(in_array("ldo-contents", $params['subscreens'])) { ?>
+	<div class="dacura-subscreen" id='ldo-contents' title='Contents'>
 		<div class='subscreen-intro-message'><?=$params['contents_intro_msg']?></div>
 		<div id="show-ldo"></div>
 	</div>

@@ -40,7 +40,7 @@ class LDPropertyValue extends DacuraObject {
 	function __construct($val, $rules = false){
 		if(is_array($rules)){
 			$this->rules = $rules;
-			$this->cwurl = $rules['cwurl'];
+			$this->cwurl = isset($rules['cwurl']) ? $rules['cwurl'] : false;
 		}
 		else {
 			$this->cwurl = $rules;

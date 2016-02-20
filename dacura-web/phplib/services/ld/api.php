@@ -15,7 +15,7 @@ if(!$x && !$dacura_server->userHasRole("admin", "all")){//meaning that this API 
 }
 else {
 	if(!$x){
-		$ldo_type = isset($_GET['ldtype']) ? $_GET['ldtype'] : "LDO";
+		$ldo_type = isset($_GET['ldtype']) ? $_GET['ldtype'] : "";
 	}
 	getRoute()->get('/', 'list_ldos');//list the linked data objects of a certain type (or updates to them)
 	getRoute()->get('/update', 'list_updates');//list the linked data objects of a certain type (or updates to them)
@@ -32,31 +32,61 @@ else {
 }
 
 
-/*
- * post requests take input as a application/json
+/**
+ * Create a new Linked Data Object and return the result to the user
+ * 
+ * POST /
+ * 
+ * Takes input as a json object with the following parameters
+ * * [demand_id_token] - the requested id of the object
+ * * options | fail_if_id_denied, include_graph_results
+ * * format
+ * * ldtype 
+ * * contents
+ * * ldfile
+ * * ldurl
+ *  
  */
+
 function create_ldo(){
 	set_time_limit (0);
 	global $dacura_server, $ldo_type;
 	$dacura_server->init("create");
-	$ar = new AnalysisResults("Create");
+	$ar = new DacuraResult("Create");
 	$json = file_get_contents('php://input');
 	$obj = json_decode($json, true);
 	if(!$obj){
 		$ar->failure(400, "Communication Error", "create request does not have a valid json encoded body");
 		return $dacura_server->writeDecision($ar);
 	}
+	if(!$ldo_type){
+		if(isset($obj['ldtype']) && $obj['ldtype'] && isset(LDO::$ldo_types[$obj['ldtype']])){
+			$ldo_type = $obj['ldtype'];
+		}
+		else {
+			$ar->failure(400, "Request Error", "create request does not have a valid linked data type associated with it");
+			return $dacura_server->writeDecision($ar);				
+		}
+	}
 	$demand_id = false;
 	if(isset($obj[$dacura_server->getServiceSetting("demand_id_token", "@id")])){
 		$demand_id = $obj[$dacura_server->getServiceSetting("demand_id_token", "@id")];
 	}
-	$format = (isset($obj['format'])) ? strtolower($obj['format']) : "json";
+	$format = (isset($obj['format'])) ? strtolower($obj['format']) : "";
 	$options = (isset($obj['options'])) ? $obj['options'] : array();
 	$create_obj = array();
-	if(isset($obj['contents'])) $create_obj['contents'] = $obj['contents'];
+	if(isset($obj['contents'])){
+		 $create_obj['contents'] = $obj['contents'];
+	}
+	elseif(isset($obj['ldfile'])){
+		$create_obj['ldfile'] = $obj['ldfile'];
+	}
+	elseif(isset($obj['ldurl'])){ 
+		$create_obj['ldurl'] = $obj['ldurl'];
+	}
 	if(isset($obj['meta'])) $create_obj['meta'] = $obj['meta'];
 	$ar = $dacura_server->createLDO($ldo_type, $create_obj, $demand_id, $format, $options, isset($obj['test']) && $obj['test']);
-	return $dacura_server->writeDecision($ar);
+	return $dacura_server->writeDecision($ar, $format, $options);
 }
 
 

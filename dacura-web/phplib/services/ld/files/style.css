@@ -4,12 +4,6 @@
 General purpose 
 */
 
-#tab-holder {
-	font-family: 'Open Sans', Helvetica;
-	padding-top: 10px;
-	margin-top: 6px;
-}
-
 .full-browser-overlay {
 	padding: 20px 6px;
 	margin-top: -40px;
@@ -200,7 +194,8 @@ div#version-header {
 	overflow: auto;	
  }
 
- .dacura-json-viewer {
+.dacura-export-viewer,
+.dacura-json-viewer {
  	white-space: pre;
  	unicode-bidi: embed;
  	font-size: 0.85em;
@@ -747,12 +742,6 @@ div#ld-editor textarea {
 	cursor:pointer;
 	-webkit-border-radius: 5px;
 	border-radius: 5px; 
-}
-
-*, *:before, *:after {
-  -moz-box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-  box-sizing: border-box;
 }
 
 div.rbdecision {

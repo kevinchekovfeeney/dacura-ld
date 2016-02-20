@@ -1,11 +1,10 @@
 <?php
 include_once("lib/PolicyEngine.php");
-include_once("lib/LDOCreateRequest.php");
 include_once("lib/LDOUpdate.php");
 include_once("lib/LDO.php");
 include_once("lib/Schema.php");
+include_once("lib/DacuraResult.php");
 include_once("lib/GraphManager.php");
-require_once("lib/AnalysisResults.php");
 require_once("lib/NSResolver.php");
 require_once("LdService.php");
 include_once("LDDBManager.php");
@@ -63,14 +62,19 @@ class LdDacuraServer extends DacuraServer {
 	 */
 	function createLDO($type, $create_obj, $demand_id, $format, $options, $test_flag = false){
 		$cr = new DacuraResult("Creating $type", $test_flag);
-		if($demand_id != ($id = $this->getNewLDOLocalID($demand_id, $type))){
+		if($demand_id != ($id = $this->getNewLDOLocalID($demand_id, $type)) && $demand_id){
+			if(isset($options['fail_on_id_denied']) && $options['fail_on_id_denied']){
+				return $cr->failure(400, "Failed to allocate requested id ".htmlspecialchars($demand_id));
+			}
 			$this->addIDAllocationWarning($cr, $type, $test_flag, $id);
 		}		
 		if(!($nldo = $this->createNewLDObject($id, $type))){
 			return $cr->failure($this->errcode, "Request Create Error", "New $type object sent to API had formatting errors. ".$this->errmsg);
 		}
 		$nldo->setContext($this->cid());
-		if(!$nldo->loadNewObjectFromAPI($create_obj, $format, $options)){
+		$nldo->setNamespaces($this->nsres);
+		$rules = $this->getServiceSetting("ldo_create_content_rules", $this->getNewLDOContentRules($type));
+		if(!$nldo->loadNewObjectFromAPI($create_obj, $format, $options, $rules)){
 			return $cr->failure($nldo->errcode, "Protocol Error", "New $type object sent to API had formatting errors. ".$nldo->errmsg);
 		}
 		$cr->add($this->getPolicyDecision("create", $nldo));
@@ -89,7 +93,7 @@ class LdDacuraServer extends DacuraServer {
 			}
 		}
 		$dont_publish = !$cr->is_accept() || $test_flag;
-		$cr->setDQSResult($this->objectPublished($nldo, $dont_publish), $options);
+		$cr->setGraphResult($this->objectPublished($nldo, $dont_publish), $options);
 		$nldo->status($cr->status());
 		if(isset($options['show_ld_triples']) && $options['show_ld_triples']){
 			$cr->setLDGraphTriples($nldo->triples());
@@ -100,7 +104,7 @@ class LdDacuraServer extends DacuraServer {
 			$cr->add($disaster);
 			if($cr->includesGraphChanges()){
 				$recovery = $this->objectDeleted($nldo);
-				$cr->undoDQSResult($recovery);
+				$cr->undoGraphResult($recovery);
 			}
 		}
 		$cr->set_result($nldo);
@@ -126,10 +130,10 @@ class LdDacuraServer extends DacuraServer {
 	 * Called to trigger any necessary DQS tests when a new object is published (status = accept)
 	 * @param array $nobj the new object to be published
 	 * @param boolean $test_flag if true, this is just a test, no graph updates will take place
-	 * @return DacuraResult
+	 * @return GraphResult
 	 */
 	function objectPublished($nobj, $test_flag = false){
-		$nopr = new DacuraResult("object publication");
+		$nopr = new GraphResult("No graph validation or publication configured for object publication.", $test_flag);
 		return $nopr->accept();
 	}
 	
@@ -137,10 +141,10 @@ class LdDacuraServer extends DacuraServer {
 	 * Called to trigger any necessary DQS tests when an object is deleted (status = deleted)
 	 * @param array $nobj the object to be deleted
 	 * @param boolean $test_flag if true, this is just a test, no graph updates will take place
-	 * @return DacuraResult
+	 * @return GraphResult
 	 */
 	function objectDeleted($nobj, $test_flag = false){
-		$nopr = new DacuraResult("object deletion");
+		$nopr = new GraphResult("No graph validation or publication configured for object deletion.");
 		return $nopr->accept();
 	}
 	
@@ -151,12 +155,18 @@ class LdDacuraServer extends DacuraServer {
 	 * @return an instance of the object 
 	 */
 	function createNewLDObject($id, $type){
-		$this->update_type = $type;
+		$cwbase = $this->getSystemSetting("install_url").$this->cid()."/".$type."/";
 		$uclass = ucfirst($type);
-		$uldo = new $uclass($id);
-		return $uldo;
+		if(class_exists($uclass)){
+			$ldo = new $uclass($id, $cwbase, $this->service->logger);
+		}
+		else {
+			$ldo = new LDO($id, $cwbase, $this->service->logger);
+		}
+		$ldo->ldtype = $type;
+		return $ldo;
 	}
-	
+		
 	/**
 	 * Generates a new id for a new ld object
 	 * @param string $demand_id the requested id 
@@ -170,11 +180,30 @@ class LdDacuraServer extends DacuraServer {
 		elseif($this->dbman->errcode){
 			return $this->failure_result("Failed to check for duplicate ID ".$this->dbman->errmsg, $this->dbman->errcode);
 		}
-		$rules = $this->getNewLDORules($type);
+		$rules = $this->getServiceSetting("ldo_create_rules", $this->getNewLDORules($type));
+		//opr($rules);
 		return genid($demand_id, $rules);
 	}
 	
-	function getNewLDORules(){}
+	function getNewLDORules($type){
+		$x = array("allow_demand_id" => true, "mimimum_id_length" => 1, "maximum_id_length" => 80, "extra_entropy" => false);
+		return $x;
+	}
+	
+	function getNewLDOContentRules($type){
+		$x = array(
+				"allow_demand_id" => true, 
+				"mimimum_id_length" => 1, 
+				"maximum_id_length" => 80, 
+				"extra_entropy" => false,
+				"expand_embedded_objects" => true,
+				"replace_blank_ids" => true,
+				"property_structure_required" => true,
+				"forbid_blank_nodes" => false,
+				"require_blank_nodes" => true,
+		);
+		return $x;
+	}
 	
 	
 	/**
@@ -547,7 +576,7 @@ class LdDacuraServer extends DacuraServer {
 	function rollbackUpdate(DacuraResult &$ar, LDOUpdate &$uldo){
 		if($ar->includesGraphChanges()){
 			$recovery = $this->undoUpdatesToGraph($uldo);
-			$ar->undoDQSResult($recovery);
+			$ar->undoGraphResult($recovery);
 		}
 	}
 	
@@ -566,11 +595,11 @@ class LdDacuraServer extends DacuraServer {
 				return $ar;
 			}
 			$gu = $this->publishUpdateToGraph($uldo, $ar->status(), $hypo || $test_flag);
-			$ar->setDQSResult($gu, $hypo, $options);
+			$ar->setGraphResult($gu, $hypo, $options);
 		}
 		elseif($ar->is_pending() && (!isset($options['test_unpublished']) || $options['test_unpublished'] == false)){
 			$gu = $this->publishUpdateToGraph($uldo, "pending", true);
-			$ar->setDQSResult($gu, true, $options);
+			$ar->setGraphResult($gu, true, $options);
 		}
 		$uldo->set_status($ar->status());
 		if(isset($options['show_update_triples']) && $options['show_update_triples']){
@@ -592,7 +621,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param LDOUpdate $uldo - the ldo update in question
 	 * @param string $decision - the status of the update
 	 * @param boolean $testflag - true if this is just a test
-	 * @return DacuraResult
+	 * @return GraphResult
 	 */
 	function publishUpdateToGraph($uldo, $decision, $testflag ){
 		if($uldo->bothPublished()){
@@ -607,7 +636,7 @@ class LdDacuraServer extends DacuraServer {
 				$gu = $this->objectPublished($uldo->changed, $dont_publish);
 			}
 			else {
-				$gu = new DacuraResult("Nothing to save to graph");
+				$gu = new GraphResult("Nothing to save to graph");
 			}
 		}
 		return $gu;
@@ -616,7 +645,7 @@ class LdDacuraServer extends DacuraServer {
 	/**
 	 * Called to roll back the updates to the dqs graph 
 	 * @param LDOUpdate $uldo the LDO Update object in question
-	 * @return DacuraResult
+	 * @return GraphResult
 	 */
 	function undoUpdatesToGraph($uldo){
 		if($uldo->bothPublished()){
@@ -628,7 +657,7 @@ class LdDacuraServer extends DacuraServer {
 		elseif($uldo->changedPublished()){
 			return $this->objectDeleted($uldo->changed);//wr
 		}
-		$ar = new DacuraResult("Nothing to undo in report graph");
+		$ar = new GraphResult("Nothing to undo in report graph");
 		return $ar;
 	}
 	
@@ -645,7 +674,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @return DacuraResult
 	 */
 	function updateUpdate($id, $obj, $meta, $options, $test_flag = false){
-		$ar = new DacuraResult("Update $this->update_type $id", $test_flag);
+		$ar = new GraphResult("Update $this->update_type $id", $test_flag);
 		if(!$orig_upd = $this->loadUpdate($id)){
 			return $ar->failure($this->errcode, "Failed to load Update $id", $this->errmsg);
 		}
@@ -820,10 +849,10 @@ class LdDacuraServer extends DacuraServer {
 			$gu = $this->saveUpdatedUpdate($new_upd, $orig_upd, $umode);
 		}
 		else {
-			$gu = new DacuraResult("no dqs tests");
+			$gu = new GraphResult("no dqs tests");
 			$gu->accept();
 		}
-		$ar->setDQSResult($gu, $hypo);
+		$ar->setGraphResult($gu, $hypo);
 		return $umode;
 	}
 	
@@ -832,7 +861,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param LDOUpdate $ncur new update object
 	 * @param LDOUpdate $ocur old update object
 	 * @param string $umode update mode - rollback, live, normal
-	 * @return DacuraResult
+	 * @return GraphResult
 	 */
 	function testUpdatedUpdate($ncur, $ocur, $umode){
 		if($umode == "rollback"){
@@ -851,7 +880,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param LDOUpdate $ncur new update object
 	 * @param LDOUpdate $ocur old update object
 	 * @param string $umode update mode - rollback, live, normal
-	 * @return DacuraResult
+	 * @return GraphResult
 	 */
 	function saveUpdatedUpdate($ncur, $ocur, $umode){
 		if($umode == "rollback"){
@@ -870,7 +899,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param LDOUpdate $cur the update object
 	 * @param string $umode the mode: rollback or normal
 	 * @param string $testflag
-	 * @return DacuraResult
+	 * @return GraphResult
 	 */
 	function updatedUpdate($cur, $umode, $testflag = false){
 		if($cur->bothPublished()){
@@ -900,7 +929,7 @@ class LdDacuraServer extends DacuraServer {
 			}
 		}
 		else {
-			$ar = new DacuraResult("Nothing to save to report graph");
+			$ar = new GraphResult("Nothing to save to report graph");
 			return $ar;
 		}
 	}
@@ -960,13 +989,13 @@ class LdDacuraServer extends DacuraServer {
 	 */
 	function sendRetrievedLDO($ar, $format, $options){
 		if($ar->is_error() or $ar->is_reject() or $ar->is_pending()){
-			$this->writeDecision($ar);
+			$this->writeDecision($ar, $options);
 		}
 		else {
 			if(!$this->sendLDO($ar->result, $format, $options)){
 				$ar = new DacuraResult("export ldo");
 				$ar->failure($this->errcode, "Failed to export data to $format", $this->errmsg);
-				$this->writeDecision($ar);
+				$this->writeDecision($ar, $options);
 			}
 		}
 	}
@@ -996,7 +1025,7 @@ class LdDacuraServer extends DacuraServer {
 	 */
 	function sendRetrievedUpdate($ar, $format, $options, $version){
 		if($ar->is_error() or $ar->is_reject() or $ar->is_confirm() or $ar->is_pending()){
-			$this->writeDecision($ar);
+			$this->writeDecision($ar, $options);
 		}
 		else {
 			$this->sendUpdate($ar->result, $format, $options, $version);
@@ -1008,7 +1037,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param DacuraResult $ar
 	 * @param string $format the format for display
 	 * @param string $display a string containing display options
-	 * @param array $options options
+	 * @param array $osptions options
 	 * @param integer $version the version to be viewed
 	 * @return boolean true if successfully sent
 	 */
@@ -1022,7 +1051,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param DacuraResult $ar the result object
 	 * @return boolean true if successfully sent
 	 */
-	function writeDecision(DacuraResult $ar){
+	function writeDecision(DacuraResult $ar, $format = "json", $options = array()){
 		if($ar->is_error()){
 			http_response_code($ar->errcode);
 			$this->logResult($ar->errcode, $ar->status()." : ".$ar->action);
@@ -1042,7 +1071,7 @@ class LdDacuraServer extends DacuraServer {
 		else {
 			$this->logResult(200, $ar->status(), $ar->action);
 		}
-		$json = json_encode($ar);
+		$json = json_encode($ar->forAPI($format, $options, $this));
 		if($json){
 			echo $json;
 			return true;
@@ -1142,7 +1171,7 @@ class LdDacuraServer extends DacuraServer {
 	
 	
 	function getPolicyDecision($action, $args){
-		return $this->policy->getPolicyDecision($action, $this->update_type, $args);
+		return $this->policy->getPolicyDecision($action, "x", $args);
 	}
 	
 	
