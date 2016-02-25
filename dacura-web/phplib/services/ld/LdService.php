@@ -22,6 +22,10 @@ class LdService extends DacuraService {
 		$this->included_css[] = $this->get_service_file_url("style.css");
 	}
 	
+	function getMinimumFacetForAccess(DacuraServer &$dacura_server){
+		return true;
+	}
+	
 	/*
 	 * The next functions render snippets of html that are needed by multiple services
 	 */
@@ -157,7 +161,7 @@ class LdService extends DacuraService {
 	}
 	
 	function renderContentDirectly(LdDacuraServer $dacura_server){
-		$type = $_GET['type'];
+		$type = isset($_GET['ldtype']) ? $_GET['ldtype'] : $this->servicename;
 		$dr = $dacura_server->getLDO($this->screen, $type);
 		if(!$dr->is_accept()){
 			return $dacura_server->writeDecision($dr);
@@ -168,7 +172,7 @@ class LdService extends DacuraService {
 		if($mime && $mime != $dacura_server->getMimeTypeForFormat("html")){
 			if(isset($options['format'])){
 				if($dacura_server->getMimeTypeForFormat($options['format']) != $mime){
-					//write http error
+					return $dacura_server->write_http_error(400, "mismatch betweeen format request ".$options['format']. " and mime type $mime");
 				}
 			}
 			$format = $dacura_server->getFormatForMimeType($mime);
@@ -183,7 +187,7 @@ class LdService extends DacuraService {
 	}
 	
 	function showFullPage($dacura_server){
-		if(isset($_GET['content_directly']) && $_GET['content_directly']){
+		if(isset($_GET['direct']) && $_GET['direct']){
 			return false;
 		}
 		$available_types = $dacura_server->getAvailableMimeTypes();
@@ -289,6 +293,9 @@ class LdService extends DacuraService {
 			if(in_array("ldo-meta", $subscreens)){
 				$params['meta_intro_msg'] = $this->smsg('view_meta_intro', $mappings);
 			}				
+			if(in_array("ldo-analysis", $subscreens)){
+				$params['analysis_intro_msg'] = $this->smsg('view_analysis_intro', $mappings);
+			}				
 		}
 		elseif($screen == "list"){
 			if(in_array("ldo-list", $subscreens)){
@@ -316,9 +323,10 @@ class LdService extends DacuraService {
 		$params['testcreate_button_text'] = $this->smsg('testcreate_button_text');
 		$params['create_ldo_fields'] = $this->sform("create_ldo_fields");
 		$params['create_ldo_fields']['ldtype']['options'] = LDO::$ldo_types;
-		$params['create_ldo_fields']['ldformat']['options'] = LDO::$valid_input_formats;
+		$params['create_ldo_fields']['ldformat']['options'] = array_merge(array("" => "Auto-detect"), LDO::$valid_input_formats);
 		$params['direct_create_allowed'] = true;
 		$params["demand_id_token"] = $this->getServiceSetting("demand_id_token", "@id");
+		$params['create_options'] = $this->getServiceSetting("create_options", array());
 	}
 
 	function getListSubscreens($dacura_server, $u){

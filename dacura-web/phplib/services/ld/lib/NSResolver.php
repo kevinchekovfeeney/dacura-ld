@@ -267,22 +267,18 @@ class NSResolver extends DacuraObject {
 	
 	/**
 	 * Returns a mapping of prefixes to full urls of namespaces used in the ld object array
-	 * @param string $id the id of the linked data object (subject id)
 	 * @param array $ldprops ld object property array
 	 * @param string $cwurl the closed world url of the object
 	 * @return array<string:string> map of prefixes to full urls
 	 */
-	function getNamespaces($id, $ldprops, $cwurl){
+	function getNamespaces($ldprops, $cwurl, $compressed = false){
 		$ns = array();
-		$this->getNamespaceUtilisation($id, $ldprops, $cwurl, $ns);
+		$this->getNamespaceUtilisation($ldprops, $cwurl, $ns);
 		$op = array();
-		foreach($ns as $pre => $urls){
+		foreach(array_keys($ns) as $pre ){
 			$exp = $this->getURL($pre);
 			if($exp){
 				$op[$pre] = $exp;
-			}
-			else {
-				$op[$pre] = $urls[0];
 			}
 		}
 		return $op;
@@ -295,24 +291,31 @@ class NSResolver extends DacuraObject {
 	 * @param string $cwurl the closed world url of the object
 	 * @param array $ns map that will be filled by the method with prefixes to information about their utilisation
 	 */	
-	function getNamespaceUtilisation($eid, $ldprops, $cwurl, &$ns){
-		$this->addSubjectToNSUtilisation($ns, $eid);
-		foreach($ldprops as $p => $v){
+	function getNamespaceUtilisation($ldprops, $cwurl, &$ns){
+		foreach($ldprops as $eid => $ldobj){
+			$this->addSubjectToNSUtilisation($ns, $eid);
+			$this->getLDONamespaceUtilisation($eid, $ldobj, $cwurl, $ns);
+		}
+	}
+	
+	function getLDONamespaceUtilisation($lid, $ldo, $cwurl, &$ns){
+		foreach($ldo as $p => $v){				
 			$pv = new LDPropertyValue($v, $cwurl);
 			if($pv->embeddedlist()){
 				foreach($v as $i => $obj){
 					$this->addPredicateToNSUtilisation($ns, $p);
-					$this->addObjectToNSUtilisation($ns, $i, $eid, $p);
+					$this->addObjectToNSUtilisation($ns, $i, $lid, $p);
 				}
+				$this->getNamespaceUtilisation($obj, $cwurl, $ns);
 			}
 			elseif($pv->embedded()){
 				$this->addPredicateToNSUtilisation($ns, $p);
-				$this->getNamespaceUtilisation($eid, $v, $cwurl, $ns);
+				$this->getLDONamespaceUtilisation("", $v, $cwurl, $ns);
 			}
 			elseif($pv->objectlist()){
 				foreach($v as $i => $obj){
 					$this->addPredicateToNSUtilisation($ns, $p);
-					$this->getNamespaceUtilisation($eid, $obj, $cwurl, $ns);
+					$this->getLDONamespaceUtilisation("", $obj, $cwurl, $ns);
 				}
 			}
 			else{
@@ -320,21 +323,21 @@ class NSResolver extends DacuraObject {
 					foreach($v as $val){
 						$this->addPredicateToNSUtilisation($ns, $p);
 						if($pv->valuelist()){
-							$this->addObjectToNSUtilisation($ns, $val, $eid, $p);
+							$this->addObjectToNSUtilisation($ns, $val, $lid, $p);
 						}
 						elseif(isset($val['type']) && $val['type'] == "uri"){
-							$this->addObjectToNSUtilisation($ns, $val['value'], $eid, $p);
+							$this->addObjectToNSUtilisation($ns, $val['value'], $lid, $p);
 						}
 					}
 				}
 				elseif($pv->link()){
 					$this->addPredicateToNSUtilisation($ns, $p);
-					$this->addObjectToNSUtilisation($ns, $v, $eid, $p);
+					$this->addObjectToNSUtilisation($ns, $v, $lid, $p);
 				}
 				elseif($pv->objectliteral()){
 					$this->addPredicateToNSUtilisation($ns, $p);
 					if(isset($v['type']) && $v['type'] == "uri"){
-						$this->addObjectToNSUtilisation($ns, $v['value'], $eid, $p);
+						$this->addObjectToNSUtilisation($ns, $v['value'], $lid, $p);
 					}
 				}
 			}

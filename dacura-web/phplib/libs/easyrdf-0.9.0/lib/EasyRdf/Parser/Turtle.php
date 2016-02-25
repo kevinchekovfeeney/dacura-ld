@@ -62,6 +62,8 @@ class EasyRdf_Parser_Turtle extends EasyRdf_Parser_Ntriples
     
     protected $line;
     protected $column;
+    protected $coffset;
+    protected $clen;
 
     /**
      * Constructor
@@ -99,6 +101,8 @@ class EasyRdf_Parser_Turtle extends EasyRdf_Parser_Ntriples
         
         $this->line = 1;
         $this->column = 1;
+        $this->coffset = 0;
+        $this->clen = mb_strlen($this->data, "UTF-8");
 
         $this->resetBnodeMap();
 
@@ -1157,7 +1161,9 @@ class EasyRdf_Parser_Turtle extends EasyRdf_Parser_Ntriples
     protected function read()
     {
         if (!empty($this->data)) {
-            $c = mb_substr($this->data, 0, 1, "UTF-8");
+          $c = mb_substr($this->data, 0, 1, "UTF-8");
+        //if($this->coffset < $this->clen){
+        	//$c = mb_substr($this->data, $this->coffset, 1, "UTF-8");
             // Keep tracks of which line we are on (0A = Line Feed)
             if ($c == "\x0A") {
                 $this->line += 1;
@@ -1165,7 +1171,8 @@ class EasyRdf_Parser_Turtle extends EasyRdf_Parser_Ntriples
             } else {
                 $this->column += 1;
             }
-
+			$this->coffset++;
+            
             if (version_compare(PHP_VERSION, '5.4.8', '<')) {
                 // versions of PHP prior to 5.4.8 treat "NULL" length parameter as 0
                 $this->data = mb_substr($this->data, 1, mb_strlen($this->data), "UTF-8");
@@ -1185,8 +1192,10 @@ class EasyRdf_Parser_Turtle extends EasyRdf_Parser_Ntriples
      */
     protected function peek()
     {
-        if (!empty($this->data)) {
-            return mb_substr($this->data, 0, 1, "UTF-8");
+         if (!empty($this->data)) {
+    	    return mb_substr($this->data, 0, 1, "UTF-8");
+    	//if($this->coffset < $this->clen){
+    	//	return mb_substr($this->data, $this->coffset, 1, "UTF-8");
         } else {
             return -1;
         }
@@ -1200,8 +1209,10 @@ class EasyRdf_Parser_Turtle extends EasyRdf_Parser_Ntriples
     protected function unread($c)
     {
         # FIXME: deal with unreading new lines
-        $this->column -= mb_strlen($c, "UTF-8");
+        $bytes = mb_strlen($c, "UTF-8");
+        $this->column -= $bytes;
         $this->data = $c . $this->data;
+        //$this->coffset -= $bytes;
     }
 
     /** @ignore */

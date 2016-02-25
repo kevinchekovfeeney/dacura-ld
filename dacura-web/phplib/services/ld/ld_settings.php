@@ -1,25 +1,27 @@
 <?php
 $settings = array(
 	"service-button-title" => "Linked Data",
-	"demand_id_token" => "request_id",	
+	"demand_id_token" => "request_id",
+	"test_unpublished_ldos" => true,
+	"create_options" => array("show_dqs_triples" => 1, "show_ld_triples" => 1, "fail_on_id_denied" => 1),
 	"tables" => array(
 		"history" => array("datatable_options" => array(
 			"jQueryUI" => true, "scrollX" => false, "info" => true, "order" => array(0, "desc"),
 			"aoColumns" => array(null, null,  array("bVisible" => false), array("iDataSort" => 2), array("bVisible" => false), array("iDataSort" => 4), null, null))				
 		),
 		"ldoupdates" => array("datatable_options" => array(
-			"jQueryUI" => true, "scrollX" => false, "info" => true, "order" => array(0, "desc"), 
+			"jQueryUI" => true, "scrollX" => false, "searching" => false, "info" => true, "pageLength" => 50, "order" => array(0, "desc"), 
 			"aoColumns" => array(null, null, null, null, null, array("bVisible" => false), array("iDataSort" => 5), array("bVisible" => false), array("iDataSort" => 7)))				
 		),
 		"ld" => array("datatable_options" => array(
-			"jQueryUI" => true, "scrollX" => false, "pageLength" => 20, "lengthMenu" => array(10, 20, 50, 75, 100), 
+			"jQueryUI" => true, "searching" => false, "scrollX" => false, "pageLength" => 20, "lengthMenu" => array(10, 20, 50, 75, 100), 
 			"info" => true, "order" => array(8, "desc"), 
-				"aoColumns" => array(null, null, null, null, null, array("iDataSort" => 6), array("bVisible" => false), array("iDataSort" => 8), array("bVisible" => false)))
+				"aoColumns" => array(null, null, null, null, null, null, array("bVisible" => false, "iDataSort" => 6), array("bVisible" => false), array("iDataSort" => 8), array("bVisible" => false), null, array("orderable" => false)))
 		), 
 		"updates" => array("datatable_options" => array(
 			"jQueryUI" => true, "scrollX" => false, "pageLength" => 20, "lengthMenu" => array(10, 20, 50, 75, 100), 
 			"info" => true, "order" => array(10, "desc"), 
-				"aoColumns" => array(null, null, null, null, null, null, null, array("iDataSort" => 8), array("bVisible" => false), array("iDataSort" => 10), array("bVisible" => false)))
+				"aoColumns" => array(null, null, null, null, null, null, null, array("iDataSort" => 8), array("bVisible" => false), array("iDataSort" => 10), array("bVisible" => false), array("orderable" => false)))
 		)
 	),
 	"messages" => array(
@@ -40,7 +42,7 @@ $settings = array(
 		"status" =>	array("label" => "Status", "help" => "The current status of the object", "type" => "status"),
 		"image" => array("type" => "image", "label" => "Image", "help" => "An image which will represent the object on pages."),
 		"url" => array("label" => "Canonical URL", "type" => "url", "help" => "The External URL which represents the 'canonical' id of this object (to support purls, etc)."),
-		"ldmeta" => array("label" => "Object Meta-data", "type" => "complex", "input_type" => "custom", "help" => "Arbitrary json meta-data that is associated with the object"),
+		"meta" => array("label" => "Object Meta-data", "type" => "complex", "input_type" => "custom", "help" => "Arbitrary json meta-data that is associated with the object"),
 		"ldsource" => array("label" => "Contents Source", "type" => "choice", "options" => array("text" => "Textbox", "url" => "Import from URL", "file" => "Upload File"), "input_type" => "radio", "help" => "You can choose to import the contents of the linked data object from a url, a local file, or by inputting the text directly into the textbox here"),
 		"ldformat" => array("label" => "Contents Format", "type" => "choice", "help" => "The contents of the object (in RDF - Linked Data format)"),
 		"ldurl" => array("label" => "Import URL", "type" => "url", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("download" => array("title" => "Load URL"))),

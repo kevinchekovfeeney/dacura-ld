@@ -17,7 +17,7 @@ class PolicyEngine extends DacuraObject {
 	var $decisions = array(
 		"view" => array("default" => "accept"),	
 		"update" => array("default" => "accept"),	
-		"create" => array("default" => "accept"),	
+		"create" => array("default" => "pending"),	
 		"delete" => array("default" => "accept"),	
 		"view update" => array("default" => "accept"),	
 		"update update" => array("default" => "accept"),	
@@ -35,8 +35,8 @@ class PolicyEngine extends DacuraObject {
 	 * @return string 
 	 */
 	function getPolicyDefaultDecision($action, $type){
-		$decisions = $this->decision[$action];
-		if(isset($decision[$type]))return $decisions[$type];
+		$decisions = $this->decisions[$action];
+		if(isset($decisions[$type]))return $decisions[$type];
 		return $decisions["default"];
 	}
 	
@@ -49,7 +49,8 @@ class PolicyEngine extends DacuraObject {
 	 */
 	function getPolicyDecision($action, $type, $context){
 		$ar = new DacuraResult("System policy for $action");
-		$ar->status($this->getPolicyDefaultDecision($action, $type));
+		$dec = $this->getPolicyDefaultDecision($action, $type);
+		$ar->status($dec);
 		if($action == "update update"){
 			return $this->updateUpdate($context[0], $context[1], $ar);
 		}

@@ -159,17 +159,10 @@ class DacuraService extends DacuraObject {
 			}
 			$this->loadContextSettings($this->settings, $srvr);
 			$this->loadServiceContextSettings($this->servicename, $this->settings[$this->servicename], $srvr);
-			$u = $srvr->getUser();
-			if($u){
-				$this->logger->user_name = $u->getName();
-			}
-			else {
-				$this->logger->user_name = $_SERVER['REMOTE_ADDR'];				
-			}
-			return $srvr;
+			return $srvr; 
 		}
 		catch(Exception $e){
-			return $this->failure_result("Failed to create $srvrclass object: ".$e->getMessage(), 500);
+			return $this->failure_result("Failed to create $srvclass object: ".$e->getMessage(), 500);
 		}
 	}
 	

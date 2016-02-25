@@ -1513,6 +1513,7 @@ textarea.dacura-display-json {
 
 button.table-refresh {
 	float: right;
+	margin-left: 20px;
 }
 
 button.table-refresh .ui-button-text {

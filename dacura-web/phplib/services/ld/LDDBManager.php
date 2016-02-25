@@ -67,7 +67,7 @@ class LDDBManager extends DBManager {
 			if(isset($filter['include_all'])){
 				$fields = ", contents";
 			}
-			$sql = "SELECT id, collectionid, version, type, status, createtime, modtime, meta". $fields." FROM ld_objects";				
+			$sql = "SELECT id, collectionid, version, type, status, createtime, modtime, meta, length(contents) as size". $fields." FROM ld_objects";				
 		}
 		$wheres = array();
 		if(isset($filter['type']) && strtolower($filter['type']) != "ldo"){

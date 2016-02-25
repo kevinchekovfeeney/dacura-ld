@@ -30,25 +30,32 @@ if($service){
 	/** @global DacuraServer $dacura_server the globally accessible server object */
 	$dacura_server = $service->loadServer();
 	if(!$dacura_server){
-		$service->renderScreen("error", array("title" => $service->errcode, "message" => $service->errmsg ), "core");
+		//$dacura_server = new DacuraServer($service);
+		default_settings($service->settings);
+		$service->renderScreen("error", array("title" => "Failed to load dacura server", "message" => "[".$service->errcode."] ".$service->errmsg ), "core");
 		$request_log->setResult($service->errmsg , "Failed to load Dacura Server ");
 	}
-	elseif($dacura_server->userHasViewPagePermission()){
-		$service->renderFullPage($dacura_server);
-		$request_log->setResult(200, "Page rendered");
-	}
-	else {
-		if($dacura_server->getUser()){
-			$service->renderScreen("denied", array("title" => "Access Denied " .$dacura_server->errcode, "message" => $dacura_server->errmsg ), "core");
-			$request_log->setResult(401, "Access Denied: $dacura_server->errcode | $dacura_server->errmsg");				
+	else{
+		$dacura_server->init();
+		if($dacura_server->userHasViewPagePermission()){
+			$service->renderFullPage($dacura_server);
+			$request_log->setResult(200, "Page rendered");
 		}
 		else {
-			header("Location: ".$service->get_service_url("login"));
+			if($dacura_server->getUser()){
+				$service->renderScreen("denied", array("title" => "Access Denied " .$dacura_server->errcode, "message" => $dacura_server->errmsg ), "core");
+				$request_log->setResult(401, "Access Denied: $dacura_server->errcode | $dacura_server->errmsg");				
+			}
+			else {
+				$request_log->setResult(401, "Access Denied:  user not logged in. $dacura_server->errcode | $dacura_server->errmsg. redirecting to login");				
+				header("Location: ".$service->get_service_url("login"));
+			}
 		}
 	}
 }
 else {
 	$service = new DacuraService($dacura_settings);
+	$dacura_server = new DacuraServer($service);
 	default_settings($service->settings);
 	$service->renderScreen("error", array("title" => " Page Not Found [" .$servman->errcode."]", "message" => $servman->errmsg ), "core");
 	$request_log->setResult( 400, "Failed to load service: $servman->errcode|$servman->errmsg" );

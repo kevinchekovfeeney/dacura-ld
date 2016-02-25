@@ -2,6 +2,10 @@
 /**
  * Class representing the value of a linked data object property
  * 
+ * Because we support property embedding and blank nodes, the object part of the subject:predicate:object can be complex. 
+ * 
+ * This class is used to analyse an object property and answer questions about its structure. 
+ * 
  * Property values cannot mix literal types with structured types
  * literals can be typed or simple values
  * 
@@ -20,7 +24,7 @@
  * * embedded object {} - an object nakedly embedded as a property value.  In order to serialise this as a triple, 
  * an id must be generated for the embedded object
  * * object list [{}, {}] - a list of embedded objects
- * 6. complex: anything else
+ * 6. complex: anything else - any mixing of object types, embedded and non-embedded, 
  *
  * Created By: Chekov
  * Creation Date: 13/03/2015
@@ -30,21 +34,22 @@
  */
 
 class LDPropertyValue extends DacuraObject {
-	var $json_type;//empty, scalar, array, object
-	var $scalar_type;//BN (blank node id), CW (Closed World ID), OW (URL), L (Literal)
-	var $array_type;//literal, object
-	var $object_type;//literal, EO, EOL -> embedded object, embedded object list
-	var $cwurl;//closed world url
-	var $rules;
-
-	function __construct($val, $rules = false){
-		if(is_array($rules)){
-			$this->rules = $rules;
-			$this->cwurl = isset($rules['cwurl']) ? $rules['cwurl'] : false;
-		}
-		else {
-			$this->cwurl = $rules;
-		}
+	/** @var $json_type the json type of the value representing the json structure: empty, scalar, array, object */
+	var $json_type;
+	/** @var string the Linked data type of a json scalar: BN (blank node id), CW (Closed World ID), OW (URL), L (Literal)*/
+	var $scalar_type;
+	/** @var string the linked data type of a json array: literal (an array of object literals), scalar (an array of scalar values), object (an array of objects - objectlist), complex (any mix of types) */
+	var $array_type;//
+	/** @var string the linked data type of a json object: literal, EO (embedded object), EOL (embedded object list) */
+	var $object_type;
+	/** @var array an array of the ids within an embedded object categorised as BN, CW, DEL (empty values), UPD (non bn ids)	var $object_id_type;
+	/** @var string url of the linked data object that this value belongs to */
+	var $cwurl;
+	/** @var boolean - set to true if a complex type is encountered. */
+	var $invalidld = false; 
+	
+	function __construct($val, $cwurl = false){
+		$this->cwurl = $cwurl;
 		$this->load($val);
 	}
 
@@ -146,16 +151,17 @@ class LDPropertyValue extends DacuraObject {
 			}
 		}
 		if(($vtypes['objectliteral'] > 0) && $vtypes['array'] == 0 && $vtypes['object'] == 0 ){
-			$this->array_type == 'literal';
+			$this->array_type = 'literal';
 		}
 		elseif(($vtypes['scalar'] > 0) && $vtypes['array'] == 0 && $vtypes['object'] == 0 ){
-			$this->array_type == 'scalar';
+			$this->array_type = 'scalar';
 		}
 		elseif(($vtypes['object'] > 0) && $vtypes['array'] == 0 && $vtypes['scalar'] == 0 && $vtypes['objectliteral'] == 0 ){
-			$this->array_type == 'object';
+			$this->array_type = 'object';
 		}
 		else {
-			$this->array_type == "complex";
+			$this->array_type = "complex";
+			$this->invalidld = true;
 		}
 		return $vtypes;
 	}	
@@ -171,33 +177,15 @@ class LDPropertyValue extends DacuraObject {
 			$this->object_type = "literal";
 			return true;
 		}
-		//big requirement to be able to distinguish between closed world ids and BN ids and property names -
+		//big requirement to be able to distinguish between closed world ids and BN ids and predicates -
 		//they can't share the same url base
 		//this is needed to distinguish embedded object lists and embedded objects.
 		$p = 0;//the count of 'properties' - not 
-		$ids = array("BN" => array(), "CW" => array(), "DEL" => array(), "UPD" => array());
+		$ids = array("BN" => array(), "DEL" => array(), "UPD" => array());
 		foreach($obj as $id => $val){
-			//note: if it is embedded object list id can't point to [] -> not allowed in JSON LD
-			if(isBlankNode($id)){
+			if(is_array($val) && (isBlankNode($id) || $this->isCWLink($id))){
 				$ids["BN"][] = $id;
-				//if((!is_array($val) or count($val) == 0) && $id != "_:meta" && $id != "_:candidate"){
-				//	return $this->failure_result("Blank node $id has empty value - it must contain an embedded object", 400);
-				//}
-			}
-			elseif(!$this->cwurl){
-				if(!is_array($val) or !isAssoc($val)){
-					$p++;
-				}
-				elseif(is_array($val) && count($val) == 0){
-					$ids["DEL"][] = $id;
-				}
-				else {
-					$ids["UPD"][] = $id;
-				}
-			}
-			elseif($this->isCWLink($id)){
-				$ids["CW"][] = $id;
-				if(!is_array($val) or count($val) == 0){
+				if(count($val) == 0){
 					$ids["DEL"][] = $id;
 				}
 				else {
@@ -208,11 +196,11 @@ class LDPropertyValue extends DacuraObject {
 				$p++;
 			}
 		}
-		//if($this->cwurl && ($p > 0 && (count($ids["BN"]) > 0 or count($ids["CW"]) > 0))){
-		//	return $this->failure_result("Illegal construct - internal ids cannot be mixed with external urls as node IDs", 400);
-		//}
-		if($p > 0){
+		if($p > 0 && count($ids['BN']) == 0){
 			$this->object_type = "EO";
+		}
+		elseif($p > 0){
+			$this->object_type = "complex";//mixes together blank node ids and non blank node ids 				
 		}
 		else {
 			$this->object_type = "EOL";
@@ -242,6 +230,31 @@ class LDPropertyValue extends DacuraObject {
 		return true;
 	}
 	
+	function regulariseObjectLiteralList($objl){
+		$list = array();
+		foreach($objl as $obj){
+			$list[] = $this->regulariseObjectLiteral($obj);
+		}
+		return $list;
+	}
+	
+	function regulariseObjectLiteral($obj){
+		$nobj = array();
+		if((isset($obj['type']) && $obj['type'] == "string") || (isset($obj['datatype']) && $obj['datatype'] == "string")){
+			$nobj['lang'] = isset($obj['lang']) ? $obj['lang'] : "en";
+		}
+		elseif(isset($obj['type']) || isset($obj['datatype'])) {
+			$nobj['type'] = isset($obj['type']) ? $obj['type'] : $obj['datatype'];
+		}
+		else {
+			$nobj['lang'] = isset($obj['lang']) ? $obj['lang'] : "en";
+		}
+		if(!isset($obj['data']) && !isset($obj['value'])){
+			$nobj['data'] = "";
+		}
+		$nobj['data'] = isset($obj['data']) ? $obj['data'] : $obj['value'];
+		return $nobj;
+	}
 
 	/* retrieving information about embedded object lists */
 	
@@ -320,16 +333,31 @@ class LDPropertyValue extends DacuraObject {
 	 * Is the value legal?
 	 * @return boolean true if legal
 	 */
-	function legal(){
-		return $this->errcode <= 0;
+	function legal($rules = array()){
+		if($this->errcode > 0) return false;
+		if($this->invalidld && !(isset($rules['allow_invalid_ld']) && $rules['allow_invalid_ld'])){
+			return $this->failure_result("value contains invalid linked data", 400);
+		}
+		if($this->literal()){
+			if(isset($rules['require_object_literals']) && $rules['require_object_literals']){
+				return $this->failure_result("value is simple literal, object literals are required", 400);
+			}
+		}
+		if($this->isempty() && isset($rules['forbid_empty']) && $rules['forbid_empty']){
+			return $this->failure_result("Illegal JSON LD structure passed: empty array - not supported in linked data form", 400);
+		}
+		if(isset($rules['expand_embedded_objects']) && ($this->objectlist() || $this->embedded())){
+			return $this->failure_result("Illegal JSON LD structure passed: embedded object which was not expanded", 400);				
+		}
+		return true;
 	}
 
 	/**
 	 * Is the value illegal?
 	 * @return boolean true if illegal
 	 */
-	function illegal(){
-		return !$this->legal();
+	function illegal($rules = array()){
+		return !$this->legal($rules);		
 	}
 	
 	/* querying object for type information */

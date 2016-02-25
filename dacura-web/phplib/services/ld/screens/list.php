@@ -6,6 +6,7 @@
 			<thead>
 			<tr>
 				<th id='lde-id'>ID</th>
+				<th id='lde-title'>Title</th>
 				<th id='lde-type'>Type</th>
 				<th id='lde-collectionid'>Collection</th>
 				<th id='lde-status'>Status</th>
@@ -14,7 +15,9 @@
 				<th id='lde-createtime'>Sortable Created</th>
 				<th id='dfn-getPrintableModified'>Modified</th>
 				<th id='lde-modtime'>Sortable Modified</th>
-			</tr>
+				<th id='lde-size'>Size</th>
+				<th id='dfn-rowselector'>Select</th>
+				</tr>
 			</thead>
 			<tbody></tbody>
 		</table>
@@ -36,6 +39,8 @@
 				<th id='ldu-createtime'>Sortable Created</th>
 				<th id='dfu-getPrintableModified'>Modified</th>
 				<th id='ldu-modtime'>Sortable Modified</th>
+				<th id='dfx-rowselector'>Select</th>
+				
 			</tr>
 			</thead>
 			<tbody></tbody>
@@ -89,7 +94,8 @@ $(function() {
 			else {
 				window.location.href = dacura.system.pageURL() + "/" + entid + args;
 			}
-		},		
+		},	
+		"refresh": {label: "Refresh <?=isset($params['ldtype']) ? $params['ldtype'] :  "object"?> List"},			
 		//"ajax": dacura.ld.apiurl,//
 		"fetch": dacura.ld.fetchldolist,
 		"dtsettings": <?=$params['ldo_datatable']?>
@@ -126,29 +132,37 @@ $(function() {
 
 
 function createSuccess(data, pconf, msg){
-	obj = createFormToAPI(data);
-	//jpr(obj);
+	//obj = createFormToAPI(data);
+	jpr(data);
 }
 
 function createFormToAPI(obj){
 	apiobj = {};
-	jpr(obj);
-	if(typeof obj.meta == "object") {
-		apiobj.meta = obj.meta;
-	}
+	<?php if(count($params['create_options']) > 0){
+		echo "apiobj.options = ".json_encode($params['create_options']).";";
+	}?>
 	if(typeof obj.id == "string" && obj.id){
 		apiobj["<?=$params['demand_id_token']?>"] = obj.id;
 	}
+	if(typeof obj.meta != "undefined" && obj.meta) {
+		apiobj.meta = JSON.parse(obj.meta);
+	}
 	if(typeof obj.status == "string" && obj.status){
-		if(typeof apiobj.meta != "object") apiobj.meta = {};
+		if(typeof apiobj.meta != "object") {
+			apiobj.meta = {};
+		}
 		apiobj.meta.status = obj.status;
 	}
 	if(typeof obj.url == "string" && obj.url){
-		if(typeof apiobj.meta != "object") apiobj.meta = {};
+		if(typeof apiobj.meta != "object") {
+			apiobj.meta = {};
+		}
 		apiobj.meta.url = obj.url;
 	}
 	if(typeof obj.title == "string" && obj.title){
-		if(typeof apiobj.meta != "object") apiobj.meta = {};
+		if(typeof apiobj.meta != "object") {
+			apiobj.meta = {};
+		}
 		apiobj.meta.title = apiobj.title;
 	}
 	if(typeof obj.ldformat == "string" && obj.ldformat){
@@ -168,7 +182,13 @@ function createFormToAPI(obj){
 		apiobj.ldurl = obj.ldurl;
 	}
 	else if (obj.contents) {
-		apiobj.contents = obj.contents;
+		if(typeof apiobj.format == "string" && dacura.ld.viewer.isJSONFormat(apiobj.format)){
+			apiobj.contents = JSON.parse(obj.contents);
+		}
+		else {
+			apiobj.contents = obj.contents;
+		}
+		
 	}
 	return apiobj;		
 }

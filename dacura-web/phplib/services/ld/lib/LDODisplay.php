@@ -1,5 +1,12 @@
 <?php 
 class LDODisplay extends DacuraObject {
+	var $cwurl;
+	
+	function __constructor($id, $cwurl = false){
+		parent::__constructor($id);
+		$this->cwurl = $cwurl;
+	}
+	
 	
 	function displayTriples($trips, $options){
 		return $trips;
@@ -18,10 +25,12 @@ class LDODisplay extends DacuraObject {
 		}
 	}
 	
-	function displayJSONLD($json, $options){
-		$cwurl = isset($options['cwurl']) ? $options['cwurl'] : false;
-		$json = toJSONLD($json, $cwurl);
-		return $this->displayJSON($json, $options);
+	function displayJSONLD($jsonld, $options){
+		//require_once("JSONLD.php");
+		//print JsonLD::toString($expanded, true);
+		//return $this->displayJSON(ML\JsonLD\JsonLD::toString($jsonld, true), $options);
+		return $this->displayJSON($jsonld, $options);
+		
 	}
 	
 	function displayHTML($props, $options){
@@ -30,6 +39,10 @@ class LDODisplay extends DacuraObject {
 			$html .= "<h3>$k</h3>".$this->getPropertiesAsHTMLTable($v, $options);
 		}
 		return $html;
+	}
+	
+	function displayNQuads($text, $options){
+		return htmlspecialchars($text);
 	}
 	
 	function displayExport($exported, $format, $options){
@@ -102,6 +115,15 @@ class LDODisplay extends DacuraObject {
 		return $nprops;
 	}
 	
+	/**
+	 * Is the passed value an id of an internal node in the document?
+	 * @param string $val
+	 * @return boolean true if the value is an internal link
+	 */
+	function isDocumentLocalLink($val){
+		return isInternalLink($val, $this->cwurl);
+	}
+	
 
 	function applyLinkHTML($ln, $vstr, $is_prop = false){
 		if($is_prop){
@@ -147,7 +169,8 @@ class LDODisplay extends DacuraObject {
 	}
 	
 
-	function getPropertiesAsHTMLTable($vstr, $props, $depth = 0, $obj_id_prefix = ""){
+	function getPropertiesAsHTMLTable($props, $options = array(), $depth = 0, $obj_id_prefix = ""){
+		$vstr = "";//should be loaded from $options...
 		if($depth % 2 == 1){
 			$cls_extra = "even_depth";
 		}
@@ -228,7 +251,7 @@ class LDODisplay extends DacuraObject {
 					}
 					$count++;
 					$props_html[] = "<tr id='$obj_id"."_objrow' class='embedded-object'><td class='container' colspan='2'>";
-					$props_html[] = $this->getPropertiesAsHTMLTable($vstr, $obj, $depth, $obj_id_prefix);
+					$props_html[] = $this->getPropertiesAsHTMLTable($obj, $options, $depth, $obj_id_prefix);
 					$props_html[] = "</tr>";
 				}
 			}

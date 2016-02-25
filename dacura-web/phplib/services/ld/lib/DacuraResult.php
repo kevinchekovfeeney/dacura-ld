@@ -19,6 +19,8 @@ class DacuraResult extends DacuraObject {
 	var $warnings = array();
 	/** @var mixed result - the linked data object returned as the result of the request */
 	var $result;
+	/** @var array<GraphResult> an optional array of graph results generated as part of the request */
+	var $graphs = array();
 
 	/**
 	 * Object constructor
@@ -56,6 +58,11 @@ class DacuraResult extends DacuraObject {
 			else {
 				$apiobj['status'] = 'reject';
 				$apiobj['message'] = array("title" => "Failed to create $format display for ".$this->result->ldtype." ".$this->result->id, "body" => $this->result->errcode . ": ".$this->result->errmsg);
+			}
+		}
+		foreach($this->graphs as $gid => $gr){
+			if(isset($options['show_'.$gid.'_triples']) && $options['show_'.$gid.'_triples']){
+				$apiobj['graph_'.$gid] = $gr->forAPI($format, $options, $srvr);
 			}
 		}
 		return $apiobj;
@@ -260,9 +267,9 @@ class DacuraResult extends DacuraObject {
 		return $this->status() == "confirm";
 	}
 
-	function setGraphResult($gu, $hypo = false){
+	function addGraphResult($gid, $gu, $hypo = false){
 		$gu->setHypothetical($hypo);
-		$action = "Dacura Quality Service";
+		$action = "$gid sgraph result";
 		if(!$hypo){
 			switch($gu->status()) {
 				case "reject" :
@@ -289,42 +296,46 @@ class DacuraResult extends DacuraObject {
 			}
 		}
 		elseif($gu->is_reject()) {
-			$txt = "This candidate cannot be published as a report";
+			$txt = "Failed $gid graph check";
 			$body = $gu->getErrorsSummary();
-			$this->addWarning("Data Quality Service", $txt, $body);
+			$this->addWarning("$gid graph", $txt, $body);
 		}
-		if(!isset($this->report_graph_update)){
-			$this->report_graph_update = $gu;
+		if(!isset($this->graphs[$gid])){
+			$this->graphs[$gid] = $gu;				
 		}
 		else {
-			$this->report_graph_update->addGraphResult($gu);
+			$this->graphs[$gid]->addGraphResult($gu, $hypo);
 		}
 	}
 	
-	function undoGraphResult($gu){
-		unset($this->candidate_graph_update);
-		$this->report_graph_update->addGraphResult($gu);
+	/**
+	 * Creates a new graph result object and adds it to the index of graphs
+	 * @param string $gid graph id
+	 * @param string $status one of DacuraObject::$valid_statuses
+	 * @param array $itrips array of triples / quads to be inserted
+	 * @param array $dtrips array of triples / quads to be deleted
+	 * @param string $is_test true if this is a test 
+	 * @param string $is_hypo true if the graph invocation is hypothetical - does not determine result of request
+	 */
+	function createGraphResult($gid, $status, $itrips = array(), $dtrips = array(), $is_test = false, $is_hypo = false){
+		$gu = new GraphResult("Graph $gid update", $is_test);
+		//$gu->status($status);
+		$gu->setHypothetical($is_hypo);
+		$gu->setInserts($itrips);
+		$gu->setDeletes($dtrips);
+		$this->graphs[$gid] = $gu;
+	}
+	
+	function undoGraphResult($gid, $gu){
+		unset($this->graphs["ld"]);
+		$this->graphs[$gid]->addGraphResult($gu);
 	}
 	
 	function setUpdateGraphResult($udelta){
 		$this->update_graph_update = new GraphAnalysisResults("Analysing Updates to Update Graph");
 		$this->update_graph_update->setInserts($udelta['add']);
 		$this->update_graph_update->setDeletes($udelta['del']);
-		$this->update_graph_update->setMeta($udelta['meta']);
-	}
-	
-	function setGraphResults($itrips, $dtrips, $is_hypo = false, $meta = false, $which = "candidate"){
-		
-	}
-	
-	function setLDGraphTriples($itrips = array(), $dtrips = array(), $is_hypo = false, $meta = false){
-		$this->ld_graph_update = new GraphAnalysisResults("Updating Candidate Graph");
-		$this->candidate_graph_update->setInserts($itrips);
-		$this->candidate_graph_update->setDeletes($dtrips);
-		$this->candidate_graph_update->setHypothetical($is_hypo);
-		if($meta){
-			$this->candidate_graph_update->setMeta($meta);
-		}
+		//$this->update_graph_update->setMeta($udelta['meta']);
 	}
 }
 
@@ -336,23 +347,13 @@ class DacuraResult extends DacuraObject {
 class GraphResult extends DacuraResult {
 	var $inserts = array();
 	var $deletes = array();
-	var $meta = array();//state changes {variable: [old, new])
 	var $hypothetical = false;
-	
-	
-	function setMeta($meta){
-		$this->meta = $meta;
-	}
-	
-	function setMetaChange($var, $oval, $nval){
-		$this->meta[$var] = array($oval, $nval);
-	}
 	
 	function includesGraphChanges(){
 		return !$this->hypothetical &&
 		(count($this->inserts) > 0 || count($this->deletes) > 0);
 	}
-	
+
 	function getErrorsSummary() {
 		$cnt = 0;
 		foreach($this->errors as $gname => $errs){
@@ -432,4 +433,36 @@ class GraphResult extends DacuraResult {
 		$this->status("reject");
 		$this->errcode = $errcode;
 	}
+	
+	function forAPI($format, $options, $srvr){
+		$apiobj = parent::forAPI($format, $options, $srvr);
+		if(count($this->inserts) > 0){
+			$apiobj['inserts'] = $this->inserts;
+		}
+		if(count($this->deletes) > 0){
+			$apiobj['deletes'] = $this->deletes;
+		}
+		$apiobj['hypothetical'] = $this->hypothetical;
+		return $apiobj;
+	}
+}
+
+/**
+ * Simple class representing changes in the object's metadata due to a request.
+ * @author chekov
+ *
+ */
+class MetaResult {
+	var $meta = array();//state changes {variable: [old, new])
+	
+	
+	
+	function setMeta($meta){
+		$this->meta = $meta;
+	}
+	
+	function setMetaChange($var, $oval, $nval){
+		$this->meta[$var] = array($oval, $nval);
+	}
+	
 }

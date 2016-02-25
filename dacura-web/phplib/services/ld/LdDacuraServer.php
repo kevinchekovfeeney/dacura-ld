@@ -34,7 +34,11 @@ class LdDacuraServer extends DacuraServer {
 		parent::__construct($service);
 		$this->policy = new PolicyEngine();
 		$this->graphman = new GraphManager($this->service->settings);
+	}
+	
+	function init($action = false, $object = ""){
 		$this->loadNamespaces();
+		return parent::init($action, $object);
 	}
 
 	function loadNamespaces(){
@@ -60,21 +64,27 @@ class LdDacuraServer extends DacuraServer {
 	 * @param boolean $test_flag if true do not actually create the object, just simulate it
 	 * @return CreateResult
 	 */
-	function createLDO($type, $create_obj, $demand_id, $format, $options, $test_flag = false){
+	function createLDO($type, $create_obj, $demand_id, &$format, $options, $test_flag = false){
 		$cr = new DacuraResult("Creating $type", $test_flag);
-		if($demand_id != ($id = $this->getNewLDOLocalID($demand_id, $type)) && $demand_id){
+		if($format && !isset(LDO::$valid_input_formats[$format])){
+			return $cr->failure(400, "Invalid format: $format is not a supported input format");				
+		}
+		$id = $this->getNewLDOLocalID($demand_id, $type);
+		if($demand_id && $demand_id != $id){
 			if(isset($options['fail_on_id_denied']) && $options['fail_on_id_denied']){
-				return $cr->failure(400, "Failed to allocate requested id ".htmlspecialchars($demand_id));
+				return $cr->failure(400, "Failed to allocate requested id ".htmlspecialchars($demand_id)." ".$this->errmsg);
 			}
 			$this->addIDAllocationWarning($cr, $type, $test_flag, $id);
 		}		
 		if(!($nldo = $this->createNewLDObject($id, $type))){
-			return $cr->failure($this->errcode, "Request Create Error", "New $type object sent to API had formatting errors. ".$this->errmsg);
+			return $cr->failure($this->errcode, "Request Create Error", "Failed to create $type object ".$this->errmsg);
 		}
 		$nldo->setContext($this->cid());
 		$nldo->setNamespaces($this->nsres);
 		$rules = $this->getServiceSetting("ldo_create_content_rules", $this->getNewLDOContentRules($type));
-		if(!$nldo->loadNewObjectFromAPI($create_obj, $format, $options, $rules)){
+		$rules['cwurl'] = $nldo->cwurl;
+		$rules['id_generator'] = array($nldo, "generateInternalID");
+		if(!($format = $nldo->loadNewObjectFromAPI($create_obj, $format, $options, $rules))){
 			return $cr->failure($nldo->errcode, "Protocol Error", "New $type object sent to API had formatting errors. ".$nldo->errmsg);
 		}
 		$cr->add($this->getPolicyDecision("create", $nldo));
@@ -88,21 +98,22 @@ class LdDacuraServer extends DacuraServer {
 			return $cr;
 		}
 		if(!$cr->is_accept()){
-			if(!isset($options['test_unpublished']) || $options['test_unpublished'] == false){
+			if(!$this->getServiceSetting("test_unpublished_ldos", true)){
 				return $cr->set_result($nldo);
 			}
 		}
 		$dont_publish = !$cr->is_accept() || $test_flag;
-		$cr->setGraphResult($this->objectPublished($nldo, $dont_publish), $options);
+		$gur = $this->objectPublished($nldo, $dont_publish);
+		$cr->addGraphResult("dqs", $gur, $dont_publish);
 		$nldo->status($cr->status());
 		if(isset($options['show_ld_triples']) && $options['show_ld_triples']){
-			$cr->setLDGraphTriples($nldo->triples());
+			$cr->createGraphResult("ld", $cr->status(), $nldo->triples(), array(), $test_flag, $dont_publish);
 		}
 		if(!$test_flag && !$this->dbman->createLDO($nldo, $type)){
 			$disaster = new DacuraResult("Database Synchronisation");
 			$disaster->failure($this->dbman->errcode, "Internal Error", "Failed to create database candidate record ". $this->dbman->errmsg);
 			$cr->add($disaster);
-			if($cr->includesGraphChanges()){
+			if($cr->includesGraphChanges("dqs")){
 				$recovery = $this->objectDeleted($nldo);
 				$cr->undoGraphResult($recovery);
 			}
@@ -174,33 +185,44 @@ class LdDacuraServer extends DacuraServer {
 	 * @return string the id of the new object
 	 */
 	function getNewLDOLocalID($demand_id, $type){
-		if($this->dbman->hasLDO($demand_id, $type, $this->cid())){
+		if($demand_id && $this->dbman->hasLDO($demand_id, $type, $this->cid())){
 			return $this->failure_result("$type object with ID $demand_id exists already in the dataset", 400);
 		}
-		elseif($this->dbman->errcode){
+		elseif($demand_id && $this->dbman->errcode){
 			return $this->failure_result("Failed to check for duplicate ID ".$this->dbman->errmsg, $this->dbman->errcode);
 		}
 		$rules = $this->getServiceSetting("ldo_create_rules", $this->getNewLDORules($type));
-		//opr($rules);
 		return genid($demand_id, $rules);
 	}
 	
 	function getNewLDORules($type){
-		$x = array("allow_demand_id" => true, "mimimum_id_length" => 1, "maximum_id_length" => 80, "extra_entropy" => false);
+		$x = array("allow_demand_id" => true, 
+			"mimimum_id_length" => 1, 
+			"maximum_id_length" => 80, 
+			"extra_entropy" => false);
 		return $x;
 	}
 	
 	function getNewLDOContentRules($type){
 		$x = array(
-				"allow_demand_id" => true, 
-				"mimimum_id_length" => 1, 
-				"maximum_id_length" => 80, 
-				"extra_entropy" => false,
-				"expand_embedded_objects" => true,
-				"replace_blank_ids" => true,
-				"property_structure_required" => true,
-				"forbid_blank_nodes" => false,
-				"require_blank_nodes" => true,
+			"allow_demand_id" => true, 
+			"mimimum_id_length" => 1, 
+			"maximum_id_length" => 80, 
+			"extra_entropy" => false,
+			"expand_embedded_objects" => true,
+			"replace_blank_ids" => true,
+			"forbid_blank_nodes" => false,
+			"require_blank_nodes" => false,
+			"require_subject_urls" => true,
+			"forbid_unknown_prefixes" => true,
+			"unique_subject_ids" => false,
+			"allow_blanknode_predicates" => false,
+			"require_predicate_urls" => true,
+			"allow_invalid_ld" => false,
+			"require_object_literals" => true,
+			"regularise_object_literals" => true,
+			"forbid_empty" => true,
+			"allow_arbitrary_metadata" => false	
 		);
 		return $x;
 	}
@@ -211,7 +233,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param array $filter a filter on the objects
 	 * @return boolean|array the linked data objects in an array
 	 */
-	function getLDOs($filter){
+	function getLDOs($filter, $options = array()){
 		$data = $this->dbman->loadLDOList($filter);
 		if(!$data){
 			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
@@ -224,9 +246,8 @@ class LdDacuraServer extends DacuraServer {
 	 * @param array $filter a filter on the objects
 	 * @return boolean|array the linked data objects in an array
 	 */
-	 function getUpdates($filter){
-		$data = $this->dbman->loadUpdatesList($filter);
-		if($data){
+	 function getUpdates($filter, $options = array()){
+		if($data = $this->dbman->loadUpdatesList($filter)){
 			return $data;
 		}
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
@@ -988,6 +1009,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @return boolean true if successfully sent
 	 */
 	function sendRetrievedLDO($ar, $format, $options){
+		if($format == "") $format = "json";
 		if($ar->is_error() or $ar->is_reject() or $ar->is_pending()){
 			$this->writeDecision($ar, $options);
 		}
@@ -1010,8 +1032,15 @@ class LdDacuraServer extends DacuraServer {
 	 * @return boolean true if successfully sent
 	 */
 	function sendLDO($ldo, $format, $opts){
-		$ldo->getContentInFormat($format, $opts, $this, "display");
-		return $this->write_json_result($ldo->forAPI($format, $opts), "Sent the object");
+		if(!isset(LDO::$valid_display_formats[$format])){
+			return $this->failure_result("$format is not a valid display type", 400);				
+		}
+		if($ldo->getContentInFormat($format, $opts, $this, "display")){
+			return $this->write_json_result($ldo->forAPI($format, $opts), "Sent the object");
+		}
+		else {
+			return $this->failure_result($ldo->errmsg, $ldo->errcode);
+		}
 	}
 	
 	/**
@@ -1071,6 +1100,9 @@ class LdDacuraServer extends DacuraServer {
 		else {
 			$this->logResult(200, $ar->status(), $ar->action);
 		}
+		//if(!isset(LDO::$valid_display_formats[$format])){
+		//	$format = "json";
+		//}
 		$json = json_encode($ar->forAPI($format, $options, $this));
 		if($json){
 			echo $json;
@@ -1171,7 +1203,9 @@ class LdDacuraServer extends DacuraServer {
 	
 	
 	function getPolicyDecision($action, $args){
-		return $this->policy->getPolicyDecision($action, "x", $args);
+		$x = $this->policy->getPolicyDecision($action, "x", $args);
+		//opr($x);
+		return $x;
 	}
 	
 	

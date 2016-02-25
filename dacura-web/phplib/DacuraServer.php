@@ -57,17 +57,20 @@ class DacuraServer extends DacuraController {
 	}
 	
 	/**
-	 * Called Immediately after server creation. 
+	 * Called Immediately after server creation to initialise request log 
 	 * Used to initialise the server and initialise the request log for the service invocation
 	 * @param string $action a string describing the action that is being invoked
 	 * @param mixed $object any further parameters that should be added to the invocation request log (e.g. object of action)
 	 * @return void
 	 */
-	function init($action, $object=""){
-		$this->service->logger->setEvent($action, $object);
+	function init($action = false, $object=""){
+		if($action){
+			$this->service->logger->setEvent($action, $object);
+		}
 		$user = $this->getUser();
-		$name = $user ? $user->handle : $_SERVER['REMOTE_ADDR'];
+		$name = $user ? $user->getName() : $_SERVER['REMOTE_ADDR'];
 		$this->service->logger->user_name = $name;
+		return $this;
 	}
 	
 	/**

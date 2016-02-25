@@ -10,10 +10,10 @@
  * @license GPL v2
  */
 $x = @$ldo_type;
-if(!$x && !$dacura_server->userHasRole("admin", "all")){//meaning that this API is being accessed directly 
-	$dacura_server->write_http_error(403, "No permission to directly access linked data API");	
-}
-else {
+//if(!$x && !$dacura_server->userHasRole("admin", "all")){//meaning that this API is being accessed directly 
+//	$dacura_server->write_http_error(403, "No permission to directly access linked data API");	
+//}
+//else {
 	if(!$x){
 		$ldo_type = isset($_GET['ldtype']) ? $_GET['ldtype'] : "";
 	}
@@ -29,7 +29,7 @@ else {
 	getRoute()->delete('/(\w+)/(\w+)', 'delete_ldo');//with fragment id
 	getRoute()->delete('/(\w+)', 'delete_ldo');//no fragment id
 	getRoute()->delete('//update/(\w+)', 'delete_update');//no fragment id	
-}
+//}
 
 
 /**
@@ -49,7 +49,7 @@ else {
  */
 
 function create_ldo(){
-	set_time_limit (0);
+	set_time_limit (1800);
 	global $dacura_server, $ldo_type;
 	$dacura_server->init("create");
 	$ar = new DacuraResult("Create");
@@ -114,6 +114,7 @@ function list_ldos(){
 			if(isset($row['meta']) && $row['meta']) $ldos[$i]['meta'] = json_decode($row['meta'], true);
 			if(isset($row['contents']) && $row['contents']) $ldos[$i]['contents'] = json_decode($row['contents'], true);
 		}
+		$dacura_server->recordUserAction("get.$ldo_type.list");	
 		return $dacura_server->write_json_result($ldos, "Returned " . count($ldos) . " " . ($ldo_type ? $ldo_type : "ld objects"). "s");
 	}
 	$dacura_server->write_http_error();
@@ -136,8 +137,10 @@ function list_updates(){
 	$dacura_server->init(($ldo_type ? $ldo_type : "ldo")."list_updates");
 	$ldos = $dacura_server->getUpdates($dt_options, $dcoptions);
 	if($ldos){
+		$dacura_server->recordUserAction("get.$ldo_type.updates");		
 		return $dacura_server->write_json_result($ldos, "Returned " . count($ldos) . " updates");
 	}
+	$dacura_server->write_http_error();	
 }
 
 /**
@@ -169,12 +172,22 @@ function get_dtoptions($cid){
  * @return string json LDO / DacuraResult on error
  */
 function get_ldo($ldo_id, $fragment_id = false){
+	set_time_limit (1800);
+	
 	global $dacura_server, $ldo_type;
 	$options = isset($_GET['options']) ? $_GET['options'] : false;
 	$version = isset($_GET['version']) ? $_GET['version'] : false;
 	$format = isset($_GET['format']) ? $_GET['format'] : false;
 	$dacura_server->init("get".($ldo_type ? $ldo_type : "ldo"), $ldo_id, $fragment_id);
 	$ar = $dacura_server->getLDO($ldo_id, $ldo_type, $fragment_id, $version, $options);
+	$params = array("id" => $ldo_id);
+	if($version){
+		$params['version'] = $version;
+	}
+	if($fragment_id){
+		$params['fragment'] = $fragment_id;
+	}
+	$dacura_server->recordUserAction("get.$ldo_type", $params);
 	return $dacura_server->sendRetrievedLdo($ar, $format, $options);
 }
 
@@ -196,6 +209,11 @@ function get_update($update_id){
 	$display = isset($_GET['display']) ? $_GET['display'] : false;
 	$dacura_server->init("get_update", $update_id);
 	$ar = $dacura_server->getUpdate($update_id, $version, $options);
+	$params = array("type" => $ldo_type);
+	if($version){
+		$params['version'] = $version;
+	}
+	$dacura_server->recordUserAction("get.update.$update_id", $params);
 	return $dacura_server->sendRetrievedUpdate($ar, $format, $display, $options, $version);
 }
 

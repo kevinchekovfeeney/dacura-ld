@@ -8,6 +8,11 @@
 		<div class='subscreen-intro-message'><?=$params['contents_intro_msg']?></div>
 		<div id="show-ldo"></div>
 	</div>
+	<?php } if(in_array("ldo-analysis", $params['subscreens'])) { ?>
+	<div class="dacura-subscreen" id='ldo-contents' title='Analysis'>
+		<div class='subscreen-intro-message'><?=$params['analysis_intro_msg']?></div>
+		<div id="show-analysis"></div>
+	</div>
 	<?php } if(in_array("ldo-history", $params['subscreens'])) { ?>		
 	<div class='dacura-subscreen' id='ldo-history' title="History">
 		<div class='subscreen-intro-message'><?=$params['history_intro_msg']?></div>

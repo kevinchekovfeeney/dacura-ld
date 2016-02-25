@@ -61,12 +61,6 @@ dacura.ld.viewer = {
 		$('tr#row-'+formdiv + "-ldfile").hide();
 	},
 	
-	gatherNew: function(jqid){
-		alert(jqid);
-		var obj = dacura.tool.form.gather(jqid);
-		jpr(obj);
-	},
-	
 	showLDInput: function(formdiv, format){
 		this.hideLDInputs(formdiv); 
 		var ft = format == "text" ? "-contents" : "-ld" + format;
@@ -117,7 +111,7 @@ dacura.ld.viewer = {
 		}
 		else if(format == "html"){
 			var html = "<div class='dacura-html-viewer'>";
-			html += contents;
+			html += ldprops;
 			$(jqkey).html(html + "</table></div>");	
 				$('.pidembedded').click(function(event){
 					$('#'+ event.target.id + "_objrow").toggle();
@@ -141,6 +135,11 @@ dacura.ld.viewer = {
 		this.mode = ldo.mode;
 		this.options = ldo.options;
 		this.drawLDProps(ldo.contents, this.mode, this.format);
+	},
+	
+	isJSONFormat: function(f){
+		if(f == "json" || f == "jsonld" || f == "quads" || f == "triples") return true;
+		return false;
 	},
 	
 	loadURL: function(ipfield, target){
@@ -170,9 +169,28 @@ dacura.ld.viewer = {
 	
 	validateNew: function(obj){
 		var errs = [];
-		//if(typeof obj.id != "string" || obj.id == ""){
-		//	return "Object ID must be set";
-		//}
+		if(typeof obj.contents == 'string' && obj.contents && (obj.format == "json" || obj.format == "jsonld" || obj.format == "triples" || obj.format == "quads")){
+			try {
+				x = JSON.parse(obj.contents);
+			}
+			catch(e){
+				return "Contents does not contain well-formed json";
+			}
+			if(typeof x != "object"){
+				return "Contents must contain a well formed json object";
+			}
+		}
+		if(typeof obj.meta == 'string' && obj.meta){
+			try {
+				x = JSON.parse(obj.meta);
+			}
+			catch(e){
+				return "Meta does not contain well-formed json";
+			}
+			if(typeof x != "object"){
+				return "Meta must contain a well formed json object";
+			}
+		}
 		return "";
 	}
 	
