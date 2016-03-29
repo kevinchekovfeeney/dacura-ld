@@ -12,7 +12,6 @@
  * @author Chekov
  * @license GPL v2
  */
-
 include_once("phplib/settings.php");
 include_once("phplib/RequestLog.php");
 //start request log at once to capture as much of the performance data as possible...
@@ -29,6 +28,7 @@ $service = $servman->loadServiceFromURL($request_log);
 if($service){
 	/** @global DacuraServer $dacura_server the globally accessible server object */
 	$dacura_server = $service->loadServer();
+	
 	if(!$dacura_server){
 		//$dacura_server = new DacuraServer($service);
 		default_settings($service->settings);

@@ -99,13 +99,17 @@ class GraphManager extends DacuraController {
 	 * we call the entity function to retrieve the list of entity classes. 
 	 * @return DQSResult
 	 */
-	function invokeDCS($graphid, $clsname = false){
+	function invokeDCS($graphid, $clsname = false, $entid = false){
 		$args = array("schema" => $graphid);
 		$dqs_config = $this->getSystemSetting("dqs_service");
 		$dqsr = new DQSResult("invoking DQS class analysis");
 		if($clsname){
 			$srvc = $dqs_config['stub'];
 			$args['class'] = $clsname;
+		}
+		elseif($entid){
+			$srvc = $dqs_config['filledframe'];
+			$args['entity'] = $entid;				
 		}
 		else {
 			$srvc = $dqs_config['entity'];
