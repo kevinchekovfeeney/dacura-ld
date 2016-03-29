@@ -46,3 +46,65 @@ $dacura_settings['mail_headers'] =
 		'Reply-To: dacura@scss.tcd.ie' . "\r\n" .
 		'X-Mailer: Dacura PHP/' . phpversion();
 
+
+/**
+ * Sets up the default system settings by building various other settings from the ones defined in localsettings.php
+ * @param array $dacura_settings - a settings array
+ */
+
+if (!function_exists('default_settings')) {
+
+	function default_settings(&$dacura_settings){
+		if(!isset($dacura_settings['dacura_sessions'])){
+			$dacura_settings['dacura_sessions'] = $dacura_settings['storage_base'].'sessions/';
+		}
+		if(!isset($dacura_settings['ajaxurl'])){
+			$dacura_settings['ajaxurl'] = $dacura_settings['install_url'].$dacura_settings['apistr'] . "/";
+		}
+		if(!isset($dacura_settings['services_url'])){
+			$dacura_settings['services_url'] = $dacura_settings['install_url'].$dacura_settings['path_to_services'];
+		}
+		if(!isset($dacura_settings['files_url'])){
+			$dacura_settings['files_url'] = $dacura_settings['install_url'] . $dacura_settings['path_to_files'];
+		}
+		if(!isset($dacura_settings['path_to_collections'])){
+			$dacura_settings['path_to_collections'] = $dacura_settings['storage_base']."collections/";
+		}
+		if(!isset($dacura_settings['collections_urlbase'])){
+			$dacura_settings['collections_urlbase'] = $dacura_settings['install_url'] . "cfiles/";
+		}
+		if(!isset($dacura_settings['dacura_sessions'])){
+			$dacura_settings['dacura_sessions'] = $dacura_settings['storage_base'].'sessions/';
+		}
+		if(!isset($dacura_settings['dqs_service'])){
+			$dacura_settings['dqs_service'] = array();
+		}
+		if(!isset($dacura_settings['dqs_service']['instance'])){
+			$dacura_settings['dqs_service']["instance"] = $dacura_settings['dqs_url']."instance";
+		}
+		if(!isset($dacura_settings['dqs_service']['schema'])){
+			$dacura_settings['dqs_service']["schema"] = $dacura_settings['dqs_url']."schema";
+		}
+		if(!isset($dacura_settings['dqs_service']['schema_validate'])){
+			$dacura_settings['dqs_service']["schema_validate"] = $dacura_settings['dqs_url']."schema_validate";
+		}
+		if(!isset($dacura_settings['dqs_service']['validate'])){
+			$dacura_settings['dqs_service']["validate"] = $dacura_settings['dqs_url']."validate";
+		}
+		if(!isset($dacura_settings['dqs_service']['stub'])){
+			$dacura_settings['dqs_service']["stub"] = $dacura_settings['dqs_url']."stub";
+		}
+		if(!isset($dacura_settings['dqs_service']['entity'])){
+			$dacura_settings['dqs_service']["entity"] = $dacura_settings['dqs_url']."entity";
+		}
+		if(!isset($dacura_settings['dqs_service']['logfile'])){
+			$dacura_settings['dqs_service']["logfile"] = false;
+		}
+		if(!isset($dacura_settings['dqs_service']['fake'])){
+			$dacura_settings['dqs_service']["fake"] = $dacura_settings['dacura_logbase'].'fakets.json';
+		}
+		if(!isset($dacura_settings['dqs_service']['dumplast'])){
+			$dacura_settings['dqs_service']["dumplast"] = $dacura_settings['dacura_logbase'].'lastdqs.log';
+		}
+	}
+}

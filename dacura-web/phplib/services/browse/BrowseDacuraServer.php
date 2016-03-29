@@ -22,7 +22,7 @@ class BrowseDacuraServer extends DacuraServer {
 		$wl = array();
 		$servs = $this->getServiceList();
 		foreach($servs as $sid){
-			if(in_array($sid, array("browse", "login", "home"))) continue;//have no widgets associated
+			if(in_array($sid, array("browse", "login", "home", "candidate", "schema"))) continue;//have no widgets associated
 			$ns = $this->createDependantService($sid);
 			//get service setting to make sure it is enabled...
 			

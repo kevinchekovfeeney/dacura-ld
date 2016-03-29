@@ -1,15 +1,23 @@
 <div class='dacura-screen' id='ld-view-home'>
-	<?php if(in_array("ldo-meta", $params['subscreens'])) { ?>
-	<div class="dacura-subscreen" id='ldo-meta' title='Metadata'>
-		<div class='subscreen-intro-message'><?=$params['meta_intro_msg']?></div>
-	</div>
-	<?php } if(in_array("ldo-contents", $params['subscreens'])) { ?>
+	<?php if(in_array("ldo-contents", $params['subscreens'])) { ?>
 	<div class="dacura-subscreen" id='ldo-contents' title='Contents'>
 		<div class='subscreen-intro-message'><?=$params['contents_intro_msg']?></div>
 		<div id="show-ldo"></div>
 	</div>
+	<?php } if(in_array("ldo-meta", $params['subscreens']))  { ?>
+	<div class="dacura-subscreen" id='ldo-meta' title='Metadata'>
+		<div class='subscreen-intro-message'><?=$params['meta_intro_msg']?></div>
+		<?php echo $service->getInputTableHTML("ldo-details", $params['create_ldo_fields'], array("display_type" => "create"));?>
+		<div class="subscreen-buttons">
+			<button id='ldotestcreate' class='dacura-test-create subscreen-button'><?=$params['testcreate_button_text']?></button>		
+			<?php if(isset($params['direct_create_allowed']) && $params['direct_create_allowed']) { ?>
+			<button id='ldocreate' class='dacura-create subscreen-button'><?=$params['create_button_text']?></button>
+			<?php } ?>
+		</div>
+		
+	</div>
 	<?php } if(in_array("ldo-analysis", $params['subscreens'])) { ?>
-	<div class="dacura-subscreen" id='ldo-contents' title='Analysis'>
+	<div class="dacura-subscreen" id='ldo-analysis' title='Analysis'>
 		<div class='subscreen-intro-message'><?=$params['analysis_intro_msg']?></div>
 		<div id="show-analysis"></div>
 	</div>
@@ -57,6 +65,17 @@
 			</tbody>
 			</table>		
 		</div>
+	</div>
+	<?php } if(in_array("ldo-raw", $params['subscreens'])) { ?>
+	<div class="dacura-subscreen" id='ldo-raw' title='Raw'>
+		<div class='subscreen-intro-message'><?=$params['raw_intro_msg']?></div>
+		<?php echo $service->getInputTableHTML("ldo-raw", $params['raw_ldo_fields'], array("display_type" => "edit"));?>
+		<div class="subscreen-buttons">
+			<button id='ldotestcreate' class='dacura-test-create subscreen-button'><?=$params['testcreate_button_text']?></button>		
+			<?php if(isset($params['direct_create_allowed']) && $params['direct_create_allowed']) { ?>
+			<button id='ldocreate' class='dacura-create subscreen-button'><?=$params['create_button_text']?></button>
+			<?php } ?>
+		</div>		
 	</div>
 	<?php } ?>	
 </div>

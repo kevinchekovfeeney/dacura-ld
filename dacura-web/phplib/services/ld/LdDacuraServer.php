@@ -6,6 +6,7 @@ include_once("lib/Schema.php");
 include_once("lib/DacuraResult.php");
 include_once("lib/GraphManager.php");
 require_once("lib/NSResolver.php");
+include_once("lib/Ontology.php");
 require_once("LdService.php");
 include_once("LDDBManager.php");
 
@@ -32,8 +33,8 @@ class LdDacuraServer extends DacuraServer {
 
 	function __construct($service){
 		parent::__construct($service);
-		$this->policy = new PolicyEngine();
-		$this->graphman = new GraphManager($this->service->settings);
+		$this->policy = new PolicyEngine($this->service);
+		$this->graphman = new GraphManager($this->service);
 	}
 	
 	function init($action = false, $object = ""){
@@ -43,10 +44,8 @@ class LdDacuraServer extends DacuraServer {
 
 	function loadNamespaces(){
 		$onts = $this->getLDOs(array("type" => "ontology"));
-		//$onts = $this->getEntities(array("type" => "ontology", "status" => "accept"));//introduces bug of missing url in dependency listing.
-		$this->nsres = new NSResolver();
+		$this->nsres = new NSResolver($this->service);
 		foreach($onts as $i => $ont){
-			$ont['meta'] = json_decode($ont['meta'], true);
 			if(isset($ont['id']) && $ont['id'] && isset($ont['meta']['url']) && $ont['meta']['url']){
 				$this->nsres->prefixes[$ont['id']] = $ont['meta']['url'];
 			}
@@ -81,16 +80,14 @@ class LdDacuraServer extends DacuraServer {
 		}
 		$nldo->setContext($this->cid());
 		$nldo->setNamespaces($this->nsres);
-		$rules = $this->getServiceSetting("ldo_create_content_rules", $this->getNewLDOContentRules($type));
-		$rules['cwurl'] = $nldo->cwurl;
-		$rules['id_generator'] = array($nldo, "generateInternalID");
-		if(!($format = $nldo->loadNewObjectFromAPI($create_obj, $format, $options, $rules))){
+		$rules = $this->getNewLDOContentRules($nldo);
+		if(!($format = $nldo->loadNewObjectFromAPI($create_obj, $format, $options, $rules, $this))){
 			return $cr->failure($nldo->errcode, "Protocol Error", "New $type object sent to API had formatting errors. ".$nldo->errmsg);
 		}
-		$cr->add($this->getPolicyDecision("create", $nldo));
+		$cr->add($this->policy->getPolicyDecision("create", $nldo));
 		if($cr->is_reject()){
 			$nldo->status($cr->status());
-			if($this->policy->storeRejected($type, $nldo) && !$test_flag){
+			if($this->policy->storeRejected("create", $nldo) && !$test_flag){
 				if(!$this->dbman->createLDO($nldo, $type)){
 					$cr->addError($this->dbman->errcode, "Usage Monitoring", "Failed to store copy of rejected create of $type.", $this->dbman->errmsg);
 				}
@@ -104,8 +101,16 @@ class LdDacuraServer extends DacuraServer {
 		}
 		$dont_publish = !$cr->is_accept() || $test_flag;
 		$gur = $this->objectPublished($nldo, $dont_publish);
-		$cr->addGraphResult("dqs", $gur, $dont_publish);
-		$nldo->status($cr->status());
+		if($cr->is_accept() && $gur->is_reject() && $this->getServiceSetting("rollback_new_to_pending_on_dqs_reject", true)){
+			$cr->addWarning("Publication", "Rejected by Graph Management Service", "State changed from accept to pending");
+			$cr->status("pending");
+			$nldo->status($cr->status());
+			$cr->addGraphResult("dqs", $gur, true);				
+		}
+		else {
+			$nldo->status($cr->status());				
+			$cr->addGraphResult("dqs", $gur, $dont_publish);				
+		}
 		if(isset($options['show_ld_triples']) && $options['show_ld_triples']){
 			$cr->createGraphResult("ld", $cr->status(), $nldo->triples(), array(), $test_flag, $dont_publish);
 		}
@@ -134,29 +139,6 @@ class LdDacuraServer extends DacuraServer {
 			$txt = "The $type was allocated a randomly generated ID: $id";
 		}
 		$ar->addWarning("Generating id", $txt, $extra);
-	}
-	
-	
-	/**
-	 * Called to trigger any necessary DQS tests when a new object is published (status = accept)
-	 * @param array $nobj the new object to be published
-	 * @param boolean $test_flag if true, this is just a test, no graph updates will take place
-	 * @return GraphResult
-	 */
-	function objectPublished($nobj, $test_flag = false){
-		$nopr = new GraphResult("No graph validation or publication configured for object publication.", $test_flag);
-		return $nopr->accept();
-	}
-	
-	/**
-	 * Called to trigger any necessary DQS tests when an object is deleted (status = deleted)
-	 * @param array $nobj the object to be deleted
-	 * @param boolean $test_flag if true, this is just a test, no graph updates will take place
-	 * @return GraphResult
-	 */
-	function objectDeleted($nobj, $test_flag = false){
-		$nopr = new GraphResult("No graph validation or publication configured for object deletion.");
-		return $nopr->accept();
 	}
 	
 	/** 
@@ -191,39 +173,41 @@ class LdDacuraServer extends DacuraServer {
 		elseif($demand_id && $this->dbman->errcode){
 			return $this->failure_result("Failed to check for duplicate ID ".$this->dbman->errmsg, $this->dbman->errcode);
 		}
-		$rules = $this->getServiceSetting("ldo_create_rules", $this->getNewLDORules($type));
+		$rules = $this->getNewLDORules();
 		return genid($demand_id, $rules);
 	}
 	
-	function getNewLDORules($type){
-		$x = array("allow_demand_id" => true, 
-			"mimimum_id_length" => 1, 
-			"maximum_id_length" => 80, 
-			"extra_entropy" => false);
+	function getNewLDORules(){
+		$x = array();
+		$x["allow_demand_id"] = $this->getServiceSetting("ldo_allow_demand_id", true); 
+		$x["mimimum_id_length"] = $this->getServiceSetting("ldo_mimimum_id_length", 1); 
+		$x["maximum_id_length"] = $this->getServiceSetting("ldo_mimimum_id_length", 80); 
+		$x["extra_entropy"] = $this->getServiceSetting("ldo_extra_entropy", false); 
 		return $x;
 	}
 	
-	function getNewLDOContentRules($type){
-		$x = array(
-			"allow_demand_id" => true, 
-			"mimimum_id_length" => 1, 
-			"maximum_id_length" => 80, 
-			"extra_entropy" => false,
-			"expand_embedded_objects" => true,
-			"replace_blank_ids" => true,
-			"forbid_blank_nodes" => false,
-			"require_blank_nodes" => false,
-			"require_subject_urls" => true,
-			"forbid_unknown_prefixes" => true,
-			"unique_subject_ids" => false,
-			"allow_blanknode_predicates" => false,
-			"require_predicate_urls" => true,
-			"allow_invalid_ld" => false,
-			"require_object_literals" => true,
-			"regularise_object_literals" => true,
-			"forbid_empty" => true,
-			"allow_arbitrary_metadata" => false	
-		);
+	function getNewLDOContentRules($nldo){
+		$x = array();
+		$x['cwurl'] = $nldo->cwurl;
+		$x['id_generator'] = array($nldo, $this->getServiceSetting("internal_generate_id", "generateInternalID"));
+		$x["allow_demand_id"] = $this->getServiceSetting("internal_allow_demand_id", true); 
+		$x["mimimum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 1); 
+		$x["maximum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 80); 
+		$x["extra_entropy"] = $this->getServiceSetting("internal_extra_entropy", false); 
+		$x["expand_embedded_objects"] = $this->getServiceSetting("expand_embedded_objects", true); 
+		$x["replace_blank_ids"] = $this->getServiceSetting("replace_blank_ids", true); 
+		$x["require_blank_nodes"] = $this->getServiceSetting("require_blank_nodes", false); 
+		$x["forbid_blank_nodes"] = $this->getServiceSetting("forbid_blank_nodes", false); 
+		$x["allow_blanknode_predicates"] = $this->getServiceSetting("allow_blanknode_predicates", true); 
+		$x["require_subject_urls"] = $this->getServiceSetting("require_subject_urls", true); 
+		$x["require_predicate_urls"] = $this->getServiceSetting("require_predicate_urls", true); 
+		$x["forbid_unknown_prefixes"] = $this->getServiceSetting("forbid_unknown_prefixes", true); 
+		$x["unique_subject_ids"] = $this->getServiceSetting("unique_subject_ids", false); 
+		$x["allow_invalid_ld"] = $this->getServiceSetting("allow_invalid_ld", false); 
+		$x["require_object_literals"] = $this->getServiceSetting("require_object_literals", true); 
+		$x["regularise_object_literals"] = $this->getServiceSetting("regularise_object_literals", true); 
+		$x["forbid_empty"] = $this->getServiceSetting("forbid_empty", true); 
+		$x["allow_arbitrary_metadata"] = $this->getServiceSetting("allow_arbitrary_metadata", false); 
 		return $x;
 	}
 	
@@ -234,8 +218,17 @@ class LdDacuraServer extends DacuraServer {
 	 * @return boolean|array the linked data objects in an array
 	 */
 	function getLDOs($filter, $options = array()){
+		if(isset($options['include_all'])){
+			$filter['include_all'] = $options['include_all'];
+		}
+		if(isset($options['status'])){
+			$filter['status'] = $options['status'];
+		}
+		if(isset($options['version'])){
+			$filter['version'] = $options['version'];
+		}
 		$data = $this->dbman->loadLDOList($filter);
-		if(!$data){
+		if(!is_array($data)){
 			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 		}
 		return $data;
@@ -247,7 +240,23 @@ class LdDacuraServer extends DacuraServer {
 	 * @return boolean|array the linked data objects in an array
 	 */
 	 function getUpdates($filter, $options = array()){
-		if($data = $this->dbman->loadUpdatesList($filter)){
+	 	if(isset($options['include_all'])){
+	 		$filter['include_all'] = $options['include_all'];
+	 	}
+	 	if(isset($options['status'])){
+	 		$filter['status'] = $options['status'];
+	 	}
+	 	if(isset($options['to_version'])){
+	 		$filter['to_version'] = $options['to_version'];
+	 	}
+	 	if(isset($options['from_version'])){
+	 		$filter['from_version'] = $options['from_version'];
+	 	}
+ 	 	if(isset($options['targetid'])){
+	 		$filter['targetid'] = $options['targetid'];
+	 	}
+	 	$data = $this->dbman->loadUpdatesList($filter);
+	 	if(is_array($data)){
 			return $data;
 		}
 		return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
@@ -273,7 +282,7 @@ class LdDacuraServer extends DacuraServer {
 		if(!$ldo){
 			return $dr->failure($this->errcode, "Error loading $type $ldo_id", $this->errmsg);
 		}
-		$dr->add($this->getPolicyDecision("view", $ldo));
+		$dr->add($this->policy->getPolicyDecision("view", $ldo));
 		if($dr->is_accept()){
 			$dr->set_result($ldo);
 		}
@@ -302,47 +311,22 @@ class LdDacuraServer extends DacuraServer {
 			$ldo->history = $this->loadHistoricalRecord($ldo);
 		}
 		if($options && isset($options['updates']) && $options['updates']){
-			$updopts = array("include_all" => true, 'type' => $type, "collectionid" => $this->cid(), "ldoid" => $ldo_id);
+			$updopts = array("include_all" => true, 'type' => $type, "collectionid" => $this->cid(), "targetid" => $ldo_id);
 			$ldo->updates = $this->getUpdates($updopts);
 		}
-		$ldo->nsres = $this->nsres;
+		$ldo->nsres = $this->nsres; 
 		$ldo->rules = $ldo->getLDORules();
 		if($version && $ldo->version() > $version){
 			if(!$this->rollBackLDO($ldo, $version)){
 				return false;
 			}
 		}
-		if($fragment_id){
-			$show_context = true;//should be in options
-			$ldo->buildIndex();
-			if($this->cwurlbase){
-				$fid = $this->cwurlbase."/".$ldo_id."/".$fragment_id;
-			}
-			else {
-				$fid = $fragment_id;
-			}
-			$frag = $ldo->getFragment($fid);
-			$ldo->fragment_id = $fid;
-			if($frag && $show_context){
-				$ldo->setContentsToFragment($fid);
-				$types = array();
-				foreach($frag as $fobj){
-					if(isset($fobj['rdf:type'])){
-						$types[] = $fobj['rdf:type'];
-					}
-				}
-				$ldo->fragment_paths = $ldo->getFragmentPaths($fid);
-				$ldo->fragment_details = count($types) == 0 ? "Undefined Type" : "Types: ".implode(", ", $types);
-			}
-			else {
-				if($frag){
-					$ldo->ldprops = $frag;
-				}
-				else {
-					return $this->failure_result("Failed to load fragment $fid", 404);
-				}
-			}
+		if($fragment_id && !$ldo->loadFragment($fragment_id)){
+			return $this->failure_result("Failed to load fragment ".htmlspecialchars($fragment_id). " " .$ldo->errmsg, $ldo->errcode);
 		}
+		if($options && isset($options['analysis']) && $options['analysis']){
+			$ldo->analyse();
+		}		
 		return $ldo;
 	}
 	
@@ -480,6 +464,28 @@ class LdDacuraServer extends DacuraServer {
 	}
 	
 	/**
+	 * Called to trigger any necessary DQS tests when a new object is published (status = accept)
+	 * @param array $nobj the new object to be published
+	 * @param boolean $test_flag if true, this is just a test, no graph updates will take place
+	 * @return GraphResult
+	 */
+	function objectPublished($nobj, $test_flag = false){
+		$nopr = new GraphResult("No graph validation or publication configured for object publication.", $test_flag);
+		return $nopr->accept();
+	}
+	
+	/**
+	 * Called to trigger any necessary DQS tests when an object is deleted (status = deleted)
+	 * @param array $nobj the object to be deleted
+	 * @param boolean $test_flag if true, this is just a test, no graph updates will take place
+	 * @return GraphResult
+	 */
+	function objectDeleted($nobj, $test_flag = false){
+		$nopr = new GraphResult("No graph validation or publication configured for object deletion.");
+		return $nopr->accept();
+	}
+	
+	/**
 	 * Called when an ldo is to be updated 
 	 * @param LDOUpdate $uldo the update linked data object
 	 * @param string $is_test true if this is just a test
@@ -567,7 +573,7 @@ class LdDacuraServer extends DacuraServer {
 		$ar->add($this->getPolicyDecision("update", $uldo));
 		if($ar->is_reject()){
 			$uldo->status($ar->status());
-			if($this->policy->storeRejected("update ".$type, $uldo) && !$test_flag){
+			if($this->policy->storeRejected("update", $uldo) && !$test_flag){
 				if(!$this->dbman->updateLDO($uldo, $ar->status())){
 					$ar->addError($this->dbman->errcode, "Usage Monitoring", "Failed to store copy of rejected update.", $this->dbman->errmsg);
 				}
@@ -1009,7 +1015,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @return boolean true if successfully sent
 	 */
 	function sendRetrievedLDO($ar, $format, $options){
-		if($format == "") $format = "json";
+		if(!$format) $format = "json";
 		if($ar->is_error() or $ar->is_reject() or $ar->is_pending()){
 			$this->writeDecision($ar, $options);
 		}
@@ -1200,16 +1206,6 @@ class LdDacuraServer extends DacuraServer {
 		$sc->nsres = $this->nsres;
 		return $sc;
 	}
-	
-	
-	function getPolicyDecision($action, $args){
-		$x = $this->policy->getPolicyDecision($action, "x", $args);
-		//opr($x);
-		return $x;
-	}
-	
-	
-	
 	
 	function getLDOTypeFromClassname(){
 		$cname = get_class($this);

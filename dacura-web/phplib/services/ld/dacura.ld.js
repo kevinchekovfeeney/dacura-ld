@@ -19,7 +19,12 @@ dacura.ld.header = function(obj){
 	}
 	var msg = obj.ldtype + " " + obj.id;
 	dacura.tool.header.showEntityHeader(msg, params);	
-}
+};
+
+dacura.ld.isJSONFormat = function(f){
+	if(f == "json" || f == "jsonld" || f == "quads" || f == "triples") return true;
+	return false;
+};
 
 dacura.ld.viewer = {
 	format: "json",
@@ -52,7 +57,9 @@ dacura.ld.viewer = {
 			var choice = this.id.substring(ldsourceid.length + 1);
 			dacura.ld.viewer.showLDInput(formdiv, choice); 
 		});
-		this.showLDInput(formdiv, $("#" +ldsourceid + " :checked").attr("id").substring(ldsourceid.length +1));
+		if($("#" +ldsourceid + " :checked").length){
+			dacura.ld.viewer.showLDInput(formdiv, $("#" +ldsourceid + " :checked").attr("id").substring(ldsourceid.length +1));			
+		}
 	},
 	
 	hideLDInputs: function(formdiv){
@@ -137,10 +144,6 @@ dacura.ld.viewer = {
 		this.drawLDProps(ldo.contents, this.mode, this.format);
 	},
 	
-	isJSONFormat: function(f){
-		if(f == "json" || f == "jsonld" || f == "quads" || f == "triples") return true;
-		return false;
-	},
 	
 	loadURL: function(ipfield, target){
 		//load url into textbox...
@@ -169,31 +172,95 @@ dacura.ld.viewer = {
 	
 	validateNew: function(obj){
 		var errs = [];
-		if(typeof obj.contents == 'string' && obj.contents && (obj.format == "json" || obj.format == "jsonld" || obj.format == "triples" || obj.format == "quads")){
+		if(typeof obj.contents == 'string' && obj.contents && typeof obj.format == "string" && dacura.ld.isJSONFormat(obj.format)){
 			try {
 				x = JSON.parse(obj.contents);
+				if(typeof x != "object"){
+					errs.push("Contents must contain a well formed json object");
+				}
 			}
 			catch(e){
-				return "Contents does not contain well-formed json";
-			}
-			if(typeof x != "object"){
-				return "Contents must contain a well formed json object";
+				errs.push("Contents does not contain well-formed json");
 			}
 		}
 		if(typeof obj.meta == 'string' && obj.meta){
 			try {
 				x = JSON.parse(obj.meta);
+				if(typeof x != "object"){
+					errs.push("Meta does not contain a json object");
+				}
 			}
 			catch(e){
-				return "Meta does not contain well-formed json";
-			}
-			if(typeof x != "object"){
-				return "Meta must contain a well formed json object";
+				errs.push("Meta does not contain well-formed JSON: "+e.message);
 			}
 		}
-		return "";
-	}
+		if(errs.length > 0){
+			return errs;
+		}
+		return false;
+	},
 	
+	parseCreateForm: function(obj, demand_id_token, options){
+		apiobj = {};
+		if(typeof options != "undefined"){
+			apiobj.options = options;
+		}
+		if(typeof obj.id == "string" && obj.id){
+			apiobj[demand_id_token] = obj.id;
+		}
+		if(typeof obj.meta != "undefined" && obj.meta) {
+			apiobj.meta = JSON.parse(obj.meta);
+		}
+		if(typeof obj.status == "string" && obj.status){
+			if(typeof apiobj.meta != "object") {
+				apiobj.meta = {};
+			}
+			apiobj.meta.status = obj.status;
+		}
+		if(typeof obj.url == "string" && obj.url){
+			if(typeof apiobj.meta != "object") {
+				apiobj.meta = {};
+			}
+			apiobj.meta.url = obj.url;
+		}
+		if(typeof obj.title == "string" && obj.title){
+			if(typeof apiobj.meta != "object") {
+				apiobj.meta = {};
+			}
+			apiobj.meta.title = obj.title;
+		}
+		if(typeof obj.format == "string" && obj.format){
+			apiobj.format = obj.format;
+		}	
+		if(typeof obj.ldtype == "string" && obj.ldtype){
+			apiobj.ldtype = obj.ldtype;
+		}	
+		if(typeof obj.image == "string" && obj.image){
+			if(typeof apiobj.meta != "object") apiobj.meta = {};
+			apiobj.meta.image = obj.image;
+		}
+		if(typeof obj.ldsource == "string" && obj.ldsource == "file" && obj.ldfile){
+			apiobj.ldfile = obj.ldfile;
+		}
+		else if(typeof obj.ldsource == "string" && obj.ldsource == "url" && obj.ldurl){
+			apiobj.ldurl = obj.ldurl;
+		}
+		else if (obj.contents) {
+			if(typeof apiobj.format == "string" && dacura.ld.isJSONFormat(apiobj.format)){
+				try {
+					apiobj.contents = JSON.parse(obj.contents);
+				}
+				catch(e){
+					alert("Failed to parse contents as JSON object " + e.message);
+					return false;
+				}
+			}
+			else {
+				apiobj.contents = obj.contents;
+			}	
+		}
+		return apiobj;		
+	}
 }
 
 
@@ -212,7 +279,7 @@ dacura.ld.api.create = function (data, test){
 
 dacura.ld.api.update = function (id, data, test){
 	var xhr = {};
-	xhr.url = dacura.ld.apiurl + "/" + encodeURIComponent(id);
+	xhr.url = dacura.ld.apiurl + "/" + id;
 	xhr.type = "POST";
 	xhr.contentType = 'application/json'; 
 	if(typeof test != "undefined" && test !== false){
@@ -226,14 +293,14 @@ dacura.ld.api.update = function (id, data, test){
 dacura.ld.api.del = function (id){
 	xhr = {};
 	xhr.data ={};
-	xhr.url = dacura.ld.apiurl + "/" + encodeURIComponent(id);
+	xhr.url = dacura.ld.apiurl + "/" + id;
 	xhr.type = "DELETE";
 	return xhr;
 }
 
 dacura.ld.api.view = function (id, args){
 	xhr = {data: args};
-	xhr.url = dacura.ld.apiurl + "/" + encodeURIComponent(id);
+	xhr.url = dacura.ld.apiurl + "/" + id;
 	return xhr;
 }
 
@@ -284,21 +351,27 @@ dacura.ld.msg.update = function(id, istest, type){
 }
 
 
-dacura.ld.fetchupdatelist = function(onwards, targets, type){
+dacura.ld.fetchupdatelist = function(onwards, targets, type, options){
 	if(typeof type == "undefined"){
 		type = this.ldo_type;
 	}
 	var ajs = dacura.ld.api.list("updates");
+	if(typeof options == "object"){
+		ajs.data = {"options": options};	
+	}
 	var msgs = dacura.ld.msg.fetchupdatelist(true);
 	ajs.handleResult = onwards;
 	dacura.system.invoke(ajs, msgs, targets);
 }
 
-dacura.ld.fetchldolist = function(onwards, targets, type){
+dacura.ld.fetchldolist = function(onwards, targets, type, options){
 	if(typeof type == "undefined"){
 		type = this.ldo_type;
 	}
 	var ajs = dacura.ld.api.list();
+	if(typeof options == "object"){
+		ajs.data = {"options": options};	
+	}
 	var msgs = dacura.ld.msg.fetchldolist(type);
 	ajs.handleResult = onwards;
 	dacura.system.invoke(ajs, msgs, targets);
@@ -347,6 +420,7 @@ dacura.ld.create = function(data, onwards, targets, istest){
 	var msgs = dacura.ld.msg.create(istest, this.ldo_type);
 	ajs.handleResult = onwards;
 	ajs.handleJSONError = onwards;
+	//targets.slow = true;
 	dacura.system.invoke(ajs, msgs, targets);
 }
 

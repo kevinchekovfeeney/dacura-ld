@@ -361,11 +361,17 @@ class DacuraService extends DacuraObject {
 	 * @return string the parameterised configuration variable value (or default if not set)
 	 */
 	function getSystemSetting($cname, $def = false, $fillings = array()){
-		if(isset($this->settings[$cname])){
-			$cval = $this->settings[$cname];
-			return $this->subParamsIntoConfigValue($cval, $fillings);
+		$cnames = explode(".", $cname);
+		$sets = $this->settings;
+		foreach($cnames as $cn){
+			if(!isset($sets[$cn])){
+				return $def;
+			}
+			else {
+				$sets = $sets[$cn];
+			}			
 		}
-		return $def;
+		return $sets;
 	}
 	
 	/**
@@ -396,9 +402,9 @@ class DacuraService extends DacuraObject {
 				$this->subParamsIntoConfigValue($val[$i], $fillings);
 			}
 		}
-		else {
+		elseif(is_array($fillings)) {
 			foreach($fillings as $n => $v){
-				if(strstr($n, $val) !== false){
+				if($val && strstr($n, $val) !== false){
 					$val = str_replace($n, $v, $val);
 				}		
 			}

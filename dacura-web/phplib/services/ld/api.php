@@ -1,4 +1,6 @@
 <?php
+//set_time_limit (1800);
+
 
 
 /**
@@ -48,8 +50,10 @@ $x = @$ldo_type;
  *  
  */
 
+set_time_limit (1800);
+	
+	
 function create_ldo(){
-	set_time_limit (1800);
 	global $dacura_server, $ldo_type;
 	$dacura_server->init("create");
 	$ar = new DacuraResult("Create");
@@ -109,11 +113,7 @@ function list_ldos(){
 	$dcoptions = isset($_GET['options']) ? $_GET['options'] : false;
 	$dacura_server->init(($ldo_type ? $ldo_type : "ldo")."list");
 	$ldos = $dacura_server->getLDOs($dt_options, $dcoptions);
-	if($ldos){
-		foreach($ldos as $i => $row){
-			if(isset($row['meta']) && $row['meta']) $ldos[$i]['meta'] = json_decode($row['meta'], true);
-			if(isset($row['contents']) && $row['contents']) $ldos[$i]['contents'] = json_decode($row['contents'], true);
-		}
+	if(is_array($ldos)){
 		$dacura_server->recordUserAction("get.$ldo_type.list");	
 		return $dacura_server->write_json_result($ldos, "Returned " . count($ldos) . " " . ($ldo_type ? $ldo_type : "ld objects"). "s");
 	}
@@ -136,7 +136,7 @@ function list_updates(){
 	$dcoptions = isset($_GET['options']) ? $_GET['options'] : false;
 	$dacura_server->init(($ldo_type ? $ldo_type : "ldo")."list_updates");
 	$ldos = $dacura_server->getUpdates($dt_options, $dcoptions);
-	if($ldos){
+	if(is_array($ldos)){
 		$dacura_server->recordUserAction("get.$ldo_type.updates");		
 		return $dacura_server->write_json_result($ldos, "Returned " . count($ldos) . " updates");
 	}
@@ -172,8 +172,6 @@ function get_dtoptions($cid){
  * @return string json LDO / DacuraResult on error
  */
 function get_ldo($ldo_id, $fragment_id = false){
-	set_time_limit (1800);
-	
 	global $dacura_server, $ldo_type;
 	$options = isset($_GET['options']) ? $_GET['options'] : false;
 	$version = isset($_GET['version']) ? $_GET['version'] : false;

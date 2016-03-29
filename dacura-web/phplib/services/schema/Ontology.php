@@ -1,11 +1,6 @@
 <?php
 
 class Ontology extends LDO {
-	//var $url; //the id is the local id, this is the official id
-	//var $title;
-	//var $description;
-	//var $real_version;
-	//var $filename;
 	
 	function __construct($id, $logger = false){
 		parent::__construct($id, false, $logger);

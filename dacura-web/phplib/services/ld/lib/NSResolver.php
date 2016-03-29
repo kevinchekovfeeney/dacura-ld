@@ -7,7 +7,7 @@
  * @author Chekov
  * @license GPL V2
  */
-class NSResolver extends DacuraObject {
+class NSResolver extends DacuraController {
 	/** @var array A mapping of prefix -> URL */ 
 	var $prefixes = array();//prefix => full
 	/** @var array the prefixes that will be loaded by default if no prefixes are specified in constructor settings */
@@ -23,8 +23,11 @@ class NSResolver extends DacuraObject {
 		"rdfs" => array("range", "domain", "subPropertyOf", "subClassOf", "member"),
 		"owl" => array("inverseOf", "unionOf", "complementOf", 
 					"intersectionOf", "oneOf", "dataRange", "disjointWith", "imports", "sameAs", "differentFrom",
-				"allValuesFrom", "someValuesFrom")  
-			
+				"allValuesFrom", "someValuesFrom")  			
+	);
+	
+	var $problem_predicates = array(
+		"dc" => array("type")	
 	);
 	
 	/** @var array a mapping of 'alternate' urls to be used in dependency analysis - the canonical url is on the right */
@@ -34,27 +37,25 @@ class NSResolver extends DacuraObject {
 		"http://web.resource.org/cc/" => "http://creativecommons.org/ns#"	
 	);
 	
-	/** @var array an index of namespace utilisation in the document */
-	var $ns_utilisation = false;
-	
 	/**
 	 * Constructor initialises structural_predicates, url_mappings and prefixes of NSResolver object
 	 * 
 	 * @param array $settings an array which can contain one or more of the above indexes
 	 */
-	function __construct($settings = array()){
-		if(isset($settings['structural_predicates'])){
-			$this->structural_predicates = $settings['structural_predicates'];
-		}
-		if(isset($settings['url_mappings'])){
-			$this->url_mappings = $settings['url_mappings'];
-		}
-		if(isset($settings['prefixes'])){
-			$this->prefixes = $settings['prefixes'];
-		}
-		else {
-			$this->prefixes = $this->default_prefixes;
-		}
+	function __construct($service){
+		parent::__construct($service);
+		$this->prefixes = $this->getServiceSetting("prefixes", $this->default_prefixes);
+		$this->structural_predicates = $this->getServiceSetting("structural_predicates", $this->structural_predicates);
+		$this->problem_predicates = $this->getServiceSetting("prefixes", $this->problem_predicates);
+		$this->loadURLMappings();
+	}
+	
+	function loadURLMappings(){
+		//return $this->url_mappings;
+	}
+	
+	function isBuiltInOntology($sh){
+		return isset($this->default_prefixes[$sh]);
 	}
 	
 	/**
@@ -157,10 +158,31 @@ class NSResolver extends DacuraObject {
 	 */
 	function expandNamespaces(&$ldprops, $cwurl = false){
 		if(!is_array($ldprops)) return;
-		foreach($ldprops as $p => $v){
+		foreach($ldprops as $s => $ldobj){
+			if(isNamespacedURL($s) && ($expanded = $this->expand($s))){
+				$ldprops[$expanded] = $ldobj;
+				unset($ldprops[$s]);
+				$s = $expanded;
+			}
+			if(!isAssoc($ldobj)){
+				echo "$s is the subject but the rest is not an object";
+			}
+			else {
+				$this->expandLDONamespaces($ldprops[$s], $cwurl);
+			}
+		}
+	}
+	
+	function expandLDONamespaces(&$ldobj, $cwurl){
+		foreach($ldobj as $p => $v){
+			if(isNamespacedURL($p) && ($expanded = $this->expand($p))){
+				$ldobj[$expanded] = $v;
+				unset($ldobj[$p]);
+				$p = $expanded;
+			}
 			$pv = new LDPropertyValue($v, $cwurl);
 			if($pv->link() && isNamespacedURL($v) && ($expanded = $this->expand($v))){
-				$nv = $expanded;
+				$ldobj[$p] = $expanded;
 			}
 			elseif($pv->valuelist()){
 				$nv = array();
@@ -172,43 +194,21 @@ class NSResolver extends DacuraObject {
 						$nv[] = $val;
 					}
 				}
+				$ldobj[$p] = $nv;
 			}
 			elseif($pv->embeddedlist()){
-				$nv = array();
-				foreach($v as $id => $obj){
-					if(isNamespacedURL($id) && ($expanded = $this->expand($id))){
-						$nv[$expanded] = $obj;
-						$this->expandNamespaces($nv[$expanded], $cwurl);
-					}
-					else {
-						$nv[$id] = $obj;
-						$this->expandNamespaces($nv[$id], $cwurl);
-					}
-				}
+				$this->expandNamespaces($ldobj[$p], $cwurl);
 			}
 			elseif($pv->embedded()){
-				$this->expandNamespaces($v, $cwurl);
-				$nv = $v;
+				$this->expandLDONamespaces($ldobj[$p], $cwurl);
 			}
 			elseif($pv->objectlist()){
 				$nv = array();
 				foreach($v as $one_obj){
-					$this->expandNamespaces($one_obj, $cwurl);
+					$this->expandLDONamespaces($one_obj, $cwurl);
 					$nv[] = $one_obj;
 				}
-			}
-			else {
-				$nv = $v;
-			}
-			if(isNamespacedURL($p) && ($expanded = $this->expand($p))){
-				unset($ldprops[$p]);
-				$ldprops[$expanded] = $nv;
-			}
-			elseif(isNamespacedURL($p)){
-				$ldprops[$p] = $nv;
-			}
-			else {
-				$ldprops[$p] = $nv;
+				$ldobj[$p] = $nv;
 			}
 		}
 	}
@@ -219,14 +219,34 @@ class NSResolver extends DacuraObject {
 	 * @param string|boolean $cwurl the closed world url of the object (or false if there is none)
 	 */
 	function compressNamespaces(&$ldprops, $cwurl = false){
-		if(!is_array($ldprops)){
-			return;
+		if(!is_array($ldprops)){return;}
+		foreach($ldprops as $s => $ldobj){
+			if(isURL($s) && ($compressed = $this->compress($s))){
+				$ldprops[$compressed] = $ldobj;
+				unset($ldprops[$s]);
+				$s = $compressed;
+			}
+			if(!isAssoc($ldobj)){
+				//echo "$s is the subject but the rest is not an object";
+			}
+			else {
+				$this->compressLDONamespaces($ldprops[$s], $cwurl);
+			}
 		}
-		foreach($ldprops as $p => $v){
-			//first compress property values
+	}
+	
+	function compressLDONamespaces(&$ldobj, $cwurl = false){
+		foreach($ldobj as $p => $v){
+			//compress predicates
+			if(isURL($p) && ($compressed = $this->compress($p))){
+				$ldobj[$compressed] = $v;
+				unset($ldobj[$p]);
+				$p = $compressed;
+			}				
+			//then compress property values
 			$pv = new LDPropertyValue($v, $cwurl);
 			if($pv->link() && ($compressed = $this->compress($v))){
-				$nv = $compressed;
+				$ldobj[$p] = $compressed;
 			}
 			elseif($pv->valuelist()){
 				$nv = array();
@@ -238,29 +258,20 @@ class NSResolver extends DacuraObject {
 						$nv[] = $val;
 					}
 				}
+				$ldobj[$p] = $nv;
 			}
 			elseif($pv->embeddedlist()){
+				$this->compressNamespaces($ldobj[$p], $cwurl);
+			}elseif($pv->embedded()){
+				$this->compressLDONamespaces($ldobj[$p], $cwurl);
+			}
+			elseif($pv->objectlist()){
 				$nv = array();
-				foreach($v as $id => $obj){
-					$this->compressNamespaces($obj, $cwurl);
-					if(isURL($id) && ($compressed = $this->compress($id))){
-						$nv[$compressed] = $obj;
-					}
-					else {
-						$nv[$id] = $obj;
-					}
+				foreach($v as $one_obj){
+					$this->compressLDONamespaces($one_obj, $cwurl);
+					$nv[] = $one_obj;
 				}
-			}
-			else {
-				$nv = $v;
-			}
-			//then compress predicates
-			if(isURL($p) && ($compressed = $this->compress($p))){
-				unset($ldprops[$p]);
-				$ldprops[$compressed] = $nv;
-			}
-			else {
-				$ldprops[$p] = $nv;
+				$ldobj[$p] = $nv;
 			}
 		}
 	}
@@ -373,11 +384,20 @@ class NSResolver extends DacuraObject {
 		if($parts = $this->initUtilisation($ns, $prop)){
 			$p = $this->compress($parts[1]);
 			$p = $p ? $p : $parts[1];
-			if(!isset($ns[$parts[0]]["predicates"][$p])){
-				$ns[$parts[0]]["predicates"][$p] = 1;
+			if(!isset($ns[$parts[0]]["predicate"][$p])){
+				$ns[$parts[0]]["predicate"][$p] = 1;
 			}
 			else {
-				$ns[$parts[0]]["predicates"][$p]++;
+				$ns[$parts[0]]["predicate"][$p]++;
+			}
+			if($this->isProblemPredicate($p)){
+				$p = $p ? $p : $parts[1];
+				if(!isset($ns[$parts[0]]["problem_predicates"][$p])){
+					$ns[$parts[0]]["problem_predicates"][$p] = 1;
+				}
+				else {
+					$ns[$parts[0]]["problem_predicates"][$p]++;
+				}
 			}
 		}
 		return $parts;
@@ -410,7 +430,7 @@ class NSResolver extends DacuraObject {
 	private function initUtilisation(&$ns, $url){
 		if($parts = $this->deconstructURL($url)){
 			if(!isset($ns[$parts[0]])){
-				$ns[$parts[0]] = array("predicates" => array(), "structural" => array(), "object" => array(), "subject" => array());
+				$ns[$parts[0]] = array("predicate" => array(), "structural" => array(), "object" => array(), "subject" => array());
 			}
 		}
 		return $parts;	
@@ -484,6 +504,18 @@ class NSResolver extends DacuraObject {
 			}
 		}
 		return false;
+	}
+	
+	function isProblemPredicate($url){
+		foreach($this->problem_predicates as $sh => $preds){
+			foreach($preds as $pred){
+				if($this->match($url, $sh, $pred)){
+					return true;
+				}
+			}
+		}
+		return false;
+		
 	}
 	
 	/**

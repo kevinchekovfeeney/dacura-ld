@@ -23,10 +23,18 @@ class LDDBManager extends DBManager {
 			$stmt->execute($params);
 			$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			if($rows){
+				foreach($rows as $i => $row){
+					if(isset($row['meta'])){
+						$rows[$i]['meta'] = json_decode($row['meta'], true);						
+					}					
+					if(isset($row['contents'])){
+						$rows[$i]['contents'] = json_decode($row['contents'], true);						
+					}					
+				}
 				return $rows;
 			}
 			else {
-				return $this->failure_result("No linked data objects found in system", 404);
+				return array();//$this->failure_result("No linked data objects found in system", 404);
 			}
 		}
 		catch(PDOException $e){
@@ -45,7 +53,7 @@ class LDDBManager extends DBManager {
 				return $rows;
 			}
 			else {
-				return $this->failure_result("No LDO updates found in system", 404);
+				return array();//$this->failure_result("No LDO updates found in system", 404);
 			}
 		}
 		catch(PDOException $e){
@@ -61,7 +69,7 @@ class LDDBManager extends DBManager {
 				$fields = ", meta, forward, backward";
 			}
 			$sql = "SELECT eurid, targetid, type, collectionid, status, from_version, to_version,
-				createtime, modtime".$fields." FROM ldo_update_requests";		
+				createtime, modtime, length(forward) + length(backward) as size".$fields." FROM ldo_update_requests";		
 		}
 		else {
 			if(isset($filter['include_all'])){
@@ -85,9 +93,17 @@ class LDDBManager extends DBManager {
 		if(isset($filter['createtime'])){
 			$wheres['createtime'] = $filter['createtime'];
 		}
-		if(isset($filter['ldoid'])){
-			$wheres['targetid'] = $filter['ldoid'];
-		}
+		if($view_updates){
+			if(isset($filter['targetid'])){
+				$wheres['targetid'] = $filter['targetid'];
+			}
+			if(isset($filter['from_version'])){
+				$wheres['from_version'] = $filter['from_version'];
+			}
+			if(isset($filter['to_version'])){
+				$wheres['to_version'] = $filter['to_version'];
+			}
+		}		
 		$wsql = "";
 		if(count($wheres) > 0){
 			$i = 0;
@@ -359,6 +375,8 @@ class LDDBManager extends DBManager {
 			$stmt = $this->link->prepare("SELECT id FROM ld_objects where id=? and type=? and collectionid=?");
 			$stmt->execute(array($id, $type, $cid));
 			if($stmt->rowCount()) {
+				$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+				//opr($rows);
 				return true;
 			}		
 			return false;

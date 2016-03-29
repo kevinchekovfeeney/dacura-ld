@@ -117,6 +117,69 @@ function generateBNIDs(&$ldobj, &$idmap, $rules){
 	$ldobj = $nprops;
 }
 
+function makeBNIDsAddressable(&$ldprops, $cwurl){
+	if(!is_array($ldprops)) return;
+	foreach($ldprops as $s => $ldobj){
+		if(isBlankNode($s)){
+			$nid = bnToAddressable($s, $cwurl);
+			$ldprops[$nid] = $ldobj;
+			unset($ldprops[$s]);
+			$s = $nid;
+		}
+		if(!isAssoc($ldobj)){
+			//echo "$s is the subject but the rest is not an object";
+		}
+		else {
+			makeLDOBNIDsAddressable($ldprops[$s], $cwurl);
+		}
+	}	
+}
+
+function bnToAddressable($bnid, $cwurl){
+	return $cwurl."/".substr($bnid, 2);
+}
+
+function makeLDOBNIDsAddressable(&$ldobj, $cwurl){
+	foreach($ldobj as $p => $v){
+		if(isBlankNode($p)){
+			$nid = bnToAddressable($p, $cwurl);
+			$ldobj[$nid] = $v;
+			unset($ldobj[$p]);
+			$p = $nid;
+		}
+		$pv = new LDPropertyValue($v, $cwurl);
+		if($pv->bn()){
+			$ldobj[$p] = bnToAddressable($v, $cwurl);
+		}
+		elseif($pv->valuelist()){
+			$nv = array();
+			foreach($v as $val){
+				if(isBlankNode($val)){
+					$nv[] = bnToAddressable($val, $cwurl);
+				}
+				else {
+					$nv[] = $val;
+				}
+			}
+			$ldobj[$p] = $nv;
+		}
+		elseif($pv->embeddedlist()){
+			makeBNIDsAddressable($ldobj[$p], $cwurl);
+		}
+		elseif($pv->embedded()){
+			makeLDOBNIDsAddressable($ldobj[$p], $cwurl);
+		}
+		elseif($pv->objectlist()){
+			$nv = array();
+			foreach($v as $i => $one_obj){
+				makeLDOBNIDsAddressable($one_obj, $cwurl);
+				$nv[] = $one_obj;
+			}
+			$ldobj[$p] = $nv;
+		}
+	}
+}
+
 /**
  * update internal references by replacing references to old values with newly ids..
  *
@@ -288,14 +351,32 @@ function validLD($ldprops, $rules){
 	return $errs;
 }
 
+
+/**
+ * Build an index of a collection of LD objects: array {id => [nodes]}
+ *
+ * @param array $ldprops the array of linked data objects indexed by subject
+ * @param array $index the index array which will be filled by this function
+ * @param array $cwurl url of the ld object that owns these assertions
+ */
+function indexLDProps($ldprops, &$index, $cwurl){
+	foreach($ldprops as $s => $ldobj){
+		if(!isset($index[$s])){
+			$index[$s] = array();
+		}
+		$index[$s][] =& $ldprops[$s];
+		indexLDO($ldprops[$s], $index, $cwurl);
+	}
+}
+
 /**
  * Build an index of a LD object's structure: array {id => [nodes]}
  * 
- * @param array $ldprops the property array
+ * @param array $ldobj linked data object
  * @param array $index the index array which will be filled by this function
- * @param array $rules settings for the indexing 
+ * @param array $cwurl url of the ld object that owns these assertions
  */
-function indexLD($ldobj, &$index, $cwurl){
+function indexLDO($ldobj, &$index, $cwurl){
 	if(!isAssoc($ldobj)) return false;
 	foreach($ldobj as $p => $v){
 		$pv = new LDPropertyValue($v, $cwurl);
@@ -307,15 +388,15 @@ function indexLD($ldobj, &$index, $cwurl){
 				else {
 					$index[$id][] = $ldobj[$p][$id];
 				}
-				indexLD($obj, $index, $cwurl);
+				indexLDO($ldobj[$p][$id], $index, $cwurl);
 			}
 		}
 		elseif($pv->embedded()){
-			indexLD($v, $index, $cwurl);				
+			indexLDO($ldobj[$p], $index, $cwurl);				
 		}
 		elseif($pv->embeddedlist()){
-			foreach($v as $obj){
-				indexLD($v, $index, $cwurl);
+			foreach($v as $i=>$obj){
+				indexLDO($ldobj[$p][$i], $index, $cwurl);
 			}				
 		}
 	}
@@ -585,29 +666,6 @@ function getEOLAsTriples($eol, $rules, $frag_id = false, $p = false){
 
 /* support for accessing fragment (LD Object internal ids) ids */
 
-/**
- * Retrieves the contents of an LD Object with fragment id $f
- * @param string $f the fragment id in question
- * @param array $ldprops the ld property array to be searched for the fragment id
- * @param array $rules transformation rules that will be used to find fragment
- * @return mixed|boolean the fragment value if present, false otherwise
- */
-function getFragment($f, $ldprops, $rules){
-	foreach($ldprops as $p => $v){
-		$pv = new LDPropertyValue($v, $rules['cwurl']);
-		if($pv->embeddedlist()){
-			foreach($v as $id => $obj){
-				if($id == $f){
-					return $obj;
-				}
-				else {
-					return getFragment($f, $obj, $rules);
-				}
-			}
-		}
-	}
-	return false;
-}
 
 /**
  * Retrieves the context of an LD Object with fragment id $f
@@ -616,25 +674,46 @@ function getFragment($f, $ldprops, $rules){
  * @param array $rules transformation rules that will be used to find fragment
  * @return mixed|boolean an array of paths to the fragment if found, false otherwise
  */
-function getFragmentContext($f, $ldprops, $rules){
-	$paths = array();
-	foreach($ldprops as $p => $v){
-		$pv = new LDPropertyValue($v, $rules['cwurl']);
+function getFragmentContext($f, $ldprops, $cwurl){
+	$context = array();
+	if(!isset($ldprops[$f])){
+		return $context;
+	}
+	foreach($ldprops as $s => $ldobj){
+		$opath = getFragmentContextInLDO($f, $ldobj, $cwurl);
+		if(is_array($opath)){
+			$context[$s] = $opath;
+			return $context;
+		}
+	}
+	return false;
+}
+
+function getFragmentContextInLDO($f, $ldobj, $cwurl){
+	foreach($ldobj as $p => $v){
+		$pv = new LDPropertyValue($v, $cwurl);
 		if($pv->embeddedlist()){
-			foreach($v as $id => $obj){
-				if($id == $f){
-					$paths[] = array($p);
-				}
-				else {
-					$cpaths = getFragmentContext($f, $obj, $rules);
-					foreach($cpaths as $pat){
-						$paths[] = array_merge(array($p, $id), $pat);
-					}
+			$opath = getFragmentContext($f, $v, $cwurl);
+			if(is_array($opath)){
+				return array($p => $opath);
+			}			
+		}
+		elseif($pv->objectlist()){
+			foreach($v as $i => $obj){
+				$opath = getFragmentContextInLDO($f, $obj);
+				if(is_array($opath)){
+					return array($p => array($i => $opath));
 				}
 			}
 		}
+		elseif($pv->embedded()){
+			$opath = getFragmentContextInLDO($f, $v);
+			if(is_array($opath)){
+				return array($p => $opath);
+			}
+		}
 	}
-	return $paths;
+	return false;
 }
 
 /**
@@ -728,7 +807,7 @@ function setFragment($f, &$dprops, $nval, $rules){
 				$did = $v[$demand_id_token];
 			}
 			$aid = genid($did, $rules);
-			$missing = array_merge($missing, findInternalMissingLinks($ldprops, $legal_vals, $aid, $rules));
+			$missing = array_merge($missing, findInternalMissingLinks($v, $legal_vals, $aid, $rules));
 		}
 		elseif($pv->objectlist()){
 			$demand_id_token = isset($rules['demand_id_token']) ? $rules['demand_id_token'] : "@id";

@@ -823,7 +823,20 @@ dacura.system.invoke = function(ajs, cmsgs, ctargets){
 		done = ajs.done;
 		delete(ajs.done);
 	}
-	return $.ajax(ajs).done(done).fail(fail).always(always);
+	if(typeof ctargets.slow != "undefined" && ctargets.slow){
+		oncomplete = function(data, textStatus, jqXHR){
+			always(data, textStatus, jqXHR);
+			done(data, textStatus, jqXHR);
+		};
+		onerror = function(jqXHR, textStatus, errorThrown){
+			always(jqXHR, textStatus, errorThrown);
+			fail(jqXHR, textStatus, errorThrown);
+		}
+		return 	dacura.system.slowAjax(ajs.url, ajs.type, ajs.data, oncomplete, ctargets.onmessage, onerror)
+	}
+	else {
+		return $.ajax(ajs).done(done).fail(fail).always(always);
+	}
 };
 
 /**

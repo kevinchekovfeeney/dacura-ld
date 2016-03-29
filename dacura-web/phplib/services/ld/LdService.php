@@ -19,7 +19,13 @@ class LdService extends DacuraService {
 	);
 	
 	function init(){
-		$this->included_css[] = $this->get_service_file_url("style.css");
+		if($this->name() == "ld"){
+			$this->included_css[] = $this->get_service_file_url("style.css");
+		}
+		else {
+			$this->included_css[] = $this->get_service_file_url("style.css", "ld");
+			$this->included_scripts[] = $this->get_service_script_url("dacura.ld.js", "ld");
+		}
 	}
 	
 	function getMinimumFacetForAccess(DacuraServer &$dacura_server){
@@ -97,7 +103,7 @@ class LdService extends DacuraService {
 			$args['options'] = $_GET['options'];
 		}
 		else {
-			$args['options'] = array("history" => 1, "updates" => 1, "ns" => 1);
+			$args['options'] = array("history" => 1, "updates" => 1, "ns" => 1, "addressable" => 1, "analysis" => 1);
 		}
 		return $args;
 	}
@@ -114,31 +120,23 @@ class LdService extends DacuraService {
 
 	function readLDListArgs($is_post = false){
 		$args = array();
-		if(isset($_GET['version']) || ($is_post && isset($_POST['version']))){
-			$args['version'] = $is_post ? $_POST['version'] : $_GET['version'];
-		}
-		if(isset($_GET['mode'])){
-			$args['mode'] = $_GET['mode'];
+		if(isset($_GET['options'])){
+			$args = $_GET['options'];				
 		}
 		else {
-			$args['mode'] = "view";
+			$args = false;
 		}
-		if(isset($_GET['ldtype']) && $_GET['ldtype']){
-			$args['ldtype'] = $_GET['ldtype'];
-		}
-		if(isset($_GET['format']) && $_GET['format']){
-			$args['format'] = $_GET['format'];
-		}
-		else {
-			$args['format'] = "json";
-		}
-		if(isset($_GET['display'])) {
-			$args['display'] = $_GET['display'];
+		return $args;
+	}
+
+	function readLDListUpdatesArgs($is_post = false){
+		$args = array();
+		if(isset($_GET['uoptions'])){
+			$args = $_GET['uoptions'];
 		}
 		else {
-			$args['display'] = "ns_links_typed_problems";
+			$args = false;
 		}
-		$args['options'] = array("history");
 		return $args;
 	}
 	
@@ -183,7 +181,7 @@ class LdService extends DacuraService {
 		if(!$dacura_server->supportsFormat($format)){
 			$format = "json";
 		}
-		$dacura_server->display_content_directly($dr->result, $format, $options);
+		$dacura_server->display_content_directly($dr->result, $format, $options['options']);
 	}
 	
 	function showFullPage($dacura_server){
@@ -208,12 +206,15 @@ class LdService extends DacuraService {
 	 * @see DacuraService::getParamsForScreen()
 	 */
 	function getParamsForScreen($screen, LdDacuraServer &$dacura_server){
-		$params = array("image" => $this->furl("image", "services/ld.png"));
+		$params = array("image" => $this->furl("image", "services/".$this->name().".png"));
+		if($this->name() != "ld") $params['ldtype'] = $this->name();
 		$params['dt'] = true;
 		$params["breadcrumbs"] = array(array(), array());
 		if($screen == "list"){
 			$options = $this->readLDListArgs();
+			$uoptions = $this->readLDListUpdatesArgs();
 			$params['fetch_args'] = json_encode($options);
+			$params['fetch_update_args'] = json_encode($uoptions);
 			$this->loadParamsForListScreen($params, $dacura_server);
 		}
 		elseif($screen == "view"){
@@ -296,6 +297,9 @@ class LdService extends DacuraService {
 			if(in_array("ldo-analysis", $subscreens)){
 				$params['analysis_intro_msg'] = $this->smsg('view_analysis_intro', $mappings);
 			}				
+			if(in_array("ldo-raw", $subscreens)){
+				$params['raw_intro_msg'] = $this->smsg('raw_intro_msg', $mappings);
+			}				
 		}
 		elseif($screen == "list"){
 			if(in_array("ldo-list", $subscreens)){
@@ -323,7 +327,7 @@ class LdService extends DacuraService {
 		$params['testcreate_button_text'] = $this->smsg('testcreate_button_text');
 		$params['create_ldo_fields'] = $this->sform("create_ldo_fields");
 		$params['create_ldo_fields']['ldtype']['options'] = LDO::$ldo_types;
-		$params['create_ldo_fields']['ldformat']['options'] = array_merge(array("" => "Auto-detect"), LDO::$valid_input_formats);
+		$params['create_ldo_fields']['format']['options'] = array_merge(array("" => "Auto-detect"), LDO::$valid_input_formats);
 		$params['direct_create_allowed'] = true;
 		$params["demand_id_token"] = $this->getServiceSetting("demand_id_token", "@id");
 		$params['create_options'] = $this->getServiceSetting("create_options", array());
@@ -334,7 +338,7 @@ class LdService extends DacuraService {
 	}
 	
 	function getViewSubscreens(){
-		return array("ldo-meta", "ldo-history", "ldo-contents", "ldo-updates");		
+		return array("ldo-meta", "ldo-raw", "ldo-history", "ldo-contents", "ldo-analysis", "ldo-updates");		
 	}
 	
 	function loadParamsForViewScreen($id, &$params, &$dacura_server){
@@ -348,6 +352,37 @@ class LdService extends DacuraService {
 		$params["title"] = "Linked Data Object Manager";
 		$params["subtitle"] = "Object view";
 		$params["description"] = "View and update your managed linked data objects";
+		//opr($params);
 		return $params;
-	}		
+	}	
+
+	/**
+	 * (non-PHPdoc)
+	 * @see DacuraService::renderScreen()
+	 * Overrides method to support screen inheritance from ld service...
+	 * @param string $screen the name of the screen to render
+	 * @param array $params name value associate array of substitution parameters to be passed to screen
+	 * @param string $other_service if set, the screen will be taken from this service, rather than the current one which is default
+	 * @return void
+	 */
+	public function renderScreen($screen, $params, $other_service = false){
+		if($this->name() != "ld" && !$other_service){ //derived class that has no other service explicitly set. 
+			$service =& $this;
+			global $dacura_server;
+			//first check to see if the service has defined its own screen 
+			$f = $this->mydir."screens/$screen.php";
+			if(file_exists($f)){
+				include_once($f);
+			}
+			else {
+				//opr($params);
+				//if not then use the one inherited from the ld service....
+				return $this->renderScreen($screen, $params, "ld");
+			}
+		}
+		else {
+			return parent::renderScreen($screen, $params, $other_service);
+		}
+	}
+	
 }

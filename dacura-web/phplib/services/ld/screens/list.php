@@ -21,7 +21,9 @@
 			</thead>
 			<tbody></tbody>
 		</table>
+		<div class="subscreen-buttons" id='ld-table-updates'></div>
 	</div>
+	
 	<?php } if(in_array("update-list", $params['subscreens'])) { ?>
 	<div class='dacura-subscreen ld-list' id="update-list" title="Updates to Linked Data Objects">
 		<div class='subscreen-intro-message'><?=$params['updates_intro_msg']?></div>
@@ -39,12 +41,14 @@
 				<th id='ldu-createtime'>Sortable Created</th>
 				<th id='dfu-getPrintableModified'>Modified</th>
 				<th id='ldu-modtime'>Sortable Modified</th>
+				<th id='ldu-size'>Size</th>				
 				<th id='dfx-rowselector'>Select</th>
 				
 			</tr>
 			</thead>
 			<tbody></tbody>
 		</table>
+		<div class="subscreen-buttons" id='update-table-updates'></div>		
 	</div>
 	<?php } if(in_array("ldo-create", $params['subscreens'])) { ?>
 	<div class='dacura-subscreen' id="ldo-create" title="Create New Linked Data Object">
@@ -55,11 +59,14 @@
 			<?php if(isset($params['direct_create_allowed']) && $params['direct_create_allowed']) { ?>
 			<button id='ldocreate' class='dacura-create subscreen-button'><?=$params['create_button_text']?></button>
 			<?php } ?>
-			</div>
+		</div>
 	</div>
 	<?php } ?>
 </div>
 <script>
+
+function updateLDStatus(){}
+
 $(function() {
 	var initarg = {
 		"tabbed": 'ld-tool-home',
@@ -94,15 +101,22 @@ $(function() {
 			else {
 				window.location.href = dacura.system.pageURL() + "/" + entid + args;
 			}
-		},	
+		},
+		"multiselect": {
+			options: {"approve": "Approve"}, 
+			intro: "Update Selected <?=isset($params['ldtype']) ? $params['ldtype'] :  "object"?> , Set Status to ", 
+			container: "ld-table-updates",
+			label: "Update",
+			update: updateLDStatus 
+		},
 		"refresh": {label: "Refresh <?=isset($params['ldtype']) ? $params['ldtype'] :  "object"?> List"},			
 		//"ajax": dacura.ld.apiurl,//
-		"fetch": dacura.ld.fetchldolist,
+		"fetch": function(onwards, pconfig) { dacura.ld.fetchldolist(onwards, pconfig, dacura.ld.ldo_type<?php if(isset($params['fetch_args']) && $params['fetch_args']) echo ", ".$params['fetch_args'];?>);},
 		"dtsettings": <?=$params['ldo_datatable']?>
 	});		
 	dacura.tool.table.init("update_table", {
 		"screen": "update-list", 
-		"fetch": dacura.ld.fetchupdatelist,
+		"fetch": function(onwards, pconfig) { dacura.ld.fetchupdatelist(onwards, pconfig, dacura.ld.ldo_type<?php if(isset($params['fetch_update_args']) && $params['fetch_update_args']) echo ", ".$params['fetch_update_args'];?>);},
 		"rowClick": function(event, entid, rowdata) {
 			window.location.href = dacura.system.pageURL(dacura.system.pagecontext.service, rowdata.collectionid) + "/update/" + entid;
 		},
@@ -136,72 +150,35 @@ function createSuccess(data, pconf, msg){
 	jpr(data);
 }
 
-function createFormToAPI(obj){
-	apiobj = {};
-	<?php if(count($params['create_options']) > 0){
-		echo "apiobj.options = ".json_encode($params['create_options']).";";
-	}?>
-	if(typeof obj.id == "string" && obj.id){
-		apiobj["<?=$params['demand_id_token']?>"] = obj.id;
-	}
-	if(typeof obj.meta != "undefined" && obj.meta) {
-		apiobj.meta = JSON.parse(obj.meta);
-	}
-	if(typeof obj.status == "string" && obj.status){
-		if(typeof apiobj.meta != "object") {
-			apiobj.meta = {};
-		}
-		apiobj.meta.status = obj.status;
-	}
-	if(typeof obj.url == "string" && obj.url){
-		if(typeof apiobj.meta != "object") {
-			apiobj.meta = {};
-		}
-		apiobj.meta.url = obj.url;
-	}
-	if(typeof obj.title == "string" && obj.title){
-		if(typeof apiobj.meta != "object") {
-			apiobj.meta = {};
-		}
-		apiobj.meta.title = apiobj.title;
-	}
-	if(typeof obj.ldformat == "string" && obj.ldformat){
-		apiobj.format = obj.ldformat;
-	}	
-	if(typeof obj.ldtype == "string" && obj.ldtype){
-		apiobj.ldtype = obj.ldtype;
-	}	
-	if(typeof obj.image == "string" && obj.image){
-		if(typeof apiobj.meta != "object") apiobj.meta = {};
-		apiobj.meta.image = obj.image;
-	}
-	if(typeof obj.ldsource == "string" && obj.ldsource == "file" && obj.ldfile){
-		apiobj.ldfile = obj.ldfile;
-	}
-	else if(typeof obj.ldsource == "string" && obj.ldsource == "url" && obj.ldurl){
-		apiobj.ldurl = obj.ldurl;
-	}
-	else if (obj.contents) {
-		if(typeof apiobj.format == "string" && dacura.ld.viewer.isJSONFormat(apiobj.format)){
-			apiobj.contents = JSON.parse(obj.contents);
-		}
-		else {
-			apiobj.contents = obj.contents;
-		}
-		
-	}
-	return apiobj;		
-}
+
 
 function testCreateLDO(data, result, pconf){
-	obj = createFormToAPI(data);
-	dacura.ld.create(obj, result, pconf, true);
+	<?php if(count($params['create_options']) > 0){
+		echo "options = ".json_encode($params['create_options']).";";
+	}?>
+	var demand_id_token = "<?php echo $params['demand_id_token'];?>";
+	obj = dacura.ld.viewer.parseCreateForm(data, demand_id_token, options);
+	if(obj){
+		//dacura.system.showModal("Testing Linked Data Object Creation", "info");
+		pconf.onmessage = function(msgs){
+			for(var i = 0; i < msgs.length; i++){
+				dacura.system.updateModal(msgs[i]);
+			}
+		}
+		dacura.ld.create(obj, result, pconf, true);
+	}
 }
 
 
 function createLDO(data, result, pconf){
-	obj = createFormToAPI(data);
-	dacura.ld.create(obj, result, pconf);
+	<?php if(count($params['create_options']) > 0){
+		echo "options = ".json_encode($params['create_options']).";";
+	}?>
+	var demand_id_token = "<?php echo $params['demand_id_token'];?>";
+	obj = dacura.ld.viewer.parseCreateForm(data, demand_id_token, options);
+	if(obj){
+		dacura.ld.create(obj, result, pconf);
+	}
 }
 
 function getPrintableCreated(obj){

@@ -8,36 +8,27 @@ include_once("DacuraResult.php");
  * @author chekov
  * @license GPL V2
  */
-class PolicyEngine extends DacuraObject {
+class PolicyEngine extends DacuraController {
 	/** @var array true for a given type if users are allowed to specify their own ids for ldos */
-	var $demand_id_allowed = array("default" => true, "graph" => false);
 	/** @var array if this is true for a given ldo type then ldos and updates that are rejected will still be stored in the db */
-	var $store_rejected = array("default" => true, "ontology" => false);
-	/** @var array An array of decisions for actions */
+	var $store_rejected = array("create", "update");
+	/** @var array An array of decisions for actions - these are default decisions, they can be overridden by settings */
 	var $decisions = array(
-		"view" => array("default" => "accept"),	
-		"update" => array("default" => "accept"),	
-		"create" => array("default" => "pending"),	
-		"delete" => array("default" => "accept"),	
-		"view update" => array("default" => "accept"),	
-		"update update" => array("default" => "accept"),	
-		"delete update" => array("default" => "accept"),	
+		"view" => "accept",	
+		"update" => "accept",	
+		"create" => "accept",	
+		"delete" => "accept",	
+		"view update" => "accept",	
+		"delete update" => "accept"	
 	);
-	/** @var array An array of which types should be rolled back*/
-	var $rollbacks = array("default" => true, "ontology" => false);
 	
-	var $decision;
-	
-	/**
-	 * Loads the default decision for a particular action and object type
-	 * @param string $action
-	 * @param string $type
-	 * @return string 
-	 */
-	function getPolicyDefaultDecision($action, $type){
-		$decisions = $this->decisions[$action];
-		if(isset($decisions[$type]))return $decisions[$type];
-		return $decisions["default"];
+	function __construct(LdService &$service){
+		parent::__construct($service);
+		$this->store_rejected = $this->getServiceSetting("store_rejected", $this->store_rejected);
+		$this->decisions = $this->getServiceSetting("decisions", $this->decisions);
+		if(!isset($this->decisions["update update"])){
+			$this->decisions["update update"] = array($this, "updateUpdate");
+		}
 	}
 	
 	/**
@@ -47,10 +38,19 @@ class PolicyEngine extends DacuraObject {
 	 * @param mixed $context any important contextual information goes in here
 	 * @return DacuraResult
 	 */
-	function getPolicyDecision($action, $type, $context){
+	function getPolicyDecision($action, $obj){
 		$ar = new DacuraResult("System policy for $action");
-		$dec = $this->getPolicyDefaultDecision($action, $type);
-		$ar->status($dec);
+		if(isset($this->decisions[$action])){
+			if(is_string($this->decisions[$action])){
+				$ar->status($this->decisions[$action]);
+			}
+			elseif(is_callable($this->decisions['action'])){
+				call_user_func_array($this->decisions['action'], array($obj, $context));
+			}
+		}
+		else {
+			$ar->reject("No system policy specified for $action", "You need to update the service settings to specify a policy result for $action");
+		}
 		if($action == "update update"){
 			return $this->updateUpdate($context[0], $context[1], $ar);
 		}
@@ -58,12 +58,14 @@ class PolicyEngine extends DacuraObject {
 	}
 
 	/**
-	 * Updates to updates are special and can beprocessed generically ...
+	 * Updates to updates are special and can be processed generically ...
 	 * @param ldoUpdate $orig the original update object
 	 * @param ldoUpdate $upd the modified update object
 	 * @param DacuraResult $ar the result object that this result will be added to
 	 */
-	function updateUpdate($orig, $upd, &$ar){
+	function updateUpdate($context){
+		$orig = $context[0];
+		$upd = $context[1];
 		if($orig->is_accept() && $orig->to_version() && ($orig->to_version() != $orig->original->latest_version)){
 			//old published version - disallow
 			return $ar->failure(400, "Illegal Update", "Old updates that have been accepted cannot be changed.");
@@ -82,31 +84,15 @@ class PolicyEngine extends DacuraObject {
 	 * @param LDO $ldo the ldo itself
 	 * @return boolean true if rejected should be stored
 	 */
-	function storeRejected($type, $ldo = false){
-		if(isset($this->store_rejected[$type])) return $this->store_rejected[$type];
-		return $this->store_rejected['default'];
+	function storeRejected($action, $ldo){
+		if(is_array($this->store_rejected) && in_array($action, $this->store_rejected)){
+			return true;
+		}
+		elseif(is_callable($this->store_rejected)){
+			return $this->store_rejected($action, $ldo);
+		}
+		return false;
 	}
 
-	/**
-	 * Should we roll back to pending when a update is accepted by policy but rejected by graph analysis?
-	 * @param string $type the type of thing
-	 * @param LDldo $ldo the thing itself
-	 * @return boolean true if it should be rolled back
-	 */
-	function rollbackToPending($type, $ldo = false){
-		if(isset($this->rollbacks[$type])) return $this->rollbacks[$type];
-		return $this->rollbacks['default'];
-	}
-	
-	/**
-	 * Should we allow the specification of ids in input?
-	 * @param string $type the type of thing
-	 * @param LDldo $ldo the thing itself
-	 * @return boolean true if it should be rolled back
-	 */
-	function demandIDAllowed($type = false, $ldo = false){
-		if(isset($this->demand_id_allowed[$type])) return $this->demand_id_allowed[$type];
-		return $this->demand_id_allowed['default'];
-	}
 }
 

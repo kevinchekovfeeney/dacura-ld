@@ -1,8 +1,12 @@
 <?php
 $settings = array(
 	"service-button-title" => "Linked Data",
-	"demand_id_token" => "request_id",
+	"demand_id_token" => "@id",
+	"rollback_new_to_pending_on_dqs_reject"	=> true,
+	"two_tier_schemas" => false,		
 	"test_unpublished_ldos" => true,
+	"create_dqs_schema_tests" => array(),
+	"create_dqs_instance_tests" => array(),		
 	"create_options" => array("show_dqs_triples" => 1, "show_ld_triples" => 1, "fail_on_id_denied" => 1),
 	"tables" => array(
 		"history" => array("datatable_options" => array(
@@ -21,11 +25,12 @@ $settings = array(
 		"updates" => array("datatable_options" => array(
 			"jQueryUI" => true, "scrollX" => false, "pageLength" => 20, "lengthMenu" => array(10, 20, 50, 75, 100), 
 			"info" => true, "order" => array(10, "desc"), 
-				"aoColumns" => array(null, null, null, null, null, null, null, array("iDataSort" => 8), array("bVisible" => false), array("iDataSort" => 10), array("bVisible" => false), array("orderable" => false)))
+				"aoColumns" => array(null, null, null, null, null, null, null, array("iDataSort" => 8), array("bVisible" => false), array("iDataSort" => 10), array("bVisible" => false), null, array("orderable" => false)))
 		)
 	),
 	"messages" => array(
 		"create_ldo_intro" => "Add a new LDO to the system by filling in the form below and hitting 'create'",
+		"raw_intro_msg" => "Update the raw underlying data",
 		"list_objects_intro" => "View all LDOs in the system",
 		"list_updates_intro" => "View updates (pending, rejected, accepted) to LDOs",
 		"view_history_intro" => "View previous versions of this LDO",
@@ -44,7 +49,7 @@ $settings = array(
 		"url" => array("label" => "Canonical URL", "type" => "url", "help" => "The External URL which represents the 'canonical' id of this object (to support purls, etc)."),
 		"meta" => array("label" => "Object Meta-data", "type" => "complex", "input_type" => "custom", "help" => "Arbitrary json meta-data that is associated with the object"),
 		"ldsource" => array("label" => "Contents Source", "type" => "choice", "options" => array("text" => "Textbox", "url" => "Import from URL", "file" => "Upload File"), "input_type" => "radio", "help" => "You can choose to import the contents of the linked data object from a url, a local file, or by inputting the text directly into the textbox here"),
-		"ldformat" => array("label" => "Contents Format", "type" => "choice", "help" => "The contents of the object (in RDF - Linked Data format)"),
+		"format" => array("label" => "Contents Format", "type" => "choice", "help" => "The contents of the object (in RDF - Linked Data format)"),
 		"ldurl" => array("label" => "Import URL", "type" => "url", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("download" => array("title" => "Load URL"))),
 		"ldfile" => array("label" => "Import File", "type" => "file", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("upload" => array("title" => "Upload File"))),
 		"contents" => array("label" => "Contents", "type" => "complex", "input_type" => "custom", "help" => "The contents of the object (in RDF - Linked Data format)"),

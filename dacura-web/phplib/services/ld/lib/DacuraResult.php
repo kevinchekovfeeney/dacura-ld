@@ -296,9 +296,13 @@ class DacuraResult extends DacuraObject {
 			}
 		}
 		elseif($gu->is_reject()) {
+			opr($gu);
 			$txt = "Failed $gid graph check";
 			$body = $gu->getErrorsSummary();
 			$this->addWarning("$gid graph", $txt, $body);
+			foreach($gu->errors as $err){
+				$this->warnings[] = $err;
+			}
 		}
 		if(!isset($this->graphs[$gid])){
 			$this->graphs[$gid] = $gu;				
@@ -445,6 +449,10 @@ class GraphResult extends DacuraResult {
 		$apiobj['hypothetical'] = $this->hypothetical;
 		return $apiobj;
 	}
+}
+
+class DQSResult extends GraphResult {
+	
 }
 
 /**
