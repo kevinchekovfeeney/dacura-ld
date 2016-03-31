@@ -1109,7 +1109,12 @@ class LdDacuraServer extends DacuraServer {
 		//if(!isset(LDO::$valid_display_formats[$format])){
 		//	$format = "json";
 		//}
-		$json = json_encode($ar->forAPI($format, $options, $this));
+		if(is_object($ar->result)){
+			$json = json_encode($ar->forAPI($format, $options, $this));
+		}
+		else {
+			$json = $json_encode($ar);
+		}
 		if($json){
 			echo $json;
 			return true;
