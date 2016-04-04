@@ -5,8 +5,17 @@
 
 $ldo_type = "candidate";
 
+getRoute()->post('/frame', 'getEmptyFrame');
+
+function getEmptyFrame(){
+	global $dacura_server;
+
+	$dacura_server->init("create");
+	
+	$cls = $_POST['class'];
+	$ar = $dacura_server->getFrame($cls);
+	$dacura_server->writeDecision($ar, "json", array());
+	
+}
+
 include_once "phplib/services/ld/api.php";
-
-
-
-

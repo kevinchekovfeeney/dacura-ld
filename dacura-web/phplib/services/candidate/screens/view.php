@@ -80,6 +80,7 @@
 	<?php } ?>	
 </div>
 <script>
+
 function printCreated(obj){
 	return timeConverter(obj.createtime);
 }
@@ -130,12 +131,12 @@ dacura.ld.showHeader = function(ent){
 
 
 function drawVersionHeader(data){
-	
+
 }
 
 
 function drawUpdateHeader(data){
-	
+
 }
 
 function drawFragmentHeader(data){
@@ -175,7 +176,8 @@ function drawLDO(data){
 	}, data.updates);		
 	dacura.system.styleJSONLD("td.rawjson");	
 	dacura.ld.viewer.init("show-ldo", "view", data.format, data.options);
-	dacura.ld.viewer.draw(data);
+	//dacura.ld.viewer.draw(data);
+	dacura.frame.init(data);
 	//dacura.editor.load("<?=$params['id']?>", dacura.ld.fetch, dacura.ld.update);
 	//jpr(data);
 }

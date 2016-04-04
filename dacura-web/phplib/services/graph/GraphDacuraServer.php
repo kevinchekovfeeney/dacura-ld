@@ -14,7 +14,7 @@ class GraphDacuraServer extends LdDacuraServer {
 	function objectPublished(Graph $graph, $test_flag = false){
 		$nopr = new DQSResult("Validating Graph", $test_flag);
 		if($graph->is_empty()){
-			return $nopr->failure(400, "Grahp is empty", "Content must be added to the Graph before it can be published");
+			return $nopr->failure(400, "Graph is empty", "Content must be added to the Graph before it can be published");
 		}
 		$rules = $this->getServiceSetting("validation_rules", array());
 		$nopr->add($ont->validateDependencies($rules, $test_flag));

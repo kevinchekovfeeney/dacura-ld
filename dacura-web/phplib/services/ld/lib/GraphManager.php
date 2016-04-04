@@ -103,13 +103,12 @@ class GraphManager extends DacuraController {
 		$args = array("schema" => $graphid);
 		$dqs_config = $this->getSystemSetting("dqs_service");
 		$dqsr = new DQSResult("invoking DQS class analysis");
-		if($clsname){
-			$srvc = $dqs_config['stub'];
+		if($entid){
+			$srvc = $dqs_config['entity_frame'];
+			$args['entity'] = $entid;			
+		}elseif($clsname){
+			$srvc = $dqs_config['class_frame'];
 			$args['class'] = $clsname;
-		}
-		elseif($entid){
-			$srvc = $dqs_config['filledframe'];
-			$args['entity'] = $entid;				
 		}
 		else {
 			$srvc = $dqs_config['entity'];
@@ -127,11 +126,14 @@ class GraphManager extends DacuraController {
 		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $qstr);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		$content = curl_exec($ch);
+		$content = curl_exec($ch);		
 		if(curl_getinfo($ch, CURLINFO_HTTP_CODE) != 200 || !$content){
 			$errcode = (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200) ? 500 : curl_getinfo($ch, CURLINFO_HTTP_CODE);
 			return $dqsr->failure($errcode, "DCS call to $srvc failed", "Service returned ".strlen($content)." bytes ".$content);
 		}
+		$dqsr->result = $content;
+		return $dqsr;
+		/*
 		if(is_array($content) && count($content) == 0){
 			return $dqsr->accept();
 		}
@@ -141,7 +143,7 @@ class GraphManager extends DacuraController {
 		}
 		else {
 			return $dqsr->failure(500, "DCS call to $srvc failed", "Dacura Quality Service returned illegal type (not an array): $content");
-		}
+		}*/
 	}
 	
 	

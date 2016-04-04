@@ -1113,7 +1113,7 @@ class LdDacuraServer extends DacuraServer {
 			$json = json_encode($ar->forAPI($format, $options, $this));
 		}
 		else {
-			$json = $json_encode($ar);
+			$json = json_encode($ar);
 		}
 		if($json){
 			echo $json;
