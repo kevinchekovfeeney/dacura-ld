@@ -13,12 +13,83 @@ dacura.frame.api.getFrame = function (cls){
 }
 
 
-dacura.frame.draw = function(resultobj, targets){
+dacura.frame.draw = function(resultobj, target){
 	var framestr = resultobj.result;
 	var frame = JSON.parse(framestr);
+	var obj = document.createElement("div");
+	res = dacura.frame.frameGenerator(frame, obj);
+	
+	var elt = document.getElementById(target);
+	elt.appendChild(res);
+}
 
-	for (var i = 0 ; i < frame.length ; i++){
+dacura.frame.frameGenerator = function(frame, obj){
+
+	/* list of frame options */ 
+	if(frame.constructor == Array){
+		// We are a property 
+		for (var i = 0 ; i < frame.length ; i++){
+			var property_elt = frame[i];
+			
+			var propdiv = document.createElement("div");
+			var labelnode = document.createElement("label");
+			
+			if (property_elt.label){
+				var label = property_elt.label.data;
+				var textnode = document.createTextNode(label + ':');
+			}else{
+				var textnode = document.createTextNode(property_elt.property + ':');			
+			}
+			labelnode.appendChild(textnode);
+			propdiv.appendChild(labelnode);
+			
+			if( property_elt.type == 'objectProperty' ){
+				var subframe = property_elt.frame;
+				var framediv = document.createElement("div");
+				framediv.setAttribute('style', 'padding-left: 5px; display: inline-block;');
+
+				dacura.frame.frameGenerator(subframe, framediv);
+				labelnode.appendChild(framediv);
+			}else if(property_elt.type == 'datatypeProperty'){
+				var input = document.createElement("input");
+				var ty = dacura.frame.typeConvert(property_elt.range);
+				
+				labelnode.appendChild(input);
+			}
+			propdiv.appendChild(labelnode);
+			
+			obj.appendChild(propdiv);
+		}
+	}else if(frame.constructor == Object && frame.type == 'entity'){
+		// we are an entity
+		/*
+		var framediv = document.createElement("div");
 		
+
+		if (frame.label){
+			var label = frame.label.data;
+			var textnode = document.createTextNode(label);
+		}else{
+			var textnode = document.createTextNode(frame.class);			
+		}
+		labelnode.appendChild(textnode);
+		*/
+		var input = document.createElement("input");
+		// This should really be a specialised search box.
+		input.setAttribute('type', 'text');
+		obj.appendChild(input);
+	}
+	
+	return obj; 
+}
+
+dacura.frame.typeConvert = function(ty){
+	// This needs to be extended at each XSD type. 
+	switch (ty) { 
+	case "http://www.w3.org/2001/XMLSchema#boolean" :
+		return 'checkbox';
+	case "http://www.w3.org/2000/01/rdf-schema#Literal" :
+		return 'text';
 	}
 }
 
