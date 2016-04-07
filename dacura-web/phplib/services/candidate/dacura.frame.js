@@ -32,6 +32,7 @@ dacura.frame.frameGenerator = function(frame, obj){
 			var property_elt = frame[i];
 			
 			var propdiv = document.createElement("div");
+			// propdiv.setAttribute('style', 'display: inline-block;');
 			var labelnode = document.createElement("label");
 			
 			if (property_elt.label){
@@ -53,6 +54,7 @@ dacura.frame.frameGenerator = function(frame, obj){
 			}else if(property_elt.type == 'datatypeProperty'){
 				var input = document.createElement("input");
 				var ty = dacura.frame.typeConvert(property_elt.range);
+				input.setAttribute('type', ty);
 				
 				labelnode.appendChild(input);
 			}
