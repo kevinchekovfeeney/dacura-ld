@@ -23,6 +23,7 @@ class GraphManager extends DacuraController {
 	 */
 	function invokeDQS($service, $schema_gname, $gname = false, $itrips = false, $dtrips = false, $test = false, $tests = "all"){
 		$dqsr = new DQSResult("DQS test", $test);
+		
 		$dqs_config = $this->getSystemSetting("dqs_service");
 		if($fakets = $this->getSystemSetting("dqs_service.fake")){
 			$fdqs = new FakeTripleStore($fakets);
@@ -31,6 +32,8 @@ class GraphManager extends DacuraController {
 		$queries = array();
 		$itrips = $itrips ? $itrips : array();
 		$dtrips = $dtrips ? $dtrips : array();
+		$dqsr->inserts = $itrips;
+		$dqsr->deletes = $dtrips;
 		if($service == "schema" or $service == "instance"){
 			$update_ip = json_encode(array(
 					"inserts" 	=> 	$itrips,
@@ -82,8 +85,7 @@ class GraphManager extends DacuraController {
 			return $dqsr->accept();
 		}
 		elseif(is_array($content)){
-			$dqsr->errors = $content;
-			return $dqsr->failure($errcode, "DQS call to $service failed", "Service returned ".count($content)." errors");
+			return $dqsr->parseErrors($content);
 		}					
 		else {
 			return $dqsr->failure(500, "DQS call to $service failed", "Dacura Quality Service returned illegal type (not an array): $content");
@@ -136,8 +138,7 @@ class GraphManager extends DacuraController {
 			return $dqsr->accept();
 		}
 		elseif(is_array($content)) {
-			$dqsr->errors = $content;
-			return $dqsr->failure($errcode, "DCS call to $srvc failed", "Service returned ".strlen($content)." bytes ".$content);
+			return $dqsr->parseErrors($content);
 		}
 		else {
 			return $dqsr->failure(500, "DCS call to $srvc failed", "Dacura Quality Service returned illegal type (not an array): $content");
@@ -159,17 +160,12 @@ class GraphManager extends DacuraController {
 	 */
 	function validateOntology(Ontology $ont, $sstrips, $strips, $stests, $itests = false){
 		//first we have to create the schema schema ontology
-		$schema_gname = $ont->id;
-		if($this->getServiceSetting("two_tier_schemas", true) && count($sstrips) > 0){
-			$dqsr = new DQSResult("validate ontology");
-			$schema_schema_gname = $ont->id."_schema";
-			$dqsr->add($this->invokeDQS("schema", $schema_schema_gname, false, $sstrips, false, false, $stests));
-			if($dqsr->is_accept()){
+		$schema_gname = $ont->schemaGname();
+		if($this->getServiceSetting("two_tier_schemas", true) && (count($sstrips) > 0 || count($strips) > 0)){
+			$schema_schema_gname = $ont->schemaSchemaGname();
+			$dqsr = $this->invokeDQS("instance", $schema_schema_gname, $schema_gname, array_merge($sstrips, $strips), false, true, $itests);
+			if($dqsr->is_accept() && count($strips) > 0){
 				$dqsr->add($this->invokeDQS("schema", $schema_gname, false, $strips, false, true, $stests));
-				if($dqsr->is_accept() && $itests){
-					$dqsr->add($this->invokeDQS("instance", $schema_schema_gname, $schema_gname, $strips, false, true, $itests));
-				}
-				$dqsr->add($this->invokeDQS("schema", $schema_schema_gname, false, false, $sstrips, false, $stests));				
 			}
 			return $dqsr;
 		}
@@ -190,84 +186,96 @@ class GraphManager extends DacuraController {
 	 * @param array $itests DQS tests to be run on instance validation
 	 * @return DQSResult Result of validation
 	 */
-	function createGraphSchema(Graph $graph, $sstrips, $strips, $test_flag, $stests, $itests = false){
-		if($this->getServiceSetting("two_tier_schemas", true) && count($sstrips) > 0){
-			$dqsr = new DQSResult("Create Graph Schema", $test_flag);
+	function publishGraphSchema(Graph $graph, $quads, $test_flag){
+		$dqsr = new DQSResult("Create Graph $graph->id schema", $test_flag);
+		if($graph->hasTwoTierSchema() && (count($strips) > 0 || count($sstrips) > 0)){
 			//create schema schema graph regardless of test_flag
-			$dqsr->add($this->invokeDQS("schema", $graph->schema_schema_gname(), false, $sstrips, false, false, $stests));
-			if($dqsr->is_accept()){
-				//write the schema to the schema graph as instance data constrained by schema schema graph
-				$dqsr->add($this->invokeDQS("instance", $graph->schema_schema_gname(), $graph->schema_gname(), $strips, false, $test_flag, $itests));
-				if($dqsr->is_accept()){
-					if($test_flag){
-						$dqsr->add($this->invokeDQS("schema", $graph->schema_gname(), false, $strips, false, $test_flag, $stests));
-					}
-					else {
-						$dqsr->add($this->invokeDQS("schema_validate", $graph->schema_gname(), $stests));
-					}
+			$sr = $this->invokeDQS("instance", $graph->schemaSchemaGname(), $graph->schemaGname(), $quads, false, $test_flag, $graph->getCreateInstanceTests());
+			$dqsr->add($sr);
+			if($sr->is_accept() || $this->getServiceSetting("continue_multitests_on_fail", false)){
+				if($sr->is_accept() && !$test_flag){
+					$sr2 = $this->invokeDQS("validate", $graph->schemaGname(), $graph->instanceGname(), false, false, false, $graph->getCreateInstanceTests());
+					if(!$sr2->is_accept()){
+						//rollback schema change
+						$sr2->add($this->invokeDQS("instance", $graph->schemaSchemaGname(), $graph->schemaGname(), false, $quads, false, $graph->getDeleteInstanceTests()));
+					}						
 				}
-				if(!$dqsr->is_accept() || $test_flag){
-					//rollback update to schema schema graph
-					$this->invokeDQS("schema", $graph->schema_schema_gname(), false, false, $sstrips, false, $stests);
-				}				
+				else {
+					$ntf = $test_flag || !$sr->is_accept();
+					$sr2 = $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $quads, false, $ntf, $graph->getCreateInstanceTests());
+				}
+				$dqsr->add($sr2);
 			}
-			return $dqsr;	
 		}
+		elseif(count($strips) > 0){
+			$dqsr = $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $quads, false, $test_flag, $graph->getCreateInstanceTests());
+		}		
 		else {
-			return $this->invokeDQS("schema", $graph->schema_gname(), false, $strips, false, $test_flag, $stests);				
+			$dqsr->setWarning("Publish Schema", "Published empty schema", $grahp->id ." graph has an empty published schema");
+		}
+		return $dqsr;	
+	}
+	
+	function unpublishGraphSchema($graph, $quads, $test_flag){
+		if($graph->hasTwoTierSchema() && (count($quads) > 0)){
+			return $this->invokeDQS("instance", $graph->schemaSchemaGname(), $graph->schemaGname(), false, $quads, $test_flag, $graph->getDeleteSchemaTests());
+		}
+		elseif(count($quads) > 0){
+			return $this->invokeDQS("schema", $graph->schemaGname(), false, false, $quads, $test_flag, $graph->getDeleteSchemaTests());			
+		}	
+		else {
+			$dqsr = new DQSResult("unpublish graph schema", $test_flag);
+			$dqsr->setWarning("Unpublish Schema", "Unpublished empty schema", $grahp->id ." graph had an empty published schema");
+			return $dqsr;
 		}
 	}
 
-	
-	function updateGraphSchema(Graph $graph, $ssitrips, $ssdtrips, $sitrips, $sdtrips, $test_flag, $stests, $itests){
+	function updateGraphSchema(Graph $graph, $iquads, $dquads, $test_flag){
 		$dqsr = new DQSResult("update graph", $test_flag);
-		if($this->getServiceSetting("two_tier_schemas", true)){
-			//first we have to create the schema schema ontology
+		if($graph->hasTwoTierSchema()){
+			//first we have to update the schema schema ontology
 			//updating schema schema graph
-			if(count($ssitrips) > 0 || count($ssdtrips) > 0){
-				$dqsr->add($this->invokeDQS("schema", $schema_schema_gname, false, $ssitrips, $ssdtrips, false, $stests));
-				if(!$dqsr->is_accept()){
-					return $dqsr;
-				}			
-			}
-			//updating schema graph
-			if(count($sitrips) > 0 || count($sdtrips) > 0){
-				//update schema as instance data against schema schema 
-				$dqsr->add($this->invokeDQS("instance", $graph->schema_schema_gname(), $graph->schema_gname(), $sitrips, $sdtrips, false, $itests));
-				if($dqsr->is_accept()){
-					//then validate the schema against instance data. 
-					$dqsr->add($this->invokeDQS("validate", $graph->schema_gname(), $graph->instance_gname(), $itests));				
+			$sr = $this->invokeDQS("instance", $graph->schemaSchemaGname(), $graph->schemaGname(), $iquads, $dquads, $test_flag, $graph->getUpdateInstanceTests());
+			$dqsr->add($sr);
+			if($sr->is_accept() || $this->getServiceSetting("continue_multitests_on_fail", false)){
+				if($sr->is_accept() && !$test_flag){
+					$sr2 = $this->invokeDQS("validate", $graph->schemaGname(), $graph->instanceGname(), false, false, false, $graph->getCreateInstanceTests());
+					if(!$sr2->is_accept()){
+						//rollback schema change
+						$sr2->add($this->invokeDQS("instance", $graph->schemaSchemaGname(), $graph->schemaGname(), false, $iquads, false, $graph->getDeleteInstanceTests()));
+					}
 				}
-				if(!$dqsr->is_accept() || $test_flag) {
-					$dqsr->add($this->invokeDQS("instance", $graph->schema_schema_gname(), $graph->schema_gname(), $sdtrips, $sitrips, false, $itests));				
+				else {
+					$ntf = $test_flag || !$sr->is_accept();
+					$sr2 = $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $iquads, false, $ntf, $graph->getCreateInstanceTests());
 				}
+				$dqsr->add($sr2);
 			}
-			if(!$dqsr->is_accept() || $test_flag){
-				//rollback update to schema schema graph
-				$dqsr->add($this->invokeDQS("schema", $graph->schema_schema_gname(), $graph->schema_gname(), $ssdtrips, $ssitrips, false, $stests));
-			}				
+		}
+		elseif(count($iquads) > 0 || count($dquads) > 0){
+			//make changes to schema graph
+			return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $sitrips, $sdtrips, $test_flag, $graph->getUpdateInstanceTests());
 		}
 		else {
-			//make changes to schema graph
-			$dqsr->add($this->invokeDQS("schema", $graph->schema_gname(), false, $sitrips, $sdtrips, false, $stests));
-			if($dqsr->is_accept()){
-				//then validate the schema against instance data.
-				$dqsr->add($this->invokeDQS("validate", $graph->schema_gname(), $graph->instance_gname(), $itests));
-				if(!$dqsr->is_accept() || $test_flag) {
-					//roll back changes to schema graph
-					$dqsr->add($this->invokeDQS("schema", $graph->schema_gname(), false, $sdtrips, $sitrips, false, $stests));
-				}
-			}				
+			$dqsr = new DQSResult("unpublish graph schema", $test_flag);
+			$dqsr->setWarning("Unpublish Schema", "Unpublished empty schema", $grahp->id ." graph had an empty published schema");
+			return $dqsr;
 		}
-		return $dqsr;		
+		return $dqsr;
 	}
 	
-	function createInstance(Graph $graph, $trips, $test_flag, $tests){
-		return $this->invokeDQS("instance", $graph->schema_gname(), $graph->instance_gname(), $trips, false, $test_flag, $tests);
+	
+	function createInstance(Graph $graph, $trips, $test_flag){
+		return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $trips, false, $test_flag, $graph->getCreateInstanceTests());
 	}
+
+	function deleteInstance(Graph $graph, $trips, $test_flag){
+		return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), false, $trips, $test_flag, $graph->getDeleteInstanceTests());
+	}
+	
 	
 	function updateInstance(Graph $graph, $itrips, $dtrips, $test_flag, $tests){
-		return $this->invokeDQS("instance", $graph->schema_gname(), $graph->instance_gname(), $itrips, $dtrips, $test_flag, $tests);
+		return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $itrips, $dtrips, $test_flag, $graph->getUpdateInstanceTests());
 	}
 	
 	/* 
@@ -287,7 +295,7 @@ class GraphManager extends DacuraController {
 		$dumpstr = "Service: $service\n";
 		$dumpstr .= "Tests: ";
 		if(is_array($tests)){
-			$dumpstr .= implode(", ", $tests)."\n";
+			$dumpstr .= "[".implode(", ", $tests)."]\n";
 		}
 		else {
 			$dumpstr .= $tests."\n";
