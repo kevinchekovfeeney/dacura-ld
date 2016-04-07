@@ -3,11 +3,18 @@ $settings = array(
 	"service-button-title" => "Linked Data",
 	"demand_id_token" => "@id",
 	"rollback_new_to_pending_on_dqs_reject"	=> true,
+	"rollback_updates_to_pending_on_dqs_reject" => true,
+	"rollback_updates_to_pending_on_version_reject" => true,
 	"two_tier_schemas" => false,		
-	"test_unpublished_ldos" => true,
+	"test_unpublished" => true,
 	"create_dqs_schema_tests" => array(),
 	"create_dqs_instance_tests" => array(),		
-	"create_options" => array("show_dqs_triples" => 1, "show_ld_triples" => 1, "fail_on_id_denied" => 1),
+	"create_options" => array("show_dqs_triples" => 0, 
+			"ns" => 1, "addressable" => 1, "analysis" => 1, 
+			"show_ld_triples" => 0, "fail_on_id_denied" => 1, "show_result" => 0),
+	"update_options" => array("show_dqs_triples" => 0, "show_ld_triples" => 0, "fail_on_id_denied" => 1, 
+			"show_update_triples" => 0, "show_meta_triples" => 0, "show_result" => 2, 
+			"show_changed" => 1, "show_original" => 1, "ns" => 1, "addressable" => 1),
 	"tables" => array(
 		"history" => array("datatable_options" => array(
 			"jQueryUI" => true, "scrollX" => false, "info" => true, "order" => array(0, "desc"),
@@ -39,6 +46,8 @@ $settings = array(
 		"view_meta_intro" => "View the LDO's meta-data",
 		"create_button_text" => "Create New LDO",
 		"testcreate_button_text" => "Test Creation",
+		"raw_edit_text" => "Update LDO",
+		"testraw_edit_text" => "Test LDP Update",
 	),
 	"create_ldo_fields" => array(
 		"id" => array("label" => "ID", "length" => "short", "help" => "The id of the linked data object - must be all lowercase with no spaces or punctuation. Choose carefully - the id appears in all urls that reference the object and cannot be easily changed!"),
@@ -54,5 +63,12 @@ $settings = array(
 		"ldfile" => array("label" => "Import File", "type" => "file", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("upload" => array("title" => "Upload File"))),
 		"contents" => array("label" => "Contents", "type" => "complex", "input_type" => "custom", "help" => "The contents of the object (in RDF - Linked Data format)"),
 	),
+		
+	"raw_edit_fields" => array(
+		"meta" => array("label" => "Object Meta-data", "type" => "complex", "input_type" => "custom", "help" => "Arbitrary json meta-data that is associated with the object"),
+		"format" => array("label" => "Contents Format", "type" => "choice", "help" => "The contents of the object (in RDF - Linked Data format)"),
+		"contents" => array("label" => "Contents", "type" => "complex", "input_type" => "custom", "help" => "The contents of the object (in RDF - Linked Data format)"),				
+		"editmode" => array("label" => "Edit Mode", "type" => "choice", "help" => "The edit mode - replace or update", "options" => array("replace" => "Replace", "update" => "Update")),
+	)
 		
 );

@@ -226,7 +226,7 @@ class DBManager extends DacuraController {
 	 */
 	function createCollectionInitialEntities($id){
 		try {
-			$stmt = $this->link->prepare("INSERT INTO ld_entities
+			$stmt = $this->link->prepare("INSERT INTO ld_objects
 				(id, collectionid, type, version, contents, meta, status, createtime, modtime)
 				VALUES('main', '$id', 'graph', 1, ?, ?, 'pending', ?, ?)");
 			$ld = json_encode(array("main" => array()));

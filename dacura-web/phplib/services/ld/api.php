@@ -56,7 +56,7 @@ set_time_limit (1800);
 function create_ldo(){
 	global $dacura_server, $ldo_type;
 	$dacura_server->init("create");
-	$ar = new DacuraResult("Create");
+	$ar = new DacuraResult("Create $ldo_type");
 	$json = file_get_contents('php://input');
 	$obj = json_decode($json, true);
 	if(!$obj){
@@ -221,30 +221,44 @@ function get_update($update_id){
  *
  */
 function update_ldo($target_id, $fragment_id = false){
-	set_time_limit (0);
 	global $dacura_server, $ldo_type;
-	$ar = new AnalysisResults("Update $target_id $fragment_id");
+	$dacura_server->init("Update $target_id". ($fragment_id ? "/fragment_id" : ""));
+	$ar = new DacuraResult("Update $ldo_type $target_id $fragment_id");
 	$json = file_get_contents('php://input');
 	$obj = json_decode($json, true);
 	if(!$obj){
-		$ar->failure(400, "Communication Error", "Update Request lacks a json encoded body");
+		return $dacura_server->writeDecision($ar->failure(400, "Communication Error", "Update Request lacks a json encoded body"));
 	}
-	elseif($fragment_id){
-		$ar->failure(403, "Illegal Update", "Attempt to directly update fragment $fragment_id. Fragments must be updated in context.");		
-	}
-	else {
-		$upd_obj = array();
-		if(!isset($obj['contents']) && !isset($obj['meta'])){
-			$ar->failure(400, "Format Error", "Update Request must have at least one of a meta or a contents property");				
+	if(!$ldo_type){
+		if(isset($obj['ldtype']) && $obj['ldtype'] && isset(LDO::$ldo_types[$obj['ldtype']])){
+			$ldo_type = $obj['ldtype'];
 		}
 		else {
-			$cnt = isset($obj['contents']) ? $obj['contents'] : "";
-			$meta = isset($obj['meta']) ? $obj['meta'] : "";
-			$options = (isset($obj['options'])) ? $obj['options'] : array();
-			$ar = $dacura_server->updateLDO($target_id, $ldo_type, $cnt, $meta, $fragment_id, $options, isset($obj['test']));
+			return $dacura_server->writeDecision($ar->failure(400, "Request Error", "create request does not have a valid linked data type associated with it"));
 		}
 	}
-	return $dacura_server->writeDecision($ar);
+	$upd_obj = array();
+	if(!isset($obj['contents']) && !isset($obj['meta'])){
+		return $dacura_server->writeDecision($ar->failure(400, "Format Error", "Update Request must have at least one of a meta or a contents property"));
+	}
+	$options = (isset($obj['options'])) ? $obj['options'] : array();
+	$update_obj = array();
+	$editmode = (isset($obj['editmode'])? $obj['editmode'] : false);
+	$format = (isset($obj['format'])? $obj['format'] : false);
+	if(isset($obj['contents'])){
+		$update_obj['contents'] = $obj['contents'];
+	}
+	elseif(isset($obj['ldfile'])){
+		$update_obj['ldfile'] = $obj['ldfile'];
+	}
+	elseif(isset($obj['ldurl'])){
+		$update_obj['ldurl'] = $obj['ldurl'];
+	}
+	if(isset($obj['meta'])) $update_obj['meta'] = $obj['meta'];
+	$test_flag = isset($obj['test']) ? 	$obj['test'] : false;
+	$version = isset($obj['version']) ? $obj['version'] : 0;
+	$ar = $dacura_server->updateLDO($target_id, $fragment_id, $ldo_type, $update_obj, $format, $editmode, $version, $options, $test_flag);
+	return $dacura_server->writeDecision($ar, $format, $options);
 }
 
 function update_update($ldo_id, $upd_id){

@@ -101,7 +101,6 @@ function addLDOToJSONLDNode(&$node, $ldo, $rules){
 			}
 		}
 		elseif($pv->embeddedlist()){
-			$nprops[$p] = array();
 			foreach($v as $id => $obj){
 				$newnode = new ML\JsonLD\Node($node->getGraph(), $id);
 				addLDOToJSONLDNode($newnode, $obj, $rules);

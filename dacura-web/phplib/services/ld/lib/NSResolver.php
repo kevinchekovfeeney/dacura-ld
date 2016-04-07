@@ -34,7 +34,8 @@ class NSResolver extends DacuraController {
 	var $url_mappings = array(
 		"http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#" => "http://swat.cse.lehigh.edu/onto/univ-bench.owl#",
 		"http://www.w3.org/2008/05/skos#" => "http://www.w3.org/2004/02/skos/core#",
-		"http://web.resource.org/cc/" => "http://creativecommons.org/ns#"	
+		"http://web.resource.org/cc/" => "http://creativecommons.org/ns#",
+		"http://www.w3.org/2001/XMLSchema-datatypes#" => "http://www.w3.org/2001/XMLSchema#",	
 	);
 	
 	/**
@@ -49,6 +50,11 @@ class NSResolver extends DacuraController {
 		$this->problem_predicates = $this->getServiceSetting("prefixes", $this->problem_predicates);
 		$this->loadURLMappings();
 	}
+	
+	function addPrefix($prefix, $url){
+		$this->prefixes[$prefix] = $url;
+	}
+	
 	
 	function loadURLMappings(){
 		//return $this->url_mappings;
@@ -165,7 +171,7 @@ class NSResolver extends DacuraController {
 				$s = $expanded;
 			}
 			if(!isAssoc($ldobj)){
-				echo "$s is the subject but the rest is not an object";
+				//echo "$s is the subject but the rest is not an object";
 			}
 			else {
 				$this->expandLDONamespaces($ldprops[$s], $cwurl);
@@ -181,8 +187,10 @@ class NSResolver extends DacuraController {
 				$p = $expanded;
 			}
 			$pv = new LDPropertyValue($v, $cwurl);
-			if($pv->link() && isNamespacedURL($v) && ($expanded = $this->expand($v))){
-				$ldobj[$p] = $expanded;
+			if($pv->link() && isNamespacedURL($v)){
+				if($expanded = $this->expand($v)){
+					$ldobj[$p] = $expanded;
+				}
 			}
 			elseif($pv->valuelist()){
 				$nv = array();
@@ -226,11 +234,11 @@ class NSResolver extends DacuraController {
 				unset($ldprops[$s]);
 				$s = $compressed;
 			}
-			if(!isAssoc($ldobj)){
-				//echo "$s is the subject but the rest is not an object";
+			if(isAssoc($ldobj)){
+				$this->compressLDONamespaces($ldprops[$s], $cwurl);
 			}
 			else {
-				$this->compressLDONamespaces($ldprops[$s], $cwurl);
+				//echo "$s is the subject but the rest is not an object";
 			}
 		}
 	}
