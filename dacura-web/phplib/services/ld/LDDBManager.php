@@ -119,19 +119,17 @@ class LDDBManager extends DBManager {
 		return $sql;
 	}
 	
-	function loadLDO($ldoid, $type, $cid, $options){
+	function loadLDO(LDO &$ldo, $ldoid, $type, $cid, $options){
 		try {
 			$stmt = $this->link->prepare("SELECT collectionid, version, type, contents, meta, status, createtime, modtime FROM ld_objects where id=? and collectionid=? and type=?");
 			$stmt->execute(array($ldoid, $cid, $type));
 			$row = $stmt->fetch(PDO::FETCH_ASSOC);
 			if($row){
-				$cwbase = $this->getSystemSetting("install_url").$cid."/".$type."/";
-				$ctype = ucfirst($row['type']);
-				if(class_exists($ctype)){
-					$ldo = new $ctype($ldoid, $cwbase, $this->service->logger);
+				if(isset($row['meta'])){
+					$row['meta'] = json_decode($row['meta'], true);
 				}
-				else {
-					$ldo = new LDO($ldoid, $cwbase, $this->service->logger);
+				if(isset($row['contents'])){
+					$row['contents'] = json_decode($row['contents'], true);
 				}
 				$ldo->loadFromDBRow($row);
 			}
@@ -142,7 +140,7 @@ class LDDBManager extends DBManager {
 		catch(PDOException $e){
 			return $this->failure_result("PDO Error".$e->getMessage(), 500);
 		}
-		return $ldo;
+		return true;
 	}
 	
 	function loadLDOUpdateHistory($ldo, $version){
@@ -216,6 +214,7 @@ class LDDBManager extends DBManager {
 	function updateLDO($uldo, $res){
 		if($res == "accept") {
 			if($uldo->to_version == 0){
+				//opr($uldo);
 				$uldo->to_version = $uldo->changed->version;
 			}
 			return ($this->insertLDOUpdate($uldo) && $this->updateLDORecord($uldo->changed));
@@ -271,7 +270,7 @@ class LDDBManager extends DBManager {
 					$uldo->get_meta_json(),
 					$uldo->created,
 					$uldo->modified,
-					$uldo->get_status(),
+					$uldo->status(),
 					$uldo->getLDOType(),
 					$uldo->cid
 			));

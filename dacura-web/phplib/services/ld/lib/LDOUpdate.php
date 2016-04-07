@@ -1,36 +1,155 @@
 <?php
 
-include_once("phplib/libs/easyrdf-0.9.0/lib/EasyRdf.php");
-include_once("LDUtils.php");
 
 class LDOUpdate extends DacuraObject{
+	/** @var the id of the update object in the db */
 	var $id;
+	/** @var the collection id of the update object in the db */
 	var $cid;
+	/** @var the ld type of the object the update applies to (candidate, graph, ontology) */
 	var $type;
+	/** @var the id of the object being updated */
 	var $targetid;
+	/** @var the status of the update one of LDO::$valid_statuses */
 	var $status;
+	/** @var the timestamp for when the update was created */
 	var $created;
+	/** @var the timestamp for when the update was last modified */
 	var $modified;
+	/** @var the forward delta to carry out the update */
 	var $forward;
+	/** @var the backward delta to carry out the update */
 	var $backward;
+	/** @var the version of the object the update applied to */
 	var $from_version;
+	/** @var the version of the object the update created (0 if update has not been applied */
 	var $to_version = 0;
-	var $meta; //meta data about the update itself
-
-	var $cwurl;//closed world url of the ldo being updated
-	var $nsres;//name space resolver
+	/** @var meta data about the update itself */
+	var $meta = array(); 
+	/** @var name space resolver object */
+	var $nsres;
 	//complex objects - any of them can be calculated from 1.5. (original + delta.forward = changed) (changed + delta.backward = original)
-	var $original; //the original state of the target candidate
-	var $changed;	//the changed state of the target candidate (if the update request was to be accepted)
+	var $original; //the original state of the target object 
+	var $changed;	//the changed state of the target object (if the update request was to be accepted)
 	var $delta; // LDDelta object describing changes from old to new
 
-	function __construct($id = false, &$original = false, $cwurl = false){
-		//parent::__construct($original->id);
+	/**
+	 * Returns the properties of the object as an array - for copying into api datastructures without copying the whole object
+	 * @return array of properties cid, ldtype, version, created, modified, latest_status, ...
+	 */
+	function getPropertiesAsArray(){
+		$props = array();
+		if($this->cid) $props['cid'] = $this->cid;
+		if($this->type) $props['ldtype'] = $this->type;
+		if($this->targetid) $props['targetid'] = $this->targetid;
+		if($this->created) $props['created'] = $this->created;
+		if($this->modified) $props['modified'] = $this->modified;
+		if($this->from_version) $props['from_version'] = $this->from_version;
+		if($this->to_version) $props['to_version'] = $this->to_version;
+		if($this->status) $props['status'] = $this->status;
+		//$props['compressed'] = $this->compressed;
+		//$props['addressable_bnids'] = $this->addressable_bnids;
+		return $props;
+	}
+	
+	function getStandardProperties(){
+		return array('cid', 'ldtype', 'from_version', 'created', 'modified',
+				"status", 'targetid', 'to_version');
+	}
+	
+	function __construct($id = false, &$original = false){
 		$this->id = $id;
 		if($original) $this->setOriginal($original);
-		$this->cwurl = $cwurl;
+		$this->created = time();
+		$this->modified = time();
 	}
 
+	function setOriginal(&$original){
+		$this->original = $original;
+		if(!(isset($original->targetid) and $original->targetid)){
+			$this->targetid = $original->id;
+		}
+		if(!(isset($this->nsres) and $original->nsres)){
+			$this->nsres = $original->nsres;
+		}
+		$this->from_version = $original->version;
+		$this->cid = $original->cid();
+	}
+	
+	/**
+	 * Applies the change specified in update to the original 
+	 * @param LDO $update the update(d) ldo object
+	 * @param string $mode replace|update - the mode that the update is taking place in..
+	 * @param array $rules rules governing permissible transforms
+	 */
+	function apply(LDO &$update, $mode, $rules, $srvr){
+		if($mode == "update"){
+			if($this->original->is_multigraph()){
+				if(!$update->is_multigraph()){
+					$update->ldprops = array($rules['default_graph_url'] => $update->ldprops);
+				}
+			}
+			elseif($update->is_multigraph()){
+				$this->original->ldprops = array($rules['default_graph_url'] => $this->ldprops);
+			}
+			$this->forward = $update->ldprops;
+			if($update->meta){
+				$this->forward['meta'] = $update->meta;
+			}
+			if(!$this->calculateChanged($rules)){
+				return false;
+			}
+			if($this->original->validate($rules, $srvr) && !$this->changed->validate($rules, $srvr)){
+				return $this->failure_result($this->changed->errmsg, $this->changed->errcode);
+			}
+		}
+		else {
+			$this->changed = $update;
+			$this->changed->version = $this->original->latest_version + 1;
+			$this->from_version = $this->original->version;
+			//$this->to_version = $this->changed->version
+			//$this->changed->to_version
+			$this->changed->readStateFromMeta();				
+		}
+		return $this->calculateDelta($rules);				
+	}
+	
+	function calculateChanged($rules = array()){
+		$this->changed = clone $this->original;
+		$this->changed->version = $this->to_version ? $this->to_version : 1 + $this->original->latest_version;
+		if($this->changed->version > $this->changed->latest_version){
+			$this->changed->latest_version = $this->changed->version;
+		}
+		$contents = (isset($rules['direction']) && $rules['direction'] == "backward") ? $this->backward : $this->forward;
+		if(!$this->changed->update($contents, $rules) && $this->changed->compliant($rules)){
+			return $this->failure_result($this->changed->errmsg, $this->changed->errcode);
+		}
+		//opr($contents);
+		$this->changed->readStateFromMeta();
+		return true;
+	}
+	
+	function calculateDelta($rules = array()){
+		$this->delta = $this->original->compare($this->changed, $rules);
+		
+		if(isset($rules['validate']) && $rules['validate'] && $this->FBLoaded()){
+			$fdelta = compareLD($this->targetid, $this->delta->forward, $this->forward, $rules);
+			if($fdelta->containsChanges()){
+				return $this->failure_result("Update $this->id to $this->targetid: Mismatch between calculated changes and stored forward transition.", 400);
+			}
+			$bdelta = compareLD($this->targetid, $this->delta->backward, $this->backward, $rules);
+			if($bdelta->containsChanges()){
+				return $this->failure_result("Update $this->id to $this->targetid: Mismatch between calculated changes and stored backward transitions", 400);
+			}
+		}
+		$this->forward = $this->delta->forward;
+		$this->backward = $this->delta->backward;
+		//opr($this->changed->ldprops);
+		//opr($this->delta);
+		return true;
+	}
+	
+	
 	function __clone(){
 		$this->original = $this->original;
 		$this->changed = $this->changed;
@@ -58,9 +177,13 @@ class LDOUpdate extends DacuraObject{
 		$this->meta = json_decode($row['meta'], true);
 	}
 	
+	function cwurl(){
+		return $this->original->cwurl;
+	}
+	
 	function getLDOType(){
 		if($this->type) return $this->type;
-		return strtolower(substr(get_class($this), 0, strlen(get_class($this)) - strlen("UpdateRequest")));
+		return strtolower(get_class($this->original));
 	}
 
 
@@ -85,8 +208,8 @@ class LDOUpdate extends DacuraObject{
 			if($this->status != $other->status) $results['meta']['status'] = array($this->status, $other->status);
 			if($this->from_version != $other->from_version) $results['meta']['from_version'] = array($this->from_version, $other->from_version);
 			if($this->to_version != $other->to_version) $results['meta']['to_version'] = array($this->to_version, $other->to_version);
-			$fdelta = compareLD($this->targetid, $this->forward, $other->forward, $this->cwurl);
-			$bdelta = compareLD($this->targetid, $this->backward, $other->backward, $this->cwurl);
+			$fdelta = compareLD($this->targetid, $this->forward, $other->forward, $this->cwurl());
+			$bdelta = compareLD($this->targetid, $this->backward, $other->backward, $this->cwurl());
 			$results['add']['forward'] = $fdelta->forward;
 			$results['add']['backward'] = $bdelta->forward;
 			$results['del']['forward'] = $fdelta->backward;
@@ -127,11 +250,11 @@ class LDOUpdate extends DacuraObject{
 		return array("add" => $added, "del" => $deleted);
 	}
 
-	function deltaAsTriples($other){
-		$added = $this->addedCandidateTriples();
-		$deleted = $this->deletedCandidateTriples();
-		$oadded = $other->addedCandidateTriples();
-		$odeleted = $other->deletedCandidateTriples();
+	function deltaAsTriples($other, $rules = array()){
+		$added = $this->addedLDTriples($rules);
+		$deleted = $this->deletedLDTriples($rules);
+		$oadded = $other->addedLDTriples($rules);
+		$odeleted = $other->deletedLDTriples($rules);
 		return $this->consolidateTrips($added, $deleted, $oadded, $odeleted);
 	}
 
@@ -139,41 +262,27 @@ class LDOUpdate extends DacuraObject{
 		$meta = array();
 		if($this->original->id != $this->changed->id) $meta['id'] = array($this->original->id, $this->changed->id);
 		if($this->original->status != $this->changed->status) $meta['status'] = array($this->original->status, $this->changed->status);
-		//if($this->original->type != $this->changed->type) $meta['type'] = array($this->original->type, $this->changed->type);
+		if($this->original->ldtype != $this->changed->ldtype) $meta['type'] = array($this->original->ldtype, $this->changed->ldtype);
 		if($this->original->cid != $this->changed->cid) $meta['cid'] = array($this->original->cid, $this->changed->cid);
 		return $meta;
 	}
 
 	function published(){
-		return $this->get_status() == "accept";
+		return $this->is_accept();
 	}
 
 	function originalPublished(){
 		if(!$this->original) return false;
-		return $this->original->get_status() == "accept";
+		return $this->original->is_accept();
 	}
 
 	function changedPublished(){
 		if(!$this->changed) return false;
-		return $this->changed->get_status() == "accept";
+		return $this->changed->is_accept();
 	}
 
 	function bothPublished(){
 		return $this->changedPublished() && $this->originalPublished();
-	}
-
-	function setOriginal(&$original){
-		$this->original = $original;
-		if(!(isset($this->targetid) and $this->targetid)){
-			$this->targetid = $original->id;
-		}
-		if(!(isset($this->cwurl) and $this->cwurl)){
-			$this->cwurl = $original->cwurl;
-		}
-		if(!(isset($this->nsres) and $this->nsres)){
-			$this->nsres = $original->nsres;
-		}
-		$this->from_version = $this->original->version();
 	}
 
 	//whether the forward and backward fields of the object have been loaded
@@ -210,7 +319,7 @@ class LDOUpdate extends DacuraObject{
 	function validateCommand($obj, $in_embedded = false){
 		foreach($obj as $p => $v){
 			//opr($v);
-			$pv = new LDPropertyValue($v, $this->cwurl);
+			$pv = new LDPropertyValue($v, $this->cwurl());
 			if($pv->illegal()) return $this->failure_result("Update failed validation: ".$pv->errmsg, $pv->errcode);
 			if($pv->embeddedlist()){
 				$cwlinks = $pv->getupdates();
@@ -245,29 +354,6 @@ class LDOUpdate extends DacuraObject{
 		return true;
 	}
 
-	function calculateChanged($opts = array()){
-		//options
-		$backward = (isset($opts['direction']) && $opts['direction'] == "backward") ? true : false;
-		$demand_id_allowed = isset($opts['demand_id_allowed']) && $opts['demand_id_allowed'];
-		$force_inserts = isset($opts['force_inserts']) && $opts['force_inserts'];
-		$calc_delta = isset($opts['calculate_delta']) && $opts['calculate_delta'];
-		$val_delta = isset($opts['validate_delta']) && $opts['validate_delta'];
-
-		$this->changed = clone $this->original;
-		$this->changed->version = $this->to_version ? $this->to_version : 1 + $this->changed->latest_version;
-		if($this->changed->version > $this->changed->latest_version){
-			$this->changed->latest_version = $this->changed->version;
-		}
-		$contents = ($backward) ? $this->backward : $this->forward;
-		if(!$this->changed->update($contents, $force_inserts, $demand_id_allowed) && $this->changed->compliant()){
-			return $this->failure_result($this->changed->errmsg, $this->changed->errcode);
-		}
-		$this->changed->readStateFromMeta();
-		if($calc_delta){
-			return $this->calculateDelta($val_delta);
-		}
-		return true;
-	}
 
 	function getUpdateOptions(){
 		$opts = array(
@@ -299,64 +385,12 @@ class LDOUpdate extends DacuraObject{
 		return $this->calculateDelta();
 	}	
 	
-	/*
-	 * Called when a candidate update request is sent to the API
-	 * $obj is a LD property structure
+	/**
+	 * Namespace resolution functions - called to compress all urls to prefix:id form
 	 */
-	function loadFromAPI($cnt, $meta, $format, $opts = false){
-		if($opts == false) $opts = $this->getUpdateOptions();
-		$this->initFromOriginal();
-		$cmd = array();
-		if($format == "json"){ //native format
-			$cmd = $cnt;
-			if($meta){
-				$cmd['meta'] = $meta;
-			}
-			$this->forward = $cmd;
-			$this->expandNS();
-			$opts = $this->getUpdateOptions();
-			if(!$this->calculateChanged($opts)){
-				return false;
-			}
-		}
-		else {
-			$imported = $this->import($format, $cnt);
-			if(!$this->calculateImported($meta, $imported)){
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	function import($format, $txt){
-		$graph = new EasyRdf_Graph($this->original->id, $txt, $format, $this->original->id);
-		$op = $graph->serialise("php");
-		$ld = importEasyRDFPHP($op);
-		return $ld;
-	}
-
-	function calculateDelta($validate = false){
-		$this->delta = $this->original->compare($this->changed);
-		if($validate && $this->FBLoaded()){
-			$fdelta = compareLD($this->targetid, $this->delta->forward, $this->forward, $this->cwurl);
-			if($fdelta->containsChanges()){
-				//opr($fdelta);
-				//opr($this);
-				return $this->failure_result("Update $this->id to $this->targetid: Mismatch between calculated changes and stored forward transition.", 400);
-			}
-			$bdelta = compareLD($this->targetid, $this->delta->backward, $this->backward, $this->cwurl);
-			if($bdelta->containsChanges()){
-				return $this->failure_result("Update $this->id to $this->targetid: Mismatch between calculated changes and stored backward transitions", 400);
-			}
-		}
-		$this->forward = $this->delta->forward;
-		$this->backward = $this->delta->backward;
-		return true;
-	}
-
 	function compressNS(){
-		compressNamespaces($this->forward, $this->nsres, $this->cwurl);
-		compressNamespaces($this->backward, $this->nsres, $this->cwurl);
+		$this->nsres->compressNamespaces($this->forward, $this->cwurl());
+		$this->nsres->compressNamespaces($this->backward, $this->cwurl());
 		if($this->delta){
 			$this->delta->compressNS($this->nsres);
 		}
@@ -364,9 +398,12 @@ class LDOUpdate extends DacuraObject{
 		$this->changed && $this->changed->compressNS();
 	}
 
+	/**
+	 *  Called to expand all prefix:id to full urls across the update
+	 */
 	function expandNS(){
-		expandNamespaces($this->forward, $this->nsres, $this->cwurl);
-		expandNamespaces($this->backward, $this->nsres, $this->cwurl);
+		$this->nsres->expandNamespaces($this->forward, $this->cwurl());
+		$this->nsres->expandNamespaces($this->backward, $this->cwurl());
 		if($this->delta){
 			$this->delta->expandNS($this->nsres);
 		}
@@ -374,12 +411,9 @@ class LDOUpdate extends DacuraObject{
 		$this->changed && $this->changed->expandNS();
 	}
 
-	function get_status(){
-		return $this->status;
-	}
 
 	/**
-	 * Does the update request come from a context that has authority for the candidate?
+	 * Does the update request come from a context that has authority for the ldo?
 	 * @param string $ocid - candidate collection id
 	 * @return boolean
 	 */
@@ -397,7 +431,7 @@ class LDOUpdate extends DacuraObject{
 	function showChanges($props, $dprops){
 		$cprops = array();
 		foreach($props as $prop => $v){
-			$pv = new LDPropertyValue($v, $this->cwurl);
+			$pv = new LDPropertyValue($v, $this->cwurl());
 			if($pv->illegal()){
 				return $this->failure_result($pv->errmsg, $pv->errcode);
 			}
@@ -408,7 +442,7 @@ class LDOUpdate extends DacuraObject{
 			}
 			else {
 				$nv = $dprops[$prop];
-				$dpv = new LDPropertyValue($nv, $this->cwurl);
+				$dpv = new LDPropertyValue($nv, $this->cwurl());
 				if($dpv->isempty()){
 					$xprop = $this->applyLinkHTML($prop, "added", true);
 					$cprops[$xprop] = $this->getAddedJSONHTML($v, $pv);
@@ -481,7 +515,7 @@ class LDOUpdate extends DacuraObject{
 			}
 		}
 		foreach($dprops as $dprop => $dv){
-			$dpv = new LDPropertyValue($dv, $this->cwurl);
+			$dpv = new LDPropertyValue($dv, $this->cwurl());
 			if(!isset($props[$dprop])){
 				$xprop = $this->applyLinkHTML($dprop, "deleted");
 				$cprops[$xprop] = $this->getDeletedJSONHTML($v, $pv);
@@ -545,7 +579,7 @@ class LDOUpdate extends DacuraObject{
 				$nid = $this->applyLinkHTML($id, $t);
 				$nv[$nid] = array();
 				foreach($obj as $p2 => $val2){
-					$pv2 = new LDPropertyValue($val2, $this->cwurl);
+					$pv2 = new LDPropertyValue($val2, $this->cwurl());
 					$np2 = $this->applyLinkHTML($p2, $t, true);
 					$nv[$nid][$np2] = $this->getJSONHTML($val2, $t, $pv2);
 				}
@@ -601,15 +635,13 @@ class LDOUpdate extends DacuraObject{
 		return "<span class='dacura-property-value $tp dacura-literal'>$ln</span>";
 	}
 
-
-	function deletedCandidateTriples(){
-		$ndelta = compareLD($this->targetid, $this->original->ldprops, $this->changed->ldprops, $this->cwurl);
-		return $ndelta->candidateDeletes(array($this->changed, "showTriples"));
-	}
-
-	function addedCandidateTriples(){
-		$ndelta = compareLD($this->targetid, $this->original->ldprops, $this->changed->ldprops, $this->cwurl);
-		return $ndelta->candidateInserts(array($this->changed, "showTriples"));
+	function compareLDTriples($rules){
+		if($this->original->is_multigraph()){
+			return compareLDGraphs($this->cwurl(), $this->original->ldprops, $this->changed->ldprops, $rules);				
+		}
+		else {
+			return compareLDGraph($this->original->ldprops, $this->changed->ldprops, $rules);
+		}
 	}
 
 	function sameAs($other){
@@ -657,29 +689,69 @@ class LDOUpdate extends DacuraObject{
 		return $this->delta ? $this->delta->reportString() : "No delta calculated - nothing to report";
 	}
 
-	function set_status($v, $is_latest = false){
-		$this->status = $v;
+	function forAPI($format, $opts){
+		$meta = deepArrCopy($this->meta);
+		$meta = array_merge($this->getPropertiesAsArray(), $meta);
+		$apirep = array(
+				"id" => $this->id,
+				"meta" => $meta,
+				"format" => $format,
+				"options" => $opts,
+				"insert" => $this->forward,
+				"delete" => $this->backward
+		);
+		if(isset($opts['show_changed']) && $opts['show_changed'] && isset($this->changed) && $this->changed) {
+			$apirep["changed"] = $this->changed->forAPI($format, $opts);
+		}
+		if(isset($opts['show_original']) && $opts['show_original'] && isset($this->original) && $this->original){
+			$apirep["original"] = $this->original->forAPI($format, $opts);
+		}
+		if(isset($opts['analysis']) && $opts['analysis'] && isset($this->analysis) && $this->analysis){
+			$apirep["analysis"] = $this->analysis;
+		}
+		return $apirep;
 	}
 
-	function showUpdateResult($format, $dacura_server) {
-		if($dacura_server->isNativeFormat($format)){
-			if($format == "html"){
-				$this->displayHTML($dacura_server);
-			}
-			elseif($format == "triples"){
-				$this->displayTriples($dacura_server);
-			}
-			elseif($format == "quads"){
-				$this->displayQuads($dacura_server);
-			}
-			else{
-				$this->displayJSON($dacura_server);
-			}
+	function display($format, $options, $srvr){
+		$lddisp = new LDODisplay($this->id, $this->cwurl);
+		if($format == "json"){
+			$this->display = $lddisp->displayJSON($this->forward, $options);
+		}
+		elseif($format == "html"){
+			$this->display = $lddisp->displayHTML($this->forward, $options);
+		}
+		elseif($format == "triples"){
+			$payload = isset($options['typed']) && $options['typed'] ? $this->typedTriples() : $this->triples();
+			$this->display = $lddisp->displayTriples($payload, $options);
+		}
+		elseif($format == "quads"){
+			$payload = isset($options['typed']) && $options['typed'] ? $this->typedQuads() : $this->quads();
+			$this->display = $lddisp->displayQuads($payload, $options);
+		}
+		elseif($format == "jsonld"){
+			require_once("JSONLD.php");
+			$jsonld = toJSONLD($this->forward, $this->getNS(), array("cwurl" => $this->cwurl));
+			$this->display = $lddisp->displayJSONLD($jsonld, $options);
+		}
+		elseif($format == "nquads"){
+			$payload = $this->nQuads();
+			$this->display = $lddisp->displayNQuads($payload, $options);
 		}
 		else {
-			$this->displayExport($format, $dacura_server);
+			$exported = $this->export($format);
+			if($exported === false){
+				return false;
+			}
+			$this->display = $lddisp->displayExport($exported, $format, $options);
 		}
-		return $this->getDisplayFormat();
+		if($this->changed){
+			$this->changed->display($format, $options, $srvr);
+		}
+		if($this->original){
+			$this->original->display($format, $options, $srvr);
+		}
+		
+		return true;
 	}
 
 	function displayExport($format, $srvr){
@@ -764,5 +836,8 @@ class LDOUpdate extends DacuraObject{
 		}
 		return false;
 	}
+	
+
+	
 }
 

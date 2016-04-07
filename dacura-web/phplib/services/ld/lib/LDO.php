@@ -96,7 +96,7 @@ class LDO extends DacuraObject {
 			"gif" => "Graphics Interchange Format (GIF)", 
 			"svg" => "Scalable Vector Graphics (SVG)",
 	);
-	
+	/** @var the mimetypes corresponding to each of the supported formats */
 	static $format_mimetypes = array(
 			"json" => "application/json",
 			"png"=>"image/png",
@@ -113,7 +113,7 @@ class LDO extends DacuraObject {
 			"ntriples" => "application/n-triples",
 			"rdfa" => "text/html"
 	);
-	/** @var the formats that do not depend upon easy-rdf */
+	/** @var the formats that do not depend upon easy-rdf for import / export */
 	static $native_formats = array("json", "html", "triples", "quads", "jsonld", "nquads");
 	/**
 	 * Constructor sets up closed world url, object id, and logger object, sets default values for object creation and modification 
@@ -158,6 +158,10 @@ class LDO extends DacuraObject {
 		$this->modified = $other->modified;
 	}
 	
+	/**
+	 * Returns the properties of the object as an array - for copying into api datastructures without copying the whole object 
+	 * @return array of properties cid, ldtype, version, created, modified, latest_status, ...
+	 */
 	function getPropertiesAsArray(){
 		$props = array();
 		if($this->cid) $props['cid'] = $this->cid;
@@ -174,6 +178,12 @@ class LDO extends DacuraObject {
 		return $props;
 	}
 	
+	function getStandardProperties(){
+		return array('cid', 'ldtype', 'version', 'created', 'modified', 
+			'latest_status', 'latest_version', 'version_replaced',
+			"version_created", 'compressed', 'addressable_bnids');
+	}
+	
 	/** 
 	 * Loads the object from the associative array representing the object in the database (field: value)
 	 * @param array $row the associative array, indexed by column names in the ld_objects database table
@@ -181,11 +191,11 @@ class LDO extends DacuraObject {
 	 */
 	function loadFromDBRow($row, $latest = true){
 		$this->setContext($row['collectionid']);
-		$this->ldprops = json_decode($row['contents'], true);
+		$this->ldprops = $row['contents'];
 		if(!is_array($this->ldprops)){
 			$this->ldprops = array();
 		}
-		$this->meta = json_decode($row['meta'], true);
+		$this->meta = $row['meta'];
 		if(!is_array($this->meta)){
 			$this->meta = array();
 		}
@@ -230,22 +240,12 @@ class LDO extends DacuraObject {
 	}
 	
 	/**
-	 * The rules that apply for ld validity when a new object is created 
-	 * @return array name value property array
+	 * Called immediately after a LDO record is loaded from database
+	 * 
+	 * Allows derived classes to do special stuff
+	 * @param LdDacuraServer $srvr the currently active linked data server
 	 */
-	function getNewLDORules(){
-		$rules = array("cwurl" => $this->cwurl);
-		return $rules;
-	}
-	
-	/**
-	 * The rules that apply for ld validity when a new object is created
-	 * @return array name value property array
-	 */
-	function getLDORules(){
-		$rules = array("cwurl" => $this->cwurl);
-		return $rules;
-	}
+	function deserialise(LdDacuraServer &$srvr){}
 	
 	/**
 	 * Loads a new object from the api 
@@ -259,9 +259,17 @@ class LDO extends DacuraObject {
 			return $this->failure_result("Create Object was malformed : both meta and contents are missing", 400);
 		}
 		$this->version = 1;
-		$this->meta = isset($obj['meta']) ? $obj['meta'] : array();
-		if(!$this->validateMeta($rules, $srvr)){
-			return false;
+		$this->meta = array();
+		if(isset($obj['meta']) && $obj['meta']){
+			$ignore_meta = $this->getStandardProperties();
+			foreach($obj['meta'] as $k => $v){
+				if(!in_array($k, $ignore_meta)){
+					$this->meta[$k] = $v;
+				}	
+			}
+			if(!$this->validateMeta($rules, $srvr)){
+				return false;
+			}
 		}
 		if(isset($obj['contents']) && $obj['contents']){
 			return $this->import("text", $obj['contents'], $format, $rules, $srvr);
@@ -277,6 +285,17 @@ class LDO extends DacuraObject {
 			$this->ldprops = array();
 		}
 		return $format;
+	}
+	
+	/**
+	 * Returns true if the LDO contains data from multiple graphs
+	 * 
+	 * In all multi-graph ldos, the indices of the ldprops arrays are the graph ids / urls
+	 * 
+	 * @return boolean
+	 */
+	function is_multigraph(){
+		return $this->multigraph;
 	}
 	
 	/**
@@ -314,8 +333,20 @@ class LDO extends DacuraObject {
 		else {
 			$contents = $arg;
 		}
+		return $this->importContents($contents, $format, $rules, $srvr);
+	}
+	
+	/**
+	 * imports a graph from a string into our object via easyrdf
+	 * @param string $contents text to be imported 
+	 * @param string $format the format of the source
+	 * @param array $rules rules applying to the import
+	 * @param LdDacuraServer $srvr - the server object, passed to make its api available 
+	 * @return string the format that was loaded (to support format detection)
+	 */
+	function importContents($contents, $format, $rules, LdDacuraServer &$srvr){
 		if(!$format){
-			$format = $this->importContentsFromJSON($contents, $rules);
+			$format = $this->importContentsFromJSON($contents, $rules, false, $srvr);
 			if(!$format){
 				$format = $this->importERDF("text", $contents, $rules);
 				if(!$format && $this->importContentsfromNQuads($contents, $rules)){
@@ -336,15 +367,19 @@ class LDO extends DacuraObject {
 				}
 			}
 			else {
-				return $this->importContentsFromJSON($contents, $rules, $format);						
+				if(!$this->importContentsFromJSON($contents, $rules, $format, $srvr)){
+					return false;
+				}
+										
 			}
 		}
 		else {
 			if($format != $this->importERDF("text", $contents, $rules, $format)){
 				return false;
 			}				
-		}	
+		}
 		$this->expandNS();//deal with full urls
+		//opr($this->ldprops);
 		$this->idmap = importLD($this->ldprops, $rules, $this->multigraph);//expands structure by generating blank node ids, etc			
 		if(!$this->validateLD($rules, $srvr)){
 			return false;
@@ -352,7 +387,15 @@ class LDO extends DacuraObject {
 		return $format;		
 	}
 	
-	function importContentsFromJSON($json, $rules = array(), $format = false){
+	/**
+	 * imports a graph from a json object of several flavours into one of our objects
+	 * @param array $json json array
+	 * @param array $rules rules applying to the import
+	 * @param string $format the format of the source
+	 * @param LdDacuraServer $srvr - the server object, passed to make its api available 
+	 * @return string the format that was loaded (to support format detection)
+	 */
+	function importContentsFromJSON($json, $rules = array(), $format = false, $srvr = false){
 		if(!is_array($json) && !($json = json_decode($json, true))){
 			return $this->failure_result("Contents were not decipherable as a json array", 400);
 		}
@@ -370,12 +413,15 @@ class LDO extends DacuraObject {
 					$format = "quads";
 				}
 			}
+			else {
+				return $this->failure_result("Failed to interpret json format", 400);
+			}
 		}
 		if($format == "quads"){
-			$this->importFromQuads($json);
+			$this->importFromQuads($json, $srvr);
 		}
 		elseif($format == "json"){
-			$this->ldprops = $json;
+			$this->importFromDacuraJSON($json, $srvr);
 		}
 		elseif($format == "triples"){
 			$this->importFromTriples($json);
@@ -384,6 +430,7 @@ class LDO extends DacuraObject {
 			require_once("JSONLD.php");
 			$this->ldprops = fromJSONLD($json, $rules);
 			if(isset($this->ldprops['multigraph'])){
+				$this->multigraph = $this->ldprops['multigraph'];
 				unset($this->ldprops['multigraph']);
 			}
 		}
@@ -393,13 +440,23 @@ class LDO extends DacuraObject {
 		return $format;
 	}
 	
+	function importFromDacuraJSON($json, $srvr = false){
+		$this->ldprops = $json;
+	}
+	
 	function importFromTriples($triples){
 		$this->ldprops = getPropsFromTriples($triples);
 	}
 	
-	function importFromQuads($quads){
+	function importFromQuads($quads, $srvr){
 		$this->ldprops = getPropsFromQuads($quads);
-		$this->multigraph = true;
+		if(count(array_keys($this->ldprops)) == 1){
+			$vals = array_values($this->ldprops);
+			$this->ldprops = $vals[0];
+		}
+		else {
+			$this->multigraph = true;
+		}
 	}
 	
 	function importContentsfromNQuads($contents, $rules){
@@ -477,7 +534,7 @@ class LDO extends DacuraObject {
 		if(!$this->validateMeta($rules, $srvr)){
 			return false;
 		}
-		return $this->validateLDProps($this->ldprops, $rules, $srvr);
+		return $this->validateLD($rules, $srvr);
 	}
 	
 	/**
@@ -519,7 +576,7 @@ class LDO extends DacuraObject {
 	 * @return boolean true if valid
 	 */
 	function validateLD($rules, &$srvr){
-		if($this->multigraph){
+		if($this->is_multigraph()){
 			foreach($this->ldprops as $gid => $props){
 				if(!$this->validateLDProps($props, $rules, $srvr)){
 					$this->errmsg = "Failed validation for graph $gid ".$this->errmsg;
@@ -549,8 +606,8 @@ class LDO extends DacuraObject {
 			return $this->failure_result("Input $props is not an array object", 500);
 		}
 		foreach($props as $s => $obj){
-			if(!$this->validateLDSubject($s, $rules)) return false;
-			if(!$this->validateLDObject($obj, $rules)){
+			if(!$this->validateLDSubject($s, $rules, $srvr)) return false;
+			if(!$this->validateLDObject($obj, $rules, $srvr)){
 				$this->errmsg = "object with node id $s has errors: ".$this->errmsg;
 				return false;
 			} 
@@ -564,7 +621,7 @@ class LDO extends DacuraObject {
 		return true;
 	}
 	
-	function validateLDObject($obj, $rules){
+	function validateLDObject($obj, $rules, $srvr){
 		if(!isAssoc($obj)){
 			if(!(isset($rules['allow_invalid_ld']) && $rules['allow_invalid_ld'])){
 				$decl = is_string($obj) ? htmlspecialchars($obj) : " is simple array";
@@ -573,10 +630,10 @@ class LDO extends DacuraObject {
 		}
 		else {
 			foreach($obj as $p => $v){
-				if(!$this->validateLDPredicate($p, $rules)){
+				if(!$this->validateLDPredicate($p, $rules, $srvr)){
 					return false;
 				}
-				if(!$this->validateLDValue($v, $rules)){
+				if(!$this->validateLDValue($v, $rules, $srvr)){
 					$this->errmsg = "Predicate $p ".$this->errmsg;
 					return false;						
 				}
@@ -585,7 +642,7 @@ class LDO extends DacuraObject {
 		return true;
 	} 
 	
-	function validateLDSubject($s, $rules){
+	function validateLDSubject($s, $rules, $srvr){
 		if(isBlankNode($s)){
 			if(isset($rules['forbid_blank_nodes']) && $rules['forbid_blank_nodes']){
 				return $this->failure_result("Linked data input structure contains forbidden blank node $s", 400);				
@@ -605,10 +662,10 @@ class LDO extends DacuraObject {
 		return true;
 	}
 		
-	function validateLDPredicate($p, $rules){
+	function validateLDPredicate($p, $rules, $srvr){
 		if(isBlankNode($p)){
 			if(!(isset($rules['allow_blanknode_predicates']) && $rules['allow_blanknode_predicates'])){
-				return $this->failure_result("Linked data input structure contains forbidden blank node $p", 400);
+				return $this->failure_result("Linked data input structure contains forbidden predicate blank node $p", 400);
 			}
 		}
 		else {
@@ -622,20 +679,20 @@ class LDO extends DacuraObject {
 		return true;
 	}
 	
-	function validateLDValue($obj, $rules){
+	function validateLDValue($obj, $rules, $srvr){
 		$pv = new LDPropertyValue($obj, $this->cwurl);
 		if($pv->illegal($rules)) {
 			return $this->failure_result("Illegal JSON LD object structure ".$pv->errmsg, $pv->errcode);
 		}
 		if($pv->embeddedlist()){
-			return $this->validateLDProps($obj, $rules);
+			return $this->validateLDProps($obj, $rules, $srvr);
 		}
 		elseif($pv->embedded()){
-			return $this->validateLDObject($obj, $rules);
+			return $this->validateLDObject($obj, $rules, $srvr);
 		}
 		elseif($pv->objectlist()){
 			foreach($obj as $emb){
-				if(!$this->$this->validateLDObject($emb, $rules)){
+				if(!$this->$this->validateLDObject($emb, $rules, $srvr)){
 					return false;
 				}
 			}
@@ -647,7 +704,7 @@ class LDO extends DacuraObject {
 		$this->analysis = "something something";
 	}
 	
-	/**
+	/**, $srvr
 	 * Returns a json representation of the object properties, optionally for a particular key of the properties array
 	 * 
 	 * The key represents a particular graph id 
@@ -673,6 +730,10 @@ class LDO extends DacuraObject {
 	 */
 	function setContext($cid){
 		$this->cid = $cid;
+	}
+	
+	function cid(){
+		return $this->cid;
 	}
 	
 	/**
@@ -763,7 +824,14 @@ class LDO extends DacuraObject {
 		if(!$this->nsres){
 			return $this->failure_result("No name space resolver object set for LD object - cannot expand Namespaces", 500);
 		}
-		$res = $this->nsres->expandNamespaces($this->ldprops, $this->cwurl);
+		if($this->is_multigraph()){
+			foreach($this->ldprops as $gid => $gprops){
+				$res = $this->nsres->expandNamespaces($this->ldprops[$gid], $this->cwurl);
+			}
+		}
+		else {
+			$res = $this->nsres->expandNamespaces($this->ldprops, $this->cwurl);
+		}
 		if($res){
 			$this->compressed = false;
 		}
@@ -936,7 +1004,34 @@ class LDO extends DacuraObject {
 	 * @return boolean|string the serialised export of the object
 	 */
 	function export($format, $nsobj = false){
-		$easy = exportEasyRDFPHP($this->ldprops, $this->cwurl);
+		if($this->is_multigraph()){
+			$easy = array();
+			foreach($this->ldprops as $gid => $gprops){
+				$neasy = exportEasyRDFPHP($gprops, $this->cwurl);
+				foreach($neasy as $s => $eldo){
+					if(!isset($easy[$s])){
+						$easy[$s] = $eldo;
+					}
+					else {
+						foreach($eldo as $p => $v){
+							if(!isset($easy[$s][$p])){
+								$easy[$s][$p] = $v;
+							}
+							elseif(is_array($easy[$s][$p])){
+								$easy[$s][$p] += $v;
+							}
+							else {
+								$easy[$s][$p] = array($easy[$s][$p]);
+								$easy[$s][$p] += $v;
+							}
+						}
+					}
+				}
+			}	
+		}
+		else {
+			$easy = exportEasyRDFPHP($this->ldprops, $this->cwurl);
+		}
 		try{
 			foreach($this->nsres->prefixes as $id => $url){
 				EasyRdf_Namespace::set($id, $url);
@@ -970,7 +1065,7 @@ class LDO extends DacuraObject {
 	 * @param string $format the format id
 	 * @return boolean true if natively supported
 	 */
-	function isNativeFormat($format){
+	static function isNativeFormat($format){
 		return $format == "" or in_array($format, LDO::$native_formats);
 	}
 	
@@ -1080,34 +1175,21 @@ class LDO extends DacuraObject {
 		return $triples;
 	}
 	
-	function typedQuads(){
-		return getPropsAsTypedQuads($this->cwurl, $this->ldprops, $this->rules);
+	function typedQuads($graphid = false){
+		$graphid = $graphid ? $graphid : $this->cwurl;
+		return getPropsAsTypedQuads($graphid, $this->ldprops, $this->rules);
 	}
 	
-	function quads(){
-		return getPropsAsQuads($this->cwurl, $this->ldprops, $this->rules);
+	function quads($graphid = false){
+		$graphid = $graphid ? $graphid : $this->cwurl;		
+		return getPropsAsQuads($graphid, $this->ldprops, $this->rules);
 	}
 	
-	function nQuads(){
+	function nQuads($graphid = false){
+		$graphid = $graphid ? $graphid : $this->cwurl;
 		require_once("JSONLD.php");
 		//function assumes that properties are indexed by graph id
-		return toNQuads(array($this->cwurl => $this->ldprops), array("cwurl" => $this->cwurl));
-	}
-	
-	/**
-	 * Return an array of quads - for a particular property
-	 * @param string $gname graph id
-	 * @return array<quads> an array of quads
-	 */
-	function getPropertyAsQuads($prop, $gname){
-		if(!isset($this->ldprops[$prop])) return array();
-		$quads = array();
-		$trips = getEOLAsTypedTriples($this->ldprops[$prop], $this->rules);
-		foreach($trips as $trip){
-			$trip[] = $gname;
-			$quads[] = $trip;
-		}
-		return $quads;
+		return toNQuads(array($graphid => $this->ldprops), array("cwurl" => $this->cwurl));
 	}
 	
 	/**
@@ -1128,13 +1210,13 @@ class LDO extends DacuraObject {
 			$apirep['fragment_id'] = $this->fragment_id;
 			$apirep['fragment_path'] = $this->fragment_path;
 		}
-		if(isset($opts['history']) && $opts['history']){
+		if(isset($opts['history']) && $opts['history'] && isset($this->history) && $this->history) {
 			$apirep["history"] = $this->history;
 		}
-		if(isset($opts['updates']) && $opts['updates']){
+		if(isset($opts['updates']) && $opts['updates'] && isset($this->updates) && $this->updates){
 			$apirep["updates"] = $this->updates;
 		}
-		if(isset($opts['analysis']) && $opts['analysis']){
+		if(isset($opts['analysis']) && $opts['analysis'] && isset($this->analysis) && $this->analysis){
 			$apirep["analysis"] = $this->analysis;
 		}
 		return $apirep;
@@ -1151,18 +1233,24 @@ class LDO extends DacuraObject {
 	/**
 	 * Calculates the transforms necessary to get to current from other
 	 * 
-	 * @param LDObject $other the object to be compared to this one
+	 * @param LDO $other the object to be compared to this one
 	 * @return LDDelta
 	 */
-	function compare(LDObject $other){
-		$aprops = $this->ldprops;
-		$aprops['meta'] = $this->meta;
-		$bprops = $other->ldprops;
-		$bprops['meta'] = $other->meta;
-		$cdelta = compareLDGraphs($this->id, $aprops, $bprops, $this->rules, true);
-		if($cdelta->containsChanges()){
-			$cdelta->setMissingLinks($this->missingLinks(), $other->missingLinks());
+	function compare(LDO $other, $rules = array()){
+		if($this->is_multigraph()){
+			$cdelta = compareLDGraphs($this->id, $this->ldprops, $other->ldprops, $rules, true);
 		}
+		else {
+			$cdelta = compareLDGraph($this->ldprops, $other->ldprops, $rules, false);
+		}
+		$ndd = compareLD($this->id, $this->meta, $other->meta, $rules, "meta");
+		if($ndd->containsChanges()){
+			$cdelta->addNamedGraphDelta($ndd, "meta");
+		}
+		//if($cdelta->containsChanges()){
+		//	$cdelta->setMissingLinks($this->missingLinks(), $other->missingLinks());
+		//}
+		//opr($cdelta);
 		return $cdelta;
 	}
 	
@@ -1172,31 +1260,102 @@ class LDO extends DacuraObject {
 	 * @param array $rules rules that will apply to thos update
 	 * @return boolean
 	 */
-	function update($update_obj, $rules = false){
-		$rules = $rules ? $rules : $this->rules;
+	function update($update_obj, $rules = array(), $force_multi = false){
 		if(isset($update_obj['meta'])){
-			$umeta = $update_obj['meta'];
-			unset($update_obj['meta']);
+			if(!$this->updateJSON($update_obj['meta'], $this->meta, $this->idmap, $rules)){
+				return false;
+			}
+			unset($update_obj['meta']);				
 		}
-		else {
-			$umeta = false;
-		}
-		if($this->applyUpdates($update_obj, $this->ldprops, $this->idmap, $rules)){
-			if($umeta === false || $this->applyUpdates($umeta, $this->meta, $this->idmap, $rules)){
-				if(count($this->idmap) > 0){
-					$unresolved = updateBNReferences($this->ldprops, $this->idmap, $rules);
-					if($unresolved === false){
-						return false;
+		if($this->is_multigraph() or $force_multi){
+			foreach($update_obj as $gid => $gprops){
+				if(is_array($gprops) && count($gprops) == 0){
+					if(isset($this->ldprops[$gid])){
+						unset($this->ldprops[$gid]);
 					}
-					elseif(count($unresolved) > 0){
-						$this->bad_links = $unresolved;
+					elseif(isset($rules['fail_on_bad_deletes']) && $rules['fail_on_bad_deletes']) {
+						return $this->failure_result("Attempted to remove non-existant property $k", 404);
 					}
 				}
-				$this->buildIndex();
-				return true;
+				elseif(isAssoc($gprops)){
+					if(!isset($this->ldprops[$gid])){
+						$this->ldprops[$gid] = $gprops;
+					}
+					else {
+						if(!$this->updateLDProps($gprops, $this->ldprops[$gid], $this->idmap, $rules)){
+							return false;
+						}
+					}
+				}
 			}
 		}
-		return false;
+		else {
+			if(count($update_obj) > 0){
+				if(!$this->updateLDProps($update_obj, $this->ldprops, $this->idmap, $rules)){
+					return false;
+				}
+			}				
+		}
+		if(count($this->idmap) > 0){
+			$this->ldprops = updateLDReferences($this->ldprops, $this->idmap, $rules, $this->is_multigraph());			
+		}
+		$this->buildIndex();
+		return true;
+	}
+	
+	function updateJSON($umeta, &$dmeta, $rules){
+		if(isAssoc($umeta)){
+			if(!is_array($dmeta)){
+				$dmeta = array();
+			}
+			foreach($umeta as $k => $v){
+				if(is_array($v) && count($v) == 0){
+					if(isset($dmeta[$k])){
+						unset($dmeta[$k]);
+					}
+					elseif(isset($rules['fail_on_bad_deletes']) && $rules['fail_on_bad_deletes']) {
+						return $this->failure_result("Attempted to remove non-existant property $k", 404);
+					}						
+				}
+				elseif(isAssoc($v)){
+					$this->updateJSON($v, $dmeta[$k], $rules);					
+				} 
+				else {
+					$dmeta[$k] = $v;
+				}				
+			}
+		}
+		return true;
+	}
+		
+	function updateLDProps($uprops, &$ldprops, &$idmap, $rules){
+		foreach($uprops as $subj => $ldo){
+			if(!is_array($ldprops)){
+				$ldprops = array();
+			}
+			if(is_array($ldo) && count($ldo) == 0){
+				if(isset($ldprops[$subj])){
+					unset($ldprops[$subj]);
+				}
+				elseif(isset($rules['fail_on_bad_deletes']) && $rules['fail_on_bad_deletes']) {
+					return $this->failure_result("Attempted to remove non-existant subject $subj", 404);
+				}
+			}
+			elseif(isAssoc($ldo)){
+				if(isBlankNode($subj)){
+					$new_id = getNewBNIDForLDObj($ldo, $idmap, $rules, $subj);
+					$ldprops[$new_id] = $ldo;
+					if($subj != $new_id){
+						unset($ldprops[$subj]);
+					}
+					$subj = $new_id;
+				}
+				if(!$this->updateLDO($ldo, $ldprops[$subj], $idmap, $rules)){
+					return false;
+				}			
+			}
+		}
+		return true;	
 	}
 
 	/**
@@ -1209,11 +1368,11 @@ class LDO extends DacuraObject {
 	 * @param array $rules - rules that apply to this update
 	 * @return boolean true if updates worked
 	 */
-	function applyUpdates($uprops, &$dprops, &$idmap, $rules){
+	function updateLDO($uprops, &$dprops, &$idmap, $rules){
 		foreach($uprops as $prop => $v){
-			if(!is_array($dprops)){
-				$dprops = array();
-			}
+			//if(!is_array($dprops)){
+			//	$dprops = array();
+			//}
 			$pv = new LDPropertyValue($v, $this->cwurl);
 			if($pv->illegal()){
 				return $this->failure_result($pv->errmsg, $pv->errcode);
@@ -1275,14 +1434,22 @@ class LDO extends DacuraObject {
 							continue;//just ignore the node
 						}
 					}
-					if(!$this->applyUpdates($uprops[$prop][$uid], $dprops[$prop][$uid], $idmap, $rules)){
+					if(!$this->updateLDO($uprops[$prop][$uid], $dprops[$prop][$uid], $idmap, $rules)){
 						return false;
 					}
-					//opr($dprops[$prop][$uid]);
 					if(isset($dprops[$prop][$uid]) && is_array($dprops[$prop][$uid]) and count($dprops[$prop][$uid]) == 0){
 						unset($dprops[$prop][$uid]);
 					}
 				}
+			}
+			elseif($pv->complex()){
+				if(!$this->updateJSON($uprops[$prop], $dprops[$prop], $idmap, $rules)){
+					return false;
+				}						
+			}
+			else {
+				opr($pv);
+				return $this->failure_result("Unknown value type in LD structure", 500);
 			}
 			if(isset($dprops[$prop]) && is_array($dprops[$prop]) && count($dprops[$prop])==0) {
 				unset($dprops[$prop]);
@@ -1291,8 +1458,6 @@ class LDO extends DacuraObject {
 		return true;
 	}
 
-
-	
 	/**
 	 * Returns a list of the bad links in the object
 	 */
@@ -1319,19 +1484,28 @@ class LDO extends DacuraObject {
 		if($this->index === false){
 			$this->buildIndex();
 		}
-		$ml = findInternalMissingLinks($this->ldprops, array_keys($this->index), $this->id, $this->rules);
-		$x = count($ml);
-		if($x > 0){
-			$this->bad_links = $ml;
+		$missing = array();
+		if($this->is_multigraph()){
+			foreach($this->ldprops as $gid => $ldprops){
+				foreach($ldprops as $s => $ldo){
+					$missing = array_merge($missing, findInternalMissingLinks($ldo, array_keys($this->index), $this->id, $rules));
+				}
+			}
 		}
-		return $ml;
+		else {
+			foreach($this->ldprops as $s => $ldo){
+				$missing = array_merge($missing, findInternalMissingLinks($ldo, array_keys($this->index), $this->id, $rules));
+			}				
+		}
+		$this->bad_links = $missing;
+		return $missing;
 	}
 	
 	/**
 	 * Returns true if the object complies with its rules
 	 */
-	function compliant(){
-		$errs = validLD($this->ldprops, $this->rules);
+	function compliant($rules = array()){
+		$errs = validLDProps($this->ldprops, $rules);
 		if(count($errs) == 0){
 			return true;
 		}

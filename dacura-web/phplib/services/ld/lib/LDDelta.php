@@ -13,9 +13,11 @@ class LDDelta extends DacuraObject {
 	var $triples_overwritten = array();//cancelled out by a remove and an add. state retained fyi
 	var $type_changes = array();
 	var $bad_links = array();
+	var $rules = array();
 	
-	function __construct($cwurl, $gname = false){
-		$this->cwurl = $cwurl;
+	function __construct($rules = array(), $gname = false){
+		$this->cwurl = isset($rules['cwurl']) ? $rules['cwurl'] : "";
+		$this->rules = $rules;
 		$this->gname = $gname;
 		if($gname){
 			$this->triples_added[$gname] = array();
@@ -34,13 +36,13 @@ class LDDelta extends DacuraObject {
 		expandNSTriples($this->triples_overwritten, $schema, $this->cwurl, true);
 	}
 	
-	function compressNS($schema){
-		compressNamespaces($this->forward, $schema, $this->cwurl);
-		compressNamespaces($this->backward, $schema, $this->cwurl);
-		compressNSTriples($this->triples_added, $schema, $this->cwurl, true);
-		compressNSTriples($this->triples_removed, $schema, $this->cwurl, true);
-		compressNSTriples($this->triples_updated, $schema, $this->cwurl, true);
-		compressNSTriples($this->triples_overwritten, $schema, $this->cwurl, true);
+	function compressNS($nsres){
+		$nsres->compressNamespaces($this->forward, $this->cwurl);
+		$nsres->compressNamespaces($this->backward, $this->cwurl);
+		$nsres->compressNSTriples($this->triples_added, $schema, $this->cwurl, true);
+		$nsres->compressNSTriples($this->triples_removed, $schema, $this->cwurl, true);
+		$nsres->compressNSTriples($this->triples_updated, $schema, $this->cwurl, true);
+		$nsres->compressNSTriples($this->triples_overwritten, $schema, $this->cwurl, true);
 	}
 	
 	function getDisplayFormat(){
@@ -59,7 +61,7 @@ class LDDelta extends DacuraObject {
 	function add($frag_id, $p, $v, $add_top_level_triples = true){
 		$this->forward[$p] = $v;
 		$this->backward[$p] = array();
-		$trips = getValueAsTypedTriples($frag_id, $p, $v, $this->cwurl);
+		$trips = getValueAsTypedTriples($frag_id, $p, $v, $this->rules);
 		if(!$add_top_level_triples ){
 			foreach($trips as $i => $trip){
 				if($trip[0] == $frag_id){
@@ -79,7 +81,7 @@ class LDDelta extends DacuraObject {
 	function del($frag_id, $p, $v, $del_top_level_triples = true){
 		$this->backward[$p] = $v;
 		$this->forward[$p] = array();
-		$trips = getValueAsTypedTriples($frag_id, $p, $v, $this->cwurl);
+		$trips = getValueAsTypedTriples($frag_id, $p, $v, $this->rules);
 		if(!$del_top_level_triples ){
 			foreach($trips as $i => $trip){
 				if($trip[0] == $frag_id){
@@ -92,26 +94,46 @@ class LDDelta extends DacuraObject {
 	}
 	
 	function addObject($frag_id, $p, $id, $obj, $ignore_root = false){
-		if(!isset($this->forward[$p])){
-			$this->forward[$p] = array();
-			$this->backward[$p] = array();
+		if($p === false){
+			if(!isset($this->forward)){
+				$this->forward = array();
+				$this->backward = array();
+			}
+			$this->forward[$id] = $obj;
+			$this->backward[$id] = array();
 		}
-		$this->forward[$p][$id] = $obj;
-		$this->backward[$p][$id] = array();
-		$trips = $ignore_root ? array() : array(array($frag_id, $p, $id));
-		$trips = array_merge($trips, getObjectAsTypedTriples($id, $obj, $this->cwurl));
+		else {
+			if(!isset($this->forward[$p])){
+				$this->forward[$p] = array();
+				$this->backward[$p] = array();
+			}
+			$this->forward[$p][$id] = $obj;
+			$this->backward[$p][$id] = array();
+		}
+		$trips = $ignore_root || ($p === false || $frag_id === false) ? array() : array(array($frag_id, $p, $id));
+		$trips = array_merge($trips, getObjectAsTypedTriples($id, $obj, $this->rules));
 		$this->addTriples($trips);
 	}
 	
 	function delObject($frag_id, $p, $id, $obj, $ignore_root = false){
-		if(!isset($this->forward[$p])){
-			$this->forward[$p] = array();
-			$this->backward[$p] = array();
+		if($p === false){
+			if(!isset($this->forward)){
+				$this->forward = array();
+				$this->backward = array();
+			}
+			$this->backward[$id] = $obj;
+			$this->forward[$id] = array();
 		}
-		$this->backward[$p][$id] = $obj;
-		$this->forward[$p][$id] = array();
-		$trips = $ignore_root ? array() : array(array($frag_id, $p, $id));
-		$trips = array_merge($trips, getObjectAsTypedTriples($id, $obj, $this->cwurl));
+		else {
+			if(!isset($this->forward[$p])){
+				$this->forward[$p] = array();
+				$this->backward[$p] = array();
+			}
+			$this->backward[$p][$id] = $obj;
+			$this->forward[$p][$id] = array();
+		}
+		$trips = $ignore_root || ($p === false || $frag_id === false) ? array() : array(array($frag_id, $p, $id));
+		$trips = array_merge($trips, getObjectAsTypedTriples($id, $obj, $this->rules));
 		$this->removeTriples($trips);
 	}
 	
@@ -127,8 +149,8 @@ class LDDelta extends DacuraObject {
 	function addTypeChange($frag_id, $p, $v, $t, $v2, $t2){
 		$this->forward[$frag_id] = array($p => $v2);
 		$this->backward[$frag_id] = array($p => $v);
-		$del = $t->isempty() ? array() : getValueAsTypedTriples($frag_id, $p, $v, $this->cwurl);
-		$add = $t2->isempty() ? array(): getValueAsTriples($frag_id, $p, $v2, $this->cwurl);
+		$del = $t->isempty() ? array() : getValueAsTypedTriples($frag_id, $p, $v, $this->rules);
+		$add = $t2->isempty() ? array(): getValueAsTriples($frag_id, $p, $v2, $this->rules);
 		if(count($del) > 0 && count($add) > 0){
 			$rem = removeOverwrites($del, $add);
 		}
@@ -161,15 +183,27 @@ class LDDelta extends DacuraObject {
 	function containsChanges(){
 		return count($this->forward) > 0 or count($this->backward) > 0;
 	}
+	
 		
-	function addSubDelta($frag_id, $p, $id, $sub, $t = false){
+	function addSubDelta($p, $id, $sub, $t = false){
 		if($sub->containsChanges()){
-			if(!isset($this->forward[$p])){
-				$this->forward[$p] = array();
-				$this->backward[$p] = array();
+			if($p === false){
+				if(!isset($this->forward)){
+					$this->forward = array();
+					$this->backward = array();
+				}
+				$this->forward[$id] = $sub->forward;
+				$this->backward[$id] = $sub->backward;
+				
 			}
-			$this->forward[$p][$id] = $sub->forward;
-			$this->backward[$p][$id] = $sub->backward;
+			else {
+				if(!isset($this->forward[$p])){
+					$this->forward[$p] = array();
+					$this->backward[$p] = array();
+				}
+				$this->forward[$p][$id] = $sub->forward;
+				$this->backward[$p][$id] = $sub->backward;
+			}
 			$this->addTriples($sub->triples_added);
 			$this->removeTriples($sub->triples_removed);
 			if($this->gname){
@@ -241,8 +275,8 @@ class LDDelta extends DacuraObject {
 	
 	function updateTriple($frag_id, $p, $ov, $updv){
 		if($this->make_updates_adds_rems){
-			$this->addTriples(getValueAsTypedTriples($frag_id, $p, $updv, $this->cwurl));
-			$this->removeTriples(getValueAsTypedTriples($frag_id, $p, $ov, $this->cwurl));
+			$this->addTriples(getValueAsTypedTriples($frag_id, $p, $updv, $this->rules));
+			$this->removeTriples(getValueAsTypedTriples($frag_id, $p, $ov, $this->rules));
 		}
 		else {
 			if($this->gname){
@@ -353,7 +387,8 @@ class LDDelta extends DacuraObject {
 		return $adds;		
 	}
 	
-	function candidateInserts($callable = false){
+	function ldInserts($callable = false){
+		return $this->triples_added;
 		$inserts = array();
 		foreach($this->triples_added as $trip){
 			if(is_array($trip[2])){
@@ -374,7 +409,8 @@ class LDDelta extends DacuraObject {
 		return $inserts;
 	}
 
-	function candidateDeletes($callable = false){
+	function ldDeletes($callable = false){
+		return $this->triples_removed;
 		$deletes = array();
 		foreach($this->triples_removed as $trip){
 			if(is_array($trip[2])){

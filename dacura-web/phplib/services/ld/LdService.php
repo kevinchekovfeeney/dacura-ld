@@ -103,7 +103,7 @@ class LdService extends DacuraService {
 			$args['options'] = $_GET['options'];
 		}
 		else {
-			$args['options'] = array("history" => 1, "updates" => 1, "ns" => 1, "addressable" => 1, "analysis" => 1);
+			$args['options'] = array("history" => 1, "updates" => 1, "ns" => 1, "addressable" => 0, "analysis" => 1);
 		}
 		return $args;
 	}
@@ -331,6 +331,10 @@ class LdService extends DacuraService {
 		$params['direct_create_allowed'] = true;
 		$params["demand_id_token"] = $this->getServiceSetting("demand_id_token", "@id");
 		$params['create_options'] = $this->getServiceSetting("create_options", array());
+		if($this->name() != "ld"){
+			unset($params['create_ldo_fields']['ldtype']);
+		}
+		
 	}
 
 	function getListSubscreens($dacura_server, $u){
@@ -352,6 +356,12 @@ class LdService extends DacuraService {
 		$params["title"] = "Linked Data Object Manager";
 		$params["subtitle"] = "Object view";
 		$params["description"] = "View and update your managed linked data objects";
+		$params["raw_ldo_fields"] = $this->sform("raw_edit_fields");
+		$params['create_button_text'] = $this->smsg('raw_edit_text');
+		$params['testcreate_button_text'] = $this->smsg('testraw_edit_text');
+		$params['raw_ldo_fields']['format']['options'] = LDO::$valid_input_formats;
+		$params['direct_create_allowed'] = true;
+		$params['update_options'] = $this->getServiceSetting("update_options", array());
 		//opr($params);
 		return $params;
 	}	

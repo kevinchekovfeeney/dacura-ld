@@ -5,8 +5,6 @@ class CandidateService extends LdService {
 	
 	function init(){
 		parent::init();
-		$this->included_scripts[] = $this->get_service_script_url("dacura.frame.js");
-		
+		$this->included_scripts[] = $this->get_service_script_url("dacura.frame.js");	
 	}
-	
 }
