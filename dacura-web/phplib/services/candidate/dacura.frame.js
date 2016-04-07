@@ -19,7 +19,6 @@ dacura.frame.draw = function(resultobj, pconf){
 	var obj = document.createElement("div");
 	res = dacura.frame.frameGenerator(frame, obj);
 	var elt = document.getElementById(pconf.busybox.substring(1));
-	alert(pconf.busybox.substring(1));
 	elt.appendChild(res);
 }
 
