@@ -1,6 +1,11 @@
 <div class='dacura-screen' id='ld-view-home'>
-	<?php if(in_array("ldo-contents", $params['subscreens'])) { ?>
-	<div class="dacura-subscreen" id='ldo-contents' title='Widget Contents'>
+	<?php if(in_array("ldo-frame", $params['subscreens'])) { ?>
+	<div class="dacura-subscreen" id='ldo-frame' title='Contents'>
+		<div class='subscreen-intro-message'><?=$params['frame_intro_msg']?></div>
+		<div id="showframe"></div>
+	</div>
+	<?php } if(in_array("ldo-contents", $params['subscreens']))  { ?>
+	<div class="dacura-subscreen" id='ldo-contents' title='LD Contents'>
 		<div class='subscreen-intro-message'><?=$params['contents_intro_msg']?></div>
 		<div id="show-ldo"></div>
 	</div>
@@ -69,16 +74,16 @@
 	<?php } if(in_array("ldo-raw", $params['subscreens'])) { ?>
 	<div class="dacura-subscreen" id='ldo-raw' title='Raw'>
 		<div class='subscreen-intro-message'><?=$params['raw_intro_msg']?></div>
-		<?php echo $service->getInputTableHTML("ldo-raw", $params['raw_ldo_fields'], array("display_type" => "edit"));?>
+		<?php echo $service->getInputTableHTML("ldoraw", $params['raw_ldo_fields'], array("display_type" => "edit"));?>
 		<div class="subscreen-buttons">
-			<button id='ldotestcreate' class='dacura-test-create subscreen-button'><?=$params['testcreate_button_text']?></button>		
+			<button id='testrawedit' class='dacura-test-create subscreen-button'><?=$params['testcreate_button_text']?></button>		
 			<?php if(isset($params['direct_create_allowed']) && $params['direct_create_allowed']) { ?>
-			<button id='ldocreate' class='dacura-create subscreen-button'><?=$params['create_button_text']?></button>
+			<button id='rawcreate' class='dacura-create subscreen-button'><?=$params['create_button_text']?></button>
 			<?php } ?>
 		</div>		
 	</div>
 	<?php } ?>	
-</div>
+	</div>
 <script>
 
 function printCreated(obj){
@@ -130,6 +135,32 @@ dacura.ld.showHeader = function(ent){
 }
 
 
+function submitRawTest(obj, result, pconf){
+	submitRaw(obj, result, pconf, true);
+}
+function submitRawUpdate(obj, result, pconf){
+	submitRaw(obj, result, pconf, false);
+}
+function submitRaw(obj, result, pconf, test){
+	<?php if(count($params['update_options']) > 0){
+		echo "obj.options = ".json_encode($params['update_options']).";";
+	}?>	
+	obj.meta = JSON.parse(obj.meta);
+	obj.ldtype = obj.meta.ldtype;
+	if(dacura.ld.isJSONFormat(obj.format)){
+		obj.contents = JSON.parse(obj.contents);
+	}
+	obj.version = obj.meta.version;
+	dacura.ld.update("<?=$params['id']?>", obj, result, pconf, test);
+}
+
+function showUpdateSuccess(data){
+	jpr(data);
+}
+
+
+
+
 function drawVersionHeader(data){
 
 }
@@ -165,18 +196,44 @@ function isUpdateID(id){
 function drawLDO(data){
 	dacura.tool.initScreens("ld-view-home");
 	dacura.ld.header(data);
-	dacura.tool.table.init("history_table", {
-		"screen": "ldo-history", 
-		"dtsettings": <?=$params['history_datatable']?>
-	}, data.history);		
-
-	dacura.tool.table.init("updates_table", {
-		"screen": "ldo-updates", 
-		"dtsettings": <?=$params['updates_datatable']?>
-	}, data.updates);		
+	if(typeof data.history == 'object'){
+		dacura.tool.table.init("history_table", {
+			"screen": "ldo-history", 
+			"dtsettings": <?=$params['history_datatable']?>
+		}, data.history);		
+	}
+	if(typeof data.updates == 'object'){
+		dacura.tool.table.init("updates_table", {
+			"screen": "ldo-updates", 
+			"dtsettings": <?=$params['updates_datatable']?>
+		}, data.updates);		
+	}
 	dacura.system.styleJSONLD("td.rawjson");	
 	dacura.ld.viewer.init("show-ldo", "view", data.format, data.options);
-	dacura.frame.init(data);
+	dacura.ld.viewer.draw(data);
+	dacura.frame.init(data, dacura.tool.subscreens["ldo-frame"]);
+	dacura.tool.button.init("testrawedit",  {
+		"screen": "ldo-raw",			
+		"source": "ldoraw",
+		"submit": submitRawTest,
+		"result": function(data, pconf) { showUpdateSuccess(data, pconf, "LDO Updated OK");}
+	});
+	dacura.tool.button.init("rawcreate",  {
+		"screen": "ldo-raw",			
+		"source": "ldoraw",
+		"submit": submitRawUpdate,
+		"result": function(data, pconf) { showUpdateSuccess(data, pconf, "LDO Updated OK");}
+	});
+	dacura.tool.form.init("ldoraw", {});
+	var fp = {"format": data.format, "meta": JSON.stringify(data.meta, 0, 4)};
+	if(typeof data.contents == "string"){
+		fp.contents = data.contents;
+	}
+	else {
+		fp.contents = JSON.stringify(data.contents, 0, 4); 
+	}
+	dacura.tool.form.populate("ldoraw", fp);
+	
 	//dacura.editor.load("<?=$params['id']?>", dacura.ld.fetch, dacura.ld.update);
 	//jpr(data);
 }

@@ -1333,7 +1333,7 @@ class LdDacuraServer extends DacuraServer {
 		return substr($cname, -(strlen("DacuraServer")));
 	}
 	
-	private function readGraphConfiguration(){
+	function readGraphConfiguration(){
 		$filter = array(
 			"type" => "graph",
 			"collectionid" => $this->cid(),

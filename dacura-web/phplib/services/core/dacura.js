@@ -823,7 +823,7 @@ dacura.system.invoke = function(ajs, cmsgs, ctargets){
 		done = ajs.done;
 		delete(ajs.done);
 	}
-	if(typeof ctargets.slow != "undefined" && ctargets.slow){
+	if(typeof ctargets == 'object' && typeof ctargets.slow != "undefined" && ctargets.slow){
 		oncomplete = function(data, textStatus, jqXHR){
 			always(data, textStatus, jqXHR);
 			done(data, textStatus, jqXHR);

@@ -282,6 +282,9 @@ class LdService extends DacuraService {
 	function loadSubscreenMessages(&$params, $screen, $subscreens){
 		$mappings = array("LDO" => "Linked Data Object");
 		if($screen == 'view'){
+			if(in_array("ldo-frame", $subscreens)){
+				$params['frame_intro_msg'] = $this->smsg('view_frame_intro', $mappings);
+			}				
 			if(in_array("ldo-history", $subscreens)){
 				$params['history_intro_msg'] = $this->smsg('view_history_intro', $mappings);
 			}	

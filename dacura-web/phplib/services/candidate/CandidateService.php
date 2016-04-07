@@ -7,4 +7,11 @@ class CandidateService extends LdService {
 		parent::init();
 		$this->included_scripts[] = $this->get_service_script_url("dacura.frame.js");	
 	}
+	
+	function getViewSubscreens(){
+		$x = parent::getViewSubscreens();
+		$x[] = "ldo-frame"; 
+		return $x;
+	}
+	
 }
