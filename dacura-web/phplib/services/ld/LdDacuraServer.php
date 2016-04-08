@@ -107,7 +107,7 @@ class LdDacuraServer extends DacuraServer {
 			}
 			$this->addIDAllocationWarning($cr, $type, $test_flag, $id);
 		}		
-		if(!($nldo = $this->createNewLDObject($id, $type))){
+		if(!($nldo = $this->createNewLDObject($id, $type, $this->cid()))){
 			return $cr->failure($this->errcode, "Request Create Error", "Failed to create $type object ".$this->errmsg);
 		}
 		$nldo->setContext($this->cid());
@@ -200,8 +200,10 @@ class LdDacuraServer extends DacuraServer {
 	 * @param string $type the object' type
 	 * @return an instance of the object 
 	 */
-	function createNewLDObject($id, $type){
-		$cwbase = $this->service->get_service_url($type);
+	function createNewLDObject($id, $type, $cid){
+		$cwbase = $this->durl();
+		$cwbase .= (($cid == "all" || !$cid) ? "" : $cid ."/") ;
+		$cwbase .= $type."/";
 		$uclass = ucfirst($type);
 		if(class_exists($uclass)){
 			$ldo = new $uclass($id, $cwbase, $this->service->logger);
@@ -209,6 +211,7 @@ class LdDacuraServer extends DacuraServer {
 		else {
 			$ldo = new LDO($id, $cwbase, $this->service->logger);
 		}
+		$ldo->cid = $cid;
 		$ldo->ldtype = $type;
 		return $ldo;
 	}
@@ -243,35 +246,7 @@ class LdDacuraServer extends DacuraServer {
 		return $x;
 	}
 	
-	/**
-	 * Default rules for processing content of new linked data objects
-	 * @param $nldo LDO - the linked data object being created
-	 * @return array<rules> an array of settings to be passed to linked data processing
-	 */
-	function getNewLDOContentRules($nldo){
-		$x = array();
-		$x['cwurl'] = $nldo->cwurl;
-		$x['id_generator'] = array($nldo, $this->getServiceSetting("internal_generate_id", "generateInternalID"));
-		$x["allow_demand_id"] = $this->getServiceSetting("internal_allow_demand_id", true); 
-		$x["mimimum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 1); 
-		$x["maximum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 80); 
-		$x["extra_entropy"] = $this->getServiceSetting("internal_extra_entropy", false); 
-		$x["expand_embedded_objects"] = $this->getServiceSetting("expand_embedded_objects", true); 
-		$x["replace_blank_ids"] = $this->getServiceSetting("replace_blank_ids", true); 
-		$x["require_blank_nodes"] = $this->getServiceSetting("require_blank_nodes", false); 
-		$x["forbid_blank_nodes"] = $this->getServiceSetting("forbid_blank_nodes", false); 
-		$x["allow_blanknode_predicates"] = $this->getServiceSetting("allow_blanknode_predicates", true); 
-		$x["require_subject_urls"] = $this->getServiceSetting("require_subject_urls", true); 
-		$x["require_predicate_urls"] = $this->getServiceSetting("require_predicate_urls", true); 
-		$x["forbid_unknown_prefixes"] = $this->getServiceSetting("forbid_unknown_prefixes", true); 
-		$x["unique_subject_ids"] = $this->getServiceSetting("unique_subject_ids", false); 
-		$x["allow_invalid_ld"] = $this->getServiceSetting("allow_invalid_ld", false); 
-		$x["require_object_literals"] = $this->getServiceSetting("require_object_literals", true); 
-		$x["regularise_object_literals"] = $this->getServiceSetting("regularise_object_literals", true); 
-		$x["forbid_empty"] = $this->getServiceSetting("forbid_empty", true); 
-		$x["allow_arbitrary_metadata"] = $this->getServiceSetting("allow_arbitrary_metadata", false); 
-		return $x;
-	}
+	
 	
 	/**
 	 * Return a list of linked data objects 
@@ -364,7 +339,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @return boolean|LDO - on success this will return the loaded linked data object
 	 */
 	function loadLDO($ldo_id, $type, $cid, $fragment_id = false, $version = false, $options = array()){
-		if(!($ldo = $this->createNewLDObject($ldo_id, $type))){
+		if(!($ldo = $this->createNewLDObject($ldo_id, $type, $cid))){
 			return false;
 		}
 		if(!$this->dbman->loadLDO($ldo, $ldo_id, $type, $cid, $options)){
@@ -608,7 +583,7 @@ class LdDacuraServer extends DacuraServer {
 			}
 		}
 		$oldo->setNamespaces($this->nsres);
-		if(!($nldo = $this->createNewLDObject($target_id, $ldo_type))){
+		if(!($nldo = $this->createNewLDObject($target_id, $ldo_type, $this->cid()))){
 			return $ar->failure($this->errcode, "Request Create Error", "Failed to create $ldo_type object ".$this->errmsg);
 		}
 		$nldo->setContext($oldo->cid());
@@ -627,7 +602,7 @@ class LdDacuraServer extends DacuraServer {
 			return $ar->failure(403, "Access Denied", "Cannot update $oldo->id through context ".$this->cid());
 		}
 		elseif(!$ldoupdate->apply($nldo, $editmode, $rules, $this)){
-			return $ar->failure($ldoupdate->errcode, "Protocol Error", "Failed to load the update command from the API. ", $ldoupdate->errmsg);
+			return $ar->failure($ldoupdate->errcode, "Protocol Error", "Failed to load the update command from the API. ". $ldoupdate->errmsg);
 		}
 		if($ldoupdate->nodelta()){
 			return $ar->reject("No Changes", "The submitted version is identical to the current version.");
@@ -662,13 +637,19 @@ class LdDacuraServer extends DacuraServer {
 		return $ar;
 	}
 	
-	function getUpdateLDOContentRules($nldo){
+
+	/**
+	 * Default rules for processing content of new linked data objects
+	 * 
+	 * This is set very liberal to allow the ld editor / server to do whatever it likes.
+	 * 
+	 * Further restrictions apply in further down the line classes
+	 * @param $nldo LDO - the linked data object being created
+	 * @return array<rules> an array of settings to be passed to linked data processing
+	 */
+	function getNewLDOContentRules($nldo){
 		$x = array();
 		$x['cwurl'] = $nldo->cwurl;
-		$x['default_graph_url'] = $this->getDefaultGraphURL();
-		$x["set_id_allowed"] = $this->getServiceSetting("set_id_allowed", true);
-		$x["fail_on_bad_update"] = $this->getServiceSetting("fail_on_bad_update", true);
-		$x["fail_on_bad_deletes"] = $this->getServiceSetting("fail_on_bad_deletes", false);
 		$x['id_generator'] = array($nldo, $this->getServiceSetting("internal_generate_id", "generateInternalID"));
 		$x["allow_demand_id"] = $this->getServiceSetting("internal_allow_demand_id", true);
 		$x["mimimum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 1);
@@ -679,44 +660,36 @@ class LdDacuraServer extends DacuraServer {
 		$x["require_blank_nodes"] = $this->getServiceSetting("require_blank_nodes", false);
 		$x["forbid_blank_nodes"] = $this->getServiceSetting("forbid_blank_nodes", false);
 		$x["allow_blanknode_predicates"] = $this->getServiceSetting("allow_blanknode_predicates", false);
-		$x["require_subject_urls"] = $this->getServiceSetting("require_subject_urls", true);
+		$x["require_subject_urls"] = $this->getServiceSetting("require_subject_urls", false);
 		$x["require_predicate_urls"] = $this->getServiceSetting("require_predicate_urls", true);
 		$x["forbid_unknown_prefixes"] = $this->getServiceSetting("forbid_unknown_prefixes", true);
 		$x["unique_subject_ids"] = $this->getServiceSetting("unique_subject_ids", false);
 		$x["allow_invalid_ld"] = $this->getServiceSetting("allow_invalid_ld", false);
 		$x["require_object_literals"] = $this->getServiceSetting("require_object_literals", true);
 		$x["regularise_object_literals"] = $this->getServiceSetting("regularise_object_literals", true);
-		$x["forbid_empty"] = $this->getServiceSetting("forbid_empty", false);
+		$x["forbid_empty"] = $this->getServiceSetting("forbid_empty", true);
 		$x["allow_arbitrary_metadata"] = $this->getServiceSetting("allow_arbitrary_metadata", false);
+		$x["set_id_allowed"] = $this->getServiceSetting("set_id_allowed", true);
+		$x["fail_on_bad_update"] = $this->getServiceSetting("fail_on_bad_update", true);
+		$x["fail_on_bad_deletes"] = $this->getServiceSetting("fail_on_bad_deletes", true);
+		$x['default_graph_url'] = $this->getDefaultGraphURL();
+		$x['load_dependencies'] = $this->getServiceSetting("load_dependencies", true);
+		return $x;
+	}
+	
+	
+	
+	function getUpdateLDOContentRules($nldo){
+		$x = $this->getNewLDOContentRules($nldo);
+		$x["forbid_empty"] = false;
+		$x["suppress_meta_checks"] = true;
 		return $x;			
 	}
 	
 	function getReplaceLDOContentRules($nldo){
-		$x = array();
-		$x['cwurl'] = $nldo->cwurl;
-		$x["set_id_allowed"] = $this->getServiceSetting("set_id_allowed", true);
-		$x["fail_on_bad_update"] = $this->getServiceSetting("fail_on_bad_update", true);
-		$x["fail_on_bad_deletes"] = $this->getServiceSetting("fail_on_bad_deletes", false);
-		$x['id_generator'] = array($nldo, $this->getServiceSetting("internal_generate_id", "generateInternalID"));
-		$x["allow_demand_id"] = $this->getServiceSetting("internal_allow_demand_id", true);
-		$x["mimimum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 1);
-		$x["maximum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 80);
-		$x["extra_entropy"] = $this->getServiceSetting("internal_extra_entropy", false);
-		$x["expand_embedded_objects"] = $this->getServiceSetting("expand_embedded_objects", true);
-		$x["replace_blank_ids"] = $this->getServiceSetting("replace_blank_ids", false);
-		$x["require_blank_nodes"] = $this->getServiceSetting("require_blank_nodes", false);
-		$x["forbid_blank_nodes"] = $this->getServiceSetting("forbid_blank_nodes", false);
-		$x["allow_blanknode_predicates"] = $this->getServiceSetting("allow_blanknode_predicates", false);
-		$x["require_subject_urls"] = $this->getServiceSetting("require_subject_urls", true);
-		$x["require_predicate_urls"] = $this->getServiceSetting("require_predicate_urls", true);
-		$x["forbid_unknown_prefixes"] = $this->getServiceSetting("forbid_unknown_prefixes", true);
-		$x["unique_subject_ids"] = $this->getServiceSetting("unique_subject_ids", false);
-		$x["allow_invalid_ld"] = $this->getServiceSetting("allow_invalid_ld", false);
-		$x["require_object_literals"] = $this->getServiceSetting("require_object_literals", true);
-		$x["regularise_object_literals"] = $this->getServiceSetting("regularise_object_literals", true);
-		$x["forbid_empty"] = $this->getServiceSetting("forbid_empty", false);
-		$x["allow_arbitrary_metadata"] = $this->getServiceSetting("allow_arbitrary_metadata", false);
-		return $x;		
+		$x = $this->getNewLDOContentRules($nldo);
+		$x["forbid_empty"] = true;
+		return $x;	
 	}
 	
 	/**

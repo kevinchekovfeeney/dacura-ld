@@ -234,7 +234,7 @@ function update_ldo($target_id, $fragment_id = false){
 			$ldo_type = $obj['ldtype'];
 		}
 		else {
-			return $dacura_server->writeDecision($ar->failure(400, "Request Error", "create request does not have a valid linked data type associated with it"));
+			return $dacura_server->writeDecision($ar->failure(400, "Request Error", "update request does not have a valid linked data type associated with it"));
 		}
 	}
 	$upd_obj = array();

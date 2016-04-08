@@ -84,21 +84,26 @@ class LDOUpdate extends DacuraObject{
 	 */
 	function apply(LDO &$update, $mode, $rules, $srvr){
 		if($mode == "update"){
+			$force_multi = false;
 			if($this->original->is_multigraph()){
 				if(!$update->is_multigraph()){
 					$update->ldprops = array($rules['default_graph_url'] => $update->ldprops);
 				}
+				$force_multi = true;
 			}
 			elseif($update->is_multigraph()){
-				$this->original->ldprops = array($rules['default_graph_url'] => $this->ldprops);
+				$force_multi = true;
+				//$this->original->ldprops = array($rules['default_graph_url'] => $this->original->ldprops);
 			}
 			$this->forward = $update->ldprops;
 			if($update->meta){
 				$this->forward['meta'] = $update->meta;
 			}
-			if(!$this->calculateChanged($rules)){
+				
+			if(!$this->calculateChanged($rules, $force_multi)){
 				return false;
 			}
+			$rules = $srvr->getReplaceLDOContentRules($this->original);
 			if($this->original->validate($rules, $srvr) && !$this->changed->validate($rules, $srvr)){
 				return $this->failure_result($this->changed->errmsg, $this->changed->errcode);
 			}
@@ -107,6 +112,9 @@ class LDOUpdate extends DacuraObject{
 			$this->changed = $update;
 			$this->changed->version = $this->original->latest_version + 1;
 			$this->from_version = $this->original->version;
+			if($this->original->validate($rules, $srvr) && !$this->changed->validate($rules, $srvr)){
+				return $this->failure_result($this->changed->errmsg, $this->changed->errcode);
+			}
 			//$this->to_version = $this->changed->version
 			//$this->changed->to_version
 			$this->changed->readStateFromMeta();				
@@ -114,17 +122,16 @@ class LDOUpdate extends DacuraObject{
 		return $this->calculateDelta($rules);				
 	}
 	
-	function calculateChanged($rules = array()){
+	function calculateChanged($rules = array(), $force_multi = false){
 		$this->changed = clone $this->original;
 		$this->changed->version = $this->to_version ? $this->to_version : 1 + $this->original->latest_version;
 		if($this->changed->version > $this->changed->latest_version){
 			$this->changed->latest_version = $this->changed->version;
 		}
 		$contents = (isset($rules['direction']) && $rules['direction'] == "backward") ? $this->backward : $this->forward;
-		if(!$this->changed->update($contents, $rules) && $this->changed->compliant($rules)){
+		if(!$this->changed->update($contents, $rules, $force_multi) && $this->changed->compliant($rules)){
 			return $this->failure_result($this->changed->errmsg, $this->changed->errcode);
 		}
-		//opr($contents);
 		$this->changed->readStateFromMeta();
 		return true;
 	}

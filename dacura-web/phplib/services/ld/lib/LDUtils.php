@@ -1089,13 +1089,33 @@ function compareLD($frag_id, $orig, $upd, $rules, $gname = false){
 	return $delta;
 }
 
-function compareJSON($frag_id, $jo, $ju){
-	if($jo == $ju){
-		//no problem
+function compareJSON($frag_id, $jo, $ju, $rules){
+	$delta = new LDDelta($rules);
+	foreach($ju as $p => $v){
+		if(!isset($jo[$p])){
+			$delta->add($frag_id, $p, $v);				
+		}
 	}
-	if(isAssoc($ju) && isAssoc($jo)){
-		
+	foreach($jo as $p => $v){
+		if(!isset($ju[$p])){
+			$delta->del($frag_id, $p, $v);
+		}
+		else {
+			if($ju[$p] == $v){
+				continue;
+			}
+			if(isAssoc($ju[$p]) && isAssoc($v)){
+				$xv = compareJSON($p, $ju[$p], $v, $rules);
+				$delta->addSubDelta(false, $p, $xv);	
+			}
+			else {
+				$delta->del($frag_id, $p, $v);
+				$delta->add($frag_id, $p, $ju[$p]);				
+			}
+		}		
 	}
+	//opr($delta);
+	return $delta;
 }
 
 

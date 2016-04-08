@@ -11,6 +11,8 @@ Class Ontology extends LDO {
 	
 	/** @var array contains the calculated data about the ontologies dependencies - array has two keys, simport and import for schema schema imports and schema imports */
 	var $dependencies = false;
+	/** @var array contains any ontologies that have been loaded as dependent ontologies of this ontology */
+	var $loaded_dependencies = array();
 	
 	/**
 	 * Adds import and simport to standard LDO meta properties. 
@@ -42,6 +44,10 @@ Class Ontology extends LDO {
 		isset($this->meta['schema_dqs_tests']) ? 	$this->meta['schema_dqs_tests'] : false;
 	}
 	
+	function getImportURL(){
+		//opr($this);
+		return $this->cwurl.($this->fragment_id ? "/".$this->fragment_id : "") ."?version=".$this->version;
+	}
 	
 	/**
 	 * Parses an internal dacura link to an ontology and separates out the id, fragment, collection and version information
@@ -100,7 +106,18 @@ Class Ontology extends LDO {
 		return $parsed_url;
 	}
 	
-	
+	static function getOntologyURL($parsed_url, $durl){
+		$url = $durl;
+		if(isset($parsed_url['collection']) && $parsed_url['collection'] && $parsed_url['collection'] != "all"){
+			$url .= $parsed_url['collection']."/";
+		}
+		$url .= "ontology/".$parsed_url['id'];	
+		if(isset($parsed_url['fragment']) && $parsed_url['fragment']){
+			$url .= "/".$parsed_url['fragment'];
+		}	
+		$url .= (isset($parsed_url['version']) && $parsed_url['version']) ? "?version=".$parsed_url['version'] : "";
+		return $url;
+	}
 	
 	/**
 	 * Ensures that both the url and the prefix of the new ontology are unique 
@@ -111,12 +128,15 @@ Class Ontology extends LDO {
 		if(!parent::validateMeta($rules, $srvr)){
 			return false;
 		}
+		if(isset($rules['suppress_meta_checks'])){
+			return true;
+		}
 		if(!isset($this->meta['url']) or !($this->meta['url'])){
 			return $this->failure_result("Ontologies must specify a canonical URL in order to be referenced by other ontologies!", 400);
 		}
 		if(!isURL($this->meta['url'])){
-			return $this->failure_result($this->meta['url'] . " is not a valid URL. Ontologies must specify a valid URL", 400);				
-		}
+			return $this->failure_result($this->meta['url'] . " is not a valid URL. Ontologies must specify a valid URL", 400);
+		}				
 		//if the id exists in the 'all' context, we can't have one in the collection - collections can't override universal ontology ids
 		if($srvr->cid() != "all" && $srvr->dbman->hasLDO($this->id, "ontology", "all")){
 			return $this->failure_result("An ontology with id $this->id exists on the platform - you must choose a different id", 400);
@@ -163,8 +183,7 @@ Class Ontology extends LDO {
 		foreach($this->dependencies as $sh => $ontdata){
 			if(isset($ontdata['problem_predicates']) && count($ontdata['problem_predicates']) > 0){
 				foreach($ontdata['problem_predicates'] as $onepred){
-					//$ores->errors[] = array("rdf:type" => "IllegalPredicate", "predicate" => $onepred);
-					$ores->error("IllegalPredicate", $onepred);
+					$ores->error("IllegalPredicate", array("predicate" => $onepred));
 				}
 			}
 			if(count($ores->errors) > 0){
@@ -188,85 +207,117 @@ Class Ontology extends LDO {
 		return $ores->accept();
 	}
 	
-	/**
-	 * Returns the list of ontologies that are required to validate instance data
-	 * 
-	 * @param OntologyDacuraServer $srvr
-	 * @return array of ontologies indexed by prefix with collection and version also
-	 */
-	function getSchemaDependencies(LdDacuraServer &$srvr, $rules, $ignore = array()){
-		if(!$this->dependencies){
-			$this->dependencies = $this->generateDependencies($rules);
+	function loadNewObjectFromAPI($create_obj, $format, $options, $rules, &$srvr){
+		if(!parent::loadNewObjectFromAPI($create_obj, $format, $options, $rules, $srvr)){
+			return false;
 		}
-		if(isset($this->meta['import'])){
-			$deps = array($this->meta['import']);
-		}
-		else {
-			$deps = array();
-			foreach($this->dependencies as $d => $info){
-				if(!in_array($d, $ignore) && $this->isImportableOntology($d) && isset($info['structural']) && count($info['structural']) > 0){
-					$deps[$d] = array("collection" => $srvr->getOntologyCollection($d), "version" => 0);
-				}
-			}			
-		}
-		$onts = array();
-		foreach($deps as $sh => $struct){
-			if($sont = $srvr->loadLDO($sh, "ontology", $struct['collection'], false, $struct['version'])){
-				$onts[$sh] = $sont;
+		if(isset($rules['load_dependencies']) && $rules['load_dependencies']){
+			if($srvr->getServiceSetting("two_tier_schemas", true)){
+				$deps = $this->getDependencies($srvr, "schema_schema", $rules);
+			}
+			else {
+				$deps = $this->getDependencies($srvr, "schema", $rules);
+			}
+			if($deps === false){
+				return false;
 			}
 		}
-		$ignore = array_merge($ignore, array_keys($onts));
-		$ronts = array();
-		foreach($onts as $sh => $wont){
-			if($sh == $this->id || in_array($sh, $ignore)) continue;
-			$ronts = array_merge($ronts, $wont->getSchemaDependencies($srvr, $rules, $ignore));
-			$ignore = array_merge($ignore, array_keys($ronts));				
-		}
-		$onts = array_merge($onts, $ronts);
-		return $onts;
+		return true;
 	}
 	
-	function getSchemaSchemaDependencies(LdDacuraServer &$srvr, $rules, $ignore = array()){
+	
+	
+	function getDependencies($srvr, $type, $rules, $ignore = array(), $forcegen = false){
+		$ignore[] = $this->id;
+		if($type == "schema"){
+			if($forcegen || !isset($this->meta['import'])){
+				if($chain = $this->loadDependencyChain($srvr, "schema", $rules, $ignore)){
+					foreach($chain as $id => $ont){
+						$this->meta['import'][$id] = array("id" => $ont->id, "collection" => $ont->cid(), "version" => $ont->version);
+					}
+					$this->loaded_dependencies[$type][$id] = $ont;
+				}
+				else {
+					return false;
+				}
+			}
+			return $this->meta['import'];
+		}
+		if($type == "schema_schema"){
+			if($forcegen || !isset($this->meta['schema_import'])){
+				if($chain = $this->loadDependencyChain($srvr, "schema_schema", $rules, $ignore)){
+					foreach($chain as $id => $ont){
+						$this->meta['schema_import'][$id] = array("id" => $ont->id, "collection" => $ont->cid(), "version" => $ont->version);
+						$this->loaded_dependencies[$type][$id] = $ont;
+					}
+				}
+				else {
+					return false;
+				}
+			}
+			return $this->meta['schema_import'];
+		}
+	}
+	
+	function getDependentOntologies($srvr, $rules, $type, $ignore = array()){
+		if(isset($this->loaded_dependencies[$type])){
+			return $this->loaded_dependencies[$type];
+		}
+		$ignore[] = $this->id;
+		$onts = array();
+		if($type == "schema"){
+			if(isset($this->meta['import'])){
+				foreach($this->meta['import'] as $id => $rec){
+					$onts[$id] = $srvr->loadLDO($id, "ontology", $rec['collection'], false, $rec['version']);					
+				}
+				$this->loaded_dependencies[$type] = $onts;
+				return $onts;
+			}
+			return $this->loadDependencyChain($srvr, $type, $rules, $ignore);				
+		}
+		else {
+			if(isset($this->meta['schema_import'])){
+				foreach($this->meta['schema_import'] as $id => $rec){
+					$onts[$id] = $srvr->loadLDO($id, "ontology", $rec['collection'], false, $rec['version']);
+				}
+				$this->loaded_dependencies[$type] = $onts;
+				return $onts;
+			}
+			return $this->loadDependencyChain($srvr, $type, $rules, $ignore);				
+		}			
+	}
+	
+	function loadDependencyChain($srvr, $type, $rules, $ignore, $level = 0){
 		if(!$this->dependencies){
 			$this->dependencies = $this->generateDependencies($rules);
 		}
-		if(isset($this->meta['schema_import'])){
-			$deps = array($this->meta['schema_import']);
+		if(!is_array($this->dependencies)){
+			return false;
 		}
-		else {
-			$deps = array();
-			foreach($this->dependencies as $d => $info){
-				if(!in_array($d, $ignore) && $this->isImportableOntology($d)){
-					$deps[$d] = array("collection" => $srvr->getOntologyCollection($d), "version" => 0);
+		$deps = array();
+		foreach($this->dependencies as $d => $info){
+			if(!in_array($d, $ignore) && $this->isImportableOntology($d)){
+				if(($type == 'schema_schema' && $level == 0 && isset($info['predicate']))|| isset($info['structural']) && count($info['structural']) > 0){
+					if(!$nont = $srvr->loadLDO($d, "ontology", $srvr->getOntologyCollection($d))){
+						return $this->failure_result($srvr->errmsg, $srvr->errcode);
+					}
+					if(!isset($this->loaded_dependencies[$type])){
+						$this->loaded_dependencies[$type] = array();
+					}
+					$this->loaded_dependencies[$type][$d] = $nont;
+					$deps[$d] = $nont;
+					$ignore[] = $nont->id;
+					$sdeps = $nont->loadDependencyChain($srvr, $type, $rules, $ignore, $level+1);
+					if($sdeps === false){
+						return $this->failure_result($nont->errmsg, $nont->errcode);						
+					}
+					$deps = array_merge($deps, $sdeps);
 				}
 			}
 		}
-		$onts = array();
-		foreach($deps as $sh => $struct){
-			if(!in_array($sh, $ignore) && $sont = $srvr->loadLDO($sh, "ontology", $struct['collection'], false, $struct['version'])){
-				$onts[$sh] = $sont;
-			}
-		}
-		$xonts = array();
-		foreach($onts as $sh => $wont){
-			if($sh == $this->id || in_array($sh, $ignore)) continue;
-			$ignore[] = $sh;
-			//we only need to load structural dependencies of the ontology!
-			$ronts = $wont->getSchemaDependencies($srvr, $rules, $ignore);
-			$ignore = array_merge($ignore, array_keys($ronts));
-			foreach($ronts as $k => $v){
-				if(!isset($xonts[$k])){
-					$xonts[$k] = $v;					
-				}
-			}			
-		}
-		foreach($xonts as $k => $xont){
-			if(!isset($onts[$k])){
-				$onts[$k] = $xont;
-			}
-		}
-		return $onts; 
+		return $deps;
 	}
+	
 		
 	/**
 	 * Only some of the ontologies are importable - some of them are built in or pseudo names 
@@ -281,7 +332,7 @@ Class Ontology extends LDO {
 	}
 	
 	/**
-	 * Generates the information about the dependencies needed for an ontology 
+	 * Analyzes the contents of the ontology to identify the dependencies
 	 * @param array $rules - rules which impinge upon dependency generation
 	 * @return array of information about the ontologies used and what's in them
 	 */

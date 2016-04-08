@@ -5,15 +5,15 @@ $settings = array(
 	"rollback_new_to_pending_on_dqs_reject"	=> true,
 	"rollback_updates_to_pending_on_dqs_reject" => true,
 	"rollback_updates_to_pending_on_version_reject" => true,
-	"two_tier_schemas" => false,		
+	"two_tier_schemas" => true,		
 	"test_unpublished" => true,
 	"create_dqs_schema_tests" => array(),
 	"create_dqs_instance_tests" => array(),		
 	"create_options" => array("show_dqs_triples" => 0, 
 			"ns" => 1, "addressable" => 1, "analysis" => 1, 
 			"show_ld_triples" => 0, "fail_on_id_denied" => 1, "show_result" => 0),
-	"update_options" => array("show_dqs_triples" => 0, "show_ld_triples" => 0, "fail_on_id_denied" => 1, 
-			"show_update_triples" => 0, "show_meta_triples" => 0, "show_result" => 2, 
+	"update_options" => array("show_dqs_triples" => 1, "show_ld_triples" => 1, "fail_on_id_denied" => 1, 
+			"show_update_triples" => 1, "show_meta_triples" => 1, "show_result" => 2, 
 			"show_changed" => 1, "show_original" => 1, "ns" => 1, "addressable" => 1),
 	"tables" => array(
 		"history" => array("datatable_options" => array(

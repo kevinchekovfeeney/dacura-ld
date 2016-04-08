@@ -379,7 +379,6 @@ class LDO extends DacuraObject {
 			}				
 		}
 		$this->expandNS();//deal with full urls
-		//opr($this->ldprops);
 		$this->idmap = importLD($this->ldprops, $rules, $this->multigraph);//expands structure by generating blank node ids, etc			
 		if(!$this->validateLD($rules, $srvr)){
 			return false;
@@ -585,7 +584,9 @@ class LDO extends DacuraObject {
 			}
 		}
 		else {
-			return $this->validateLDProps($this->ldprops, $rules, $srvr);
+			if(!$x = $this->validateLDProps($this->ldprops, $rules, $srvr)){
+				return false;				
+			}
 		}
 		return true;
 	}
@@ -649,7 +650,7 @@ class LDO extends DacuraObject {
 			}
 		}
 		else {
-			if(isset($rules['require_blank_nodes']) && $rules['require_blank_nodes']){
+			if(isset($rules['require_blank_nodes']) && $rules['require_blank_nodes'] && $s != $this->cwurl){//second condition prevents failure on new candidate with id = cwurl
 				return $this->failure_result("Linked data input structure contains embedded ids that are not blank nodes - forbidden", 400);				
 			}
 			if(isNamespacedURL($s) && isset($rules['forbid_unknown_prefixes']) && $rules['forbid_unknown_prefixes']){
@@ -1237,20 +1238,31 @@ class LDO extends DacuraObject {
 	 * @return LDDelta
 	 */
 	function compare(LDO $other, $rules = array()){
-		if($this->is_multigraph()){
+		if($this->is_multigraph() && $other->is_multigraph()){
 			$cdelta = compareLDGraphs($this->id, $this->ldprops, $other->ldprops, $rules, true);
 		}
+		elseif($this->is_multigraph()){
+		}
+		elseif($other->is_multigraph()){
+			$defurl = $rules['default_graph_url'];
+			$def_graph = $other->ldprops[$defurl];
+			$cdelta = compareLDGraph($this->ldprops, $other->ldprops[$defurl], $rules, false);
+			foreach($other->ldprops as $gid => $gdata){
+				if($gid == $defurl) continue;
+				$cdelta->addSubDelta($gid, false, compareLDGraph(array(), $gdata, $rules, false));
+			}			
+		}
 		else {
+			
 			$cdelta = compareLDGraph($this->ldprops, $other->ldprops, $rules, false);
 		}
-		$ndd = compareLD($this->id, $this->meta, $other->meta, $rules, "meta");
+		$ndd = compareJSON($this->id, $this->meta, $other->meta, $rules, "meta");
 		if($ndd->containsChanges()){
 			$cdelta->addNamedGraphDelta($ndd, "meta");
 		}
 		//if($cdelta->containsChanges()){
 		//	$cdelta->setMissingLinks($this->missingLinks(), $other->missingLinks());
 		//}
-		//opr($cdelta);
 		return $cdelta;
 	}
 	
@@ -1267,7 +1279,11 @@ class LDO extends DacuraObject {
 			}
 			unset($update_obj['meta']);				
 		}
-		if($this->is_multigraph() or $force_multi){
+		if(!$this->is_multigraph() && $force_multi){
+			$this->ldprops = $update_obj;
+			$this->multigraph = true;
+		}
+		elseif($this->is_multigraph()){
 			foreach($update_obj as $gid => $gprops){
 				if(is_array($gprops) && count($gprops) == 0){
 					if(isset($this->ldprops[$gid])){
@@ -1293,7 +1309,7 @@ class LDO extends DacuraObject {
 			if(count($update_obj) > 0){
 				if(!$this->updateLDProps($update_obj, $this->ldprops, $this->idmap, $rules)){
 					return false;
-				}
+				}				
 			}				
 		}
 		if(count($this->idmap) > 0){
@@ -1342,15 +1358,10 @@ class LDO extends DacuraObject {
 				}
 			}
 			elseif(isAssoc($ldo)){
-				if(isBlankNode($subj)){
-					$new_id = getNewBNIDForLDObj($ldo, $idmap, $rules, $subj);
-					$ldprops[$new_id] = $ldo;
-					if($subj != $new_id){
-						unset($ldprops[$subj]);
-					}
-					$subj = $new_id;
+				if(!isset($ldprops[$subj])){
+					$ldprops[$subj] = $ldo;
 				}
-				if(!$this->updateLDO($ldo, $ldprops[$subj], $idmap, $rules)){
+				elseif(!$this->updateLDO($ldo, $ldprops[$subj], $idmap, $rules)){
 					return false;
 				}			
 			}
@@ -1448,7 +1459,7 @@ class LDO extends DacuraObject {
 				}						
 			}
 			else {
-				opr($pv);
+				//opr($pv);
 				return $this->failure_result("Unknown value type in LD structure", 500);
 			}
 			if(isset($dprops[$prop]) && is_array($dprops[$prop]) && count($dprops[$prop])==0) {

@@ -160,19 +160,21 @@ class GraphManager extends DacuraController {
 	 * @param array $itests DQS tests to be run on instance validation
 	 * @return DQSResult Result of validation
 	 */
-	function validateOntology(Ontology $ont, $sstrips, $strips, $stests, $itests = false){
-		//first we have to create the schema schema ontology
-		$schema_gname = $ont->schemaGname();
-		if($this->getServiceSetting("two_tier_schemas", true) && (count($sstrips) > 0 || count($strips) > 0)){
-			$schema_schema_gname = $ont->schemaSchemaGname();
-			$dqsr = $this->invokeDQS("instance", $schema_schema_gname, $schema_gname, array_merge($sstrips, $strips), false, true, $itests);
-			if($dqsr->is_accept() && count($strips) > 0){
-				$dqsr->add($this->invokeDQS("schema", $schema_gname, false, $strips, false, true, $stests));
+	function validateOntology(Ontology $ont, $quads, $stests, $itests = false){
+		$dqsr = new DQSResult("Validating ontology $ont->id");
+		if(count($quads) == 0){
+			$dqsr->setWarning("Publish Schema", "Validating empty ontology", $ont->id." graph has an empty published schema");
+			return $dqsr;	
+		}
+		if($this->getServiceSetting("two_tier_schemas", true)){
+			$dqsr = $this->invokeDQS("instance", $ont->schemaSchemaGname(), $ont->schemaGname(), $quads, false, true, $itests);
+			if($dqsr->is_accept()){
+				$dqsr->add($this->invokeDQS("schema", $ont->schemaGname(), false, $quads, false, true, $stests));
 			}
 			return $dqsr;
 		}
 		else {
-			return $this->invokeDQS("schema", $schema_gname, false, $strips, false, true, $stests);
+			return $this->invokeDQS("schema", $ont->schemaGname(), false, $quads, false, true, $stests);
 		}
 	}
 	
@@ -182,16 +184,16 @@ class GraphManager extends DacuraController {
 	 * Schema schema graph regulates updates of schema graph as instance data
 	 * Schema graph regulates updates of instance graph
 	 * @param Graph $graph the graph object
-	 * @param array $sstrips the triples to be added to the schema schema graph
-	 * @param array $strips the triples to be added to the schema graph
-	 * @param array $stests DQS tests to be run on schema validation
-	 * @param array $itests DQS tests to be run on instance validation
+	 * @param array $quads the triples to be added to the schema graph(s)
 	 * @return DQSResult Result of validation
 	 */
 	function publishGraphSchema(Graph $graph, $quads, $test_flag){
 		$dqsr = new DQSResult("Create Graph $graph->id schema", $test_flag);
-		if($graph->hasTwoTierSchema() && (count($strips) > 0 || count($sstrips) > 0)){
-			//create schema schema graph regardless of test_flag
+		if(count($quads) == 0){
+			$dqsr->setWarning("Publish Schema", "Published empty schema", $graph->id ." graph has an empty published schema");
+			return $dqsr;
+		}		
+		if($graph->hasTwoTierSchema()){
 			$sr = $this->invokeDQS("instance", $graph->schemaSchemaGname(), $graph->schemaGname(), $quads, false, $test_flag, $graph->getCreateInstanceTests());
 			$dqsr->add($sr);
 			if($sr->is_accept() || $this->getServiceSetting("continue_multitests_on_fail", false)){
@@ -209,12 +211,9 @@ class GraphManager extends DacuraController {
 				$dqsr->add($sr2);
 			}
 		}
-		elseif(count($strips) > 0){
+		else {
 			$dqsr = $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $quads, false, $test_flag, $graph->getCreateInstanceTests());
 		}		
-		else {
-			$dqsr->setWarning("Publish Schema", "Published empty schema", $grahp->id ." graph has an empty published schema");
-		}
 		return $dqsr;	
 	}
 	
@@ -227,7 +226,7 @@ class GraphManager extends DacuraController {
 		}	
 		else {
 			$dqsr = new DQSResult("unpublish graph schema", $test_flag);
-			$dqsr->setWarning("Unpublish Schema", "Unpublished empty schema", $grahp->id ." graph had an empty published schema");
+			$dqsr->setWarning("Unpublish Schema", "Unpublished empty schema", $graph->id ." graph had an empty published schema");
 			return $dqsr;
 		}
 	}
@@ -256,12 +255,11 @@ class GraphManager extends DacuraController {
 		}
 		elseif(count($iquads) > 0 || count($dquads) > 0){
 			//make changes to schema graph
-			return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $sitrips, $sdtrips, $test_flag, $graph->getUpdateInstanceTests());
+			return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $iquads, $dquads, $test_flag, $graph->getUpdateInstanceTests());
 		}
 		else {
 			$dqsr = new DQSResult("unpublish graph schema", $test_flag);
-			$dqsr->setWarning("Unpublish Schema", "Unpublished empty schema", $grahp->id ." graph had an empty published schema");
-			return $dqsr;
+			$dqsr->setWarning("Unpublish Schema", "Unpublished empty schema", $graph->id ." graph had an empty published schema");
 		}
 		return $dqsr;
 	}

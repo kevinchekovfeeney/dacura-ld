@@ -239,15 +239,16 @@ class LDDBManager extends DBManager {
 	function updateLDORecord($ldo){
 		try {
 			$stmt = $this->link->prepare("UPDATE ld_objects SET
-					collectionid = ?, version = ?, contents = ?, meta = ?, status = ?, modtime = ? WHERE id = ?");
+					version = ?, contents = ?, meta = ?, status = ?, modtime = ? WHERE id = ? and collectionid = ? and type = ?");
 			$res = $stmt->execute(array(
-					$ldo->cid,
 					$ldo->version(),
 					json_encode($ldo->ldprops),
 					json_encode($ldo->meta),
 					$ldo->get_status(),
 					time(),
-					$ldo->id
+					$ldo->id,
+					$ldo->cid,
+					$ldo->ldtype
 			));
 			return true;
 		}
