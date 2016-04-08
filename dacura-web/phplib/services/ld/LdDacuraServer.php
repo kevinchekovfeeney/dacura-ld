@@ -7,15 +7,20 @@ include_once("lib/DacuraResult.php");
 include_once("lib/GraphManager.php");
 require_once("lib/NSResolver.php");
 include_once("lib/Ontology.php");
+require_once("lib/RVO.php");
+include_once("lib/Graph.php");
+include_once("lib/Candidate.php");
 require_once("LdService.php");
 include_once("LDDBManager.php");
-
-
 /**
 * This class implements the basic processing pipeline of dacura linked data objects
+* It does all the linked data bits - and implements hooks for derived classes to implement interactions with graphs / reasoning
 * Particular ldo types can override whichever parts they want
 * It provides defered updates and version management / linked data conformance
- */
+* 
+* @author Chekov
+* @license GPL V2
+*/
 class LdDacuraServer extends DacuraServer {
 	/** @var string the class name of the database manager in operation */
 	var $dbclass = "LDDBManager";
@@ -29,21 +34,48 @@ class LdDacuraServer extends DacuraServer {
 	var $cwurlbase = false;
 	/** @var the base url from which graph ids are composed (by adding /graphid_schema etc */
 	var $graphbase = false;
-	var $schema = false;
+	var $graphs = array();
+	
 
+	/**
+	 * Constructor creates helper controller classes - for policy engine and graph connections
+	 * @param DacuraService $service - the dacura service that is creating this controller
+	 */
 	function __construct($service){
 		parent::__construct($service);
 		$this->policy = new PolicyEngine($this->service);
 		$this->graphman = new GraphManager($this->service);
 	}
 	
+	/**
+	 * Initialises the server - called by api - used to do any post constructor initialisation
+	 * (non-PHPdoc)
+	 * @see DacuraServer::init()
+	 */
 	function init($action = false, $object = ""){
 		$this->loadNamespaces();
 		return parent::init($action, $object);
 	}
 
+	/**
+	 * The ontologies / namespace prefixes available in any context are the universal ontologies (with status = accept) 
+	 * and all the ontologies in the collection
+	 * 
+	 * This function loads the appropriate ontologies into the servers namespace resolver object
+	 */
 	function loadNamespaces(){
-		$onts = $this->getLDOs(array("type" => "ontology"));
+		$universal_onts = array(
+			"type" => "ontology",
+			"collectionid" => "all",
+		);
+		$onts = $this->getLDOs($universal_onts);
+		if($this->cid() != "all"){
+			$local_onts = array(
+				"type" => "ontology",
+				"collectionid" => $this->cid()
+			);
+			$onts = array_merge($onts, $this->getLDOs($local_onts));
+		}
 		$this->nsres = new NSResolver($this->service);
 		foreach($onts as $i => $ont){
 			if(isset($ont['id']) && $ont['id'] && isset($ont['meta']['url']) && $ont['meta']['url']){
@@ -95,14 +127,22 @@ class LdDacuraServer extends DacuraServer {
 			return $cr;
 		}
 		if(!$cr->is_accept()){
-			if(!$this->getServiceSetting("test_unpublished_ldos", true)){
+			if(!$this->getServiceSetting("test_unpublished", true)){
+				if(isset($options['show_result']) && $options['show_result']){
+					if($options['show_result'] == 1){
+						$cr->set_result($nldo);
+					}
+					else {
+						$cr->set_result($nldo->cwurl);				
+					}
+				}
 				return $cr->set_result($nldo);
 			}
 		}
 		$dont_publish = !$cr->is_accept() || $test_flag;
 		$gur = $this->objectPublished($nldo, $dont_publish);
 		if($cr->is_accept() && $gur->is_reject() && $this->getServiceSetting("rollback_new_to_pending_on_dqs_reject", true)){
-			$cr->addWarning("Publication", "Rejected by Graph Management Service", "State changed from accept to pending");
+			$cr->setWarning("Publication", "Rejected by Graph Management Service", "State changed from accept to pending");
 			$cr->status("pending");
 			$nldo->status($cr->status());
 			$cr->addGraphResult("dqs", $gur, true);				
@@ -123,11 +163,24 @@ class LdDacuraServer extends DacuraServer {
 				$cr->undoGraphResult($recovery);
 			}
 		}
-		$cr->set_result($nldo);
+		if(isset($options['show_result']) && $options['show_result']){
+			if($options['show_result'] == 1){
+				$cr->set_result($nldo);
+			}
+			else {
+				$cr->set_result($nldo->cwurl);				
+			}
+		}
 		return $cr;
 	}
 	
-
+	/**
+	 * Adds a warning when a demand id fails for an ld object 
+	 * @param DacuraResult $ar - the dacura result object the warning is being added to
+	 * @param string $type - linked data type being created
+	 * @param boolean $test_flag - if true it is only a test create
+	 * @param string $id - the randomly generated Id that will be used. 
+	 */
 	function addIDAllocationWarning(&$ar, $type, $test_flag, $id){
 		$txt = "Requested ID could not be granted (".$this->errmsg.").";
 		$extra = "";
@@ -148,7 +201,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @return an instance of the object 
 	 */
 	function createNewLDObject($id, $type){
-		$cwbase = $this->getSystemSetting("install_url").$this->cid()."/".$type."/";
+		$cwbase = $this->service->get_service_url($type);
 		$uclass = ucfirst($type);
 		if(class_exists($uclass)){
 			$ldo = new $uclass($id, $cwbase, $this->service->logger);
@@ -177,6 +230,10 @@ class LdDacuraServer extends DacuraServer {
 		return genid($demand_id, $rules);
 	}
 	
+	/**
+	 * Default rules for processing a new linked data object
+	 * @return array<rules> an array of settings to be passed to linked data processing
+	 */
 	function getNewLDORules(){
 		$x = array();
 		$x["allow_demand_id"] = $this->getServiceSetting("ldo_allow_demand_id", true); 
@@ -186,6 +243,11 @@ class LdDacuraServer extends DacuraServer {
 		return $x;
 	}
 	
+	/**
+	 * Default rules for processing content of new linked data objects
+	 * @param $nldo LDO - the linked data object being created
+	 * @return array<rules> an array of settings to be passed to linked data processing
+	 */
 	function getNewLDOContentRules($nldo){
 		$x = array();
 		$x['cwurl'] = $nldo->cwurl;
@@ -210,7 +272,6 @@ class LdDacuraServer extends DacuraServer {
 		$x["allow_arbitrary_metadata"] = $this->getServiceSetting("allow_arbitrary_metadata", false); 
 		return $x;
 	}
-	
 	
 	/**
 	 * Return a list of linked data objects 
@@ -303,10 +364,13 @@ class LdDacuraServer extends DacuraServer {
 	 * @return boolean|LDO - on success this will return the loaded linked data object
 	 */
 	function loadLDO($ldo_id, $type, $cid, $fragment_id = false, $version = false, $options = array()){
-		$ldo = $this->dbman->loadLDO($ldo_id, $type, $cid, $options);
-		if(!$ldo){
+		if(!($ldo = $this->createNewLDObject($ldo_id, $type))){
+			return false;
+		}
+		if(!$this->dbman->loadLDO($ldo, $ldo_id, $type, $cid, $options)){
 			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 		}
+		$ldo->deserialise($this);
 		if($options && isset($options['history']) && $options['history']){
 			$ldo->history = $this->loadHistoricalRecord($ldo);
 		}
@@ -315,7 +379,6 @@ class LdDacuraServer extends DacuraServer {
 			$ldo->updates = $this->getUpdates($updopts);
 		}
 		$ldo->nsres = $this->nsres; 
-		$ldo->rules = $ldo->getLDORules();
 		if($version && $ldo->version() > $version){
 			if(!$this->rollBackLDO($ldo, $version)){
 				return false;
@@ -433,6 +496,8 @@ class LdDacuraServer extends DacuraServer {
 		return $ar;
 	}	
 	
+	
+	
 	/**
 	 * Loads update from database and applies it to the required ldo version 
 	 * @param string $id update id
@@ -491,7 +556,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param string $is_test true if this is just a test
 	 */
 	function objectUpdated(LDOUpdate $uldo, $is_test = false){
-		$ar = new DacuraResult("ldo " . $uldo->original->id." updated (test: $is_test)");
+		$ar = new GraphResult("ldo " . $uldo->original->id." updated (test: $is_test)");
 		return $ar->accept();
 	}
 	
@@ -501,7 +566,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param string $is_test true if this is just a test
 	 */
 	function undoLDOUpdate(LDOUpdate $uldo, $is_test = false){
-		$ar = new DacuraResult("rolling back update $uldo->id to ldo ".$uldo->original->id." (test: $is_test)");
+		$ar = new GraphResult("rolling back update $uldo->id to ldo ".$uldo->original->id." (test: $is_test)");
 		return $ar->accept();		
 	}
 
@@ -515,37 +580,25 @@ class LdDacuraServer extends DacuraServer {
 	 * @return DacuraResult containing information on the outcome of the effort
 	 */
 	function updatePublishedUpdate(LDOUpdate $uldoa, LDOUpdate $uldob, $is_test = false){
-		$ar = new DacuraResult("update update $uldoa->id to ldo ".$uldoa->original->id." (test: $is_test)");
+		$ar = new GraphResult("update update $uldoa->id to ldo ".$uldoa->original->id." (test: $is_test)");
 		return $ar->accept();		
-	}
-	
-	/**
-	 * Called to create a new instance of an LDO Update Object
-	 * @param LDO $oldo the original state of the LD object before the update
-	 * @param string $type the ldtype of the object
-	 * @return LDOUpdate a LDO Update object
-	 */
-	function createNewLDOUpdate(LDO $oldo, $type){
-		$this->update_type = $type;
-		$uclass = ucfirst($type)."UpdateRequest";
-		$uldo = new $uclass(false, $oldo);
-		return $uldo;
 	}
 	
 	/**
 	 * Update a linked data object
 	 * @param string $target_id the id of the ldo being updated 
-	 * @param string $type the ld type of the ldo
-	 * @param array $cnt the contents of the update 
-	 * @param array $meta the metadata of the update
 	 * @param string $fragment_id the particular node id within the ldo that is being updated
+	 * @param string $ldo_type the ld type of the ldo
+	 * @param array $update_obj the contents of the update 
+	 * @param string $format the format of the contents (if known)
+	 * @param string $editmode is this an update or a replace...
 	 * @param array $options options array 
 	 * @param boolean $test_flag if true, this is just a test
 	 * @return DacuraResult
 	 */
-	function updateLDO($target_id, $type, $cnt, $meta, $fragment_id, $options = array(), $test_flag = false){
+	function updateLDO($target_id, $fragment_id, $ldo_type, $update_obj, $format, $editmode, $version, $options, $test_flag){
 		$ar = new DacuraResult("Update $target_id", $test_flag);
-		$oldo = $this->loadLDO($target_id, $type, $this->cid(), $fragment_id);
+		$oldo = $this->loadLDO($target_id, $ldo_type, $this->cid(), $fragment_id, $version);
 		if(!$oldo){
 			if($this->errcode){
 				return $ar->failure($this->errcode, "Failed to load $target_id", $this->errmsg);
@@ -554,45 +607,116 @@ class LdDacuraServer extends DacuraServer {
 				return $ar->failure(404, "No such $this->ldo_type", "$target_id does not exist.");
 			}
 		}
-		$uldo = $this->createNewLDOUpdateObject($oldo, $type);
-		if(!$uldo){
-			return $ar->failure(403, "Update Failed", "Cant create update object for $oldo->id");				
+		$oldo->setNamespaces($this->nsres);
+		if(!($nldo = $this->createNewLDObject($target_id, $ldo_type))){
+			return $ar->failure($this->errcode, "Request Create Error", "Failed to create $ldo_type object ".$this->errmsg);
 		}
-		$uldo->setNamespaces($this->nsres);	
-		$form = isset($options['format']) ? $options['format'] : "json";
-		//is this ldo being accessed through a legal collection context?
-		if(!$uldo->isLegalContext($this->cid())){
+		$nldo->setContext($oldo->cid());
+		$nldo->setNamespaces($this->nsres);
+		if($editmode == "update"){
+			$rules = $this->getUpdateLDOContentRules($nldo);				
+		}
+		else {
+			$rules = $this->getReplaceLDOContentRules($nldo);
+		}
+		if(!($format = $nldo->loadNewObjectFromAPI($update_obj, $format, $options, $rules, $this))){
+			return $ar->failure($nldo->errcode, "Protocol Error", "New $ldo_type object sent to API had formatting errors. ".$nldo->errmsg);
+		}
+		$ldoupdate = new LDOUpdate(false, $oldo);
+		if(!$ldoupdate->isLegalContext($this->cid())){
 			return $ar->failure(403, "Access Denied", "Cannot update $oldo->id through context ".$this->cid());
 		}
-		elseif(!$uldo->loadFromAPI($cnt, $meta, $form)){
-			return $ar->failure($uldo->errcode, "Protocol Error", "Failed to load the update command from the API. ", $uldo->errmsg);
+		elseif(!$ldoupdate->apply($nldo, $editmode, $rules, $this)){
+			return $ar->failure($ldoupdate->errcode, "Protocol Error", "Failed to load the update command from the API. ", $ldoupdate->errmsg);
 		}
-		if($uldo->nodelta()){
+		if($ldoupdate->nodelta()){
 			return $ar->reject("No Changes", "The submitted version is identical to the current version.");
 		}
-		$ar->add($this->getPolicyDecision("update", $uldo));
+		$ar->add($this->policy->getPolicyDecision("update", $ldoupdate));
 		if($ar->is_reject()){
-			$uldo->status($ar->status());
-			if($this->policy->storeRejected("update", $uldo) && !$test_flag){
-				if(!$this->dbman->updateLDO($uldo, $ar->status())){
+			$ldoupdate->status($ar->status());
+			if($this->policy->storeRejected("update", $ldoupdate) && !$test_flag){
+				if(!$this->dbman->updateLDO($ldoupdate, $ar->status())){
 					$ar->addError($this->dbman->errcode, "Usage Monitoring", "Failed to store copy of rejected update.", $this->dbman->errmsg);
 				}
 			}
 			return $ar;
 		}
-		$this->checkUpdate($ar, $uldo, $options, $test_flag);
+		$this->checkUpdate($ar, $ldoupdate, $options, $rules, $test_flag);
 		if(($ar->is_accept() or $ar->is_pending()) && !$test_flag){
-			if(!$this->dbman->updateLDO($uldo, $ar->status())){
+			if(!$this->dbman->updateLDO($ldoupdate, $ar->status())){
 				$disaster = new AnalysisResults("Database Synchronisation");
 				$disaster->failure($this->dbman->errcode, "Internal Error", "Failed to update database candidate record ". $this->dbman->errmsg);
 				$ar->add($disaster);
-				$this->rollBackUpdate($ar, $uldo);
+				$this->rollBackUpdate($ar, $ldoupdate);
 			}
 		}
-		//get stuff out of options...
-		$format = isset($options['format']) ? $options['format'] : false;
-		$ar->set_result($uldo->showUpdateResult($format, $this));
+		if(isset($options['show_result']) && $options['show_result']){
+			if($options['show_result'] == 1){
+				$ar->set_result($ldoupdate->changed);
+			}
+			else {
+				$ar->set_result($ldoupdate);
+			}
+		}
 		return $ar;
+	}
+	
+	function getUpdateLDOContentRules($nldo){
+		$x = array();
+		$x['cwurl'] = $nldo->cwurl;
+		$x['default_graph_url'] = $this->getDefaultGraphURL();
+		$x["set_id_allowed"] = $this->getServiceSetting("set_id_allowed", true);
+		$x["fail_on_bad_update"] = $this->getServiceSetting("fail_on_bad_update", true);
+		$x["fail_on_bad_deletes"] = $this->getServiceSetting("fail_on_bad_deletes", false);
+		$x['id_generator'] = array($nldo, $this->getServiceSetting("internal_generate_id", "generateInternalID"));
+		$x["allow_demand_id"] = $this->getServiceSetting("internal_allow_demand_id", true);
+		$x["mimimum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 1);
+		$x["maximum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 80);
+		$x["extra_entropy"] = $this->getServiceSetting("internal_extra_entropy", false);
+		$x["expand_embedded_objects"] = $this->getServiceSetting("expand_embedded_objects", true);
+		$x["replace_blank_ids"] = $this->getServiceSetting("replace_blank_ids", false);
+		$x["require_blank_nodes"] = $this->getServiceSetting("require_blank_nodes", false);
+		$x["forbid_blank_nodes"] = $this->getServiceSetting("forbid_blank_nodes", false);
+		$x["allow_blanknode_predicates"] = $this->getServiceSetting("allow_blanknode_predicates", false);
+		$x["require_subject_urls"] = $this->getServiceSetting("require_subject_urls", true);
+		$x["require_predicate_urls"] = $this->getServiceSetting("require_predicate_urls", true);
+		$x["forbid_unknown_prefixes"] = $this->getServiceSetting("forbid_unknown_prefixes", true);
+		$x["unique_subject_ids"] = $this->getServiceSetting("unique_subject_ids", false);
+		$x["allow_invalid_ld"] = $this->getServiceSetting("allow_invalid_ld", false);
+		$x["require_object_literals"] = $this->getServiceSetting("require_object_literals", true);
+		$x["regularise_object_literals"] = $this->getServiceSetting("regularise_object_literals", true);
+		$x["forbid_empty"] = $this->getServiceSetting("forbid_empty", false);
+		$x["allow_arbitrary_metadata"] = $this->getServiceSetting("allow_arbitrary_metadata", false);
+		return $x;			
+	}
+	
+	function getReplaceLDOContentRules($nldo){
+		$x = array();
+		$x['cwurl'] = $nldo->cwurl;
+		$x["set_id_allowed"] = $this->getServiceSetting("set_id_allowed", true);
+		$x["fail_on_bad_update"] = $this->getServiceSetting("fail_on_bad_update", true);
+		$x["fail_on_bad_deletes"] = $this->getServiceSetting("fail_on_bad_deletes", false);
+		$x['id_generator'] = array($nldo, $this->getServiceSetting("internal_generate_id", "generateInternalID"));
+		$x["allow_demand_id"] = $this->getServiceSetting("internal_allow_demand_id", true);
+		$x["mimimum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 1);
+		$x["maximum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 80);
+		$x["extra_entropy"] = $this->getServiceSetting("internal_extra_entropy", false);
+		$x["expand_embedded_objects"] = $this->getServiceSetting("expand_embedded_objects", true);
+		$x["replace_blank_ids"] = $this->getServiceSetting("replace_blank_ids", false);
+		$x["require_blank_nodes"] = $this->getServiceSetting("require_blank_nodes", false);
+		$x["forbid_blank_nodes"] = $this->getServiceSetting("forbid_blank_nodes", false);
+		$x["allow_blanknode_predicates"] = $this->getServiceSetting("allow_blanknode_predicates", false);
+		$x["require_subject_urls"] = $this->getServiceSetting("require_subject_urls", true);
+		$x["require_predicate_urls"] = $this->getServiceSetting("require_predicate_urls", true);
+		$x["forbid_unknown_prefixes"] = $this->getServiceSetting("forbid_unknown_prefixes", true);
+		$x["unique_subject_ids"] = $this->getServiceSetting("unique_subject_ids", false);
+		$x["allow_invalid_ld"] = $this->getServiceSetting("allow_invalid_ld", false);
+		$x["require_object_literals"] = $this->getServiceSetting("require_object_literals", true);
+		$x["regularise_object_literals"] = $this->getServiceSetting("regularise_object_literals", true);
+		$x["forbid_empty"] = $this->getServiceSetting("forbid_empty", false);
+		$x["allow_arbitrary_metadata"] = $this->getServiceSetting("allow_arbitrary_metadata", false);
+		return $x;		
 	}
 	
 	/**
@@ -614,32 +738,51 @@ class LdDacuraServer extends DacuraServer {
 	 * @param array $options the options for checking
 	 * @param boolean $test_flag if true, this is just a test
 	 */
-	function checkUpdate(DacuraResult &$ar, LDOUpdate &$uldo, $options = array(), $test_flag = false){
+	function checkUpdate(DacuraResult &$ar, LDOUpdate &$uldo, $options = array(), $rules = array(), $test_flag = false){
+		//check version information
+		if(!$uldo->original->isLatestVersion()){
+			if($ar->is_accept() && $this->getServiceSetting("rollback_updates_to_pending_on_version_reject")){
+				$ar->status("pending");
+				$ar->setWarning("Update check", "Update version clash", "The object you are updating has been updated to version ".$uldo->original->latest_version." since the version that you saw (".$uldo->original->version.")");
+			}
+			else {
+				return $ar->failure(400, "Update version clash", "The object you are updating has been updated to version ".$uldo->original->latest_version." since the version that you saw (".$uldo->original->version.")");
+			}			
+		}
 		if($ar->is_accept() or $ar->is_confirm()){
 			//unless the status of the candidate was accept, before or after, the change to the report graph is hypothetical
 			$hypo = !($uldo->changedPublished() || $uldo->originalPublished());
-			if($hypo && (!isset($options['test_unpublished']) || $options['test_unpublished'] == false)){
+			if($hypo && (!$this->getServiceSetting("test_unpublished", true))){
 				return $ar;
 			}
 			$gu = $this->publishUpdateToGraph($uldo, $ar->status(), $hypo || $test_flag);
-			$ar->setGraphResult($gu, $hypo, $options);
-		}
-		elseif($ar->is_pending() && (!isset($options['test_unpublished']) || $options['test_unpublished'] == false)){
-			$gu = $this->publishUpdateToGraph($uldo, "pending", true);
-			$ar->setGraphResult($gu, true, $options);
-		}
-		$uldo->set_status($ar->status());
-		if(isset($options['show_update_triples']) && $options['show_update_triples']){
-			$ar->setUpdateGraphTriples($uldo->compare());
-		}
-		if(isset($options['show_ld_triples']) && $options['show_ld_triples']){
-			if(isset($options['show_meta_delta']) && $options['show_meta_delta']){
-				$meta_delta = $uldo->getMetaUpdates();
+			if($ar->is_accept() && !$hypo && $gu->is_reject() && $this->getServiceSetting("rollback_updates_to_pending_on_dqs_reject", true)){
+				$ar->setWarning("Publication", "Rejected by DQS Service", "State changed from accept to pending");
+				$ar->status("pending");
+				$ar->addGraphResult("dqs", $gu, true);
 			}
 			else {
-				$meta_delta = false;
-			}	
-			$ar->setLDGraphTriples($uldo->addedCandidateTriples(), $uldo->deletedCandidateTriples(), !($ar->is_accept() || $ar->is_confirm()), $meta_delta);
+				$ar->addGraphResult("dqs", $gu, $hypo || $test_flag);
+			}
+		}
+		elseif($ar->is_pending() && $this->getServiceSetting("test_unpublished", true)){
+			$hypo = true;
+			$gu = $this->publishUpdateToGraph($uldo, "pending", $hypo);
+			$ar->addGraphResult("dqs", $gu, $hypo);
+		}
+		else {
+			$hypo = $test_flag || !$ar->is_accept();
+		}
+		$uldo->status($ar->status());
+		if(isset($options['show_meta_triples']) && $options['show_meta_triples']){
+			$ar->createMetaResult($uldo->getMetaUpdates(), $ar->status(), $test_flag, $test_flag || !$ar->is_accept());
+		}
+		if(isset($options['show_update_triples']) && $options['show_update_triples']){
+			$ar->createGraphResult("update", $ar->status(), $uldo->forward, $uldo->backward, $test_flag, $test_flag || $ar->is_reject());
+		}
+		if(isset($options['show_ld_triples']) && $options['show_ld_triples']){
+			$delta = $uldo->compareLDTriples($rules);
+			$ar->createGraphResult("ld", $ar->status(), $delta->triples_added, $delta->triples_removed, $test_flag, $test_flag || $ar->is_reject());
 		}
 	}
 	
@@ -813,7 +956,7 @@ class LdDacuraServer extends DacuraServer {
 		$capture_ld = isset($options['show_ld_triples']) && $options['show_ld_triples'];
 		$capture_update = isset($options['show_update_triples']) && $options['show_update_triples'];
 		$capture_meta = isset($options['show_meta_delta']) && $options['show_meta_delta'];
-		$test_unpublished = !isset($options['test_unpublished']) || $options['test_unpublished'] == false;
+		$test_unpublished = $this->getServiceSetting("test_unpublished", true);
 		
 		$md = $capture_meta ? $meta_delta : false;
 		if($new_upd->published() && $orig_upd->published()){ //live edit
@@ -1106,15 +1249,7 @@ class LdDacuraServer extends DacuraServer {
 		else {
 			$this->logResult(200, $ar->status(), $ar->action);
 		}
-		//if(!isset(LDO::$valid_display_formats[$format])){
-		//	$format = "json";
-		//}
-		if(is_object($ar->result)){
-			$json = json_encode($ar->forAPI($format, $options, $this));
-		}
-		else {
-			$json = json_encode($ar);
-		}
+		$json = json_encode($ar->forAPI($format, $options, $this));
 		if($json){
 			echo $json;
 			return true;
@@ -1193,28 +1328,67 @@ class LdDacuraServer extends DacuraServer {
 		return true;
 	}
 	
-
-	/**
-	 * Called by candidate & schema service to load the schema - graphs, ontologies, etc, for the current context
-	 * @return boolean|Schema
-	 */
-	function loadSchemaFromContext(){
-		$filter = array("type" => "graph", "collectionid" => $this->cid(), "include_all" => true);
-		$ldos = $this->getLDOs($filter);
-		$sc = new Schema($this->cid(), $this->durl());
-		if($ldos){
-			$sc->load($ldos);
-		}
-		elseif($this->errcode != 404){
-			return false;
-		}
-		$sc->nsres = $this->nsres;
-		return $sc;
-	}
-	
 	function getLDOTypeFromClassname(){
 		$cname = get_class($this);
 		return substr($cname, -(strlen("DacuraServer")));
 	}
+	
+	function readGraphConfiguration(){
+		$filter = array(
+			"type" => "graph",
+			"collectionid" => $this->cid(),
+			"include_all" => true,
+			"status" => "accept"	
+		);
+		if($active_graphs = $this->getLDOs($filter)){
+			foreach($active_graphs as $gr){
+				if($graph = $this->loadLDO($gr['id'], "graph", $this->cid())){
+					$this->graphs[$graph->id] = $graph;						
+				}
+				else {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+	
+	function getValidGraphURLs(){
+		if(!$this->graphs){
+			$this->readGraphConfiguration();
+		}
+		$urls = array();
+		foreach(array_keys($this->graphs) as $gid){
+			$urls[] = $this->service->get_service_url("graph")."/$gid";
+		}
+		return $urls;
+	}
+		
+	function getDefaultGraphURL(){
+		return $this->service->get_service_url("graph")."/main";
+	}
+	
+	function isDefaultGraphURL($url){
+		return $url == $this->getDefaultGraphURL();
+	}
+	
+	function validGraph($gid){
+		return isset($this->graphs[$gid]);
+	}
+	
+	function graphURLToID($gurl){
+		if(substr($gurl, 0, strlen($this->service->get_service_url("graph"))) == $this->service->get_service_url("graph")){
+			return substr($gurl, strlen($this->service->get_service_url("graph"))+1);
+		}
+		return false;
+	}
+	
+	function getOntologyCollection($id){
+		if($this->dbman->hasLDO($id, "ontology", "all")){
+			return "all";
+		}
+		return $this->cid();
+	}
+	
 	
 }

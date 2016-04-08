@@ -467,4 +467,8 @@ class LDPropertyValue extends DacuraObject {
 	function objectlist(){
 		return $this->json_type == "array" && $this->array_type == "object";
 	}
+	
+	function complex(){
+		return $this->ldtype() == "complex";
+	}
 }

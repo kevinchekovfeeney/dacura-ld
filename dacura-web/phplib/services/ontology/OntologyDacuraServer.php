@@ -16,8 +16,11 @@ class OntologyDacuraServer extends LdDacuraServer {
 		$rules = $this->getServiceSetting("validation_rules", array());
 		$nopr->add($ont->validateDependencies($rules, $test_flag));
 		if($nopr->is_accept()){
-			if($trips = $this->getOntologyDependenciesAsTriples($ont)){
-				$nopr->add($this->graphman->validateOntology($ont, $trips['schema'], $trips['instance'], $this->getServiceSetting("create_dqs_schema_tests", array()), $this->getServiceSetting("create_dqs_instance_tests", array())));
+			if($trips = $this->getOntologyDependenciesAsTriples($ont, $rules)){
+				$schema_tests = $this->getSchemaTests($ont);
+				$instance_tests = $this->getInstanceTests($ont);
+				$vo = $this->graphman->validateOntology($ont, $trips['schema_schema'], $trips['schema'], $schema_tests, $instance_tests);
+				$nopr->add($vo);
 			}
 			else {
 				$nopr->failure($this->errcode, "Failed to generate ontology dependency triples", $this->errmsg);
@@ -26,30 +29,46 @@ class OntologyDacuraServer extends LdDacuraServer {
 		return $nopr;
 	}
 	
-	function getOntologyDependenciesAsTriples(Ontology $ont){
-		$sdeps = $ont->getSchemaDependencies($this);
-		$ideps = $ont->getSchemaSchemaDependencies($this);
-		$trips = array("instance" => $ont->typedQuads(), "schema" => array());
-		return $trips;
-		foreach($ideps as $sh => $struct){
-			$iont = $this->loadLDO($sh, "ontology", $struct['collection'], false, $struct['version']);
-			if(!$iont){
-				return $this->failure_result("Failed to load ontology $sh", 400);
+	function getSchemaTests(Ontology $ont){
+		if($tests = $ont->getCreateSchemaTests()) return $tests;
+		$p = array_keys(RVO::getSchemaTests(false)); 
+		$x = $this->getServiceSetting("create_dqs_schema_tests", $p);
+		return $x;
+	}
+	
+	function getInstanceTests(Ontology $ont){
+		if($tests = $ont->getCreateInstanceTests()) return $tests;
+		$p = array_keys(RVO::getInstanceTests(false)); 
+		return $this->getServiceSetting("create_dqs_instance_tests", $p);		
+	}
+	
+	
+	function getOntologyDependenciesAsTriples(Ontology $ont, $rules){
+		$deps = $ont->getSchemaDependencies($this, $rules);
+		//opr(array_keys($deps));
+		$trips = array("schema" => $ont->typedQuads($ont->cwurl."/schema"), "schema_schema" => array());				
+		if($this->getServiceSetting("two_tier_schemas", true)){
+			foreach($deps as $sh => $iont){
+				$trips['schema'] = array_merge($trips['schema'], $iont->typedQuads($ont->schemaGname()));
+				$trips['schema_schema'] = array_merge($trips['schema_schema'], $iont->typedQuads($ont->schemaSchemaGname()));
+			}		
+			$sdeps = $ont->getSchemaSchemaDependencies($this, $rules, array_keys($deps));
+			//opr(array_keys($sdeps));				
+			foreach($sdeps as $sh => $sont){
+				$trips['schema_schema'] = array_merge($trips['schema_schema'], $sont->typedQuads($ont->schemaSchemaGname()));
 			}
-			$trips['schema'] = array_merge($trips['schema'], $iont->typedQuads());
-			if(isset($ideps[$sh])){
-				$trips['instance'] = array_merge($trips['instance'], $iont->typedQuads());
-			}
+		}
+		else {
+			foreach($deps as $sh => $iont){
+				//echo "<P>$sh";
+				$xtrips = $iont->typedQuads($ont->schemaGname());
+				$trips['schema'] = array_merge($trips['schema'], $xtrips);
+				//echo count($trips['schema'])." triples in the schema and ".count($xtrips)." in $sh";
+			}		
 		}
 		return $trips;
 	}
 	
-	function getOntologyCollection($id){
-		if($this->dbman->hasLDO($id, "ontology", "all")){
-			return "all";
-		}
-		return $this->cid();
-	}
 	
 	function objectUpdated(LDOUpdate $uldo, $test_flag = false){
 		return $this->objectPublished($uldo->changed, $test_flag);

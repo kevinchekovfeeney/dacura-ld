@@ -180,6 +180,33 @@ function makeLDOBNIDsAddressable(&$ldobj, $cwurl){
 	}
 }
 
+function updateLDReferences($ldprops, $idmap, $rules, $is_multi){
+	$nprops = array();
+	if($is_multi){
+		foreach($ldprops as $gid => $props){
+			$nprops[$gid] = array();
+			foreach($props as $s => $ldo){
+				if(isAssoc($ldo) && $ldu = updateLDOReferences($ldo, $idmap, $rules)){
+					$nprops[$gid][$s] = $ldu;
+				}
+				else {
+					$nprops[$gid][$s] = $ldo;
+				}
+			}
+		}
+	}
+	else {
+		foreach($ldprops as $s => $ldo){
+			if(isAssoc($ldo)){
+				$nprops[$s] = updateLDOReferences($ldo, $idmap, $rules);
+			}
+			else {
+				$nprops[$s] = $ldo;
+			}
+		}
+	}
+	return $nprops;
+}
 /**
  * update internal references by replacing references to old values with newly ids..
  *
@@ -189,11 +216,9 @@ function makeLDOBNIDsAddressable(&$ldobj, $cwurl){
  * @param array $ldobj - ld object array
  * @param array $idmap - mapping from old ids to new ids
  * @param array $rules - settings for this object
- * @return array of unresolved references in the properties after all transformations
- * empty array indicates success and no unresolved links
+ * @return array of updated properties
  */
 function updateLDOReferences($ldobj, $idmap, $rules){
-	$unresolved = array();
 	$nprops = array();
 	if(!is_array($ldobj)){
 		return $nprops;
@@ -227,7 +252,7 @@ function updateLDOReferences($ldobj, $idmap, $rules){
 			}
 		}
 		elseif($pv->embedded()){
-			$nprops[$p] = updateLDOBNReferences($v, $idmap, $rules);
+			$nprops[$p] = updateLDOReferences($v, $idmap, $rules);
 		}
 		elseif($pv->objectlist()){
 			$nprops[$p] = array();
@@ -319,6 +344,29 @@ function genid($bn = false, $rules = false, $oldid = false){
 	return call_user_func($idgenalgorithm , isset($rules['extra_entropy']) && $rules['extra_entropy'], $oldid);
 }
 
+
+/**
+ * Performs Basic validity check on a passed LD structure according to the passed rules
+ *
+ * @param array $ldprops linked data property array
+ * @param array $rules settings for validation
+ * @return boolean true if the property array has a valid structure according to the passed rules
+ */
+function validLDProps($ldprops, $rules, $ismulti = false){
+	$errs = array();
+	foreach($ldprops as $id => $x){
+		if($ismulti){
+			foreach($x as $s => $ldo){
+				$errs = array_merge($errs, validLDO($ldo, $rules));	
+			}
+		}
+		else {
+			$errs = array_merge($errs, validLDO($x, $rules));				
+		}
+	}
+	return $errs;
+}
+
 /**
  * Performs Basic validity check on a passed LD structure according to the passed rules
  * 
@@ -326,25 +374,25 @@ function genid($bn = false, $rules = false, $oldid = false){
  * @param array $rules settings for validation
  * @return boolean true if the property array has a valid structure according to the passed rules
  */
-function validLD($ldprops, $rules){
+function validLDO($ldo, $rules){
 	$errs = array();
-	if(!$ldprops or !is_array($ldprops)) return true;
-	foreach($ldprops as $p => $v){
+	if(!$ldo or !isAssoc($ldo)) return true;
+	foreach($ldo as $p => $v){
 		$pv = new LDPropertyValue($v, $rules['cwurl']);
 		if($pv->illegal()){
 			$errs[] = array($p, "Illegal value ".$pv->errmsg);
 		}
 		elseif($pv->embedded()){
-			$errs = array_merge($errs, validLD($ldprops[$p], $rules));
+			$errs = array_merge($errs, validLDO($v, $rules));
 		}
 		elseif($pv->objectlist()){
 			foreach($v as $obj){
-				$errs = array_merge($errs, validLD($obj, $rules));
+				$errs = array_merge($errs, validLDO($obj, $rules));
 			}
 		}
 		elseif($pv->embeddedlist()){
 			foreach($v as $id => $obj){
-				$errs = array_merge($errs, validLD($obj, $rules));
+				$errs = array_merge($errs, validLDO($obj, $rules));
 			}
 		}
 	}
@@ -881,16 +929,8 @@ function compareLDGraphs($id, $aprops, $bprops, $rules, $top_level = false){
 				$delta->addNamedGraphDelta($ndelta);
 			}
 			else {
-				if($gname == 'meta'){
-					$ndd = compareLD($id, $eol, $bprops[$gname], $rules, $gname);
-					if($ndd->containsChanges()){
-						$delta->addNamedGraphDelta($ndd, $gname);
-					}
-				}
-				else {
-					$ndd = compareEOL($id, $gname, $eol, $bprops[$gname], $rules, $gname);
-					$delta->addNamedGraphDelta($ndd);
-				}
+				$ndd = compareEOL($id, $gname, $eol, $bprops[$gname], $rules, $gname);
+				$delta->addNamedGraphDelta($ndd);
 			}
 		}
 	}
@@ -906,8 +946,12 @@ function compareLDGraphs($id, $aprops, $bprops, $rules, $top_level = false){
 	return $delta;
 }
 
+function compareLDGraph($aprops, $bprops, $rules, $gname = false){
+	return compareEOL(false, false, $aprops, $bprops, $rules, $gname);
+}
+
 /**
- * Compares two ld property arrays and reports on the differences
+ * Compares two ld object arrays and reports on the differences
  * 
  * Does a complex comparison of two ld structures and returns a LD delta object which contains a mapping between the two
  * @param string $frag_id id of the current node id
@@ -977,7 +1021,7 @@ function compareLD($frag_id, $orig, $upd, $rules, $gname = false){
 						$delta->delObject($frag_id, $p, $id, $obj);
 					}
 					else {
-						$delta->addSubDelta($frag_id, $p, $id, compareLD($id, $obj, $vnew[$id], $rules));
+						$delta->addSubDelta($p, $id, compareLD($id, $obj, $vnew[$id], $rules));
 					}
 				}
 				foreach($vnew as $nid => $nobj){
@@ -993,7 +1037,7 @@ function compareLD($frag_id, $orig, $upd, $rules, $gname = false){
 					$did = $vold[$demand_id_token];
 				}
 				$bnid = genid($did, $rules);
-				$delta->addSubDelta($frag_id, $p, $bnid, compareLD($bnid, $vold, $vnew, $rules));
+				$delta->addSubDelta($p, $bnid, compareLD($bnid, $vold, $vnew, $rules));
 				break;
 			case 'embeddedlist' : //hard
 				$rems = array();
@@ -1036,26 +1080,24 @@ function compareLD($frag_id, $orig, $upd, $rules, $gname = false){
 					}
 				}
 				break;
+			//case 'complex' :
+			//	$delta->addSubDelta($frag_id, $p, $bnid, compareLD($bnid, $vold, $vnew, $rules));
+			//	break;
 		}
 	}
 	$delta->removeOverwrites();
 	return $delta;
 }
 
-/**
- * Compares two ld embedded objects
- *
- * @param string $frag_id id of the current node id
- * @param array $vold the left hand side of the comparison (unchanged version)
- * @param array $vnew the right hand side of the comparison (changed version)
- * @param array $rules the rules governing the comparison
- * @param string [$gname] the id of the named graph currently under investigation
- * @return LDDelta description of the differences between $vold and $vnew 
- */
-function compareEO($frag_id, $vold, $vnew, $rules, $gname = false){
-	$delta = new LDDelta($rules, $gname);
-	$delta->addNamedGraphDelta($ndd);	
+function compareJSON($frag_id, $jo, $ju){
+	if($jo == $ju){
+		//no problem
+	}
+	if(isAssoc($ju) && isAssoc($jo)){
+		
+	}
 }
+
 
 /**
  * Compares two ld embedded object lists
@@ -1075,7 +1117,7 @@ function compareEOL($frag_id, $p, $vold, $vnew, $rules, $gname = false){
 			$delta->delObject($frag_id, $p, $id, $obj, $gname);
 		}
 		else {
-			$delta->addSubDelta($frag_id, $p, $id, compareLD($id, $obj, $vnew[$id], $rules));
+			$delta->addSubDelta($p, $id, compareLD($id, $obj, $vnew[$id], $rules));
 		}
 	}
 	foreach($vnew as $nid => $nobj){
@@ -1179,15 +1221,13 @@ function compareObjLiterals($a, $b){
  * @return string the encoded version of the object value
  */
 function encodeObject($o, $t){
-	if($t == "literal"){
-		return $o;
+	if($t == "objectliteral"){
+		if(isset($o['type']) && $o['type'] == "string"){
+			$o['lang'] = "en";
+			unset($o['type']);
+		}
 	}
-	elseif($t == "objectliteral"){
-		return json_encode($o);
-	}
-	else {
-		return $o;
-	}
+	return $o;
 }
 
 /**
@@ -1356,7 +1396,9 @@ function unembed($ldprops, $cwurl = false){
 	$unem = array();
 	if(!is_array($ldprops)) return $unem;
 	foreach($ldprops as $s => $obj){
-		$unem = array_merge($unem, unembedLDO($s, $obj, $cwurl));
+		if(isAssoc($obj)){
+			$unem = array_merge($unem, unembedLDO($s, $obj, $cwurl));
+		}
 	}
 	return $unem;
 }

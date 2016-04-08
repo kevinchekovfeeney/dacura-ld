@@ -13,7 +13,7 @@ dacura.frame.api.getFrame = function (cls){
 };
 
 
-dacura.frame.draw = function(resultobj, target){
+dacura.frame.draw = function(resultobj, pconf){
 	var framestr = resultobj.result;
 	var frame = JSON.parse(framestr);
 	var obj = document.createElement("div");
@@ -21,15 +21,18 @@ dacura.frame.draw = function(resultobj, target){
 	gensym = dacura.frame.Gensym("query");
 	res = dacura.frame.frameGenerator(frame, obj, gensym);
 	
-	var elt = document.getElementById(target);
+	var elt = document.getElementById(pconf.busybox.substring(1));
 	elt.appendChild(res);
-	
-	dacura.frame.initInteractors();
 	
 };
 
 dacura.frame.initInteractors = function (){
-	$('.queryInteractor').
+	$('.queryInteractor').foreach(function(entry){
+		var id = $(entry).attr('id');
+		alert(id);
+
+
+	});
 		
 }
 
@@ -112,29 +115,39 @@ dacura.frame.fill = function(frameid, candidate){
 	//
 };
 
-dacura.frame.init = function(entity){
+dacura.frame.init = function(entity, pconf){
 	// frame is in triple store. 
-	if(entity.latest_status == 'accepted'){
-	}else{
-		// frame is not in triple store and we have to get a class based frame.
+	//if(entity.meta.latest_status == 'accept'){
+	//	alert("frame is in triple store");
+	//}else{
+	// frame is not in triple store and we have to get a class based frame.
+	
+	// DDD
+	// This url should be found in a different manner - it seems to be hard coded.
+	
+	// entity qualified name [ dacura.system/ld that has URL ]
+	// var eqn = dacura.system.pageURL(entity.ldtype, entity.meta.cid) + "/" + entity.id;
+	// var cls = entity.contents[eqn]['rdf:type'];
+	
+	// DDD This is the wrong way...
+	var eqn = 'http://localhost/dacura/' +
+ 		entity.meta.cid + '/' + 'report' + '/' + entity.id;
 
-		// DDD
-		// This url should be found in a different manner - it seems to be hard coded.
-
-		// entity qualified name [ dacura.system/ld that has URL ]
-		var eqn = 'http://localhost/dacura/' +
-			entity.meta.cid + '/' + entity.ldtype + '/' + entity.id;
-		// Should be in meta data ?/!
-		var cls = entity.contents.main[eqn]['rdf:type'];
-		var ajs = dacura.frame.api.getFrame(cls);
-		ajs.handleResult = dacura.frame.draw;
-		dacura.system.invoke(ajs, "", "ldo-contents-contents");
-
-		
-		//
-		
-	}		
-};
+	/* alert(JSON.stringify(entity,null,4));
+	   alert(eqn);
+	*/
+	
+	var cls = entity.contents.main[eqn]['rdf:type'];
+	
+	var ajs = dacura.frame.api.getFrame(cls);
+	msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};
+	ajs.handleResult = function(resultobj, pconf){
+		dacura.frame.draw(resultobj, pconf);
+		dacura.frame.initInteractors();
+	}
+	
+	dacura.system.invoke(ajs, msgs, pconf);	
+}
 
 
 

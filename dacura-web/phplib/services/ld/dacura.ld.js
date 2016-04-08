@@ -424,7 +424,7 @@ dacura.ld.create = function(data, onwards, targets, istest){
 	dacura.system.invoke(ajs, msgs, targets);
 }
 
-dacura.ld.update = function(id, uobj, onwards, type, targets, istest){
+dacura.ld.update = function(id, uobj, onwards, targets, istest){
 	var ajs = dacura.ld.api.update(id, uobj, istest);
 	var msgs = dacura.ld.msg.update(id, istest, this.ldo_type);
 	ajs.handleResult = onwards;

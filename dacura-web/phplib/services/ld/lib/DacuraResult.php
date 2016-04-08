@@ -21,6 +21,7 @@ class DacuraResult extends DacuraObject {
 	var $result;
 	/** @var array<GraphResult> an optional array of graph results generated as part of the request */
 	var $graphs = array();
+	var $violations;
 
 	/**
 	 * Object constructor
@@ -30,6 +31,23 @@ class DacuraResult extends DacuraObject {
 	function __construct($action, $test = false){
 		$this->action = $action;
 		$this->test = $test;
+	}
+	
+	function title($x = false){
+		if($x !== false) $this->msg_title = $x;
+		return $this->msg_title;
+	}
+
+	function body($x = false){
+		if($x !== false) $this->msg_body = $x;
+		return $this->msg_body;
+	}
+	
+	function msg($tit, $body = false){
+		$this->title($tit);
+		if($body !== false){
+			$this->body($body);
+		}
 	}
 	
 	function forAPI($format, $options, $srvr){
@@ -52,12 +70,17 @@ class DacuraResult extends DacuraObject {
 			$apiobj['warnings'] = $this->warnings;
 		}
 		if($this->result){
-			if($this->result->display($format, $options, $srvr)){
-				$apiobj['result'] = $this->result->forAPI($format, $options);
+			if(is_object($this->result) && method_exists($this->result, "display")){
+				if($this->result->display($format, $options, $srvr)){
+					$apiobj['result'] = $this->result->forAPI($format, $options);
+				}
+				else {
+					$apiobj['status'] = 'reject';
+					$apiobj['message'] = array("title" => "Failed to create $format display for ".$this->result->ldtype." ".$this->result->id, "body" => $this->result->errcode . ": ".$this->result->errmsg);
+				}
 			}
 			else {
-				$apiobj['status'] = 'reject';
-				$apiobj['message'] = array("title" => "Failed to create $format display for ".$this->result->ldtype." ".$this->result->id, "body" => $this->result->errcode . ": ".$this->result->errmsg);
+				$apiobj['result'] = $this->result;
 			}
 		}
 		foreach($this->graphs as $gid => $gr){
@@ -75,6 +98,23 @@ class DacuraResult extends DacuraObject {
 	function ok(){
 		return !($this->errcode > 0);
 	}
+	
+	function error($type, $args){
+		$err = RVO::loadViolation($type, $args);
+		if($err){
+			$this->errors[] = $err;			
+		}
+		return $err;				
+	}
+	
+	function warning($type, $args){
+		$err = RVO::loadViolation($type, $args);
+		if($err){
+			$this->warnings[] = $err;
+		}
+		return $err;
+		
+	}
 
 	/**
 	 * Add a warning to the result
@@ -84,8 +124,14 @@ class DacuraResult extends DacuraObject {
 	 * @return void
 	 */
 	function addWarning($action, $prompt, $txt){
-		$this->warnings[] = array("action" => $action, "msg_title" => $prompt, "msg_body" => $txt);
-	}			
+		$this->warnings[] = new SystemWarning($action, $prompt, $txt);
+	}	
+
+	function setWarning($action, $prompt, $txt){
+		$this->action = $action;
+		$this->msg_body = $txt;
+		$this->msg_title = $prompt;		
+	}
 
 	/**
 	 * Add an incidental error to the result
@@ -97,30 +143,8 @@ class DacuraResult extends DacuraObject {
 	 * @param string $type the type of the error (internal, permission, addressing, input, policy, unspecified)
 	 * @return void
 	 */
-	function addError($errcode, $action, $prompt, $txt = "", $type = false){
-		if($type == false){
-			switch($errcode){
-				case 500:
-					$type = "internal";
-					break;
-				case 403:
-					$type = "permission";
-					break;
-				case 404:
-					$type = "addressing";
-					break;
-				case 400:
-					$type = "input";
-					break;
-				case 200:
-					$type = "policy";
-					break;
-				default:
-					$type = "unspecified";
-					break;
-			}
-		}
-		$this->errors[] = array("code" => $errcode, "type" => $type, "action" => $action, "msg_title" => $prompt, "msg_body" => $txt);
+	function addError($errcode, $action, $prompt, $txt = ""){
+		$this->errors[] = new SystemViolation($errcode, $action, $prompt, $txt);
 	}
 	
 	/**
@@ -205,7 +229,7 @@ class DacuraResult extends DacuraObject {
 	 * @param boolean $chain should the results be merged?
 	 */
 	function add($sub, $chain = true){
-		if($chain){
+		if($chain && is_object($sub)){
 			if($sub->errors) $this->errors = array_merge($this->errors, $sub->errors);
 			if($sub->warnings) $this->warnings = array_merge($this->warnings, $sub->warnings);
 		}
@@ -266,49 +290,24 @@ class DacuraResult extends DacuraObject {
 	function is_confirm(){
 		return $this->status() == "confirm";
 	}
-
+	
 	function addGraphResult($gid, $gu, $hypo = false){
 		$gu->setHypothetical($hypo);
 		$action = "$gid sgraph result";
 		if(!$hypo){
-			switch($gu->status()) {
-				case "reject" :
-					if($gu->is_error()){
-						if(!$this->is_error()){
-							$this->errcode = $gu->errcode;
-							$this->msg_title = "Rejected by ".$action;
-						}
-						$this->addError($gu->errcode, $action, $gu->getErrorsSummary(), $gu->getErrorsDetails(), "graph");
-					}
-					else {
-						$this->addError(200, $action, $gu->getErrorsSummary(), $gu->getErrorsDetails(),  "graph");
-						if(!$this->is_reject()){
-							$this->msg_title = "Rejected by ".$action;
-						}
-					}
-					$this->status("reject");
-					break;
-				case "accept" :
-					if($this->is_accept()){
-						$this->status("accept");
-					}
-					break;
-			}
+			$this->add($gu);
 		}
 		elseif($gu->is_reject()) {
-			opr($gu);
-			$txt = "Failed $gid graph check";
-			$body = $gu->getErrorsSummary();
-			$this->addWarning("$gid graph", $txt, $body);
+			$this->addWarning("$gid graph", $gu->msg_title, $gu->msg_body);
 			foreach($gu->errors as $err){
 				$this->warnings[] = $err;
 			}
+			if($gu->warnings && count($gu->warnings) > 0){
+				$this->warnings = array_merge($this->warnings, $gu->warnings);
+			}
 		}
 		if(!isset($this->graphs[$gid])){
-			$this->graphs[$gid] = $gu;				
-		}
-		else {
-			$this->graphs[$gid]->addGraphResult($gu, $hypo);
+			$this->graphs[$gid] = $gu;//only one result per graph result				
 		}
 	}
 	
@@ -323,11 +322,15 @@ class DacuraResult extends DacuraObject {
 	 */
 	function createGraphResult($gid, $status, $itrips = array(), $dtrips = array(), $is_test = false, $is_hypo = false){
 		$gu = new GraphResult("Graph $gid update", $is_test);
-		//$gu->status($status);
+		$gu->status($status);
 		$gu->setHypothetical($is_hypo);
 		$gu->setInserts($itrips);
 		$gu->setDeletes($dtrips);
 		$this->graphs[$gid] = $gu;
+	}
+	
+	function createMetaResult($metabox, $status, $is_test = false, $is_hypo = false){
+		$this->createGraphResult("meta", $status, array_keys($metabox), array_values($metabox),$is_test, $is_hypo);
 	}
 	
 	function undoGraphResult($gid, $gu){
@@ -357,26 +360,7 @@ class GraphResult extends DacuraResult {
 		return !$this->hypothetical &&
 		(count($this->inserts) > 0 || count($this->deletes) > 0);
 	}
-
-	function getErrorsSummary() {
-		$cnt = 0;
-		foreach($this->errors as $gname => $errs){
-			$cnt += count($errs);
-		}
-		$tex = $cnt . " Quality Control Error";
-		if($cnt != 1) $tex .= "s";
-		return $tex;
-	}
-	
-	
-	function getErrorsDetails() {
-		$txt = "";
-		foreach($this->errors as $gname => $errs){
-			$txt .= count($errs) . " errors in $gname graph. ";
-		}
-		return $txt;
-	}
-	
+		
 	function setHypothetical($ishypo){
 		$this->hypothetical = $ishypo;
 	}
@@ -389,55 +373,15 @@ class GraphResult extends DacuraResult {
 		$this->deletes = $q;
 	}
 	
-	function addGraphResult($other, $hypo = false){
-		$this->add($other);
+	function addGraphResult($gid, $other, $hypo = false){
+		parent::addGraphResult($gid, $other, $hypo);
 		$this->inserts = array_merge($this->inserts, $other->inserts);
 		$this->deletes = array_merge($this->deletes, $other->deletes);
 		if($hypo){
 			$this->hypothetical = true;
 		}
 	}
-	
-	function addOneGraphTestResult($gname, $iquads, $dquads, $errs){
-		if(count($errs) > 0){
-			if(!$this->errcode){
-				$this->errcode = 400;
-			}
-			$this->status('reject');
-			if(isset($this->errors[$gname])){
-				$this->errors[$gname] = array_merge($this->errors[$gname], $errs);
-			}
-			else {
-				$this->errors[$gname] = $errs;
-			}
-		}
-		$this->inserts = array_merge($this->inserts, $iquads);
-		$this->deletes = array_merge($this->deletes, $dquads);
-	}
-	
-	function addOneGraphTestFail($gname, $iquads, $dquads, $errcode, $errmsg){
-		$this->errcode = $errcode;
-		$this->status('reject');
-		$err = array("type" => "test fail",
-				"action" => "write to graph",
-				"errcode" => $errcode,
-				"msg_title" => "Failed data quality checks when writing to graph.",
-				"msg_body" => $errmsg);
-		if(isset($this->errors[$gname])){
-			$this->errors[$gname][] = $err;
-		}
-		else {
-			$this->errors[$gname] = $err;
-		}
-		$this->inserts = array_merge($this->inserts, $iquads);
-		$this->deletes = array_merge($this->deletes, $dquads);
-	}
-	
-	function graph_fail($gname, $errcode){
-		$this->status("reject");
-		$this->errcode = $errcode;
-	}
-	
+		
 	function forAPI($format, $options, $srvr){
 		$apiobj = parent::forAPI($format, $options, $srvr);
 		if(count($this->inserts) > 0){
@@ -452,6 +396,40 @@ class GraphResult extends DacuraResult {
 }
 
 class DQSResult extends GraphResult {
+
+	/**
+	 * Parses the DQS response - an array of name-value error objects - and turns them into RVO objects 
+	 * @param $array an array of json name-value objects with the information returned by DQS
+	 */
+	function parseErrors($array){
+		foreach($array as $err){
+			if(isset($err['rdf:type']) && $cls = $err['rdf:type']){
+				if($nrvo = RVO::loadViolation($cls, $err)){
+					if($nrvo->bp()){
+						$this->warnings[] = $nrvo;
+					}
+					else {
+						$this->errors[] = $nrvo;						
+					}
+				}
+				else {
+					return $this->reject("Dacura Quality Service Failure", "DQS returned unknown error class $cls");						
+				}
+			}
+			else {
+				return $this->reject("Dacura Quality Service Failure", "DQS returned error with no violation class specified");				
+			}
+		}
+		if(count($this->errors) > 0){
+			if(count($this->errors) == 1){
+				return $this->reject("Dacura Quality Service Error", $this->errors[0]->msg().$this->errors[0]->info());
+			}
+			else {
+				return $this->reject("Dacura Quality Service Errors", "DQS identified ".count($this->errors) . " in the input");				
+			}
+		}
+		return $this->accept();
+	}
 	
 }
 
