@@ -10,20 +10,42 @@ dacura.frame.api.getFrame = function (cls){
 	xhr.data = {'class' : cls};
 	xhr.dataType = "json";
 	return xhr;
-}
+};
 
 
 dacura.frame.draw = function(resultobj, target){
 	var framestr = resultobj.result;
 	var frame = JSON.parse(framestr);
 	var obj = document.createElement("div");
-	res = dacura.frame.frameGenerator(frame, obj);
+	
+	gensym = dacura.frame.Gensym("query");
+	res = dacura.frame.frameGenerator(frame, obj, gensym);
 	
 	var elt = document.getElementById(target);
 	elt.appendChild(res);
+	
+	dacura.frame.initInteractors();
+	
+};
+
+dacura.frame.initInteractors = function (){
+	$('.queryInteractor').
+		
 }
 
-dacura.frame.frameGenerator = function(frame, obj){
+dacura.frame.Gensym = function(pref){
+	var prefix = pref;
+	var count = 0;
+	return {
+		next: function(){
+			var result = prefix + count;
+			count += 1;
+			return result;
+		}
+	};
+};
+
+dacura.frame.frameGenerator = function(frame, obj, gensym){
 
 	/* list of frame options */ 
 	if(frame.constructor == Array){
@@ -49,7 +71,7 @@ dacura.frame.frameGenerator = function(frame, obj){
 				var framediv = document.createElement("div");
 				framediv.setAttribute('style', 'padding-left: 5px; display: inline-block;');
 
-				dacura.frame.frameGenerator(subframe, framediv);
+				dacura.frame.frameGenerator(subframe, framediv, gensym);
 				labelnode.appendChild(framediv);
 			}else if(property_elt.type == 'datatypeProperty'){
 				var input = document.createElement("input");
@@ -64,26 +86,17 @@ dacura.frame.frameGenerator = function(frame, obj){
 		}
 	}else if(frame.constructor == Object && frame.type == 'entity'){
 		// we are an entity
-		/*
-		var framediv = document.createElement("div");
 		
-
-		if (frame.label){
-			var label = frame.label.data;
-			var textnode = document.createTextNode(label);
-		}else{
-			var textnode = document.createTextNode(frame.class);			
-		}
-		labelnode.appendChild(textnode);
-		*/
 		var input = document.createElement("input");
+		input.setAttribute('class', 'queryInteractor');
+		input.setAttribute('id', gensym.next());
 		// This should really be a specialised search box.
 		input.setAttribute('type', 'text');
 		obj.appendChild(input);
 	}
 	
 	return obj; 
-}
+};
 
 dacura.frame.typeConvert = function(ty){
 	// This needs to be extended at each XSD type. 
@@ -93,7 +106,11 @@ dacura.frame.typeConvert = function(ty){
 	case "http://www.w3.org/2000/01/rdf-schema#Literal" :
 		return 'text';
 	}
-}
+};
+
+dacura.frame.fill = function(frameid, candidate){
+	//
+};
 
 dacura.frame.init = function(entity){
 	// frame is in triple store. 
@@ -117,7 +134,7 @@ dacura.frame.init = function(entity){
 		//
 		
 	}		
-}
+};
 
 
 
