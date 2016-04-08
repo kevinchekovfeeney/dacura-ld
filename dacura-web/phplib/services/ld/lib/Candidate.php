@@ -15,13 +15,27 @@ class Candidate extends LDO {
 			if(isset($json[$pgurl])){
 				$graphs[$pgurl] = $json[$pgurl];
 				unset($json[$pgurl]);
+			}
+			else {
+				//echo "didnt find $pgurl";
 			}							
 		}
 		if(count($graphs) == 0 && count($json) > 0){
-			$this->ldprops = array($this->cwurl => $json);
+			if(!isset($json[$this->cwurl])){
+				$this->ldprops = array($this->cwurl => $json);
+				//opr($this->ldprops);
+			}
+			else {
+				$this->ldprops = $json;
+			}
 		}
-		elseif(count($json) > 0 && !isset($json[$this->cwurl])){
-			$graphs[$srvr->getDefaultGraphURL()] = array($this->cwurl => $json);
+		elseif(count($json) > 0){
+			if(!isset($json[$this->cwurl])){
+				$graphs[$srvr->getDefaultGraphURL()] = array($this->cwurl => $json);
+			}
+			else {
+				$graphs[$srvr->getDefaultGraphURL()] = $json;
+			}
 		}
 		elseif(isset($graphs[$srvr->getDefaultGraphURL()]) ){
 			if(!isset($graphs[$srvr->getDefaultGraphURL()][$this->cwurl])){

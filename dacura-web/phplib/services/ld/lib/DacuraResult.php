@@ -48,6 +48,7 @@ class DacuraResult extends DacuraObject {
 		if($body !== false){
 			$this->body($body);
 		}
+		return $this;
 	}
 	
 	function forAPI($format, $options, $srvr){

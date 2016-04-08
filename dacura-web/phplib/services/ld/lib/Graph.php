@@ -2,7 +2,7 @@
 
 include_once("Ontology.php");
 
-class Graph extends Ontology {
+class Graph extends LDO {
 	var $dqs = array();
 	
 	function getCreateInstanceTests() {
@@ -64,209 +64,164 @@ class Graph extends Ontology {
 		$this->loadDQSTestConfiguration($srvr);			
 	}
 	
-	function setSchemaImports($onts){
-		$importurls = array();
-		$deps = $this->getSchemaDependencies($srvr);
-		foreach($deps as $id => $ont){
-			$importurls[] = $ont->getImportURL();
+	function getSchemaImports($durl){
+		$urls = $this->getPredicateValues("_:schema", "imports", "owl");
+		$imports = array();
+		if($urls){
+			foreach($urls as $url){
+				if($parsed_url = Ontology::parseOntologyURL($url, $durl)){
+					$imports[$parsed_url['id']] = $parsed_url;
+				}
+			}
 		}
-		$this->ldprops["_:schema"] = array($this->nsres->expand("owl:imports") => $importurls);
+		return $imports;
 	}
 	
-	function setSchemaSchemaImports($onts, $srvr){
-		$importurls = array();
-		$deps = $this->getSchemaSchemaDependencies($srvr);
-		foreach($deps as $id => $ont){
-			$importurls[] = $ont->getImportURL();
+	function getSchemaSchemaImports($durl){
+		$urls = $this->getPredicateValues("_:schema_schema", "imports", "owl");
+		$imports = array();
+		if($urls){
+			foreach($urls as $url){
+				if($parsed_url = Ontology::parseOntologyURL($url, $durl)){
+					$imports[$parsed_url['id']] = $parsed_url;
+				}
+			}
 		}
-		$this->ldprops["_:schema_schema"] = array($this->nsres->expand("owl:imports") => $importurls);
+		return $imports;
 	}
-	
 	
 	function loadNewObjectFromAPI($create_obj, $format, $options, $rules, &$srvr){
 		if(!parent::loadNewObjectFromAPI($create_obj, $format, $options, $rules, $srvr)){
 			return false;
 		}
-		$this->loadDQSTestConfiguration($srvr);
-		$simports = $this->getSchemaImports();
-		foreach($simports as $simport){
-			if(!isset($simport['version']) || $simport['version'] == 0){
-				if(!isset($meta['explicit_schema_imports'])){
-					$meta['explicit_schema_imports'] = array();
-				}
-				$meta['explicit_schema_imports'][] = $simport['id'];
-			}
+		if(isset($rules['load_dependencies']) && $rules['load_dependencies']){
+			$this->processImports($srvr, $rules);
 		}
-		/*	if($this->generateDependencies($srvr)){
-				$dep_urls = array();
-				$treated = array();
-				if(isset($this->dependencies['schema']) && is_array($this->dependencies['schema']) && count($this->dependencies['schema']) > 0){
-					foreach($this->dependencies['schema'] as $sh => $ont){
-						$ontref = $ont->cwurl;
-						if($ont->fragment_id){
-							$ontref .= "/".$ont->fragment_id;
-						}
-						$ontref.="?version=".$ont->version;
-						$dep_urls[] = $ontref;
-						$treated[] = $sh;
-					}
-					$this->ldprops["_:schema"] = array($this->nsres->expand("owl:imports") => $dep_urls);
-				}
-				if(isset($this->dependencies['schema_schema']) && is_array($this->dependencies['schema_schema']) && count($this->dependencies['schema_schema']) > 0){
-					foreach($this->dependencies['schema_schema'] as $sh => $ont){
-						if(in_array($sh, $treated)) continue;
-						$treated[] = $sh;
-						$ontref = $ont->cwurl;
-						if($ont->fragment_id){
-							$ontref .= "/".$ont->fragment_id;
-						}
-						$ontref.="?version=".$ont->version;
-						$dep_urls[] = $ontref;
-					}				
-					$this->ldprops["_:schema_schema"] = array($this->nsres->expand("owl:imports") => $dep_urls);
-				}
-				return $format ? $format : "json";
-			}
-			else {
-				return false;
-			}
-		}*/
+		$this->loadDQSTestConfiguration($srvr);
 		return true;			
 	}
 	
-	function generateDependenciesFromURLs(&$srvr, $urls, $is_schema_schema = false){
-		$dependencies = array();
-		foreach($urls as $url){
-			if($parsed_url = Ontology::parseOntologyURL($url, $srvr->durl())){
-				if(!isset($dependencies[$parsed_url['id']])){
-					$sont = $srvr->loadLDO($parsed_url['id'], "ontology", $parsed_url['collection'], $parsed_url['fragment'], $parsed_url['version']);
-					if($sont){
-						$dependencies[$parsed_url['id']] = $sont;
+	function processImports(LdDacuraServer $srvr, $rules){
+		$simports = $this->getSchemaImports($srvr->durl());
+		$nimporturls = array();
+		$changed_schema = false;
+		foreach($simports as $id => $simport){
+			if(!isset($simport['version']) || $simport['version'] == 0){
+				if(!isset($this->meta['explicit_schema_imports'])){
+					$this->meta['explicit_schema_imports'] = array();
+				}
+				$changed_schema = true;
+				$this->meta['explicit_schema_imports'][] = $id;
+				$cid = isset($simport['collection']) && $simport['collection'] ? $simport['collection'] : $srvr->getOntologyCollection($id);
+				if(!$ont = $srvr->loadLDO($id, "ontology", $cid)){
+					return false;
+				}
+				$nimporturls[$id] = $ont->getImportURL();
+				$deps = $ont->getDependencies($srvr, "schema", $rules, array_keys($nimporturls), true);
+				foreach($deps as $oid => $rec){
+					if(!isset($simports[$oid])){
+						$nimporturls[$oid] = Ontology::getOntologyURL($rec, $srvr->durl());						
 					}
-					else {
-						return $this->failure_result("Failed to load ontology ".$parsed_ur['id']. $srvr->errmsg, $srvr->errcode);
-					}
-					$rules = array();
-					if($is_schema_schema){
-						$ss_deps = $sont->getSchemaSchemaDependencies($srvr, $rules, array_keys($dependencies));
-						foreach($ss_deps as $ssid => $ssdep){
-							if(!isset($dependencies[$ssid])){
-								$dependencies[$ssid] = $ssdep;
+				}
+			}
+			else {
+				$nimporturls[$id] = Ontology::getOntologyURL($simport, $srvr->durl());
+			}
+		}
+		
+		$this->ldprops["_:schema"] = array($this->nsres->expand("owl:imports") => array_values($nimporturls));
+		if($this->hasTwoTierSchema()){
+			if($changed_schema){
+				$this->generateSchemaSchemaImports($srvr, $rules);				
+			}
+			else {
+				$simports = $this->getSchemaSchemaImports($srvr->durl());
+				$nimporturls = array();
+				foreach($simports as $id => $simport){
+					if(!isset($simport['version']) || $simport['version'] == 0){
+						if(!isset($meta['explicit_schema_schema_imports'])){
+							$meta['explicit_schema_schema_imports'] = array();
+						}
+						$meta['explicit_schema_schema_imports'][] = $simport['id'];
+						$cid = isset($simport['collection']) && $simport['collection'] ? $simport['collection'] : $srvr->getOntologyCollection($id);
+						$nimporturls[$id] = $ont->getImportURL();						
+						$ont = $srvr->loadLDO($id, "ontology", $cid);
+						$deps = $ont->getDependencies($srvr, "schema_schema", $rules, array_keys($nimporturls), true);
+						foreach($deps as $oid => $rec){
+							if(!isset($simports[$oid])){
+								$nimporturls[$id] = Ontology::getOntologyURL($rec, $srvr->durl());						
 							}
 						}
 					}
 					else {
-						$sdeps = $sont->getSchemaDependencies($srvr, $rules, array_keys($dependencies));
-						foreach($sdeps as $sid => $sdep){
-							if(!isset($dependencies[$sid])){
-								$dependencies[$sid] = $sdep;
-							}								
-						}
+						$nimporturls[$id] = Ontology::getOntologyURL($simport, $srvr->durl());
 					}
 				}
+				$this->ldprops["_:schema_schema"] = array($this->nsres->expand("owl:imports") => array_values($nimporturls));				
+			}
+		}
+	}
+	
+
+	function generateSchemaImports(&$srvr, $rules){
+		$parsed_urls = $this->getSchemaImports($srvr->durl());
+		$dependencies = $this->generateDependenciesFromURLs($srvr, $parsed_urls, "schema", $rules);
+		$nimporturls = array();
+		foreach($dependencies as $id => $ont){
+			$nimporturls[$id] = $ont->getImportURL();
+		}
+		$this->ldprops["_:schema"] = array($this->nsres->expand("owl:imports") => array_values($nimporturls));
+	}
+	
+	function generateSchemaSchemaImports(&$srvr, $rules){
+		$parsed_urls = array_merge($this->getSchemaImports($srvr->durl()), $this->getSchemaSchemaImports($srvr->durl()));
+		$dependencies = $this->generateDependenciesFromURLs($srvr, $parsed_urls, "schema_schema", $rules);
+		$nimporturls = array();
+		foreach($dependencies as $id => $ont){
+			$nimporturls[$id] = $ont->getImportURL();
+		}
+		$this->ldprops["_:schema_schema"] = array($this->nsres->expand("owl:imports") => array_values($nimporturls));
+	}
+	
+	function instanceGname(){
+		return $this->cwurl;
+	}
+	
+	function schemaGname(){
+		return $this->cwurl ."/schema";
+	}
+	
+	function schemaSchemaGname(){
+		return $this->cwurl ."/schema_schema";
+	}
+	
+	
+	function generateDependenciesFromURLs(&$srvr, $parsed_urls, $type = 'schema'){
+		$dependencies = array();
+		foreach($parsed_urls as $parsed_url){
+			if(!isset($dependencies[$parsed_url['id']])){
+				$sont = $srvr->loadLDO($parsed_url['id'], "ontology", $parsed_url['collection'], $parsed_url['fragment'], $parsed_url['version']);
+				if($sont){
+					$dependencies[$parsed_url['id']] = $sont;
+				}
+				else {
+					return $this->failure_result("Failed to load ontology ".$parsed_ur['id']. $srvr->errmsg, $srvr->errcode);
+				}
+				$rules = array();
+				$dependencies = array_merge($dependencies, $sont->getDependentOntologies($srvr, $rules, $type, array_keys($dependencies)));
 			}
 			else {
-				return $this->failure_result("Could not translate $url into dacura schema dependency", 404);
+				return $this->failure_result("Could not translate parsed url into dacura schema dependency", 404);
 			}
 		}
 		return $dependencies;
 	}
-
-	function generateSchemaDependencies(&$srvr){
-		$urls = $this->getPredicateValues("_:schema", "imports", "owl");
-		if($urls){
-			if(is_string($urls)) $urls = array($urls);
-			if($urls && is_array($urls) && count($urls) > 0){
-				return $this->generateDependenciesFromURLs($srvr, $urls, false);
-			}
-		}
-	}
 	
-	function generateSchemaSchemaDependencies(&$srvr){
-		$urls = $this->getPredicateValues("_:schema", "imports", "owl");
-		if($urls){
-			if(is_string($urls)) $urls = array($urls);
-		}
-		if(!is_array($urls)){
-			$urls = array();
-		}
-		$surls = $this->getPredicateValues("_:schema_schema", "imports", "owl");	
-		if($surls){
-			if(is_string($surls)) $surls = array($surls);
-		}
-		if(is_array($surls)){
-			foreach($surls as $surl){
-				if(!in_array($surl, $urls)){
-					$urls[] = $surl;
-				}
-			}
-		}
-		if($urls) {
-			return $this->generateDependenciesFromURLs($srvr, $urls, true);
-		}
-		return array();				
-	}
 	
-	function generateDependencies(&$srvr){
-		$this->dependencies = array("schema" => $this->generateSchemaDependencies($srvr));
-		//opr(array_keys($this->dependencies['schema']));
-		$this->dependencies['schema_schema'] = $this->generateSchemaSchemaDependencies($srvr);
-		return ($this->dependencies["schema"] !== false);		
-	}
-	
-	function getSchemaDependencies(&$srvr){
-		if(!$this->dependencies){
-			if(!$this->generateDependencies($srvr)){
-				return false;
-			}		
-		}
-		return $this->dependencies['schema'];
-	}
-	
-	function getSchemaSchemaDependencies(&$srvr){
-		if(!$this->dependencies){
-			if(!$this->generateDependencies($srvr)){
-				return false;
-			}
-		}
-		return $this->dependencies['schema_schema'];
-	}
-	
-	function validateDependencies(&$srvr){
-		if(!$this->dependencies){
-			$this->generateDependencies($srvr);
-		}
-		if(isset($this->dependencies['schema']) && $this->dependencies['schema'] === false){
-			return false;
-		}
-		if(isset($this->dependencies['schema_schema']) && $this->dependencies['schema_schema'] === false){
-			return false;
-		}
-		return true;
-	}
 	
 	function getValidMetaProperties(){
-		return array("status", "title", "two_tier_schemas", "image", "instance_dqs_tests", "schema_dqs_tests", "selected_ontologies");
+		return array("status", "title", "two_tier_schemas", "image", "explicit_schema_imports", "instance_dqs_tests", "schema_dqs_tests", "selected_ontologies");
 	}		
 	
 	
-	/**
-	 * Ensures that both the url and the prefix of the new ontology are unique
-	 * (non-PHPdoc)
-	 * @see LDO::validateMeta()
-	 */
-	function validateMeta($rules, LdDacuraServer &$srvr){
-		if(isset($rules['allow_arbitrary_metadata']) && $rules['allow_arbitrary_metadata']){
-			return true;
-		}
-		else {
-			$vprops = $this->getValidMetaProperties();
-			foreach($this->meta as $k => $v){
-				if(!in_array($k, $vprops)){
-					return $this->failure_result("Meta Property $k is not a valid metadata property", 400);	
-				}				
-			}
-		}
-		return true;
-	}
 }

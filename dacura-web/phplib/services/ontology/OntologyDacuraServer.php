@@ -16,11 +16,8 @@ class OntologyDacuraServer extends LdDacuraServer {
 		$rules = $this->getServiceSetting("validation_rules", array());
 		$nopr->add($ont->validateDependencies($rules, $test_flag));
 		if($nopr->is_accept()){
-			if($trips = $this->getOntologyDependenciesAsTriples($ont, $rules)){
-				$schema_tests = $this->getSchemaTests($ont);
-				$instance_tests = $this->getInstanceTests($ont);
-				$vo = $this->graphman->validateOntology($ont, $trips['schema_schema'], $trips['schema'], $schema_tests, $instance_tests);
-				$nopr->add($vo);
+			if($quads = $this->getOntologyAsQuads($ont, $rules)){
+				$nopr->add($this->graphman->validateOntology($ont, $quads, $this->getSchemaTests($ont), $this->getInstanceTests($ont)));
 			}
 			else {
 				$nopr->failure($this->errcode, "Failed to generate ontology dependency triples", $this->errmsg);
@@ -43,35 +40,46 @@ class OntologyDacuraServer extends LdDacuraServer {
 	}
 	
 	
-	function getOntologyDependenciesAsTriples(Ontology $ont, $rules){
-		$deps = $ont->getSchemaDependencies($this, $rules);
-		//opr(array_keys($deps));
-		$trips = array("schema" => $ont->typedQuads($ont->cwurl."/schema"), "schema_schema" => array());				
-		if($this->getServiceSetting("two_tier_schemas", true)){
-			foreach($deps as $sh => $iont){
-				$trips['schema'] = array_merge($trips['schema'], $iont->typedQuads($ont->schemaGname()));
-				$trips['schema_schema'] = array_merge($trips['schema_schema'], $iont->typedQuads($ont->schemaSchemaGname()));
+	function getOntologyAsQuads(Ontology $ont, $rules, $include_deps = true){
+		$quads = $ont->typedQuads($ont->schemaGname());
+		if($include_deps){
+			$deps = $ont->getDependentOntologies($this, $rules, "schema");
+			foreach($deps as $id => $dont){
+				$quads = array_merge($quads, $dont->typedQuads($ont->schemaGname()));				
 			}		
-			$sdeps = $ont->getSchemaSchemaDependencies($this, $rules, array_keys($deps));
-			//opr(array_keys($sdeps));				
-			foreach($sdeps as $sh => $sont){
-				$trips['schema_schema'] = array_merge($trips['schema_schema'], $sont->typedQuads($ont->schemaSchemaGname()));
+		}
+		if($this->getServiceSetting("two_tier_schemas", true)){
+			$quads = array_merge($quads, $ont->typedQuads($ont->schemaGnameGname()));
+			if($include_deps){
+				$deps = $ont->getDependentOntologies($this, "schema_schema", $rules);
+				foreach($deps as $id => $dont){
+					$quads = array_merge($quads, $dont->typedQuads($ont->schemaSchemaGname()));				
+				}		
 			}
 		}
-		else {
-			foreach($deps as $sh => $iont){
-				//echo "<P>$sh";
-				$xtrips = $iont->typedQuads($ont->schemaGname());
-				$trips['schema'] = array_merge($trips['schema'], $xtrips);
-				//echo count($trips['schema'])." triples in the schema and ".count($xtrips)." in $sh";
-			}		
-		}
-		return $trips;
+		return $quads;		
 	}
-	
 	
 	function objectUpdated(LDOUpdate $uldo, $test_flag = false){
 		return $this->objectPublished($uldo->changed, $test_flag);
+	}
+	
+	function getNewLDOContentRules($nldo){
+		$x = parent::getNewLDOContentRules($nldo);
+		$x["replace_blank_ids"] = true;
+		$x['load_dependencies'] = true;
+		return $x;
+	}
+	
+	function getUpdateLDOContentRules($nldo){
+		$x = parent::getUpdateLDOContentRules($nldo);
+		$x["replace_blank_ids"] = false;
+		$x['load_dependencies'] = false;
+		return $x;
+	}
+	
+	function getReplaceLDOContentRules($nldo){
+		return $this->getNewLDOContentRules($nldo);
 	}
 	
 	
