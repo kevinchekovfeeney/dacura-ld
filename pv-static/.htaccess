@@ -1,4 +1,0 @@
-AuthUserFile /var/www/.htpasswd
-AuthType Basic
-AuthName "Dacura Test"
-Require valid-user
