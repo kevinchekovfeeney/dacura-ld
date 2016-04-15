@@ -13,10 +13,12 @@ dacura.frame.api.getFrame = function (cls){
 };
 
 
-dacura.frame.draw = function(resultobj, pconf){
+dacura.frame.draw = function(cls,resultobj,pconf){
 	var framestr = resultobj.result;
 	var frame = JSON.parse(framestr);
 	var obj = document.createElement("div");
+	obj.setAttribute('id','frame-container');
+	obj.setAttribute('data-class', cls);
 	
 	gensym = dacura.frame.Gensym("query");
 	res = dacura.frame.frameGenerator(frame, obj, gensym);
@@ -74,15 +76,17 @@ dacura.frame.frameGenerator = function(frame, obj, gensym){
 					var textnode = document.createTextNode(elt.property + ':');			
 				}
 				var divlabel = document.createElement("div");
-				divlabel.setAttribute('data-property', elt.property);
 				divlabel.setAttribute('style', 'float: left');
 				divlabel.appendChild(textnode); 
 				labelnode.appendChild(divlabel);
+				labelnode.setAttribute('data-property', elt.property);
+
 				propdiv.appendChild(labelnode);
 				
 				if( elt.type == 'objectProperty' ){
 					var subframe = elt.frame;
 					var framediv = document.createElement("div");
+					framediv.setAttribute('class', 'embedded-object');
 					framediv.setAttribute('style', 'padding-left: 5px; display: inline-block;');
 					
 					dacura.frame.frameGenerator(subframe, framediv, gensym);
@@ -112,8 +116,9 @@ dacura.frame.frameGenerator = function(frame, obj, gensym){
 		// we are an entity
 		
 		var input = document.createElement("input");
-		input.setAttribute('class', 'queryInteractor');
+		input.setAttribute('class', 'entity-class');
 		input.setAttribute('id', gensym.next());
+		input.setAttribute('data-range', (frame.class || frame.type)); 
 		// This should really be a specialised search box.
 		input.setAttribute('type', 'text');
 		obj.appendChild(input);
@@ -125,9 +130,83 @@ dacura.frame.frameGenerator = function(frame, obj, gensym){
 	
 };
 
-dacura.frame.entityExtractor = function(div){
-	// Extracts the entity graph as JSON from a div. 
+dacura.frame.getId = function(obj,gs){
+	return obj.attr('data-id') ? obj.attr('data-id') : gs.next() ;	
+};
+
+dacura.frame.entityExtractor = function(){
+	var gs = dacura.frame.Gensym("_:oid"); 
+	var frame = $('#frame-container');	
+	var id = dacura.frame.getId(frame,gs); 
+	var cls = frame.attr('data-class');
+	var jsonobj = {};
+	var res = dacura.frame.objectExtractor(frame, gs);
+	res['rdf:type'] = cls;
+	jsonobj[id] = res;
+	return res;
+};
+
+dacura.frame.hasSubObject = function(obj){
+	if($(obj).children('div.embedded-object').length > 0){
+		return true;
+	}else{
+		return false;
+	}
 }
+
+dacura.frame.hasEntitySubObject = function(obj){
+	if($(obj).children('div.embedded-object').children('input.entity-class').length > 0){
+		return true;
+	}else{
+		return false;
+	}
+}
+
+dacura.frame.hasInputSubObject = function(obj){
+	if($(obj).children('input').length > 0){
+		console.log("Got here....");
+		return true;
+	}else{
+		return false;
+	}
+}
+
+ex = [];
+sub = [];
+empty = [];
+current = undefined;
+
+dacura.frame.objectExtractor = function(container,gs){
+	var obj = {};	
+	// Extracts the entity graph as JSON from a div.	
+	$(container).children('div').children('label').each(function(elt){
+		var property = $(this).attr('data-property');
+		if('http://dacura.cs.tcd.ie/data/seshat#hasComponent' == property ){
+			current = this;
+		}
+		var subobj = dacura.frame.subObjectExtractor(this,gs);
+		obj[property] = subobj;		
+	});
+
+	return obj;
+};
+
+dacura.frame.subObjectExtractor = function(container,gs){
+	var obj = {}
+	
+	if(dacura.frame.hasEntitySubObject(container)){
+		return $(container).children('div.embedded-object').children('input.entity-class').val();
+	}else if(dacura.frame.hasInputSubObject(container)){
+		return $(container).children('div.embedded-object').children('input').val();
+	}else{
+		$(container).children('div.embedded-object').each(function(elt){
+			obj = dacura.frame.objectExtractor(this,gs);
+			sub.push(obj);		
+		});
+		return obj;
+	}		
+	
+};
 
 dacura.frame.typeConvert = function(ty){
 	// This needs to be extended at each XSD type. 
@@ -169,8 +248,9 @@ dacura.frame.init = function(entity, pconf){
 	
 	var ajs = dacura.frame.api.getFrame(cls);
 	msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};
+	//alert(cls);
 	ajs.handleResult = function(resultobj, pconf){
-		var frameid = dacura.frame.draw(resultobj, pconf);
+		var frameid = dacura.frame.draw(cls,resultobj,pconf);
 		dacura.frame.fill(resultobj, pconf); 
 		dacura.frame.initInteractors();
 	}
