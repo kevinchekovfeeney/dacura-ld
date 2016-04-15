@@ -5,24 +5,6 @@
 require_once("phplib/services/ontology/OntologyDacuraServer.php");
 class GraphDacuraServer extends LdDacuraServer {
 	
-	function getNewLDOContentRules($nldo){
-		$x = parent::getNewLDOContentRules($nldo);
-		$x["replace_blank_ids"] = false;
-		$x['load_dependencies'] = true;
-		return $x;
-	}
-	
-	function getUpdateLDOContentRules($nldo){
-		$x = parent::getUpdateLDOContentRules($nldo);
-		$x["replace_blank_ids"] = false;
-		$x['load_dependencies'] = false;
-		return $x;
-	}
-	
-	function getReplaceLDOContentRules($nldo){
-		return $this->getNewLDOContentRules($nldo);
-	}
-	
 	
 	
 	/**
@@ -36,13 +18,9 @@ class GraphDacuraServer extends LdDacuraServer {
 		if($graph->is_empty()){
 			return $nopr->failure(400, "Graph schema is empty", "A schema must be added to the Graph before data can be published to it.");
 		}
-		if(!$graph->validateDependencies($this)){
-			return $nopr->reject("Failed dependency validation", "The dependencies defined in the graph's configuration cannot be loaded for validation. ".$graph->errmsg." [$graph->errcode]");
-		}
-		$rules=array();
-		if($quads = $this->getGraphSchemaAsQuads($graph, $rules)){
+		if($quads = $this->getGraphSchemaAsQuads($graph)){
 			if($graph->hasTwoTierSchema()){
-				$squads = $this->getGraphSchemaSchemaAsQuads($graph, $rules);
+				$squads = $this->getGraphSchemaSchemaAsQuads($graph);
 				if($squads === false){
 					return $nopr->failure($this->errcode, "Failed to serialise schema schema graph ".$graph->id, $this->errmsg);						
 				}
@@ -54,9 +32,9 @@ class GraphDacuraServer extends LdDacuraServer {
 		elseif($quads === false){
 			return $nopr->failure($this->errcode, "Failed to serialise graph ".$graph->id, $this->errmsg);
 		}
-		else {
-			$nopr->msg("Empty schema graph", "no tests run as no triples were produced for graph");
-		}
+		//if(!$graph->validateDependencies($this)){
+		//	return $nopr->reject("Failed dependency validation", "The dependencies defined in the graph's configuration cannot be loaded for validation. ".$graph->errmsg." [$graph->errcode]");
+		//}
 		return $nopr;
 	}
 	
@@ -64,13 +42,11 @@ class GraphDacuraServer extends LdDacuraServer {
 	function objectDeleted(Graph $graph, $test_flag = false){
 		$nopr = new DQSResult("Deleting Graph $graph->id", $test_flag);
 		if($graph->is_empty()){
-			$nopr->body("Graph schema is empty");
-			return $nopr->accept();
+			return $nopr->msg("Graph schema is empty");
 		}
-		$rules=array();
-		if($quads = $this->getGraphSchemaAsQuads($graph, $rules)){
+		if($quads = $this->getGraphSchemaAsQuads($graph)){
 			if($graph->hasTwoTierSchema()){
-				$squads = $this->getGraphSchemaSchemaAsQuads($graph, $rules);
+				$squads = $this->getGraphSchemaSchemaAsQuads($graph);
 				if($squads === false){
 					return $nopr->failure($this->errcode, "Failed to serialise schema schema graph ".$graph->id, $this->errmsg);						
 				}
@@ -105,30 +81,31 @@ class GraphDacuraServer extends LdDacuraServer {
 		$oimports = $uldo->original->getSchemaImports($this->durl());
 		//opr($oimports);
 		$nimports = $uldo->changed->getSchemaImports($this->durl());
+		//opr($uldo->changed->ldprops);
 		foreach($oimports as $id => $rec){
 			if(isset($nimports[$id]) && $nimports[$id]['version'] != $rec['version']){
-				$add_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], $nimports[$id]['version']);
-				$del_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], $rec['version']);
+				$add_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], false, $nimports[$id]['version']);
+				$del_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], false, $rec['version']);
 			}
 			elseif(!isset($nimports[$id])){
-				$del_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], $rec['version']);
+				$del_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], false, $rec['version']);
 			}
 		}
 		foreach($nimports as $id => $rec){
 			if(!isset($oimports[$id])){
-				$add_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], $rec['version']);
+				$add_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], false, $rec['version']);
 			}				
 		}
 		$iquads = array();
 		$dquads = array();
+		//opr(array_keys($add_onts));
 		foreach($add_onts as $ont){
 			$iquads = array_merge($iquads, $ont->typedQuads($uldo->changed->schemaGname()));
 			if(count($iquads) == 0){
-				$x = $ont->typedQuads("x");
-				opr($ont);
-				echo $uldo->changed->schemaGname();
+				//opr($ont);
+				echo "Failed for ".$ont->id;
 			}				
-			echo "<P>$ont->id (".count($iquads).")";
+			//echo "<P>$ont->id (".count($iquads).")";
 				
 		}
 		foreach($del_onts as $ont){
@@ -141,16 +118,16 @@ class GraphDacuraServer extends LdDacuraServer {
 			$nimports = $uldo->changed->getSchemaSchemaImports();
 			foreach($oimports as $id => $rec){
 				if(isset($nimports[$id]) && $nimports[$id]['version'] != $rec['version']){
-					$add_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], $nimports[$id]['version']);
-					$del_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], $rec['version']);
+					$add_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], false, $nimports[$id]['version']);
+					$del_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], false, $rec['version']);
 				}
 				elseif(!isset($nimports[$id])){
-					$del_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], $rec['version']);
+					$del_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], false, $rec['version']);
 				}
 			}
 			foreach($nimports as $id => $rec){
 				if(!isset($oimports[$id])){
-					$add_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], $rec['version']);
+					$add_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], false, $rec['version']);
 				}
 			}
 			foreach($add_onts as $ont){
@@ -162,6 +139,7 @@ class GraphDacuraServer extends LdDacuraServer {
 		}
 		if(count($iquads) > 0 || count($dquads) > 0){
 			$gr = $this->graphman->updateGraphSchema($uldo->changed, $iquads, $dquads, $test_flag);
+			//opr($gr);
 			$nopr->add($gr);
 		}
 		else {
@@ -171,11 +149,17 @@ class GraphDacuraServer extends LdDacuraServer {
 	}
 	
 	
-	function getGraphSchemaAsQuads(Graph $graph, $rules){
+	function getGraphSchemaAsQuads(Graph &$graph){
 		$quads = array();
+		//echo "<P>doing it ".$this->durl();
+		//opr($graph->ldprops);
 		$imports = $graph->getSchemaImports($this->durl());
+		//echo "<P>done it ".$this->durl();
+		//opr($imports);
+		
+		//return $quads;
 		foreach($imports as $id => $rec){
-			if(!$ont = $this->loadLDO($id, "ontology", $rec['collection'], $rec['version'])){
+			if(!$ont = $this->loadLDO($id, "ontology", $rec['collection'], false, $rec['version'])){
 				return false;
 			}	
 			$quads = array_merge($quads, $ont->typedQuads($graph->schemaGname()));				
@@ -183,11 +167,11 @@ class GraphDacuraServer extends LdDacuraServer {
 		return $quads;
 	}
 
-	function getGraphSchemaSchemaAsQuads(Graph $graph, $rules){
+	function getGraphSchemaSchemaAsQuads(Graph $graph){
 		$quads = array();
 		$imports = $graph->getSchemaSchemaImports($this->durl());
 		foreach($imports as $id => $rec){
-			if(!$ont = $this->loadLDO($id, "ontology", $rec['collection'], $rec['version'])){
+			if(!$ont = $this->loadLDO($id, "ontology", $rec['collection'], false, $rec['version'])){
 				return false;
 			}	
 			$quads = array_merge($quads, $ont->typedQuads($graph->schemaGname()));				

@@ -30,25 +30,6 @@ dacura.ld.viewer = {
 	format: "json",
 	mode: "view",
 	div: "",
-	init: function(div, options, mode, format){
-		$('#'+div).html('<div class="ld-main-body"><div class="ld-viewer-header"></div><div class="ld-viewer-body"></div></div>');
-		if(typeof mode == "string"){
-			this.mode = mode;					
-		}
-		if(typeof format == "string"){
-			this.format = format;
-		}	
-		this.div = div;
-		if(typeof options.version_browser != "undefined"){
-			//draw version browser component
-		}
-		if(typeof options.can_update != "undefined"){
-			//draw update browser component
-		}	
-		if(mode == "view" && typeof options.formats == "object"){
-			//draw radio buttons for choosing format
-		}		
-	},
 	
 	initCreate: function(formdiv){
 		//ldsource 
@@ -137,7 +118,9 @@ dacura.ld.viewer = {
 		$(jqkey).show();
 	},
 	
-	draw: function(ldo){
+	draw: function(ldo, div){
+		$('#'+div).html('<div class="ld-main-body"><div class="ld-viewer-header"></div><div class="ld-viewer-body"></div></div>');
+		this.div = div;
 		this.format = ldo.format;
 		this.mode = ldo.mode;
 		this.options = ldo.options;

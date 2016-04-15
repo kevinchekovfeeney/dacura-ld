@@ -106,7 +106,7 @@ dacura.frame.init = function(entity, pconf){
 
 		// entity qualified name [ dacura.system/ld that has URL ]
 		var eqn = dacura.system.pageURL(entity.ldtype, entity.meta.cid) + "/" + entity.id;
-		var cls = entity.contents.main[eqn]['rdf:type'];
+		var cls = entity.meta.type;//[eqn]['rdf:type'];
 		var ajs = dacura.frame.api.getFrame(cls);
 		msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};
 		ajs.handleResult = dacura.frame.draw;

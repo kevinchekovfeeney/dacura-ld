@@ -135,16 +135,6 @@ class GraphManager extends DacuraController {
 		}
 		$dqsr->result = $content;
 		return $dqsr;
-		/*
-		if(is_array($content) && count($content) == 0){
-			return $dqsr->accept();
-		}
-		elseif(is_array($content)) {
-			return $dqsr->parseErrors($content);
-		}
-		else {
-			return $dqsr->failure(500, "DCS call to $srvc failed", "Dacura Quality Service returned illegal type (not an array): $content");
-		}*/
 	}
 	
 	
@@ -212,11 +202,18 @@ class GraphManager extends DacuraController {
 			}
 		}
 		else {
-			$dqsr = $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $quads, false, $test_flag, $graph->getCreateInstanceTests());
+			$dqsr = $this->invokeDQS("schema", $graph->schemaGname(), $graph->instanceGname(), $quads, false, $test_flag, $graph->getCreateInstanceTests());
 		}		
 		return $dqsr;	
 	}
 	
+	/**
+	 * Called to remove a graph's schema from the triple-store
+	 * @param Graph $graph graph object for which the schema is being unpublished
+	 * @param array $quads quads to be removed 
+	 * @param boolean $test_flag - is this a test
+	 * @return DQSResult
+	 */
 	function unpublishGraphSchema($graph, $quads, $test_flag){
 		if($graph->hasTwoTierSchema() && (count($quads) > 0)){
 			return $this->invokeDQS("instance", $graph->schemaSchemaGname(), $graph->schemaGname(), false, $quads, $test_flag, $graph->getDeleteSchemaTests());
@@ -231,6 +228,14 @@ class GraphManager extends DacuraController {
 		}
 	}
 
+	/**
+	 * Called to update the schema of a live graph 
+	 * @param Graph $graph graph object
+	 * @param array $iquads insert quads - to be added to graph
+	 * @param array $dquads delete quads - to be deleted from graph
+	 * @param boolean $test_flag - is this a test invocation
+	 * @return DQSResult
+	 */
 	function updateGraphSchema(Graph $graph, $iquads, $dquads, $test_flag){
 		$dqsr = new DQSResult("update graph", $test_flag);
 		if($graph->hasTwoTierSchema()){
@@ -248,14 +253,14 @@ class GraphManager extends DacuraController {
 				}
 				else {
 					$ntf = $test_flag || !$sr->is_accept();
-					$sr2 = $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $iquads, false, $ntf, $graph->getCreateInstanceTests());
+					$sr2 = $this->invokeDQS("schema", $graph->schemaGname(), $graph->instanceGname(), $iquads, false, $ntf, $graph->getCreateInstanceTests());
 				}
 				$dqsr->add($sr2);
 			}
 		}
 		elseif(count($iquads) > 0 || count($dquads) > 0){
 			//make changes to schema graph
-			return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $iquads, $dquads, $test_flag, $graph->getUpdateInstanceTests());
+			return $this->invokeDQS("schema", $graph->schemaGname(), $graph->instanceGname(), $iquads, $dquads, $test_flag, $graph->getUpdateInstanceTests());
 		}
 		else {
 			$dqsr = new DQSResult("unpublish graph schema", $test_flag);
@@ -264,33 +269,63 @@ class GraphManager extends DacuraController {
 		return $dqsr;
 	}
 	
-	
-	function createInstance(Graph $graph, $trips, $test_flag){
-		return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $trips, false, $test_flag, $graph->getCreateInstanceTests());
+	/**
+	 * Called to create an instance in the graph's instance named graph
+	 * @param Graph $graph graph object 
+	 * @param array $quads quads to be added to graph
+	 * @param boolean $test_flag
+	 * @return DQSResult
+	 */
+	function createInstance(Graph $graph, $quads, $test_flag){
+		return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $quads, false, $test_flag, $graph->getCreateInstanceTests());
 	}
 
-	function deleteInstance(Graph $graph, $trips, $test_flag){
-		return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), false, $trips, $test_flag, $graph->getDeleteInstanceTests());
-	}
-	
-	
-	function updateInstance(Graph $graph, $itrips, $dtrips, $test_flag, $tests){
-		return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $itrips, $dtrips, $test_flag, $graph->getUpdateInstanceTests());
-	}
-	
-	/* 
-	 * all of these are just convenience interfaces to invoke DQS...
+	/**
+	 * Called to delete an instance in the graph's instance named graph
+	 * @param Graph $graph graph object 
+	 * @param array $quads quads to be removed from graph
+	 * @param boolean $test_flag
+	 * @return DQSResult
 	 */
-	function getGraphldoClasses($schema_gname){
-		$classes = $this->invokeDCS($schema_gname);
-		return $classes;
+	function deleteInstance(Graph $graph, $quads, $test_flag){
+		return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), false, $quads, $test_flag, $graph->getDeleteInstanceTests());
 	}
 	
-	function getClassFrame($schema_gname, $classname){
-		$classes = $this->invokeDCS($schema_gname, $classname);
-		return $classes;
+	/**
+	 * Called to update an instance's data in the graph's instance named graph
+	 * @param Graph $graph graph object
+	 * @param array $iquads quads to be added to graph
+	 * @param array $dquads quads to be removed from graph
+	 * @param boolean $test_flag
+	 * @return DQSResult
+	 */
+	function updateInstance(Graph $graph, $iquads, $dquads, $test_flag){
+		return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $iquads, $dquads, $test_flag, $graph->getUpdateInstanceTests());
 	}
-		
+
+	/**
+	 * Called to reverse an update of an object's instance data 
+	 * @param Graph $graph graph object
+	 * @param array $iquads quads that were added
+	 * @param array $dquads quads that were removed
+	 * @param boolean $test_flag
+	 * @return DQSResult
+	 */
+	function undoInstanceUpdate(Graph $graph, $iquads, $dquads){
+		return $this->invokeDQS("instance", $graph->schemaGname(), $graph->instanceGname(), $dquads, $iquads, $test_flag, $graph->getUndoInstanceUpdateTests());
+	}
+
+	/**
+	 * Called to dump a dqs request to file for debugging
+	 * @param string $fname filepath to file to be used for debugging
+	 * @param string $service the dqs service being called
+	 * @param array|string $tests the dqs tests being requested
+	 * @param string $schema_gname the name of the schema graph
+	 * @param string $gname the name of the instance graph
+	 * @param array $iquads the quads that are to be inserted
+	 * @param array $iquads the quads that are to be deleted
+	 * @param string $qstr the query string
+	 */
 	function dumpDQSRequest($fname, $service, $tests, $schema_gname, $gname, $itrips, $dtrips, $qstr){
 		$dumpstr = "Service: $service\n";
 		$dumpstr .= "Tests: ";

@@ -25,9 +25,13 @@ class NSResolver extends DacuraController {
 					"intersectionOf", "oneOf", "dataRange", "disjointWith", "imports", "sameAs", "differentFrom",
 				"allValuesFrom", "someValuesFrom")  			
 	);
-	
+	/**
+	 * An array of problem predicates that can be flagged by dacura
+	 * @var unknown
+	 */
 	var $problem_predicates = array(
-		"dc" => array("type")	
+		"dc" => array("type"),
+		"rdf" => array("List")				
 	);
 	
 	/** @var array a mapping of 'alternate' urls to be used in dependency analysis - the canonical url is on the right */
@@ -47,19 +51,23 @@ class NSResolver extends DacuraController {
 		parent::__construct($service);
 		$this->prefixes = $this->getServiceSetting("prefixes", $this->default_prefixes);
 		$this->structural_predicates = $this->getServiceSetting("structural_predicates", $this->structural_predicates);
-		$this->problem_predicates = $this->getServiceSetting("prefixes", $this->problem_predicates);
-		$this->loadURLMappings();
+		$this->problem_predicates = $this->getServiceSetting("problem_predicates", $this->problem_predicates);
+		$this->url_mappings = $this->getServiceSetting("url_mappings", $this->url_mappings);
 	}
 	
+	/**
+	 * Adds a prefix / url pair to the name space resolver
+	 * @param string $prefix the prefix to use
+	 * @param string $url the url to use
+	 */
 	function addPrefix($prefix, $url){
 		$this->prefixes[$prefix] = $url;
 	}
 	
-	
-	function loadURLMappings(){
-		//return $this->url_mappings;
-	}
-	
+	/**
+	 * Is the prefix a dqs built-in ontology (rdf, owl, rdfs, xsd)
+	 * @param string $sh the prefix
+	 */
 	function isBuiltInOntology($sh){
 		return isset($this->default_prefixes[$sh]);
 	}
@@ -158,27 +166,36 @@ class NSResolver extends DacuraController {
 	}
 	
 	/**
-	 * Traverses a LD object associative array, expanding the namespaces from the prefixes of any ids found there
+	 * Traverses a LD props associative array, expanding the namespaces from the prefixes of any ids found there
 	 * @param array $ldprops an LD object's associative array contents,
 	 * @param string|boolean $cwurl the closed world url of the object (or false if there is none)
 	 */
-	function expandNamespaces(&$ldprops, $cwurl = false){
+	function expandNamespaces(&$ldprops, $cwurl = false, $multigraph = false){
 		if(!is_array($ldprops)) return;
-		foreach($ldprops as $s => $ldobj){
-			if(isNamespacedURL($s) && ($expanded = $this->expand($s))){
-				$ldprops[$expanded] = $ldobj;
-				unset($ldprops[$s]);
-				$s = $expanded;
+		if($multigraph){
+			foreach(array_keys($ldprops) as $gid){
+				$ldprops[$gid] = expandNamespaces($ldprops[$gid], $cwurl);
 			}
-			if(!isAssoc($ldobj)){
-				//echo "$s is the subject but the rest is not an object";
-			}
-			else {
-				$this->expandLDONamespaces($ldprops[$s], $cwurl);
+		}
+		else {
+			foreach($ldprops as $s => $ldobj){
+				if(isNamespacedURL($s) && ($expanded = $this->expand($s))){
+					$ldprops[$expanded] = $ldobj;
+					unset($ldprops[$s]);
+					$s = $expanded;
+				}
+				if(isAssoc($ldobj)){
+					$this->expandLDONamespaces($ldprops[$s], $cwurl);
+				}
 			}
 		}
 	}
 	
+	/**
+	 * Traverses an ldo array {property: value} and expands all the urls to not use prefixes
+	 * @param array $ldobj the array to be expanded
+	 * @param string $cwurl the url of the object that owns the property array
+	 */
 	function expandLDONamespaces(&$ldobj, $cwurl){
 		foreach($ldobj as $p => $v){
 			if(isNamespacedURL($p) && ($expanded = $this->expand($p))){
@@ -225,25 +242,35 @@ class NSResolver extends DacuraController {
 	 * Traverses a LD object associative array, compressing the namespaces with the prefixes of any matching urls found 
 	 * @param array $ldprops an LD object's associative array contents,
 	 * @param string|boolean $cwurl the closed world url of the object (or false if there is none)
+	 * @param boolean - is this a multi-graph ld array (indexed by graph id)
 	 */
-	function compressNamespaces(&$ldprops, $cwurl = false){
+	function compressNamespaces(&$ldprops, $cwurl = false, $multigraph=false){
 		if(!is_array($ldprops)){return;}
-		foreach($ldprops as $s => $ldobj){
-			if(isURL($s) && ($compressed = $this->compress($s))){
-				$ldprops[$compressed] = $ldobj;
-				unset($ldprops[$s]);
-				$s = $compressed;
+		if($multigraph){
+			foreach(array_keys($ldprops) as $gid){
+				$ldprops[$gid] = compressNamespaces($ldprops[$gid], $cwurl);
 			}
-			if(isAssoc($ldobj)){
-				$this->compressLDONamespaces($ldprops[$s], $cwurl);
-			}
-			else {
-				//echo "$s is the subject but the rest is not an object";
+		}
+		else {
+			foreach($ldprops as $s => $ldobj){
+				if(isURL($s) && ($compressed = $this->compress($s))){
+					$ldprops[$compressed] = $ldobj;
+					unset($ldprops[$s]);
+					$s = $compressed;
+				}
+				if(isAssoc($ldobj)){
+					$this->compressLDONamespaces($ldprops[$s], $cwurl);
+				}
 			}
 		}
 	}
 	
-	function compressLDONamespaces(&$ldobj, $cwurl = false){
+	/**
+	 * Traverses a ld object {property: value} array and compresses urls to use prefix:id form
+	 * @param array $ldobj the ld object to be compressed
+	 * @param string $cwurl the url of the objec that owns the property array
+	 */
+	private function compressLDONamespaces(&$ldobj, $cwurl = false){
 		foreach($ldobj as $p => $v){
 			//compress predicates
 			if(isURL($p) && ($compressed = $this->compress($p))){
@@ -270,7 +297,8 @@ class NSResolver extends DacuraController {
 			}
 			elseif($pv->embeddedlist()){
 				$this->compressNamespaces($ldobj[$p], $cwurl);
-			}elseif($pv->embedded()){
+			}
+			elseif($pv->embedded()){
 				$this->compressLDONamespaces($ldobj[$p], $cwurl);
 			}
 			elseif($pv->objectlist()){
@@ -317,7 +345,14 @@ class NSResolver extends DacuraController {
 		}
 	}
 	
-	function getLDONamespaceUtilisation($lid, $ldo, $cwurl, &$ns){
+	/**
+	 * Returns a data structure containing information about the namespaces used in the passed ldo
+	 * @param string $lid id of the object
+	 * @param array $ldo the linked data property array
+	 * @param string $cwurl the url of the object 
+	 * @param array $ns namespace utilisation record which is populated
+	 */
+	private function getLDONamespaceUtilisation($lid, $ldo, $cwurl, &$ns){
 		foreach($ldo as $p => $v){				
 			$pv = new LDPropertyValue($v, $cwurl);
 			if($pv->embeddedlist()){
@@ -361,7 +396,6 @@ class NSResolver extends DacuraController {
 				}
 			}
 		}
-		return $ns;
 	}
 
 	/**
@@ -514,6 +548,11 @@ class NSResolver extends DacuraController {
 		return false;
 	}
 	
+	/**
+	 * Does the url match one of our known problem predicates? 
+	 * @param string $url
+	 * @return boolean
+	 */
 	function isProblemPredicate($url){
 		foreach($this->problem_predicates as $sh => $preds){
 			foreach($preds as $pred){
@@ -523,7 +562,6 @@ class NSResolver extends DacuraController {
 			}
 		}
 		return false;
-		
 	}
 	
 	/**
@@ -531,50 +569,71 @@ class NSResolver extends DacuraController {
 	 * @param string $s subject url
 	 * @param string $p predicate url
 	 * @param string $o object url
+	 * @param [string] $g named graph url
 	 * @return array<$s, $p, $o> compressed triple array [s,p,o]
 	 */
-	function compressTriple($s, $p, $o){
+	function compressTriple($s, $p, $o, $g=false){
 		$ss = $this->compress($s);
 		$ss = $ss ? $ss : $s;
 		$sp = $this->compress($p);
 		$sp = $sp ? $sp : $p;
 		$so = $this->compress($o);
 		$so = $so ? $so : $o;
-		return array($ss, $sp, $so);
+		$trip = array($ss, $sp, $so);
+		if($g){
+			$trip[] = ($comp = $this->compress[$g]) ? $comp : $g;
+		}
+		return trip;
 	}
 	
 	/**
-	 * Expands the urls in a triple by using full forms wherever prefixed forms are used
+	 * Expands the urls in a triple / quad by using full forms wherever prefixed forms are used
 	 * @param string $s subject url
 	 * @param string $p predicate url
 	 * @param string $o object url
-	 * @return array<$s, $p, $o> expanded triple array [s,p,o]
+	 * @param [string] $g named graph url
+	 * @return array<$s, $p, $o, $g> expanded triple / quad array [s,p,o,g]
 	 */
-	function expandTriple($s, $p, $o){
+	function expandTriple($s, $p, $o, $g = false){
 		$ss = $this->expand($s);
 		$ss = $ss ? $ss : $s;
 		$sp = $this->expand($p);
 		$sp = $sp ? $sp : $p;
 		$so = $this->expand($o);
 		$so = $so ? $so : $o;
-		return array($ss, $sp, $so);
+		$trip = array($ss, $sp, $so);
+		if($g){
+			$trip[] = ($comp = $this->expand[$g]) ? $comp : $g;
+		}
+		return $trip;
 	}
 
 	/**
 	 * Expands the urls from prefixes in a passed array of triples wherever possible
-	 * @param array $trips the array of triples [s,p,o]
+	 * @param array $trips the array of triples [s,p,o] or quads [s,p,o,q]
 	 * @param string $cwurl the closed world url of the object, if it exists
 	 * @param boolean $has_gnames if true, the passed triple array will be treated as if it is indexed by graph ids 
+	 * @param string $gid the graph url of the current graph (for adding to quads) 
 	 */
-	function expandTriples(&$trips, $cwurl, $has_gnames = false){
+	function expandTriples(&$trips, $cwurl, $has_gnames = false, $gid = false){
 		if($has_gnames){
-			foreach($trips as $gname => $data){
-				$this->expandTriples($trips[$gname], $cwurl);
+			if($gid){
+				$this->expandTriples($trips[$gid], $cwurl, false, $gid);				
+			}
+			else {
+				foreach($trips as $gname => $data){
+					$this->expandTriples($trips[$gname], $cwurl, false, $gname);
+				}
 			}
 		}
 		else {
 			foreach($trips as $i => $v){
-				$trips[$i] = $this->expandTriple($v[0], $v[1], $v[2]);
+				if(count($v) == 3){
+					$trips[$i] = $this->expandTriple($v[0], $v[1], $v[2]);
+				}
+				else {
+					$trips[$i] = $this->expandTriple($v[0], $v[1], $v[2], $v[3]);						
+				}
 			}
 		}		
 	}
@@ -585,15 +644,25 @@ class NSResolver extends DacuraController {
 	 * @param string $cwurl the closed world url of the object, if it exists
 	 * @param boolean $has_gnames if true, the passed triple array will be treated as if it is indexed by graph ids
 	 */
-	function compressTriples(&$trips, $cwurl, $has_gnames = false){
+	function compressTriples(&$trips, $cwurl, $has_gnames = false, $gid = false){
 		if($has_gnames){
-			foreach($trips as $gname => $data){
-				$this->compressTriples($trips[$gname], $cwurl);
+			if($gid){
+				$this->compressTriples($trips[$gid], $cwurl, false, $gid);
+			}
+			else {
+				foreach($trips as $gname => $data){
+					$this->compressTriples($trips[$gname], $cwurl, false, $gname);
+				}
 			}
 		}
 		else {
 			foreach($trips as $i => $v){
-				$trips[$i] = $this->compressTriple($v[0], $v[1], $v[2]);
+				if(count($v) == 3){
+					$trips[$i] = $this->compressTriple($v[0], $v[1], $v[2]);
+				}
+				else {
+					$trips[$i] = $this->compressTriple($v[0], $v[1], $v[2], $v[3]);
+				}
 			}
 		}
 	}

@@ -7,7 +7,6 @@ $settings['create_dqs_instance_tests'] = array();
 $settings['dqs_invalid_status'] = "pending";
 $settings['two_tier_schemas'] = false;
 $settings['ldo_allow_demand_id'] = true;
-$settings["internal_allow_demand_id"] = true;
 $settings["replace_blank_ids"] = false;
 $settings["create_options"] = array("show_dqs_triples" => 0,
 		"ns" => 1, "addressable" => 1, "analysis" => 1,

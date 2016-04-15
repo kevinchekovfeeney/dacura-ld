@@ -134,7 +134,10 @@ class FakeTripleStore {
 		return $dqsr;
 	}
 
-	
+	/**
+	 * Generates a simple html represention of the contents of the fake triple store
+	 * @return string the html table
+	 */
 	function html(){
 		$html = "<table><tr><th>Graph</th><th>Subject</th><th>Predicate</th><th>Object</th></tr>";
 		foreach($this->ts as $gname => $trips){

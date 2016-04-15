@@ -197,8 +197,7 @@ function drawLDO(data){
 		"dtsettings": <?=$params['updates_datatable']?>
 	}, data.updates);		
 	dacura.system.styleJSONLD("td.rawjson");	
-	dacura.ld.viewer.init("show-ldo", "view", data.format, data.options);
-	dacura.ld.viewer.draw(data);
+	dacura.ld.viewer.draw(data, "show-ldo");
 	dacura.tool.button.init("testrawedit",  {
 		"screen": "ldo-raw",			
 		"source": "ldoraw",

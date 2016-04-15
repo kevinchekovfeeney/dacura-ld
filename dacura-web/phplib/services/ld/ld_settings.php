@@ -2,19 +2,25 @@
 $settings = array(
 	"service-button-title" => "Linked Data",
 	"demand_id_token" => "@id",
+	"url_mappings" => false,
+	"problem_predicates" => false,
 	"rollback_new_to_pending_on_dqs_reject"	=> true,
+	"pending_updates_prevent_rollback" => false,
 	"rollback_updates_to_pending_on_dqs_reject" => true,
 	"rollback_updates_to_pending_on_version_reject" => true,
 	"two_tier_schemas" => true,		
 	"test_unpublished" => true,
 	"create_dqs_schema_tests" => array(),
-	"create_dqs_instance_tests" => array(),		
-	"create_options" => array("show_dqs_triples" => 0, 
+	"create_dqs_instance_tests" => array(),	
+	
+	"create_options" => array("show_dqs_triples" => 1, 
 			"ns" => 1, "addressable" => 1, "analysis" => 1, 
-			"show_ld_triples" => 0, "fail_on_id_denied" => 1, "show_result" => 0),
+			"show_ld_triples" => 1, "fail_on_id_denied" => 1, "show_result" => 1
+	),
 	"update_options" => array("show_dqs_triples" => 1, "show_ld_triples" => 1, "fail_on_id_denied" => 1, 
-			"show_update_triples" => 1, "show_meta_triples" => 1, "show_result" => 2, 
-			"show_changed" => 1, "show_original" => 1, "ns" => 1, "addressable" => 1),
+			"show_update_triples" => 1, "show_meta_triples" => 1, "show_result" => 1, 
+			"show_changed" => 1, "show_original" => 1, "ns" => 1, "addressable" => 1
+	),
 	"tables" => array(
 		"history" => array("datatable_options" => array(
 			"jQueryUI" => true, "scrollX" => false, "info" => true, "order" => array(0, "desc"),
@@ -47,7 +53,13 @@ $settings = array(
 		"create_button_text" => "Create New LDO",
 		"testcreate_button_text" => "Test Creation",
 		"raw_edit_text" => "Update LDO",
-		"testraw_edit_text" => "Test LDP Update",
+		"testraw_edit_text" => "Test LDO Update",
+		"view_update_contents_intro" => "The contents of the update to the LDO",
+		"view_update_meta_intro" => "The LDO update's meta data",
+		"view_update_analysis_intro" => "The LDO update's analysis",
+		"update_raw_intro_msg" => "The LDO update's raw editing interface",
+		"view_update_after_msg" => "The LDO after the update has taken place",
+		"view_update_before_msg" => "The LDO before the update has taken place",
 	),
 	"create_ldo_fields" => array(
 		"id" => array("label" => "ID", "length" => "short", "help" => "The id of the linked data object - must be all lowercase with no spaces or punctuation. Choose carefully - the id appears in all urls that reference the object and cannot be easily changed!"),

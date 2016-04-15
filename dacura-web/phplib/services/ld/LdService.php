@@ -107,6 +107,39 @@ class LdService extends DacuraService {
 		}
 		return $args;
 	}
+
+	/*
+	 * The various optional arguments supported by the linked data api
+	 */
+	function readLDUpdateArgs($is_post = false){
+		$args = array();
+		if(isset($_GET['version']) || ($is_post && isset($_POST['version']))){
+			$args['version'] = $is_post ? $_POST['version'] : $_GET['version'];
+		}
+		if(isset($_GET['mode'])){
+			$args['mode'] = $_GET['mode'];
+		}
+		else {
+			$args['mode'] = "view";
+		}
+		if(isset($_GET['format'])){
+			$args['format'] = $_GET['format'];
+		}
+		else {
+			$args['format'] = "json";
+		}
+		if(isset($_GET['ldtype']) && $_GET['ldtype']){
+			$args['ldtype'] = $_GET['ldtype'];
+		}
+		if(isset($_GET['options'])){
+			$args['options'] = $_GET['options'];
+		}
+		else {
+			$args['options'] = array("show_changed" => 1, "show_original" => 1, "ns" => 1, "addressable" => 0, "analysis" => 1);
+		}
+		return $args;
+	}
+	
 	
 	function readLDCreateArgs($is_post = false){
 		if(isset($_GET['format'])){
@@ -220,10 +253,7 @@ class LdService extends DacuraService {
 		elseif($screen == "view"){
 			$options = $this->readLDViewArgs();
 			$params['fetch_args'] = json_encode($options);
-			if($this->args && $this->screen == 'update'){
-				$id = "update/".implode("/", $this->args);
-			}
-			elseif($this->args){
+			if($this->args){
 				$id = $this->screen."/".implode("/", $this->args);
 			}
 			else {
@@ -232,7 +262,10 @@ class LdService extends DacuraService {
 			$this->loadParamsForViewScreen($id, $params, $dacura_server);				
 		}
 		elseif($screen == "update"){
-			
+			$options = $this->readLDUpdateArgs();
+			$params['fetch_args'] = json_encode($options);
+			$id = "update/".implode("/", $this->args);
+			$this->loadParamsForUpdateScreen($id, $params, $dacura_server);				
 		}
 		else {
 			return $this->failure_result("Attempt to load unknown LD screen $screen", 404);
@@ -315,6 +348,26 @@ class LdService extends DacuraService {
 				$params['create_intro_msg'] = $this->smsg('create_ldo_intro', $mappings);
 			}
 		}
+		elseif($screen == "update"){
+			if(in_array("ldo-contents", $subscreens)){
+				$params['contents_intro_msg'] = $this->smsg('view_update_contents_intro', $mappings);
+			}				
+			if(in_array("ldo-meta", $subscreens)){
+				$params['meta_intro_msg'] = $this->smsg('view_update_meta_intro', $mappings);
+			}				
+			if(in_array("ldo-analysis", $subscreens)){
+				$params['analysis_intro_msg'] = $this->smsg('view_update_analysis_intro', $mappings);
+			}				
+			if(in_array("ldo-raw", $subscreens)){
+				$params['raw_intro_msg'] = $this->smsg('update_raw_intro_msg', $mappings);
+			}
+			if(in_array("ldo-after", $subscreens)){
+				$params['after_intro_msg'] = $this->smsg('view_update_after_msg', $mappings);
+			}		
+			if(in_array("ldo-before", $subscreens)){
+				$params['before_intro_msg'] = $this->smsg('view_before_after_msg', $mappings);
+			}		
+		}
 	}
 		
 	function loadParamsForObjectListTab(&$params, &$dacura_server){
@@ -348,6 +401,11 @@ class LdService extends DacuraService {
 		return array("ldo-meta", "ldo-raw", "ldo-history", "ldo-contents", "ldo-analysis", "ldo-updates");		
 	}
 	
+	function getUpdateSubscreens(){
+		return array("ldo-meta", "ldo-raw", "ldo-before", "ldo-contents", "ldo-analysis", "ldo-after");
+	}
+	
+	
 	function loadParamsForViewScreen($id, &$params, &$dacura_server){
 		$params['ldoviewer_init'] = array();
 		$params['subscreens'] = $this->getViewSubscreens();
@@ -367,7 +425,26 @@ class LdService extends DacuraService {
 		$params['update_options'] = $this->getServiceSetting("update_options", array());
 		//opr($params);
 		return $params;
-	}	
+	}
+
+	function loadParamsForUpdateScreen($id, &$params, &$dacura_server){
+		$params['ldoviewer_init'] = array();
+		$params['subscreens'] = $this->getUpdateSubscreens();
+		$this->loadSubscreenMessages($params, "update", $params['subscreens']);
+		$params["id"] = $id;
+	
+		$params["title"] = "Linked Data Object Manager";
+		$params["subtitle"] = "Object view";
+		$params["description"] = "View and update your managed linked data objects";
+		$params["raw_ldo_fields"] = $this->sform("raw_edit_fields");
+		$params['create_button_text'] = $this->smsg('raw_edit_text');
+		$params['testcreate_button_text'] = $this->smsg('testraw_edit_text');
+		$params['raw_ldo_fields']['format']['options'] = LDO::$valid_input_formats;
+		$params['direct_create_allowed'] = true;
+		$params['update_options'] = $this->getServiceSetting("update_options", array());
+		//opr($params);
+		return $params;
+	}
 
 	/**
 	 * (non-PHPdoc)

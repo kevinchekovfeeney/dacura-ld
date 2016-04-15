@@ -15,41 +15,6 @@ Class Ontology extends LDO {
 	var $loaded_dependencies = array();
 	
 	/**
-	 * Adds import and simport to standard LDO meta properties. 
-	 * (non-PHPdoc)
-	 * @see LDO::getValidMetaProperties()
-	 */
-	function getValidMetaProperties(){
-		$valids = array_merge(array("import", "schema_import", 'instance_dqs_tests', 'schema_dqs_tests'), parent::getValidMetaProperties());
-		return $valids;
-	}
-
-	function instanceGname(){
-		return $this->cwurl;
-	}
-	
-	function schemaGname(){
-		return $this->cwurl ."/schema";
-	}
-	
-	function schemaSchemaGname(){
-		return $this->cwurl ."/schema_schema";
-	}
-	
-	function getCreateInstanceTests(){
-		isset($this->meta['instance_dqs_tests']) ? 	$this->meta['instance_dqs_tests'] : false;			
-	}
-	
-	function getCreateSchemaTests(){
-		isset($this->meta['schema_dqs_tests']) ? 	$this->meta['schema_dqs_tests'] : false;
-	}
-	
-	function getImportURL(){
-		//opr($this);
-		return $this->cwurl.($this->fragment_id ? "/".$this->fragment_id : "") ."?version=".$this->version;
-	}
-	
-	/**
 	 * Parses an internal dacura link to an ontology and separates out the id, fragment, collection and version information
 	 * @param string $url internal dacura link to ontology
 	 * @return array|boolean an array representing the parsed url with fields, id, fragment, collection, version
@@ -106,17 +71,131 @@ Class Ontology extends LDO {
 		return $parsed_url;
 	}
 	
+	/**
+	 * Generate a url from a parsed ontology url structure
+	 * 
+	 * structure is {id: collection: version: fragment: }
+	 * @param array $parsed_url parsed url with above structure
+	 * @param string $durl dacura baseline url
+	 * @return string the url 
+	 */
 	static function getOntologyURL($parsed_url, $durl){
 		$url = $durl;
 		if(isset($parsed_url['collection']) && $parsed_url['collection'] && $parsed_url['collection'] != "all"){
 			$url .= $parsed_url['collection']."/";
 		}
-		$url .= "ontology/".$parsed_url['id'];	
+		$url .= "ontology/".$parsed_url['id'];
 		if(isset($parsed_url['fragment']) && $parsed_url['fragment']){
 			$url .= "/".$parsed_url['fragment'];
-		}	
+		}
 		$url .= (isset($parsed_url['version']) && $parsed_url['version']) ? "?version=".$parsed_url['version'] : "";
 		return $url;
+	}
+	
+
+	/**
+	 * Override defaults to specify loading of dependencies and switch off blank node requirement
+	 * @see LDO::setLDRules()
+	 */
+	function setLDRules(&$srvr){
+		parent::setLDRules($srvr);
+		$this->rules->setRule("import", "load_dependencies", true);
+		$this->rules->setRule("validate", "require_blank_nodes", false);
+	}
+	
+	/**
+	 * sets up the namespaces properly and loads dependencies once an ontology has been imported from the api 
+	 * @param $mode the access mode (create, update, replace, ...)
+	 * @param LdDacuraServer $srvr the server object 
+	 * @see LDO::importLD()
+	 */
+	function importLD($mode, LdDacuraServer &$srvr){
+		parent::importLD($mode, $srvr);
+		if(isset($this->meta['url'])){
+			$this->nsres->addPrefix($this->id, $this->meta['url']);
+		}
+		if($this->rule($mode, "import", 'load_dependencies')){
+			if($srvr->getServiceSetting("two_tier_schemas", true)){
+				$deps = $this->getDependencies($srvr, "schema/schema");
+			}
+			else {
+				$deps = $this->getDependencies($srvr, "schema");
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * Adds import and schema_import to standard LDO meta properties. 
+	 * (non-PHPdoc)
+	 * @see LDO::getValidMetaProperties()
+	 */
+	function getValidMetaProperties(){
+		$valids = array_merge(array("import", "schema_import", 'instance_dqs_tests', 'schema_dqs_tests'), parent::getValidMetaProperties());
+		return $valids;
+	}
+
+	/**
+	 * Specifies that type should be ignored by update api 
+	 * @see LDO::getStandardProperties()
+	 */
+	function getStandardProperties(){
+		$props = parent::getStandardProperties();
+		$props[] = "type";
+		return $props;
+	}
+	
+	/**
+	 * @see LDO::getDefaultGraphURL()
+	 */
+	function getDefaultGraphURL(){
+		return $this->instanceGname();
+	}
+	
+	/**
+	 * Graph name of ontology instance data (only for testing)
+	 * @return string url
+	 */
+	function instanceGname(){
+		return $this->cwurl;
+	}
+	
+	/**
+	 * Graph name of ontology schema graph (only for testing)
+	 * @return string url
+	 */
+	function schemaGname(){
+		return $this->cwurl ."/schema";
+	}
+	
+	/**
+	 * Graph name of ontology schema schema graph (only for testing)
+	 * @return string url
+	 */
+	function schemaSchemaGname(){
+		return $this->cwurl ."/schema/schema";
+	}
+	
+	/**
+	 * Get the set of tests to be used when instance data is being created (only used in testing - ontology is instance)
+	 */
+	function getCreateInstanceTests(){
+		isset($this->meta['instance_dqs_tests']) ? 	$this->meta['instance_dqs_tests'] : false;			
+	}
+	
+	/**
+	 * Get the set of tests to be used when ontology is used to create a schema
+	 */
+	function getCreateSchemaTests(){
+		isset($this->meta['schema_dqs_tests']) ? 	$this->meta['schema_dqs_tests'] : false;
+	}
+	
+	/**
+	 * Get the url that is used to import this ontology (includes version, fragment, collection, id)
+	 */
+	function getImportURL(){
+		//opr($this);
+		return $this->cwurl.($this->fragment_id ? "/".$this->fragment_id : "") ."?version=".$this->version;
 	}
 	
 	/**
@@ -124,39 +203,26 @@ Class Ontology extends LDO {
 	 * (non-PHPdoc)
 	 * @see LDO::validateMeta()
 	 */
-	function validateMeta($rules, LdDacuraServer &$srvr){
-		if(!parent::validateMeta($rules, $srvr)){
+	function validateMeta($mode, &$srvr){
+		if(!parent::validateMeta($mode, $action, $srvr)){
 			return false;
 		}
-		if(isset($rules['suppress_meta_checks'])){
-			return true;
-		}
-		if(!isset($this->meta['url']) or !($this->meta['url'])){
-			return $this->failure_result("Ontologies must specify a canonical URL in order to be referenced by other ontologies!", 400);
-		}
-		if(!isURL($this->meta['url'])){
-			return $this->failure_result($this->meta['url'] . " is not a valid URL. Ontologies must specify a valid URL", 400);
-		}				
-		//if the id exists in the 'all' context, we can't have one in the collection - collections can't override universal ontology ids
-		if($srvr->cid() != "all" && $srvr->dbman->hasLDO($this->id, "ontology", "all")){
-			return $this->failure_result("An ontology with id $this->id exists on the platform - you must choose a different id", 400);
-		}
-		//if the url already exists, then we don't want to replicate it
-		$onts = $srvr->getLDOs(array("type" => "ontology", "collectionid" => "all"));
-		foreach($onts as $onet){
-			if(isset($onet['meta']['url']) && $this->id != $onet['id'] && $onet['meta']['url'] == $this->meta['url']){
+		if($this->rule($mode, "validate", 'required_meta_properties')){
+			if(!isset($this->meta['url']) or !($this->meta['url'])){
+				return $this->failure_result("Ontologies must specify a canonical URL in order to be referenced by other ontologies!", 400);
+			}
+			if(!isURL($this->meta['url'])){
+				return $this->failure_result($this->meta['url'] . " is not a valid URL. Ontologies must specify a valid URL", 400);
+			}				
+			//if the id exists in the 'all' context, we can't have one in the collection - collections can't override universal ontology ids
+			if($srvr->cid() != "all" && $srvr->dbman->hasLDO($this->id, "ontology", "all")){
+				return $this->failure_result("An ontology with id $this->id exists on the platform - you must choose a different id", 400);
+			}
+			//if the url already exists, then we don't want to replicate it
+			if(($taken_urls = $this->rule($mode, "validate", 'unavailable_urls')) && in_array($this->meta['url'],$taken_urls)){
 				return $this->failure_result($onet['id'] ." ontology already exists on platform with the url ".$this->meta['url'], 400);				
 			}
 		}
-		if($srvr->cid() != 'all'){
-			$onts = $srvr->getLDOs(array("type" => "ontology", "collectionid" => $srvr->cid()));
-			foreach($onts as $onet){
-				if(isset($onet['meta']['url']) && $this->id != $onet['id'] && $onet['meta']['url'] == $this->meta['url']){
-					return $this->failure_result($onet['id'] ." ontology already exists in collection with the url ".$this->meta['url'], 400);
-				}
-			}				
-		}
-		$this->nsres->addPrefix($this->id, $this->meta['url']);
 		return true;
 	}	
 	
@@ -164,30 +230,31 @@ Class Ontology extends LDO {
 	 * Validate dependencies is called as part of ontology publication
 	 * 
 	 * Ontologies which fail this check will not be active (cannot be used by other ontologies)
-	 * @param array $rules - configuration settings which impinge upon dependency analysis (currently none)
 	 */
-	function validateDependencies($rules){
+	function validateDependencies($srvr, $test_flag){
 		if(!$this->dependencies){
-			$this->dependencies = $this->generateDependencies($rules);
+			$this->dependencies = $this->generateDependencies($srvr);
 		}
-		$ores = new DQSResult("Ontology " .$this->id . "dependency analysis");
+		$ores = new DQSResult("Ontology " .$this->id . "dependency analysis", $test_flag);
 		//what makes a set of dependencies invalid? 
 		//1 unknown structural elements
 		if(isset($this->dependencies['unknown']) && isset($this->dependencies['unknown']['structural']) && count($this->dependencies['unknown']['structural']) > 0){
 			foreach($this->dependencies['unknown']['structural'] as $serr){
-				$ores->error("MissingDependency", array("subject" => $serr[0], "predicate" => $serr[1], "object" => $serr[2]));
+				$ores->warning("MissingDependency", array("subject" => $serr[0], "predicate" => $serr[1], "object" => $serr[2]));
 			}
-			return $ores->failure(400, "Unknown required dependencies in ontology", count($ores->errors) . " unknown structural dependencies detected in ontology");		
+			if($srvr->getServiceSetting("fail_on_missing_dependency", true)){
+				return $ores->failure(400, "Unknown required dependencies in ontology", count($ores->warnings) . " unknown structural dependencies detected in ontology");
+			}		
 		}
 		//2 problem elements (dc:type)
 		foreach($this->dependencies as $sh => $ontdata){
 			if(isset($ontdata['problem_predicates']) && count($ontdata['problem_predicates']) > 0){
 				foreach($ontdata['problem_predicates'] as $onepred){
-					$ores->error("IllegalPredicate", array("predicate" => $onepred));
+					$ores->warning("IllegalPredicate", array("predicate" => $onepred));
 				}
 			}
-			if(count($ores->errors) > 0){
-				return $ores->failure(400, "Use of bad predicates in ontology ", count($ores->errors) . " problem predicates detected in ontology");				
+			if(count($ores->warnings) > 0 && $srvr->getServiceSetting("fail_on_bad_predicate", true)){
+				return $ores->failure(400, "Use of bad predicates in ontology ", count($ores->warnings) . " problem predicates detected in ontology");				
 			}
 		}
 		//3 check for incorrect url -> no statements in current namespace -> also check unknown to try to find a url recommendation...
@@ -204,34 +271,25 @@ Class Ontology extends LDO {
 				}
 			}							
 		}
+		if(count($ores->warnings) > 0 && $srvr->getServiceSetting("fail_on_ontology_hijack", false)){
+			return $ores->failure(400, "Ontology Hijacking identified in ontology", count($ores->warnings) . " instances detected");				
+		}
 		return $ores->accept();
 	}
 	
-	function loadNewObjectFromAPI($create_obj, $format, $options, $rules, &$srvr){
-		if(!parent::loadNewObjectFromAPI($create_obj, $format, $options, $rules, $srvr)){
-			return false;
-		}
-		if(isset($rules['load_dependencies']) && $rules['load_dependencies']){
-			if($srvr->getServiceSetting("two_tier_schemas", true)){
-				$deps = $this->getDependencies($srvr, "schema_schema", $rules);
-			}
-			else {
-				$deps = $this->getDependencies($srvr, "schema", $rules);
-			}
-			if($deps === false){
-				return false;
-			}
-		}
-		return true;
-	}
-	
-	
-	
-	function getDependencies($srvr, $type, $rules, $ignore = array(), $forcegen = false){
+	/**
+	 * Loads the ontologies dependency tree
+	 * @param LdDacuraServer $srvr the active server object
+	 * @param string $type schema or schema/schema
+	 * @param array $ignore an array of dependencies (prefixes) that should be ignored (allows us to stop loading already loaded ones)
+	 * @param boolean $forcegen if true, depedencies will be generated even when they are already specified
+	 * @return boolean|array the dependency array of the ontology
+	 */
+	function getDependencies(LdDacuraServer $srvr, $type, $ignore = array(), $forcegen = false){
 		$ignore[] = $this->id;
 		if($type == "schema"){
 			if($forcegen || !isset($this->meta['import'])){
-				if($chain = $this->loadDependencyChain($srvr, "schema", $rules, $ignore)){
+				if($chain = $this->loadDependencyChain($srvr, "schema", $ignore)){
 					foreach($chain as $id => $ont){
 						$this->meta['import'][$id] = array("id" => $ont->id, "collection" => $ont->cid(), "version" => $ont->version);
 					}
@@ -243,9 +301,9 @@ Class Ontology extends LDO {
 			}
 			return $this->meta['import'];
 		}
-		if($type == "schema_schema"){
+		if($type == "schema/schema"){
 			if($forcegen || !isset($this->meta['schema_import'])){
-				if($chain = $this->loadDependencyChain($srvr, "schema_schema", $rules, $ignore)){
+				if($chain = $this->loadDependencyChain($srvr, "schema/schema", $ignore)){
 					foreach($chain as $id => $ont){
 						$this->meta['schema_import'][$id] = array("id" => $ont->id, "collection" => $ont->cid(), "version" => $ont->version);
 						$this->loaded_dependencies[$type][$id] = $ont;
@@ -259,7 +317,14 @@ Class Ontology extends LDO {
 		}
 	}
 	
-	function getDependentOntologies($srvr, $rules, $type, $ignore = array()){
+	/**
+	 * Retrieves the actual ontologies that this ontology is dependent on
+	 * @param LdDacuraServer $srvr
+	 * @param string $type schema or schema/schema
+	 * @param array $ignore ids of ontologies to be ignored
+	 * @return array array of loaded ontologies
+	 */
+	function getDependentOntologies(LdDacuraServer $srvr, $type, $ignore = array()){
 		if(isset($this->loaded_dependencies[$type])){
 			return $this->loaded_dependencies[$type];
 		}
@@ -273,7 +338,7 @@ Class Ontology extends LDO {
 				$this->loaded_dependencies[$type] = $onts;
 				return $onts;
 			}
-			return $this->loadDependencyChain($srvr, $type, $rules, $ignore);				
+			return $this->loadDependencyChain($srvr, $type, $ignore);				
 		}
 		else {
 			if(isset($this->meta['schema_import'])){
@@ -283,13 +348,21 @@ Class Ontology extends LDO {
 				$this->loaded_dependencies[$type] = $onts;
 				return $onts;
 			}
-			return $this->loadDependencyChain($srvr, $type, $rules, $ignore);				
+			return $this->loadDependencyChain($srvr, $type, $ignore);				
 		}			
 	}
 	
-	function loadDependencyChain($srvr, $type, $rules, $ignore, $level = 0){
+	/**
+	 * Loads an ontologies dependency chain
+	 * @param LdDacuraServer $srvr
+	 * @param string $type schema schema/schema
+	 * @param array $ignore array of prefixes to ignore in chain
+	 * @param number $level how many levels along are we in the chain
+	 * @return boolean|Ambigous <multitype:, multitype:unknown >
+	 */
+	private function loadDependencyChain(LdDacuraServer $srvr, $type, $ignore, $level = 0){
 		if(!$this->dependencies){
-			$this->dependencies = $this->generateDependencies($rules);
+			$this->dependencies = $this->generateDependencies($srvr);
 		}
 		if(!is_array($this->dependencies)){
 			return false;
@@ -297,7 +370,7 @@ Class Ontology extends LDO {
 		$deps = array();
 		foreach($this->dependencies as $d => $info){
 			if(!in_array($d, $ignore) && $this->isImportableOntology($d)){
-				if(($type == 'schema_schema' && $level == 0 && isset($info['predicate']))|| isset($info['structural']) && count($info['structural']) > 0){
+				if(($type == 'schema/schema' && $level == 0 && isset($info['predicate']))|| isset($info['structural']) && count($info['structural']) > 0){
 					if(!$nont = $srvr->loadLDO($d, "ontology", $srvr->getOntologyCollection($d))){
 						return $this->failure_result($srvr->errmsg, $srvr->errcode);
 					}
@@ -307,7 +380,7 @@ Class Ontology extends LDO {
 					$this->loaded_dependencies[$type][$d] = $nont;
 					$deps[$d] = $nont;
 					$ignore[] = $nont->id;
-					$sdeps = $nont->loadDependencyChain($srvr, $type, $rules, $ignore, $level+1);
+					$sdeps = $nont->loadDependencyChain($srvr, $type, $ignore, $level+1);
 					if($sdeps === false){
 						return $this->failure_result($nont->errmsg, $nont->errcode);						
 					}
@@ -317,8 +390,7 @@ Class Ontology extends LDO {
 		}
 		return $deps;
 	}
-	
-		
+			
 	/**
 	 * Only some of the ontologies are importable - some of them are built in or pseudo names 
 	 * @param string $oid the ontology id
@@ -333,13 +405,12 @@ Class Ontology extends LDO {
 	
 	/**
 	 * Analyzes the contents of the ontology to identify the dependencies
-	 * @param array $rules - rules which impinge upon dependency generation
 	 * @return array of information about the ontologies used and what's in them
 	 */
-	function generateDependencies($rules){
+	function generateDependencies(LdDacuraServer $srvr){
 		$nsutil = array();
 		$this->nsres->getNamespaceUtilisation($this->ldprops, $this->cwurl, $nsutil);
-		if(isset($rules['collapse_blank_nodes']) && $rules['collapse_blank_nodes']){
+		if($srvr->getServiceSetting("collapse_blank_nodes_for_dependencies", true)){
 			$this->copyBlankNodesToLocalID($nsutil);
 		}
 		$deps = array();
@@ -375,7 +446,7 @@ Class Ontology extends LDO {
 	 * Changes dependency analysis by combining blank nodes and local node ids together. 
 	 * @param array $nsutil the namespace utilisation array as returned by NSResolver->getNSUtilisation
 	 */
-	function copyBlankNodesToLocalID(&$nsutil){
+	private function copyBlankNodesToLocalID(&$nsutil){
 		if(isset($nsutil["_"])){
 			foreach($nsutil["_"]["predicate"] as $prop => $c){
 				if(isset($nsutil[$this->id]["predicate"][$prop])){
