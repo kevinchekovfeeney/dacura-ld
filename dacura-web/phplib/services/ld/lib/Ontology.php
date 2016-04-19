@@ -364,6 +364,7 @@ Class Ontology extends LDO {
 	private function loadDependencyChain(LdDacuraServer $srvr, $type, $ignore, $level = 0){
 		if(!$this->dependencies){
 			$this->dependencies = $this->generateDependencies($srvr);
+			//opr($this->dependencies);
 		}
 		if(!is_array($this->dependencies)){
 			return false;

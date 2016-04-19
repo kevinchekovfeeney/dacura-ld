@@ -15,6 +15,7 @@ class CandidateDacuraServer extends LdDacuraServer {
 	function getValidCandidateTypes(){
 		$mg = $this->getMainGraph();
 		$ar = $this->graphman->invokeDCS($mg->schemaGname());
+		//echo $mg->schemaGname()."<br>";
 		//opr($ar);
 		if($ar->is_accept()){
 			return json_decode($ar->result, true);

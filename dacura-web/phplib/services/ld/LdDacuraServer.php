@@ -1173,8 +1173,9 @@ class LdDacuraServer extends DacuraServer {
 			return true;
 		}
 		else {
+			opr($ar->forAPI($format, $options, $this));
 			http_response_code(500);
-			echo "JSON error: ".json_last_error() . " " . json_last_error_msg();
+			echo "JSON error in encoding dacura result: ".json_last_error() . " " . json_last_error_msg();
 		}
 	}
 	

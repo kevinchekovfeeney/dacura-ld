@@ -141,11 +141,6 @@ class GraphDacuraServer extends LdDacuraServer {
 		return $nopr;
 	}
 	
-	function updatePublishedUpdate(LDOUpdate $uldoa, LDOUpdate $uldob, $is_test = false){
-		$uldob->
-		$this->objectUpdated(LDOUpdate $uldo, $is_test);
-		return $this->objectPublished($uldob->changed, $is_test);
-	}
 		
 	function getGraphSchemaAsQuads(Graph &$graph){
 		$quads = array();

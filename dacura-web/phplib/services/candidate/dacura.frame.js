@@ -244,20 +244,8 @@ dacura.frame.init = function(entity, pconf){
 	//}else{
 	// frame is not in triple store and we have to get a class based frame.
 	
-	// DDD
-	// This url should be found in a different manner - it seems to be hard coded.
-	
-	// entity qualified name [ dacura.system/ld that has URL ]
-	// var eqn = dacura.system.pageURL(entity.ldtype, entity.meta.cid) + "/" + entity.id;
-	// var cls = entity.contents[eqn]['rdf:type'];
-	
-	// DDD This is the wrong way...
-	//var eqn = 'http://localhost/dacura/' +
- 	//	entity.meta.cid + '/' + 'report' + '/' + entity.id;
-	
-	//var cls = entity.contents.main[eqn]['rdf:type'];
 	var eqn = dacura.system.pageURL(entity.ldtype, entity.meta.cid) + "/" + entity.id;
-	var cls = entity.meta.type;//[eqn]['rdf:type'];
+	var cls = entity.meta.type;
 	
 	var ajs = dacura.frame.api.getFrame(cls);
 	msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};

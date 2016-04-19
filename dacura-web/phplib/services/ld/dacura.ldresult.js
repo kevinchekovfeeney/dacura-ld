@@ -8,20 +8,16 @@ function LDResult(jsondr, pconfig){
 	this.status = jsondr.status;
 	this.message = jsondr.message;
 	this.test = typeof jsondr.test == "undefined" ? false : jsondr.test;
-	if(typeof jsondr.errors == "undefined"){
-		this.errors = false;
-	}
-	else {
+	this.errors = [];
+	this.warnings = [];
+	if(typeof jsondr.errors != "undefined"){
 		for(var i = 0; i < jsondr.errors.length; i++){
-			this.errors.push(new RVO(data[i]));			
+			this.errors.push(new RVO(jsondr.errors[i]));			
 		}
 	}
-	if(typeof jsondr.warnings == "undefined"){
-		this.warnings = false;
-	}
-	else {
+	if(typeof jsondr.warnings != "undefined"){
 		for(var i = 0; i < jsondr.warnings.length; i++){
-			this.warnings.push(new RVO(data[i]));			
+			this.warnings.push(new RVO(jsondr.warnings[i]));			
 		}
 	}
 	this.result = false;
@@ -228,10 +224,10 @@ LDGraphResult.prototype.getHTML = function(){
 	}
 	else if(this.graphtype == 'triples'){
 		if(this.inserts && this.inserts.length > 0){
-			html += this.getTripleTableHTML(this.inserts, "Quads Inserted"); 
+			html += this.getTripleTableHTML(this.inserts, "Quads Inserted", true); 
 		}
 		if(this.deletes && this.deletes.length > 0){
-			html += this.getTripleTableHTML(dr.deletes, "Quads Deleted"); 
+			html += this.getTripleTableHTML(this.deletes, "Quads Deleted", true); 
 		}
 	}
 	else {
@@ -240,6 +236,32 @@ LDGraphResult.prototype.getHTML = function(){
 	html += "</div>";
 	return html;
 };
+
+LDGraphResult.prototype.getTripleTableHTML = function(trips, tit, isquads){
+	var html = "";
+	if(trips.length > 0){
+		html += "<div class='api-triplestable-title cls'>" + tit + "</div>";
+		html += "<table class='rbtable'>";
+		html += "<thead><tr><th>Subject</th><th>Predicate</th><th>Object</th>";
+		if(isquads){
+			html += "<th>Graph</th>";
+		}
+		html += "</tr></thead><tbody>";
+		for(var i = 0; i < trips.length; i++){
+			if(typeof trips[i][2] == "object"){
+				trips[i][2] = JSON.stringify(trips[i][2]);
+			}
+			html += "<tr><td>" + trips[i][0] + "</td><td>" + trips[i][1] + "</td><td>" + trips[i][2] + "</td>";
+			if(isquads){
+				html += "<td>" + trips[i][3] + "</td>";
+			}
+			html += "</tr>";				
+		}
+		html += "</tbody></table>";
+	}
+	return html;
+} 
+
 
 LDGraphResult.prototype.getJSONViewHTML = function (inserts, deletes){
 	if(typeof inserts == "undefined" || typeof deletes == "undefined"){

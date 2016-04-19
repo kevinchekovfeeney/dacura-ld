@@ -642,3 +642,8 @@ class SystemWarning extends RVO {
 	var $label = "Dacura System Warning";
 	var $comment = "A technical failure that caused the test to include a warning";
 }
+
+class UnknownViolation extends RVO {
+	var $label = "Unknown Error";
+	var $comment = "weird shit is happening";
+}
