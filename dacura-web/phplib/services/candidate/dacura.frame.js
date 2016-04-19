@@ -71,7 +71,10 @@ dacura.frame.frameGenerator = function(frame, obj, gensym){
 			
 				if (elt.label){
 					var label = elt.label.data;
-					var textnode = document.createTextNode(label + ':');				
+					var textnode = document.createTextNode(label + ':');
+					if(label == 'Unit of Measure'){
+						alert(JSON.stringify(elt))
+					}
 				}else{
 					var textnode = document.createTextNode(elt.property + ':');			
 				}
@@ -96,6 +99,7 @@ dacura.frame.frameGenerator = function(frame, obj, gensym){
 					var ty = dacura.frame.typeConvert(elt.range);
 					input.setAttribute('type', ty);
 					
+						
 					labelnode.appendChild(input);
 				}else{
 					alert("Impossible: must be either an object or datatype property.");
@@ -143,7 +147,7 @@ dacura.frame.entityExtractor = function(){
 	var res = dacura.frame.objectExtractor(frame, gs);
 	res['rdf:type'] = cls;
 	jsonobj[id] = res;
-	return res;
+	return jsonobj;
 };
 
 dacura.frame.hasSubObject = function(obj){
@@ -164,13 +168,13 @@ dacura.frame.hasEntitySubObject = function(obj){
 
 dacura.frame.hasInputSubObject = function(obj){
 	if($(obj).children('input').length > 0){
-		console.log("Got here....");
 		return true;
 	}else{
 		return false;
 	}
 }
 
+// DDD debugging rubbish left on the ground by Gavin
 ex = [];
 sub = [];
 empty = [];
@@ -218,8 +222,19 @@ dacura.frame.typeConvert = function(ty){
 	}
 };
 
-dacura.frame.fill = function(entity, target){
+dacura.frame.fillFrame = function(entity){ // , target){
+	// do we need 'target'?
+
+	var gs = dacura.frame.Gensym("_:oid"); 
+	var frame = $('#frame-container');	
+	var cls = frame.attr('data-class');
+	var jsonobj = {};
 	
+	var id = entity.id;
+	for( var i ; i < entity.length ; i++){
+		
+	}
+		
 };
 
 dacura.frame.init = function(entity, pconf){
@@ -251,7 +266,8 @@ dacura.frame.init = function(entity, pconf){
 	//alert(cls);
 	ajs.handleResult = function(resultobj, pconf){
 		var frameid = dacura.frame.draw(cls,resultobj,pconf);
-		dacura.frame.fill(resultobj, pconf); 
+		alert(JSON.stringify(entity, null, 4)); 
+		dacura.frame.fillFrame(entity, pconf); 
 		dacura.frame.initInteractors();
 	}
 	
