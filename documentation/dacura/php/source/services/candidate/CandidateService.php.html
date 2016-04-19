@@ -1,0 +1,115 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+include_once(&quot;CandidateDacuraServer.php&quot;);
+
+class CandidateService extends LdService {
+	
+	var $public_screens = array(&quot;test&quot;);
+	var $default_screen = &quot;list&quot;;
+	var $protected_screens = array(&quot;list&quot; =&gt; array(&quot;user&quot;), &quot;view&quot; =&gt; array(&quot;user&quot;));
+	
+
+	function getCreateStatusOptions(){
+		$opts = array(
+				&quot;candidate&quot;, &quot;report&quot;, &quot;interpretation&quot;
+		);
+		$html = &quot;&quot;;
+		foreach($opts as $o){
+			$html .= &quot;&lt;option value='$o'&gt;$o&lt;/option&gt;&quot;;
+		}
+		return $html;
+	}
+	
+	function getScreenForCall($dacura_server){
+		if($this-&gt;screen == &quot;list&quot;) return &quot;list&quot;;
+		return &quot;view&quot;;		
+	}
+
+	function init(){
+		parent::init();
+		$ldscript = $this-&gt;get_service_script_url(&quot;dacura.ld.js&quot;, &quot;ld&quot;);
+		$this-&gt;included_scripts[] = $ldscript;
+	}
+	
+	function getParamsForScreen($screen, $dacura_server){
+		$params = array();
+		$params['topbreadcrumb'] = &quot;All Instance Data&quot;;
+		$params['collectionbreadcrumb'] = &quot;instance data&quot;;
+		$params[&quot;title&quot;] = &quot;Instance Data Viewer&quot;;
+		$params['dt'] = true;
+		$params[&quot;image&quot;] = $this-&gt;furl(&quot;images&quot;, &quot;services/candidate.png&quot;);
+		$params['status_options'] = $this-&gt;getCreateStatusOptions();
+		$params['args'] = $this-&gt;getOptionalArgs();
+		$params[&quot;entity_type&quot;] = &quot;Candidate&quot;;
+		if($this-&gt;getCollectionID() != &quot;all&quot;){
+			//$this-&gt;dacura_tables['candidate']['datatable_options']['aoColumns'][2] = array(&quot;bVisible&quot; =&gt; false);
+			//$this-&gt;dacura_tables['updates']['datatable_options']['aoColumns'][3] = array(&quot;bVisible&quot; =&gt; false);
+		}
+		$params['candidate_datatable'] = $this-&gt;getDatatableSetting(&quot;candidate&quot;);
+		$params['update_datatable'] = $this-&gt;getDatatableSetting(&quot;updates&quot;);				
+		$params[&quot;breadcrumbs&quot;] = array(array(), array());
+		if($screen == &quot;view&quot;){
+			if($this-&gt;args &amp;&amp; $this-&gt;screen == 'update'){
+				$id = &quot;update/&quot;.implode(&quot;/&quot;, $this-&gt;args);
+			}
+			elseif($this-&gt;args){
+				$id = $this-&gt;screen.&quot;/&quot;.implode(&quot;/&quot;, $this-&gt;args);
+			}
+			else {
+				$id = $this-&gt;screen;
+			}
+			$params[&quot;id&quot;] = $id;
+			
+			if($this-&gt;screen == 'update'){
+				$params['status_options'] = $this-&gt;getUpdateStatusOptions();
+			}
+			else {
+				$params['status_options'] = $this-&gt;getEntityStatusOptions();
+			}				
+		}
+		return $params;
+	}	
+}</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

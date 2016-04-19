@@ -1,0 +1,106 @@
+<?php
+require_once("DacuraFormElement.php");
+/**
+ * Class representing a user interface (html) form 
+ * 
+ * Forms can be read-only (view), read-write (update) or write-only (create)
+ * Creation Date: 15/11/2015
+ * @author Chekov
+ * @license GPL V2
+ */
+class DacuraForm extends DacuraObject {
+	/** @var array(DacuraFormElement) an array of form elements, each representing a line in the form */
+	var $elements = array();
+	/** @var array() a name-value array of settings for this form */
+	var $settings = array();
+	
+	/** 
+	 * @param string $id Dacura ID
+	 * @param string $type update | view | create - which type of form is this
+	 * @param array $settings the settings for the form
+	 */
+	function __construct($id, $settings = array()){
+		$this->id = $id;
+		$this->settings = $settings;
+	}
+	
+	/**
+	 * Adds a meta-data column to the form
+	 * @param string $name the name of the variable
+	 * @param string $val the value of the variable
+	 * @param string $type - the type (checkbox, select, text)
+	 * @param array $options options for the column
+	 */
+	function addMetaDataColumn($name, $val, $type, $options = array()){
+		foreach($this->elements as $i => $el){
+			$this->elements[$i]->addMeta($name, $val, $type, $options);
+		}
+	}
+	
+	/**
+	 * Adds an array of elements to the form
+	 * @param DacuraFormElement[] $rows form elements to be added to the form
+	 * @return boolean true if the elements were all legal, false otherwise
+	 */
+	function addElements(array $rows){
+		foreach($rows as $row){
+			$dfe = new DacuraFormElement();
+			if($dfe->load($row, $this->settings)){
+				if(isset($this->settings['meta'])){
+					foreach($this->settings['meta'] as $mf => $mvals){
+						$dfe->addMeta($mf, $mvals[0], $mvals[1], $mvals[2]);		
+					}
+				}
+				$this->elements[] = $dfe;
+			}
+			else {
+				return $this->failure_result($dfe->errmsg, $dfe->errcode);
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * Generage a html representation of the form
+	 * @param string $jdid the html id of the table that will be created to hold the form
+	 * @param array $context context in which the form is being serialised - an array of html element ids within which the form finds itself 
+	 * @return string the html table of the form
+	 */
+	function html($jdid, $context = array()){
+		$context[] = $jdid;
+		if(count($context) == 1){
+			$cls_extra = " property-table-top property-table-odd property-table-level-1";
+		}
+		elseif(count($context) % 2 == 0){
+			$cls_extra = " property-table-even property-table-level-".count($context);				
+		}
+		else {
+			$cls_extra = " property-table-odd property-table-level-".count($context);				
+		}
+		$html = "<table class='dacura-property-table dacura-".$this->settings['display_type']."-table $cls_extra' id='$jdid'>";
+		//echo htmlspecialchars($html);
+		$html.= $this->table_header($context);
+		$html .= "<tbody>";
+		foreach($this->elements as $i => $el){
+			$rownum = $i + 1;
+			$is_last = ($rownum == count($this->elements) || isset($this->elements[$rownum]) && $this->elements[$rownum]->isSection());
+			$html .= $el->tr($this->settings, $context, $rownum, $is_last);			
+		}
+		$html .="</tbody></table>";		
+		return $html;
+	}
+	
+	/**
+	 * Generates a header for the form table
+	 * @param array $context an array of the ids of forms that we are embedded inside
+	 * @return string the html representation of the table header. 
+	 */
+	function table_header($context){
+		$html = "<thead>";
+		if(isset($this->settings['show-header']) && $this->settings['show-header'] > count($context)){
+			$html .= "<tr><th colspan='". (2 + count($this->settings['meta'])) . "' class='dacura-property-label'>" . $this->settings['header-html']."</th></tr>";
+			$html .= "</thead>";
+		}
+		return $html;
+	}
+}

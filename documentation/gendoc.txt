@@ -1,0 +1,5 @@
+[cd C:\xampp\php]
+phpdoc -d C:\Users\chekov\workspace\dacura\dacura-web\phplib\ --template="zend" -i libs\* -t C:\Users\chekov\workspace\dacura\documentation\dacura\php
+
+j[cd C:\Program Files\nodejs\node_modules\.bin]
+jsdoc -r -c C:\Users\chekov\workspace\dacura\documentation\jsdoc.json -d C:\Users\chekov\workspace\dacura\documentation\dacura\js

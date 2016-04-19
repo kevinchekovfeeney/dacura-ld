@@ -1,0 +1,544 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;script src='&lt;?=$service-&gt;furl(&quot;js&quot;, &quot;jquery.dataTables.js&quot;)?&gt;'&gt;&lt;/script&gt;
+&lt;script src='&lt;?=$service-&gt;furl(&quot;js&quot;, &quot;dataTables.jqueryui.js&quot;)?&gt;'&gt;&lt;/script&gt;
+&lt;script src='&lt;?=$service-&gt;furl(&quot;js&quot;, &quot;jquery.json-editor.js&quot;)?&gt;'&gt;&lt;/script&gt;
+&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;furl(&quot;css&quot;, &quot;dataTables.jqueryui.css&quot;)?&gt;&quot; /&gt;
+&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;furl(&quot;css&quot;, &quot;jquery.json-editor.css&quot;)?&gt;&quot; /&gt;
+
+&lt;script&gt;
+function showDQSOptions(){
+	$('#dqsopts').show();	
+}
+
+function validateSchema(id){
+	var ajs = dacura.schema.api.validate_ontology(id);
+	var msgs = { &quot;busy&quot;: &quot;Validating Ontology with Dacura Quality Service&quot;, &quot;fail&quot;: &quot;Schema validation failed&quot;};
+	var self = this;
+	ajs.handleResult = function(data){ alert(JSON.stringify(data));};
+	dacura.system.invoke(ajs, msgs);
+}
+
+$(function() {
+	$('.dqsoption').button();
+});
+&lt;/script&gt;
+&lt;style&gt;
+  .ui-menu { width: 120px; }
+&lt;/style&gt;
+
+&lt;div id='version-header' class=&quot;dch&quot;&gt;
+	&lt;span class='vc version-title'&gt;&lt;/span&gt;
+	&lt;span class='vc version-created'&gt;&lt;/span&gt;
+	&lt;span class='vc version-replaced'&gt;&lt;/span&gt;
+	&lt;span class='vc version-details'&gt;&lt;/span&gt;
+&lt;/div&gt;	
+
+&lt;div id='tab-holder'&gt;
+	 &lt;ul id=&quot;ontology-pane-list&quot; class=&quot;dch&quot;&gt;
+	 	&lt;li&gt;&lt;a href=&quot;#ontology-contents&quot;&gt;Contents&lt;/a&gt;&lt;/li&gt;
+	 	&lt;li&gt;&lt;a href=&quot;#ontology-meta&quot;&gt;Dependencies&lt;/a&gt;&lt;/li&gt;
+	 	&lt;li&gt;&lt;a href=&quot;#ontology-test&quot;&gt;Quality Test&lt;/a&gt;&lt;/li&gt;
+	 &lt;/ul&gt;
+	 &lt;div id=&quot;dqs-holder&quot;&gt;
+		&lt;div id='ontology-test' class=&quot;dch&quot;&gt;
+			&lt;div id='dep-msgs'&gt;&lt;/div&gt;
+			&lt;div id='dacura-problems'&gt;&lt;/div&gt;
+			&lt;div id='test-includes'&gt;&lt;/div&gt;
+			&lt;div id='dqs-options'&gt;
+				&lt;div class='dqs-embed'&gt;
+					&lt;?= $service-&gt;showDQSControls(&quot;schema&quot;, &quot;all&quot;); ?&gt;
+					&lt;div style='clear: both'&gt;&lt;/div&gt;
+				&lt;/div&gt;
+				&lt;div class='dqs-button'&gt;
+					&lt;a class='button2' href='javascript:validateOntologies();'&gt;Validate Selected Ontologies&lt;/a&gt;
+				&lt;/div&gt;				
+			&lt;/div&gt;
+		&lt;/div&gt;
+	 &lt;/div&gt;
+	 &lt;div id=&quot;meta-holder&quot;&gt;
+		&lt;div id='ontology-meta' class=&quot;dch&quot;&gt;
+			&lt;div id='deps-msgs'&gt;&lt;/div&gt;
+			&lt;div id=&quot;ontology-dependencies&quot;&gt;
+				&lt;div id='deptable' class='ld-list'&gt;
+				&lt;/div&gt;
+				&lt;div id='included_onts'&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;tool-buttons&quot;&gt;
+		   			&lt;button class=&quot;dacura-button depend-button&quot; id=&quot;depend-button&quot;&gt;Calculate Dependencies&lt;/button&gt;
+		      	&lt;/div&gt;
+			&lt;/div&gt;
+			&lt;div id='singleont-dependencies' class='dch'&gt;
+		   		&lt;button class=&quot;dacura-button showlist-button&quot; style=&quot;float:right&quot;&gt;Return to dependency listing&lt;/button&gt;
+				&lt;div id='singleont-table'&gt;&lt;/div&gt;
+				&lt;div class=&quot;tool-buttons&quot;&gt;
+		   			&lt;button class=&quot;dacura-button showlist-button&quot;&gt;Return to dependency listing&lt;/button&gt;
+		      	&lt;/div&gt;
+			
+			&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;
+ 	&lt;div id=&quot;contents-holder&quot;&gt;
+		&lt;div id='ontology-contents' class=&quot;dch&quot; &gt;
+			&lt;div id='lded-msgs'&gt;&lt;/div&gt;
+			&lt;div id='viewont'&gt;
+				&lt;?php echo $service-&gt;showLDResultbox($params);?&gt;
+				&lt;?php echo $service-&gt;showLDEditor($params);?&gt;
+			&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id=&quot;tabletemplates&quot; class='dacura-templates'&gt;
+	&lt;?php echo $service-&gt;includeSnippet(&quot;ldentity-header&quot;)?&gt;
+	 &lt;div id=&quot;depend-template&quot;&gt;
+	 	&lt;table class='ont-depend'&gt;
+			&lt;thead&gt;
+				&lt;tr&gt;
+					&lt;th&gt;Shorthand&lt;/th&gt;
+					&lt;th&gt;URL&lt;/th&gt;
+					&lt;th&gt;Subjects (count)&lt;/th&gt;
+					&lt;th&gt;Properties (count)&lt;/th&gt;
+					&lt;th&gt;Structural Links&lt;/th&gt;
+					&lt;th&gt;Values&lt;/th&gt;
+					&lt;th&gt;Include&lt;/th&gt;
+				&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;
+			&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	&lt;div id=&quot;subject-template&quot;&gt;
+	 	&lt;table class='subject-depend ont-depend'&gt;
+			&lt;thead&gt;
+				&lt;tr&gt;&lt;th colspan='2'&gt;Subjects of assertions&lt;/th&gt;&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;
+				&lt;tr&gt;
+					&lt;th&gt;Subject&lt;/th&gt;
+					&lt;th&gt;Count&lt;/th&gt;
+				&lt;/tr&gt;
+			&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	&lt;div id=&quot;property-template&quot;&gt;
+	 	&lt;table class='property-depend ont-depend'&gt;
+			&lt;thead&gt;
+				&lt;tr&gt;&lt;th colspan='2'&gt;Properties Used&lt;/th&gt;&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;
+				&lt;tr&gt;
+					&lt;th&gt;Property&lt;/th&gt;
+					&lt;th&gt;Count&lt;/th&gt;
+				&lt;/tr&gt;
+			&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	&lt;div id=&quot;structural-template&quot;&gt;
+	 	&lt;table class='structural-depend ont-depend'&gt;
+			&lt;thead&gt;
+				&lt;tr&gt;&lt;th colspan='3'&gt;Structural Links&lt;/th&gt;&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;
+				&lt;tr&gt;
+					&lt;th&gt;Subject&lt;/th&gt;
+					&lt;th&gt;Property&lt;/th&gt;
+					&lt;th&gt;Object&lt;/th&gt;
+				&lt;/tr&gt;
+			&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	&lt;div id=&quot;object-template&quot;&gt;
+	 	&lt;table class='object-depend ont-depend'&gt;
+			&lt;thead&gt;
+				&lt;tr&gt;&lt;th colspan='3'&gt;Values Used&lt;/th&gt;&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;
+				&lt;tr&gt;
+					&lt;th&gt;Subject&lt;/th&gt;
+					&lt;th&gt;Property&lt;/th&gt;
+					&lt;th&gt;Object&lt;/th&gt;
+				&lt;/tr&gt;
+			&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	&lt;div id=&quot;toolheader-template&quot;&gt;
+		&lt;table class='ld-invariants'&gt;
+			&lt;thead&gt;
+				&lt;tr&gt;
+					&lt;th&gt;URL&lt;/th&gt;
+					&lt;th&gt;Status&lt;/th&gt;
+					&lt;th&gt;Imported&lt;/th&gt;
+				&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;
+				&lt;tr&gt;
+					&lt;td class='ont_uri'&gt;&lt;/td&gt;
+					&lt;td class='ont_status'&gt;&lt;/td&gt;
+					&lt;td class='ont_created'&gt;&lt;/td&gt;
+				&lt;/tr&gt;
+			&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	
+&lt;/div&gt;
+
+&lt;script&gt;
+dacura.schema.showHeader = function(ont){
+	options = { title: ont.id + &quot; ontology&quot; };
+	if(typeof ont.image != &quot;undefined&quot;){
+		options.image = ont.image;
+	}
+	options.subtitle = ont.meta.title;
+	options.description = $('#toolheader-template').html();
+	dacura.tool.header.update(options);
+	metadetails = timeConverter(ont.created);
+	$('.ont_uri').html(&quot;&lt;span class='ontology-uri'&gt;&quot; + ont.meta.url + &quot;&lt;/span&gt;&quot;);
+	$('.ont_created').html(&quot;&lt;span class='ontology-details'&gt;&quot; + metadetails + &quot;&lt;/span&gt;&quot;);
+	$('.ont_status').html(&quot;&lt;span class='ontology-status ontology-&quot; + ont.latest_status + &quot;'&gt;&quot; + ont.latest_status + &quot;&lt;/span&gt;&quot;);
+    dacura.schema.drawVersionHeader(ont);	
+}
+
+function setStyleMisc(){
+	$('.rawjson').each(function(){
+	    var text = $(this).html();
+	    $(this).html(text.substring(0, 50) + &quot;...&quot;);
+	    text = JSON.stringify(JSON.parse(text), 0, 4);
+	    $(this).attr(&quot;title&quot;, text);
+	});
+}
+
+var depids = [];
+var deps;
+var testids = [];
+
+function validateOntologies(){
+	var onts = [];
+	for (index = 0; index &lt; deps.includes.length; ++index) {	
+		if($('#incont_' +  deps.includes[index]).is(&quot;:checked&quot;)){
+			onts.push(deps.includes[index]);
+		}	
+		else {
+			//alert(deps.includes[index] + &quot; not included&quot;);
+		}
+	}
+	var tests = dacura.dqs.getSelection(&quot;schema&quot;);
+	dacura.schema.validateGraphOntologies(onts, tests, { resultbox: &quot;#dep-msgs&quot;, errorbox: &quot;#dep-msgs&quot;, busybox: &quot;#ontology-test&quot;, scrollto: &quot;#dep-msgs&quot;});
+}
+
+function getDepRow(dep, id, key, isauto){
+	var s = dep['distinct_subjects'];
+	if(s &gt; 0) s += &quot; (&quot; + dep['subjects_used'] + &quot;)&quot;; 
+	var p = dep['distinct_properties'];
+	if(p &gt; 0) p += &quot; (&quot; + dep['properties_used'] + &quot;)&quot;; 
+	var l = dep['structural_links']; 
+	var o = dep['values_used']; 
+	if(key == &quot;unknown&quot;) dep['url'] = &quot;&quot;;
+	var html = &quot;&lt;tr class='ontology-list' id='ontology_&quot; + id + &quot;'&gt;&quot; + &quot;&lt;td class='clickable ontology_&quot; + id+ &quot;'&gt;&quot; + key + &quot;&lt;/td&gt;&lt;td class='clickable'&gt;&quot;;
+	html += dep['url'] + &quot;&lt;/td&gt;&lt;td class='clickable'&gt;&quot; + s + &quot;&lt;/td&gt;&lt;td class='clickable'&gt;&quot; + p + &quot;&lt;/td&gt;&lt;td class='clickable'&gt;&quot; + l + &quot;&lt;/td&gt;&lt;td&gt;&quot; + o;
+	if(typeof isauto != &quot;undefined&quot; &amp;&amp; isauto != false){
+		html += &quot;&lt;td class='clickable'&gt;auto&lt;/td&gt;&lt;/tr&gt;&quot;;
+	}
+	else if(typeof isauto != &quot;undefined&quot;){
+		html += &quot;&lt;td class='clickable'&gt;&lt;/td&gt;&lt;/tr&gt;&quot;;	
+	}
+	else {
+		if(dep['distinct_properties'] &gt; 0 || dep['structural_links'] &gt; 0){
+			html += &quot;&lt;td class='clickable'&gt;yes&lt;/td&gt;&lt;/tr&gt;&quot;;
+		}
+		else {
+			html += &quot;&lt;td class='clickable'&gt;no&lt;/td&gt;&lt;/tr&gt;&quot;;		
+		}
+	}
+	return html;
+}
+
+dacura.schema.showDependencies = function(d){
+	deps = d;
+	depids = [];
+	var builtins = &quot;&quot;;
+	var itself = &quot;&quot;;
+	var imported = &quot;&quot;;
+	var unknown = &quot;&quot;;
+	var problems = {&quot;properties&quot;: [], &quot;structural&quot;: [], &quot;subject&quot;: {}};
+	var k = $('#depend-template').html();
+	$('#deptable').html(k);
+	for (var key in deps) {
+	  	if (deps.hasOwnProperty(key)) {
+			if(!isEmpty(deps[key])){
+				if(key == &quot;&lt;?=$params['id']?&gt;&quot;){
+					itself = getDepRow(deps[key], depids.length, key, true);
+				}
+				else if(key == &quot;rdf&quot; || key == &quot;rdfs&quot; || key == &quot;owl&quot; || key == &quot;xsd&quot;){
+					builtins += getDepRow(deps[key], depids.length, key, true);
+					if(deps[key]['distinct_subjects'] &gt; 0){
+						for(var sk in deps[key]['subject']){
+							if(typeof problems.subject[sk] == &quot;undefined&quot;){
+								problems.subject[sk] = deps[key]['subject'][sk];
+							}
+							else {
+								problems.subject[sk] += deps[key]['subject'][sk];							
+							}
+						}					
+					}
+				}
+				else if(key == &quot;unknown&quot;){
+					problems.properties = deps[key].properties;
+					problems.structural = deps[key].structural;
+					unknown = getDepRow(deps[key], depids.length, key, false);
+				}
+				else if(key == &quot;includes&quot; || key == &quot;include_tree&quot;){
+				}
+				else {
+					if(deps[key]['distinct_subjects'] &gt; 0){
+						for(var sk in deps[key]['subject']){
+							if(typeof problems.subject[sk] == &quot;undefined&quot;){
+								problems.subject[sk] = deps[key]['subject'][sk];
+							}
+							else {
+								problems.subject[sk] += deps[key]['subject'][sk];							
+							}
+						}					
+					}
+					imported += getDepRow(deps[key], depids.length, key);	
+				}
+			  	depids[depids.length] = key;		  	 		  					  				    
+			}
+		}
+	}
+	$('#deptable table tbody').append(itself + builtins);
+	if(imported.length &gt; 0){
+	    $('#deptable table tbody').append(imported);
+	}
+	if(unknown.length &gt; 0){
+	    $('#deptable table tbody').append(unknown);
+	}
+	for(var i = 0; i&lt;depids.length; i++){
+	  	$('#ontology_' + i + &quot; td.clickable&quot;).click( function (event){
+	  		$('#ontology-dependencies').hide();
+	  		$('#singleont-dependencies').show();
+	  		dacura.schema.showNSDependencies(depids[this.parentNode.id.substr(9) ]);
+	    });	
+	}
+	$('.ontology-list').hover(function(){
+		$(this).addClass('userhover');
+	}, function() {
+	    $(this).removeClass('userhover');
+	});
+	if(typeof deps['includes'] != &quot;undefined&quot; &amp;&amp; typeof deps['include_tree'] != &quot;undefined&quot;){
+		dacura.schema.showIncludeTree(deps['includes'], deps['include_tree']);
+		var inchtml = &quot;&quot;;
+		$('#test-includes').html(&quot;&lt;div class='title'&gt;Included Ontologies (&quot; + (deps['includes'].length - 1) + &quot;)&lt;/div&gt;&quot;);
+		for(var i = 0; i &lt; deps['includes'].length; i++){
+			var sh = deps['includes'][i];
+			$('#test-includes').append(&quot;&lt;span class='ontinc'&gt;&lt;input type='checkbox' checked='checked' id='incont_&quot; + sh + &quot;'&gt; &lt;label for='incont_&quot; + sh + &quot;'&gt;&quot; + sh + &quot;&lt;/label&gt;&lt;/span&gt;&quot;); 
+		}			
+	}
+	//finally the problems
+	if(!(isEmpty(problems.properties)  &amp;&amp; isEmpty(problems.subject) &amp;&amp; isEmpty(problems.structural))){
+		var msg = &quot;&quot;;
+		var tit = &quot;Warning - problems in ontology&quot;;
+		var extra = &quot;&quot;;
+		if(!isEmpty(problems.properties)){
+			var cnt = 0;
+			extra += &quot;&lt;table&gt;&lt;tr&gt;&lt;th&gt;Properties from unknown ontologies&lt;/th&gt;&lt;th&gt;Count&lt;/td&gt;&lt;/tr&gt;&quot;;
+			for(var key in problems.properties){
+				cnt++;
+				extra += &quot;&lt;tr&gt;&lt;td&gt;&quot; + key + &quot;&lt;/td&gt;&lt;td&gt;&quot; + problems.properties[key] + &quot;&lt;/td&gt;&lt;/tr&gt;&quot;;
+			}
+			extra += &quot;&lt;/table&gt;&quot;;
+			msg += &quot;&lt;span&gt;&quot; + cnt + &quot; properties used from unknown ontologies&lt;/span&gt;&quot;;
+		}
+		if(!isEmpty(problems.structural)){
+			msg += &quot;&lt;span&gt;&quot; + problems.structural.length + &quot; structural links to unknown ontologies&lt;/span&gt;&quot;;
+			extra += &quot;&lt;table&gt;&lt;tr&gt;&lt;th colspan='3'&gt;Structural Links to Unknown Ontologies&lt;/th&gt;&lt;/tr&gt;&quot;;
+			for(i = 0; i&lt; problems.structural.length; i++){
+				var s = problems.structural[i];
+				extra += &quot;&lt;tr&gt;&lt;td&gt;&quot; + s[0] + &quot;&lt;/td&gt;&lt;td&gt;&quot; + s[1] + &quot;&lt;/td&gt;&lt;td&gt;&quot; + s[2] + &quot;&lt;/td&gt;&lt;/tr&gt;&quot;; 
+			}
+			extra += &quot;&lt;/table&gt;&quot;;
+		}
+		if(!isEmpty(problems.subject)){
+			var cnt = 0;
+			extra += &quot;&lt;table&gt;&lt;tr&gt;&lt;th&gt;Assertions about entities in other ontologies&lt;/th&gt;&lt;/tr&gt;&quot;;
+			for(var key in problems.subject){
+				cnt++;
+				extra += &quot;&lt;tr&gt;&lt;td&gt;&quot; + key + &quot; (&quot; + problems.subject[key] + &quot;)&lt;/td&gt;&lt;/tr&gt;&quot;;
+			}
+			extra += &quot;&lt;/table&gt;&quot;;
+			msg += &quot;&lt;span&gt;&quot; + cnt + &quot; remote entities modified&lt;/span&gt;&quot;;
+		}
+		dacura.system.showWarningResult(msg, extra, tit, '#dacura-problems');
+	}
+}
+
+function getTreeAsTable(tree){
+	var hasentry = false;
+	//var html = &quot;&lt;table class='include-tree'&gt;&quot;;
+	var html = &quot;&lt;ul class='include-treelist'&gt;&quot;;
+	for(var r in tree){
+		hasentry = true;
+		html += &quot;&lt;li&gt;&quot; + r;
+		html += getTreeAsTable(tree[r]);		
+		html += &quot;&lt;/li&gt;&quot;;
+	}
+	html += &quot;&lt;/ul&gt;&quot;;
+	if(hasentry){
+		return html;
+	}
+	return &quot;&quot;;
+}
+
+dacura.schema.showIncludeTree = function(flat, tree){
+	$('#included_onts').html(getTreeAsTable(tree['&lt;?=$params['id']?&gt;']));
+	$('#included_onts').append(&quot;&lt;div class='include_summary'&gt;&quot; + flat.length + &quot; included ontologies&lt;/div&gt;&quot;);
+	$('#included_onts').append(&quot;&lt;div class='include_list'&gt;&lt;span class='ontlabel'&gt;&quot; + flat.join(&quot;&lt;/span&gt;&lt;span class='ontlabel'&gt;&quot;) + &quot;&lt;/span&gt;&lt;/div&gt;&quot;);
+	$('.include-treelist').menu();
+}
+
+
+dacura.schema.showNSDependencies = function(ns){
+	var dep = deps[ns];
+	$('#singleont-table').html(&quot;&lt;h3&gt;Dependencies of &lt;?=$params['id']?&gt; on &quot; + ns + &quot;&lt;/h3&gt;&quot;);
+	var hassubj = false;
+	for (var key in dep.subject) {
+	  	if (dep.subject.hasOwnProperty(key)) {
+			if(!hassubj){
+				var k = $('#subject-template').html();
+				$('#singleont-table').append(k);
+				hassubj = true;								
+			}
+			$('#singleont-table table.subject-depend tbody').append(&quot;&lt;tr&gt;&lt;td&gt;&quot; + key + &quot;&lt;/td&gt;&lt;td&gt;&quot; + dep.subject[key] + &quot;&lt;/td&gt;&lt;/tr&gt;&quot;);
+	  	}
+	}
+	var hasprops = false;
+	for (var key in dep.properties) {
+	  	if (dep.properties.hasOwnProperty(key)) {
+			if(!hasprops){
+				var k = $('#property-template').html();
+				$('#singleont-table').append(k);
+				hasprops = true;								
+			}
+			$('#singleont-table table.property-depend tbody').append(&quot;&lt;tr&gt;&lt;td&gt;&quot; + key + &quot;&lt;/td&gt;&lt;td&gt;&quot; + dep.properties[key] + &quot;&lt;/td&gt;&lt;/tr&gt;&quot;);
+	  	}
+	}
+	if(dep.structural.length &gt; 0){
+		var k = $('#structural-template').html();
+		$('#singleont-table').append(k);
+		for (var i = 0; i &lt; dep.structural.length; i++) {
+			$('#singleont-table table.structural-depend tbody').append(&quot;&lt;tr&gt;&lt;td&gt;&quot; + dep.structural[i][0] + &quot;&lt;/td&gt;&lt;td&gt;&quot; + 
+					dep.structural[i][1] + &quot;&lt;/td&gt;&lt;td&gt;&quot; + dep.structural[i][2] + &quot;&lt;/td&gt;&lt;/tr&gt;&quot;);		
+		}	
+	}
+	if(dep.object.length &gt; 0){
+		var k = $('#object-template').html();
+		$('#singleont-table').append(k);
+		for (var i = 0; i &lt; dep.object.length; i++) {
+			$('#singleont-table table.object-depend tbody').append(&quot;&lt;tr&gt;&lt;td&gt;&quot; + dep.object[i][0] + &quot;&lt;/td&gt;&lt;td&gt;&quot; + 
+				dep.object[i][1] + &quot;&lt;/td&gt;&lt;td&gt;&quot; + dep.object[i][2] + &quot;&lt;/td&gt;&lt;/tr&gt;&quot;);		
+		}	
+	}
+}
+
+function clearResultMessage(){
+	dacura.system.clearResultMessage();	
+}
+
+function initDecorations(){
+	//view format choices
+	$(&quot;#tab-holder&quot;).tabs( {
+        &quot;activate&quot;: function(event, ui) {
+            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
+        }
+    });
+	
+	$('#depend-button').button().click(function(event){
+		dacura.schema.calculateDependencies(&quot;&lt;?=$params['id']?&gt;&quot;);
+    });
+	$('.showlist-button').button().click(function(event){
+  		$('#ontology-dependencies').show();
+  		$('#singleont-dependencies').hide();
+	});
+}
+
+
+$(function() {
+	initDecorations();
+	dacura.schema.entity_type = &quot;ontology&quot;;
+	dacura.tool.init({&quot;tabbed&quot;: &quot;tab-holder&quot;});
+	dacura.editor.init({&quot;entity_type&quot;: &quot;ontology&quot;, 
+		&quot;targets&quot;: {resultbox: &quot;#lded-msgs&quot;, errorbox: &quot;#lded-msgs&quot;}, 
+		&quot;args&quot;: &lt;?=json_encode($params['args']);?&gt;});
+
+	dacura.editor.getMetaEditHTML = function(meta){
+		$('#meta-edit-table').html(&quot;&quot;);
+		$('#meta-edit-table').append(&quot;&lt;li&gt;&lt;span class='meta-label'&gt;Status&lt;/span&gt;&lt;span class='meta-value'&gt;&quot; + 
+			&quot;&lt;select id='entstatus'&gt;&lt;?php echo $service-&gt;getEntityStatusOptions();?&gt;&lt;/select&gt;&lt;/span&gt;&lt;/li&gt;&quot;);
+		$('#entstatus').val(meta.status);	
+		$('#meta-edit-table').append(&quot;&lt;li&gt;&lt;span class='meta-label'&gt;URL&lt;/span&gt;&lt;span class='meta-value'&gt;&quot; + 
+				&quot;&lt;input type='text' id='enturl' value='&quot; + meta.url + &quot;'&gt;&lt;/span&gt;&lt;/li&gt;&quot;);	
+		$('#meta-edit-table').append(&quot;&lt;li&gt;&lt;span class='meta-label'&gt;Title&lt;/span&gt;&lt;span class='meta-value'&gt;&quot; + 
+				&quot;&lt;input type='text' id='enttitle' value='&quot; + meta.title + &quot;'&gt;&lt;/span&gt;&lt;/li&gt;&quot;);	
+		$('#meta-edit-table').show();
+		return &quot;&quot;;
+	};
+
+	dacura.editor.getInputMeta = function(){
+		var meta = {&quot;status&quot;: $('#entstatus').val(), &quot;title&quot;: $('#enttitle').val(), &quot;url&quot;: $('#enturl').val()};
+		return meta;
+	};
+	
+	var onw = function (obj){
+		dacura.editor.load(&quot;&lt;?=$params['id']?&gt;&quot;, dacura.schema.fetch, dacura.schema.update, obj);
+	    //dacura.system.addServiceBreadcrumb(&quot;&lt;?=$service-&gt;my_url()?&gt;/&quot; + obj.id , obj.id);
+	    dacura.system.styleJSONLD();
+	    $('#ontology-pane-list').show();
+		dacura.schema.calculateDependencies(&quot;&lt;?=$params['id']?&gt;&quot;, {resultbox: &quot;#deps-msgs&quot;, errorbox: &quot;#deps-msgs&quot;, busybox: &quot;#ontology-meta&quot;});		
+	};
+	var args = &lt;?=json_encode($params['args']);?&gt;;
+	dacura.schema.fetch(&quot;&lt;?=$params['id']?&gt;&quot;, args, onw);
+	
+});
+&lt;/script&gt;
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

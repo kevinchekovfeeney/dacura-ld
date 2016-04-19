@@ -1,0 +1,12 @@
+<http>
+	<head>
+		<script>
+			hash = window.location.hash;
+			path = window.location.pathname;
+			hash = hash.replace("#", "");
+			address = path + "%23" + hash;
+			window.location.replace(address);
+		</script>
+	</head>
+	<body></body>
+</http>

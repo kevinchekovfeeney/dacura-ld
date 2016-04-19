@@ -1,0 +1,187 @@
+#tab-holder {
+	font-family: 'Open Sans', Helvetica;
+	padding-top: 10px;
+	margin-top: 6px;
+	font-size: 0.9em;
+}
+
+#tximp {
+	width: 100%;
+	height: 300px;
+}
+
+#id-input-cell {
+	min-width: 600px;
+}
+
+#id-input {
+	width: 100px;
+}
+
+#tab-holder input,
+#tab-holder select {
+	font-family: 'Open Sans', Helvetica;	
+}
+
+div#dqs-tests {
+	margin-top: 16px;
+	margin-left: 10px;
+}
+
+.dqs-choose {
+	float: left;
+	font-size: 1.2em;
+	font-weight: bold;
+}
+
+
+
+div.ontology-type {
+	display: inline-block;
+	margin: 6px 0;
+	border: 1px solid #888;
+	padding: 4px;
+}
+
+div.dqs-category-title {
+	display: inline-block;
+	padding: 6px;
+	font-weight: bold;
+}
+
+div.dqs-button {
+	width: 100%;
+	text-align: right;
+}
+
+#dqsopts {
+	font-size: 0.8em;
+}
+
+div.all-constraints {
+	margin-top: 10px;
+}
+
+#page-holder {
+	padding-top: 10px;
+	margin-top: 6px;
+	padding-left: 10px;
+	padding-right: 10px;	
+}
+
+  div#view-bar {
+  	background-color: #d5f9e9;
+  
+  	border: 1px solid #aaa;
+	margin-bottom: -20px;
+	width: 100%;
+	font-size: 0.8em;
+	border-radius: 5px 5px 0 0;
+	padding: 2px 0;
+  }
+  
+  input#url-input, 
+  input#title-input {
+  	width: 400px;
+  	font-size: 15px;
+  	padding: 2px 4px;
+  }
+  
+  
+  
+  div.input-text-title {
+  	padding-top: 10px;
+  	margin-bottom: 4px;
+  	color: #444;
+  }
+  
+  div.input-text {
+  	margin: 10px;
+  	margin-top: 20px;
+  }
+  
+  #tximp {
+  	width: 100%;
+  	height: 200px;
+  }
+  
+  .import-content {
+  	background-color: #f8f8f8;
+  }
+  
+  div#view-bar table {
+  	width: 100%;
+  }
+  
+  div#view-bar  table td {
+  	width: 33%;
+  }
+  
+  td#view-bar-right {
+  	text-align: right;
+  }
+
+  td#view-bar-left {
+  	padding-left: 4px;
+  }
+
+  td#view-bar-centre {
+  	text-align: center;
+  }
+
+td.action {
+	text-align: right;
+}
+  
+td.action .ui-button {
+	padding: 0px;
+	font-size: 14px;
+  }
+
+#newns-sh {
+	width: 50px;
+}  
+#newns-url {
+	width: 400px;
+}
+
+#dqs {
+	width: 380px;
+	float: left;
+	text-align: center;
+}
+
+#dqs-opts {
+	width: 600px;
+	float: right;
+	
+}
+
+table.graph-summary {
+	border: 1px solid #888;
+	border-collapse: collapse;
+	width: 600px;
+	margin-top: 20px;
+	background-color: #f8f8f8;
+}
+
+table.graph-summary thead {
+	height: 4px;
+}
+
+table.graph-summary th {
+	padding: 6px 4px 10px 4px;
+	font-size: 0.85em;
+	vertical-align: top;
+	text-align: right;
+	padding-right: 6px;
+}
+	
+table.graph-summary td {
+	padding: 2px 4px 8px 6px;
+	text-align: left;
+}
+ 
+table.graph-summary td textarea {
+	width: 95%;
+}

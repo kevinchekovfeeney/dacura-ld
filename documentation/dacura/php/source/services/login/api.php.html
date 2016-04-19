@@ -1,0 +1,192 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/** 
+ * API for login service - supports lost password and registration interface too
+ *
+ * * Creation Date: 12/01/2015
+ * @package login/api
+ * @author Chekov
+ * @license GPL v2
+ */
+getRoute()-&gt;get(&quot;/&quot;, &quot;hello&quot;);
+getRoute()-&gt;post('/', 'login');
+getRoute()-&gt;post('/register', 'register');
+getRoute()-&gt;post('/lost', 'lost');
+getRoute()-&gt;post('/reset', 'resetpassword');
+getRoute()-&gt;delete('/', 'logout');
+
+
+/**
+ * Login API
+ * 
+ * POST login/
+ * Requires $_POST['login-email'] and $_POST['login-password']
+ * @api
+ */
+function login(){
+	global $dacura_server;
+	$dacura_server-&gt;init(&quot;login&quot;);
+	$u = $dacura_server-&gt;getUser();
+	if($u){
+		return $dacura_server-&gt;write_http_result(400, &quot;User is logged in - cannot log in again&quot;, &quot;notice&quot;);
+	}
+	if(isset($_POST['login-email']) &amp;&amp; isset($_POST['login-password'])){
+		$u = $dacura_server-&gt;login($_POST['login-email'], $_POST['login-password']);
+		if($u) {
+			$dacura_server-&gt;write_json_result($dacura_server-&gt;durl(), &quot;Login Successful&quot;);
+		}
+		else {
+			$dacura_server-&gt;write_http_result(false, false, &quot;notice&quot;);
+		}
+	}
+	else {
+		$dacura_server-&gt;write_http_result(400, &quot;Missing required login fields.&quot;, &quot;notice&quot;);
+	}
+}
+
+/**
+ * Register API
+ * 
+ * POST login/register
+ * Requires $_POST['login-email'] and $_POST['login-password']
+ * @api
+ */
+function register(){
+	global $dacura_server;
+	$dacura_server-&gt;init(&quot;register&quot;);
+	$u = $dacura_server-&gt;getUser(0);
+	if($u){
+		return $dacura_server-&gt;write_http_result(401, &quot;User is logged in - cannot register&quot;, &quot;notice&quot;);
+	}
+	if(isset($_POST['login-email']) &amp;&amp; isset($_POST['login-password'])){
+		$u = $dacura_server-&gt;register($_POST['login-email'], $_POST['login-password']);
+		if($u) $dacura_server-&gt;write_json_result($u, &quot;Registration Successful&quot;);
+		else $dacura_server-&gt;write_http_result(false, false, &quot;notice&quot;);
+	}
+	else {
+		$dacura_server-&gt;write_http_result(400, &quot;Missing required registration fields.&quot;, &quot;notice&quot;);
+	}
+}
+
+/**
+ * Lost Password API
+ *
+ * POST login/lost
+ * Requires $_POST['login-email']
+ * @api
+ */
+function lost(){
+	global $dacura_server;
+	$dacura_server-&gt;init(&quot;lost&quot;);
+	$u = $dacura_server-&gt;getUser(0);
+	if($u){
+		return $dacura_server-&gt;write_http_result(401, &quot;User is logged in -cannot start lost password process&quot;, &quot;notice&quot;);
+	}
+	if(isset($_POST['login-email'])){
+		$u = $dacura_server-&gt;lostpassword($_POST['login-email']);
+		if($u) $dacura_server-&gt;write_json_result($u, &quot;Lost Password Process Initiated&quot;);
+		else $dacura_server-&gt;write_http_result(false, false, &quot;notice&quot;);
+	}
+	else {
+		$dacura_server-&gt;write_http_result(400, &quot;Missing required email fields.&quot;, &quot;notice&quot;);
+	}
+}
+
+/**
+ * Reset Password API
+ * 
+ * This is called when a user updates their password after following the link...
+ *
+ * POST login/reset
+ * Requires $_POST['login-password'] &amp;&amp; $_POST['userid'] &amp;&amp; $_POST['action']
+ * @api
+ */
+function resetpassword(){
+	global $dacura_server;
+	$dacura_server-&gt;init(&quot;resetpassword&quot;);
+	$u = $dacura_server-&gt;getUser(0);
+	if($u){
+		return $dacura_server-&gt;write_http_result(401, &quot;User is logged in - cannot reset password&quot;, &quot;notice&quot;);
+	}
+	if(isset($_POST['userid']) &amp;&amp;  isset($_POST['login-password']) &amp;&amp; isset($_POST['action'])){
+		$u = $dacura_server-&gt;resetPassword($_POST['userid'], $_POST['login-password'], $_POST['action']);
+		if($u) $dacura_server-&gt;write_json_result($u, &quot;Password Reset Successfully&quot;);
+		else $dacura_server-&gt;write_http_result(false, false, &quot;notice&quot;);
+	}
+	else {
+		$dacura_server-&gt;write_http_result(400, &quot;Missing required fields.&quot;,  &quot;notice&quot;);
+	}
+}
+
+/**
+ * Logout API
+ *
+ * DELETE login/
+ * @api
+ */
+function logout(){
+	global $dacura_server;
+	$dacura_server-&gt;init(&quot;logout&quot;);
+	$u = $dacura_server-&gt;getUser();
+	if(!$u){
+		return $dacura_server-&gt;write_http_result(401, &quot;User is not logged in - cannot log out&quot;, &quot;notice&quot;);
+	}
+	$dacura_server-&gt;write_json_result($dacura_server-&gt;logout(), &quot;Logged out successfully&quot;);
+}
+
+/**
+ * Hello API
+ * 
+ * GET login/hello
+ * Just says hello to let us know the server is there
+ * @api
+ */
+function hello(){
+	global $dacura_server;
+	$dacura_server-&gt;init(&quot;hello&quot;);
+	$dacura_server-&gt;write_json_result(&quot;Hello World. This is Dacura speaking.&quot;, &quot;Hello world&quot;);
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

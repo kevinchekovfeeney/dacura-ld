@@ -1,0 +1,191 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import argparse
+import datetime
+import time
+import logging
+import traceback
+import glob
+import re
+from subprocess import call
+
+"""
+serverlist contains servers which are slated for backup.  The system assumes that ssh has keys already exchanged. 
+The format is as follows: 
+
+[{"name" : "myserver",						 # Fully qualified domain name of the server
+  "user" : "username",						 # username for remote host (defaults to "aligned-backup")
+  "directories" : [dir1,dir2,...dirn],		 # directories to be backed up
+  "mysql_dbs" : [{"db_name" : "my_db1",		 # Name of the database
+				  "db_user" : "my_db_user",	 # name of the database user
+				  "db_pass" : "my_db_pass"}, # password of the database user
+				 ....  
+				 {"db_name" : "my_db2" 
+				 ... }]						 # any number of additional databases
+ ...
+ {"name" : "myserver2",						 # any number of additional servers.
+  ...}
+ ]
+
+Ports can not be specified per server because of limitations in rdiff-backup.  Instead this should be place in the .ssh/config file as so: 
+
+Host hostIPorName
+	 Port portnumber
+
+"""	  
+
+serverlist = [{"name" : "aligned", 
+			   "directories" : ['/var/www/mediawiki', '/var/www/seshat-wiki'], 
+			   "mysql_dbs" : [{"db_name" : "mediawiki", 
+							   "db_user" : "root", 
+							   "db_pass" : "atlassian" }, 
+							  {"db_name" : "seshat73_mw", 
+							   "db_user" : "root", 
+							   "db_pass" : "atlassian" }]}, 
+			  {"name" : "tcdfame2", 
+			   "directories" : ['/var/www/wp', '/var/git', '/var/fuseki/data', ], 
+			   "mysql_dbs" : [{"db_name" : "wordpress", 
+							   "db_user" : "dacura-wordpress", 
+							   "db_pass" : "ptnt4gTp"}, 
+							  {"db_name" : "jiradb", 
+							   "db_user" : "root", 
+							   "db_pass" : "atlassian"}]}, 
+			  {"name" : "199.167.200.174", 
+			   "user" : "seshat",
+			   "rdiff" : False,
+			   "directories" : ['/home/seshat/public_html'], 
+			   "mysql_dbs" : [{"db_name" : "seshat_wiki", 
+							   "db_user" : "seshat_wiki", 
+							   "db_pass" : "ptnt4gTp" }]}]
+			  
+#RSYNC = '/usr/bin/rsync'
+RDIFF = '/usr/bin/rdiff-backup'
+SSH = '/usr/bin/ssh'
+SCP = '/usr/bin/scp'
+TEMP = '/tmp/'
+HOME = '/media/backup/'
+
+DUMPCMD = "mkdir -p /tmp/%(db_name)s ; mysqldump %(db_name)s -u%(db_user)s -p%(db_pass)s > "+TEMP+"%(db_name)s/%(db_name)s.sql"
+
+TARCMD = "tar -cvzf /tmp/%(file)s.tgz %(directory)s"
+
+__LOG_FILE__ = HOME + 'log/backup.log'
+__LOG_FORMAT__ = '%(asctime)-15s %(message)s'
+
+def top_level_error_handler(exctype, value, tb): 
+	logging.error("Fatal exception: %s with value %s" % (exctype, value)) 
+	logging.error("Traceback:\n%s" % traceback.format_tb(tb))
+sys.excepthook = top_level_error_handler
+
+def ensure_directory_exists(directory): 
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+
+def now(): 
+	"""Microseconds should be enough to avoid collision"""
+	return datetime.datetime.now().isoformat()
+
+# Date
+def version_filename(basename): 
+	return basename + now()
+
+def get_latest_path(server): 
+	largest = 0
+	# If we have never been run before, we start fresh, hence create a new path. 
+	path = HOME + server + '/backup-' + now() + '/'
+	for elt in glob.glob(HOME + server + '/backup-*'):
+		m = re.match(HOME + server + '/backup-(.*)', elt)
+		if m: 
+			dt = datetime.datetime.strptime(m.group(1), "%Y-%m-%dT%H:%M:%S.%f")
+			timestamp = time.mktime(dt.timetuple())
+			if timestamp > largest: 
+				largest = timestamp
+				path = elt
+	return path
+
+
+if __name__ == '__main__': 
+	parser = argparse.ArgumentParser(description='Get backups')
+	parser.add_argument('--fresh', help='Start with a new date, so we have a complete backup', action='store_const', const=True)
+	parser.add_argument('--log', help='Location of log file', default=__LOG_FILE__)
+	args = vars(parser.parse_args())
+
+	## Iritating logging setup
+	root = logging.getLogger() 
+	if root.handlers:
+		for handler in root.handlers: 
+			root.removeHandler(handler)
+	logging.basicConfig(filename=args['log'], level=logging.INFO, format=__LOG_FORMAT__)
+	
+	logging.info("-" * 80)
+	logging.info("Initiating backups")
+
+	if not os.path.exists(RDIFF):
+		logging.error("No rdiff-backup found, please install or change path to binary in RDIFF variable.")
+
+	command = RDIFF
+	cmd_args = ['--force']
+	ssh_server_cmd_args = []
+
+	for server in serverlist: 
+		# We want to make sure that we are doing incremental deltas
+		# into the same location, but creating a new location for all 
+		# full backups.
+		logging.info("Processing server '%(name)s'" % server)
+
+		# Try each server independently of errors. 
+		try: 
+			if not server['rdiff']: 
+				source_base = server['name'] + ':'
+			else:
+				source_base = server['name'] + '::'
+
+			if 'user' in server:
+				user = server['user']
+			else: 
+				user = 'aligned-backup'
+
+			if args['fresh']:				 
+				inc = "full backup"
+				destination = HOME + server['name'] + '/backup-' + now() +'/'
+			else:
+				inc = "incremental backup"
+				destination = get_latest_path(server['name'])
+			
+			logging.info("	Performing %s to destination %s" % (inc,destination))
+			ensure_directory_exists(destination)
+
+			for d in server['directories']:
+				logging.info("	  Processing directory %s" % d)
+				ensure_directory_exists(destination + d)
+				if not server['rdiff']:
+					dirfile = d.replace('+', '++').replace('/', '+') # escape directory slashes..
+					source = user + '@' + source_base + TEMP + '/' + dirfile + '.tgz'
+					print source_base
+					print str([SSH, user + '@' + server['name']] + [(TARCMD % {'file' : dirfile, 'directory' : d})])
+					call([SSH, user + '@' + server['name']] + [(TARCMD % {'file' : dirfile, 'directory' : d})])
+					call([SCP] + ['-r'] + [source, destination])
+				else:
+					source = user + '@' + source_base + d
+					call([command] + cmd_args + [source, destination + d])
+			  
+			logging.info("	Downloading relevant mysql databases:")
+			for d in server['mysql_dbs']: 
+				logging.info("	  Processing database '%s'" % d['db_name'])
+				ssh_source = user + '@' + server['name']
+				call([SSH, ssh_source] + ssh_server_cmd_args + [(DUMPCMD % d)])
+				source = user + '@' + source_base + TEMP + '/' + d['db_name'] + '/' 
+				if not server['rdiff']:
+					call([SCP] + [ssh_source, destination])
+				else:
+					call([command] + cmd_args + [source, destination])
+
+		except Exception as e:
+			ex_type, ex, tb = sys.exc_info()
+			logging.error("Fatal error: %s" % e)
+			logging.error(traceback.format_tb(tb))
+	
+	logging.info("Completed!")
+	logging.info("-" * 80)

@@ -1,0 +1,326 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;script&gt;
+dacura.candidate = {}
+dacura.candidate.apiurl = &quot;&lt;?=$service-&gt;get_service_url('candidate', array(), true)?&gt;&quot;;
+dacura.candidate.api = {};
+dacura.candidate.api.create = function (data){
+	var xhr = {};
+	xhr.url = dacura.candidate.apiurl;
+	xhr.type = &quot;POST&quot;;
+	xhr.contentType = 'application/json'; 
+	xhr.data = JSON.stringify(data);
+    xhr.dataType = &quot;json&quot;;
+    return xhr;
+}
+
+dacura.candidate.api.del = function (id, xhr){
+	if(typeof xhr == &quot;undefined&quot;){
+		xhr = {};
+		xhr.data ={};
+	}
+	xhr.url = dacura.candidate.apiurl + &quot;/&quot; + id;
+	xhr.type = &quot;DELETE&quot;;
+	return xhr;
+}
+
+dacura.candidate.api.view = function (id, xhr){
+	if(typeof xhr == &quot;undefined&quot;){
+		xhr = {};
+		xhr.data ={};
+	}
+	xhr.url = dacura.candidate.apiurl + &quot;/&quot; + id;
+	return xhr;
+}
+
+
+dacura.candidate.api.update = function (id, data){
+	var xhr = {};
+	xhr.url = dacura.candidate.apiurl + &quot;/&quot; + id;
+	xhr.type = &quot;POST&quot;;
+	xhr.contentType = 'application/json'; 
+	xhr.data = JSON.stringify(data);
+    xhr.dataType = &quot;json&quot;;
+    return xhr;	
+}
+
+&lt;/script&gt;
+&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;url(&quot;css&quot;, &quot;jquery.json-editor.css&quot;)?&gt;&quot; /&gt;
+&lt;div style='background-color: white; padding: 20px;'&gt;
+	&lt;?php 
+		$fakets = new FakeTripleStore(&quot;C:\\Temp\\fakets.json&quot;);
+		echo ($fakets-&gt;html());		
+	?&gt;
+&lt;/div&gt;
+&lt;script src='&lt;?=$service-&gt;url(&quot;js&quot;, &quot;jquery.json-editor.js&quot;)?&gt;'&gt;&lt;/script&gt;
+		&lt;div id=&quot;pagecontent-nopadding&quot;&gt;
+			&lt;div class=&quot;pctitle&quot;&gt;Candidate API Service &lt;span id=&quot;screen-context&quot;&gt;&lt;/span&gt;&lt;/div&gt;
+			&lt;h2 id=&quot;whatsinbox&quot;&gt;&lt;/h2&gt;
+			&lt;div id='jsoninput'&gt;&lt;textarea id='jsoninput_ta'&gt;&lt;/textarea&gt;&lt;/div&gt;
+			&lt;br&gt;
+		&lt;/div&gt;
+	  	&lt;div class=&quot;tool-buttons&quot;&gt;
+	   		&lt;button class=&quot;dacura-button get-ngas&quot; id=&quot;create-test&quot;&gt;Test Candidate create&lt;/button&gt;
+	      	&lt;button class=&quot;dacura-button get-ngas&quot; id=&quot;update-test&quot;&gt;Test Candidate update&lt;/button&gt;
+	      	&lt;input id='viewid'&gt;&lt;/input&gt;
+	      	&lt;button class=&quot;dacura-button get-ngas&quot; id=&quot;candidate-view&quot;&gt;View Candidate&lt;/button&gt;
+        &lt;/div&gt;
+	   	&lt;/div&gt;
+&lt;/div&gt;
+&lt;script&gt;
+var sco = {};
+sco.candidate = { 
+	&quot;rdf:type&quot; : &quot;seshat:Polity&quot;,
+	&quot;seshat:duration&quot; : [{ start: &quot;100BCE&quot;, end: &quot;1BCE&quot;}], 
+	&quot;seshat:population&quot; : [{ &quot;@id&quot;: &quot;_:p1&quot;, value: &quot;10000&quot;, start: &quot;100BCE&quot;, end: &quot;100BCE&quot;}, { &quot;@id&quot;: &quot;_:p2&quot;, value: &quot;20000&quot;, start: &quot;100BCE&quot;, end: &quot;100CE&quot; }], 
+	&quot;seshat:capital&quot; 	: [{ value: &quot;seshat:Rome&quot;, start: &quot;500BCE&quot;, end: &quot;300CE&quot;}, { value: &quot;seshat:Byzantium&quot;, start: &quot;300BCE&quot;, end: &quot;800CE&quot;}],
+	&quot;seshat:name&quot; 	: [{value: &quot;Roman Empire&quot;}]
+};
+
+//only include agents and entities that are being added to the system...
+sco.provenance = [                  
+	    {	
+		    &quot;prov:target&quot;: &quot;_:candidate&quot;,
+			&quot;rdf:type&quot;: &quot;prov:Entity&quot;,
+			&quot;prov:wasGeneratedBy&quot;: {
+				&quot;rdf:type&quot;: &quot;prov:Activity&quot;,
+				&quot;@id&quot;: &quot;_:act1&quot;,
+				&quot;startTime&quot;: &quot;2011-11-16T16:05:00&quot;, 
+				&quot;endTime&quot;: &quot;2011-11-16T16:06:00&quot;, 
+				&quot;prov:type&quot;: &quot;dacura:candidateCreation&quot;,
+				&quot;prov:wasAssociatedWith&quot;: {&quot;rdf:type&quot;: &quot;prov:Agent&quot;, &quot;prov:type&quot;: &quot;prov:SoftwareAgent&quot;}
+		    } 
+	    }, 
+	    {
+		    &quot;prov:target&quot;: &quot;_:p2&quot;,
+	    	&quot;rdf:type&quot;: &quot;prov:Entity&quot;,
+			&quot;prov:wasGeneratedBy&quot;: {
+				&quot;rdf:type&quot;: &quot;prov:Activity&quot;,
+				&quot;startTime&quot;: &quot;2011-11-16T16:05:00&quot;, 
+				&quot;endTime&quot;: &quot;2011-11-16T16:06:00&quot;, 
+				&quot;prov:type&quot;: &quot;dacura:candidateCreation&quot;,
+				&quot;prov:wasAssociatedWith&quot;: {&quot;rdf:type&quot;: &quot;prov:Agent&quot;, &quot;prov:type&quot;: &quot;prov:SoftwareAgent&quot;}
+		    } 
+    	}
+];
+
+sco.annotation = [
+    {
+		&quot;rdf:type&quot; : &quot;oa:Annotation&quot;,
+		&quot;oa:hasTarget&quot; : &quot;_:candidate&quot;, 
+		&quot;oa:hasBody&quot;: { &quot;rdf:type&quot; : &quot;dctypes:Text&quot;, &quot;cnt:chars&quot;: &quot;This data is completely wrong&quot;},
+		&quot;oa:annotatedBy&quot;: &quot;dacura:john&quot;
+	},
+	{&quot;rdf:type&quot; : &quot;dctypes:Text&quot;, &quot;cnt:chars&quot;: &quot;This data is completely right&quot;}
+];
+
+
+
+var suo = {};
+suo.candidate = { 
+	&quot;rdf:type&quot; 			: &quot;seshat:Polity&quot;,
+	&quot;seshat:duration&quot; 	: [{ start: &quot;100BCE&quot;, end: &quot;1BCE&quot;}, { start: &quot;1CE&quot;, end: &quot;100CE&quot;}], //added second one
+	&quot;seshat:population&quot; : [{ &quot;@id&quot;: &quot;_:p1&quot;, value: &quot;10000&quot;, start: &quot;100BCE&quot;, end: &quot;100BCE&quot;}, { &quot;@id&quot;: &quot;_:p2&quot;, value: &quot;2000&quot;, start: &quot;100BCE&quot;, end: &quot;100CE&quot; }], //change second one 
+	&quot;seshat:capital&quot; 	: [{ value: &quot;seshat:Rome&quot;, start: &quot;50CE&quot;, end: &quot;300CE&quot;}], //delete one value and change the other
+	&quot;seshat:name&quot; 		: [] //delete property
+};
+
+
+suo.provenance = {
+	prefix: { 
+		&quot;dacura&quot; : &quot;http://dacura.scss.tcd.ie/data/provenance&quot; 
+	},
+	agent: {
+		&quot;dacura:dacuraAgent&quot;: {&quot;prov:type&quot;: &quot;prov:SoftwareAgent&quot;, &quot;dacura:key&quot; : &quot;agentkey&quot;},
+		&quot;dacura:jim&quot;: {&quot;prov:type&quot;: &quot;prov:Person&quot;}
+	},
+	activity: {
+		&quot;_:a1&quot; : {
+			&quot;startTime&quot;: &quot;2011-11-16T16:05:00&quot;, 
+			&quot;endTime&quot;: &quot;2011-11-16T16:06:00&quot;, 
+			&quot;prov:type&quot;: &quot;dacura:candidateEditing&quot;
+		}
+	},
+	wasGeneratedBy: {&quot;_:g1&quot; : 
+		{&quot;entity&quot;: &quot;_:candidate&quot;, &quot;activity&quot;: &quot;_:a1&quot;}
+	},
+	wasAssociatedWith: {
+	   &quot;_:ag1&quot; : {&quot;agent&quot;: &quot;dacura:jim&quot;, &quot;activity&quot;: &quot;_:a1&quot;}, 
+	   &quot;_:ag2&quot; : {&quot;agent&quot;: &quot;dacura:dacuraAgent&quot;, &quot;activity&quot;: &quot;_:a1&quot;}
+	}
+};
+
+
+
+suo.annotation = {
+	'_:ano1': {
+		&quot;oa:hasTarget&quot; : &quot;_:candidate&quot;, 
+		&quot;oa:hasBody&quot;: { &quot;rdf:type&quot; : &quot;dctypes:Text&quot;, &quot;cnt:chars&quot;: &quot;This data is completely wrong&quot;},
+		&quot;oa:annotatedBy&quot;: &quot;dacura:john&quot;
+	},
+};
+
+
+
+
+
+var pvco = {};
+pvco.candidate = { 
+	&quot;rdf:type&quot; : &quot;pv:Event&quot;,
+	&quot;pv:fatalities&quot;: 100,
+	&quot;pv:committedBy&quot; : &quot;pv:IRA&quot;,
+	&quot;pv:location&quot;: { id: &quot;l1&quot;, &quot;geo:lat&quot; : 1.21112, &quot;geo:long&quot; : -0.1212 }
+};
+
+pvco.provenance = {
+	prefix: { &quot;dacura&quot; : &quot;http://dacura.scss.tcd.ie/data/provenance&quot; },
+	agent: {
+		&quot;dacura:dacuraAgent&quot;: {&quot;prov:type&quot;: &quot;prov:SoftwareAgent&quot;, &quot;dacura:key&quot; : &quot;agentkey&quot;},
+		&quot;dacura:jane&quot;: {&quot;prov:type&quot;: &quot;prov:Person&quot;}
+	},
+	activity: {
+		&quot;_:a1&quot; : {
+			&quot;startTime&quot;: &quot;2011-11-16T16:05:00&quot;, 
+			&quot;endTime&quot;: &quot;2011-11-16T16:06:00&quot;, 
+			&quot;prov:type&quot;: &quot;dacura:candidateCreation&quot;
+		}
+	},
+	wasGeneratedBy: [{&quot;entity&quot;: &quot;_:candidate&quot;, &quot;activity&quot;: &quot;_:a1&quot;}], 
+	wasAssociatedWith: [
+	   {&quot;agent&quot;: &quot;dacura:jane&quot;, &quot;activity&quot;: &quot;_:a1&quot;}, {&quot;agent&quot;: &quot;dacura:dacuraAgent&quot;, &quot;activity&quot;: &quot;_:a1&quot;}
+	] 
+};
+pvco.annotation = {
+	'_:ano1': {&quot;oa:hasTarget&quot; : &quot;_:candidate&quot;, &quot;oa:hasBody&quot;: &quot;_:body&quot;, &quot;oa:annotatedBy&quot;: &quot;dacura:jane&quot;},
+	'_:body': {&quot;rdf:type&quot; : &quot;dctypes:Text&quot;, &quot;cnt:chars&quot;: &quot;This data is completely right&quot;}
+};
+
+
+
+$('document').ready(function(){
+	
+	$('#jsoninput_ta').val(JSON.stringify(sco));
+	JSONEditor.prototype.ADD_IMG = '&lt;?=$service-&gt;url(&quot;image&quot;, &quot;icons/add.png&quot;)?&gt;';
+    JSONEditor.prototype.DELETE_IMG = '&lt;?=$service-&gt;url(&quot;image&quot;, &quot;icons/delete.png&quot;)?&gt;';
+    var j = new JSONEditor($(&quot;#jsoninput_ta&quot;), &quot;800&quot;, &quot;400&quot;);
+    j.doTruncation(true);
+    j.showText();
+	j.showFunctionButtons();
+
+	
+	
+	$(&quot;#create-test&quot;).button().click(function(){
+		ajs.beforeSend = function(){
+			
+		};
+		ajs.complete = function(){
+			
+		};
+
+		$.ajax(ajs)
+		.done(function(response, textStatus, jqXHR) {	
+			$('#whatsinbox').html(&quot;Create result&quot;);
+			$('#jsoninput_ta').val(JSON.stringify(response));	
+			j.setJsonFromText();
+		    j.rebuild();
+			
+			//alert(response);
+		});	
+	});
+	$(&quot;#candidate-view&quot;).button().click(function(){
+		var i = $('#viewid').val();
+		if(i == &quot;&quot;){
+			alert(&quot;You must specify a candidate id&quot;);
+			return;
+		}
+		var ajs = dacura.candidate.api.view(i);
+		ajs.beforeSend = function(){
+			
+		};
+		ajs.complete = function(){
+			
+		};
+		$.ajax(ajs)
+		.done(function(response, textStatus, jqXHR) {	
+			$('#whatsinbox').html(&quot;View &quot; + i + &quot; result&quot;);
+			$('#jsoninput_ta').val(response);	
+			j.setJsonFromText();
+		    j.rebuild();
+		});	
+	});
+	$(&quot;#update-test&quot;).button().click(function(){
+		var i = $('#viewid').val();
+		if(i == &quot;&quot;){
+			alert(&quot;You must specify a candidate id&quot;);
+			return;
+		}
+		var uobj = $('#jsoninput_ta').val();
+		try {
+			uobj = JSON.parse(uobj);
+		}
+		catch(e){
+			alert(&quot;JSON does not parse &quot;+ e.message);
+			return;
+		}
+		var ajs = dacura.candidate.api.update(i, uobj.contents);
+		ajs.beforeSend = function(){
+			
+		};
+		ajs.complete = function(){
+			
+		};
+
+		$.ajax(ajs)
+		.done(function(response, textStatus, jqXHR) {	
+			$('#whatsinbox').html(&quot;Update &quot; + i + &quot; result&quot;);
+			//ert(response);
+			$('#jsoninput_ta').val(JSON.stringify(response));	
+			j.setJsonFromText();
+		    j.rebuild();
+		});	
+	});
+	
+});
+&lt;/script&gt;</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,215 @@
+@CHARSET "ISO-8859-1";
+
+.seshatFact {
+	display: inline;
+	padding: 2px 6px;
+	cursor: pointer;
+	border: 1px solid white;
+	
+}
+
+.seshatFactSelected {
+	border: 1px #888 dashed;
+	background-color:#FFFFE0;
+}
+
+.seshatResult {
+	font-weight: bold;
+}
+
+.seshatError {
+	color: #822;
+}
+
+.seshatWarning {
+	color: #842;
+}
+
+.seshatEmpty {
+	color: #228;	
+}
+
+.seshatComplex,
+.seshatSimple,
+.seshatCorrect {
+	color: #282;	
+}
+
+.seshatUnknown {
+	color: #4aa;	
+}
+
+.grabber-busy {
+	text-align: center;
+}
+
+img.dialog-busy {
+	display: block;
+	margin: 6px auto;
+}
+
+#validator-results {
+	position:  fixed;
+	z-index: 1000;
+	top: 0px;
+	left: 0px;
+	min-height: 32px;
+	width: 100%;
+	border-bottom: 2px solid  #F0E68C;
+	background: rgba(28, 16, 19, 0.9);
+	color: #eeeeee;
+}
+
+#validator-stats dt {
+	color: #eeeeee;
+}
+
+#validator-results {
+	padding: 6px 0px 0px 0px;
+}
+
+#validator-stats dd {
+	background-color: white;
+	padding: 0px 8px;
+}
+
+#validator-stats dt {
+	padding-top: 3px;
+}
+
+#validator-branding,
+#validator-name,
+#validator-controls,
+#validatar-stats,
+#validator-stats dl,
+#validator-stats dt,
+#validator-stats dd {
+	float: left;
+}
+
+#validator-branding {
+	margin-left: 1em;
+}
+
+#validator-stats dt {
+	margin-right: 6px;
+}
+
+#validator-stats dd {
+	margin-right: 16px;
+	margin-left: 0px;
+	font-weight: bold;
+}
+
+
+#validator-stats dl {
+	margin-right: 1em;
+	padding-left: 12px;
+	border-left: 1px solid #eeeeee;
+	border-right: 1px solid #eeeeee;
+}
+
+#validator-controls button {
+	margin-right: 10px;	
+}
+
+#validator-controls {
+	margin-right: 1em;
+	margin-left: 12px;
+}
+
+#validator-name {
+	margin-right: 1em;
+	margin-left: 1em;
+	margin-left: 8px;
+	padding-top: 6px;
+}
+
+
+#validator-close {
+	float: right;
+	margin-right: 8px;
+}
+
+dl.parsedVariable dt
+{
+	font-size: 0.9em;
+}
+
+dl.parsedVariable dd.varname,
+dl.parsedVariable dd.varval {
+	font-weight: bold;
+}
+
+dl.parsedVariable dd.varmsg {
+	font-size: 0.9em;
+}
+
+div.vardatapoints  {
+	padding: 6px;
+	text-align: center; 
+	display: none;
+} 
+
+
+
+#validator-variable {
+	width: 96%;
+	clear: both;
+	margin: 4px auto;
+	background-color: #FFFFE0;
+	border-radius: 6px;
+	color: black;
+	padding: 3px 4px;
+	border: 2px solid white;
+}
+
+#validator-variable dl {
+	width: 100%;
+	display: inline;
+	height: 100%;
+}
+
+#validator-variable dd,
+#validator-variable dt {
+	display: inline;
+	padding: 3px 2px;
+}
+
+#validator-variable dd {
+	margin-right: 8px;
+	margin-left: 4px;
+	border-right: 2px solid #444;
+	padding-right: 16px;
+}
+
+#validator-variable dt {
+	margin-right: 0px;
+	padding-right: 0px;
+	color: #444;
+}
+
+#validator-variable table {
+	font-size: 0.8em;
+	border-collapse: collapse;
+	margin: 2px auto;
+	border: 1px solid #a4a4af;
+}
+
+#validator-variable table th {
+	padding: 6px 8px;
+	background-color: #c4c4cf;
+	border-bottom: 1px solid #444;
+	text-align: center;
+}
+
+#validator-variable table td {
+	padding: 4px;
+	border-right: 1px solid #a4a4af;
+	
+}
+
+
+button {
+	font-size: .8em !important;
+}

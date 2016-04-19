@@ -1,0 +1,165 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/**
+ * The settings for the config Service
+ * @author chekov
+ * @package users
+ * @license GPL V2
+ */
+$settings = array(
+	/* standard fields for services */
+	&quot;service-title&quot; =&gt; &quot;Configuration Manager&quot;,
+	&quot;service-button-title&quot; =&gt; &quot;Configuration&quot;,
+	&quot;service-description&quot; =&gt; &quot;View and update the settings of the platform and its collections&quot;,
+	/* the list of all facets supported by the service */
+	&quot;facet-list&quot; =&gt; array(&quot;admin&quot; =&gt; &quot;Administer Collection&quot;, &quot;manage&quot; =&gt; &quot;Manage collection&quot;, &quot;inspect&quot; =&gt; &quot;Auditing&quot;, &quot;view&quot; =&gt; &quot;view details&quot;),
+	&quot;default_status&quot; =&gt; &quot;pending&quot;,
+	&quot;default_profile&quot; =&gt; array(),
+	&quot;default_collection_config&quot; =&gt; array(),
+	&quot;collection_paths_to_create&quot; =&gt; array(&quot;logs&quot;, &quot;cache&quot;, &quot;dumps&quot;, &quot;files&quot;),
+	&quot;messages&quot; =&gt; array(
+		&quot;system-view-files-intro&quot; =&gt; &quot;Upload and manage images and other server files&quot;,
+		&quot;system-view-logs-intro&quot; =&gt; &quot;Keep track of all the activity on the platform&quot;,
+		&quot;system-system-configuration-intro&quot; =&gt; &quot;The basic settings that define the platform's installation context&quot;,
+		&quot;system-view-services-intro&quot; =&gt; &quot;Configure the various services provided to users by the platform&quot;,
+		&quot;system-list-collections-intro&quot; =&gt; &quot;Access to the configurations of the individual collections hosted by the platform&quot;,
+		&quot;system-add-collection-intro&quot; =&gt; &quot;Choose an id (a short, lowercase, word, which will appear in the collection's URL and title for the new collection), then click the button below&quot;,
+		&quot;collection-view-files-intro&quot; =&gt; &quot;Upload and manage your collection's images and other files&quot;,
+		&quot;collection-view-logs-intro&quot; =&gt; &quot;Keep track of all the activity within your collection with real time logging&quot;,
+		&quot;collection-system-configuration-intro&quot; =&gt; &quot;The basic settings that define the collection&quot;,
+		&quot;collection-view-services-intro&quot; =&gt; &quot;Configure the various services provided to users by the collection&quot;,
+	),
+	&quot;tables&quot; =&gt; array(
+		&quot;collections&quot; =&gt; array(&quot;datatable_options&quot; =&gt; array(&quot;jQueryUI&quot; =&gt; true, &quot;searching&quot; =&gt; false, &quot;info&quot; =&gt; true, &quot;pageLength&quot; =&gt; 25)),
+		&quot;services&quot; =&gt; array(&quot;datatable_options&quot; =&gt; array(&quot;jQueryUI&quot; =&gt; true, &quot;searching&quot; =&gt; false, &quot;info&quot; =&gt; true, &quot;pageLength&quot; =&gt; 25)),
+		&quot;logs&quot; =&gt; array(&quot;datatable_options&quot; =&gt; array(&quot;order&quot;=&gt; array(0, &quot;desc&quot;), &quot;jQueryUI&quot; =&gt; true, &quot;searching&quot; =&gt; false, &quot;info&quot; =&gt; true, &quot;pageLength&quot; =&gt; 50))
+	),
+	&quot;create_collection_fields&quot; =&gt; array(
+		&quot;id&quot; =&gt; array(&quot;id&quot; =&gt; &quot;id&quot;, &quot;label&quot; =&gt; &quot;ID&quot;, &quot;length&quot; =&gt; &quot;short&quot;, &quot;help&quot; =&gt;&quot;The collection id is a short (minimum 3 characters, maximum 40 characters) alphanumeric string [a-z_0-9] which will identify the collection. It will appear in URLs so brevity is key.&quot;),
+		&quot;title&quot;	=&gt; array(&quot;id&quot; =&gt; &quot;title&quot;, &quot;label&quot; =&gt; &quot;Title&quot;, &quot;help&quot; =&gt; &quot;The full title of the data collection - may include spaces and punctuation.&quot;),				
+	),
+	/* collection configuration fields that will appear on the collection configuration form */	
+	&quot;update_collection_fields&quot; =&gt; array(
+		&quot;name&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Title&quot;, &quot;help&quot; =&gt; &quot;The full title of the data collection - may include spaces and punctuation.&quot;),
+		&quot;status&quot; =&gt;	array(&quot;label&quot; =&gt; &quot;Status&quot;, &quot;help&quot; =&gt; &quot;The current status of the collection&quot;, &quot;type&quot; =&gt; &quot;status&quot;),
+		&quot;image&quot; =&gt; array(&quot;type&quot; =&gt; &quot;image&quot;, &quot;label&quot; =&gt; &quot;Image&quot;, &quot;help&quot; =&gt; &quot;An image which will represent the collection on pages.&quot;),
+		&quot;background&quot; =&gt; array(&quot;type&quot; =&gt; &quot;image&quot;, &quot;label&quot; =&gt; &quot;Background Image&quot;, &quot;help&quot; =&gt; &quot;An image which will be the background of the collection's pages.&quot;),		
+		&quot;icon&quot; =&gt; array(&quot;type&quot; =&gt; &quot;image&quot;, &quot;label&quot; =&gt; &quot;Icon&quot;, &quot;help&quot; =&gt; &quot;An icon (16 x 16 pixels) which will represent the collection in menus, etc.&quot;),
+		&quot;collection_url&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Collection Home&quot;, &quot;type&quot; =&gt; &quot;url&quot;, &quot;help&quot; =&gt; &quot;The Dacura URL for the collection&quot;),		
+		&quot;collection_path&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Collection Storage&quot;, &quot;help&quot; =&gt; &quot;The directory in which the collection's files are stored&quot;),		
+	//	&quot;instance_idbase&quot; =&gt; array(&quot;hidden&quot; =&gt; true, &quot;label&quot; =&gt; &quot;Instance Data ID prefix&quot;, &quot;type&quot; =&gt; &quot;url&quot;, &quot;help&quot; =&gt; &quot;This URL will be prepended to the internal IDs of all collection instance data to make a global id&quot;),		
+	//	&quot;graph_idbase&quot; =&gt; array(&quot;hidden&quot; =&gt; true, &quot;label&quot; =&gt; &quot;Named Graph ID prefix&quot;, &quot;type&quot; =&gt; &quot;url&quot;, &quot;help&quot; =&gt; &quot;This URL will be prepended to the internal IDs of all collection named graphs to make a global id&quot;),		
+	),
+	/* System configuration fields that will appear on the collection / system configuration form */
+	&quot;sysconfig_form_fields&quot; =&gt; array(
+		&quot;install_url&quot; =&gt; array(&quot;disabled&quot; =&gt; true, &quot;label&quot; =&gt; &quot;Dacura Base URL&quot;, &quot;type&quot; =&gt; &quot;url&quot;, &quot;help&quot; =&gt; &quot;The URL that Dacura is installed at. All Dacura URLs will be relative to this base.&quot;),
+		&quot;storage_base&quot; =&gt; array(&quot;disabled&quot; =&gt; true, &quot;label&quot; =&gt; &quot;Storage Base&quot;, &quot;help&quot; =&gt; &quot;The directory where the server stores its data.&quot;),
+		&quot;dqs_url&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Dacura Quality Service URL&quot;, &quot;type&quot; =&gt; &quot;url&quot;, &quot;help&quot; =&gt; &quot;The Dacura Quality Service has an independent endpoint from the rest of Dacura&quot;),
+		&quot;dacurauser&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Dacura Session User&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;length&quot; =&gt; &quot;short&quot;, &quot;help&quot; =&gt; &quot;The name of the dacura user object in the user's php session - it only has to  be changed to allow multiple dacuras to be installed on the same server.&quot;),				
+		&quot;db&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Database Settings&quot;, &quot;disabled&quot; =&gt; true, &quot;type&quot; =&gt; &quot;section&quot;, &quot;help&quot; =&gt; &quot;Access information for the database where Dacura will store its information.&quot;),				
+		&quot;host&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Hostname&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;length&quot; =&gt; &quot;short&quot;),				
+		&quot;dbname&quot; =&gt; array(&quot;id&quot; =&gt; &quot;name&quot;, &quot;disabled&quot; =&gt; true, &quot;label&quot; =&gt; &quot;Name&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;length&quot; =&gt; &quot;short&quot;),				
+		&quot;user&quot; =&gt; array(&quot;disabled&quot; =&gt; true, &quot;label&quot; =&gt; &quot;Username&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;length&quot; =&gt; &quot;short&quot;),				
+		&quot;pass&quot; =&gt; array(&quot;disabled&quot; =&gt; true, &quot;label&quot; =&gt; &quot;Password&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;length&quot; =&gt; &quot;short&quot;),	
+		&quot;apistr&quot; =&gt; array(&quot;label&quot; =&gt; &quot;API url offset&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;length&quot; =&gt; &quot;tiny&quot;, &quot;help&quot;=&gt;&quot;The URL path used to route requests to the ajax api rather than the html page.&quot;),			
+		&quot;path_to_files&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Path to media files&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;length&quot; =&gt; &quot;tiny&quot;, &quot;help&quot;=&gt;&quot;The URL directory used to store built-in Dacura media files, etc.&quot;),			
+		&quot;path_to_services&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Path to service files&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;length&quot; =&gt; &quot;short&quot;, &quot;help&quot;=&gt;&quot;The URL directory where services live.&quot;),			
+		&quot;dump_directory&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Dump Directory&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;length&quot; =&gt; &quot;short&quot;, &quot;help&quot;=&gt;&quot;The directory in which raw output files will be dumped.&quot;),			
+		&quot;files_directory&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Files Directory&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;length&quot; =&gt; &quot;short&quot;, &quot;help&quot;=&gt;&quot;The directory in which files will be stored.&quot;),			
+		&quot;cache_directory&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Cache Directory&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;length&quot; =&gt; &quot;short&quot;, &quot;help&quot;=&gt;&quot;The directory in which cache files will be stored.&quot;),			
+		&quot;default_cache_config&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Default Cache Configuration&quot;, &quot;type&quot; =&gt; &quot;complex&quot;, &quot;help&quot;=&gt;&quot;The default configuration of new cache stores.&quot;),
+		&quot;performance_timing&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Measure Performance&quot;, &quot;type&quot; =&gt; &quot;choice&quot;, &quot;options&quot; =&gt; array( &quot;0&quot;=&gt; &quot;off&quot;, &quot;1&quot; =&gt; &quot;measure request&quot;, &quot;2&quot; =&gt; &quot;fine-tuning&quot;), &quot;help&quot;=&gt;&quot;Turn on to create a measure of performance in the server logs&quot;),				
+		&quot;request_log_level&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Request Log Level&quot;, &quot;type&quot; =&gt; &quot;choice&quot;, &quot;options&quot; =&gt; RequestLog::$log_levels, &quot;help&quot;=&gt;&quot;Controls the volume of logs that dacura records&quot;),				
+		&quot;system_log_level&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Event Log Level&quot;, &quot;type&quot; =&gt; &quot;choice&quot;, &quot;options&quot; =&gt; RequestLog::$log_levels, &quot;help&quot;=&gt;&quot;Controls the volume of logs that dacura records&quot;),				
+		&quot;filebrowser&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Filebroswer directory&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;help&quot;=&gt;&quot;Path to the file browser plugin.&quot;),				
+		&quot;dacura_logbase&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Log Directory&quot;, &quot;help&quot; =&gt; &quot;Absolute path of directory where dacura keeps its logs&quot;, &quot;type&quot; =&gt; &quot;text&quot;),				
+		&quot;dacura_request_log&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Request Logfile&quot;, &quot;help&quot; =&gt; &quot;Absolute path of file where dacura keeps its request logs&quot;, &quot;type&quot; =&gt; &quot;text&quot;),				
+		&quot;dacura_system_log&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Event Log&quot;, &quot;help&quot; =&gt; &quot;Absolute path of file where dacura keeps its event logs&quot;, &quot;type&quot; =&gt; &quot;text&quot;),				
+		&quot;services_url&quot; =&gt; array(&quot;label&quot; =&gt; &quot;URL of dacura services&quot;, &quot;help&quot; =&gt; &quot;URL for accessing dacura's services&quot;, &quot;type&quot; =&gt; &quot;url&quot;),				
+		&quot;dqs_service&quot; =&gt; array(&quot;label&quot; =&gt; &quot;URL of DQS methods&quot;, &quot;type&quot; =&gt; &quot;section&quot;),				
+		&quot;instance&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Instance API&quot;, &quot;type&quot; =&gt; &quot;url&quot;),				
+		&quot;schema&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Schema API&quot;, &quot;type&quot; =&gt; &quot;url&quot;),				
+		&quot;schema_validate&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Schema Validate API&quot;, &quot;type&quot; =&gt; &quot;url&quot;),				
+		&quot;validate&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Validate API&quot;, &quot;type&quot; =&gt; &quot;url&quot;),				
+		&quot;stub&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Frame API&quot;, &quot;type&quot; =&gt; &quot;url&quot;),				
+		&quot;logfile&quot; =&gt; array(&quot;label&quot; =&gt; &quot;DQS Logfile&quot;, &quot;type&quot; =&gt; &quot;text&quot;),				
+		&quot;fakets&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Fake Triplsetore path&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;help&quot; =&gt; &quot;A path to a file that will be used as a fake triplestore (just a file).&quot;),				
+		&quot;dumplast&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Last Request Dump File&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;help&quot; =&gt; &quot;A path to a file that will be used to dump the last request sent to the DQS.&quot;),				
+		&quot;mail_headers&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Mail Headers&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;input_type&quot; =&gt; &quot;textarea&quot;, &quot;help&quot; =&gt; &quot;Mailheaders that will be sent with outward mail.&quot;),				
+		&quot;dacura_sessions&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Sessions Directory&quot;, &quot;type&quot; =&gt; &quot;text&quot;, &quot;help&quot; =&gt; &quot;Directory in which PHP will store its sessions.&quot;),				
+		&quot;ajaxurl&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Ajax URL&quot;, &quot;type&quot; =&gt; &quot;url&quot;, &quot;help&quot; =&gt; &quot;Base URL for all Dacura AJAX / API calls.&quot;),
+		&quot;files_url&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Media Files URL&quot;, &quot;type&quot; =&gt; &quot;url&quot;, &quot;help&quot; =&gt; &quot;URL where Dacura serves its media files.&quot;),
+		&quot;path_to_collections&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Path to collections' file storage area&quot;, &quot;type&quot; =&gt; &quot;text&quot;),
+		&quot;collections_urlbase&quot; =&gt; array(&quot;label&quot; =&gt; &quot;URL of collections' web-files&quot;, &quot;type&quot; =&gt; &quot;text&quot;),
+	),
+	/* field settings that apply to all services */
+	&quot;service_form_fields&quot; =&gt; array(
+		&quot;status&quot; =&gt;	array(&quot;label&quot; =&gt; &quot;Status&quot;, &quot;help&quot; =&gt; &quot;Is the service currently enabled?&quot;, &quot;type&quot; =&gt; &quot;choice&quot;, &quot;options&quot; =&gt; array(&quot;enable&quot; =&gt; &quot;Enabled&quot;, &quot;disable&quot; =&gt; &quot;Disabled&quot;)),			
+		&quot;facets&quot; =&gt;	array(&quot;label&quot; =&gt; &quot;Access Control&quot;, &quot;input_type&quot; =&gt; &quot;custom&quot;, &quot;extras&quot; =&gt; array(), &quot;help&quot; =&gt; &quot;What facets of the service are available to which users&quot;, &quot;type&quot; =&gt; &quot;complex&quot;),			
+		&quot;facet-list&quot; =&gt;	array(&quot;label&quot; =&gt; &quot;Access Control Facets&quot;, &quot;disabled&quot; =&gt; true),
+		&quot;service-title&quot; =&gt; array(&quot;hidden&quot; =&gt; true),
+		&quot;service-button-title&quot; =&gt; array(&quot;hidden&quot; =&gt; true),
+		&quot;status_locked&quot; =&gt; array(&quot;hidden&quot; =&gt; true),
+		&quot;service-description&quot; =&gt; array(&quot;hidden&quot; =&gt; true),				
+		&quot;config_form_fields&quot; =&gt; array(&quot;hidden&quot; =&gt; true, &quot;type&quot; =&gt; &quot;complex&quot;, &quot;label&quot; =&gt; &quot;This array!&quot;),
+	),
+	/* field settings that will appear on configuration form of this service */
+	&quot;config_form_fields&quot; =&gt; array(
+		&quot;default_status&quot; =&gt; array(&quot;label&quot; =&gt; &quot;Default status of new collections&quot;, &quot;type&quot; =&gt; &quot;status&quot;),
+		&quot;service_form_fields&quot; =&gt; array(&quot;hidden&quot; =&gt; true, &quot;type&quot; =&gt; &quot;complex&quot;, &quot;label&quot; =&gt; &quot;config stuff&quot;),
+		&quot;create_collection_fields&quot; =&gt; array(&quot;hidden&quot; =&gt; true, &quot;type&quot; =&gt; &quot;complex&quot;, &quot;label&quot; =&gt; &quot;config stuff&quot;),
+		&quot;update_collection_fields&quot; =&gt; array(&quot;hidden&quot; =&gt; true, &quot;type&quot; =&gt; &quot;complex&quot;, &quot;label&quot; =&gt; &quot;config stuff&quot;),
+		&quot;sysconfig_form_fields&quot; =&gt; array(&quot;hidden&quot; =&gt; true, &quot;type&quot; =&gt; &quot;complex&quot;, &quot;label&quot; =&gt; &quot;config stuff&quot;),
+		&quot;forms&quot; =&gt; array(&quot;hidden&quot; =&gt; true, &quot;type&quot; =&gt; &quot;complex&quot;, &quot;label&quot; =&gt; &quot;config stuff&quot;),
+		&quot;tables&quot; =&gt; array(&quot;hidden&quot; =&gt; true, &quot;type&quot; =&gt; &quot;complex&quot;, &quot;label&quot; =&gt; &quot;config stuff&quot;),
+		&quot;default_profile&quot; =&gt; array(&quot;type&quot; =&gt; &quot;complex&quot;, &quot;label&quot; =&gt; &quot;Default User Profile&quot;),
+		&quot;default_collection_config&quot; =&gt; array(&quot;type&quot; =&gt; &quot;complex&quot;, &quot;label&quot; =&gt; &quot;Default Collection Configuration&quot;),
+		&quot;collection_paths_to_create&quot; =&gt; array(&quot;type&quot; =&gt; &quot;complex&quot;, &quot;label&quot; =&gt; &quot;Paths to create for new collections&quot;),
+		&quot;messages&quot; =&gt; array(&quot;type&quot; =&gt; &quot;section&quot;, &quot;label&quot; =&gt; &quot;Text messages that will be reported to the user&quot;),
+		&quot;settings_intro&quot; =&gt; array(&quot;type&quot; =&gt; &quot;text&quot;, &quot;label&quot; =&gt; &quot;Configuration Welcome Message&quot;, &quot;help&quot; =&gt; &quot;Text that appears on the top of the configuration front page&quot;),		
+	),		
+);
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,333 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;script src='&lt;?=$service-&gt;furl(&quot;js&quot;, &quot;jquery.dataTables.js&quot;)?&gt;'&gt;&lt;/script&gt;
+&lt;script src='&lt;?=$service-&gt;furl(&quot;js&quot;, &quot;dataTables.jqueryui.js&quot;)?&gt;'&gt;&lt;/script&gt;
+&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; media=&quot;screen&quot; href=&quot;&lt;?=$service-&gt;get_system_file_url(&quot;css&quot;, &quot;dataTables.jqueryui.css&quot;)?&gt;&quot; /&gt;
+
+&lt;div id='fragment-header' class=&quot;dch&quot;&gt;
+	&lt;span class='candidate-subhead fragment-title'&gt;&lt;/span&gt;
+	&lt;span class='fragment-details'&gt;&lt;/span&gt;
+	&lt;span class='fragment-path'&gt;&lt;/span&gt;
+&lt;/div&gt;			
+&lt;div id='version-header' class=&quot;dch&quot;&gt;
+	&lt;span class='vc candidate-subhead version-title'&gt;&lt;/span&gt;
+	&lt;span class='vc version-created'&gt;&lt;/span&gt;
+	&lt;span class='vc version-replaced'&gt;&lt;/span&gt;
+	&lt;span class='vc version-details'&gt;&lt;/span&gt;
+&lt;/div&gt;			
+
+&lt;div id='update-header' class=&quot;dch&quot;&gt;
+	&lt;span class='candidate-subhead update-title'&gt;&lt;/span&gt;
+	&lt;span class='update-created'&gt;&lt;/span&gt;
+	&lt;span class='update-modified'&gt;&lt;/span&gt;
+	&lt;span class='update-details'&gt;&lt;/span&gt;
+&lt;/div&gt;			
+
+&lt;div id='tab-holder'&gt;
+	 &lt;ul id=&quot;cand-pane-list&quot; class=&quot;dch&quot;&gt;
+	 	&lt;li&gt;&lt;a href=&quot;#cand-contents&quot;&gt;Contents&lt;/a&gt;&lt;/li&gt;
+	 	&lt;li&gt;&lt;a href=&quot;#cand-history&quot;&gt;History&lt;/a&gt;&lt;/li&gt;
+	 	&lt;li&gt;&lt;a href=&quot;#cand-updates&quot;&gt;Updates&lt;/a&gt;&lt;/li&gt;
+	 &lt;/ul&gt;
+	&lt;div id=&quot;contents-holder&quot;&gt;
+	 	&lt;div id=&quot;cand-contents&quot; class='dch'&gt;
+	 		&lt;div id='editor-msgs'&gt;&lt;/div&gt;
+			&lt;?php echo $service-&gt;showLDResultbox($params);?&gt;
+			&lt;?php echo $service-&gt;showLDEditor($params);?&gt;
+		&lt;/div&gt;	
+	&lt;/div&gt;
+ 	&lt;div id=&quot;cand-history&quot;&gt;
+		&lt;div id=&quot;history-holder&quot; class='ld-list dch'&gt;
+			&lt;table class=&quot;history_table display&quot;&gt;
+				&lt;thead&gt;
+					&lt;tr&gt;
+						&lt;th&gt;Version&lt;/th&gt;
+						&lt;th&gt;Status&lt;/th&gt;
+						&lt;th&gt;Created&lt;/th&gt;
+						&lt;th&gt;Sortable Created&lt;/th&gt;
+						&lt;th&gt;Changed From&lt;/th&gt;
+						&lt;th&gt;Changed To&lt;/th&gt;
+					&lt;/tr&gt;
+				&lt;/thead&gt;
+				&lt;tbody&gt;
+				&lt;/tbody&gt;
+			&lt;/table&gt;		
+		&lt;/div&gt;
+	&lt;/div&gt;
+ 	&lt;div id=&quot;cand-updates&quot;&gt;
+		&lt;div id=&quot;update-holder&quot; class='ld-list dch'&gt;
+			&lt;table class=&quot;updates_table display&quot;&gt;
+				&lt;thead&gt;
+				&lt;tr&gt;
+					&lt;th&gt;ID&lt;/th&gt;
+					&lt;th&gt;Status&lt;/th&gt;
+					&lt;th&gt;From Version&lt;/th&gt;
+					&lt;th&gt;To Version&lt;/th&gt;
+					&lt;th&gt;Created&lt;/th&gt;
+					&lt;th&gt;Sortable Created&lt;/th&gt;
+					&lt;th&gt;Updated&lt;/th&gt;
+					&lt;th&gt;Sortable Updated&lt;/th&gt;
+					&lt;th&gt;Change Command&lt;/th&gt;
+					&lt;th&gt;Rollback Command&lt;/th&gt;
+				&lt;/tr&gt;
+				&lt;/thead&gt;
+				&lt;tbody&gt;&lt;/tbody&gt;
+			&lt;/table&gt;					
+		&lt;/div&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+	
+&lt;div id=&quot;tabletemplates&quot; class='dacura-templates'&gt;
+	&lt;div id=&quot;toolheader-template&quot;&gt;
+		&lt;table class='ld-invariants'&gt;
+			&lt;thead&gt;
+				&lt;tr&gt;
+					&lt;th&gt;Status&lt;/th&gt;
+					&lt;th&gt;Type&lt;/th&gt;
+					&lt;th&gt;Collection&lt;/th&gt;
+					&lt;th&gt;Created&lt;/th&gt;
+				&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;
+				&lt;tr&gt;
+					&lt;td class='cand_status'&gt;&lt;/td&gt;
+					&lt;td class='cand_type'&gt;&lt;/td&gt;
+					&lt;td class='cand_owner'&gt;&lt;/td&gt;
+					&lt;td class='cand_created'&gt;&lt;/td&gt;
+				&lt;/tr&gt;
+			&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+&lt;script&gt;
+
+/*
+ * Called once per page load - sets the candidate context of the view page
+ */
+dacura.candidate.showHeader = function(cand){
+	options = { title: cand.id };
+	if(typeof cand.title != &quot;undefined&quot;){
+		options.subtitle = cand.title;
+	}
+	if(typeof cand.image != &quot;undefined&quot;){
+		options.image = cand.image;
+	}
+	options.description = $('#toolheader-template').html();
+	dacura.tool.header.update(options);
+	dtit = cand.cid;
+	if(typeof cand.metadetails != &quot;undefined&quot;){
+		metadetails = cand.metadetails;
+	}
+	else {
+		metadetails = timeConverter(cand.created);
+	}
+	$('.cand_type').html(&quot;&lt;span class='candidate-type'&gt;&quot; + cand.meta.type + &quot;&lt;/span&gt;&quot;);
+	$('.cand_owner').html(&quot;&lt;span class='candidate-owner'&gt;&quot; + dtit + &quot;&lt;/span&gt;&quot;);
+	$('.cand_created').html(&quot;&lt;span class='candidate-details'&gt;&quot; + metadetails + &quot;&lt;/span&gt;&quot;);
+	$('.cand_status').html(&quot;&lt;span class='candidate-status candidate-&quot; + cand.latest_status + &quot;'&gt;&quot; + cand.latest_status + &quot;&lt;/span&gt;&quot;);
+	//alert(&quot;adding service breadcrumb&quot;);
+    dacura.candidate.drawVersionHeader(cand);
+}
+
+
+
+function drawUpdateHeader(data){
+	if(typeof data == &quot;undefined&quot; || data.length == 0){
+		$('#update-holder').show();	
+		$('#update_table').dataTable(dacura.candidate.getTableInitStrings(true)); 
+		dacura.system.showErrorResult(&quot;No Updates Found&quot;, false, &quot;&quot;, '#update_table .dataTables_empty');		
+	}	
+}
+
+function drawUpdateListTable (data){	
+	if(typeof data == &quot;undefined&quot; || data == null || data.length == 0){
+		$('#update-holder').show();	
+		$('.updates_table').dataTable(&lt;?=$dacura_server-&gt;getServiceSetting('pending_datatable_init_string', &quot;{}&quot;);?&gt;); 
+		dacura.system.showErrorResult(&quot;No Updates Found&quot;, false, &quot;&quot;, '.updates_table .dataTables_empty');		
+	}
+	else {
+		$('.updates_table tbody').html(&quot;&quot;);
+		update_urls = [];
+		for (var i in data) {
+			var obj = data[i];
+			$('.updates_table tbody').append(&quot;&lt;tr class='updaterow' id='update_&quot; + update_urls.length + &quot;'&gt;&quot; + 
+			&quot;&lt;td&gt;&quot; + obj.eurid + &quot;&lt;/td&gt;&quot; + 
+			&quot;&lt;td&gt;&quot; + obj.status + &quot;&lt;/td&gt;&quot; + 
+			&quot;&lt;td&gt;&quot; + obj.from_version + &quot;&lt;/td&gt;&quot; + 
+			&quot;&lt;td&gt;&quot; + obj.to_version + &quot;&lt;/td&gt;&quot; + 
+			&quot;&lt;td&gt;&quot; + timeConverter(obj.createtime) + &quot;&lt;/td&gt;&quot; + 
+			&quot;&lt;td&gt;&quot; + obj.createtime + &quot;&lt;/td&gt;&quot; + 
+			&quot;&lt;td&gt;&quot; + timeConverter(obj.modtime) + &quot;&lt;/td&gt;&quot; + 
+			&quot;&lt;td&gt;&quot; + obj.modtime + &quot;&lt;/td&gt;&quot; + 
+			&quot;&lt;td class='rawjson'&gt;&quot; + obj.forward + &quot;&lt;/td&gt;&quot; + 
+			&quot;&lt;td class='rawjson'&gt;&quot; + obj.backward + &quot;&lt;/td&gt;&quot; + &quot;&lt;/tr&gt;&quot;);
+			update_urls[update_urls.length] = dacura.system.pageURL() + &quot;/&quot; + obj.targetid + &quot;/update/&quot; + obj.eurid;			
+		}
+		$('.updaterow').hover(function(){
+			$(this).addClass('userhover');
+		}, function() {
+		    $(this).removeClass('userhover');
+		});
+		$('.updaterow').click( function (event){
+			window.location.href = update_urls[this.id.substr(7)]
+	    }); 
+		$('#update-holder').show();	
+		$('.updates_table').dataTable(&lt;?=$dacura_server-&gt;getServiceSetting('pending_datatable_init_string', &quot;{}&quot;);?&gt;).show();
+	}
+}
+
+function drawHistorySection(data){
+	if(typeof data == &quot;undefined&quot; || data == null || data.length == 0){
+		$('#history-holder').show();	
+		$('.history_table').dataTable(&lt;?=$dacura_server-&gt;getServiceSetting('history_datatable_init_string', &quot;{}&quot;);?&gt;); 
+		dacura.system.showErrorResult(&quot;No history information found&quot;, false, &quot;&quot;, '.history_table .dataTables_empty');		
+	}
+	else {
+		$('.history_table tbody').html(&quot;&quot;);
+		history_urls = [];
+		for (var i in data) {
+			var obj = data[i];
+			$('.history_table tbody').append(&quot;&lt;tr class='history' id='history_&quot; + history_urls.length + &quot;'&gt;&quot; + 
+				&quot;&lt;td&gt;&quot; + obj.version + &quot;&lt;/td&gt;&quot; + 
+				&quot;&lt;td&gt;&quot; + obj.status + &quot;&lt;/td&gt;&quot; + 
+				&quot;&lt;td&gt;at &quot; + timeConverter(obj.createtime) + &quot; by update &quot; + obj.created_by + &quot;&lt;/td&gt;&quot; + 
+				&quot;&lt;td&gt;&quot; + obj.createtime + &quot;&lt;/td&gt;&quot; + 
+				&quot;&lt;td class='rawjson'&gt;&quot; + obj.backward + &quot;&lt;/td&gt;&quot; +
+				&quot;&lt;td class='rawjson'&gt;&quot; + obj.forward + &quot;&lt;/td&gt;&quot; + 
+			+ &quot;&lt;/tr&gt;&quot;);
+			history_urls[history_urls.length] = dacura.system.pageURL() + &quot;/&lt;?=$params['id']?&gt;?version=&quot;+obj.version;			
+		}
+		$('.history').hover(function(){
+			$(this).addClass('userhover');
+		}, function() {
+		    $(this).removeClass('userhover');
+		});
+		$('.history').click( function (event){
+			window.location.href = history_urls[this.id.substr(8)]
+	    }); 
+		$('#history-holder').show();	
+		$('.history_table').dataTable(&lt;?=$dacura_server-&gt;getServiceSetting('history_datatable_init_string', &quot;{}&quot;);?&gt;).show();
+	}
+	
+	
+}
+
+function drawFragmentHeader(data){
+	if(typeof data.fragment_id != &quot;undefined&quot;){
+		fids = data.fragment_id.split(&quot;/&quot;);
+		fid = fids[fids.length -1];
+		fdets = data.fragment_details;
+		fpaths = data.fragment_paths;
+		fpathhtml = &quot;&lt;div class='fragment-paths'&gt;&quot;;
+		for(i in fpaths){
+			fpathhtml += &quot;&lt;span class='fragment-path'&gt;&quot;;
+			fpathhtml += &quot;&lt;span class='fragment-step'&gt;&quot; + data.id + &quot;&lt;/span&gt;&lt;span class='fragment-step'&gt;&quot;;
+			fpathhtml += fpaths[i].join(&quot;&lt;/span&gt;&lt;span class='fragment-step'&gt;&quot;);
+			fpathhtml += &quot;&lt;/span&gt;&lt;span class='fragment-step'&gt;&quot; + data.fragment_id + &quot;&lt;/span&gt;&lt;/span&gt;&quot;;
+		}
+		fpathhtml += &quot;&lt;/div&gt;&quot;;
+		$('#fragment-data').html(&quot;&lt;span class='fragment-title-label'&gt;Fragment&lt;/span&gt; &lt;span class='fragment-title'&gt;&quot; + fid + &quot;&lt;/span&gt;&lt;span class='fragment-details'&gt;&quot; + fdets + &quot;&lt;/span&gt;&quot; + fpathhtml);
+		$('#fragment-data').show();
+	}	
+}
+
+function isUpdateID(id){
+	return id.substr(0,7) == &quot;update/&quot;;
+}
+
+$('document').ready(function(){
+	$(&quot;#tab-holder&quot;).tabs( {
+        &quot;activate&quot;: function(event, ui) {
+            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
+        }
+    });
+	dacura.system.init({&quot;mode&quot;: &quot;tabbed&quot;});
+	dacura.editor.init({&quot;targets&quot;: { resultbox: &quot;#editor-msgs&quot;, errorbox: &quot;#editor-msgs&quot;, busybox: '#cand-contents'}, 
+		&quot;args&quot;: &lt;?=json_encode($params['args']);?&gt;});
+	dacura.editor.getMetaEditHTML = function(meta){
+		/*if(dacura.editor.options.format == &quot;json&quot;){
+			var html = &quot;&lt;textarea id='ldmeta-input'&gt;&quot;;
+			if(typeof meta == 'undefined'){
+				meta = {};
+			} 
+			$('#meta-edit-table').hide();
+			html += JSON.stringify(meta, null, 4) + &quot;&lt;/textarea&gt;&quot;;
+			return html; 				
+		}
+		else {*/
+			$('#entstatus').val(meta.status);	
+			$('#meta-edit-table').show();
+			//$('#entstatus').val(meta.status);	
+			return &quot;&quot;;
+		//}
+	
+
+	};
+
+	dacura.editor.getInputMeta = function(){
+		var meta = {&quot;status&quot;: $('#entstatus').val()};
+		return meta;
+	};
+	
+	var onw = function (obj){
+		//here's where we load the history and the update list...
+		if(typeof(obj.history) != &quot;undefined&quot; &amp;&amp; obj.history.length &gt; 0){
+			drawHistorySection(obj.history);
+			$('#history-holder').show();
+		}
+		if(typeof obj.updates != &quot;undefined&quot; &amp;&amp; obj.updates.length &gt; 0){
+			drawUpdateListTable(obj.updates);
+			$('#update-holder').show();
+		}
+		dacura.editor.load(&quot;&lt;?=$params['id']?&gt;&quot;, dacura.candidate.fetch, dacura.candidate.update, obj);
+		//dacura.system.addServiceBreadcrumb(&quot;&lt;?=$service-&gt;my_url()?&gt;/&quot; + obj.id , obj.id);
+		dacura.system.styleJSONLD();		
+		$('#cand-pane-list').show();
+	};
+	dacura.candidate.fetch(&quot;&lt;?=$params['id']?&gt;&quot;, &lt;?=json_encode($params['args']);?&gt;, onw, { resultbox: &quot;#editor-msgs&quot;, errorbox: &quot;#editor-msgs&quot;, busybox: '#cand-contents'});
+});
+&lt;/script&gt;
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

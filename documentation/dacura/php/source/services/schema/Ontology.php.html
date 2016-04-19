@@ -1,0 +1,225 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+class Ontology extends LDEntity {
+	//var $url; //the id is the local id, this is the official id
+	//var $title;
+	//var $description;
+	//var $real_version;
+	//var $filename;
+	
+	function __construct($id, $logger = false){
+		parent::__construct($id, false, $logger);
+	}
+	
+	function import($type, $arg, $gurl = false, $format = false, $novel = false){
+		$this-&gt;imported = false;
+		$egraph = $this-&gt;importERDF($type, $arg, $gurl, $format);
+		$this-&gt;logger-&gt;timeEvent(&quot;Imported&quot;, &quot;debug&quot;);
+		if(!$egraph){
+			return false;
+		}
+		if($type == &quot;url&quot;){
+			$this-&gt;url = $arg;
+		}
+		$op = $egraph-&gt;toRdfPhp();//$this-&gt;egraph-&gt;serialise(&quot;php&quot;);
+		$this-&gt;logger-&gt;timeEvent(&quot;Exported to php form&quot;, &quot;debug&quot;);
+		$this-&gt;ldprops[$this-&gt;id] = importEasyRDFPHP($op);
+		$this-&gt;logger-&gt;timeEvent(&quot;Reimported for us&quot;, &quot;debug&quot;);
+		$this-&gt;meta = array();
+		$errs = validLD($this-&gt;ldprops);
+		if(count($errs) &gt; 0){
+			$msg = &quot;&lt;ul&gt;&lt;li&gt;&quot;.implode(&quot;&lt;li&gt;&quot;, $errs).&quot;&lt;/ul&gt;&quot;;
+			return $this-&gt;failure_result(&quot;Graph had &quot;. count($errs).&quot; errors. $msg&quot;, 400);
+		}
+		return true;
+	}
+	
+	function getIncludedOntologies($nsres){
+		$incs = array();
+		$nsutil = array();
+		foreach($this-&gt;ldprops[$this-&gt;id] as $subj =&gt; $props){
+			getDeepNamespaceUtilisation($subj, $props, $nsres, false, $nsutil);			
+		}
+		foreach($nsutil as $sh =&gt; $contents){
+			if(count($contents[&quot;properties&quot;]) &gt; 0 or count($contents[&quot;structural&quot;]) &gt; 0){
+				$incs[] = $sh;
+			}
+		}
+		return $incs;
+	}
+	
+	function generateDependencies($nsres){
+		//$nslist = $this-&gt;getERDFSupportedNamespaces();
+		//$nsres = new NSResolver(false, false, true);
+		//$nsres-&gt;setPrefixMap($nslist);
+		$nsutil = array();
+		foreach($this-&gt;ldprops[$this-&gt;id] as $subj =&gt; $props){
+			getDeepNamespaceUtilisation($subj, $props, $nsres, false, $nsutil);			
+		}
+		if(isset($nsutil[&quot;_&quot;])){
+			foreach($nsutil[&quot;_&quot;][&quot;properties&quot;] as $prop =&gt; $c){
+				if(isset($nsutil[$this-&gt;id][&quot;properties&quot;][$prop])){
+					$nsutil[$this-&gt;id][&quot;properties&quot;][$prop] += $c;
+				}
+				else {
+					$nsutil[$this-&gt;id][&quot;properties&quot;][$prop] = $c;						
+				}
+			}
+			foreach($nsutil[&quot;_&quot;][&quot;subject&quot;] as $prop =&gt; $c){
+				if(isset($nsutil[$this-&gt;id][&quot;subject&quot;][$prop])){
+					$nsutil[$this-&gt;id][&quot;subject&quot;][$prop] += $c;
+				}
+				else {
+					$nsutil[$this-&gt;id][&quot;subject&quot;][$prop] = $c;						
+				}
+			}
+			if(isset($nsutil[$this-&gt;id][&quot;structural&quot;]) &amp;&amp; isset($nsutil[&quot;_&quot;][&quot;structural&quot;])){
+				$nsutil[$this-&gt;id][&quot;structural&quot;] = array_merge($nsutil[$this-&gt;id][&quot;structural&quot;], $nsutil[&quot;_&quot;][&quot;structural&quot;]);
+			}
+			if(isset($nsutil[$this-&gt;id][&quot;object&quot;]) &amp;&amp; isset($nsutil[&quot;_&quot;][&quot;object&quot;])){
+				$nsutil[$this-&gt;id][&quot;object&quot;] = array_merge($nsutil[$this-&gt;id][&quot;object&quot;], $nsutil[&quot;_&quot;][&quot;object&quot;]);
+			}
+			unset($nsutil[&quot;_&quot;]);
+		}
+		$deps = array();
+		foreach($nsutil as $sh =&gt; $contents){
+			$deps[$sh] = array(
+					&quot;url&quot; =&gt; $nsres-&gt;getURL($sh), 
+					&quot;properties&quot; =&gt; isset($contents[&quot;properties&quot;]) ? $contents[&quot;properties&quot;] : array(), 
+					&quot;subject&quot; =&gt; isset($contents[&quot;subject&quot;]) ? $contents[&quot;subject&quot;] : array(), 
+					&quot;structural&quot; =&gt; isset($contents[&quot;structural&quot;])? $contents[&quot;structural&quot;]: array(), 
+					&quot;object&quot; =&gt; isset($contents[&quot;object&quot;]) ? $contents[&quot;object&quot;] : array(), 
+					&quot;distinct_properties&quot; =&gt; isset($contents[&quot;properties&quot;]) ? count($contents[&quot;properties&quot;]) : 0, 
+					&quot;distinct_subjects&quot; =&gt; isset($contents[&quot;subject&quot;]) ? count($contents[&quot;subject&quot;]) : 0, 
+					&quot;structural_links&quot; =&gt; isset($contents[&quot;structural&quot;])? count($contents['structural']) : 0,
+					&quot;values_used&quot; =&gt; isset($contents[&quot;object&quot;]) ? count($contents['object']) : 0,
+					&quot;properties_used&quot; =&gt; 0,
+					&quot;subjects_used&quot; =&gt; 0
+			); 
+			if(isset($contents[&quot;properties&quot;] )){
+				foreach($contents[&quot;properties&quot;] as $p =&gt; $c){
+					$deps[$sh][&quot;properties_used&quot;] += $c;
+				}
+			}
+			if(isset($contents[&quot;subject&quot;])){
+				foreach($contents[&quot;subject&quot;] as $p =&gt; $c){
+					$deps[$sh][&quot;subjects_used&quot;] += $c;
+				}			
+			}
+		}
+		return $deps;
+	}
+	
+	function getClassHierarchy(){
+		$subtypes = array();
+		$parents = array();
+		$children = array();
+		$this-&gt;compressNS();
+		foreach($this-&gt;ldprops[$this-&gt;id] as $id =&gt; $props){
+			if(isset($props['rdfs:subClassOf'])){
+				if(!in_array($id, $children)) $children[] = $id;
+				$pts = is_array($props['rdfs:subClassOf']) ? $props['rdfs:subClassOf'] : array($props['rdfs:subClassOf']);
+				foreach($pts as $parent){
+					if(!in_array($parent, $parents)){
+						$parents[] = $parent;
+					}
+					if(!isset($subtypes[$parent])){
+						$subtypes[$parent] = array($id);
+					}
+					else {
+						if(!in_array($id, $subtypes[$parent])){
+							$subtypes[$parent][] = $id;
+						}
+					}						
+				}
+			}
+		}
+		$hierarchy = array();
+		foreach($parents as $parent){
+			if(!in_array($parent, $children)){
+				$hierarchy[$parent] = array(&quot;children&quot; =&gt; array());
+				foreach($subtypes[$parent] as $st){
+					$hierarchy[$parent]['children'] = $this-&gt;getHierarchy($st, $subtypes);
+				}				
+			}			
+		}
+		return $hierarchy;		
+	}
+	
+	function getHierarchy($cls, $subtypes){
+		$hierarchy = array($cls =&gt; array());
+		if(isset($subtypes[$cls])){
+			foreach($subtypes[$cls] as $st){
+				$hierarchy[$cls]['children'] = $this-&gt;getHierarchy($st, $subtypes);
+			}				
+		}
+		return $hierarchy;
+	}	
+
+	
+	function genFname(){
+		$fid = &quot;ONT&quot;. randid();
+		return $fid;
+	}
+	
+	function setFilename($fname){
+		$this-&gt;filename = $fname;
+	}
+	
+	function getTitle(){
+		return $this-&gt;title;
+	}
+
+	function getDescription(){
+		return $this-&gt;description;
+	}
+	
+	function displayQuads($flags, $vstr, $srvr){
+		$this-&gt;display = $this-&gt;getPropertyAsQuads($this-&gt;id, $this-&gt;id);
+	}
+	
+}</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

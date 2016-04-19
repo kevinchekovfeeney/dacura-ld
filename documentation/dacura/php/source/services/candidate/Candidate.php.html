@@ -1,0 +1,157 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+class Candidate extends LDEntity {
+	//maps to candidates db structure
+
+	/*
+	 * Called to hide whatever internal parts of the object we do not wish to send as json through the api
+	 */
+	function getDisplayFormat() {
+		$other = clone($this);
+		unset($other-&gt;index);
+		unset($other-&gt;errmsg);
+		return $other;
+	}
+	
+	function get_class_version(){
+		return $this-&gt;type_version;
+	}
+	
+	function reportString(){
+		return &quot;Not yet implemented&quot;;
+	}
+	
+	function set_class($c, $v){
+		$this-&gt;type = $c;
+		$this-&gt;type_version = $v;
+	}
+	
+	
+	/**
+	 * Functions for producing various different representations of the candidate
+	 */
+
+	function triples($use_ns = false){
+		$triples = parent::triples();
+		foreach($triples as $i =&gt; $trip){
+			if($trip[0] == $this-&gt;id){
+				$triples[$i][0] = ($use_ns) ? &quot;local:&quot;.$this-&gt;id : $this-&gt;cwurl;
+			}
+		}
+		return $triples;
+	}
+	
+
+	function jazzUpTriples($s, $p, $o, $t, $g = false){
+		if($s == $this-&gt;id){
+			$s = &quot;local:&quot;.$this-&gt;id;
+		}
+		else {
+			$sc = $this-&gt;nsres-&gt;compress($s);
+			$s = $sc ? $sc : $s;
+		}
+		if(in_array($p, $this-&gt;dacura_props) or $p == &quot;status&quot;){
+			$p = &quot;dacura:&quot;. $p;
+		}
+		else {
+			$pc = $this-&gt;nsres-&gt;compress($p);
+			$p = $pc ? $pc : $p;
+		}
+		if($t == 'literal'){
+			$o = '&quot;'.$o.'&quot;';
+		}
+		else {
+			$oc = $this-&gt;nsres-&gt;compress($o);
+			$o = $oc ? $oc : $o;				
+		}
+		return array(array($s, $p, $o));		
+	}
+	
+
+	function typedTriples($use_ns = false, $use_dacura_ns = true){
+		$triples = parent::typedTriples();
+		if($use_dacura_ns){
+			foreach($triples as $i =&gt; $trip){
+				if($trip[0] == $this-&gt;id){
+					$triples[$i][0] = ($use_ns) ? &quot;local:&quot;.$this-&gt;id : $this-&gt;cwurl;
+				}
+			}
+		}
+		return $triples;
+	}
+	
+	function displayHTML($flags, $vstr, $srvr){
+		$this-&gt;display = &quot;&quot;;
+		foreach($this-&gt;ldprops as $g =&gt; $ldprops){
+			$this-&gt;display .= &quot;&lt;h2&gt;Graph $g&lt;/h2&gt;&quot;;
+			foreach($ldprops as $sub =&gt; $props){
+				$rdft = $this-&gt;extractTypeFromProps($props);
+				if($rdft){
+					if(is_array($rdft)) {
+						$sub .= &quot; &quot; . implode(&quot;, &quot;, $rdft);
+					}
+					else {
+						$sub .= &quot; &quot; . $rdft;
+					}
+					unset($props['rdf:type']);
+				}
+				$this-&gt;display .= &quot;&lt;h3&gt;$sub&lt;/h3&gt;&quot;.$this-&gt;getPropertiesAsHTMLTable($vstr, $props);				
+			}
+		}
+	}
+	
+	function displayQuads($flags, $vstr, $srvr){
+		$quads = array();
+		foreach($this-&gt;ldprops as $g =&gt; $props){
+			$quads = array_merge($this-&gt;getPropertyAsQuads($g, $g));
+		}
+		$this-&gt;display = $quads;
+	}
+	
+}
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

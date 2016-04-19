@@ -1,0 +1,242 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/*
+ * This is Dacura's generic, general purpose, Linked Data API
+ * this module is not for normal access, only for administrators directly accessing linked data objects to repair them....
+ */
+$x = @$entity_type;
+if(!$x &amp;&amp; !$dacura_server-&gt;userHasRole(&quot;admin&quot;, &quot;all&quot;)){//meaning that this API is being accessed directly 
+	$dacura_server-&gt;write_http_error(403, &quot;No permission to directly access linked data API&quot;);	
+}
+else {
+	getRoute()-&gt;get('/', 'list_entities');//list the entities of a certain type (or updates to them)
+	getRoute()-&gt;get('/(\w+)/update/(\w+)', 'get_update');
+	getRoute()-&gt;get('/(\w+)/(\w+)', 'get_entity');//with fragment id
+	getRoute()-&gt;get('/(\w+)', 'get_entity');//no fragment id
+	getRoute()-&gt;post('/(\w+)/update/(\w+)', 'update_update');
+	getRoute()-&gt;post('/(\w+)/(\w+)', 'update_entity');//with frag id
+	getRoute()-&gt;post('/', 'create_entity');//create a new entity of a given type
+	getRoute()-&gt;post('/(\w+)', 'update_entity');//no frag id
+	getRoute()-&gt;delete('/(\w+)/(\w+)', 'delete_entity');//with fragment id
+	getRoute()-&gt;delete('/(\w+)', 'delete_entity');//no fragment id
+	getRoute()-&gt;delete('/(\w+)/update/(\w+)', 'delete_update');//no fragment id	
+}
+
+/*
+ * Returns a list of either entities, or updates to entities
+ * Designed to accept filter requests from data tables module
+ */
+function list_entities(){
+	global $dacura_server, $entity_type;
+	$dt_options = array();
+	if($entity_type){
+		$dt_options['type'] = $entity_type;
+		$type = $entity_type;
+	}
+	else {
+		$type = &quot;entity&quot;;
+	}
+	if($dacura_server-&gt;cid() != &quot;all&quot;){
+		$dt_options['collectionid'] = $dacura_server-&gt;cid();
+	}
+	$options = isset($_GET['options']) ? $_GET['options'] : false;
+	isset($_GET['draw']) &amp;&amp; $dt_options['draw'] = $_GET['draw'];
+	$dt_options['start'] = isset($_GET['start']) ? $_GET['start'] : 0;
+	$dt_options['length'] = isset($_GET['length']) ? $_GET['length'] : 0;	
+	$dt_options['search'] = isset($_GET['search']) ? $_GET['search'] : false;
+	$dt_options['columns'] = isset($_GET['columns']) ? $_GET['columns'] : false;
+	$dt_options['order'] = isset($_GET['order']) ? $_GET['order'] : false;
+	if(isset($_GET['type']) &amp;&amp; $_GET['type'] == &quot;updates&quot;){
+		$dacura_server-&gt;init(&quot;list_&quot;.$type.&quot;_updates&quot;);
+		$ents = $dacura_server-&gt;getUpdates($dt_options);
+		if($ents){
+			return $dacura_server-&gt;write_json_result($ents, &quot;Returned &quot; . count($ents) . &quot; updates&quot;);
+		}
+	}
+	else {
+		$dacura_server-&gt;init(&quot;list_&quot;.$type);
+		$ents = $dacura_server-&gt;getEntities($dt_options);
+		if($ents){
+			foreach($ents as $i =&gt; $row){
+				if(isset($row['meta']) &amp;&amp; $row['meta']) $ents[$i]['meta'] = json_decode($row['meta'], true);
+				if(isset($row['contents']) &amp;&amp; $row['contents']) $ents[$i]['contents'] = json_decode($row['contents'], true);
+			}
+			return $dacura_server-&gt;write_json_result($ents, &quot;Returned &quot; . count($ents) . &quot; &quot; . $type. &quot;s&quot;);
+		}
+	}
+	$dacura_server-&gt;write_http_error();
+}
+
+function get_entity($entity_id, $fragment_id = false){
+	global $dacura_server, $entity_type;
+	$options = isset($_GET['options']) ? $_GET['options'] : false;
+	$version = isset($_GET['version']) ? $_GET['version'] : false;
+	$format = isset($_GET['format']) ? $_GET['format'] : false;
+	$display = isset($_GET['display']) ? $_GET['display'] : false;
+	$dacura_server-&gt;init(&quot;get&quot;, $entity_id, $fragment_id);
+	$ar = $dacura_server-&gt;getEntity($entity_id, $entity_type,$fragment_id, $version, $options);
+	return $dacura_server-&gt;sendRetrievedEntity($ar, $format, $display, $options, $version);
+}
+
+function get_update($entity_id, $update_id){
+	global $dacura_server, $entity_type;
+	$options = isset($_GET['options']) ? $_GET['options'] : array();
+	$version = isset($_GET['version']) ? $_GET['version'] : false;
+	$format = isset($_GET['format']) ? $_GET['format'] : false;
+	$display = isset($_GET['display']) ? $_GET['display'] : false;
+	$dacura_server-&gt;init(&quot;get_update&quot;, $update_id);
+	$ar = $dacura_server-&gt;getUpdate($update_id, $version, $options);
+	return $dacura_server-&gt;sendRetrievedUpdate($ar, $format, $display, $options, $version);
+}
+
+/*
+ * post requests take input as a application/json
+ */
+function create_entity(){
+	set_time_limit (0);	
+	global $dacura_server, $entity_type;
+	$dacura_server-&gt;init(&quot;create&quot;);
+	$ar = new AnalysisResults(&quot;Create&quot;);
+	$json = file_get_contents('php://input');
+	$obj = json_decode($json, true);
+	if(!$obj){
+		$ar-&gt;failure(400, &quot;Communication Error&quot;, &quot;create request does not have a valid json encoded body&quot;);
+		return $dacura_server-&gt;writeDecision($ar);
+	}
+	$type = (isset($obj['type'])) ? strtolower($obj['type']) : $entity_type;
+	$options = (isset($obj['options'])) ? $obj['options'] : array();
+	$create_obj = array();
+	if(isset($obj['contents'])) $create_obj['contents'] = $obj['contents'];
+	if(isset($obj['meta'])) $create_obj['meta'] = $obj['meta'];
+	$demand_id = isset($create_obj['meta']['@id']) ? $create_obj['meta']['@id'] : false;
+	if($demand_id) {
+		unset($create_obj['meta']['@id']);
+	}
+	else {
+		$demand_id = isset($create_obj['contents']['@id']) ? $create_obj['contents']['@id'] : false;
+		if($demand_id) {
+			unset($create_obj['contents']['@id']);
+		}		
+	}
+	$ar = $dacura_server-&gt;createEntity($type, $create_obj, $demand_id, $options, isset($obj['test']));
+	return $dacura_server-&gt;writeDecision($ar);
+}
+
+/**
+ *
+ * @param string $target_id the id of the entity that is being updated
+ *
+ */
+function update_entity($target_id, $fragment_id = false){
+	set_time_limit (0);
+	global $dacura_server, $entity_type;
+	$ar = new AnalysisResults(&quot;Update $target_id $fragment_id&quot;);
+	$json = file_get_contents('php://input');
+	$obj = json_decode($json, true);
+	if(!$obj){
+		$ar-&gt;failure(400, &quot;Communication Error&quot;, &quot;Update Request lacks a json encoded body&quot;);
+	}
+	elseif($fragment_id){
+		$ar-&gt;failure(403, &quot;Illegal Update&quot;, &quot;Attempt to directly update fragment $fragment_id. Fragments must be updated in context.&quot;);		
+	}
+	else {
+		$upd_obj = array();
+		if(!isset($obj['contents']) &amp;&amp; !isset($obj['meta'])){
+			$ar-&gt;failure(400, &quot;Format Error&quot;, &quot;Update Request must have at least one of a meta or a contents property&quot;);				
+		}
+		else {
+			$cnt = isset($obj['contents']) ? $obj['contents'] : &quot;&quot;;
+			$meta = isset($obj['meta']) ? $obj['meta'] : &quot;&quot;;
+			$options = (isset($obj['options'])) ? $obj['options'] : array();
+			$ar = $dacura_server-&gt;updateEntity($target_id, $entity_type, $cnt, $meta, $fragment_id, $options, isset($obj['test']));
+		}
+	}
+	return $dacura_server-&gt;writeDecision($ar);
+}
+
+function update_update($entity_id, $upd_id){
+	set_time_limit (0);
+	global $dacura_server;
+	$json = file_get_contents('php://input');
+	$ar = new AnalysisResults(&quot;Update Update&quot;);
+	$obj = json_decode($json, true);
+	$dacura_server-&gt;init(&quot;update update&quot;, $upd_id);
+	if(!$obj){
+		$ar-&gt;failure(400, &quot;Communication Error&quot;, &quot;Update Update lacks a json encoded body&quot;);
+	}
+	else {
+		$umeta = isset($obj['updatemeta']) ? $obj['updatemeta'] : array();
+		$entmeta = isset($obj['meta']) ? $obj['meta'] : array();
+		$entcontents = isset($obj['contents']) ? $obj['contents'] : array();
+		if(count($umeta) == 0 &amp;&amp; count($entmeta) == 0 &amp;&amp; count($entcontents) == 0 ){
+			$ar-&gt;failure(400, &quot;Format Error&quot;, &quot;Update Request must have at least one of a meta, a contents or an updatemeta property&quot;);				
+		}
+		else {
+			$options = (isset($obj['options'])) ? $obj['options'] : array();
+			$ar = $dacura_server-&gt;updateUpdate($upd_id, $entcontents, $entmeta, $umeta, $options, isset($obj['test']));				
+		}
+	}
+	return $dacura_server-&gt;writeDecision($ar);
+}
+
+function delete_entity($entid, $fragment_id = false){
+	$dacura_server-&gt;init(&quot;delete entity $entid&quot;);
+	$ar = new AnalysisResults(&quot;Delete entity $entid&quot;);
+	$options = (isset($_GET['options'])) ? $_GET['options'] : array();
+	$ar = $dacura_server-&gt;deleteEntity($entid, $fragment_id, $options, isset($_GET['test']));
+	return $dacura_server-&gt;write_decision($ar);
+}
+
+function delete_update($entity_id, $updid){
+	$dacura_server-&gt;init(&quot;delete update $updid&quot;);
+	$ar = new AnalysisResults(&quot;Delete update $updid&quot;);
+	$options = (isset($_GET['options'])) ? $_GET['options'] : array();
+	$ar = $dacura_server-&gt;deleteUpdate($updid, $options, isset($_GET['test']));
+	return $dacura_server-&gt;write_decision($ar);
+}
+
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

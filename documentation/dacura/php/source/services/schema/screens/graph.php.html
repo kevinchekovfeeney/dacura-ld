@@ -1,0 +1,276 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">
+&lt;div id='tab-holder'&gt;
+	 &lt;ul id=&quot;graph-pane-list&quot; class=&quot;dch&quot;&gt;
+	 	&lt;li&gt;&lt;a href=&quot;#graph-contents&quot;&gt;Local Ontology&lt;/a&gt;&lt;/li&gt;
+	 	&lt;li&gt;&lt;a href=&quot;#graph-imports&quot;&gt;Imported Ontologies&lt;/a&gt;&lt;/li&gt;
+	 &lt;/ul&gt;
+	&lt;div id=&quot;imports-holder&quot;&gt;
+		&lt;div id=&quot;graph-imports&quot; class=&quot;dch&quot;&gt;
+			&lt;div id='import-msgs'&gt;&lt;/div&gt;
+				&lt;div id='ont-list'&gt;
+					&lt;?php if(isset($params['ontologies'])) {?&gt;
+						&lt;div class='ont-title'&gt;Ontologies available for import
+							&lt;span class='ont-select-all'&gt;&lt;input type='checkbox' id='ont-select-all'&gt;&lt;label for='ont-select-all'&gt;Select All&lt;/label&gt;&lt;/span&gt;						
+						&lt;/div&gt;
+						&lt;div class='ont-import-list'&gt;
+						&lt;?php foreach($params['ontologies'] as $id =&gt; $body){ 
+								$title = &quot;Status: &quot;.$body['status'] . &quot;\nVersion: &quot;. $body['version'];
+								if(isset($body['meta'])){
+									if(isset($body['meta']['title'])){
+										$title .= &quot;\nTitle: &quot;.$body['meta']['title'];
+									}
+									if(isset($body['meta']['url'])){
+										$title .= &quot;\nURL: &quot;.$body['meta']['url'];
+									}											
+								}
+						?&gt;
+							&lt;span class='ontoption'&gt;
+								&lt;input title='&lt;?=$title?&gt;' type='checkbox' class='ontologies-selected' id='&lt;?=$body['id']?&gt;'&gt; 
+								&lt;label title='&lt;?=$title?&gt;' for='&lt;?= $body['id']?&gt;'&gt;&lt;?=$body['id']?&gt;&lt;/label&gt;&lt;/span&gt;
+							&lt;?php } ?&gt;
+					&lt;?php } ?&gt;
+					&lt;/div&gt;
+				&lt;/div&gt;
+				&lt;div class='dqs-options'&gt;
+					&lt;div class='ont-title'&gt;Quality Service constraints to enforce
+						&lt;span class='dqs-select-all'&gt;&lt;input type='checkbox' id='dqs-all'&gt;&lt;label for='dqs-all'&gt;Select All&lt;/label&gt;&lt;/span&gt;
+					&lt;/div&gt;
+					&lt;div class='dqs-embed'&gt;
+						&lt;?= $service-&gt;showDQSControls(&quot;both&quot;, array()); ?&gt;
+					&lt;/div&gt;
+				&lt;/div&gt;
+				&lt;div class=&quot;tool-buttons&quot;&gt;
+	   			&lt;button class=&quot;dacura-button test-imports&quot; id=&quot;test-imports&quot;&gt;Test Graph Configuration&lt;/button&gt;
+	   			&lt;button class=&quot;dacura-button deploy-imports&quot; id=&quot;deploy-imports&quot;&gt;Deploy Graph Configuration&lt;/button&gt;
+	   		&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;
+ 	&lt;div id=&quot;contents-holder&quot;&gt;
+		&lt;div id='graph-contents' class=&quot;dch&quot;&gt;
+			&lt;div id='graph-msgs'&gt;&lt;/div&gt;
+			&lt;div id='viewont'&gt;
+				&lt;?php echo $service-&gt;showLDResultbox($params);?&gt;
+				&lt;?php echo $service-&gt;showLDEditor($params);?&gt;
+			&lt;/div&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id=&quot;tabletemplates&quot; style=&quot;display:none&quot;&gt;
+	&lt;div id=&quot;ontology-template&quot;&gt;
+	&lt;/div&gt;
+	&lt;div id=&quot;toolheader-template&quot;&gt;
+		&lt;table class='ld-invariants'&gt;
+			&lt;thead&gt;
+				&lt;tr&gt;
+					&lt;th&gt;URL&lt;/th&gt;
+					&lt;th&gt;Status&lt;/th&gt;
+					&lt;th&gt;Created&lt;/th&gt;
+				&lt;/tr&gt;
+			&lt;/thead&gt;
+			&lt;tbody&gt;
+				&lt;tr&gt;
+					&lt;td class='graph_uri'&gt;&lt;/td&gt;
+					&lt;td class='graph_status'&gt;&lt;/td&gt;
+					&lt;td class='graph_created'&gt;&lt;/td&gt;
+				&lt;/tr&gt;
+			&lt;/tbody&gt;
+		&lt;/table&gt;
+	&lt;/div&gt;
+	
+&lt;/div&gt;
+
+
+&lt;script&gt;
+
+dacura.schema.showHeader = function(gra){
+	options = { title: gra.id + &quot; graph&quot; };
+	if(typeof gra.image != &quot;undefined&quot;){
+		options.image = gra.image;
+	}
+	///gra.subtitle = ont.meta.title;
+	options.description = $('#toolheader-template').html();
+	dacura.system.updateToolHeader(options);
+	metadetails = timeConverter(gra.created);
+	$('.graph_uri').html(&quot;&lt;span class='graph-uri'&gt;&quot; + gra.meta.url + &quot;&lt;/span&gt;&quot;);
+	$('.graph_created').html(&quot;&lt;span class='graph-details'&gt;&quot; + metadetails + &quot;&lt;/span&gt;&quot;);
+	$('.graph_status').html(&quot;&lt;span class='graph-status graph-&quot; + gra.latest_status + &quot;'&gt;&quot; + gra.latest_status + &quot;&lt;/span&gt;&quot;);
+    dacura.schema.drawVersionHeader(gra);	    
+}
+
+ontids = [];
+
+
+
+dacura.schema.showImportedOntologies = function(imports){
+	for(var i = 0; i &lt; imports.length; i++){
+		$('#' + imports[i]).prop('checked', true);
+	}
+};
+
+dacura.schema.showSelectedDQS = function(schema, instance){
+	if(typeof schema != &quot;undefined&quot; &amp;&amp; schema){
+		for(var i = 0; i &lt; schema.length; i++){
+			$('#' + schema[i]).prop('checked', true).button(&quot;refresh&quot;);
+		}
+	}
+	if(typeof instance != &quot;undefined&quot; &amp;&amp; instance){
+		for(var i = 0; i &lt; instance.length; i++){
+			$('#' + instance[i]).prop('checked', true).button(&quot;refresh&quot;);
+		}
+	}
+};
+
+
+dacura.schema.showGraph = function(obj){
+	if(typeof obj.meta.imports != &quot;undefined&quot;){
+		dacura.schema.showImportedOntologies(obj.meta.imports);	
+	}
+	if(typeof obj.meta.schema_dqs != &quot;undefined&quot;){
+		dacura.schema.showSelectedDQS(obj.meta.schema_dqs, obj.meta.instance_dqs);	
+	}
+}
+
+function getSelectedOntologies(){
+	selected = [];
+	$('.ont-import-list input:checked').each(function() {
+	    selected.push($(this).attr('id'));
+	});
+	return selected;		
+}
+
+
+
+function getSelectedDQS(){
+	var dqs = { &quot;schema_dqs&quot;: dacura.dqs.getSelection(&quot;schema&quot;), &quot;instance_dqs&quot; : dacura.dqs.getSelection(&quot;instance&quot;)};
+	return dqs;		
+}
+
+
+function showImportResult(res){
+	var imptargets = { resultbox: '#import-msgs', errorbox: '#import-msgs', busybox: &quot;#graph-imports&quot;, scrollto:'#import-msgs'};
+	var cancel = function(){
+		$(imptargets.resultbox).html(&quot;&quot;);
+	};
+	var upd = function(){
+		delete(dacura.schema.lastUpdateObject[&quot;test&quot;]);
+		dacura.schema.update(&quot;&lt;?=$params['id']?&gt;&quot;, dacura.schema.lastUpdateObject, showImportResult, &quot;import&quot;, imptargets);				
+	};
+	res.format = &quot;json&quot;;
+	
+	dacura.ldresult.showDecision(res, imptargets.resultbox, cancel, upd);			
+}
+
+function initDecorations(){
+	//view format choices
+	//quality check choices
+	$(&quot;#tab-holder&quot;).tabs( {
+        &quot;activate&quot;: function(event, ui) {
+            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
+        }
+    });
+	$( &quot;#ont-select-all&quot; ).button().click(function(event){
+		if($('#ont-select-all').is(&quot;:checked&quot;)){
+			$(&quot;input:checkbox.ontologies-selected&quot;).prop('checked', true).button(&quot;refresh&quot;);
+		}
+		else {
+			$(&quot;input:checkbox.ontologies-selected&quot;).prop('checked', false).button(&quot;refresh&quot;);
+		}					
+	});
+	var imptargets = {resultbox: &quot;#import-msgs&quot;, errorbox: &quot;#import-msgs&quot;, busybox: &quot;#graph-imports&quot;, scrollto: &quot;#import-msgs&quot;};
+	$('#test-imports').button().click(function(event){
+		//get ids of selected ones...
+		//
+		var onts = getSelectedOntologies();
+		var dqs = getSelectedDQS();
+		var updateobj = {&quot;meta&quot;: dqs};
+		updateobj.meta.imports = onts;
+		dacura.schema.lastUpdateObject = updateobj;
+		dacura.schema.update(&quot;&lt;?=$params['id']?&gt;&quot;, updateobj, showImportResult, &quot;import&quot;, imptargets, true);				
+    });
+	$('#deploy-imports').button().click(function(event){
+	    var onts = getSelectedOntologies();
+		var dqs = getSelectedDQS();
+		var updateobj = {&quot;meta&quot;: dqs};
+		updateobj.meta.imports = onts;		
+		dacura.schema.lastUpdateObject = updateobj;
+		dacura.schema.update(&quot;&lt;?=$params['id']?&gt;&quot;, updateobj, showImportResult, &quot;import&quot;, imptargets);				
+	});	
+}
+
+$(function() {
+	dacura.schema.lastUpdateObject = false;
+	dacura.schema.entity_type = &quot;graph&quot;;
+	initDecorations();
+	dacura.system.init({&quot;mode&quot;: &quot;tool&quot;});
+	dacura.editor.init({&quot;entity_type&quot;: &quot;ontology&quot;, &quot;targets&quot;: {resultbox: &quot;#graph-msgs&quot;, busybox: &quot;#graph-contents&quot;, scrollto: &quot;#graph-msgs&quot;},		
+		&quot;args&quot;: &lt;?=json_encode($params['args']);?&gt;});
+	dacura.editor.getMetaEditHTML = function(meta){
+		$('#meta-edit-table').html(&quot;&quot;);
+		$('#meta-edit-table').append(&quot;&lt;li&gt;&lt;span class='meta-label'&gt;Status&lt;/span&gt;&lt;span class='meta-value'&gt;&quot; + 
+			&quot;&lt;select id='entstatus'&gt;&lt;?php echo $service-&gt;getEntityStatusOptions();?&gt;&lt;/select&gt;&lt;/span&gt;&lt;/li&gt;&quot;);
+		$('#entstatus').val(meta.status);	
+		$('#meta-edit-table').append(&quot;&lt;li&gt;&lt;span class='meta-label'&gt;URL&lt;/span&gt;&lt;span class='meta-value'&gt;&quot; + 
+				&quot;&lt;input type='text' id='enturl' value='&quot; + meta.url + &quot;'&gt;&lt;/span&gt;&lt;/li&gt;&quot;);	
+		$('#meta-edit-table').show();
+		return &quot;&quot;;
+	};
+
+	dacura.editor.getInputMeta = function(){
+		var meta = {&quot;status&quot;: $('#entstatus').val(), &quot;url&quot;: $('#enturl').val()};
+		return meta;
+	};
+	
+	var onw = function (obj){
+		dacura.editor.load(&quot;&lt;?=$params['id']?&gt;&quot;, dacura.schema.fetch, dacura.schema.update, obj);
+		dacura.system.addServiceBreadcrumb(&quot;&lt;?=$service-&gt;my_url()?&gt;/&quot; + obj.id , obj.id);	
+		dacura.schema.showGraph(obj);
+	    $('#graph-pane-list').show();
+	};
+	var args = &lt;?=json_encode($params['args']);?&gt;;
+	dacura.schema.fetch(&quot;&lt;?=$params['id']?&gt;&quot;, args, onw, {resultbox: &quot;#graph-msgs&quot;, errorbox: &quot;#graph-msgs&quot;, busybox: &quot;#graph-contents&quot;});
+});
+&lt;/script&gt;</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

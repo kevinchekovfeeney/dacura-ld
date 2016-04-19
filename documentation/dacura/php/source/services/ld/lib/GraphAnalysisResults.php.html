@@ -1,0 +1,152 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+class GraphAnalysisResults extends AnalysisResults {
+	var $inserts = array();
+	var $deletes = array();
+	var $meta = array();//state changes {variable: [old, new])
+	var $hypothetical = false;
+
+
+	function setMeta($meta){
+		$this-&gt;meta = $meta;
+	}
+
+	function setMetaChange($var, $oval, $nval){
+		$this-&gt;meta[$var] = array($oval, $nval);
+	}
+
+	function includesGraphChanges(){
+		return !$this-&gt;hypothetical &amp;&amp;
+		(count($this-&gt;inserts) &gt; 0 || count($this-&gt;deletes) &gt; 0);
+	}
+
+	function getErrorsSummary() {
+		$cnt = 0;
+		foreach($this-&gt;errors as $gname =&gt; $errs){
+			$cnt += count($errs);
+		}
+		$tex = $cnt . &quot; Quality Control Error&quot;;
+		if($cnt != 1) $tex .= &quot;s&quot;;
+		return $tex;
+	}
+
+
+	function getErrorsDetails() {
+		$txt = &quot;&quot;;
+		foreach($this-&gt;errors as $gname =&gt; $errs){
+			$txt .= count($errs) . &quot; errors in $gname graph. &quot;;
+		}
+		return $txt;
+	}
+
+	function setHypothetical($ishypo){
+		$this-&gt;hypothetical = $ishypo;
+	}
+
+	function setInserts($q){
+		$this-&gt;inserts = $q;
+	}
+
+	function setDeletes($q){
+		$this-&gt;deletes = $q;
+	}
+
+	function addGraphResult($other, $hypo = false){
+		$this-&gt;add($other);
+		$this-&gt;inserts = array_merge($this-&gt;inserts, $other-&gt;inserts);
+		$this-&gt;deletes = array_merge($this-&gt;deletes, $other-&gt;deletes);
+		if($hypo){
+			$this-&gt;hypothetical = true;
+		}
+	}
+
+	function addOneGraphTestResult($gname, $iquads, $dquads, $errs){
+		if(count($errs) &gt; 0){
+			if(!$this-&gt;errcode){
+				$this-&gt;errcode = 400;
+			}
+			$this-&gt;decision = 'reject';
+			if(isset($this-&gt;errors[$gname])){
+				$this-&gt;errors[$gname] = array_merge($this-&gt;errors[$gname], $errs);
+			}
+			else {
+				$this-&gt;errors[$gname] = $errs;
+			}
+		}
+		$this-&gt;inserts = array_merge($this-&gt;inserts, $iquads);
+		$this-&gt;deletes = array_merge($this-&gt;deletes, $dquads);
+	}
+
+	function addOneGraphTestFail($gname, $iquads, $dquads, $errcode, $errmsg){
+		$this-&gt;errcode = $errcode;
+		$this-&gt;decision = 'reject';
+		$err = array(&quot;type&quot; =&gt; &quot;test fail&quot;,
+				&quot;action&quot; =&gt; &quot;write to graph&quot;,
+				&quot;errcode&quot; =&gt; $errcode,
+				&quot;msg_title&quot; =&gt; &quot;Failed data quality checks when writing to graph.&quot;,
+				&quot;msg_body&quot; =&gt; $errmsg);
+		if(isset($this-&gt;errors[$gname])){
+			$this-&gt;errors[$gname][] = $err;
+		}
+		else {
+			$this-&gt;errors[$gname] = $err;
+		}
+		$this-&gt;inserts = array_merge($this-&gt;inserts, $iquads);
+		$this-&gt;deletes = array_merge($this-&gt;deletes, $dquads);
+	}
+
+	function graph_fail($gname, $errcode){
+		$this-&gt;decision = &quot;reject&quot;;
+		$this-&gt;errcode = $errcode;
+	}
+
+}
+
+
+
+
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

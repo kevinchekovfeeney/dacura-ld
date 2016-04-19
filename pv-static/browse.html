@@ -1,0 +1,57 @@
+<html>
+	<head>
+		<title>Browser v0.1</title>
+		<style type='text/css'>
+		    @import 'dt/media/css/demo_page.css';
+		    @import 'dt/media/css/demo_table.css';
+		    body{
+		    	font-size: small;
+				width: 75%;
+				margin: 10 auto;
+		    }table{
+		    	font-size: small;
+		    	margin: 0 auto;
+		    }
+	    </style>
+		<script src='dt/media/js/jquery.js'></script>
+		<script src='dt/media/js/jquery.dataTables.js'></script>
+		<script>
+		//This should be generalisable in a php file - do the same thing to get IDs to not-IDs as in x.php
+			$(document).ready(function() {
+				$('#example').dataTable( {
+					"bProcessing": true,
+					"bFilter": false,
+					"bServerSide": true,
+					"sAjaxSource": "browser.php",
+					"aoColumns": [
+						{ "sTitle": "Start Date", "mData": "start date" },
+						{ "sTitle": "End Date", "mData": "end date" },
+						{ "sTitle": "Category", "mData": "category" },
+						{ "sTitle": "Motivation", "mData": "motivation" },
+						{ "sTitle": "Location", "mData": "location" },
+						{ "sTitle": "Fatalities", "mData": "fatalities" },
+						{ "sTitle": "Source", "mData": "source" },
+						{ "sTitle": "Description", "mData": "description" }
+					]
+					/* "aoColumns": [
+						{ "sTitle": "Start Date",   "mData": "http://tcdfame.cs.tcd.ie/data/politicalviolence#startDate" },
+						{ "sTitle": "End Date",  "mData": "http://tcdfame.cs.tcd.ie/data/politicalviolence#endDate" },
+						{ "sTitle": "Category", "mData": "http://tcdfame.cs.tcd.ie/data/politicalviolence#category" },
+						{ "sTitle": "Motivation",  "mData": "http://tcdfame.cs.tcd.ie/data/politicalviolence#motivation" },
+						{ "sTitle": "Location",    "mData": "http://tcdfame.cs.tcd.ie/data/politicalviolence#location" },
+						{ "sTitle": "Fatalities",    "mData": "http://tcdfame.cs.tcd.ie/data/politicalviolence#fatalities" },
+						{ "sTitle": "Source",    "mData": "http://tcdfame.cs.tcd.ie/data/politicalviolence#source" },
+						{ "sTitle": "Description",    "mData": "http://tcdfame.cs.tcd.ie/data/politicalviolence#description" }
+					] */
+				} );
+			} );
+		</script>
+	</head>
+	<body>
+		<table id="example">
+		<thead></thead>
+		<tbody></tbody>
+		</table>
+	</body>
+
+</html>

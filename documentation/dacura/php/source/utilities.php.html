@@ -1,0 +1,420 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/**
+ * A place to put random utility functions that are useful in multiple places
+ * 
+ * * Creation Date: 20/11/2014
+ * @author Chekov
+ * @license GPL v2
+ */
+
+/**
+ * Prints out a php datastructure in structured way with pre tags wrapping it
+ * @param mixed $s any php variable
+ */
+function opr($s){
+	echo &quot;&lt;PRE&gt;&quot;;
+	print_r($s);
+	echo &quot;&lt;/PRE&gt;&quot;;
+}
+
+/**
+ * Generates a randomised ID using php's uniqid function
+ * @return string id
+ */
+function randid(){
+	return uniqid_base36();
+}
+
+/**
+ * generates a base 36 encoded uniqid (for tersness)
+ * @param boolean $more_entropy if set to true, a longer id, with more entropy will be returned
+ * @return string
+ */
+function uniqid_base36($more_entropy=false) {
+	$s = uniqid('', $more_entropy);
+	if (!$more_entropy)
+		return base_convert($s, 16, 36);
+	 
+	$hex = substr($s, 0, 13);
+	$dec = $s[13] . substr($s, 15); // skip the dot
+	return base_convert($hex, 16, 36) . base_convert($dec, 10, 36);
+}
+
+/**
+ * Function to generate a randomised key of specified length
+ * @param int $length length of key desired
+ * @return string key
+ */
+function createRandomKey($length){
+	$buffer = mcrypt_create_iv($length, MCRYPT_DEV_URANDOM);
+	$encodedBuffer = str_replace(array('+', '/'), array('_', 'X'), base64_encode($buffer));
+	return substr($encodedBuffer, 0, $length);
+}
+
+/**
+ * Is the passed data structure a php associative array
+ * @param mixed $arr variable to be tested
+ * @return boolean true if the variable is an associative array (and is not indexed 0,1,2...)
+ */
+function isAssoc($arr)
+{
+	return is_array($arr) &amp;&amp; array_keys($arr) !== range(0, count($arr) - 1);
+}
+
+/**
+ * Sends an email
+ * @param string $recip recipient email address
+ * @param string $subj subject line
+ * @param string $text body 
+ * @param string $headers message headers
+ * @return boolean true if sent
+ */
+function sendemail($recip, $subj, $text, $headers){
+	if(!$headers){
+		$headers = 'From: dacura@cs.tcd.ie' . &quot;\r\n&quot; .
+			'Reply-To: dacura@cs.tcd.ie' . &quot;\r\n&quot; .
+			'X-Mailer: PHP/' . phpversion();
+	}
+	if(is_array($headers)){
+		$headers = implode(&quot;\r\n&quot;, $headers);
+	}
+	return mail( $recip, $subj, $text, $headers);
+}
+
+/**
+ * creates a 'deep' recursive copy of an array
+ * @param array $x the array to copy 
+ * @return array the copied array
+ */
+function deepArrCopy(array $x){
+	$vals = array();
+	foreach($x as $i =&gt; $v){
+		if(is_array($v)){
+			$vals[$i] = deepArrCopy($v);
+		}
+		else {
+			$vals[$i] = $v;
+		}
+	}
+	return $vals;
+}
+
+/**
+ * compares two deep arrays and returns differences. 
+ * adapted from arrayRecursiveDiff in comments of http://php.net/manual/en/function.array-diff.php
+ */
+function arrayRecursiveCompare($aArray1, $aArray2) {
+	foreach ($aArray1 as $mKey =&gt; $mValue) {
+		if (array_key_exists($mKey, $aArray2)) {
+			if (is_array($mValue)) {
+				if(!arrayRecursiveCompare($mValue, $aArray2[$mKey])){
+					return false;
+				}
+			} else {
+				if ($mValue != $aArray2[$mKey]) {
+					return false;
+				}
+			}
+		} else {
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * Returns true if the value is a string and is not a url
+ * @param unknown $x the value to test
+ * @return boolean true if it is a literal
+ */
+function isLiteral($x){
+	return (is_string($x) &amp;&amp; !isURL($x) &amp;&amp; !isBlankNode($x) &amp;&amp; !isNamespacedURL($x));
+}
+
+/**
+ * Returns true if the passed string is a URL 
+ * @param string $str
+ * @return boolean
+ */
+function isURL($str){
+	return (!filter_var($str, FILTER_VALIDATE_URL) === false);
+}
+
+/**
+ * Returns true if the passed string is a valid email address
+ * @param string $email
+ * @return boolean
+ */
+function isValidEmail($email){
+	return (!filter_var($email, FILTER_VALIDATE_EMAIL) === false);
+}
+
+/**
+ * Returns true if the passed string is a namespaced url (prefix:localurl)
+ * @param string $x the string to test
+ * @return boolean
+ */
+function isNamespacedURL($x){
+	if(!is_string($x)){
+		return false;
+	}
+	else {
+		$bits = explode(&quot;:&quot;, $x);
+		return (!isURL($x) &amp;&amp; count($bits) &gt; 1 &amp;&amp; strlen($bits[0]) &lt;= 16 &amp;&amp; strlen($bits[0]) &gt;= 1 &amp;&amp; !preg_match('/[^a-z0-9]/', $bits[0]));		
+	}
+}
+
+/**
+ * Returns the namespace / prefix portion of a namespaced url
+ * @param string $str the string 
+ * @return string the namespace portion (false if it does not exist) 
+ */
+function getNamespacePortion($str){
+	if(is_array($str)) return false;
+	$bits = explode(&quot;:&quot;, $str);
+	return (count($bits) &gt; 1) ? $bits[0]: false;
+}
+
+/**
+ * Tests for a string being a blank node url (_:...)
+ * @param string $str the string to test
+ * @return boolean
+ */
+function isBlankNode($str){
+	return (getNamespacePortion($str) == &quot;_&quot;);
+}
+
+/**
+ * Returns the path to a particular snippet 
+ * @param string $snip the name of the snippet
+ * @return string the path
+ */
+function path_to_snippet($snip){
+	return &quot;phplib/services/core/snippets/&quot;.$snip.&quot;.php&quot;;
+}
+
+//this function exists in PHP 5.4 - this emulates it in case we are &lt; 5.4
+if (!function_exists('http_response_code')) {
+/** 
+ * generates correct text and codes for http responses and writes them to http
+ * @param number $code the http response code desired
+*/
+	function http_response_code($code = NULL) {
+		if ($code !== NULL) {
+			switch ($code) {
+				case 100: $text = 'Continue'; break;
+				case 101: $text = 'Switching Protocols'; break;
+				case 200: $text = 'OK'; break;
+				case 201: $text = 'Created'; break;
+				case 202: $text = 'Accepted'; break;
+				case 203: $text = 'Non-Authoritative Information'; break;
+				case 204: $text = 'No Content'; break;
+				case 205: $text = 'Reset Content'; break;
+				case 206: $text = 'Partial Content'; break;
+				case 300: $text = 'Multiple Choices'; break;
+				case 301: $text = 'Moved Permanently'; break;
+				case 302: $text = 'Moved Temporarily'; break;
+				case 303: $text = 'See Other'; break;
+				case 304: $text = 'Not Modified'; break;
+				case 305: $text = 'Use Proxy'; break;
+				case 400: $text = 'Bad Request'; break;
+				case 401: $text = 'Unauthorized'; break;
+				case 402: $text = 'Payment Required'; break;
+				case 403: $text = 'Forbidden'; break;
+				case 404: $text = 'Not Found'; break;
+				case 405: $text = 'Method Not Allowed'; break;
+				case 406: $text = 'Not Acceptable'; break;
+				case 407: $text = 'Proxy Authentication Required'; break;
+				case 408: $text = 'Request Time-out'; break;
+				case 409: $text = 'Conflict'; break;
+				case 410: $text = 'Gone'; break;
+				case 411: $text = 'Length Required'; break;
+				case 412: $text = 'Precondition Failed'; break;
+				case 413: $text = 'Request Entity Too Large'; break;
+				case 414: $text = 'Request-URI Too Large'; break;
+				case 415: $text = 'Unsupported Media Type'; break;
+				case 500: $text = 'Internal Server Error'; break;
+				case 501: $text = 'Not Implemented'; break;
+				case 502: $text = 'Bad Gateway'; break;
+				case 503: $text = 'Service Unavailable'; break;
+				case 504: $text = 'Gateway Time-out'; break;
+				case 505: $text = 'HTTP Version not supported'; break;
+				default:
+					exit('Unknown http status code &quot;' . htmlentities($code) . '&quot;');
+					break;
+			}
+			$protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
+			header($protocol . ' ' . $code . ' ' . $text);
+			$GLOBALS['http_response_code'] = $code;
+
+		} else {
+			$code = (isset($GLOBALS['http_response_code']) ? $GLOBALS['http_response_code'] : 200);
+		}
+		return $code;
+	}
+}
+
+/* 
+ */
+/**
+ * Self-rolled tail replicator 
+ * 
+ * Adapted from https://gist.github.com/lorenzos/1711e81a9162320fde20
+ * @param string $filepath the file to tail
+ * @param number $lines number of lines to show
+ * @param boolean $adaptive should it adapt to the size of the lines or just use a fixed buffer?
+ * @return string last lines in file as a string
+ */
+function tailCustom($filepath, $lines = 1, $adaptive = true) {
+	// Open file
+	$f = @fopen($filepath, &quot;rb&quot;);
+	if ($f === false) return false;
+	// Sets buffer size
+	if (!$adaptive) $buffer = 4096;
+	else $buffer = ($lines &lt; 2 ? 64 : ($lines &lt; 10 ? 512 : 4096));
+	// Jump to last character
+	fseek($f, -1, SEEK_END);
+	// Read it and adjust line number if necessary
+	// (Otherwise the result would be wrong if file doesn't end with a blank line)
+	if (fread($f, 1) != &quot;\n&quot;) $lines -= 1;
+
+	// Start reading
+	$output = '';
+	$chunk = '';
+	// While we would like more
+	while (ftell($f) &gt; 0 &amp;&amp; $lines &gt;= 0) {
+		// Figure out how far back we should jump
+		$seek = min(ftell($f), $buffer);
+		// Do the jump (backwards, relative to where we are)
+		fseek($f, -$seek, SEEK_CUR);
+		// Read a chunk and prepend it to our output
+		$output = ($chunk = fread($f, $seek)) . $output;
+		// Jump back to where we started reading
+		fseek($f, -mb_strlen($chunk, '8bit'), SEEK_CUR);
+		// Decrease our line counter
+		$lines -= substr_count($chunk, &quot;\n&quot;);
+	}
+	// While we have too many lines
+	// (Because of buffer size we might have read too many)
+	while ($lines++ &lt; 0) {
+		// Find first newline and remove all text before that
+		$output = substr($output, strpos($output, &quot;\n&quot;) + 1);
+	}
+	// Close file and return
+	fclose($f);
+	return trim($output);
+}
+
+/**
+ * Trims square brackets from the start and front of string
+ * @param string $ent the string to be trimmed
+ * @return string
+ */
+function xstrim($ent){
+	return trim($ent, &quot;[]&quot;);
+} 
+
+/**
+ * Sets up the default system settings by building various other settings from the ones defined in localsettings.php
+ * @param array $dacura_settings - a settings array 
+ */
+ function default_settings(&amp;$dacura_settings){
+	if(!isset($dacura_settings['dacura_sessions'])){
+		$dacura_settings['dacura_sessions'] = $dacura_settings['storage_base'].'sessions/';
+	}
+	if(!isset($dacura_settings['ajaxurl'])){
+		$dacura_settings['ajaxurl'] = $dacura_settings['install_url'].$dacura_settings['apistr'] . &quot;/&quot;;
+	}
+	if(!isset($dacura_settings['services_url'])){
+		$dacura_settings['services_url'] = $dacura_settings['install_url'].$dacura_settings['path_to_services'];
+	}
+	if(!isset($dacura_settings['files_url'])){
+		$dacura_settings['files_url'] = $dacura_settings['install_url'] . $dacura_settings['path_to_files'];
+	}
+	if(!isset($dacura_settings['path_to_collections'])){
+		$dacura_settings['path_to_collections'] = $dacura_settings['storage_base'].&quot;collections/&quot;;
+	}
+	if(!isset($dacura_settings['collections_urlbase'])){
+		$dacura_settings['collections_urlbase'] = $dacura_settings['install_url'] . &quot;cfiles/&quot;;
+	}
+	if(!isset($dacura_settings['dacura_sessions'])){
+		$dacura_settings['dacura_sessions'] = $dacura_settings['storage_base'].'sessions/';
+	}
+	if(!isset($dacura_settings['dqs_service'])){
+		$dacura_settings['dqs_service'] = array();
+	}
+	if(!isset($dacura_settings['dqs_service']['instance'])){
+		$dacura_settings['dqs_service'][&quot;instance&quot;] = $dacura_settings['dqs_url'].&quot;instance&quot;;
+	}
+	if(!isset($dacura_settings['dqs_service']['schema'])){
+		$dacura_settings['dqs_service'][&quot;schema&quot;] = $dacura_settings['dqs_url'].&quot;schema&quot;;
+	}
+	if(!isset($dacura_settings['dqs_service']['schema_validate'])){
+		$dacura_settings['dqs_service'][&quot;schema_validate&quot;] = $dacura_settings['dqs_url'].&quot;schema_validate&quot;;
+	}
+	if(!isset($dacura_settings['dqs_service']['validate'])){
+		$dacura_settings['dqs_service'][&quot;validate&quot;] = $dacura_settings['dqs_url'].&quot;validate&quot;;
+	}
+	if(!isset($dacura_settings['dqs_service']['instance'])){
+		$dacura_settings['dqs_service'][&quot;stub&quot;] = $dacura_settings['dqs_url'].&quot;stub&quot;;
+	}
+	if(!isset($dacura_settings['dqs_service']['entity'])){
+		$dacura_settings['dqs_service'][&quot;stub&quot;] = $dacura_settings['dqs_url'].&quot;entity&quot;;
+	}
+	if(!isset($dacura_settings['dqs_service']['logfile'])){
+		$dacura_settings['dqs_service'][&quot;logfile&quot;] = false;
+	}
+	if(!isset($dacura_settings['dqs_service']['fakets'])){
+		$dacura_settings['dqs_service'][&quot;fakets&quot;] = $dacura_settings['dacura_logbase'].'fakets.json';
+	}
+	if(!isset($dacura_settings['dqs_service']['dumplast'])){
+		$dacura_settings['dqs_service'][&quot;dumplast&quot;] = $dacura_settings['dacura_logbase'].'lastdqs.log';
+	}
+}
+
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

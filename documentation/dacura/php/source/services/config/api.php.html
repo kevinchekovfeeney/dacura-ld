@@ -1,0 +1,193 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+/**
+ * API for config service - viewing and updating user details
+ *
+ * Creation Date: 12/01/2015
+ * @author chekov
+ * @package config/api
+ * @license GPL v2
+ */
+
+/** We only pulish the api endpoints that are relevant to the user's permissions */
+if($dacura_server-&gt;userHasRole(&quot;admin&quot;, &quot;all&quot;)){
+	getRoute()-&gt;post('/create', 'create');
+	getRoute()-&gt;delete('/', 'delete');
+}
+if($dacura_server-&gt;userHasFacet(&quot;inspect&quot;)){
+	getRoute()-&gt;get('/logs', 'showLogs');
+}
+if($dacura_server-&gt;userHasFacet(&quot;manage&quot;)){
+	getRoute()-&gt;post('/', 'update');
+//	getRoute()-&gt;post('/files', 'upload');
+}	
+if($dacura_server-&gt;userHasFacet(&quot;view&quot;)){
+	getRoute()-&gt;get('/(\w*)', 'view');
+}
+
+/**
+ * POST /create
+ *
+ * requires $json[id] 
+ * optional: $json[title]
+ * Creates a new collection with the passed id (and title if present)
+ * @return a JSON version of a Collection object [id, status, name, profile]
+ * @api
+ */
+function create(){
+	global $dacura_server;
+	$title = isset($_POST['title']) ? $_POST['title'] : &quot;&quot;;
+	$dacura_server-&gt;init(&quot;create.collection&quot;);
+	if($colobj = $dacura_server-&gt;createNewCollection($_POST['id'], $title)){
+		return $dacura_server-&gt;write_json_result($colobj, &quot;Created Collection &quot;.$dacura_server-&gt;cid().&quot; ($title)&quot;);
+	}
+	return $dacura_server-&gt;write_http_error();
+}
+
+/**
+ * GET /[$part]
+ *
+ * Fetches the configuration settings for the current collection context
+ * @param $part optional 'part' of the configuration - can be list for a list of collections (only in the 'all' context)
+ * @return an associative array with the fields: settings, services, collection (and meta &amp; servicemeta for all)
+ * or a simple array with elements having (status, id, name) when the argument is 'list'
+ *
+ * This function does two things to get around the problem that all requests are to the root resource normally (because the arguments are contained in the preceding parts of the url)
+ * @api
+ */
+function view($part = &quot;&quot;){
+	global $dacura_server;
+	if($part == &quot;list&quot;){
+		$dacura_server-&gt;init(&quot;view.collections&quot;);
+		$ls = $dacura_server-&gt;getCollectionList();
+		$collobj = array();
+		foreach($ls as $c =&gt; $col){
+			if($c == &quot;all&quot;) continue;
+			$collobj[] = array(&quot;id&quot; =&gt; $c , &quot;status&quot; =&gt; $col-&gt;status, &quot;name&quot; =&gt; $col-&gt;name);
+		}
+	}
+	else {
+		$collobj = $dacura_server-&gt;getCollectionConfig();
+	}
+	if($collobj){
+		return $dacura_server-&gt;write_json_result($collobj, &quot;Retrieved configuration listing for &quot;.$dacura_server-&gt;contextStr());
+	}
+	$dacura_server-&gt;write_http_error();
+}
+
+
+/**
+ *
+ * requires $json[settings] and/or $json[services] (or, if all, $json[meta] and/or $json[servicemeta]
+ * 
+ * Updates the collection configuration 
+ * @return a JSON version of the current settings [1 or more of settings, service, collection, meta, servicemeta]
+ * @api
+ */
+function update(){
+	global $dacura_server;
+	$json = file_get_contents('php://input');
+	if(!($obj = json_decode($json, true))){
+		return $dacura_server-&gt;write_http_error(400, &quot;Submitted update object was not valid json&quot;);
+	}
+	if(isset($obj['settings']['status']) &amp;&amp; $obj['settings']['status'] == &quot;deleted&quot;){
+		$dacura_server-&gt;init(&quot;delete.collection&quot;);
+		if(!$dacura_server-&gt;userHasRole(&quot;admin&quot;, &quot;all&quot;)){
+			return $dacura_server-&gt;write_http_error(401, &quot;You do not have permission to delete collections&quot;);
+		}
+		if($collobj = $dacura_server-&gt;deleteCollection($dacura_server-&gt;cid())){
+			return $dacura_server-&gt; write_http_result(0, &quot;Successfully Deleted Collection &quot;.$dacura_server-&gt;cid());
+		}
+	}
+	else {
+		$dacura_server-&gt;init(&quot;update.collection&quot;);
+		//need to do some checks on the update -&gt; status = deleted...also the facet stuff - some need admin....
+		if($cobj = $dacura_server-&gt;updateCollectionConfig($dacura_server-&gt;cid(), $obj)){
+			return $dacura_server-&gt;write_json_result($cobj, &quot;Updated Collection &quot;.$dacura_server-&gt;cid());
+		}
+	}
+	$dacura_server-&gt;write_http_error();
+}
+
+/**
+ * DELETE /
+ *
+ * Deletes the collection from the system
+ * @return a JSON version of the last version of the Collection object
+ * @api
+ */
+function delete(){
+	global $dacura_server;
+	if($dacura_server-&gt;cid() == &quot;all&quot;){
+		return $dacura_server-&gt;write_http_error(400, &quot;Deleting system configuration is not permitted&quot;);		
+	}
+	$dacura_server-&gt;init(&quot;delete.collection&quot;);
+	if($dacura_server-&gt;deleteCollection($dacura_server-&gt;cid())){
+		return $dacura_server-&gt; write_http_result(200, &quot;Successfully Deleted Collection &quot;.$dacura_server-&gt;cid());
+	}
+	$dacura_server-&gt;write_http_error();
+}
+
+/**
+ * GET /logs
+ *
+ * Retrieves the most recent entries from the context's request log
+ * @return an array representing the 50 most recent log entries...
+ * @api
+ */
+function showLogs(){
+	global $dacura_server;
+	$dacura_server-&gt;init(&quot;show.logs&quot;);
+	if($logobj = $dacura_server-&gt;getLogsAsListingObject()){
+		return $dacura_server-&gt;write_json_result($logobj, &quot;Log listing issued&quot;);
+	}
+	else {
+		return $dacura_server-&gt;write_http_error();
+	}
+}
+
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

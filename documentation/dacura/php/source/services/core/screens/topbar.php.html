@@ -1,0 +1,132 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/**
+ * The bar at the top of most dacura pages
+ *
+ * includes some context information and a link to their profile page
+ * @package core/screens
+ * @author chekov
+ * @copyright GPL v2
+*/?&gt;
+&lt;div id=&quot;dacura-header&quot;&gt;
+	&lt;div class=&quot;dacura-logo&quot;&gt;
+		&lt;a href=&quot;&lt;?=$service-&gt;durl()?&gt;&quot; title=&quot;Dacura Home&quot;&gt;&lt;img src=&quot;&lt;?=$service-&gt;furl(&quot;images&quot;, &quot;system/dacura-logo-simple.png&quot;)?&gt;&quot; height=&quot;24&quot;&gt;&lt;/a&gt;
+	&lt;/div&gt;
+	&lt;div class=&quot;topbar-context&quot;&gt;
+		&lt;ul id=&quot;utopbar-context&quot;&gt;
+		&lt;?php foreach($params['context'] as $n =&gt; $cbit){ 
+			if($n == count($params['context']) - 1) $cbit['class'] .= &quot; ucontext-active&quot;;
+			?&gt;
+			&lt;li title=&quot;&lt;?=$cbit['name']?&gt;&quot; class=&quot;&lt;?=isset($cbit['class']) ? $cbit['class'] : &quot;&quot;;?&gt;&quot;&gt;&lt;img class='topbar-icon' src=&quot;&lt;?=$cbit['icon']?&gt;&quot;&gt; &lt;a href=&quot;&lt;?=$cbit['url']?&gt;&quot;&gt;&lt;?=$cbit['name']?&gt;&lt;/a&gt;&lt;/li&gt;
+		&lt;?php } ?&gt;
+		&lt;/ul&gt;
+	&lt;/div&gt;
+	&lt;?php if(isset($params['username'])){?&gt;
+	&lt;div class=&quot;topbar-user-context&quot;&gt;
+		&lt;a href=&quot;&lt;?=$params['profileurl']?&gt;&quot;&gt;
+			&lt;span class=&quot;username&quot;&gt;
+				&lt;img class='uicon' src=&quot;&lt;?=$params['usericon']?&gt;&quot; /&gt;
+				&lt;label id='uname'&gt; &lt;?=$params['username']?&gt;&lt;/label&gt;
+				&lt;img class='uconfigicon' src='&lt;?= $service-&gt;furl(&quot;images&quot;, &quot;services/config_icon.png&quot;)?&gt;'&gt;
+			&lt;/span&gt;
+		&lt;/a&gt;
+		&lt;div class='topbar-user-menu dch'&gt;
+			&lt;ul id=&quot;user-actions-menubar&quot;&gt;
+				&lt;li&gt;
+					&lt;span class=&quot;ui-icon ui-icon-disk&quot;&gt;&lt;/span&gt;
+					&lt;a href='&lt;?= $service-&gt;get_service_url(&quot;login&quot;, array(&quot;logout&quot;));?&gt;'&gt;Logout&lt;/a&gt; 
+				&lt;/li&gt;					
+				&lt;?php $choices = $dacura_server-&gt;getUserAvailableContexts(); if(count($choices) &gt; 1){?&gt;
+				&lt;li&gt;--&lt;/li&gt;
+				&lt;?php foreach($choices as $i =&gt; $choice){ ?&gt;
+					&lt;?php if($i == $service-&gt;cid() or ($i == &quot;all&quot; &amp;&amp; !$service-&gt;cid())){?&gt;
+					 	&lt;li class='ui-state-disabled'&gt;&lt;?php echo $choice['title']?&gt;&lt;/li&gt;
+					 &lt;?php } else { ?&gt;
+					 	&lt;li&gt;&lt;a href=&quot;javascript:dacura.system.switchContext('&lt;?=$i?&gt;')&quot;&gt;&lt;?php echo $choice['title']?&gt;&lt;/a&gt;&lt;/li&gt;
+				&lt;?php }}}?&gt;
+			&lt;/ul&gt;
+		&lt;/div&gt;
+	&lt;/div&gt;
+	&lt;?php } elseif(false) {?&gt;
+	&lt;div class=&quot;topbar-user-login&quot;&gt;
+		&lt;label for='uname'&gt;email&lt;/label&gt;
+		&lt;input name='uname' type='text' id='topbar-username'&gt;
+		&lt;label for='upass'&gt;password&lt;/label&gt;
+		&lt;input type='password' id='topbar-password'&gt;
+		&lt;a href=&quot;#&quot; class='topbarlogin'&gt;login&lt;/a&gt;
+	&lt;/div&gt;
+	&lt;?php } else {?&gt;
+		&lt;div class=&quot;topbar-user-login&quot;&gt;
+			&lt;a href=&quot;&lt;?php echo $service-&gt;get_service_url(&quot;login&quot;)?&gt;&quot; class='topbar-goto-login'&gt;login&lt;/a&gt;	
+		&lt;/div&gt;
+	&lt;?php }?&gt;
+	
+&lt;/div&gt;
+	
+
+
+&lt;script&gt;
+$(document).ready(function() {
+	$('#user-actions-menubar').menu({
+		  icons: { submenu: &quot;ui-icon-circle-triangle-w&quot; }
+	});
+	$('.topbar-user-context').hover(
+    	function(){ 
+        	$(this).addClass('ui-state-focus');
+        	$('.topbar-user-menu').show(&quot;blind&quot;);
+        	$('#user-actions-menubar').menu(&quot;refresh&quot;); 
+        },
+    	function(){ 
+        	$(this).removeClass('ui-state-focus'); 
+        	$('.topbar-user-menu').hide(&quot;fade&quot;);
+        }
+    );
+	$('button.topbarlogin').button().click(function(){
+		alert($('#topbar-password').val() + $('#topbar-username').val());
+	});
+});	
+
+&lt;/script&gt;</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

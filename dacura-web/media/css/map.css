@@ -1,0 +1,29 @@
+#description{
+	width:200px;
+	height:60px;
+	border-bottom: 1px solid rgb(102, 136, 170);
+	background-color:rgb(102, 136, 170);
+	padding: 10px;
+	border-radius: 0.5em 0.5em 0.5em 0.5em;
+	color:white;
+	-webkit-box-shadow: 4px 4px 3px rgb(102, 136, 170);
+	-moz-box-shadow:4px 4px 3px rgb(102, 136, 170);
+	box-shadow:4px 4px 3px rgb(102, 136, 170);
+	margin-bottom:2em;
+	margin-top:3em;
+}#key{
+	width:200px;
+	padding: 10px;
+	border:1px solid rgb(102, 136, 170);
+	border-radius: 0.5em 0.5em 0.5em 0.5em;
+	-webkit-box-shadow: 4px 4px 3px rgb(102, 136, 170);
+	-moz-box-shadow:4px 4px 3px rgb(102, 136, 170);
+	box-shadow:4px 4px 3px rgb(102, 136, 170);
+}#keytitle{
+	text-align:center;
+	padding-right:25px;
+}.keybox{
+	width:20px;
+}#usamap{
+	margin-top:1em;
+}

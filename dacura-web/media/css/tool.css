@@ -1,0 +1,434 @@
+div.dacura-widget {
+   font-size: 13px;
+   font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;
+   letter-spacing: normal;
+   line-height: normal;
+	text-align: left;
+}
+
+.dacura-widget ul {
+	padding-left: 1em;
+	margin-left: 0;
+	margin-top: 1em;
+  	display: block;
+  	list-style-type: disc;
+  	margin: 1em 0;
+}
+
+div.dacura-widget ul li {
+	display: list-item;
+	line-height: normal;
+}
+
+
+div.dacura-widget td,
+div.dacura-widget th {
+  padding: 2px;
+}
+
+td.dacura-property-input label {
+	font-size: 90%;
+}
+
+
+span.dacura-property-label {
+	font-size: 12px;
+	font-weight: bold;
+	color: #777;
+}
+
+td.dacura-property-label {
+	width: 54px;
+	padding-right: 4px;
+	padding-left: 4px;
+	text-align: right;
+	font-size: 12px;
+	font-weight: bold;
+	color: #777;
+}
+
+table.dacura-widget {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+
+table.dacura-widget td {
+	padding-top: 3px;
+	padding-bottom: 3px;
+	border-bottom: 1px dotted white;
+}
+
+
+table.dc-dialog {
+	width: 100%;
+}
+
+table.dc-dialog th,
+table.dc-dialog td {
+	padding-top: 6px;
+}
+
+td.dacura-button-row {
+	width: 100%;
+	text-align: center;
+}
+
+div.dacura-button {
+	text-align: center;
+	margin-top: 4px;
+}
+
+table.dc-dialog td.dacura-status {
+	padding-top: 0px;
+}
+
+span#current-user-title,
+span#current-candidate-title,
+span#current-chunk-title {
+	font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;
+	font-size: 150%;
+	display: block;
+	float: left;
+	margin-left: 20px;
+	padding-top: 10px;
+	margin-right: 10px;
+}
+
+
+.dc-widget-section-contents {
+	margin-bottom: 2px;
+	font-size: 90%;
+	padding: 4px 2px 4px 2px;
+	border: 1px solid #eedfda;
+}
+
+
+
+#event-motivation .ui-button {
+   font-weight: normal;
+   line-height: 1.1;
+   border-radius: 0px;
+   margin: 2px 2px;
+   font-size: 0.9em;
+}
+
+
+#event-motivation .ui-button-text-only,
+#event-motivation  .ui-button-text {
+	padding: 2px 4px;
+}
+
+#event-actors-add.ui-button {
+  font-weight: normal;
+  line-height: 1;
+  border-radius: 0px;
+  margin: 0px 2px;
+  font-size: 0.8em;
+}
+
+#event-actors-add.ui-button-text-only,
+#event-actors-add.ui-button-text {
+	padding: 0;
+}
+
+select.dc-input-text {
+	font-size: 14px;
+}
+
+input.dc-input-text {
+	font-size: 14px;
+}
+
+.dc-widget-line {
+	margin-top: 2px;
+}
+
+
+option.dc-default-value, 
+.dc-default-value {
+	font-style: italic;
+	color: #888;
+}
+
+.dc-default-value.dc-mandatory-field {
+	color: #d88;
+}
+
+#event-description-input {
+	width: 100%;
+}
+
+span.dc-select-mandatory {
+	color: #f44;
+}
+
+.dc-widget-section-header {
+	color: #444;
+	background-color: #fda;
+	margin-top: 8px;
+	padding: 4px 4px 0px 4px;
+	width: 150px;
+	border-radius: 4px 4px 0px 0px;
+	font-weight: bold;
+	border-left: 1px solid #eedfda;
+	border-right: 1px solid #eedfda;
+	border-top: 1px solid #eedfda;
+}
+
+.dc-widget-section-contents.dc-section-hidden {
+	display: none;
+}
+
+.dc-widget-section-header.dc-section-displayed:after {
+	content: " \25BE";
+}
+
+.dc-widget-section-header.dc-section-hidden:after {
+	content: " \25B8";	
+}
+
+div#dc-motivations-quench {
+	float: right;
+	margin-right: 4px;
+	color: #44d;
+	cursor: pointer;
+}
+
+span#event-actors-add {
+	color: #44d;
+	cursor: pointer;
+}
+
+span#event-actors-add.dc-disabled {
+	color: #999;
+	cursor: default;
+}
+
+
+	
+div#dc-motivations-quench:after {
+	content: " motivations";
+}
+
+table.dacura-event-actors th {
+	font-size: 11px;
+	color: #866;
+	text-align: center;
+}
+
+table.dacura-event-actors {
+	width: 100%;
+	margin-top: 4px;
+}
+
+
+table.dacura-event-actors td {
+	vertical-align: top;
+	padding-bottom: 4px;
+	padding-top: 4px;
+	padding-left: 2px;	
+	border-top: 1px #dca solid;
+}
+
+table.dacura-event-actors  div.dc-widget-line {
+	margin-top: 4px;
+}
+
+
+td.dc-actor-fatalities {
+	min-width: 40px;
+}
+
+
+
+td.dacura-actor{
+	min-width: 120px;
+}
+
+span.dc-actor-size {
+	font-size: 70%;
+	color: #888;
+	margin-left: 2px;
+}
+
+tr.dc-actor-odd td{
+	background-color: #fff8e8;
+}
+
+.dacura-input-missing {
+	border: 1px solid red;
+}
+
+table.dacura-confirm-form {
+	border-collapse: collapse;
+}
+
+th.dc-confirm-details {
+	width: 350px;
+}
+
+span.confirm-user-data {
+	color: #448;
+	font-weight: bold;
+}
+
+span.confirm-user-data-error {
+	color: #844;
+	font-weight: bold;
+}
+
+
+table.dacura-confirm-form td {
+	border-top: 1px solid #fff;
+	font-size: 13px;
+}
+
+
+td.dacura-confirm-details-warning {
+	color: #f44;
+}
+
+td.dacura-confirm-details-dubious {
+	text-align: center;
+}
+
+td.dacura-confirm-details-empty {
+	color: #888;
+}
+
+table.dacura-confirm-sundries {
+	margin-top: 2em;
+	width: 100%;
+}
+
+table.dacura-confirm-sundries td {
+	vertical-align: top;
+	font-size: 12px;
+}
+
+table.dacura-confirm-sundries th {
+	font-size: 14px;
+	margin: 0;
+	padding: 6px;
+text-align: center;
+}
+
+table.dacura-confirm-sundries td {
+	font-size: 12px;
+	padding: 2px;
+text-align: left
+}
+
+table.dacura-confirm-ok {
+	border-bottom: 1px solid white;
+	width: 100%;
+}
+
+table.dacura-confirm-ok th {
+	font-size: 15px;
+	padding: 6px;
+}
+
+table.dacura-confirm-ok td {
+	font-size: 13px;
+	padding: 4px;
+}
+
+
+
+
+.ui-front {
+    z-index:99998 !important; /* The default is 100. !important overrides the default. */
+}
+
+.ui-dialog-title {
+   font-size: 15px !important;
+}
+
+ul#dacura-pv-widget-message {
+	padding-left: 12px;
+	background-color: #fff8f8;
+}
+
+
+ul#dacura-pv-widget-message li {
+   margin-left: 4px;
+}
+
+
+p.dacura-widget-message{
+	background-color: white;
+	border-top: 1px solid #afafff;
+	border-left: 1px solid #afafff;
+	border-right: 1px solid #afafff;
+	border-radius: 4px 4px 0 0;
+	font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;
+	padding: 4px 4px 2px 4px;
+	font-size: 14px;
+	margin-bottom: 0px;
+}
+
+.dacura-widget-message-error {
+	color: #844;
+}
+
+ul.dacura-widget-message-items {
+	background-color: white;
+	border-bottom : 1px solid #afafff;
+	border-left: 1px solid #afafff;
+	border-right: 1px solid #afafff;
+	border-radius: 0 0 4px 4px;
+	font-size: 12px;
+	margin-top: 0;
+	padding-left: 18px;
+}
+
+span.control-success {
+	display: block;
+	color: #0f8f0f;
+	padding-top: 10px;
+}
+
+span.control-failure {
+	display: block;
+	color: #8f0f0f;
+	padding-top: 10px;
+}
+
+a.confirm-user-data,
+a.more-less-widget-link {
+	color: #44d !important;
+}
+
+a.more-less-widget-link {
+	font-size: 11px;
+	text-decoration: none;
+}
+
+input#event-location-place {
+	width: 200px;
+}
+
+.dc-widget-busy {
+	position: absolute;
+	text-align: center;
+	width: 96%;
+	background-color: rgba(254, 238, 189, 0.85);
+	height: 92%;
+	padding-top: 20px;
+	z-index:1000000 !important; /* The default is 100. !important overrides the default. */
+	display: none;
+}
+
+
+.dc-widget-busy-message {
+	max-width: 300px;	
+	margin: 10px auto;
+	background-color: white;
+	border: 1px solid #afafff;
+	border-radius: 4px;
+	font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif;
+	padding: 4px 4px 2px 4px;
+	font-size: 14px;
+}

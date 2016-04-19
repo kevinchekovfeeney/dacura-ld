@@ -1,0 +1,68 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/**
+ * Upon installation, set the configuration values below to reflect the installation environment
+ * And save this file as localsettings.php
+ *
+ * * Creation Date: 15/01/2015
+ * @author Chekov
+ * @license GPL v2
+ */
+
+//URL at which the dacura system is accessible
+$dacura_settings['install_url'] = &quot;http://localhost/dacura/&quot;;
+//URL of the system's triple store...
+$dacura_settings['dqs_url'] = &quot;http://dacura.scss.tcd.ie/dqs/dacura/&quot;;
+//$dacura_settings['dqs_url'] = &quot;http://192.168.2.104:3020/dacura/&quot;;
+//directory under which dacura will store its data...
+$dacura_settings['storage_base'] = &quot;C:/Temp/dacura/&quot;;
+//DB credentials
+$dacura_settings['db'] = array(&quot;host&quot; =&gt; 'localhost', &quot;name&quot; =&gt; &quot;dacura&quot;, &quot;user&quot; =&gt; &quot;dacura&quot;, &quot;pass&quot; =&gt; &quot;dacura&quot;);
+//HTTP proxy
+//$dacura_settings['http_proxy'] = &quot;http://proxy.cs.tcd.ie:8080&quot;;
+//change this to something distinct if multiple dacuras are running at the same url in different sub-dirs
+$dacura_settings['dacurauser'] = 'dacurauser';
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>
