@@ -13,11 +13,11 @@ dacura.frame.api.getFrame = function (cls){
 };
 
 
-dacura.frame.draw = function(cls,resultobj,pconf){
+dacura.frame.draw = function(cls,resultobj,pconf,target){
 	var framestr = resultobj.result;
 	var frame = JSON.parse(framestr);
 	var obj = document.createElement("div");
-	obj.setAttribute('id','frame-container');
+	obj.setAttribute('id',target);
 	obj.setAttribute('data-class', cls);
 	
 	gensym = dacura.frame.Gensym("query");
@@ -72,9 +72,9 @@ dacura.frame.frameGenerator = function(frame, obj, gensym){
 				if (elt.label){
 					var label = elt.label.data;
 					var textnode = document.createTextNode(label + ':');
-					if(label == 'Unit of Measure'){
+					/* if(label == 'Unit of Measure'){
 						alert(JSON.stringify(elt))
-					}
+					}*/ 
 				}else{
 					var textnode = document.createTextNode(elt.property + ':');			
 				}
@@ -138,9 +138,9 @@ dacura.frame.getId = function(obj,gs){
 	return obj.attr('data-id') ? obj.attr('data-id') : gs.next() ;	
 };
 
-dacura.frame.entityExtractor = function(){
+dacura.frame.entityExtractor = function(target){
 	var gs = dacura.frame.Gensym("_:oid"); 
-	var frame = $('#frame-container');	
+	var frame = $(target);	
 	var id = dacura.frame.getId(frame,gs); 
 	var cls = frame.attr('data-class');
 	var jsonobj = {};
@@ -222,11 +222,11 @@ dacura.frame.typeConvert = function(ty){
 	}
 };
 
-dacura.frame.fillFrame = function(entity){ // , target){
+dacura.frame.fillFrame = function(entity, target){
 	// do we need 'target'?
 
 	var gs = dacura.frame.Gensym("_:oid"); 
-	var frame = $('#frame-container');	
+	var frame = $(target);	
 	var cls = frame.attr('data-class');
 	var jsonobj = {};
 	
@@ -236,6 +236,17 @@ dacura.frame.fillFrame = function(entity){ // , target){
 	}
 		
 };
+
+/* 
+
+TODO: 
+
+1. Read / Write and Read-Write modes 
+2. Specific editorial comments to specific fields - add error / highlight of fields
+3. Get highlight to accept an RVO to signal the appropriate region of problem
+
+Look at utilisation of LD dacura results.
+*/
 
 dacura.frame.init = function(entity, pconf){
 	// frame is in triple store. 
@@ -265,9 +276,10 @@ dacura.frame.init = function(entity, pconf){
 	msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};
 	//alert(cls);
 	ajs.handleResult = function(resultobj, pconf){
-		var frameid = dacura.frame.draw(cls,resultobj,pconf);
-		alert(JSON.stringify(entity, null, 4)); 
-		dacura.frame.fillFrame(entity, pconf); 
+		var frameid = dacura.frame.draw(cls,resultobj,pconf,'frame-container');
+		//alert(JSON.stringify(entity, null, 4));
+		console.log(resultobj);
+		dacura.frame.fillFrame(entity, pconf, 'frame-container'); 
 		dacura.frame.initInteractors();
 	}
 	
