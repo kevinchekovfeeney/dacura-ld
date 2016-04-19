@@ -13,10 +13,9 @@ class OntologyDacuraServer extends LdDacuraServer {
 		if($ont->is_empty()){
 			return $nopr->failure(400, "Ontology is empty", "Content must be added to the ontology before it can be published");
 		}
-		$rules = $this->getServiceSetting("validation_rules", array());
-		$nopr->add($ont->validateDependencies($rules, $test_flag));
+		$nopr->add($ont->validateDependencies($this, $test_flag));
 		if($nopr->is_accept()){
-			if($quads = $this->getOntologyAsQuads($ont, $rules)){
+			if($quads = $this->getOntologyAsQuads($ont)){
 				$nopr->add($this->graphman->validateOntology($ont, $quads, $this->getSchemaTests($ont), $this->getInstanceTests($ont)));
 			}
 			else {
@@ -40,10 +39,10 @@ class OntologyDacuraServer extends LdDacuraServer {
 	}
 	
 	
-	function getOntologyAsQuads(Ontology $ont, $rules, $include_deps = true){
+	function getOntologyAsQuads(Ontology $ont, $include_deps = true){
 		$quads = $ont->typedQuads($ont->schemaGname());
 		if($include_deps){
-			$deps = $ont->getDependentOntologies($this, $rules, "schema");
+			$deps = $ont->getDependentOntologies($this, "schema");
 			foreach($deps as $id => $dont){
 				$quads = array_merge($quads, $dont->typedQuads($ont->schemaGname()));				
 			}		
@@ -51,7 +50,7 @@ class OntologyDacuraServer extends LdDacuraServer {
 		if($this->getServiceSetting("two_tier_schemas", true)){
 			$quads = array_merge($quads, $ont->typedQuads($ont->schemaGnameGname()));
 			if($include_deps){
-				$deps = $ont->getDependentOntologies($this, "schema_schema", $rules);
+				$deps = $ont->getDependentOntologies($this, "schema_schema");
 				foreach($deps as $id => $dont){
 					$quads = array_merge($quads, $dont->typedQuads($ont->schemaSchemaGname()));				
 				}		
@@ -60,26 +59,12 @@ class OntologyDacuraServer extends LdDacuraServer {
 		return $quads;		
 	}
 	
+	function updatePublishedUpdate(LDOUpdate $uldoa, LDOUpdate $uldob, $is_test = false){
+		return $this->objectPublished($uldob->changed, $is_test);
+	}
+	
 	function objectUpdated(LDOUpdate $uldo, $test_flag = false){
 		return $this->objectPublished($uldo->changed, $test_flag);
-	}
-	
-	function getNewLDOContentRules($nldo){
-		$x = parent::getNewLDOContentRules($nldo);
-		$x["replace_blank_ids"] = true;
-		$x['load_dependencies'] = true;
-		return $x;
-	}
-	
-	function getUpdateLDOContentRules($nldo){
-		$x = parent::getUpdateLDOContentRules($nldo);
-		$x["replace_blank_ids"] = false;
-		$x['load_dependencies'] = false;
-		return $x;
-	}
-	
-	function getReplaceLDOContentRules($nldo){
-		return $this->getNewLDOContentRules($nldo);
 	}
 	
 	

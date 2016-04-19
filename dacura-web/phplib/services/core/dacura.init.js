@@ -33,11 +33,14 @@ dacura.system.pagecontext = {
 };
 
 dacura.system.resulticons = {
-		"error" : "<img class='result-icon result-error' src='<?=$service->furl("images", "icons/error.png");?>'>",		
-		"success" : "<img class='result-icon result-success' src='<?=$service->furl("images", "icons/success.png");?>'>",
-		"warning" : "<img class='result-icon result-warning' src='<?=$service->furl("images", "icons/warning.png");?>'>",
-		"info" : "<img class='result-icon result-info' src='<?=$service->furl("images", "icons/info.png");?>'>",
-		"help" : "<img class='result-icon result-info' src='<?=$service->furl("images", "icons/help_icon.png");?>'>",
+	"error" : "<img class='result-icon result-error' src='<?=$service->furl("images", "icons/error.png");?>'>",		
+	"success" : "<img class='result-icon result-success' src='<?=$service->furl("images", "icons/success.png");?>'>",
+	"warning" : "<img class='result-icon result-warning' src='<?=$service->furl("images", "icons/warning.png");?>'>",
+	"info" : "<img class='result-icon result-info' src='<?=$service->furl("images", "icons/info.png");?>'>",
+	"help" : "<img class='result-icon result-info' src='<?=$service->furl("images", "icons/help_icon.png");?>'>",
+	"accept" : "<img class='result-icon result-accept' src='<?=$service->furl("images", "icons/accept.png");?>'>",		
+	"pending" : "<img class='result-icon result-pending' src='<?=$service->furl("images", "icons/pending.png");?>'>",		
+	"reject" : "<img class='result-icon result-reject' src='<?=$service->furl("images", "icons/reject.png");?>'>",		
 };
 
 $(document).ready(function() {

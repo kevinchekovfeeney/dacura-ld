@@ -1,4 +1,9 @@
 <?php 
+/**
+ * Set of classes which implement the RVO ontology as of April 2016
+ * @author chekov
+ *
+ */
 
 class RVO {
 	/** @var A property which assignes the class that produced a violation to the respective violation class. */
@@ -21,7 +26,7 @@ class RVO {
 	var $constraintType;
 	/** @var This is a generic property which indicates whether a violation is considered only best practice or more serious. */
 	var $best_practice;
-	
+	/** @var The set of supported violation classes in the ontology */
 	static $violation_classes = array(
 		"NoImmediateClass", "OrphanClass", "ClassCycle", "NotDomainClass", "NotUniqueClassLabel", "NotUniqueClassName", 
 		"NotSuperClassOfClass", "NotSubClassofClass", "NotIntersectionOfClass", "NotUnionOfClass", "NotUniquePropertyName", 
@@ -32,7 +37,11 @@ class RVO {
 		"NotRestrictionElement","EdgeOrphanInstance", "DataInvalidAtDatatype", "NotBaseTypeElement", "InstanceBlankNode",
 		"Dependency", "MissingDependency", "IllegalPredicate", "IncorrectURL", "OntologyHijack", "annotationOverload"		
 	);
-
+	
+	/**
+	 * Loads the details of the violation from the passed property array if present
+	 * @param string $props initialisation properties
+	 */
 	function __construct($props = false){
 		$this->cls = get_class($this);
 		if($props){
@@ -57,62 +66,97 @@ class RVO {
 			if(isset($props['info'])){
 				$this->info = $props['info'];
 			}	
+			if(isset($props['constraintType'])){
+				$this->constraintType = $props['constraintType'];
+			}	
 		}
 	}
-	
 
-
+	/**
+	 * Get / set the info field
+	 * @param string $m
+	 * @return string
+	 */
 	function info($m = false){
 		if($m !== false) $this->info = $m;
 		return $this->info;
 	}
 	
-	
+	/**
+	 * Get / set the message field
+	 * @param string $m message
+	 * @return string message
+	 */
 	function msg($m = false){
 		if($m !== false) $this->message = $m;
 		return $this->message;
 	}
 	
+	/**
+	 * Get / set the element field
+	 * @param string $elem
+	 */
 	function element($elem=false){
 		if($elem) $this->element = $elem;
 		return $this->$element;
 	}
 	
+	/**
+	 * Get / set the constraintType field
+	 * @param string $t constraint type
+	 * @return string constraint type
+	 */
 	function constraintType($t = false){
 		if($t) $this->constraintType = $t;
 		return $this->constraintType;		
 	}
 	
+	/**
+	 * get set the property field
+	 * @param string $prop
+	 * @return string property
+	 */
 	function property($prop=false){
 		if($prop) $this->property = $prop;
 		return $this->property;
 	}
 	
+	/**
+	 * is this a schema violation?
+	 * @return boolean
+	 */
 	function schema(){
 		return false;		
 	}
 	
+	/**
+	 * Is this an instance violation
+	 * @return boolean
+	 */
 	function instance(){
 		return false;
 	}
 	
+	/**
+	 * Is this a dqs violation
+	 * @return boolean
+	 */
 	function dqs(){
 		return true;
 	}
 	
+	/**
+	 * is it a best practice violation
+	 */
 	function bp(){
 		return $this->best_practice;
 	}
 	
-	function load($args){
-		if(is_string($args)){
-			$this->info .= "\n".$args;
-		}
-		else {
-			$this->info .= "\n".json_encode($args);				
-		}
-	}
-	
+	/**
+	 * Returns a list of all the available DQS Schema tests
+	 * @param boolean $include_bp if false best practice tests will not be included
+	 * @return array - an aray of the tests
+	 */
 	static function getSchemaTests($include_bp = true){
 		$alltests = RVO::getViolations();
 		$itests = array();
@@ -123,7 +167,12 @@ class RVO {
 		}
 		return $itests;
 	}
-
+	
+	/**
+	 * Returns a list of all the available DQS instance tests
+	 * @param boolean $include_bp include best practice tests
+	 * @return array - an array of tests
+	 */
 	static function getInstanceTests($include_bp = true){
 		$alltests = RVO::getViolations();
 		$itests = array();
@@ -135,10 +184,15 @@ class RVO {
 		return $itests;
 	}
 	
+	/**
+	 * Creates a new violation from the passed details
+	 * @param string $cls the class of violation
+	 * @param array $details property initialisation array
+	 * @return RVO the violation object
+	 */
 	static function loadViolation($cls, $details){
 		try {
 			$y = substr($cls, 0, strlen($cls) - strlen("Violation"));
-			//echo "<P>$y is the class";
 			if(in_array($y, RVO::$violation_classes)){
 				//echo "<P>creating new $clis";
 				$x = new $cls($details);
@@ -157,6 +211,10 @@ class RVO {
 		
 	}
 	
+	/**
+	 * Gets a an array of all RVO violation types with no properties set
+	 * @return array
+	 */
 	static function getViolations(){
 		$x = RVO::$violation_classes;
 		$viols = array();
@@ -167,48 +225,16 @@ class RVO {
 		return $viols;
 	}	
 }
-
-class UnknownViolation extends RVO {
-	
-	function __construct($cls, $details){
-		parent::__construct($details);
-		$this->cls = $cls;
-	}
-}
-
-
-class SystemViolation extends RVO {
-	function __construct($errcode, $action, $prompt, $txt){
-		parent::__construct();
-		$this->message = $prompt;
-		$this->info = $txt;
-		$this->label = $errcode ." " .$action;
-	}
-	
-}
-
-class SystemWarning extends RVO {
-	function __construct($action, $prompt, $txt){
-		parent::__construct();
-		$this->message = $prompt;
-		$this->info = $txt;
-		$this->label = $action;
-	}
-}
+/* The schema part of the class hierarchy */
 
 class SchemaViolation extends RVO {
 	function schema(){
 		return true;
 	}
 }
-
-class annotationOverloadViolation extends RVO {
-	var $best_practie = true;
-}
-
+/* class violations can have associated parent and child nodes
+ */
 class ClassViolation extends SchemaViolation {
-	/** @var Defines the path of the cycle violation. */
-	var $path;
 	/** @var Involved parent class */
 	var $parent;
 	/** @var Involved child class */
@@ -217,9 +243,6 @@ class ClassViolation extends SchemaViolation {
 	function __construct($props = false){
 		parent::__construct($props);
 		if($props){
-			if(isset($props['path'])){
-				$this->path = $props['path'];
-			}
 			if(isset($props['parent'])){
 				$this->parent = $props['parent'];
 			}
@@ -237,9 +260,19 @@ class OrphanClassViolation extends ClassViolation {
 	
 }
 
+/* class cycles have associated paths */
 class ClassCycleViolation extends ClassViolation {
 	var $label = "Class Cycle Violation";
 	var $comment = "The class has a class cycle.";
+	/** @var Defines the path of the cycle violation. */
+	var $path;
+	
+	function __construct($props = false){
+		parent::__construct($props);
+		if($props && isset($props['path'])){
+			$this->path = $props['path'];
+		}
+	}
 }
 
 class NotDomainClassViolation extends ClassViolation {
@@ -249,20 +282,20 @@ class NotDomainClassViolation extends ClassViolation {
 
 class NotUniqueClassLabelViolation extends ClassViolation {
 	var $label = "Not Unique Class Label Violation"; 
-	var $best_practice = true;
 	var $comment = "Class does not have exactly one label.";
+	var $best_practice = true;
 }
 
 class NotUniqueClassNameViolation extends ClassViolation {
 	var $label = "Not Unique Class Name Violation"; 
-	var $best_practice = true;
 	var $comment = "The class or restriction is not unique (i.e. there is another existing class with the same identifier)." ;
+	var $best_practice = true;
 }
 
 class NoImmediateClassViolation extends ClassViolation {
 	var $label = "No Immediate Class Violation";
-	var $best_practice = true;
 	var $comment = "An undefined class is used as domain for a property or the class is defined but the superclass is not or the class is not a subclass of a defined class or the class is an intersection of a defined class but not a defined class or the class is not an intersection of a defined class or the class is not a union of a defined class or the class is a union but not a defined class.";
+	var $best_practice = true;
 }
 
 class NotSuperClassOfClassViolation extends ClassViolation {
@@ -275,7 +308,6 @@ class NotSubClassofClassViolation extends ClassViolation {
 	var $comment = "The class is not a subclass of a defined class.";
 }
 
-
 class NotIntersectionOfClassViolation extends ClassViolation {
 	var $label = "Not Intersection of Class Violation";
 	var $comment = "The class is an intersection of a defined class, but not a defined class or the class is not an intersection of a defined class. <p>Example: The class A is not an intersection of a valid class B.";
@@ -286,36 +318,29 @@ class NotUnionOfClassViolation extends ClassViolation {
 	var $comment = "The class is not a union of a defined class or is a union of a defined class but not defined itself.";
 }
 
+/* Property Violations */
+
+/**
+ * Property violations can have parent and child properties
+ */
 class PropertyViolation extends SchemaViolation {
-	/** @var Defines the path of the cycle violation. */
-	var $path;
 	/** @var Involved parent property. */
 	var $parent;
 	/** @var Involved child property */
 	var $child;
-	/** @var Marks the parent property for range and domain not subsumed violations. */
-	var $parentProperty;
 	
 	function __construct($props = false){
 		parent::__construct($props);
 		if($props){
-			if(isset($props['path'])){
-				$this->path = $props['path'];
-			}
 			if(isset($props['parent'])){
 				$this->parent = $props['parent'];
 			}
 			if(isset($props['child'])){
 				$this->child = $props['child'];
 			}
-			if(isset($props['parentProperty'])){
-				$this->parentProperty = $props['parentProperty'];
-			}
 		}
 	}
-	
 }
-
 
 class NotUniquePropertyNameViolation extends PropertyViolation {
 	var $label = "Not Unique Property Name Violation";
@@ -324,23 +349,17 @@ class NotUniquePropertyNameViolation extends PropertyViolation {
 	
 }
 
-
 class PropertyRangeViolation extends PropertyViolation {
 	var $label = "Property Range Violation";
 	var $comment = "Property has no well defined range. <p>Example: Object property A has no specified range.";
 	/** @var The intended range class of a property range violation. */
 	var $range;
-	/** @var Parent range of a range not subsumed violation. */
-	var $parentRange;
 	
 	function __construct($props = false){
 		parent::__construct($props);
 		if($props){
 			if(isset($props['range'])){
 				$this->range = $props['range'];
-			}
-			if(isset($props['parentRange'])){
-				$this->parentRange = $props['parentRange'];
 			}
 		}
 	}	
@@ -366,6 +385,22 @@ class InvalidRangeViolation extends PropertyRangeViolation {
 class RangeNotSubsumedViolation extends PropertyRangeViolation {
 	var $label = "Range Not Subsumed Violation";
 	var $comment = "Invalid range on a property has been caused by failure of range subsumption. <p>Example: Invalid range on property A, due to failure of range subsumption.";
+	/** @var Marks the parent property for range and domain not subsumed violations. */
+	var $parentProperty;
+	/** @var Parent range of a range not subsumed violation. */
+	var $parentRange;
+	
+	function __construct($props = false){
+		parent::__construct($props);
+		if($props){
+			if(isset($props['parentProperty'])){
+				$this->parentProperty = $props['parentProperty'];
+			}
+			if(isset($props['parentRange'])){
+				$this->parentRange = $props['parentRange'];
+			}
+		}
+	}
 }
 
 class PropertyAnnotationOverloadViolation extends PropertyViolation {
@@ -374,26 +409,19 @@ class PropertyAnnotationOverloadViolation extends PropertyViolation {
 	var $best_practice = true;
 }
 
-
 class PropertyDomainViolation extends PropertyViolation {
 	var $label = "Property Domain Violation";
 	var $comment = "Property has no well defined domain.";
 	/** @var The intended domain class of a property domain violation. */
 	var $domain;
-	/** @var Parent domain of a domain not subsumed violation. */
-	var $parentDomain;
 	function __construct($props = false){
 		parent::__construct($props);
 		if($props){
 			if(isset($props['domain'])){
 				$this->domain = $props['domain'];
 			}
-			if(isset($props['parentDomain'])){
-				$this->parentDomain = $props['parentDomain'];
-			}
 		}
 	}
-	
 }
 
 class NoImmediateDomainViolation extends PropertyDomainViolation {
@@ -401,7 +429,6 @@ class NoImmediateDomainViolation extends PropertyDomainViolation {
 	var $comment = "Property has no immediate domain (a super property may define its domain).";
 	var $best_practice = true;
 }
-
 
 class NoExplicitDomainViolation extends PropertyDomainViolation {
 	var $label = "No Explicit Domain Violation";
@@ -416,6 +443,21 @@ class InvalidDomainViolation extends PropertyDomainViolation {
 class DomainNotSubsumedViolation extends PropertyDomainViolation {
 	var $label = "Domain Not Subsumed Violation";
 	var $comment = "Invalid domain on a property has been caused by failure of domain subsumption.";
+	/** @var Marks the parent property for range and domain not subsumed violations. */
+	var $parentProperty;
+	/** @var Parent domain of a domain not subsumed violation. */
+	var $parentDomain;
+	function __construct($props = false){
+		parent::__construct($props);
+		if($props){
+			if(isset($props['parentProperty'])){
+				$this->parentProperty = $props['parentProperty'];
+			}
+			if(isset($props['parentDomain'])){
+				$this->parentDomain = $props['parentDomain'];
+			}
+		}
+	}
 }
 
 class NotSubpropertyOfPropertyViolation extends PropertyViolation {
@@ -436,6 +478,14 @@ class PropertyTypeOverloadViolation extends PropertyViolation {
 class PropertyCycleViolation extends PropertyViolation {
 	var $label = "Property Cycle Violation";
 	var $comment = "The property inheritance hierarcchy contains a property cycle.";
+	/** @var Defines the path of the cycle violation. */
+	var $path;
+	function __construct($props = false){
+		parent::__construct($props);
+		if($props && isset($props['path'])){
+			$this->path = $props['path'];
+		}
+	}
 }
 
 class SchemaBlankNodeViolation extends SchemaViolation {
@@ -444,11 +494,12 @@ class SchemaBlankNodeViolation extends SchemaViolation {
 	var $best_practice = true;
 }
 
+/* Instance Violations */
+
 class InstanceViolation extends RVO {
 	function instance(){
 		return true;
 	}
-
 }
 
 class InstancePropertyViolation extends InstanceViolation {
@@ -487,14 +538,14 @@ class LocalOrphanPropertyViolation extends InstancePropertyViolation {
 }
 
 class NotAnElementViolation extends InstanceViolation {
+	var $label = "Not an Element Violation";
+	var $comment = "Not an element of enumeration, intersection, or union.";
 	/** @var Defines the cardinality of a not an element violation. */
 	var $cardinality;
 	/** @var The value of an element involved in the not an element violation. */
 	var $value;
-	/** @var the relation between a not an elment violation an the class the element was assigned to.*/
+	/** @var the relation between a not an elment violation and the class the element was assigned to.*/
 	var $qualifiedOn;
-	var $label = "Not an Element Violation";
-	var $comment = "Not an element of enumeration, intersection, or union.";
 	
 	function __construct($props = false){
 		parent::__construct($props);
@@ -510,8 +561,6 @@ class NotAnElementViolation extends InstanceViolation {
 			}
 		}
 	}
-	
-
 }
 
 class ObjectInvalidAtClassViolation extends NotAnElementViolation {
@@ -545,6 +594,14 @@ class InstanceBlankNodeViolation extends InstanceViolation {
 	var $best_practice = true;
 }
 
+class annotationOverloadViolation extends RVO {
+	var $label = "Annotation Overload Violation";
+	var $comment = "Property declared as both an annotation property and an object class";
+	var $best_practice = true;
+}
+
+/* Added Dacura (non-DQS) dependency violations */
+
 class DependencyViolation extends SchemaViolation {
 	var $label = "Dependency Violation";
 	var $comment = "The schema's dependencies are in an incosistent state";
@@ -553,8 +610,6 @@ class DependencyViolation extends SchemaViolation {
 		return false;
 	}
 }
-
-
 
 class MissingDependencyViolation extends DependencyViolation {
 	var $label = "Missing Dependency Violation";
@@ -578,6 +633,12 @@ class OntologyHijackViolation extends DependencyViolation {
 	var $best_practice = true;
 }
 
+class SystemViolation extends RVO {
+	var $label = "Dacura System Error";
+	var $comment = "A technical failure that caused the test to fail";	
+}
 
-
-
+class SystemWarning extends RVO {
+	var $label = "Dacura System Warning";
+	var $comment = "A technical failure that caused the test to include a warning";
+}

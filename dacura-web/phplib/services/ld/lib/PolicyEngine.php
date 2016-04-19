@@ -9,7 +9,6 @@ include_once("DacuraResult.php");
  * @license GPL V2
  */
 class PolicyEngine extends DacuraController {
-	/** @var array true for a given type if users are allowed to specify their own ids for ldos */
 	/** @var array if this is true for a given ldo type then ldos and updates that are rejected will still be stored in the db */
 	var $store_rejected = array("create", "update");
 	/** @var array An array of decisions for actions - these are default decisions, they can be overridden by settings */
@@ -22,6 +21,10 @@ class PolicyEngine extends DacuraController {
 		"delete update" => "accept"	
 	);
 	
+	/**
+	 * Loads some basic settings 
+	 * @param LdService $service
+	 */
 	function __construct(LdService &$service){
 		parent::__construct($service);
 		$this->store_rejected = $this->getServiceSetting("store_rejected", $this->store_rejected);
@@ -34,48 +37,59 @@ class PolicyEngine extends DacuraController {
 	/**
 	 * Returns a decision in response to an attempt to carry out an action 
 	 * @param string $action create, update, delete, view, update update, view update, delete update
-	 * @param string $type what type of thing is being actioned on 
-	 * @param mixed $context any important contextual information goes in here
+	 * @param object $obj the object / update being decided upon
 	 * @return DacuraResult
 	 */
 	function getPolicyDecision($action, $obj){
 		$ar = new DacuraResult("System policy for $action");
-		if(isset($this->decisions[$action])){
+		if($action == "update update"){
+			if($this->updateUpdate($obj)){
+				return $ar->accept();
+			}
+			else {
+				return $ar->reject("Update to update rejected by policy ".$this->errmsg, $this->errcode);
+			}
+		}
+		elseif(isset($this->decisions[$action])){
 			if(is_string($this->decisions[$action])){
 				$ar->status($this->decisions[$action]);
 			}
-			elseif(is_callable($this->decisions['action'])){
-				call_user_func_array($this->decisions['action'], array($obj, $context));
+			elseif(is_callable($this->decisions[$action])){
+				call_user_func_array($this->decisions[$action], array($obj, $context));
+			}
+			if($action == 'update' || $action == 'create'){
+				if($ar->is_accept() && $obj->status() == "pending"){
+					$ar->pending("Submission specified pending", "Request sent to api was marked as being in pending state");
+				}
+				if(($ar->is_accept() || $ar->is_pending()) && $obj->status() == "reject"){
+					$ar->reject("Submission specified reject", "Request sent to api was marked as being in reject state");
+				}
 			}
 		}
 		else {
 			$ar->reject("No system policy specified for $action", "You need to update the service settings to specify a policy result for $action");
-		}
-		if($action == "update update"){
-			return $this->updateUpdate($context[0], $context[1], $ar);
 		}
 		return $ar;
 	}
 
 	/**
 	 * Updates to updates are special and can be processed generically ...
-	 * @param ldoUpdate $orig the original update object
-	 * @param ldoUpdate $upd the modified update object
+	 * @param array $obj [original update object, the modified update object] 
 	 * @param DacuraResult $ar the result object that this result will be added to
 	 */
-	function updateUpdate($context){
+	function updateUpdate($obj){
 		$orig = $context[0];
 		$upd = $context[1];
 		if($orig->is_accept() && $orig->to_version() && ($orig->to_version() != $orig->original->latest_version)){
 			//old published version - disallow
-			return $ar->failure(400, "Illegal Update", "Old updates that have been accepted cannot be changed.");
+			return $this->failure_result("Old updates that have been accepted cannot be changed.", 403);
 		}
 		elseif($upd->published() && $upd->to_version()){
 			if($upd->to_version() != $upd->original->latest_version){
-				return $ar->failure(400, "Illegal Update", "Updates can only be enacted against the latest version.");
+				return $this->failure_result("Updates can only be enacted against the latest version.", 403);
 			}
 		}
-		return $ar->accept();
+		return true;
 	}
 
 	/**

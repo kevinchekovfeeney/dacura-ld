@@ -148,8 +148,10 @@ function submitRaw(obj, result, pconf, test){
 	dacura.ld.update("<?=$params['id']?>", obj, result, pconf, test);
 }
 
-function showUpdateSuccess(data){
-	jpr(data);
+function showUpdateSuccess(data, pconf){
+	//jpr(data);
+	var x = new LDResult(data, pconf);
+	x.show();
 }
 
 function drawVersionHeader(data){
@@ -197,8 +199,7 @@ function drawLDO(data){
 		"dtsettings": <?=$params['updates_datatable']?>
 	}, data.updates);		
 	dacura.system.styleJSONLD("td.rawjson");	
-	dacura.ld.viewer.init("show-ldo", "view", data.format, data.options);
-	dacura.ld.viewer.draw(data);
+	dacura.ld.viewer.draw(data, "show-ldo");
 	dacura.tool.button.init("testrawedit",  {
 		"screen": "ldo-raw",			
 		"source": "ldoraw",

@@ -31,18 +31,35 @@ class DacuraResult extends DacuraObject {
 	function __construct($action, $test = false){
 		$this->action = $action;
 		$this->test = $test;
+		$this->status("accept");
 	}
 	
+	/**
+	 * Gets / sets the message title
+	 * @param string $x the new title or omit to just get the current title
+	 * @return string the title
+	 */
 	function title($x = false){
 		if($x !== false) $this->msg_title = $x;
 		return $this->msg_title;
 	}
-
+	
+	/**
+	 * Gets / sets the message body
+	 * @param string $x the new body or omit to just get the current body
+	 * @return string the body
+	 */
 	function body($x = false){
 		if($x !== false) $this->msg_body = $x;
 		return $this->msg_body;
 	}
 	
+	/**
+	 * Sets the message title and body 
+	 * @param string $tit the message title 
+	 * @param [string] $body the body
+	 * @return DacuraResult $this
+	 */
 	function msg($tit, $body = false){
 		$this->title($tit);
 		if($body !== false){
@@ -51,46 +68,6 @@ class DacuraResult extends DacuraObject {
 		return $this;
 	}
 	
-	function forAPI($format, $options, $srvr){
-		$apiobj = array("status" => $this->status(), "test" => $this->test);
-		if($this->msg_title || $this->msg_body){
-			if($this->msg_title && $this->msg_body){
-				$apiobj['message'] = array("title" => $this->msg_title, "body" => $this->msg_body);
-			}
-			elseif($this->msg_title){
-				$apiobj['message'] = $this->msg_title;
-			} 
-			else {
-				$apiobj['message'] = $this->msg_body;
-			}
-		}
-		if(count($this->errors) > 0){
-			$apiobj['errors'] = $this->errors;
-		}
-		if(count($this->warnings) > 0){
-			$apiobj['warnings'] = $this->warnings;
-		}
-		if($this->result){
-			if(is_object($this->result) && method_exists($this->result, "display")){
-				if($this->result->display($format, $options, $srvr)){
-					$apiobj['result'] = $this->result->forAPI($format, $options);
-				}
-				else {
-					$apiobj['status'] = 'reject';
-					$apiobj['message'] = array("title" => "Failed to create $format display for ".$this->result->ldtype." ".$this->result->id, "body" => $this->result->errcode . ": ".$this->result->errmsg);
-				}
-			}
-			else {
-				$apiobj['result'] = $this->result;
-			}
-		}
-		foreach($this->graphs as $gid => $gr){
-			if(isset($options['show_'.$gid.'_triples']) && $options['show_'.$gid.'_triples']){
-				$apiobj['graph_'.$gid] = $gr->forAPI($format, $options, $srvr);
-			}
-		}
-		return $apiobj;
-	}
 	
 	/**
 	 * Returns true if there are no errors encountered
@@ -100,6 +77,12 @@ class DacuraResult extends DacuraObject {
 		return !($this->errcode > 0);
 	}
 	
+	/**
+	 * Loads a new error into the error list as an RVO object
+	 * @param string $type - the RVO violation type of the error
+	 * @param array $args - the extra arguments to populate the error
+	 * @return RVO the rvo violation object. 
+	 */
 	function error($type, $args){
 		$err = RVO::loadViolation($type, $args);
 		if($err){
@@ -108,13 +91,18 @@ class DacuraResult extends DacuraObject {
 		return $err;				
 	}
 	
+	/**
+	 * Loads a new warning into the warning list as an RVO object
+	 * @param string $type - the RVO violation type of the error
+	 * @param array $args - the extra arguments to populate the error
+	 * @return RVO the rvo violation object.
+	 */
 	function warning($type, $args){
 		$err = RVO::loadViolation($type, $args);
 		if($err){
 			$this->warnings[] = $err;
 		}
 		return $err;
-		
 	}
 
 	/**
@@ -128,6 +116,12 @@ class DacuraResult extends DacuraObject {
 		$this->warnings[] = new SystemWarning($action, $prompt, $txt);
 	}	
 
+	/**
+	 * Set the result messages for a warning
+	 * @param unknown $action
+	 * @param unknown $prompt
+	 * @param unknown $txt
+	 */
 	function setWarning($action, $prompt, $txt){
 		$this->action = $action;
 		$this->msg_body = $txt;
@@ -220,6 +214,11 @@ class DacuraResult extends DacuraObject {
 		}
 		return $this;
 	}
+
+	function set_result($obj){
+		$this->result = $obj;
+		return $this;
+	}
 	
 	/**
 	 * Adds a sub-result to this result
@@ -233,73 +232,70 @@ class DacuraResult extends DacuraObject {
 		if($chain && is_object($sub)){
 			if($sub->errors) $this->errors = array_merge($this->errors, $sub->errors);
 			if($sub->warnings) $this->warnings = array_merge($this->warnings, $sub->warnings);
+			if($sub->graphs) $this->graphs = array_merge($this->graphs, $sub->graphs);
+			if($sub->result && !$this->result) $this->result = $sub->result;
 		}
 		switch($sub->status()) {
 			case "reject" :
 				if($sub->is_error()){
-					$this->addError($sub->errcode, $sub->action, $sub->msg_title, $sub->msg_body);
 					if(!$this->is_error()){
 						$this->errcode = $sub->errcode;
-						$this->msg_title = "Error in ".$sub->action;						
+						$this->msg_title = $sub->msg_title;//"Error in ".$sub->action;
+						$this->msg_body = $sub->msg_body;						
+					}
+					else {
+						$this->addError($sub->errcode, $sub->action, $sub->msg_title, $sub->msg_body);						
 					}
 				}
-				else { //if the sub is already in reject state, we save details of second reject
-					$this->addError(200, $sub->action, $sub->msg_title, $sub->msg_body);
+				else { 
 					if(!$this->is_reject()){
-						$this->msg_title = "Rejected by ".$sub->action;
+						$this->msg_title = $sub->msg_title;//"Error in ".$sub->action;
+						$this->msg_body = $sub->msg_body;						
+					}
+					else {
+						//if the result is already in reject state, we save details of second reject
+						$this->addError(200, $sub->action, $sub->msg_title, $sub->msg_body);
 					}
 				}
 				$this->status("reject");
 			break;
 			case "pending" :
-				$this->addWarning($sub->action, $sub->msg_title." requires approval.", $sub->msg_body);
 				if($this->is_accept()){
 					$this->status("pending");
-					$this->msg_title = $sub->action . " requires approval";
+					$this->msg_title = $sub->msg_title;
+					$this->msg_body = $sub->msg_body;
+				}
+				else {
+					$this->addWarning($sub->action, $sub->msg_title, $sub->msg_body);						
 				}
 			break;
 			case "accept" :
-				if($this->is_accept()){
-					$this->status("accept");
+				if(!$this->msg_title && $sub->msg_title){
+					$this->msg_title = $sub->msg_title;
 				}
-			break;
+				if(!$this->msg_body && $sub->msg_body){
+					$this->msg_body = $sub->msg_body;
+				}
+				break;
 		}
 	}
 		
-	function set_result($obj){
-		$this->result = $obj;
-		return $this;
-	}
-	
-
-	function is_pending(){
-		return ($this->status() == "pending");
-	}
-	
-	function is_accept(){
-		return ($this->status() == "accept" or !$this->status());
-	}
-	
-	function is_reject(){
-		return ($this->status() == "reject");
-	}
-	
-	function is_error(){
-		return $this->errcode > 0;
-	}
-	
-	function is_confirm(){
-		return $this->status() == "confirm";
-	}
-	
-	function addGraphResult($gid, $gu, $hypo = false){
+	/**
+	 * Adds a graph test result to this result - 
+	 * 
+	 * to support multiple different graph tests being reported in a single result
+	 * @param string $gid - the id of the graph result (dqs|ld|meta|update)
+	 * @param GraphResult $gu the graph result to be added to this one
+	 * @param boolean $hypo - true if this is just a hypotethical test result, not an actual update
+	 */
+	function addGraphResult($gid, GraphResult $gu, $hypo = false){
 		$gu->setHypothetical($hypo);
 		$action = "$gid sgraph result";
 		if(!$hypo){
 			$this->add($gu);
 		}
-		elseif($gu->is_reject()) {
-			$this->addWarning("$gid graph", $gu->msg_title, $gu->msg_body);
+		elseif($gu->is_reject()) { //graph errors and warnings are copied into the warnings of this result
+			$this->addWarning($gu->action, $gu->msg_title, $gu->msg_body);
 			foreach($gu->errors as $err){
 				$this->warnings[] = $err;
 			}
@@ -307,9 +303,7 @@ class DacuraResult extends DacuraObject {
 				$this->warnings = array_merge($this->warnings, $gu->warnings);
 			}
 		}
-		if(!isset($this->graphs[$gid])){
-			$this->graphs[$gid] = $gu;//only one result per graph result				
-		}
+		$this->graphs[$gid] = $gu;//only one result per graph result id				
 	}
 	
 	/**
@@ -322,58 +316,143 @@ class DacuraResult extends DacuraObject {
 	 * @param string $is_hypo true if the graph invocation is hypothetical - does not determine result of request
 	 */
 	function createGraphResult($gid, $status, $itrips = array(), $dtrips = array(), $is_test = false, $is_hypo = false){
-		$gu = new GraphResult("Graph $gid update", $is_test);
-		$gu->status($status);
+		if(count($itrips) == 0 && count($dtrips) == 0){
+			$gu = new GraphResult("No update to $gid graph", $is_test);
+		}
+		else {
+			$gu = new GraphResult("update graph $gid", $is_test);
+			$gu->setInserts($itrips);
+			$gu->setDeletes($dtrips);
+		}
 		$gu->setHypothetical($is_hypo);
-		$gu->setInserts($itrips);
-		$gu->setDeletes($dtrips);
+		$gu->status($status);
 		$this->graphs[$gid] = $gu;
 	}
 	
-	function createMetaResult($metabox, $status, $is_test = false, $is_hypo = false){
-		$this->createGraphResult("meta", $status, array_keys($metabox), array_values($metabox),$is_test, $is_hypo);
-	}
-	
+	/**
+	 * Called to rollback a graph result when things go wrong.
+	 * @param string $gid the graph id
+	 * @param GraphResult $gu the graph result of the undo comment
+	 */
 	function undoGraphResult($gid, $gu){
 		unset($this->graphs["ld"]);
 		$this->graphs[$gid]->addGraphResult($gu);
 	}
 	
-	function setUpdateGraphResult($udelta){
-		$this->update_graph_update = new GraphAnalysisResults("Analysing Updates to Update Graph");
-		$this->update_graph_update->setInserts($udelta['add']);
-		$this->update_graph_update->setDeletes($udelta['del']);
-		//$this->update_graph_update->setMeta($udelta['meta']);
+	/**
+	 * Adds a meta result (detailing updates to object's meta-data) to the result
+	 * @param unknown $metabox - output of LDOUpdate->getMetaUpdates()
+	 * @param string $status - the status of the result (is the update okay)
+	 * @param boolean $is_test - is this a test invocation
+	 * @param boolean $is_hypo - is this a hypothetical result
+	 */
+	function createMetaResult($metabox, $status, $is_test = false, $is_hypo = false){
+		$this->createGraphResult("meta", $status, array_keys($metabox), array_values($metabox),$is_test, $is_hypo);
+	}
+	
+	/**
+	 * Returns a representation of the result for the api. 
+	 * @param string $format one of LDO::$valid_display_formats
+	 * @param array $options - options as submitted to api
+	 * @param LdDacuraServer $srvr
+	 * @return array a json array of the result ready for sending to the client
+	 */
+	function forAPI($format, $options, LdDacuraServer &$srvr){
+		$apiobj = array("status" => $this->status(), "action" => $this->action, "test" => $this->test);
+		if($this->msg_title || $this->msg_body){
+			if($this->msg_title && $this->msg_body){
+				$apiobj['message'] = array("title" => $this->msg_title, "body" => $this->msg_body);
+			}
+			elseif($this->msg_title){
+				$apiobj['message'] = $this->msg_title;
+			}
+			else {
+				$apiobj['message'] = $this->msg_body;
+			}
+		}
+		if(count($this->errors) > 0){
+			$apiobj['errors'] = $this->errors;
+		}
+		if(count($this->warnings) > 0){
+			$apiobj['warnings'] = $this->warnings;
+		}
+		if($this->result){
+			if(is_object($this->result) && method_exists($this->result, "display")){
+				if($this->result->display($format, $options, $srvr)){
+					$apiobj['result'] = $this->result->forAPI($format, $options);
+				}
+				else {
+					$apiobj['status'] = 'reject';
+					$apiobj['message'] = array("title" => "Failed to create $format display for ".$this->result->ldtype." ".$this->result->id, "body" => $this->result->errcode . ": ".$this->result->errmsg);
+				}
+			}
+			else {
+				$apiobj['result'] = $this->result;
+			}
+		}
+		foreach($this->graphs as $gid => $gr){
+			if(isset($options['show_'.$gid.'_triples']) && $options['show_'.$gid.'_triples']){
+				$apiobj['graph_'.$gid] = $gr->forAPI($format, $options, $srvr);
+			}
+		}
+		return $apiobj;
 	}
 }
 
 /**
  * Represents the state changes that are caused by an update to the dacura api for a particular graph....
- * @author chekov
+ * There are 4 graphs considered:
+ * * ld graph - changes to linked data objects
+ * * meta graph - changes to object meta data
+ * * dqs graph - changes to triplestore
+ * * update graph - changes to update store
  *
  */
 class GraphResult extends DacuraResult {
+	/** @var array What has been inserted into the graph */
 	var $inserts = array();
+	/** @var array What has been removed from the graph */
 	var $deletes = array();
+	/** @var boolean if true, this is a hypotethical result which should not cause the overall result to fail */
 	var $hypothetical = false;
 	
+	/** 
+	 * Does this result include changes to the graph (could be just errors, warnings, null)
+	 * @return boolean - true if this graph has changed
+	 */
 	function includesGraphChanges(){
 		return !$this->hypothetical &&
 		(count($this->inserts) > 0 || count($this->deletes) > 0);
 	}
-		
+
+	/**
+	 * Specify that this result is hypothetical 
+	 * @param boolean $ishypo if true the result is hypotethical 
+	 */
 	function setHypothetical($ishypo){
 		$this->hypothetical = $ishypo;
 	}
 	
+	/**
+	 * Specify the set of quads / json / triples that has been inserted into the graph
+	 * @param array $q - quads / json / triples added
+	 */
 	function setInserts($q){
 		$this->inserts = $q;
 	}
 	
+	/**
+	 * Specify the set of quads / json / triples that has been removed from the graph
+	 * @param array $q quads / json / triples removed
+	 */
 	function setDeletes($q){
 		$this->deletes = $q;
 	}
 	
+	/**
+	 * Extends the method to include amalgamation of inserts and deletes from sub-graph result
+	 * @see DacuraResult::addGraphResult()
+	 */
 	function addGraphResult($gid, $other, $hypo = false){
 		parent::addGraphResult($gid, $other, $hypo);
 		$this->inserts = array_merge($this->inserts, $other->inserts);
@@ -382,7 +461,11 @@ class GraphResult extends DacuraResult {
 			$this->hypothetical = true;
 		}
 	}
-		
+
+	/**
+	 * Adds inserts and deletes into api result
+	 * @see DacuraResult::forAPI()
+	 */
 	function forAPI($format, $options, $srvr){
 		$apiobj = parent::forAPI($format, $options, $srvr);
 		if(count($this->inserts) > 0){
@@ -396,10 +479,16 @@ class GraphResult extends DacuraResult {
 	}
 }
 
+/**
+ * Represents the result of a DQS graph update / test
+ *
+ */
 class DQSResult extends GraphResult {
 
 	/**
 	 * Parses the DQS response - an array of name-value error objects - and turns them into RVO objects 
+	 * 
+	 * Adds the violations to the result's errors and warnings and sets the result to reject or accept depending on the contents
 	 * @param $array an array of json name-value objects with the information returned by DQS
 	 */
 	function parseErrors($array){
@@ -431,25 +520,6 @@ class DQSResult extends GraphResult {
 		}
 		return $this->accept();
 	}
-	
 }
 
-/**
- * Simple class representing changes in the object's metadata due to a request.
- * @author chekov
- *
- */
-class MetaResult {
-	var $meta = array();//state changes {variable: [old, new])
-	
-	
-	
-	function setMeta($meta){
-		$this->meta = $meta;
-	}
-	
-	function setMetaChange($var, $oval, $nval){
-		$this->meta[$var] = array($oval, $nval);
-	}
-	
-}
+

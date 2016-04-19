@@ -1235,3 +1235,11 @@ function nvArrayToOptions(nv, selected){
 function jpr(obj){
 	alert(JSON.stringify(obj));
 }
+
+/**
+ * @function ucfirst
+ * @summary Upper cases the first character of a string - added to prototype of string object
+*/
+String.prototype.ucfirst = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+}

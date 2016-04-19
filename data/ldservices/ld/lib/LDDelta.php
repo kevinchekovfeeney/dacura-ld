@@ -172,14 +172,8 @@ class LDDelta extends DacuraObject {
 			$this->backward[$p][$id] = $sub->backward;
 			$this->addTriples($sub->triples_added);
 			$this->removeTriples($sub->triples_removed);
-			if($this->gname){
-				$this->triples_updated[$this->gname] = array_merge($this->triples_updated[$this->gname], $sub->triples_updated);
-				$this->triples_overwritten[$this->gname] = array_merge($this->triples_overwritten[$this->gname], $sub->triples_overwritten);		
-			}
-			else {
-				$this->triples_updated = array_merge($this->triples_updated, $sub->triples_updated);
-				$this->triples_overwritten = array_merge($this->triples_overwritten, $sub->triples_overwritten);
-			}
+			$this->triples_updated = array_merge($this->triples_updated, $sub->triples_updated);
+			$this->triples_overwritten = array_merge($this->triples_overwritten, $sub->triples_overwritten);
 			$this->type_changes = array_merge($this->type_changes, $sub->type_changes);
 			$this->bad_links = array_merge($this->bad_links, $sub->bad_links);
 		}

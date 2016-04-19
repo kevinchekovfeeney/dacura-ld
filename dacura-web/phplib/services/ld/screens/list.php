@@ -147,7 +147,8 @@ $(function() {
 
 function createSuccess(data, pconf, msg){
 	//obj = createFormToAPI(data);
-	jpr(data);
+	var x = new LDResult(data, pconf);
+	x.show();
 }
 
 

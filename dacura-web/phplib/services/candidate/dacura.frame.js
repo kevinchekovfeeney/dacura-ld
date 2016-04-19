@@ -263,14 +263,12 @@ dacura.frame.init = function(entity, pconf){
 	// var cls = entity.contents[eqn]['rdf:type'];
 	
 	// DDD This is the wrong way...
-	var eqn = 'http://localhost/dacura/' +
- 		entity.meta.cid + '/' + 'report' + '/' + entity.id;
-
-	/* alert(JSON.stringify(entity,null,4));
-	   alert(eqn);
-	*/
+	//var eqn = 'http://localhost/dacura/' +
+ 	//	entity.meta.cid + '/' + 'report' + '/' + entity.id;
 	
-	var cls = entity.contents.main[eqn]['rdf:type'];
+	//var cls = entity.contents.main[eqn]['rdf:type'];
+	var eqn = dacura.system.pageURL(entity.ldtype, entity.meta.cid) + "/" + entity.id;
+	var cls = entity.meta.type;//[eqn]['rdf:type'];
 	
 	var ajs = dacura.frame.api.getFrame(cls);
 	msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};

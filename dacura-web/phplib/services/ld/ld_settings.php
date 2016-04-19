@@ -1,20 +1,53 @@
 <?php
+/**
+ * Settings for ld service
+ * 
+ * These are inherited by all ld services unless they are explicitly overwritten or unset.  Settings specified here 
+ * can easily cascade inadvertently 
+ */
 $settings = array(
-	"service-button-title" => "Linked Data",
+	/*settings specifically for ld services - not sure if @id might clash with json ld want to be able to bail easily if it does */
 	"demand_id_token" => "@id",
+	"ldo_allow_demand_id" => true,
+	"ldo_mimimum_id_length" => 2,
+	"ldo_maximum_id_length" => 80,
+	"ldo_extra_entropy" => true,
+	/* a {old: new} mapping of urls, which are to apply universally whenever those urls are encountered */
+	//"url_mappings" => false,
+	/* an array of {ns: predicates} describing 'problem' banned predicates */
+	//"problem_predicates" => false,
+	//"structural_predicates" => false,
+	//"prefixes" => false,
+	/* if the graph rejects a new object, to we want to roll it back and let it be pending in the object store? */
 	"rollback_new_to_pending_on_dqs_reject"	=> true,
+	/* if there are updates pending on the current version of an object, we may not want to allow us to roll it back to an older version */
+	"pending_updates_prevent_rollback" => true,
+	/* if dqs rejects an update do we want to save it in the object store as a deferred update? */	
 	"rollback_updates_to_pending_on_dqs_reject" => true,
+	/* if dqs rejects an update due to a clash with a more recent version do we want to save the rejected version to the object store as a deferred update? */	
 	"rollback_updates_to_pending_on_version_reject" => true,
-	"two_tier_schemas" => true,		
+	/* are two tier schemas in operation */
+	"two_tier_schemas" => false,
+	/* should we apply graph tests to objects even when they are unpublished (hypotethical tests). */		
 	"test_unpublished" => true,
+		
+	/* these next two should really be in further down classes....	
+	/* the set of tests that will apply when a create schema request is sent to the dqs */
 	"create_dqs_schema_tests" => array(),
-	"create_dqs_instance_tests" => array(),		
-	"create_options" => array("show_dqs_triples" => 0, 
+	/* the set of tests that will apply when a create instance request is sent to the dqs */	
+	"create_dqs_instance_tests" => array(),	
+	/* default options to be sent to api for create command */
+	"create_options" => array("show_dqs_triples" => 1, 
 			"ns" => 1, "addressable" => 1, "analysis" => 1, 
-			"show_ld_triples" => 0, "fail_on_id_denied" => 1, "show_result" => 0),
+			"show_ld_triples" => 1, "fail_on_id_denied" => 1, "show_result" => 1, "show_meta_triples" => 1
+	),
+	/* default options to be sent to api for update command */
 	"update_options" => array("show_dqs_triples" => 1, "show_ld_triples" => 1, "fail_on_id_denied" => 1, 
-			"show_update_triples" => 1, "show_meta_triples" => 1, "show_result" => 2, 
-			"show_changed" => 1, "show_original" => 1, "ns" => 1, "addressable" => 1),
+			"show_update_triples" => 1, "show_meta_triples" => 1, "show_result" => 1, 
+			"show_changed" => 1, "show_original" => 1, "ns" => 1, "addressable" => 1
+	),
+	//standard service settings
+	"service-button-title" => "Linked Data",
 	"tables" => array(
 		"history" => array("datatable_options" => array(
 			"jQueryUI" => true, "scrollX" => false, "info" => true, "order" => array(0, "desc"),
@@ -47,7 +80,13 @@ $settings = array(
 		"create_button_text" => "Create New LDO",
 		"testcreate_button_text" => "Test Creation",
 		"raw_edit_text" => "Update LDO",
-		"testraw_edit_text" => "Test LDP Update",
+		"testraw_edit_text" => "Test LDO Update",
+		"view_update_contents_intro" => "The contents of the update to the LDO",
+		"view_update_meta_intro" => "The LDO update's meta data",
+		"view_update_analysis_intro" => "The LDO update's analysis",
+		"update_raw_intro_msg" => "The LDO update's raw editing interface",
+		"view_update_after_msg" => "The LDO after the update has taken place",
+		"view_update_before_msg" => "The LDO before the update has taken place",
 	),
 	"create_ldo_fields" => array(
 		"id" => array("label" => "ID", "length" => "short", "help" => "The id of the linked data object - must be all lowercase with no spaces or punctuation. Choose carefully - the id appears in all urls that reference the object and cannot be easily changed!"),

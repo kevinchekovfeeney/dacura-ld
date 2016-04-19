@@ -54,6 +54,7 @@ class LdDacuraServer extends DacuraServer {
 	 */
 	function init($action = false, $object = ""){
 		$this->loadNamespaces();
+		$this->readGraphConfiguration();
 		return parent::init($action, $object);
 	}
 
@@ -61,7 +62,7 @@ class LdDacuraServer extends DacuraServer {
 	 * The ontologies / namespace prefixes available in any context are the universal ontologies (with status = accept) 
 	 * and all the ontologies in the collection
 	 * 
-	 * This function loads the appropriate ontologies into the servers namespace resolver object
+	 * This function loads the appropriate ontologies into the server's namespace resolver object
 	 */
 	function loadNamespaces(){
 		$universal_onts = array(
@@ -83,38 +84,38 @@ class LdDacuraServer extends DacuraServer {
 			}
 		}
 	}
-	
 
 	/**
 	 * Create a new instance of a LDO type
 	 * @param string $type the type of the object
-	 * @param unknown $create_obj the initial skeleton object to be created
-	 * @param unknown $demand_id the id that the client is requesting
-	 * @param unknown $format the format of the input
-	 * @param unknown $options options for creation
+	 * @param array $create_obj the initial object to be created
+	 * @param string $demand_id the id that the client is requesting
+	 * @param string $format the format of the object contents one of LDO::$valid_input_types
+	 * @param array $options options for creation
 	 * @param boolean $test_flag if true do not actually create the object, just simulate it
 	 * @return CreateResult
 	 */
 	function createLDO($type, $create_obj, $demand_id, &$format, $options, $test_flag = false){
-		$cr = new DacuraResult("Creating $type", $test_flag);
+		$cr = new DacuraResult("create $type", $test_flag);
 		if($format && !isset(LDO::$valid_input_formats[$format])){
 			return $cr->failure(400, "Invalid format: $format is not a supported input format");				
 		}
 		$id = $this->getNewLDOLocalID($demand_id, $type);
 		if($demand_id && $demand_id != $id){
+			$reason = $this->errmsg ? $this->errmsg : demandIDInvalid($demand_id, $this->getNewLDOIDRules());
 			if(isset($options['fail_on_id_denied']) && $options['fail_on_id_denied']){
-				return $cr->failure(400, "Failed to allocate requested id ".htmlspecialchars($demand_id)." ".$this->errmsg);
+				return $cr->failure(400, "Failed to allocate requested id", $reason);
 			}
-			$this->addIDAllocationWarning($cr, $type, $test_flag, $id);
+			$this->addIDAllocationWarning($cr, $type, $test_flag, $id, $reason);
 		}		
 		if(!($nldo = $this->createNewLDObject($id, $type, $this->cid()))){
 			return $cr->failure($this->errcode, "Request Create Error", "Failed to create $type object ".$this->errmsg);
 		}
-		$nldo->setContext($this->cid());
-		$nldo->setNamespaces($this->nsres);
-		$rules = $this->getNewLDOContentRules($nldo);
-		if(!($format = $nldo->loadNewObjectFromAPI($create_obj, $format, $options, $rules, $this))){
-			return $cr->failure($nldo->errcode, "Protocol Error", "New $type object sent to API had formatting errors. ".$nldo->errmsg);
+		if(!($format = $nldo->loadNewObjectFromAPI($create_obj, $format, $options, $this, "create", "import"))){
+			return $cr->failure($nldo->errcode, "Communication Error", "New $type object sent to API had formatting errors. ".$nldo->errmsg);
+		}
+		if(!($nldo->validate("create", $this))){
+			return $cr->failure($nldo->errcode, "Linked Data Format Error", "New $type sent to API had formatting errors. ".$nldo->errmsg);
 		}
 		$cr->add($this->policy->getPolicyDecision("create", $nldo));
 		if($cr->is_reject()){
@@ -154,9 +155,13 @@ class LdDacuraServer extends DacuraServer {
 		if(isset($options['show_ld_triples']) && $options['show_ld_triples']){
 			$cr->createGraphResult("ld", $cr->status(), $nldo->triples(), array(), $test_flag, $dont_publish);
 		}
+		if(isset($options['show_meta_triples']) && $options['show_meta_triples']){
+			$mupdates = array_merge($nldo->meta, $nldo->getPropertiesAsArray());
+			$cr->createGraphResult("meta", $cr->status(), $mupdates, array(), $test_flag, $dont_publish);
+		}
 		if(!$test_flag && !$this->dbman->createLDO($nldo, $type)){
 			$disaster = new DacuraResult("Database Synchronisation");
-			$disaster->failure($this->dbman->errcode, "Internal Error", "Failed to create database candidate record ". $this->dbman->errmsg);
+			$disaster->failure($this->dbman->errcode, "Internal Error", "Failed to create database ldo record ". $this->dbman->errmsg);
 			$cr->add($disaster);
 			if($cr->includesGraphChanges("dqs")){
 				$recovery = $this->objectDeleted($nldo);
@@ -171,6 +176,9 @@ class LdDacuraServer extends DacuraServer {
 				$cr->set_result($nldo->cwurl);				
 			}
 		}
+		if($cr->is_accept() && !$test_flag){
+			$cr->msg(ucfirst($type)." with id $nldo->id and url <a href='$nldo->cwurl'>$nldo->cwurl</a> created");
+		}
 		return $cr;
 	}
 	
@@ -181,8 +189,8 @@ class LdDacuraServer extends DacuraServer {
 	 * @param boolean $test_flag - if true it is only a test create
 	 * @param string $id - the randomly generated Id that will be used. 
 	 */
-	function addIDAllocationWarning(&$ar, $type, $test_flag, $id){
-		$txt = "Requested ID could not be granted (".$this->errmsg.").";
+	function addIDAllocationWarning(&$ar, $type, $test_flag, $id, $reason){
+		$txt = "Requested ID could not be granted ($reason).";
 		$extra = "";
 		if($test_flag){
 			$txt = "An ID will be randomly generated when the $type is created.";
@@ -195,12 +203,16 @@ class LdDacuraServer extends DacuraServer {
 	}
 	
 	/** 
-	 * Called to create a php object of the appropriate type
+	 * Called to create a php object of the appropriate type and intialise it with some things from the server
+	 * 
+	 * Thsi should be the only way in which LDO objects are created. 
 	 * @param string $id the object's id
 	 * @param string $type the object' type
+	 * @param string $cid the object's collection id
 	 * @return an instance of the object 
 	 */
-	function createNewLDObject($id, $type, $cid){
+	function createNewLDObject($id, $type, $cid = false){
+		$cid = $cid ? $cid : $this->cid();
 		$cwbase = $this->durl();
 		$cwbase .= (($cid == "all" || !$cid) ? "" : $cid ."/") ;
 		$cwbase .= $type."/";
@@ -213,6 +225,8 @@ class LdDacuraServer extends DacuraServer {
 		}
 		$ldo->cid = $cid;
 		$ldo->ldtype = $type;
+		$ldo->setLDRules($this);
+		$ldo->setNamespaces($this->nsres);
 		return $ldo;
 	}
 		
@@ -229,24 +243,21 @@ class LdDacuraServer extends DacuraServer {
 		elseif($demand_id && $this->dbman->errcode){
 			return $this->failure_result("Failed to check for duplicate ID ".$this->dbman->errmsg, $this->dbman->errcode);
 		}
-		$rules = $this->getNewLDORules();
-		return genid($demand_id, $rules);
+		return genid($demand_id, $this->getNewLDOIDRules());
 	}
 	
 	/**
-	 * Default rules for processing a new linked data object
-	 * @return array<rules> an array of settings to be passed to linked data processing
+	 * Returns the config settings that are relevant to id generation
+	 * @return array - rules for constraining new ids
 	 */
-	function getNewLDORules(){
-		$x = array();
-		$x["allow_demand_id"] = $this->getServiceSetting("ldo_allow_demand_id", true); 
-		$x["mimimum_id_length"] = $this->getServiceSetting("ldo_mimimum_id_length", 1); 
-		$x["maximum_id_length"] = $this->getServiceSetting("ldo_mimimum_id_length", 80); 
-		$x["extra_entropy"] = $this->getServiceSetting("ldo_extra_entropy", false); 
-		return $x;
+	function getNewLDOIDRules(){
+		$rules = array();
+		$rules["allow_demand_id"] = $this->getServiceSetting("ldo_allow_demand_id", true);
+		$rules["mimimum_id_length"] = $this->getServiceSetting("ldo_minimum_id_length", 2);
+		$rules["maximum_id_length"] = $this->getServiceSetting("ldo_maximum_id_length", 80);
+		$rules["extra_entropy"] = $this->getServiceSetting("ldo_extra_entropy", false);
+		return $rules;
 	}
-	
-	
 	
 	/**
 	 * Return a list of linked data objects 
@@ -299,7 +310,6 @@ class LdDacuraServer extends DacuraServer {
 	}
 	
 	/**
-	/*
 	 * the getLDO version returns a LD object wrapped in an AR object to support direct API access
 	 * also loads things like history and updates -> for UI
 	 * @param string $ldo_id object id
@@ -311,7 +321,6 @@ class LdDacuraServer extends DacuraServer {
 	 */
 	function getLDO($ldo_id, $type, $fragment_id = false, $version = false, $options = array()){
 		$action = "Fetching " . ($fragment_id ? "fragment $fragment_id from " : "");
-		$this->update_type = $type;
 		$action .= "$type $ldo_id". ($version ? " version $version" : "");
 		$dr = new DacuraResult($action);
 		$ldo = $this->loadLDO($ldo_id, $type, $this->cid(), $fragment_id, $version, $options);
@@ -342,7 +351,7 @@ class LdDacuraServer extends DacuraServer {
 		if(!($ldo = $this->createNewLDObject($ldo_id, $type, $cid))){
 			return false;
 		}
-		if(!$this->dbman->loadLDO($ldo, $ldo_id, $type, $cid, $options)){
+		if(!$this->dbman->loadLDO($ldo, $ldo_id, $type, $cid)){
 			return $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
 		}
 		$ldo->deserialise($this);
@@ -353,7 +362,6 @@ class LdDacuraServer extends DacuraServer {
 			$updopts = array("include_all" => true, 'type' => $type, "collectionid" => $this->cid(), "targetid" => $ldo_id);
 			$ldo->updates = $this->getUpdates($updopts);
 		}
-		$ldo->nsres = $this->nsres; 
 		if($version && $ldo->version() > $version){
 			if(!$this->rollBackLDO($ldo, $version)){
 				return false;
@@ -364,19 +372,19 @@ class LdDacuraServer extends DacuraServer {
 		}
 		if($options && isset($options['analysis']) && $options['analysis']){
 			$ldo->analyse();
-		}		
+		}
 		return $ldo;
 	}
 	
 	/**
 	 * Loads an array of historical records about the LDO detailing its previous changes
 	 * 
-	 * @param unknown $oldo the ldo under investigation
+	 * @param LDO $oldo the ldo under investigation
 	 * @param number $from_version what version are we interested in history from
 	 * @param number $to_version what version are we interested in history to
 	 * @return boolean|array 
 	 */
-	function loadHistoricalRecord($oldo, $from_version = 0, $to_version = 1){
+	function loadHistoricalRecord(LDO $oldo, $from_version = 0, $to_version = 1){
 		$ldo = clone $oldo;
 		$histrecord = array(array(
 				'status' => $ldo->status,
@@ -389,7 +397,7 @@ class LdDacuraServer extends DacuraServer {
 			$histrecord[count($histrecord) -1]['forward'] = $old['forward'];
 			$histrecord[count($histrecord) -1]['backward'] = $old['backward'];
 			$back_command = json_decode($old['backward'], true);
-			if(!$ldo->update($back_command, true)){
+			if(!$ldo->update($back_command, "rollback", $ldo->isMultigraphUpdate($back_command))){
 				return $this->failure_result($ldo->errmsg, $ldo->errcode);
 			}
 			$histrecord[count($histrecord) -1]['createtime'] = $old['modtime'];
@@ -413,14 +421,14 @@ class LdDacuraServer extends DacuraServer {
 	 * @param integer $version the version to which it will be rolled back
 	 * @return boolean|LDO - updated ldo is returned, or false on failure
 	 */
-	function rollBackLDO(&$ldo, $version){
+	function rollBackLDO(LDO &$ldo, $version){
 		$history = $this->getLDOHistory($ldo, $version);
 		foreach($history as $i => $old){
 			if($old['from_version'] < $version){
 				continue;
 			}
 			$back_command = json_decode($old['backward'], true);
-			if(!$ldo->update($back_command, true)){
+			if(!$ldo->update($back_command, "rollback", $ldo->isMultigraphUpdate($back_command))){
 				return $this->failure_result($ldo->errmsg, $ldo->errcode);
 			}
 			$ldo->status = isset($ldo->meta['status']) ? $ldo->meta['status'] : $ldo->status;
@@ -453,59 +461,55 @@ class LdDacuraServer extends DacuraServer {
 	/* Same pattern applies for retreiving updates */
 	
 	/**
-	 * Returns a representation of a particular update to a ldo
+	 * Returns a particular ldo update object
 	 * @param string $id update id
 	 * @param array $options options array
 	 * @return DacuraResult with the result containing the update representation 
 	 */
 	function getUpdate($id, $options = array()){
 		$ar = new DacuraResult("Loading Update Request $id from DB", false);
-		$ur = $this->loadUpdate($id, $options);
+		$ur = $this->loadUpdate($id, "view");
 		if(!$ur){
 			return $ar->failure($this->errcode, "Failed to load Update $id", $this->errmsg);
 		}
-		$ar->add($this->getPolicyDecision("view update", $ur));
+		$ar->add($this->policy->getPolicyDecision("view update", $ur));
 		if($ar->is_accept()){
 			$ar->set_result($ur);
 		}
 		return $ar;
 	}	
 	
-	
-	
 	/**
 	 * Loads update from database and applies it to the required ldo version 
 	 * @param string $id update id
-	 * @param array $options
+	 * @param string $editmode the mode in which this update is being loaded (update, rollback, replace, view)
 	 * @param integer $vfrom the version of the object to apply the update to (default is current version)
 	 * @param integer $vto the version of the object that the update created in the db (for accepted updates)
 	 * @return boolean|LDOUpdate the ldo update object describing the update
 	 */
-	function loadUpdate($id, $options = array(), $vfrom = false, $vto = false){
-		$eur = $this->dbman->loadLDOUpdateRequest($id, $options);
+	function loadUpdate($id, $editmode, $vfrom = false, $vto = false){
+		if(!($eur = $this->dbman->loadLDOUpdateRequest($id))){
+			return $this->failure_result("Failed to load update request id: ".$this->dbman->errmsg, $this->dbman->errcode);
+		}
 		$vto = $vto ? $vto : $eur->to_version();
 		$vfrom = $vfrom ? $vfrom : $eur->from_version();
-		$orig = $this->loadLDO($eur->targetid, $eur->type, $eur->cid, $eur->did, false, $vfrom, $options);
-		if(!$orig){
-			return $this->failure_result("Failed to load Update $id - could not load original " .$this->errmsg, $this->errcode);
+		if(!($orig = $this->loadLDO($eur->targetid, $eur->type, $eur->cid, false, $vfrom))){
+			return $this->failure_result("Could not load original LDO: " .$this->errmsg, $this->errcode);
 		}
-		$eur->setOriginal($orig);
-		$changed = false;
-		if($vto > 0){
-			$changed = $this->loadLDO($eur->targetid, $eur->type, $eur->cid, $eur->did, false, $vto, $options);
-			if(!$changed){
-				return $this->failure_result("Loading of $this->ldo_type update $id failed - could not load changed ".$this->errmsg, $this->errcode);
-			}
-		}
-		if(!$eur->calculate($changed)){
+		if(!$eur->calculate($orig)){
 			return $this->failure_result($eur->errmsg, $eur->errcode);
 		}
 		return $eur;
 	}
 	
+	/* 
+	 * The next three functions must be overwritten by derived classes that want to provide graph-testing 
+	 * into their publication pipeline
+	 */
+	
 	/**
-	 * Called to trigger any necessary DQS tests when a new object is published (status = accept)
-	 * @param array $nobj the new object to be published
+	 * Called to trigger any necessary Graph interactions when a new object is published (status = accept)
+	 * @param array $nobj the new ldo to be published
 	 * @param boolean $test_flag if true, this is just a test, no graph updates will take place
 	 * @return GraphResult
 	 */
@@ -515,7 +519,7 @@ class LdDacuraServer extends DacuraServer {
 	}
 	
 	/**
-	 * Called to trigger any necessary DQS tests when an object is deleted (status = deleted)
+	 * Called to trigger any necessary Graph interactoins when an object is deleted (status != accept)
 	 * @param array $nobj the object to be deleted
 	 * @param boolean $test_flag if true, this is just a test, no graph updates will take place
 	 * @return GraphResult
@@ -541,8 +545,8 @@ class LdDacuraServer extends DacuraServer {
 	 * @param string $is_test true if this is just a test
 	 */
 	function undoLDOUpdate(LDOUpdate $uldo, $is_test = false){
-		$ar = new GraphResult("rolling back update $uldo->id to ldo ".$uldo->original->id." (test: $is_test)");
-		return $ar->accept();		
+		$uldo->flip();
+		return $this->objectUpdated($uldo, $is_test);		
 	}
 
 	/**
@@ -555,8 +559,9 @@ class LdDacuraServer extends DacuraServer {
 	 * @return DacuraResult containing information on the outcome of the effort
 	 */
 	function updatePublishedUpdate(LDOUpdate $uldoa, LDOUpdate $uldob, $is_test = false){
-		$ar = new GraphResult("update update $uldoa->id to ldo ".$uldoa->original->id." (test: $is_test)");
-		return $ar->accept();		
+		$uldob->original = $uldoa->changed;
+		$uldob->calculateDelta();
+		return $this->objectUpdated($uldob, $is_test);
 	}
 	
 	/**
@@ -565,15 +570,17 @@ class LdDacuraServer extends DacuraServer {
 	 * @param string $fragment_id the particular node id within the ldo that is being updated
 	 * @param string $ldo_type the ld type of the ldo
 	 * @param array $update_obj the contents of the update 
+	 * @param array $update_meta meta-data about the update itself
 	 * @param string $format the format of the contents (if known)
 	 * @param string $editmode is this an update or a replace...
+	 * @param number $version the version number that is being updated
 	 * @param array $options options array 
 	 * @param boolean $test_flag if true, this is just a test
 	 * @return DacuraResult
 	 */
-	function updateLDO($target_id, $fragment_id, $ldo_type, $update_obj, $format, $editmode, $version, $options, $test_flag){
+	function updateLDO($target_id, $fragment_id, $ldo_type, $update_obj, $update_meta, $format, $editmode, $version, $options, $test_flag){
 		$ar = new DacuraResult("Update $target_id", $test_flag);
-		$oldo = $this->loadLDO($target_id, $ldo_type, $this->cid(), $fragment_id, $version);
+		$oldo = $this->loadLDO($target_id, $ldo_type, $this->cid(), false, $version);
 		if(!$oldo){
 			if($this->errcode){
 				return $ar->failure($this->errcode, "Failed to load $target_id", $this->errmsg);
@@ -582,26 +589,20 @@ class LdDacuraServer extends DacuraServer {
 				return $ar->failure(404, "No such $this->ldo_type", "$target_id does not exist.");
 			}
 		}
-		$oldo->setNamespaces($this->nsres);
-		if(!($nldo = $this->createNewLDObject($target_id, $ldo_type, $this->cid()))){
+		if(!($nldo = $this->createNewLDObject($target_id, $ldo_type, $oldo->cid()))){
 			return $ar->failure($this->errcode, "Request Create Error", "Failed to create $ldo_type object ".$this->errmsg);
 		}
-		$nldo->setContext($oldo->cid());
-		$nldo->setNamespaces($this->nsres);
-		if($editmode == "update"){
-			$rules = $this->getUpdateLDOContentRules($nldo);				
+		if($fragment_id){
+			$nldo->fragment_id = $fragment_id;
 		}
-		else {
-			$rules = $this->getReplaceLDOContentRules($nldo);
-		}
-		if(!($format = $nldo->loadNewObjectFromAPI($update_obj, $format, $options, $rules, $this))){
+		if(!($format = $nldo->loadNewObjectFromAPI($update_obj, $format, $options, $this, $editmode))){
 			return $ar->failure($nldo->errcode, "Protocol Error", "New $ldo_type object sent to API had formatting errors. ".$nldo->errmsg);
 		}
-		$ldoupdate = new LDOUpdate(false, $oldo);
-		if(!$ldoupdate->isLegalContext($this->cid())){
-			return $ar->failure(403, "Access Denied", "Cannot update $oldo->id through context ".$this->cid());
+		if(!($nldo->validate($editmode, $this))){
+			return $ar->failure($nldo->errcode, "Format Error", "$ldo_type $editmode sent to API had formatting errors. ".$nldo->errmsg);				
 		}
-		elseif(!$ldoupdate->apply($nldo, $editmode, $rules, $this)){
+		$ldoupdate = new LDOUpdate(false, $oldo);
+		if(!$ldoupdate->loadFromAPI($nldo, $update_meta, $editmode, $this)){
 			return $ar->failure($ldoupdate->errcode, "Protocol Error", "Failed to load the update command from the API. ". $ldoupdate->errmsg);
 		}
 		if($ldoupdate->nodelta()){
@@ -611,16 +612,16 @@ class LdDacuraServer extends DacuraServer {
 		if($ar->is_reject()){
 			$ldoupdate->status($ar->status());
 			if($this->policy->storeRejected("update", $ldoupdate) && !$test_flag){
-				if(!$this->dbman->updateLDO($ldoupdate, $ar->status())){
+				if(!$this->dbman->updateLDO($ldoupdate)){
 					$ar->addError($this->dbman->errcode, "Usage Monitoring", "Failed to store copy of rejected update.", $this->dbman->errmsg);
 				}
 			}
 			return $ar;
 		}
-		$this->checkUpdate($ar, $ldoupdate, $options, $rules, $test_flag);
+		$this->checkUpdate($ar, $ldoupdate, $options, $test_flag);
 		if(($ar->is_accept() or $ar->is_pending()) && !$test_flag){
-			if(!$this->dbman->updateLDO($ldoupdate, $ar->status())){
-				$disaster = new AnalysisResults("Database Synchronisation");
+			if(!$this->dbman->updateLDO($ldoupdate)){
+				$disaster = new DacuraResult("Database Synchronisation");
 				$disaster->failure($this->dbman->errcode, "Internal Error", "Failed to update database candidate record ". $this->dbman->errmsg);
 				$ar->add($disaster);
 				$this->rollBackUpdate($ar, $ldoupdate);
@@ -637,63 +638,29 @@ class LdDacuraServer extends DacuraServer {
 		return $ar;
 	}
 	
-
 	/**
-	 * Default rules for processing content of new linked data objects
-	 * 
-	 * This is set very liberal to allow the ld editor / server to do whatever it likes.
-	 * 
-	 * Further restrictions apply in further down the line classes
-	 * @param $nldo LDO - the linked data object being created
-	 * @return array<rules> an array of settings to be passed to linked data processing
+	 * Deletes an LDO by creating the appropriate update commands and calling the UpdateLDO function
+	 * @param string $target_id id of the ldo to be deleted
+	 * @param string $fragment_id the fragment id (for a fragment delete)
+	 * @param string $ldo_type the ld type of the object 
+	 * @param sring $format the format that the results should be returned in 
+	 * @param array $options array of options which will be govern returned data
+	 * @param boolean $test_flag if true this is only a test invocation
+	 * @return DacuraResult
 	 */
-	function getNewLDOContentRules($nldo){
-		$x = array();
-		$x['cwurl'] = $nldo->cwurl;
-		$x['id_generator'] = array($nldo, $this->getServiceSetting("internal_generate_id", "generateInternalID"));
-		$x["allow_demand_id"] = $this->getServiceSetting("internal_allow_demand_id", true);
-		$x["mimimum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 1);
-		$x["maximum_id_length"] = $this->getServiceSetting("internal_mimimum_id_length", 80);
-		$x["extra_entropy"] = $this->getServiceSetting("internal_extra_entropy", false);
-		$x["expand_embedded_objects"] = $this->getServiceSetting("expand_embedded_objects", true);
-		$x["replace_blank_ids"] = $this->getServiceSetting("replace_blank_ids", false);
-		$x["require_blank_nodes"] = $this->getServiceSetting("require_blank_nodes", false);
-		$x["forbid_blank_nodes"] = $this->getServiceSetting("forbid_blank_nodes", false);
-		$x["allow_blanknode_predicates"] = $this->getServiceSetting("allow_blanknode_predicates", false);
-		$x["require_subject_urls"] = $this->getServiceSetting("require_subject_urls", false);
-		$x["require_predicate_urls"] = $this->getServiceSetting("require_predicate_urls", true);
-		$x["forbid_unknown_prefixes"] = $this->getServiceSetting("forbid_unknown_prefixes", true);
-		$x["unique_subject_ids"] = $this->getServiceSetting("unique_subject_ids", false);
-		$x["allow_invalid_ld"] = $this->getServiceSetting("allow_invalid_ld", false);
-		$x["require_object_literals"] = $this->getServiceSetting("require_object_literals", true);
-		$x["regularise_object_literals"] = $this->getServiceSetting("regularise_object_literals", true);
-		$x["forbid_empty"] = $this->getServiceSetting("forbid_empty", true);
-		$x["allow_arbitrary_metadata"] = $this->getServiceSetting("allow_arbitrary_metadata", false);
-		$x["set_id_allowed"] = $this->getServiceSetting("set_id_allowed", true);
-		$x["fail_on_bad_update"] = $this->getServiceSetting("fail_on_bad_update", true);
-		$x["fail_on_bad_deletes"] = $this->getServiceSetting("fail_on_bad_deletes", true);
-		$x['default_graph_url'] = $this->getDefaultGraphURL();
-		$x['load_dependencies'] = $this->getServiceSetting("load_dependencies", true);
-		return $x;
-	}
-	
-	
-	
-	function getUpdateLDOContentRules($nldo){
-		$x = $this->getNewLDOContentRules($nldo);
-		$x["forbid_empty"] = false;
-		$x["suppress_meta_checks"] = true;
-		return $x;			
-	}
-	
-	function getReplaceLDOContentRules($nldo){
-		$x = $this->getNewLDOContentRules($nldo);
-		$x["forbid_empty"] = true;
-		return $x;	
-	}
+	function deleteLDO($target_id, $fragment_id, $ldo_type, $format, $options, $test_flag = false){
+		if($fragment_id){
+			$update_obj = array($fragment_id => array());
+			return $this->updateLDO($target_id, $fragment_id, $ldo_type, $update_obj, array(), "json", "update", 0, $options, $test_flag);		
+		}
+		else {
+			$update_obj = array("meta" => array("status" => "deleted"));
+			return $this->updateLDO($target_id, $fragment_id, $ldo_type, $update_obj, array(), $format, "delete", 0, $options, $test_flag);
+		}	
+	}		
 	
 	/**
-	 * Called to roll back an update because of db failure 
+	 * Called to roll back a graph update because of db failure 
 	 * @param DacuraResult $ar the dacura result message containing the information about the changes to be rolled back
 	 * @param LDOUpdate $uldo the update object to be rolled back
 	 */
@@ -711,7 +678,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param array $options the options for checking
 	 * @param boolean $test_flag if true, this is just a test
 	 */
-	function checkUpdate(DacuraResult &$ar, LDOUpdate &$uldo, $options = array(), $rules = array(), $test_flag = false){
+	function checkUpdate(DacuraResult &$ar, LDOUpdate &$uldo, $options = array(), $test_flag = false){
 		//check version information
 		if(!$uldo->original->isLatestVersion()){
 			if($ar->is_accept() && $this->getServiceSetting("rollback_updates_to_pending_on_version_reject")){
@@ -722,7 +689,7 @@ class LdDacuraServer extends DacuraServer {
 				return $ar->failure(400, "Update version clash", "The object you are updating has been updated to version ".$uldo->original->latest_version." since the version that you saw (".$uldo->original->version.")");
 			}			
 		}
-		if($ar->is_accept() or $ar->is_confirm()){
+		if($ar->is_accept()){
 			//unless the status of the candidate was accept, before or after, the change to the report graph is hypothetical
 			$hypo = !($uldo->changedPublished() || $uldo->originalPublished());
 			if($hypo && (!$this->getServiceSetting("test_unpublished", true))){
@@ -754,8 +721,8 @@ class LdDacuraServer extends DacuraServer {
 			$ar->createGraphResult("update", $ar->status(), $uldo->forward, $uldo->backward, $test_flag, $test_flag || $ar->is_reject());
 		}
 		if(isset($options['show_ld_triples']) && $options['show_ld_triples']){
-			$delta = $uldo->compareLDTriples($rules);
-			$ar->createGraphResult("ld", $ar->status(), $delta->triples_added, $delta->triples_removed, $test_flag, $test_flag || $ar->is_reject());
+			$delta = $uldo->compareLDTriples();
+			$ar->createGraphResult("ld", $ar->status(), $delta->getInsertQuads(), $delta->getDeleteQuads(), $test_flag, $test_flag || $ar->is_reject());
 		}
 	}
 	
@@ -766,7 +733,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param boolean $testflag - true if this is just a test
 	 * @return GraphResult
 	 */
-	function publishUpdateToGraph($uldo, $decision, $testflag ){
+	function publishUpdateToGraph(LDOUpdate $uldo, $decision, $testflag ){
 		if($uldo->bothPublished()){
 			$gu = $this->objectUpdated($uldo, $testflag );
 		}
@@ -790,7 +757,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param LDOUpdate $uldo the LDO Update object in question
 	 * @return GraphResult
 	 */
-	function undoUpdatesToGraph($uldo){
+	function undoUpdatesToGraph(LDOUpdate $uldo){
 		if($uldo->bothPublished()){
 			return $this->undoLDOUpdate($uldo, false);
 		}
@@ -810,18 +777,20 @@ class LdDacuraServer extends DacuraServer {
 	 * Generally should be just called to change LDO Update Status during approval
 	 * But supports all changes to updates 
 	 * @param string $id - the id of the update to be updated
-	 * @param array $obj - json object received by api representing update contents
-	 * @param array $meta - json object representing update meta
+	 * @param array $update_obj - json object received by api representing new update contents
+	 * @param array $umeta - json object representing update meta
+	 * @param string $format - format to return the contents
+	 * @param string $editmode - replace|update
 	 * @param array $options - options array 
 	 * @param boolean $test_flag - if true this is only a test
 	 * @return DacuraResult
 	 */
-	function updateUpdate($id, $obj, $meta, $options, $test_flag = false){
-		$ar = new GraphResult("Update $this->update_type $id", $test_flag);
-		if(!$orig_upd = $this->loadUpdate($id)){
+	function updateUpdate($id, $update_obj, $umeta, $format, $editmode, $options, $test_flag = false){
+		$ar = new GraphResult("Update update $id", $test_flag);
+		if(!$orig_upd = $this->loadUpdate($id, $editmode)){
 			return $ar->failure($this->errcode, "Failed to load Update $id", $this->errmsg);
 		}
-		if(!$new_upd = $this->loadUpdatedUpdate($orig_upd, $obj, $meta, $options)){
+		if(!$new_upd = $this->loadUpdatedUpdate($orig_upd, $update_obj, $umeta, $format, $editmode, $options)){
 			return $ar->failure($this->errcode, "Failed to load updated version of $id", $this->errmsg);
 		}
 		if($new_upd->sameAs($orig_upd)){
@@ -833,7 +802,7 @@ class LdDacuraServer extends DacuraServer {
 		if($new_upd->nodelta()){
 			return $ar->reject("No changes", "The submitted version removes all changes from the update - it has no effect.");
 		}
-		$ar->add($this->getPolicyDecision("update update", array($orig_upd, $new_upd)));
+		$ar->add($this->policy->getPolicyDecision("update update", array($orig_upd, $new_upd)));
 		if($ar->is_reject()){
 			return $ar;
 		}
@@ -860,51 +829,61 @@ class LdDacuraServer extends DacuraServer {
 				}
 			}
 		}
-		$format = isset($options['format']) ? $options['format'] : false;
-		$flags = isset($options['options']) ? $options['options'] : array();
-		$version = isset($options['version']) ? $options['version'] : false;
-		$ar->set_result($new_upd->showUpdateResult($format, $flags, $version, $this));
+		if(isset($options['show_result']) && $options['show_result']){
+			if($options['show_result'] == 1){
+				$ar->set_result($new_upd);
+			}
+			else {
+				$ar->set_result($new_upd->changed);
+			}
+		}
 		return $ar;
+	}
+	
+	/**
+	 * Deletes an LDO Update by creating the appropriate update command and calling the updateUpdate function
+	 * @param string $updid update to be deleted
+	 * @param string $format the format to return the results in.
+	 * @param array $options the options array (for update)
+	 * @param boolean $test_flag - if true, this is only a test.
+	 * @return DacuraResult
+	 */
+	function deleteUpdate($updid, $format, $options, $test_flag = false){
+		$umeta = array("status" => "deleted");
+		return $this->updateUpdate($upid, false, $umeta, "json", "delete", $options, $test_flag);
 	}
 	
 	/**
 	 * Loads an update LDO Update from the database
 	 * @param LDOUpdate $orig_upd the original update object
 	 * @param array $obj json update object contents received from api
-	 * @param array $meta json update meta received from api
+	 * @param array $umeta json update meta received from api
 	 * @param array $options options array
 	 * @return boolean|LDOUpdate update objecct 
 	 */
-	function loadUpdatedUpdate($orig_upd, $obj, $meta, $options = array()){
-		if(isset($meta['from_version']) && $meta['from_version'] && $meta['from_version'] != $orig_upd->original->get_version()){
-			$norig = $this->loadLDO($orig_upd->targetid, $this->update_type, $this->cid(), false, $meta['version']);
+	function loadUpdatedUpdate(LDOUpdate $orig_upd, $update_obj, $umeta, $format, $editmode, $options = array()){
+		if(isset($umeta['from_version']) && $umeta['from_version'] && $umeta['from_version'] != $orig_upd->original->get_version()){
+			$norig = $this->loadLDO($orig_upd->targetid, $orig_upd->ldtype(), $this->cid(), false, $umeta['version']);
 			if(!$norig)	return false;
 		}
 		else {
 			$norig = clone $orig_upd->original;
 		}
-		$ncur = $this->createNewLDOUpdateObject($norig, $this->update_type);
-		$ncur->to_version = $orig_upd->to_version;
-		if(isset($meta['status'])){
-			$ncur->status($meta['status']);
+		if(!($nldo = $this->createNewLDObject($orig_upd->targetid, $orig_upd->ldtype(), $norig->cid()))){
+			return false;
 		}
-		else {
-			$ncur->status($orig_upd->status());
+		if(!($format = $nldo->loadNewObjectFromAPI($update_obj, $format, $options, $this, $editmode))){
+			return $this->failure_result("update to update sent to API had formatting errors. ".$nldo->errmsg, $nldo->errcode);
 		}
-		$form = isset($options['format']) ? $options['format'] : "json";
-		/*$opts = array(
-				"demand_id_allowed" => $this->policy->demandIDAllowed("update $this->update_type", $ncur),
-				"force_inserts" => true,
-				"calculate_delta" => true,
-				"validate_delta" => true
-		);*/
-		if(!$ncur->loadFromAPI($obj, $meta, $form, $options)){
-			return $this->failure_result($ncur->errmsg, $ncur->errcode);
+		if(!($nldo->validate($editmode, $this))){
+			return $this->failure_result("$editmode update sent to API had formatting errors. ".$nldo->errmsg, $nldo->errcode);
 		}
-		return $ncur;
+		$ldoupdate = new LDOUpdate($orig_upd->id, $norig);
+		if(!$ldoupdate->loadFromAPI($nldo, $umeta, $editmode, $this)){
+			return $this->failure_result("Failed to load the update command from the API. ". $ldoupdate->errmsg, $ldoupdate->errcode);
+		}
+		return $ldoupdate;
 	}
-	
-	
 	
 	/**
 	 * Checks an update to an update for conformance with rules in place
@@ -915,7 +894,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param boolean $test_flag - if true it is just a test
 	 * @return string - the mode "normal", "live" or "rollback"
 	 */
-	function checkUpdatedUpdate(&$ar, $new_upd, $orig_upd, $options, $test_flag){
+	function checkUpdatedUpdate(DacuraResult &$ar, LDOUpdate $new_upd, LDOUpdate $orig_upd, $options, $test_flag){
 		
 		//3 types of changes can be caused by updates to updates
 		//1. Changes to the update itself (if ar->is_accept() and it is legal...)
@@ -928,33 +907,34 @@ class LdDacuraServer extends DacuraServer {
 		$umode = "normal";
 		$capture_ld = isset($options['show_ld_triples']) && $options['show_ld_triples'];
 		$capture_update = isset($options['show_update_triples']) && $options['show_update_triples'];
-		$capture_meta = isset($options['show_meta_delta']) && $options['show_meta_delta'];
+		$capture_meta = isset($options['show_meta_triples']) && $options['show_meta_triples'];
+		$capture_dqs = isset($options['show_dqs_triples']) && $options['show_dqs_triples'];
 		$test_unpublished = $this->getServiceSetting("test_unpublished", true);
 		
 		$md = $capture_meta ? $meta_delta : false;
 		if($new_upd->published() && $orig_upd->published()){ //live edit
-			if($capture_update){		
-				$ar->setUpdateGraphResult($orig_upd->compare($new_upd));
+			if($capture_update){	
+				$ar->createGraphResult("update", $ar->status(), $new_upd->forward, $new_upd->backward, $test_flag, $test_flag || $ar->is_reject());
 			}
 			if($capture_ld){
 				$trips = $new_upd->deltaAsTriples($orig_upd);
-				$ar->setLDGraphResult($trips['add'], $trips['del'], $chypo, $md);
+				$ar->createGraphResult("ld", $ar->status(), $trips['add'], $trips['del'], $chypo);
 			}
 			$umode = "live";
 		}
 		elseif($new_upd->published()){ //publish new update
 			if($capture_update){
-				$ar->setUpdateGraphResult($orig_upd->compare($new_upd));
+				$ar->createGraphResult("update", $ar->status(), $new_upd->forward, $new_upd->backward, $test_flag, $test_flag || $ar->is_reject());
 			}
 			if($capture_ld){
-				$ar->setLDGraphResult($new_upd->addedLDTriples(), $new_upd->deletedLDTriples(), $chypo, $md);
+				$ar->createGraphResult("ld", $ar->status(), $new_upd->addedLDTriples(), $new_upd->deletedLDTriples(), $chypo);
 			}
 		}
 		elseif($orig_upd->published()){ //unpublish update
 			$umode = "rollback";
-			if(isset($options['pending_updates_prevent_rollback']) && $options['pending_updates_prevent_rollback']){
+			if($this->getServiceSetting('pending_updates_prevent_rollback', false)){
 				//check here to see if there are any pending updates that are hanging off the latest version....
-				if($this->dbman->pendingUpdatesExist($orig_upd->targetid, $this->update_type, $this->cid(), $orig_upd->to_version()) || $this->dbman->errcode){
+				if($this->dbman->pendingUpdatesExist($orig_upd->targetid, $orig_upd->ldtype(), $this->cid(), $orig_upd->to_version()) || $this->dbman->errcode){
 					if($this->dbman->errcode){
 						return $ar->failure($this->dbman->errcode, "Unpublishing of update $orig_upd->id failed", "Failed to check for pending updates to current version of candidate");
 					}
@@ -962,20 +942,20 @@ class LdDacuraServer extends DacuraServer {
 				}
 			}
 			if($capture_update){
-				$ar->setUpdateGraphResult($orig_upd->compare($new_upd));
+				$ar->createGraphResult("update", $ar->status(), $new_upd->forward, $new_upd->backward, $test_flag, $test_flag || $ar->is_reject());
 			}
 			if($capture_ld){
-				$ar->setLDGraphResult($orig_upd->deletedLDTriples(), $orig_upd->addedLDTriples(), $chypo, $md);
+				$ar->createGraphResult("ld", $ar->status(), $orig_upd->deletedQuads(), $orig_upd->addedQuads(), $chypo);
 			}
 		}
 		else { //edit unpublished
 			if($test_unpublished){
 				$chypo = true;
 				if($capture_update){
-					$ar->setUpdateGraphResult($orig_upd->compare($new_upd));
+					$ar->createGraphResult("update", $ar->status(), $new_upd->forward, $new_upd->backward, $test_flag, $test_flag || $ar->is_reject());
 				}
 				if($capture_ld){
-					$ar->setLDGraphResult($new_upd->addedLDTriples(), $new_upd->deletedLDTriples(), $chypo, $md);
+					$ar->createGraphResult("ld", $ar->status(), $new_upd->addedLDTriples(), $new_upd->deletedLDTriples(), $chypo);
 				}
 			}
 		}
@@ -985,7 +965,7 @@ class LdDacuraServer extends DacuraServer {
 		else {
 			$hypo = $chypo || !($new_upd->changedPublished() || $new_upd->originalPublished());
 		}
-		if($test_flag or $ar->is_confirm() or ($hypo and $test_unpublished)){
+		if($test_flag or ($hypo and $test_unpublished)){
 			$gu = $this->testUpdatedUpdate($new_upd, $orig_upd, $umode);
 		}
 		elseif(!$hypo) {
@@ -995,7 +975,7 @@ class LdDacuraServer extends DacuraServer {
 			$gu = new GraphResult("no dqs tests");
 			$gu->accept();
 		}
-		$ar->setGraphResult($gu, $hypo);
+		$ar->addGraphResult("dqs", $gu, $hypo);
 		return $umode;
 	}
 	
@@ -1006,7 +986,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param string $umode update mode - rollback, live, normal
 	 * @return GraphResult
 	 */
-	function testUpdatedUpdate($ncur, $ocur, $umode){
+	function testUpdatedUpdate(LDOUpdate $ncur, LDOUpdate $ocur, $umode){
 		if($umode == "rollback"){
 			return $this->updatedUpdate($ocur, $umode, true);
 		}
@@ -1025,7 +1005,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param string $umode update mode - rollback, live, normal
 	 * @return GraphResult
 	 */
-	function saveUpdatedUpdate($ncur, $ocur, $umode){
+	function saveUpdatedUpdate(LDOUpdate $ncur, LDOUpdate $ocur, $umode){
 		if($umode == "rollback"){
 			return $this->updatedUpdate($ocur, $umode);
 		}
@@ -1044,7 +1024,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param string $testflag
 	 * @return GraphResult
 	 */
-	function updatedUpdate($cur, $umode, $testflag = false){
+	function updatedUpdate(LDOUpdate $cur, $umode, $testflag = false){
 		if($cur->bothPublished()){
 			if($umode == "rollback"){
 				return $this->undoLDOUpdate($cur, $testflag);
@@ -1063,11 +1043,11 @@ class LdDacuraServer extends DacuraServer {
 		}
 		elseif($cur->changedPublished() or $testflag) {
 			if($umode == "rollback"){
-				$dont_publish = ($testflag || $cur->original->status != "accept");
+				$dont_publish = ($testflag || !$cur->originalPublished());
 				return $this->objectPublished($cur->original, $dont_publish);
 			}
 			else {
-				$dont_publish = ($testflag || $cur->changed->status != "accept");
+				$dont_publish = ($testflag || !$cur->changedPublished());
 				return $this->objectPublished($cur->changed, $dont_publish);
 			}
 		}
@@ -1076,89 +1056,67 @@ class LdDacuraServer extends DacuraServer {
 			return $ar;
 		}
 	}
-
-	/**
-	 * Returns the full id of the instance graph associated with the graph id 
-	 * 
-	 * @param string $graphname the local id of the graph
-	 */
-	function getInstanceGraph($graphname){
-		if($this->graphbase) return $this->graphbase ."/". $graphname."_instance";
-		return $graphname."_instance";
-	}
-	
-	/**
-	 * Returns the full id of the schema graph associated with the graph id 
-	 * 
-	 * @param string $graphname the local id of the graph
-	 */
-	function getGraphSchemaGraph($graphname){
-		if($this->graphbase) return $this->graphbase ."/". $graphname."_schema";
-		return $graphname."_schema";
-	}
-
-	/**
-	 * Returns the full id of the schema's schema graph associated with the graph id
-	 *
-	 * @param string $graphname the local id of the graph
-	 */
-	function getSchemaSchemaGraph($graphname){
-		if($this->graphbase) return $this->graphbase ."/". $graphname."_schema_schema";
-		return $graphname."_schema_schema";
-	}
-	
-	
-	/**
-	 * Retrieves pending updates from DB
-	 * @param LDO $ldo linked data object
-	 * @return array|boolean - array of pending updates or false on failure
-	 */
-	function getPendingUpdates($ldo){
-		$updates = $this->dbman->get_relevant_updates($ldo, $this->ldo_type);
-		return $updates ? $updates : $this->failure_result($this->dbman->errmsg, $this->dbman->errcode);
-	}
-	
 	
 	/* Methods for sending results to client */
 
 	/**
-	 * Marshalls a dacura LDO through http
+	 * Marshalls a dacura LDO through http via a result object
 	 * @param DacuraResult $ar
 	 * @param string $format the format for display
-	 * @param string $display a string containing display options
 	 * @param array $options options
-	 * @param integer $version the version to be viewed
 	 * @return boolean true if successfully sent
 	 */
-	function sendRetrievedLDO($ar, $format, $options){
+	function sendRetrievedLDO(DacuraResult $ar, $format, $options){
+		if(!$format) $format = "json";
+		if($ar->is_error() or $ar->is_reject() or $ar->is_pending() or !$ar->result){
+			$this->writeDecision($ar, $options);
+		}
+		else {
+			if(!$this->sendLDO($ar->result, $format, $options)){
+				$ar = new DacuraResult("export ldo");
+				$ar->failure($this->errcode, "Failed to export data to $format ".$this->errmsg);
+				$this->writeDecision($ar, $options);
+			}
+		}
+	}
+
+	/**
+	 * Marshalls a dacura LDO Update through http
+	 * @param DacuraResult $ar
+	 * @param string $format the format for display
+	 * @param array $options options
+	 * @return boolean true if successfully sent
+	 */
+	function sendRetrievedUpdate(DacuraResult $ar, $format, $options){
 		if(!$format) $format = "json";
 		if($ar->is_error() or $ar->is_reject() or $ar->is_pending()){
 			$this->writeDecision($ar, $options);
 		}
 		else {
-			if(!$this->sendLDO($ar->result, $format, $options)){
+			if(!$this->sendUpdate($ar->result, $format, $options)){
 				$ar = new DacuraResult("export ldo");
 				$ar->failure($this->errcode, "Failed to export data to $format", $this->errmsg);
 				$this->writeDecision($ar, $options);
 			}
 		}
 	}
-		
+	
 	
 	/**
 	 * prepares a linked data object for transmission to the client
 	 * @param LDO $ldo linked data object
 	 * @param string $format the format for display
-	 * @param string $display a string containing display options
-	 * @param integer $version the version to be viewed
+	 * @param array $opts options
 	 * @return boolean true if successfully sent
 	 */
 	function sendLDO($ldo, $format, $opts){
 		if(!isset(LDO::$valid_display_formats[$format])){
 			return $this->failure_result("$format is not a valid display type", 400);				
 		}
-		if($ldo->getContentInFormat($format, $opts, $this, "display")){
-			return $this->write_json_result($ldo->forAPI($format, $opts), "Sent the object");
+		if($ldo->getContentInFormat($format, $opts, $this, "display") !== false){
+			$x = $ldo->forAPI($format, $opts);
+			$x['type'] = "LDO";
+			return $this->write_json_result($x, "Sent the object");
 		}
 		else {
 			return $this->failure_result($ldo->errmsg, $ldo->errcode);
@@ -1166,40 +1124,31 @@ class LdDacuraServer extends DacuraServer {
 	}
 	
 	/**
-	 * Marshalls a dacura LDO Update through http
-	 * @param DacuraResult $ar
-	 * @param string $format the format for display
-	 * @param string $display a string containing display options
-	 * @param array $options options
-	 * @param integer $version the version to be viewed
-	 * @return boolean true if successfully sent
-	 */
-	function sendRetrievedUpdate($ar, $format, $options, $version){
-		if($ar->is_error() or $ar->is_reject() or $ar->is_confirm() or $ar->is_pending()){
-			$this->writeDecision($ar, $options);
-		}
-		else {
-			$this->sendUpdate($ar->result, $format, $options, $version);
-		}
-	}
-
-	/**
 	 * prepares LDO Update for transmission over http
 	 * @param DacuraResult $ar
 	 * @param string $format the format for display
-	 * @param string $display a string containing display options
-	 * @param array $osptions options
-	 * @param integer $version the version to be viewed
+	 * @param array $opts options
 	 * @return boolean true if successfully sent
 	 */
-	function sendUpdate($update, $format, $flags, $version = false){
-		$ar = $update->showUpdateResult($format, $flags, $display, $this);
-		return $this->write_json_result($ar, "update ".$update->id." dispatched");		
+	function sendUpdate($update, $format, $opts){
+		if(!isset(LDO::$valid_display_formats[$format])){
+			return $this->failure_result("$format is not a valid display type", 400);				
+		}
+		if($update->getContentInFormat($format, $opts, $this, "display")){
+			$x = $update->forAPI($format, $opts);
+			$x['type'] = "LDOUpdate";
+			return $this->write_json_result($x, "Sent the update");
+		}
+		else {
+			return $this->failure_result($update->errmsg, $update->errcode);
+		}
 	}
 	
 	/**
 	 * Transforms a dacura result object into an appropriate http communication
 	 * @param DacuraResult $ar the result object
+	 * @param string $format the format for display
+ 	 * @param array $options options
 	 * @return boolean true if successfully sent
 	 */
 	function writeDecision(DacuraResult $ar, $format = "json", $options = array()){
@@ -1210,10 +1159,6 @@ class LdDacuraServer extends DacuraServer {
 		elseif($ar->is_reject()){
 			http_response_code(401);
 			$this->logResult(401, $ar->status()." : ".$ar->action);
-		}
-		elseif($ar->is_confirm()){
-			http_response_code(428);
-			$this->logResult(428, $ar->status()." : ".$ar->action);
 		}
 		elseif($ar->is_pending()){
 			http_response_code(202);
@@ -1233,6 +1178,11 @@ class LdDacuraServer extends DacuraServer {
 		}
 	}
 	
+	/**
+	 * Does the system support the given format?
+	 * @param string $format the format?
+	 * @param string $ftype "input" | display only search a particular type for context
+	 */
 	function supportsFormat($format, $ftype = false){
 		if($ftype == "input"){
 			return isset(LDO::$valid_input_formats[$format]);				
@@ -1240,6 +1190,10 @@ class LdDacuraServer extends DacuraServer {
 		return isset(LDO::$valid_display_formats[$format]);
 	}
 	
+	/**
+	 * Retrieve a list of the available mimetypes supported by the system
+	 * @return array - list of mime-types as strings
+	 */
 	function getAvailableMimeTypes(){
 		return array_values(LDO::$format_mimetypes);
 	}
@@ -1253,6 +1207,11 @@ class LdDacuraServer extends DacuraServer {
 		return isset(LDO::$format_mimetypes[$format]) ? LDO::$format_mimetypes[$format] : false;
 	}
 
+	/**
+	 * Turns a mimetype into an internal dacura format id (rdfxml|turtle..) LDO::valid_display_types
+	 * @param string $mtype the mimetype
+	 * @return string|boolean the local id of the format if it exists
+	 */
 	function getFormatForMimeType($mtype){
 		foreach(LDO::$format_mimetypes as $f => $fmtype){
 			if($mtype == $fmtype) return $f;
@@ -1260,7 +1219,14 @@ class LdDacuraServer extends DacuraServer {
 		return false;
 	}
 	
-	
+	/**
+	 * Called to display the content of an LDO directly to the client, without html or any meta-data to clog it up:
+	 * pure linked data
+	 * @param LDO $ldo the LDO to be displayed
+	 * @param string $format the format for it to be displayed in
+	 * @param array $options the options for display
+	 * @return boolean true on success
+	 */
 	function display_content_directly(LDO $ldo, $format, $options){
 		$mime = $this->getMimeTypeForFormat($format);
 		$content = $ldo->getContentInFormat($format, $options, $this, "api");
@@ -1281,6 +1247,8 @@ class LdDacuraServer extends DacuraServer {
 	
 	/**
 	 * Checks to see whether a demand id is valid
+	 * 
+	 * Checks db and policy to ensure that a given ldo id is valid
 	 * @param string $demand the demand id
 	 * @param string $type the ld type of the object
 	 * @return boolean true if valid
@@ -1301,11 +1269,18 @@ class LdDacuraServer extends DacuraServer {
 		return true;
 	}
 	
-	function getLDOTypeFromClassname(){
-		$cname = get_class($this);
-		return substr($cname, -(strlen("DacuraServer")));
-	}
 	
+/*
+ * These really belong to the candidate service 
+ * They are required by the candidate class
+ * They are put here instead of in CandidateDacuraServer to allow the ld service to work with candidates
+ * If they weren't here, the ld service couldn't work with candidates - it needs a server with these functions
+ * */
+	
+	/**
+	 * Loads the graph configuration for the current context
+	 * @return boolean true if success
+	 */
 	function readGraphConfiguration(){
 		$filter = array(
 			"type" => "graph",
@@ -1326,6 +1301,10 @@ class LdDacuraServer extends DacuraServer {
 		return true;
 	}
 	
+	/**
+	 * Returns a list of the named graph urls / ids that are valid in the current context
+	 * @return array<string> array of graph urls
+	 */
 	function getValidGraphURLs(){
 		if(!$this->graphs){
 			$this->readGraphConfiguration();
@@ -1336,19 +1315,37 @@ class LdDacuraServer extends DacuraServer {
 		}
 		return $urls;
 	}
-		
+
+	/**
+	 * Retrieve the URL of the default graph in this context
+	 * @return string the graph url
+	 */
 	function getDefaultGraphURL(){
 		return $this->service->get_service_url("graph")."/main";
 	}
 	
+	/**
+	 * Tests a passed string to see if it is the default graph url for the current context
+	 * @param string $url the url in question
+	 * @return boolean true if it is the default named graph url
+	 */
 	function isDefaultGraphURL($url){
 		return $url == $this->getDefaultGraphURL();
 	}
 	
+	/**
+	 * Is the passed string the local id of a valid graph?
+	 * @param string $gid the graph id (local id - not a url) 
+	 */
 	function validGraph($gid){
 		return isset($this->graphs[$gid]);
 	}
 	
+	/**
+	 * Changes a graph url into a local graph id 
+	 * @param string $gurl the url in question
+	 * @return string|boolean the graph local id
+	 */
 	function graphURLToID($gurl){
 		if(substr($gurl, 0, strlen($this->service->get_service_url("graph"))) == $this->service->get_service_url("graph")){
 			return substr($gurl, strlen($this->service->get_service_url("graph"))+1);
@@ -1356,12 +1353,23 @@ class LdDacuraServer extends DacuraServer {
 		return false;
 	}
 	
+	/**
+	 * The list of rdf:types that new candidate objects can be 
+	 * @return array<string> list of all the valid rdf:types for new candidates
+	 */
+	function getValidCandidateTypes(){
+		return array();
+	}
+	
+	/**
+	 * Figure out what collection a given ontology belongs to - the universal scope or the local collection?
+	 * @param string $id the ontology id
+	 * @return string the id of the collection 
+	 */
 	function getOntologyCollection($id){
 		if($this->dbman->hasLDO($id, "ontology", "all")){
 			return "all";
 		}
 		return $this->cid();
-	}
-	
-	
+	}	
 }

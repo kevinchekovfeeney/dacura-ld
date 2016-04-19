@@ -24,12 +24,10 @@
  * * embedded object {} - an object nakedly embedded as a property value.  In order to serialise this as a triple, 
  * an id must be generated for the embedded object
  * * object list [{}, {}] - a list of embedded objects
- * 6. complex: anything else - any mixing of object types, embedded and non-embedded, 
+ * 6. complex: anything else - any mixing of object types, embedded and non-embedded,json object but not parseable as dacura ld 
  *
  * Created By: Chekov
  * Creation Date: 13/03/2015
- * Contributors:
- * Modified:
  * Licence: GPL v2
  */
 
@@ -230,6 +228,11 @@ class LDPropertyValue extends DacuraObject {
 		return true;
 	}
 	
+	/**
+	 * Regularises the format of lists of object literals to the DQS internal fomat (data: "...", lang: "en")
+	 * @param array $objl object literal list
+	 * @return array list of regularised object literals
+	 */
 	function regulariseObjectLiteralList($objl){
 		$list = array();
 		foreach($objl as $obj){
@@ -238,6 +241,11 @@ class LDPropertyValue extends DacuraObject {
 		return $list;
 	}
 	
+	/**
+	 * Takes an object literal in a variety of forms and turns it into a compliant dqs form
+	 * @param array $obj the original oblect literal 
+	 * @return array the fixed object literal
+	 */
 	function regulariseObjectLiteral($obj){
 		$nobj = array();
 		if((isset($obj['type']) && $obj['type'] == "string") || (isset($obj['datatype']) && $obj['datatype'] == "string")){
@@ -331,6 +339,7 @@ class LDPropertyValue extends DacuraObject {
 	
 	/**
 	 * Is the value legal?
+	 * @params array $rules - a set of rules that can be applied to the value to check if it is invalid in some way
 	 * @return boolean true if legal
 	 */
 	function legal($rules = array()){
@@ -468,6 +477,10 @@ class LDPropertyValue extends DacuraObject {
 		return $this->json_type == "array" && $this->array_type == "object";
 	}
 	
+	/**
+	 * Complex types have a json object structure that cannot be parsed into a dacura ld object structure
+	 * @return boolean
+	 */
 	function complex(){
 		return $this->ldtype() == "complex";
 	}

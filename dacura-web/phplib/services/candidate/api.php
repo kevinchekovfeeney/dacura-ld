@@ -12,10 +12,14 @@ function getEmptyFrame(){
 
 	$dacura_server->init("create");
 	
-	$cls = $_POST['class'];
-	$ar = $dacura_server->getFrame($cls);
-	$dacura_server->writeDecision($ar, "json", array());
-	
+	$cls = isset($_POST['class']) ? $_POST['class'] : false;
+	if($cls){
+		$ar = $dacura_server->getFrame($cls);
+		$dacura_server->writeDecision($ar, "json", array());
+	}
+	else {
+		$dacura_server->write_http_error(400, "No class present in frame request");
+	}
 }
 
 include_once "phplib/services/ld/api.php";
