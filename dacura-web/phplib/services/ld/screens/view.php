@@ -224,7 +224,7 @@ function drawLDOPage(data, pconf){
 	ldovconfig.view_actions = <?= json_encode($params['view_actions']);?>;
 	ldov.show(ldovconfig);
 	//dacura.ld.viewer.draw(data, "show-ldo");
-	/*dacura.tool.button.init("testrawedit",  {
+	dacura.tool.button.init("testrawedit",  {
 		"screen": "ldo-raw",			
 		"source": "ldoraw",
 		"submit": submitRawTest,
@@ -235,7 +235,7 @@ function drawLDOPage(data, pconf){
 		"source": "ldoraw",
 		"submit": submitRawUpdate,
 		"result": function(data, pconf) { showUpdateSuccess(data, pconf, "LDO Updated OK");}
-	});*/
+	});
 	dacura.tool.form.init("ldoraw", {});
 	var fp = {"format": data.format, "meta": JSON.stringify(data.meta, 0, 4)};
 	if(typeof data.contents == "string"){

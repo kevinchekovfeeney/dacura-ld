@@ -131,6 +131,7 @@ LDResult.prototype.show = function(rconfig){
 		var self = this;
 		$(this.pconfig.resultbox + " .roption").button().click(function(event){
 			$(self.pconfig.resultbox + " .result-extra").hide();
+			//alert(self.pconfig.resultbox + " .result-extra-" + this.id.substring(11));
 			$(self.pconfig.resultbox + " .result-extra-" + this.id.substring(11)).show();				
 		});	
 	}
@@ -185,7 +186,7 @@ LDResult.prototype.getExtraHTML = function(){
 	var extras = this.getExtraFields();
 	for(var i in extras){
 		var sel = (j++ == 0) ? " checked" : "";
-		dch = sel == "" ? " dch" : "";
+		dch = (sel == "" ? " dch" : "");
 		headhtml += "<input type='radio' class='resoption roption'" + sel +" id='show_extra_" + i + "' name='result_extra_fields'><label class='resoption' title='" + extras[i].title + "' for='show_extra_" + i + "'>" + extras[i].title + "</label>";
 		bodyhtml += "<div class='result-extra" + dch + " result-extra-" + i + "'>" + extras[i].content + "</div>";
 	}
@@ -223,6 +224,7 @@ LDResult.prototype.getExtraFields = function(){
 	}
 	if(this.dqsgraph ){
 		subs['dqs'] = {title: 'DQS Triplestore Updates', content: this.dqsgraph.getHTML()};
+		alert(subs['dqs'].content);
 	}
 	if(this.metagraph ){
 		subs['meta'] = {title: 'Metadata Updates', content: this.metagraph.getHTML()};
@@ -482,7 +484,8 @@ LDOViewer.prototype.show = function(vconf){
 	if(this.show_options){
 		$(this.target).append(this.showOptionsBar());
 	}
-	//html += this.ldo.getContentsHTML(this.emode);
+	$(this.target).append(this.ldo.getContentsHTML(this.emode));
+	//html += ;
 	//if(this.viewstyle == "raw"){
 	//	this.showRaw();	
 	//}
