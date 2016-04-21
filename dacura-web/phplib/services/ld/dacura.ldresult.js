@@ -224,7 +224,6 @@ LDResult.prototype.getExtraFields = function(){
 	}
 	if(this.dqsgraph ){
 		subs['dqs'] = {title: 'DQS Triplestore Updates', content: this.dqsgraph.getHTML()};
-		alert(subs['dqs'].content);
 	}
 	if(this.metagraph ){
 		subs['meta'] = {title: 'Metadata Updates', content: this.metagraph.getHTML()};
