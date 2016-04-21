@@ -244,6 +244,8 @@ TODO:
 1. Read / Write and Read-Write modes 
 2. Specific editorial comments to specific fields - add error / highlight of fields
 3. Get highlight to accept an RVO to signal the appropriate region of problem
+4. Take complete pconf object for rendering results / errors (dacura.js - DacuraPageConfig)
+
 
 Look at utilisation of LD dacura results.
 */
