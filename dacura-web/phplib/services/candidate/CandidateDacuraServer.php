@@ -1,10 +1,52 @@
 <?php 
 require_once("phplib/services/ld/LdDacuraServer.php");
+/**
+ * This class extends the basic processing pipeline of the LD server to handle candidate (instance data) publishing
+ *
+ * Provides concrete implementations of the objectPublished, objectDeleted and objectUpdated methods and some helper functions
+ * Candidates may be multi-graph which makes them a bit more complicated than the others. Much of the difference is found in the 
+ * MultigraphLDO class
+ * 
+ * Also provides the interface to the DCS functions (get frame, get valid candidate types)
+ *
+ * @author Chekov
+ * @license GPL V2
+ */
 class CandidateDacuraServer extends LdDacuraServer {
-
+	/** @var array - the valid rdf:type values that candidates can take up */
 	var $valid_candidate_types;
 	
-	// Talk to DQS here...
+	/**
+	 * Extends initialisation function to load valid candidate types
+	 * @see LdDacuraServer::init()
+	 */
+	function init($action = false, $object = ""){
+		parent::init($action, $object);
+		$this->valid_candidate_types = $this->getValidCandidateTypes();
+	}
+	
+	/**
+	 * fetches the graph object with the specified id (assuming it exists in this context)
+	 * @param string $id the local id of the graph
+	 * @return boolean|Graph - either the graph object or false;
+	 */
+	function getGraph($id){
+		return isset($this->graphs[$id]) ? $this->graphs[$id] : false;
+	}
+	
+	/**
+	 * fetches the default graph object for this context
+	 * @return boolean|Graph - either the graph object or false if it does not exist;
+	 */
+	function getMainGraph(){
+		return ($graph = $this->getGraph('main')) ? $graph : $this->failure_result("No default graph found in collection configuration.", 500);
+	}
+	
+	/**
+	 * Creates a frame for the given class by calling the DCS frame function
+	 * @param string $cls the name of the class in question
+	 * @return DacuraResult the Dacura Result object incorporating the frame
+	 */
 	function getFrame($cls){
 		$ar = new DacuraResult("Creating Frame $cls");
 		$cls = ($expanded = $this->nsres->expand($cls)) ? $expanded : $cls;
@@ -12,32 +54,27 @@ class CandidateDacuraServer extends LdDacuraServer {
 		return $this->graphman->invokeDCS($mg->schemaGname(), $cls);
 	}
 	
+	/**
+	 * Asks the DCS service for the set of valid types as specified in the context schema for candidates
+	 * @see LdDacuraServer::getValidCandidateTypes()
+	 */
 	function getValidCandidateTypes(){
 		$mg = $this->getMainGraph();
 		$ar = $this->graphman->invokeDCS($mg->schemaGname());
-		//echo $mg->schemaGname()."<br>";
-		//opr($ar);
 		if($ar->is_accept()){
 			return json_decode($ar->result, true);
 		}
 		else {
-			return $this->failure_result($ar->msg_title." ".$ar->msb_body, $ar->errcode);
+			return $this->failure_result($ar->msg_title." ".$ar->msg_body, $ar->errcode);
 		}		
 	}
 	
-	function init($action = false, $object = ""){
-		parent::init($action, $object);
-		$this->valid_candidate_types = $this->getValidCandidateTypes();
-	}
-	
-	function getGraph($id){
-		return isset($this->graphs[$id]) ? $this->graphs[$id] : false; 
-	}
-	
-	function getMainGraph(){
-		return ($graph = $this->getGraph('main')) ? $graph : $this->failure_result("No default graph found in collection configuration.", 500);
-	}
-		
+	/**
+	 * Extends the ld server to do graph publication and testing
+	 * 
+	 * This is rendered somewhat more complex as we have to try each graph in turn. 
+	 * @see LdDacuraServer::objectPublished()
+	 */
 	function objectPublished(Candidate $cand, $test_flag = false){
 		$dr = new DQSResult("Validating Candidate $cand->id", $test_flag);
 		if($cand->is_empty()){
@@ -62,7 +99,7 @@ class CandidateDacuraServer extends LdDacuraServer {
 					}
 				}
 				$graph = $this->graphs[$gid];
-				$quads = $cand->typedNGQuads($graph->instanceGname());
+				$quads = $cand->typedQuads($graph->instanceGname());
 				$gr = $this->graphman->createInstance($graph, $quads, $test_flag);
 				$dr->addGraphResult($gid, $gr);
 				if(!$gr->is_accept() && $exit_on_fail){

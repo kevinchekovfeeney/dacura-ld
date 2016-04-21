@@ -10,7 +10,7 @@ include_once("DacuraResult.php");
  */
 class PolicyEngine extends DacuraController {
 	/** @var array if this is true for a given ldo type then ldos and updates that are rejected will still be stored in the db */
-	var $store_rejected = array("create", "update");
+	var $store_rejected = array();
 	/** @var array An array of decisions for actions - these are default decisions, they can be overridden by settings */
 	var $decisions = array(
 		"view" => "accept",	
@@ -41,21 +41,28 @@ class PolicyEngine extends DacuraController {
 	 * @return DacuraResult
 	 */
 	function getPolicyDecision($action, $obj){
-		$ar = new DacuraResult("System policy for $action");
+		$ar = new DacuraResult("Checking system policy for $action");
 		if($action == "update update"){
 			if($this->updateUpdate($obj)){
 				return $ar->accept();
 			}
 			else {
-				return $ar->reject("Update to update rejected by policy ".$this->errmsg, $this->errcode);
+				return $ar->reject("Failed policy check", "Update to update rejected by policy ".$this->errmsg."[".$this->errcode."]");
 			}
 		}
 		elseif(isset($this->decisions[$action])){
 			if(is_string($this->decisions[$action])){
-				$ar->status($this->decisions[$action]);
+				$res = $this->decisions[$action];
 			}
 			elseif(is_callable($this->decisions[$action])){
-				call_user_func_array($this->decisions[$action], array($obj, $context));
+				$res = call_user_func_array($this->decisions[$action], array($obj, $context));
+			}
+			$ar->status($res);
+			if($res == "reject"){
+				$ar->title("Failed system policy check");
+			}
+			elseif($res == "pending"){
+				$ar->msg("Approval required", "System policy requires that this action ($action) is approved before it will be published.");				
 			}
 			if($action == 'update' || $action == 'create'){
 				if($ar->is_accept() && $obj->status() == "pending"){

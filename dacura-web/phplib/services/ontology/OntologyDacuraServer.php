@@ -1,5 +1,13 @@
 <?php 
 require_once("phplib/services/ld/LdDacuraServer.php");
+/**
+ * This class extends the basic processing pipeline of the LD server to handle ontology publishing
+ * 
+ * Provides concrete implementations of the objectPublished, objectDeleted and objectUpdated methods and some helper functions
+ * 
+ * @author Chekov
+ * @license GPL V2
+ */
 class OntologyDacuraServer extends LdDacuraServer {
 	
 	/**
@@ -13,10 +21,11 @@ class OntologyDacuraServer extends LdDacuraServer {
 		if($ont->is_empty()){
 			return $nopr->failure(400, "Ontology is empty", "Content must be added to the ontology before it can be published");
 		}
-		$nopr->add($ont->validateDependencies($this, $test_flag));
-		if($nopr->is_accept()){
+		$nopr->add($ont->validateDependencies($this, $test_flag), true, true);
+		if($nopr->is_accept() || $this->getServiceSetting("test_unpublished", true)){
 			if($quads = $this->getOntologyAsQuads($ont)){
-				$nopr->add($this->graphman->validateOntology($ont, $quads, $this->getSchemaTests($ont), $this->getInstanceTests($ont)));
+				$dqs = $this->graphman->validateOntology($ont, $quads, $this->getSchemaTests($ont), $this->getInstanceTests($ont));
+				$nopr->add($dqs);
 			}
 			else {
 				$nopr->failure($this->errcode, "Failed to generate ontology dependency triples", $this->errmsg);
@@ -25,6 +34,11 @@ class OntologyDacuraServer extends LdDacuraServer {
 		return $nopr;
 	}
 	
+	/**
+	 * Retrieves the set of tests that are to be run against the ontology when used with schema tests
+	 * @param Ontology $ont the ontology in question
+	 * @return array|string - either 'all' or an array of tests to use
+	 */
 	function getSchemaTests(Ontology $ont){
 		if($tests = $ont->getCreateSchemaTests()) return $tests;
 		$p = array_keys(RVO::getSchemaTests(false)); 
@@ -32,13 +46,23 @@ class OntologyDacuraServer extends LdDacuraServer {
 		return $x;
 	}
 	
+	/**
+	 * Retrieves the set of tests that are to be run against the ontology when used with instance tests
+	 * @param Ontology $ont the ontology in question
+	 * @return array|string - either 'all' or an array of tests to use
+	 */
 	function getInstanceTests(Ontology $ont){
 		if($tests = $ont->getCreateInstanceTests()) return $tests;
 		$p = array_keys(RVO::getInstanceTests(false)); 
 		return $this->getServiceSetting("create_dqs_instance_tests", $p);		
 	}
 	
-	
+	/**
+	 * Generates the quads to represent the passed ontology
+	 * @param Ontology $ont the ontology in question
+	 * @param boolean $include_deps if true, ontology dependencies will be included
+	 * @return Ambigous <multitype:, unknown, multitype:multitype:string Ambigous <string, mixed>  >
+	 */
 	function getOntologyAsQuads(Ontology $ont, $include_deps = true){
 		$quads = $ont->typedQuads($ont->schemaGname());
 		if($include_deps){
@@ -59,13 +83,13 @@ class OntologyDacuraServer extends LdDacuraServer {
 		return $quads;		
 	}
 	
-	function updatePublishedUpdate(LDOUpdate $uldoa, LDOUpdate $uldob, $is_test = false){
-		return $this->objectPublished($uldob->changed, $is_test);
-	}
-	
+
+	/**
+	 * As Ontologies are never permanently published to their own graph, 
+	 * updates and publications are the same..
+	 * @see LdDacuraServer::objectUpdated()
+	 */	
 	function objectUpdated(LDOUpdate $uldo, $test_flag = false){
 		return $this->objectPublished($uldo->changed, $test_flag);
 	}
-	
-	
 }

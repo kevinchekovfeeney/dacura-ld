@@ -6,8 +6,6 @@
  */
 
 class RVO {
-	/** @var A property which assignes the class that produced a violation to the respective violation class. */
-	var $cls;
 	/** @var This is a general property which can be used to attach the original error message provided by a reasoner. */
 	var $message;
 	/** @var This is a generic property which allows publishing additional context to a message. */
@@ -28,7 +26,7 @@ class RVO {
 	var $best_practice;
 	/** @var The set of supported violation classes in the ontology */
 	static $violation_classes = array(
-		"NoImmediateClass", "OrphanClass", "ClassCycle", "NotDomainClass", "NotUniqueClassLabel", "NotUniqueClassName", 
+		"NoImmediateClass", "noImmediateDomain", "noImmediateRange", "OrphanClass", "ClassCycle", "NotDomainClass", "NotUniqueClassLabel", "NotUniqueClassName", 
 		"NotSuperClassOfClass", "NotSubClassofClass", "NotIntersectionOfClass", "NotUnionOfClass", "NotUniquePropertyName", 
 		"PropertyRange", "NoExplicitRange", "InvalidRange", "RangeNotSubsumed", "PropertyAnnotationOverload", "PropertyDomain",
 		"NoExplicitDomain", "InvalidDomain", "DomainNotSubsumed", "OrphanProperty", "NotSubpropertyOfProperty","PropertyTypeOverload",
@@ -43,7 +41,7 @@ class RVO {
 	 * @param string $props initialisation properties
 	 */
 	function __construct($props = false){
-		$this->cls = get_class($this);
+		$this->type = get_class();
 		if($props){
 			if(isset($props['property'])){
 				$this->property = $props['property'];
@@ -192,6 +190,9 @@ class RVO {
 	 */
 	static function loadViolation($cls, $details){
 		try {
+			if($cls == "noImmediateDomain" || $cls == "noImmediateRange"){
+				$cls.= "Violation";
+			}
 			$y = substr($cls, 0, strlen($cls) - strlen("Violation"));
 			if(in_array($y, RVO::$violation_classes)){
 				//echo "<P>creating new $clis";
@@ -199,7 +200,8 @@ class RVO {
 				return $x;				
 			}
 			else {
-				$x = new UnknownViolation($cls, $details);
+				$details['message'] = $cls . " is not a known type of violation";
+				$x = new UnknownViolation($details);
 				return $x;
 			}
 		}
@@ -292,7 +294,7 @@ class NotUniqueClassNameViolation extends ClassViolation {
 	var $best_practice = true;
 }
 
-class NoImmediateClassViolation extends ClassViolation {
+class noImmediateClassViolation extends ClassViolation {
 	var $label = "No Immediate Class Violation";
 	var $comment = "An undefined class is used as domain for a property or the class is defined but the superclass is not or the class is not a subclass of a defined class or the class is an intersection of a defined class but not a defined class or the class is not an intersection of a defined class or the class is not a union of a defined class or the class is a union but not a defined class.";
 	var $best_practice = true;
@@ -366,7 +368,7 @@ class PropertyRangeViolation extends PropertyViolation {
 	
 }
 
-class NoImmediateRangeViolation extends PropertyRangeViolation {
+class noImmediateRangeViolation extends PropertyRangeViolation {
 	var $label = "No Immediate Range Violation";
 	var $comment = "Property has no immediate range (a super property may define its range).";
 	var $best_practice = true;	
@@ -424,7 +426,7 @@ class PropertyDomainViolation extends PropertyViolation {
 	}
 }
 
-class NoImmediateDomainViolation extends PropertyDomainViolation {
+class noImmediateDomainViolation extends PropertyDomainViolation {
 	var $label = "No Immediate Domain Violation";
 	var $comment = "Property has no immediate domain (a super property may define its domain).";
 	var $best_practice = true;
@@ -633,14 +635,31 @@ class OntologyHijackViolation extends DependencyViolation {
 	var $best_practice = true;
 }
 
-class SystemViolation extends RVO {
-	var $label = "Dacura System Error";
-	var $comment = "A technical failure that caused the test to fail";	
+class SystemRVO extends RVO {
+	var $label = "System Violation";
+	var $comment = "A violation was encountered while processing the request";
+
+	function __construct($action, $title, $msg){
+		$this->message = $title;
+		$this->info = $msg;
+		$this->comment .= " in ".$action;
+	}
 }
 
-class SystemWarning extends RVO {
+
+class SystemViolation extends SystemRVO {
+	var $label = "Dacura System Error";
+	var $comment = "An error was encountered while processing the request";	
+}
+
+class GraphTestFailure extends SystemViolation {
+	var $label = "Graph Test Failure";
+}
+
+
+class SystemWarning extends SystemRVO {
 	var $label = "Dacura System Warning";
-	var $comment = "A technical failure that caused the test to include a warning";
+	var $comment = "A warning condition was encountered while processing the request";
 }
 
 class UnknownViolation extends RVO {

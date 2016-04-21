@@ -339,9 +339,11 @@ class NSResolver extends DacuraController {
 	 * @param array $ns map that will be filled by the method with prefixes to information about their utilisation
 	 */	
 	function getNamespaceUtilisation($ldprops, $cwurl, &$ns){
-		foreach($ldprops as $eid => $ldobj){
-			$this->addSubjectToNSUtilisation($ns, $eid);
-			$this->getLDONamespaceUtilisation($eid, $ldobj, $cwurl, $ns);
+		if($ldprops && is_array($ldprops) && count($ldprops) > 0){
+			foreach($ldprops as $eid => $ldobj){
+				$this->addSubjectToNSUtilisation($ns, $eid);
+				$this->getLDONamespaceUtilisation($eid, $ldobj, $cwurl, $ns);
+			}
 		}
 	}
 	

@@ -577,7 +577,7 @@ td.ld-bar-right {
 	padding-right: 14px;
 }
 
-div#ld-view-bar {
+div.ld-view-bar {
   	background-color: #d5f9e9;
   	border: 1px solid #aaa;
 	font-size: 0.7em;

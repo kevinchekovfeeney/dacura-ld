@@ -23,7 +23,7 @@ class GraphManager extends DacuraController {
 	 */
 	function invokeDQS($service, $schema_gname, $gname = false, $itrips = false, $dtrips = false, $test = false, $tests = "all"){
 		$dqsr = new DQSResult("DQS test", $test);
-		
+		$dqsr->setTests($tests);
 		$dqs_config = $this->getSystemSetting("dqs_service");
 		if($fakets = $this->getSystemSetting("dqs_service.fake")){
 			$fdqs = new FakeTripleStore($fakets);
@@ -202,7 +202,7 @@ class GraphManager extends DacuraController {
 			}
 		}
 		else {
-			$dqsr = $this->invokeDQS("schema", $graph->schemaGname(), $graph->instanceGname(), $quads, false, $test_flag, $graph->getCreateInstanceTests());
+			$dqsr = $this->invokeDQS("schema", $graph->schemaGname(), $graph->instanceGname(), $quads, false, $test_flag, $graph->getCreateSchemaTests());
 		}		
 		return $dqsr;	
 	}

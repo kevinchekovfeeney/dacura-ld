@@ -13,11 +13,7 @@ include_once("LdDacuraServer.php");
 class LdService extends DacuraService {
 	
 	var $default_screen = "list";
-	
-	var $supported_formats = array(
-			
-	);
-	
+		
 	function init(){
 		if($this->name() == "ld"){
 			$this->included_css[] = $this->get_service_file_url("style.css");
@@ -36,27 +32,6 @@ class LdService extends DacuraService {
 	/*
 	 * The next functions render snippets of html that are needed by multiple services
 	 */
-	
-	/**
-	 * Renders the LD editor screen (from the ld service)
-	 * @param array $params
-	 */
-	
-	function getLDOViewer($params){
-		$ldov = new LDODisplay();
-		echo $ldov->showLDOViewer($params, $this);
-	}
-	
-	/**
-	 * Renders the Linked Data Update Result box
-	 * @param array $params
-	 */
-	public function showLDResultbox($params){
-		$service = $this;
-		$entity = isset($params['entity']) ? $params['entity'] : "Entity";
-		$this->renderScreen("resultbox", $params, "ld");
-	}	
-	
 	function getScreenForCall(){
 		if($this->screen == "list"){
 			return "list";
@@ -76,9 +51,35 @@ class LdService extends DacuraService {
 			$this->screen = $this->default_screen;
 		}
 	}
-		
-	/*
-	 * The various optional arguments supported by the linked data api
+
+	/* Organised by screen - list screen first */
+	function readLDListArgs($is_post = false){
+		$args = array();
+		if(isset($_GET['options'])){
+			$args = $_GET['options'];
+		}
+		else {
+			$args = false;
+		}
+		return $args;
+	}
+	
+	function readLDListUpdatesArgs($is_post = false){
+		$args = array();
+		if(isset($_GET['uoptions'])){
+			$args = $_GET['uoptions'];
+		}
+		else {
+			$args = false;
+		}
+		return $args;
+	}
+	
+	
+	/**
+	 * Reads the optional arguments supported by the linked data view api
+	 * @param string $is_post
+	 * @return multitype:string multitype:number  unknown
 	 */
 	function readLDViewArgs($is_post = false){
 		$args = array();
@@ -107,6 +108,11 @@ class LdService extends DacuraService {
 			$args['options'] = array("history" => 1, "updates" => 1, "ns" => 1, "addressable" => 0, "analysis" => 1);
 		}
 		return $args;
+	}
+
+	function getDefaultViewOptions(){
+		$a = array("ns" => array("title" => "Namespace prefixes", "value" => 1), "pretty" => array("title" => "Pretty", "value" => 1), "unaddressable" => array("title" => "Blank Nodes", "value" => 1));
+		return $a;
 	}
 
 	/*
@@ -140,45 +146,7 @@ class LdService extends DacuraService {
 		}
 		return $args;
 	}
-	
-	
-	function readLDCreateArgs($is_post = false){
-		if(isset($_GET['format'])){
-			$args['format'] = $_GET['format'];
-		}
-		else {
-			$args['format'] = "json";
-		}
-		return $args;
-	}
 
-	function readLDListArgs($is_post = false){
-		$args = array();
-		if(isset($_GET['options'])){
-			$args = $_GET['options'];				
-		}
-		else {
-			$args = false;
-		}
-		return $args;
-	}
-
-	function readLDListUpdatesArgs($is_post = false){
-		$args = array();
-		if(isset($_GET['uoptions'])){
-			$args = $_GET['uoptions'];
-		}
-		else {
-			$args = false;
-		}
-		return $args;
-	}
-	
-
-	function getOptionalArgs(){
-		return $this->readLDListArgs();
-	}
-	
 	/**
 	 * Renders a screen when viewed in full page mode
 	 * @param DacuraServer $dacura_server
@@ -425,7 +393,10 @@ class LdService extends DacuraService {
 		$params['raw_ldo_fields']['format']['options'] = LDO::$valid_input_formats;
 		$params['direct_create_allowed'] = true;
 		$params['update_options'] = $this->getServiceSetting("update_options", array());
-		//opr($params);
+		$params['valid_view_formats'] = LDO::$valid_display_formats;
+		$params['default_view_options'] = $this->getDefaultViewOptions();
+		$params['view_actions'] = array("edit" => "Edit", "export" => "Export", "accept" => "Publish", "reject" => "Reject", "pending" => "Unpublish");
+		$params['valid_update_formats'] = LDO::$valid_input_formats;
 		return $params;
 	}
 
