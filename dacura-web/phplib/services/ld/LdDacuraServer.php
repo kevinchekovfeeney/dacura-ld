@@ -723,7 +723,7 @@ class LdDacuraServer extends DacuraServer {
 		}
 		$uldo->status($ar->status());
 		if(isset($options['show_meta_triples']) && $options['show_meta_triples']){
-			$ar->createMetaResult($uldo->getMetaUpdates(), $ar->status(), $test_flag);
+			//$ar->createMetaResult($uldo->getMetaUpdates(), $ar->status(), $test_flag);
 		}
 		if(isset($options['show_update_triples']) && $options['show_update_triples']){
 			$msg = "Updates to update ".$uldo->id;

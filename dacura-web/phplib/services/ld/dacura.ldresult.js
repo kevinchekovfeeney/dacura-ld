@@ -131,7 +131,6 @@ LDResult.prototype.show = function(rconfig){
 		var self = this;
 		$(this.pconfig.resultbox + " .roption").button().click(function(event){
 			$(self.pconfig.resultbox + " .result-extra").hide();
-			//alert(self.pconfig.resultbox + " .result-extra-" + this.id.substring(11));
 			$(self.pconfig.resultbox + " .result-extra-" + this.id.substring(11)).show();				
 		});	
 	}
@@ -188,7 +187,7 @@ LDResult.prototype.getExtraHTML = function(){
 		var sel = (j++ == 0) ? " checked" : "";
 		dch = (sel == "" ? " dch" : "");
 		headhtml += "<input type='radio' class='resoption roption'" + sel +" id='show_extra_" + i + "' name='result_extra_fields'><label class='resoption' title='" + extras[i].title + "' for='show_extra_" + i + "'>" + extras[i].title + "</label>";
-		bodyhtml += "<div class='result-extra" + dch + " result-extra-" + i + "'>" + extras[i].content + "</div>";
+		bodyhtml += "<div class='result-extra " + dch + " result-extra-" + i + "'>" + extras[i].content + "</div>";
 	}
 	headhtml += "</span></div>";
 	bodyhtml += "</div>";
@@ -206,7 +205,7 @@ LDResult.prototype.getResultHTML = function(){
 	if(this.test){
 		html += "<P>" + dacura.ld.testResultMsg + "</P>";
 	}
-	html += this.result.getHTML();
+	html += this.result.getHTML() + "</div>";
 	return html;
 }
 
