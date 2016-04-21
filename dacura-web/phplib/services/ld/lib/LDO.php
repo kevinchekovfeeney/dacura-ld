@@ -188,6 +188,10 @@ class LDO extends DacuraObject {
 		return $this->cwurl;
 	}
 	
+	/**
+	 * Returns the linked data type of the object (ontology, graph, candidate, ldo)
+	 * @return string the typename
+	 */
 	function ldtype(){
 		if($this->ldtype) return $this->ldtype;
 		return strtolower(get_class($this));
@@ -310,7 +314,9 @@ class LDO extends DacuraObject {
 	 */
 	function buildIndex(){
 		$this->index = array();
-		indexLDProps($this->ldprops, $this->index, $this->cwurl);
+		if($this->ldprops){
+			indexLDProps($this->ldprops, $this->index, $this->cwurl);
+		}
 	}
 	
 	/**
@@ -333,6 +339,9 @@ class LDO extends DacuraObject {
 			foreach($obj['meta'] as $k => $v){
 				if(!in_array($k, $ignore_meta)){
 					$this->meta[$k] = $v;
+				}
+				if($k == "status"){
+					$this->status = $v;
 				}	
 			}
 		}
@@ -434,7 +443,7 @@ class LDO extends DacuraObject {
 			$format = $this->importContentsFromJSON($contents, false);
 			if(!$format){
 				$format = $this->importERDF("text", $contents);
-				if(!$format && $this->importContentsfromNQuads($contents)){
+				if(!$format && $this->importContentsfromNQuads($contents, $this->getDefaultGraphURL())){
 					$format = "nquads";
 				}
 				elseif(!$format) {
@@ -447,7 +456,7 @@ class LDO extends DacuraObject {
 		}
 		elseif($this->isNativeFormat($format)){ //first try to see if we can import as a native format
 			if($format == "nquads"){
-				if(!$this->importContentsfromNQuads($contents)){
+				if(!$this->importContentsfromNQuads($contents, $this->getDefaultGraphURL())){
 					return $this->failure_result("Failed to import nquads", 400);
 				}
 			}
@@ -551,8 +560,9 @@ class LDO extends DacuraObject {
 	/**
 	 * Import from nquads
 	 * @param string $contents nquads as string
+	 * @param string $def_graph - url of default graph (only used in multi-graph - just here for compatibility)
 	 */
-	function importContentsfromNQuads($contents){
+	function importContentsfromNQuads($contents, $def_graph){
 		require_once("JSONLD.php");
 		$this->ldprops = fromNQuads($contents);
 	}
@@ -705,14 +715,6 @@ class LDO extends DacuraObject {
 	 */
 	function getValidMetaProperties(){
 		return array("status", "title", "url", "image");
-	}
-	
-	/**
-	 * The list of meta-data properties that must be present in the meta data
-	 * @return boolean | array of required properties
-	 */
-	function getRequiredMetaProperties(){
-		return false;
 	}
 	
 	/**
@@ -1311,7 +1313,7 @@ class LDO extends DacuraObject {
 	 * @return boolean true if successful
 	 */
 	function display($format, $options, LdDacuraServer &$srvr){
-		$lddisp = new LDODisplay($this->id, $this->cwurl);
+		$lddisp = new LDODisplay($this->id, $this->nsres, $this->cwurl);
 		if($format == "json"){
 			$this->display = $lddisp->displayJSON($this->ldprops, $options);
 		}

@@ -15,13 +15,15 @@ class Candidate extends MultiGraphLDO {
 	 * Adds two new rules to the standard linked data validation rules
 	 * * require_candidate_type - if true, a rdf:type must be present in all candidates
 	 * * valid_candidate_types - an array of valid rdf:types for candidates 
-	 * (non-PHPdoc)
 	 * @see LDO::setLDRules()
 	 */
 	function setLDRules(&$srvr){
 		parent::setLDRules($srvr);
-		$this->rules->setRule("validate", "require_candidate_type", $srvr->getServiceSetting("require_candidate_type", true)); 
-		$this->rules->setRule("validate", "valid_candidate_types", $srvr->valid_candidate_types); 
+		$req = $srvr->getServiceSetting("require_candidate_type", false);
+		$this->rules->setRule("validate", "require_candidate_type", $req);
+		if($req){ 	
+			$this->rules->setRule("validate", "valid_candidate_types", $srvr->valid_candidate_types); 
+		}
 	}
 	
 	/**
@@ -33,9 +35,10 @@ class Candidate extends MultiGraphLDO {
 	 */
 	function importLD($mode, $srvr){
 		if(!$srvr->graphs){
+			//echo "<P>Why hasn't the server read the graphs?";
 			$srvr->readGraphConfiguration();
 		}
-		$this->graphs =& $srvr->graphs;
+		//$this->graphs =& $srvr->graphs;//too late..
 		if(isset($srvr->valid_candidate_types) && $srvr->valid_candidate_types) {
 			$this->valid_types =& $srvr->valid_candidate_types;
 		}	
@@ -107,7 +110,7 @@ class Candidate extends MultiGraphLDO {
 		if(!$this->fragment_id){
 			$t = $this->getRDFType();
 			if((!$t && $mode != "update") && $this->rule($mode, "validate", 'require_candidate_type')){
-				return $this->failure_result("No rdf:type specified in input candidate". $this->errmsg, 400);
+				return $this->failure_result("No rdf:type specified in input candidate", 400);
 			}
 			if($t && ($valids = $this->rule($mode, "validate", 'valid_candidate_types')) && !in_array($t, $valids)){
 				return $this->failure_result("$t is not a valid rdf:type for candidates in ".$srvr->cid(), 400);

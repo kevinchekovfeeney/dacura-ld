@@ -1,4 +1,4 @@
-<div class='dacura-screen' id='ld-view-home'>
+<div class='dacura-screen' id="ld-view-home">
 	<?php if(in_array("ldo-contents", $params['subscreens'])) { ?>
 	<div class="dacura-subscreen" id='ldo-contents' title='Contents'>
 		<div class='subscreen-intro-message'><?=$params['contents_intro_msg']?></div>
@@ -186,21 +186,45 @@ function isUpdateID(id){
 	return id.substr(0,7) == "update/";
 }
 
-function drawLDO(data){
-	dacura.tool.initScreens("ld-view-home");
-	
+function drawLDOPage(data, pconf){
+	if(data.status == "reject"){
+		var x = new LDResult(data, pconf);
+		return x.show();
+	}
 	dacura.ld.header(data);
-	dacura.tool.table.init("history_table", {
-		"screen": "ldo-history", 
-		"dtsettings": <?=$params['history_datatable']?>
-	}, data.history);		
-	dacura.tool.table.init("updates_table", {
-		"screen": "ldo-updates", 
-		"dtsettings": <?=$params['updates_datatable']?>
-	}, data.updates);		
+	//get rid of the tabs that we have nothing to fill
+	if(typeof data.history != "object"){
+		$('#ldo-history').remove();
+	}		
+	if(typeof data.updates != "object"){
+		$('#ldo-updates').remove();
+	}		
+	if(typeof data.analysis != "object"){
+		$('#ldo-analysis').remove();
+	}		
+	dacura.tool.initScreens("ld-view-home");
+	if(typeof data.history == "object"){
+		dacura.tool.table.init("history_table", {
+			"screen": "ldo-history", 
+			"dtsettings": <?=$params['history_datatable']?>
+		}, data.history);		
+	}
+	if(typeof data.updates == "object"){
+		dacura.tool.table.init("updates_table", {
+			"screen": "ldo-updates", 
+			"dtsettings": <?=$params['updates_datatable']?>
+		}, data.updates);	
+	}	
 	dacura.system.styleJSONLD("td.rawjson");	
-	dacura.ld.viewer.draw(data, "show-ldo");
-	dacura.tool.button.init("testrawedit",  {
+	var ldo = new LDO(data);
+	var ldov = new LDOViewer(ldo);
+	var ldovconfig = {target: "#show-ldo", emode: "view"};
+	ldovconfig.view_formats = <?= json_encode($params['valid_view_formats']);?>;
+	ldovconfig.view_options = <?= json_encode($params['default_view_options']);?>;
+	ldovconfig.view_actions = <?= json_encode($params['view_actions']);?>;
+	ldov.show(ldovconfig);
+	//dacura.ld.viewer.draw(data, "show-ldo");
+	/*dacura.tool.button.init("testrawedit",  {
 		"screen": "ldo-raw",			
 		"source": "ldoraw",
 		"submit": submitRawTest,
@@ -211,7 +235,7 @@ function drawLDO(data){
 		"source": "ldoraw",
 		"submit": submitRawUpdate,
 		"result": function(data, pconf) { showUpdateSuccess(data, pconf, "LDO Updated OK");}
-	});
+	});*/
 	dacura.tool.form.init("ldoraw", {});
 	var fp = {"format": data.format, "meta": JSON.stringify(data.meta, 0, 4)};
 	if(typeof data.contents == "string"){
@@ -221,15 +245,11 @@ function drawLDO(data){
 		fp.contents = JSON.stringify(data.contents, 0, 4); 
 	}
 	dacura.tool.form.populate("ldoraw", fp);
-	//dacura.editor.load("<?=$params['id']?>", dacura.ld.fetch, dacura.ld.update);
-	//jpr(data);
 }
 
 $('document').ready(function(){
-	var pconf = { resultbox: ".tool-info", busybox: "#ld-view-home"};
-	dacura.ld.fetch("<?=$params['id']?>", <?=$params['fetch_args']?>, drawLDO, pconf);
-	//dacura.editor.load("<?=$params['id']?>", dacura.ld.fetch, dacura.ld.update);
-	//$('#show-ldo').show();
+	var pconf = { resultbox: ".tool-info", busybox: ".tool-holder"};
+	dacura.ld.fetch("<?=$params['id']?>", <?=$params['fetch_args']?>, drawLDOPage, pconf);
 });
 </script>
 

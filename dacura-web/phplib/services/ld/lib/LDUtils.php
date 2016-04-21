@@ -441,7 +441,9 @@ function indexLDProps($ldprops, &$index, $cwurl){
 			$index[$s] = array();
 		}
 		$index[$s][] =& $ldprops[$s];
-		indexLDO($ldprops[$s], $index, $cwurl);
+		if($ldprops[$s]){
+			indexLDO($ldprops[$s], $index, $cwurl);
+		}
 	}
 }
 

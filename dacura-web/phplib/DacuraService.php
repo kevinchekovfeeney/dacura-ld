@@ -587,7 +587,7 @@ class DacuraService extends DacuraObject {
 	protected function writeIncludedScripts(DacuraServer &$dacura_server){
 		$jsname = "dacura.".$this->servicename.".js";
 		if(file_exists($this->mydir.$jsname)){
-			$this->included_scripts[] = $this->furl("script", $jsname);
+			array_unshift($this->included_scripts, $this->furl("script", $jsname));
 		}
 		foreach($this->included_scripts as $url){
 			echo "<script src='$url'></script>";

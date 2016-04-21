@@ -1,17 +1,20 @@
 <?php 
+require_once("phplib/services/ld/LdDacuraServer.php");
 /**
- * Graph Server
+ * This class extends the basic processing pipeline of the LD server to handle graph publishing
+ *
+ * Provides concrete implementations of the objectPublished, objectDeleted and objectUpdated methods and some helper functions
+ *
+ * @author Chekov
+ * @license GPL V2
  */
-require_once("phplib/services/ontology/OntologyDacuraServer.php");
-class GraphDacuraServer extends LdDacuraServer {
-	
-	
+class GraphDacuraServer extends LdDacuraServer {	
 	
 	/**
 	 * Called when graph is moved into 'accept' state -> only allowed when it passes dqs tests
 	 * @param array $graph the new graph to be published
 	 * @param boolean $test_flag if true, this is just a test, no graph updates will take place
-	 * @return GraphResult
+	 * @return DQSResult - dqs result object
 	 */
 	function objectPublished(Graph $graph, $test_flag = false){
 		$nopr = new DQSResult("Validating Graph $graph->id", $test_flag);
@@ -32,13 +35,13 @@ class GraphDacuraServer extends LdDacuraServer {
 		elseif($quads === false){
 			return $nopr->failure($this->errcode, "Failed to serialise graph ".$graph->id, $this->errmsg);
 		}
-		//if(!$graph->validateDependencies($this)){
-		//	return $nopr->reject("Failed dependency validation", "The dependencies defined in the graph's configuration cannot be loaded for validation. ".$graph->errmsg." [$graph->errcode]");
-		//}
 		return $nopr;
 	}
 	
-
+	/**
+	 * Deletes the graph in the triplestore
+	 * @see LdDacuraServer::objectDeleted()
+	 */
 	function objectDeleted(Graph $graph, $test_flag = false){
 		$nopr = new DQSResult("Deleting Graph $graph->id", $test_flag);
 		if($graph->is_empty()){
@@ -58,7 +61,7 @@ class GraphDacuraServer extends LdDacuraServer {
 			return $nopr->failure(400, "Failed graph serialisation", "The system could not produce the quads needed to delete the graph configuration");
 		}
 		else {
-			return $nopr->msg("Empty schema graph", "no tests run as no triples were produced for graph");				
+			return $nopr->msg("Empty schema graph", "Nothing to remove - graph is empty");				
 		}
 	}
 	
@@ -72,9 +75,7 @@ class GraphDacuraServer extends LdDacuraServer {
 		$del_onts = array();
 		$add_onts = array();
 		$oimports = $uldo->original->getSchemaImports($this->durl());
-		//opr($oimports);
 		$nimports = $uldo->changed->getSchemaImports($this->durl());
-		//opr($uldo->changed->ldprops);
 		foreach($oimports as $id => $rec){
 			if(isset($nimports[$id]) && $nimports[$id]['version'] != $rec['version']){
 				$add_onts[$id] = $this->loadLDO($id, "ontology", $rec['collection'], false, $nimports[$id]['version']);
@@ -91,15 +92,11 @@ class GraphDacuraServer extends LdDacuraServer {
 		}
 		$iquads = array();
 		$dquads = array();
-		//opr(array_keys($add_onts));
 		foreach($add_onts as $ont){
 			$iquads = array_merge($iquads, $ont->typedQuads($uldo->changed->schemaGname()));
 			if(count($iquads) == 0){
-				//opr($ont);
 				echo "Failed for ".$ont->id;
-			}				
-			//echo "<P>$ont->id (".count($iquads).")";
-				
+			}								
 		}
 		foreach($del_onts as $ont){
 			$dquads = array_merge($dquads, $ont->typedQuads($uldo->original->schemaGname()));
@@ -141,21 +138,14 @@ class GraphDacuraServer extends LdDacuraServer {
 		return $nopr;
 	}
 	
-	function updatePublishedUpdate(LDOUpdate $uldoa, LDOUpdate $uldob, $is_test = false){
-		$uldob->
-		$this->objectUpdated(LDOUpdate $uldo, $is_test);
-		return $this->objectPublished($uldob->changed, $is_test);
-	}
-		
+	/**
+	 * Generates an array of quads to represent a graph schema  including its dependencies
+	 * @param Graph $graph the graph in question
+	 * @return boolean|array: - array of quads or false on failure
+	 */	
 	function getGraphSchemaAsQuads(Graph &$graph){
 		$quads = array();
-		//echo "<P>doing it ".$this->durl();
-		//opr($graph->ldprops);
 		$imports = $graph->getSchemaImports($this->durl());
-		//echo "<P>done it ".$this->durl();
-		//opr($imports);
-		
-		//return $quads;
 		foreach($imports as $id => $rec){
 			if(!$ont = $this->loadLDO($id, "ontology", $rec['collection'], false, $rec['version'])){
 				return false;
@@ -165,6 +155,11 @@ class GraphDacuraServer extends LdDacuraServer {
 		return $quads;
 	}
 
+	/**
+	 * Generates an array of quads to represent a graph schema/schema (for 2 tier schemas) including its dependencies
+	 * @param Graph $graph the graph in question
+	 * @return boolean|array - array of quads or false on failure
+	 */	
 	function getGraphSchemaSchemaAsQuads(Graph $graph){
 		$quads = array();
 		$imports = $graph->getSchemaSchemaImports($this->durl());
@@ -177,7 +172,11 @@ class GraphDacuraServer extends LdDacuraServer {
 		return $quads;
 	}
 	
-	
+	/**
+	 * Called to load an ontology object from its local url
+	 * @param string $url the url (to the local ontology object)
+	 * @return boolean|array - array of quads or false on failure
+	 */
 	function loadOntologyFromURL($url){
 		if(!($parsed_url = Ontology::parseOntologyURL($url))){
 			return $this->failure_result(htmlspecialchars($url)." is not a valid dacura ontology url", 404);

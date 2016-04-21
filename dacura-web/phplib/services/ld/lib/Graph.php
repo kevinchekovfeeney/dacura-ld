@@ -327,7 +327,6 @@ class Graph extends LDO {
 	 * @param array $parsed_urls an array of urls structures with (id, collection, fragment_id, version) fields
 	 * @return array an array containing of all the dependendent ontologies. 
 	 */
-	
 	function generateDependenciesFromURLs(&$srvr, $parsed_urls, $type = 'schema'){
 		$dependencies = array();
 		foreach($parsed_urls as $parsed_url){

@@ -6,7 +6,7 @@
 dacura.ld = {}
 dacura.ld.apiurl = dacura.system.apiURL();
 dacura.ld.ldo_type = "ldo";
-dacura.ld.plurals = {"ldo": "linked data objects"};
+dacura.ld.plurals = {"ldo": "linked data objects", "candidate": "candidates", "ontology": "ontologies", "graph": "graphs"};
 dacura.ld.api = {};
 
 dacura.ld.header = function(obj){
@@ -17,7 +17,7 @@ dacura.ld.header = function(obj){
 		params = {"version": obj.meta.version, "status": obj.meta.status, "latest version": obj.meta.latest_version, "current status": obj.meta.latest_status};
 			
 	}
-	var msg = obj.ldtype + " " + obj.id;
+	var msg = obj.meta.ldtype.ucfirst() + " " + obj.id;
 	dacura.tool.header.showEntityHeader(msg, params);	
 };
 
@@ -300,7 +300,7 @@ dacura.ld.msg.plural = function(str){
 	if(typeof dacura.ld.plurals[str] != "undefined"){
 		return dacura.ld.plurals[str];
 	}
-	return "No plural defined for " + str;
+	return str + "s";
 }
 
 dacura.ld.msg.fetch = function(id, type){
@@ -360,41 +360,13 @@ dacura.ld.fetchldolist = function(onwards, targets, type, options){
 	dacura.system.invoke(ajs, msgs, targets);
 };
 
-dacura.ld.fetch = function(id, args, onwards, targets, from){
+dacura.ld.fetch = function(id, args, onwards, targets, msgs){
 	var ajs = dacura.ld.api.view(id, args);
-	var msgs = dacura.ld.msg.fetch(id, this.ldo_type);
-	if(typeof from != "undefined"){
-		if(from){
-			msgs.busy += ": " + from;
-			msgs.success += ": " + from;
-		}	
+	if(typeof msgs != "object"){
+		var msgs = {"busy": "Retrieving linked data object " + id + " from server", "fail": "Failed to retrieve linked data object "+ id};
 	}
-	ajs.handleResult = function(obj){
-		if(typeof obj.status != "undefined" && obj.status != 'accept'){
-			ajs.handleJSONError(obj); 
-		}
-		else {
-			//dacura.ld.showHeader(obj);
-			if(typeof onwards != "undefined"){
-				onwards(obj);
-			}
-		}
-	}
-	ajs.handleJSONError = function(json){
-		if(typeof targets == "undefined" || typeof targets.resultbox == "undefined" || !targets.resultbox ){
-			targets = {resultbox: dacura.system.targets.resultbox};
-		}
-		if(typeof(dacura.ldresult) != "undefined"){
-			dacura.ldresult.update_type = "view";
-			var cancel = function(){
-				$(targets.resultbox).html("");
-			};
-			dacura.ldresult.showDecision(json, targets.resultbox, cancel);			
-		}
-		else {
-			dacura.system.showJSONErrorResult(json); 	
-		}
-	}
+	ajs.handleResult = 	onwards;
+	ajs.handleJSONError = onwards;
 	dacura.system.invoke(ajs, msgs, targets);
 }
 

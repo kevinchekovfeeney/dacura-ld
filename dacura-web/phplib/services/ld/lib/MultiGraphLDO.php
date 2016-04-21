@@ -9,7 +9,11 @@
  *
  */
 class MultiGraphLDO extends LDO {
-
+	
+	/**
+	 * Called after db loading - extends ldo by calling importfromdacurajson to normalise graph structure
+	 * @see LDO::deserialise()
+	 */
 	function deserialise(LdDacuraServer &$srvr){
 		$this->importFromDacuraJSON($this->ldprops, $this->getDefaultGraphURL(), $this->getValidGraphURLs());
 	}
@@ -24,9 +28,37 @@ class MultiGraphLDO extends LDO {
 		$this->index = array();
 		foreach($this->ldprops as $gid => $props){
 			$this->index[$gid] = array();
-			indexLDProps($this->ldprops[$gid], $this->index[$gid], $this->cwurl);
+			if($props){
+				indexLDProps($this->ldprops[$gid], $this->index[$gid], $this->cwurl);
+			}
 		}
 	}	
+	
+	/**
+	 * Extends the set of standard ldo meta properties by adding in graph information for multi-graph objects
+	 * @see LDO::getPropertiesAsArray()
+	 */
+	function getPropertiesAsArray(){
+		$props = parent::getPropertiesAsArray();
+		if($this->multigraph){
+			$props['multigraph'] = 1;
+		}
+		$props['default_graph'] = $this->getDefaultGraphURL();
+		$props['available_graphs'] = $this->getValidGraphURLs();
+		return $props;
+	}
+	
+	/**
+	 * The set of 'special' metadata fields that can be ignored in input - not directly settable through the api
+	 * @see LDO::getStandardProperties()
+	 */
+	function getStandardProperties(){
+		$props = parent::getStandardProperties();
+		$props[] = "multigraph";
+		$props[] = "default_graph";
+		$props[] = "available_graphs";
+		return $props;
+	}
 
 	/**
 	 * Returns a list of the bad links in the object
@@ -93,8 +125,6 @@ class MultiGraphLDO extends LDO {
 		}
 		return true;
 	}
-	
-
 
 	/**
 	 * Consolidates and normalises data fed to api
@@ -195,6 +225,14 @@ class MultiGraphLDO extends LDO {
 				return false;
 			}
 		}
+	}
+	
+	/**
+	 * Returns the ids of the available graphs in the current context
+	 * @return array list of graph id strings [id1, id2, ..]
+	 */
+	function getGraphIDs(){
+		return array_keys($this->graphs);
 	}
 	
 	/**

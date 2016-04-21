@@ -98,68 +98,48 @@ class LdDacuraServer extends DacuraServer {
 	function createLDO($type, $create_obj, $demand_id, &$format, $options, $test_flag = false){
 		$cr = new DacuraResult("create $type", $test_flag);
 		if($format && !isset(LDO::$valid_input_formats[$format])){
-			return $cr->failure(400, "Invalid format: $format is not a supported input format");				
+			return $cr->failure(400, "Invalid format for new $type", "$format is not a supported input format");				
 		}
+		$this->errmsg = "";//blank out any previous error code as we need ot use it to get the reason back.
 		$id = $this->getNewLDOLocalID($demand_id, $type);
 		if($demand_id && $demand_id != $id){
 			$reason = $this->errmsg ? $this->errmsg : demandIDInvalid($demand_id, $this->getNewLDOIDRules());
 			if(isset($options['fail_on_id_denied']) && $options['fail_on_id_denied']){
-				return $cr->failure(400, "Failed to allocate requested id", $reason);
+				return $cr->failure(412, "Failed to allocate requested id", $reason);
 			}
 			$this->addIDAllocationWarning($cr, $type, $test_flag, $id, $reason);
 		}		
 		if(!($nldo = $this->createNewLDObject($id, $type, $this->cid()))){
-			return $cr->failure($this->errcode, "Request Create Error", "Failed to create $type object ".$this->errmsg);
+			return $cr->failure($this->errcode, "Object Creation Error", "Failed to create $type object ".$this->errmsg);
 		}
 		if(!($format = $nldo->loadNewObjectFromAPI($create_obj, $format, $options, $this, "create", "import"))){
-			return $cr->failure($nldo->errcode, "Communication Error", "New $type object sent to API had formatting errors. ".$nldo->errmsg);
+			return $cr->failure($nldo->errcode, "Input Structural Error", "New $type object sent to API had structural problems. ".$nldo->errmsg);
 		}
 		if(!($nldo->validate("create", $this))){
 			return $cr->failure($nldo->errcode, "Linked Data Format Error", "New $type sent to API had formatting errors. ".$nldo->errmsg);
 		}
 		$cr->add($this->policy->getPolicyDecision("create", $nldo));
-		if($cr->is_reject()){
-			$nldo->status($cr->status());
-			if($this->policy->storeRejected("create", $nldo) && !$test_flag){
-				if(!$this->dbman->createLDO($nldo, $type)){
-					$cr->addError($this->dbman->errcode, "Usage Monitoring", "Failed to store copy of rejected create of $type.", $this->dbman->errmsg);
-				}
+		if($cr->is_accept() || ($cr->is_pending() && $this->getServiceSetting("test_unpublished", true))){
+			$gur = $this->objectPublished($nldo, !$cr->is_accept() || $test_flag);
+			$gur->setHypothetical(!$cr->is_accept());
+			if($gur->is_reject() && $cr->is_accept() && $this->getServiceSetting("rollback_new_to_pending_on_dqs_reject", true)){
+				$cr->msg("New $type failed DQS tests", "Accepted as a linked data object but cannot be published to graph");
+				$cr->status("pending");
+				$nldo->status($cr->status());
+				$cr->addGraphResult("dqs", $gur, true, false);				
 			}
-			return $cr;
-		}
-		if(!$cr->is_accept()){
-			if(!$this->getServiceSetting("test_unpublished", true)){
-				if(isset($options['show_result']) && $options['show_result']){
-					if($options['show_result'] == 1){
-						$cr->set_result($nldo);
-					}
-					else {
-						$cr->set_result($nldo->cwurl);				
-					}
-				}
-				return $cr->set_result($nldo);
+			elseif($gur->is_reject() && $cr->is_pending() && $this->getServiceSetting("retain_pending_on_dqs_reject", true)){
+				$cr->msg("New $type Accepted");
+				$cr->status("pending");
+				$nldo->status($cr->status());
+				$cr->addGraphResult("dqs", $gur, true, false);					
+			}
+			else {
+				$nldo->status($cr->status());
+				$cr->addGraphResult("dqs", $gur);				
 			}
 		}
-		$dont_publish = !$cr->is_accept() || $test_flag;
-		$gur = $this->objectPublished($nldo, $dont_publish);
-		if($cr->is_accept() && $gur->is_reject() && $this->getServiceSetting("rollback_new_to_pending_on_dqs_reject", true)){
-			$cr->setWarning("Publication", "Rejected by Graph Management Service", "State changed from accept to pending");
-			$cr->status("pending");
-			$nldo->status($cr->status());
-			$cr->addGraphResult("dqs", $gur, true);				
-		}
-		else {
-			$nldo->status($cr->status());				
-			$cr->addGraphResult("dqs", $gur, $dont_publish);				
-		}
-		if(isset($options['show_ld_triples']) && $options['show_ld_triples']){
-			$cr->createGraphResult("ld", $cr->status(), $nldo->triples(), array(), $test_flag, $dont_publish);
-		}
-		if(isset($options['show_meta_triples']) && $options['show_meta_triples']){
-			$mupdates = array_merge($nldo->meta, $nldo->getPropertiesAsArray());
-			$cr->createGraphResult("meta", $cr->status(), $mupdates, array(), $test_flag, $dont_publish);
-		}
-		if(!$test_flag && !$this->dbman->createLDO($nldo, $type)){
+		if(!$test_flag && (!$cr->is_reject() || $this->policy->storeRejected("create", $nldo)) && !$this->dbman->createLDO($nldo, $type)){
 			$disaster = new DacuraResult("Database Synchronisation");
 			$disaster->failure($this->dbman->errcode, "Internal Error", "Failed to create database ldo record ". $this->dbman->errmsg);
 			$cr->add($disaster);
@@ -176,8 +156,29 @@ class LdDacuraServer extends DacuraServer {
 				$cr->set_result($nldo->cwurl);				
 			}
 		}
-		if($cr->is_accept() && !$test_flag){
-			$cr->msg(ucfirst($type)." with id $nldo->id and url <a href='$nldo->cwurl'>$nldo->cwurl</a> created");
+		if(isset($options['show_ld_triples']) && $options['show_ld_triples']){
+			$cr->createGraphResult("ld", "New $type's linked data contents", $cr->status(), $nldo->typedQuads(), array(), $test_flag);
+		}
+		if(isset($options['show_meta_triples']) && $options['show_meta_triples']){
+			$mupdates = array_merge($nldo->meta, $nldo->getPropertiesAsArray());
+			$cr->createGraphResult("meta", "New $type's metadata", $cr->status(), $mupdates, array(), $test_flag);
+		}		
+		if(($cr->is_accept() || $cr->is_pending()) && !$test_flag){
+			//$cr->msg_body = "<b>".$cr->title()."</b> ".$cr->body();
+			if(!$cr->is_accept()){
+				$cr->msg_title = ucfirst($type)." accepted to object store: <a href='$nldo->cwurl'>$nldo->cwurl</a>";
+				$cr->msg_body = ucfirst($type) . " not published to dqs triplestore. ". $cr->msg_body;
+			}
+			else {
+				$cr->msg_title = ucfirst($type)." accepted to dqs triplestore: <a href='$nldo->cwurl'>$nldo->cwurl</a>";
+				$cr->msg_body = ucfirst($type) . " published to object store and dqs triplestore. ". $cr->msg_body;				
+			}
+		}
+		elseif($cr->is_accept() && $test_flag){
+			$cr->msg_title = ucfirst($type)." accepted for dqs triplestore and linked data object store";				
+		}
+		elseif($cr->is_pending() && $test_flag && !$cr->msg_title){
+			$cr->msg_title = ucfirst($type)." accepted for linked data object store but not for dqs triplestore";
 		}
 		return $cr;
 	}
@@ -227,6 +228,9 @@ class LdDacuraServer extends DacuraServer {
 		$ldo->ldtype = $type;
 		$ldo->setLDRules($this);
 		$ldo->setNamespaces($this->nsres);
+		if(isset($this->graphs) && $this->graphs){
+			$ldo->graphs =& $this->graphs;
+		}
 		return $ldo;
 	}
 		
@@ -392,6 +396,7 @@ class LdDacuraServer extends DacuraServer {
 				'version_replaced' => 0
 		));
 		$history = $this->getLDOHistory($ldo, $to_version);
+		if(count($history) == 0) return array();
 		foreach($history as $i => $old){
 			$histrecord[count($histrecord) -1]['created_by'] = $old['eurid'];
 			$histrecord[count($histrecord) -1]['forward'] = $old['forward'];
@@ -514,8 +519,9 @@ class LdDacuraServer extends DacuraServer {
 	 * @return GraphResult
 	 */
 	function objectPublished($nobj, $test_flag = false){
-		$nopr = new GraphResult("No graph validation or publication configured for object publication.", $test_flag);
-		return $nopr->accept();
+		$nopr = new GraphResult("Validating new object ". $nobj->id . " publication with DQS.", $test_flag);
+		$nopr->msg("No DQS validation configured", "The linked data service does not use the DQS to validate updates");
+		return $nopr;
 	}
 	
 	/**
@@ -525,7 +531,8 @@ class LdDacuraServer extends DacuraServer {
 	 * @return GraphResult
 	 */
 	function objectDeleted($nobj, $test_flag = false){
-		$nopr = new GraphResult("No graph validation or publication configured for object deletion.");
+		$nopr = new GraphResult("Validating object ". $nobj->id . " deletion with DQS.", $test_flag);
+		$nopr->msg("No DQS validation configured", "The linked data service does not use the DQS to validate updates");
 		return $nopr->accept();
 	}
 	
@@ -534,9 +541,10 @@ class LdDacuraServer extends DacuraServer {
 	 * @param LDOUpdate $uldo the update linked data object
 	 * @param string $is_test true if this is just a test
 	 */
-	function objectUpdated(LDOUpdate $uldo, $is_test = false){
-		$ar = new GraphResult("ldo " . $uldo->original->id." updated (test: $is_test)");
-		return $ar->accept();
+	function objectUpdated(LDOUpdate $uldo, $test_flag = false){
+		$nopr = new GraphResult("Validating object ". $uldo->targetid. " update with DQS.", $test_flag);
+		$nopr->msg("No DQS validation configured", "The linked data service does not use the DQS to validate updates");
+		return $nopr->accept();
 	}
 	
 	/**
@@ -715,14 +723,16 @@ class LdDacuraServer extends DacuraServer {
 		}
 		$uldo->status($ar->status());
 		if(isset($options['show_meta_triples']) && $options['show_meta_triples']){
-			$ar->createMetaResult($uldo->getMetaUpdates(), $ar->status(), $test_flag, $test_flag || !$ar->is_accept());
+			$ar->createMetaResult($uldo->getMetaUpdates(), $ar->status(), $test_flag);
 		}
 		if(isset($options['show_update_triples']) && $options['show_update_triples']){
-			$ar->createGraphResult("update", $ar->status(), $uldo->forward, $uldo->backward, $test_flag, $test_flag || $ar->is_reject());
+			$msg = "Updates to update ".$uldo->id;
+			$ar->createGraphResult("update", $msg, $ar->status(), $uldo->forward, $uldo->backward, $test_flag);
 		}
 		if(isset($options['show_ld_triples']) && $options['show_ld_triples']){
+			$msg = "Updates to ".$uldo->ldtype()." ".$uldo->targetid;
 			$delta = $uldo->compareLDTriples();
-			$ar->createGraphResult("ld", $ar->status(), $delta->getInsertQuads(), $delta->getDeleteQuads(), $test_flag, $test_flag || $ar->is_reject());
+			$ar->createGraphResult("ld", $msg, $ar->status(), $delta->getInsertQuads(), $delta->getDeleteQuads(), $test_flag);
 		}
 	}
 	
@@ -746,7 +756,8 @@ class LdDacuraServer extends DacuraServer {
 				$gu = $this->objectPublished($uldo->changed, $dont_publish);
 			}
 			else {
-				$gu = new GraphResult("Nothing to save to graph");
+				$gu = new GraphResult("DQS Validation", $testflag);
+				$gu->msg("No DQS validation", "As the ".$uldo->ldtype()." is not published, no dqs validation has taken place");
 			}
 		}
 		return $gu;
@@ -912,22 +923,23 @@ class LdDacuraServer extends DacuraServer {
 		$test_unpublished = $this->getServiceSetting("test_unpublished", true);
 		
 		$md = $capture_meta ? $meta_delta : false;
+		if($capture_update){
+			$msg = "Updates to update ".$new_upd->id;
+			$ar->createGraphResult("update", $msg, $ar->status(), $new_upd, $orig_upd, $test_flag);
+		}
 		if($new_upd->published() && $orig_upd->published()){ //live edit
-			if($capture_update){	
-				$ar->createGraphResult("update", $ar->status(), $new_upd->forward, $new_upd->backward, $test_flag, $test_flag || $ar->is_reject());
-			}
-			if($capture_ld){
-				$trips = $new_upd->deltaAsTriples($orig_upd);
-				$ar->createGraphResult("ld", $ar->status(), $trips['add'], $trips['del'], $chypo);
-			}
 			$umode = "live";
+			if($capture_ld){
+				$msg = "Updates to ".$new_upd->ldtype()." ".$new_upd->targetid;
+				$trips = $new_upd->deltaAsTriples($orig_upd);
+				$ar->createGraphResult("ld", $msg, $ar->status(), $trips['add'], $trips['del'], $test_flag);
+			}
 		}
 		elseif($new_upd->published()){ //publish new update
-			if($capture_update){
-				$ar->createGraphResult("update", $ar->status(), $new_upd->forward, $new_upd->backward, $test_flag, $test_flag || $ar->is_reject());
-			}
+			$umode = "publish";
 			if($capture_ld){
-				$ar->createGraphResult("ld", $ar->status(), $new_upd->addedLDTriples(), $new_upd->deletedLDTriples(), $chypo);
+				$msg = "Updates to ".$new_upd->ldtype()." ".$new_upd->targetid;
+				$ar->createGraphResult("ld", $msg, $ar->status(), $new_upd->addedLDTriples(), $new_upd->deletedLDTriples(), $test_flag);
 			}
 		}
 		elseif($orig_upd->published()){ //unpublish update
@@ -941,32 +953,27 @@ class LdDacuraServer extends DacuraServer {
 					return $ar->failure(400, "Unpublishing of update $orig_upd->id not allowed", "There are pending updates on version ".$orig_upd->to_version()." of candidate $orig_upd->targetid");
 				}
 			}
-			if($capture_update){
-				$ar->createGraphResult("update", $ar->status(), $new_upd->forward, $new_upd->backward, $test_flag, $test_flag || $ar->is_reject());
-			}
 			if($capture_ld){
-				$ar->createGraphResult("ld", $ar->status(), $orig_upd->deletedQuads(), $orig_upd->addedQuads(), $chypo);
+				$msg = "Updates to ".$new_upd->ldtype()." ".$new_upd->targetid;
+				$ar->createGraphResult("ld", $msg, $ar->status(), $orig_upd->deletedQuads(), $orig_upd->addedQuads(), $test_flag);
 			}
 		}
 		else { //edit unpublished
-			if($test_unpublished){
-				$chypo = true;
-				if($capture_update){
-					$ar->createGraphResult("update", $ar->status(), $new_upd->forward, $new_upd->backward, $test_flag, $test_flag || $ar->is_reject());
-				}
-				if($capture_ld){
-					$ar->createGraphResult("ld", $ar->status(), $new_upd->addedLDTriples(), $new_upd->deletedLDTriples(), $chypo);
-				}
+			if($capture_ld){
+				$msg = "Updates to ".$new_upd->ldtype()." ".$new_upd->targetid. " (hypotethical - update is not published)";
+				$ar->createGraphResult("ld", $msg, $ar->status(), $new_upd->addedLDTriples(), $new_upd->deletedLDTriples(), $test_flag, true);
 			}
 		}
+		//in which cases do we call dqs?
 		if($umode == "rollback"){
-			$hypo = $chypo || !($orig_upd->changedPublished() || $orig_upd->originalPublished());
+			$hypo = !($orig_upd->changedPublished() || $orig_upd->originalPublished());
 		}
 		else {
-			$hypo = $chypo || !($new_upd->changedPublished() || $new_upd->originalPublished());
+			$hypo = !($new_upd->changedPublished() || $new_upd->originalPublished());
 		}
 		if($test_flag or ($hypo and $test_unpublished)){
 			$gu = $this->testUpdatedUpdate($new_upd, $orig_upd, $umode);
+			$gu->setHypothetical($hypo);
 		}
 		elseif(!$hypo) {
 			$gu = $this->saveUpdatedUpdate($new_upd, $orig_upd, $umode);
@@ -1173,8 +1180,9 @@ class LdDacuraServer extends DacuraServer {
 			return true;
 		}
 		else {
+			opr($ar->forAPI($format, $options, $this));
 			http_response_code(500);
-			echo "JSON error: ".json_last_error() . " " . json_last_error_msg();
+			echo "JSON error in encoding dacura result: ".json_last_error() . " " . json_last_error_msg();
 		}
 	}
 	

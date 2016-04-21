@@ -104,6 +104,7 @@ Class Ontology extends LDO {
 		//also need to do unavailable_urls
 	}
 	
+	
 	/**
 	 * sets up the namespaces properly and loads dependencies once an ontology has been imported from the api 
 	 * @param $mode the access mode (create, update, replace, ...)
@@ -213,16 +214,18 @@ Class Ontology extends LDO {
 				return $this->failure_result("Ontologies must specify a canonical URL in order to be referenced by other ontologies!", 400);
 			}
 			if(!isURL($this->meta['url'])){
-				return $this->failure_result($this->meta['url'] . " is not a valid URL. Ontologies must specify a valid URL", 400);
+				return $this->failure_result($this->meta['url'] . " is not a valid URL. Ontologies must specify a valid URL in order to be referenced by other ontologies", 400);
 			}				
 			//if the id exists in the 'all' context, we can't have one in the collection - collections can't override universal ontology ids
 			if($srvr->cid() != "all" && $srvr->dbman->hasLDO($this->id, "ontology", "all")){
 				return $this->failure_result("An ontology with id $this->id exists on the platform - you must choose a different id", 400);
 			}
 			//if the url already exists, then we don't want to replicate it
-			if(($taken_urls = $this->rule($mode, "validate", 'unavailable_urls')) && in_array($this->meta['url'],$taken_urls)){
-				return $this->failure_result($onet['id'] ." ontology already exists on platform with the url ".$this->meta['url'], 400);				
+			unset($this->nsres->prefixes[$this->id]);//temporarily unset it so we don't consider ourselves taken...
+			if(($taken_urls = array_values($this->nsres->prefixes)) && in_array($this->meta['url'],$taken_urls)){
+				return $this->failure_result("Ontology " . array_search($this->meta['url'], $this->nsres->prefixes)." already exists on platform with the url ".$this->meta['url']. " you cannot use the same URL for multiple dacura ontologies", 400);				
 			}
+			$this->nsres->prefixes[$this->id] = $this->meta['url'];
 		}
 		return true;
 	}	
@@ -236,46 +239,81 @@ Class Ontology extends LDO {
 		if(!$this->dependencies){
 			$this->dependencies = $this->generateDependencies($srvr);
 		}
-		$ores = new DQSResult("Ontology " .$this->id . "dependency analysis", $test_flag);
+		$test_unpublished = $srvr->getServiceSetting("test_unpublished", true);
+		$ores = new GraphResult("Ontology " .$this->id . "dependency analysis", $test_flag);
 		//what makes a set of dependencies invalid? 
 		//1 unknown structural elements
+		$violations = array();
 		if(isset($this->dependencies['unknown']) && isset($this->dependencies['unknown']['structural']) && count($this->dependencies['unknown']['structural']) > 0){
 			foreach($this->dependencies['unknown']['structural'] as $serr){
-				$ores->warning("MissingDependency", array("subject" => $serr[0], "predicate" => $serr[1], "object" => $serr[2]));
+				$violations[] = new MissingDependencyViolation(array(
+					"message" => $this->id." has a structural dependency on an unknown ontology ".$serr[2],
+					"info" => $serr[0] . ", ".$serr[1].", ". $serr[2],
+					"subject" => $serr[0], 
+					"predicate" => $serr[1], 
+					"object" => $serr[2]));
 			}
 			if($srvr->getServiceSetting("fail_on_missing_dependency", true)){
-				return $ores->failure(400, "Unknown required dependencies in ontology", count($ores->warnings) . " unknown structural dependencies detected in ontology");
+				$ores->errors = $violations;
+				$ores->failure(400, "Missing required dependencies", count($violations) . " unknown structural dependencies detected in ontology");
+			}
+			else {
+				$ores->warnings = array_merge($ores->warnings, $violations);
 			}		
 		}
-		//2 problem elements (dc:type)
-		foreach($this->dependencies as $sh => $ontdata){
-			if(isset($ontdata['problem_predicates']) && count($ontdata['problem_predicates']) > 0){
-				foreach($ontdata['problem_predicates'] as $onepred){
-					$ores->warning("IllegalPredicate", array("predicate" => $onepred));
+		if($ores->is_accept() || $test_unpublished){
+			//2 problem elements (dc:type)
+			$violations = array();
+			foreach($this->dependencies as $sh => $ontdata){
+				if(isset($ontdata['problem_predicates']) && count($ontdata['problem_predicates']) > 0){
+					foreach($ontdata['problem_predicates'] as $onepred){
+						$violations[] = new IllegalPredicateViolation(array(
+							"message" => $this->id." uses a problematic predicate ".$onepred,
+							"predicate" => $serr[1]));
+					}
 				}
-			}
-			if(count($ores->warnings) > 0 && $srvr->getServiceSetting("fail_on_bad_predicate", true)){
-				return $ores->failure(400, "Use of bad predicates in ontology ", count($ores->warnings) . " problem predicates detected in ontology");				
-			}
-		}
-		//3 check for incorrect url -> no statements in current namespace -> also check unknown to try to find a url recommendation...
-		if(!isset($this->dependencies[$this->id]) || count($this->dependencies[$this->id]) == 0){
-			$ores->warning("IncorrectURL", "The Ontology URL entered: ".$this->meta['url']." does not appear to be correct - there are no assertions about this ontology");
-			//$ores->warnings[] = array("rdf:type" => "IncorrectURL", "message" => "The Ontology URL entered: ".$this->meta['url']." does not appear to be correct - there are no assertions about this ontology");	
-		}
-		//4 ontology hijacking -> warning.
-		foreach($this->dependencies as $sh => $ontdata){
-			if(!in_array($sh, array("_", "unknown", $this->id)) && count($ontdata['subject']) > 0){
-				foreach($ontdata['subject'] as $hijack => $hcount){
-					$ores->warning("OntologyHijack", "$hcount assertions about $hijack from $sh ontology");
-					//$ores->warnings[] = array("rdf:type" => "OntologyHijack", "message" =>  - this constitutes ontology hijacking");
+				if(count($violations) > 0 && $srvr->getServiceSetting("fail_on_bad_predicate", true)){
+					$ores->errors = array_merge($ores->errors, $violations);
+					$ores->failure(400, "Use of bad predicates in ontology ", count($violations) . " problem predicates detected in ontology");				
 				}
-			}							
+				else {
+					$ores->warnings = array_merge($ores->warnings, $violations);
+				}		
+			}
 		}
-		if(count($ores->warnings) > 0 && $srvr->getServiceSetting("fail_on_ontology_hijack", false)){
-			return $ores->failure(400, "Ontology Hijacking identified in ontology", count($ores->warnings) . " instances detected");				
+		if($ores->is_accept() || $test_unpublished){
+			//3 check for incorrect url -> no statements in current namespace -> also check unknown to try to find a url recommendation...
+			if(!isset($this->dependencies[$this->id]) || count($this->dependencies[$this->id]) == 0){
+				$ores->warnings[] = new IncorrectURLViolation(array(
+						"message" => "The Ontology URL: ".(isset($this->meta['url']) ? $this->meta['url'] : "(missing)") ." does not appear to be correct", 
+						"info" => "there are no assertions about entities within this ontology's namespace"));				
+			}
 		}
-		return $ores->accept();
+		if($ores->is_accept() || $test_unpublished){
+			//4 ontology hijacking -> warning.
+			$violations = array();
+			foreach($this->dependencies as $sh => $ontdata){
+				if(!in_array($sh, array("_", "unknown", $this->id)) && count($ontdata['subject']) > 0){
+					foreach($ontdata['subject'] as $hijack => $hcount){
+						$violations[] = new OntologyHijackViolation(array(
+							"message" => "$hcount assertion" . (($hcount == 1) ? "" : "s" )." about $hijack ($sh ontology)",
+							"subject" => $hijack							
+						));
+					}
+				}							
+			}
+			if(count($violations) > 0 && $srvr->getServiceSetting("fail_on_ontology_hijack", false)){
+				$ores->errors = array_merge($ores->errors, $violations);
+				return $ores->failure(400, "Ontology Hijacking identified in ontology", count($ores->warnings) . " instances detected");				
+			}
+			else {
+				$ores->warnings = array_merge($ores->warnings, $violations);
+			}
+		}
+		if($ores->is_accept() && count($ores->warnings) > 0){
+			$ores->title(count($ores->warnings) == 1 ? "Dependency analysis produced a warning" : "Dependency analysis produced ".count($ores->warnings)." warnings");
+		}
+		return $ores;
 	}
 	
 	/**
@@ -288,33 +326,29 @@ Class Ontology extends LDO {
 	 */
 	function getDependencies(LdDacuraServer $srvr, $type, $ignore = array(), $forcegen = false){
 		$ignore[] = $this->id;
-		if($type == "schema"){
-			if($forcegen || !isset($this->meta['import'])){
-				if($chain = $this->loadDependencyChain($srvr, "schema", $ignore)){
-					foreach($chain as $id => $ont){
-						$this->meta['import'][$id] = array("id" => $ont->id, "collection" => $ont->cid(), "version" => $ont->version);
+		$mindex = ($type == "schema") ? "import" : "import_schema";
+		if($forcegen || !isset($this->meta[$mindex])){
+			$deps = array();
+			if($chain = $this->loadDependencyChain($srvr, $type, $ignore)){
+				foreach($chain as $id => $ont){
+					$deps[$id] = array("id" => $ont->id, "collection" => $ont->cid(), "version" => $ont->version);
+					//we don't want to save version information for generated ontology dependencies - they should always use the latest available
+					if(!isset($this->meta[$mindex])){
+						$this->meta[$mindex] = array($id => array("id" => $ont->id, "collection" => $ont->cid(), "version" => 0));								
 					}
+					elseif(!isset($this->meta[$mindex][$id])){
+						$this->meta[$mindex][$id] = array("id" => $ont->id, "collection" => $ont->cid(), "version" => 0);								
+					}					
 					$this->loaded_dependencies[$type][$id] = $ont;
 				}
-				else {
-					return false;
-				}
+				return $deps;
 			}
-			return $this->meta['import'];
+			else {
+				return false;
+			}
 		}
-		if($type == "schema/schema"){
-			if($forcegen || !isset($this->meta['schema_import'])){
-				if($chain = $this->loadDependencyChain($srvr, "schema/schema", $ignore)){
-					foreach($chain as $id => $ont){
-						$this->meta['schema_import'][$id] = array("id" => $ont->id, "collection" => $ont->cid(), "version" => $ont->version);
-						$this->loaded_dependencies[$type][$id] = $ont;
-					}
-				}
-				else {
-					return false;
-				}
-			}
-			return $this->meta['schema_import'];
+		else {
+			return $this->meta[$mindex];
 		}
 	}
 	
@@ -354,7 +388,7 @@ Class Ontology extends LDO {
 	}
 	
 	/**
-	 * Loads an ontologies dependency chain
+	 * Loads an ontology's dependency chain recursively
 	 * @param LdDacuraServer $srvr
 	 * @param string $type schema schema/schema
 	 * @param array $ignore array of prefixes to ignore in chain

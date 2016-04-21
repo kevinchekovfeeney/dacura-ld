@@ -228,13 +228,7 @@ class DacuraResult extends DacuraObject {
 	 * @param DacuraResult $sub the sub-result object that will be added to this one
 	 * @param boolean $chain should the results be merged?
 	 */
-	function add($sub, $chain = true){
-		if($chain && is_object($sub)){
-			if($sub->errors) $this->errors = array_merge($this->errors, $sub->errors);
-			if($sub->warnings) $this->warnings = array_merge($this->warnings, $sub->warnings);
-			if($sub->graphs) $this->graphs = array_merge($this->graphs, $sub->graphs);
-			if($sub->result && !$this->result) $this->result = $sub->result;
-		}
+	function add($sub, $chain = true, $force_msg = false){
 		switch($sub->status()) {
 			case "reject" :
 				if($sub->is_error()){
@@ -270,14 +264,40 @@ class DacuraResult extends DacuraObject {
 				}
 			break;
 			case "accept" :
-				if(!$this->msg_title && $sub->msg_title){
-					$this->msg_title = $sub->msg_title;
-				}
-				if(!$this->msg_body && $sub->msg_body){
-					$this->msg_body = $sub->msg_body;
+				if($force_msg || !($this->is_accept() && ($sub->is_accept() && count($sub->warnings) == 0))){
+					if(!$sub->is_accept() && !$this->msg_title && $sub->msg_title){
+						$this->msg_title = $sub->msg_title;
+						if(!$this->msg_body && $sub->msg_body){
+							$this->msg_body = $sub->msg_body;
+						}
+					}
+					elseif($sub->is_accept() && $this->is_accept() && count($sub->warnings) > 0 && count($this->warnings) > 0){
+						$this->msg_body = count($sub->warnings) + count($this->warnings) . " warnings generated";	
+						$this->msg_title = $this->test ? "Accepted for publication with warnings" : "Successfully Published to DQS Triplestore";
+					}		
+					elseif($sub->is_accept() && count($sub->warnings) > 0){
+						if($sub->msg_title && !$sub->msg_body){
+							$this->msg_title = $this->test ? "Accepted for publication with warnings" : "Successfully Published to DQS Triplestore";
+							$this->msg_body = $sub->msg_title;
+						}
+						elseif($sub->msg_title && $sub->msg_body){
+							$this->msg_title = $sub->msg_title;								
+							$this->msg_body = $sub->msg_body;								
+						}
+					}
+					elseif($force_msg){
+						$this->msg_title = $sub->msg_title;
+						$this->msg_body = $sub->msg_body;						
+					}
 				}
 				break;
 		}
+		if($chain && is_object($sub)){
+			if($sub->errors) $this->errors = array_merge($this->errors, $sub->errors);
+			if($sub->warnings) $this->warnings = array_merge($this->warnings, $sub->warnings);
+			if($sub->graphs) $this->graphs = array_merge($this->graphs, $sub->graphs);
+			if($sub->result && !$this->result) $this->result = $sub->result;
+		}		
 	}
 		
 	/**
@@ -288,26 +308,32 @@ class DacuraResult extends DacuraObject {
 	 * @param GraphResult $gu the graph result to be added to this one
 	 * @param boolean $hypo - true if this is just a hypotethical test result, not an actual update
 	 */
-	function addGraphResult($gid, GraphResult $gu, $hypo = false){
-		$gu->setHypothetical($hypo);
+	function addGraphResult($gid, GraphResult $gu, $hypo = false, $add_err = true){
 		$action = "$gid sgraph result";
 		if(!$hypo){
 			$this->add($gu);
 		}
 		elseif($gu->is_reject()) { //graph errors and warnings are copied into the warnings of this result
-			$this->addWarning($gu->action, $gu->msg_title, $gu->msg_body);
-			foreach($gu->errors as $err){
-				$this->warnings[] = $err;
+			if($add_err){
+				$this->errors[] = new GraphTestFailure($gu->action, $gu->msg_title, $gu->msg_body);
 			}
-			if($gu->warnings && count($gu->warnings) > 0){
-				$this->warnings = array_merge($this->warnings, $gu->warnings);
+			elseif(count($gu->errors) > 0 || count($gu->warnings) > 0){
+				foreach($gu->errors as $err){
+					$this->warnings[] = $err;
+				}
+				if($gu->warnings && count($gu->warnings) > 0){
+					$this->warnings = array_merge($this->warnings, $gu->warnings);
+				}
+			}
+			else {
+				$this->warnings[] = new GraphTestFailure($gu->action, $gu->msg_title, $gu->msg_body);
 			}
 		}
 		$this->graphs[$gid] = $gu;//only one result per graph result id				
 	}
 	
 	/**
-	 * Creates a new graph result object and adds it to the index of graphs
+	 * Creates a new graph2 result object and adds it to the index of graphs
 	 * @param string $gid graph id
 	 * @param string $status one of DacuraObject::$valid_statuses
 	 * @param array $itrips array of triples / quads to be inserted
@@ -315,15 +341,21 @@ class DacuraResult extends DacuraObject {
 	 * @param string $is_test true if this is a test 
 	 * @param string $is_hypo true if the graph invocation is hypothetical - does not determine result of request
 	 */
-	function createGraphResult($gid, $status, $itrips = array(), $dtrips = array(), $is_test = false, $is_hypo = false){
-		if(count($itrips) == 0 && count($dtrips) == 0){
-			$gu = new GraphResult("No update to $gid graph", $is_test);
-		}
-		else {
-			$gu = new GraphResult("update graph $gid", $is_test);
+	function createGraphResult($gid, $msg, $status, $itrips = array(), $dtrips = array(), $is_test = false, $is_hypo = false){
+		$gu = new GraphResult("Updates to graph $gid", $is_test);
+		if(count($itrips) > 0 || count($dtrips) > 0){
 			$gu->setInserts($itrips);
 			$gu->setDeletes($dtrips);
+			if($gid == "meta"){
+				$gu->msg($msg, count($itrips)." values inserted, ".count($dtrips)." values deleted");				
+			}
+			else {
+				$gu->msg($msg, count($itrips)." quads inserted, ".count($dtrips)." quads deleted");
+			}
 		}
+		else {
+			$gu->msg($msg, "No updates");				
+		}	
 		$gu->setHypothetical($is_hypo);
 		$gu->status($status);
 		$this->graphs[$gid] = $gu;
@@ -346,9 +378,9 @@ class DacuraResult extends DacuraObject {
 	 * @param boolean $is_test - is this a test invocation
 	 * @param boolean $is_hypo - is this a hypothetical result
 	 */
-	function createMetaResult($metabox, $status, $is_test = false, $is_hypo = false){
-		$this->createGraphResult("meta", $status, array_keys($metabox), array_values($metabox),$is_test, $is_hypo);
-	}
+	//function createMetaResult($metabox, $msg, $status, $is_test = false, $is_hypo = false){
+	//	$this->createGraphResult("meta", $status, array_keys($metabox), array_values($metabox),$is_test, $is_hypo);
+	//}
 	
 	/**
 	 * Returns a representation of the result for the api. 
@@ -451,15 +483,14 @@ class GraphResult extends DacuraResult {
 	
 	/**
 	 * Extends the method to include amalgamation of inserts and deletes from sub-graph result
-	 * @see DacuraResult::addGraphResult()
+	 * @see DacuraResult::add()
 	 */
-	function addGraphResult($gid, $other, $hypo = false){
-		parent::addGraphResult($gid, $other, $hypo);
-		$this->inserts = array_merge($this->inserts, $other->inserts);
-		$this->deletes = array_merge($this->deletes, $other->deletes);
-		if($hypo){
-			$this->hypothetical = true;
+	function add($sub, $chain = true, $force_msg = false){
+		if($chain && is_object($sub)){
+			if(isset($sub->inserts) && $sub->inserts) $this->inserts = array_merge($this->inserts, $sub->inserts);
+			if(isset($sub->deletes) && $sub->deletes) $this->deletes = array_merge($this->deletes, $sub->deletes);
 		}
+		return parent::add($sub, $chain, $force_msg);
 	}
 
 	/**
@@ -484,7 +515,38 @@ class GraphResult extends DacuraResult {
  *
  */
 class DQSResult extends GraphResult {
+	/** @var string|array an array of all the configured tests for the dqs test or the string "all" */
+	var $tests = array();
+	
+	/** 
+	 * Store the set of tests that this result corresponds to 
+	 * @param array|string $tests an array of tests or the string "all"
+	 */
+	function setTests($tests){
+		$this->tests = $tests;
+	}
 
+	/**
+	 * Extends method to include the tests property in api 
+	 * @see GraphResult::forAPI()
+	 */
+	function forAPI($format, $options, $srvr){
+		$apiobj = parent::forAPI($format, $options, $srvr);
+		$apiobj['tests'] = $this->tests;
+		return $apiobj;
+	}
+	
+	/**
+	 * Extends method to include the tests property in result combination 
+	 * @see GraphResult::add()
+	 */
+	function add($sub, $chain = true, $force_msg = false){
+		if($chain && is_object($sub)){
+			if($this->tests != "all" && isset($sub->tests) && $sub->tests) $this->tests = is_array($sub->tests) ? array_merge($this->tests, $sub->tests) : $sub->tests;
+		}
+		return parent::add($sub, $chain, $force_msg);
+	}
+	
 	/**
 	 * Parses the DQS response - an array of name-value error objects - and turns them into RVO objects 
 	 * 
@@ -512,10 +574,10 @@ class DQSResult extends GraphResult {
 		}
 		if(count($this->errors) > 0){
 			if(count($this->errors) == 1){
-				return $this->reject("Dacura Quality Service Error", $this->errors[0]->msg().$this->errors[0]->info());
+				return $this->reject("Dacura Quality Service Tests Failed", $this->errors[0]->msg().$this->errors[0]->info());
 			}
 			else {
-				return $this->reject("Dacura Quality Service Errors", "DQS identified ".count($this->errors) . " in the input");				
+				return $this->reject("Dacura Quality Service Errors", "DQS identified ".count($this->errors) . " errors in the input data");				
 			}
 		}
 		return $this->accept();

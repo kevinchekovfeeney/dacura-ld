@@ -1,3 +1,92 @@
+dacura.ld.testResultMsg = "(no changes have been made to the object store as this was a test invocation.)";
+dacura.ld.hypoResultMsg = "(this is a hypotethical result - no changes will be made to the graph until the object is published.)";
+dacura.ld.parseRVOList = function(jsonlist){
+	if(typeof jsonlist != 'object' || jsonlist.length == 0){
+		return [];
+	}
+	var l = [];
+	for(var i = 0; i< jsonlist.length; i++){
+		l.push(new RVO(jsonlist[i]));
+	}
+	return l;
+}
+
+dacura.ld.getTripleTableHTML = function(trips, tit){
+	var html = "";
+	if(trips.length > 0){
+		isquads = trips[0].length == 4;
+		html += "<div class='api-triplestable-title'>" + tit + "</div>";
+		html += "<table class='rbtable'>";
+		html += "<thead><tr><th>Subject</th><th>Predicate</th><th>Object</th>";
+		if(isquads){
+			html += "<th>Graph</th>";
+		}
+		html += "</tr></thead><tbody>";
+		for(var i = 0; i < trips.length; i++){
+			if(typeof trips[i][2] == "object"){
+				trips[i][2] = JSON.stringify(trips[i][2]);
+			}
+			html += "<tr><td>" + trips[i][0] + "</td><td>" + trips[i][1] + "</td><td>" + trips[i][2] + "</td>";
+			if(isquads){
+				html += "<td>" + trips[i][3] + "</td>";
+			}
+			html += "</tr>";				
+		}
+		html += "</tbody></table>";
+	}
+	return html;
+} 
+
+dacura.ld.getJSONViewHTML = function (inserts, deletes){
+	if(!inserts || !deletes){
+		var html = "<table class='json-graph'><thead><tr><th>Variable</th><th>Value</th></tr></thead><tbody>";
+		var def = inserts ? inserts : deletes;
+		for(var i in def){
+			html += "<tr><td>" + i + "</td><td class='dacura-json-viewer'>";
+			html += (typeof def[i] == "object" ? JSON.stringify(def[i], 0, 4) : def[i]);
+			html += "</td></tr>";
+		}
+		html += "</tbody></table>";
+	}
+	else {
+		var html = "<table class='json-graph'><thead><tr><th>Variable</th><th>Before</th><th>After</th></tr></thead><tbody>";
+		if(typeof inserts == "object"){
+			for(var i in inserts){
+				html += "<tr><td>" + i + "</td><td class='dacura-json-viewer'>";
+				if(typeof deletes == "object" && typeof deletes[i] != "undefined"){
+					html += typeof deletes[i] == "object" ? JSON.stringify(deletes[i], 0, 4) : deletes[i];
+				}
+				else {
+					html += "not defined";
+				}
+				html += "</td><td class='dacura-json-viewer'>" + (typeof inserts[i] == "object" ? JSON.stringify(inserts[i], 0, 4) : inserts[i]);
+				html += "</td></tr>";
+			}
+		}
+		if(typeof deletes == "object"){
+			for(var i in deletes){
+				if(typeof inserts != "object" || typeof inserts[i] == "undefined"){
+					html += "<tr><td>" + i + "</td><td class='dacura-json-viewer'>undefined</td><td class='dacura-json-viewer'>";	
+					html += typeof deletes[i] == "object" ? JSON.stringify(deletes[i], 0, 4) : deletes[i];
+					html += "</td></tr>";
+				}
+			}
+		}
+		html += "</tbody></table>";
+	}
+	return html;
+};
+
+dacura.ld.wrapJSON = function(json, mode){
+	if(!mode || mode == "view"){
+		var html = "<div class='dacura-json-viewer'>" + JSON.stringify(json, null, 4) + "</div>";				
+	}
+	else {
+		var html = "<div class='dacura-json-editor'><textarea>" + JSON.stringify(json, null, 4) + "</textarea></div>";			
+	}
+	return html;
+}
+
 function LDResult(jsondr, pconfig){
 	if(typeof jsondr == "undefined") {
 		alert("LD result created without any result json initialisation data - not permitted!");
@@ -8,22 +97,8 @@ function LDResult(jsondr, pconfig){
 	this.status = jsondr.status;
 	this.message = jsondr.message;
 	this.test = typeof jsondr.test == "undefined" ? false : jsondr.test;
-	if(typeof jsondr.errors == "undefined"){
-		this.errors = false;
-	}
-	else {
-		for(var i = 0; i < jsondr.errors.length; i++){
-			this.errors.push(new RVO(data[i]));			
-		}
-	}
-	if(typeof jsondr.warnings == "undefined"){
-		this.warnings = false;
-	}
-	else {
-		for(var i = 0; i < jsondr.warnings.length; i++){
-			this.warnings.push(new RVO(data[i]));			
-		}
-	}
+	this.errors = dacura.ld.parseRVOList(jsondr.errors);
+	this.warnings = dacura.ld.parseRVOList(jsondr.warnings);
 	this.result = false;
 	if(typeof jsondr.result == 'object' &&  jsondr.result.type == "LDO"){
 		this.result = new LDO(jsondr.result);
@@ -39,19 +114,71 @@ function LDResult(jsondr, pconfig){
 	this.pconfig = pconfig;
 }
 
+
 LDResult.prototype.show = function(rconfig){
 	var mainmsg = this.getResultMessage();
-	var extrahtml = this.getExtraHTML();
+	var errhtml = this.getErrorsHTML() + this.getWarningsHTML();
+	if(mainmsg && errhtml){
+		mainmsg += errhtml;
+	}
+	else if(errhtml){
+		mainmsg = errhtml;
+	}
+	var extrahtml = this.hasExtraFields() ? this.getExtraHTML() : false;
 	dacura.system.writeResultMessage(this.status, this.getResultTitle(), this.pconfig.resultbox, mainmsg, extrahtml, this.pconfig.mopts);
-	$(this.pconfig.resultbox + " .rb-options").buttonset();
-	var self = this;
-	$(this.pconfig.resultbox + " .roption").button().click(function(event){
-		$(self.pconfig.resultbox + " .result-extra").hide();
-		$(self.pconfig.resultbox + " .result-extra-" + this.id.substring(11)).show();				
-	});	
+	if(this.hasExtraFields()){
+		$(this.pconfig.resultbox + " .rb-options").buttonset();
+		var self = this;
+		$(this.pconfig.resultbox + " .roption").button().click(function(event){
+			$(self.pconfig.resultbox + " .result-extra").hide();
+			$(self.pconfig.resultbox + " .result-extra-" + this.id.substring(11)).show();				
+		});	
+	}
+}
+
+LDResult.prototype.getErrorsHTML = function(type){
+	var html = "";
+	if(this.hasErrors()){
+		var errhtml = "";
+		for(var i = 0; i < this.errors.length; i++){
+			errhtml += this.errors[i].getHTML(type);
+		}
+		if(errhtml.length > 0){
+			//if(type == "table"){
+				html = "<div class='api-error-details'>";
+				html += "<h4>Errors</h4>"
+				html += "<table class='rbtable dqs-error-table'>";
+				var thead = "<thead><tr>" + "<th>Error</th><th>Message</th><th>Attributes</th></thead>";
+				html += "<tbody>" + errhtml + "</tbody></table></div>";
+			//}
+		}	
+	}
+	return html;	
+}
+
+LDResult.prototype.getWarningsHTML = function(type){
+	var html = "";
+	if(this.hasWarnings()){
+		var errhtml = "";
+		for(var i = 0; i < this.warnings.length; i++){
+			errhtml += this.warnings[i].getHTML(type);
+		}
+		if(errhtml.length > 0){
+			html = "<div class='api-error-details'>";
+			html += "<h4>Warnings</h4>"
+			html += "<table class='rbtable dqs-warning-table'>"; 
+			var thead = "<thead><tr>" + "<th>Error</th><th>Message</th><th>Attributes</th></thead>";
+			html += "<tbody>" + errhtml + "</tbody></table></div>";
+		}	
+	}
+	return html;	
 }
 
 LDResult.prototype.getExtraHTML = function(){
+	if(!this.hasExtraFields()){
+		return "";
+	}
+	var extras = this.getExtraFields();
 	var headhtml = "<div class='ld-resultbox-options'><span class='rb-options'>";
 	var bodyhtml = 	"<div class='ld-resultbox-content'>";
 	var j = 0;
@@ -60,7 +187,7 @@ LDResult.prototype.getExtraHTML = function(){
 		var sel = (j++ == 0) ? " checked" : "";
 		dch = sel == "" ? " dch" : "";
 		headhtml += "<input type='radio' class='resoption roption'" + sel +" id='show_extra_" + i + "' name='result_extra_fields'><label class='resoption' title='" + extras[i].title + "' for='show_extra_" + i + "'>" + extras[i].title + "</label>";
-		bodyhtml += "<div class='result-extra" + dch + " result-extra-" + i + "'><h2>" + extras[i].title + "</h2>" + extras[i].content + "</div>";
+		bodyhtml += "<div class='result-extra" + dch + " result-extra-" + i + "'>" + extras[i].content + "</div>";
 	}
 	headhtml += "</span></div>";
 	bodyhtml += "</div>";
@@ -68,13 +195,22 @@ LDResult.prototype.getExtraHTML = function(){
 }
 
 LDResult.prototype.getResultHTML = function(){
-	var html = "<P class='result-intro'>";
-	html += this.result.meta.ldtype.ucfirst() + " " + this.result.id + " " + this.action.substring(0,6) + "d";
-	if(this.test){
-		html += " (no changes have been made to the object store as this was a test invocation.)";
+	var html ="<div class='api-graph-testresults'>";
+	if(this.status == "reject"){
+		html += "<h2>" + this.result.meta.ldtype.ucfirst() + " " + this.result.id + " " + this.action.substring(0,6) + " rejected" + "</h2>";		
 	}
-	html += ".</p>" + this.result.getHTML();
+	else {
+		html += "<h2>" + this.result.meta.ldtype.ucfirst() + " " + this.result.id + " " + this.action.substring(0,6) + "d" + "</h2>";
+	}
+	if(this.test){
+		html += "<P>" + dacura.ld.testResultMsg + "</P>";
+	}
+	html += this.result.getHTML();
 	return html;
+}
+
+LDResult.prototype.hasExtraFields = function(){
+	return (this.result || this.ldgraph || this.dqsgraph || this.metagraph || this.updategraph);
 }
 
 LDResult.prototype.getExtraFields = function(){
@@ -102,40 +238,32 @@ LDResult.prototype.getExtraFields = function(){
  * @summary generates the result box title text
  */
 LDResult.prototype.getResultTitle = function(rconfig){
-	tit = this.action; 
-	if(this.status == "reject"){
-		tit += (this.test) ? " failed tests. " : " failed. ";
-	}
-	else if(this.status == "pending"){
-		tit += (this.test) ? " requires approval. " : " accepted: awaiting approval. ";
-	}
-	else if(this.status == "accept"){
-		tit += (this.test) ? " approved. " : " accepted and published. ";
-	}
+	tit = "";//this.action.ucfirst() + " - "; 
 	if(typeof this.message == "object" && typeof this.message.title != "undefined"){
 		tit += this.message.title;
+	}
+	else if(this.message){
+		tit += this.message;
+	}
+	else if(this.status == "reject"){
+		tit += " Failed. ";
+	}
+	else if(this.status == "pending"){
+		tit += (this.test) ? " Requires approval. " : " Accepted: awaiting approval. ";
+	}
+	else if(this.status == "accept"){
+		tit += (this.test) ? " Approved. " : " Accepted and published. ";
 	}
 	return tit;
 };
 
 LDResult.prototype.hasWarnings = function(){
-	return this.warnings.length > 0;
+	return this.warnings && this.warnings.length > 0;
 };
 
 LDResult.prototype.hasErrors = function(){
-	return this.errors.length > 0;
+	return this.errors && this.errors.length > 0;
 };
-
-LDResult.prototype.getHTML = function(){
- 	var html = "<div class='ld-resultbox dacura-user-message-box dacura-" + this.status + "'>";
- 	html += this.getResultTitleHTML(this.getResultTitle());
- 	var msg = this.getResultMessage();
- 	if(msg){
- 		html += ths.getResultMessageHTML(msg);
- 	}
- 	html += "</div>";
- 	return html;
-}
 
 /**
  * @summary gets the text to populate the body of the message box
@@ -145,11 +273,108 @@ LDResult.prototype.getResultMessage = function(rconfig){
 	if(typeof(this.message) == "object"){
 		msg = typeof this.message.body != "undefined" ? this.message.body : false;
 	}
+	//else if(typeof(this.message) == "string") {
+	//	msg = this.message;
+	//}
+	return msg;
+};
+
+
+function LDGraphResult(jsondr, graphtype, pconfig){
+	this.graphtype = graphtype;
+	this.tests = typeof jsondr.tests == "undefined" ? false : jsondr.tests;
+	this.inserts = typeof jsondr.inserts == "undefined" ? false : jsondr.inserts;
+	this.deletes = typeof jsondr.deletes == "undefined" ? false : jsondr.deletes;
+	this.action = jsondr.action;
+	this.status = jsondr.status;
+	this.message = jsondr.message;
+	this.test = typeof jsondr.test == "undefined" ? false : jsondr.test;
+	this.errors = dacura.ld.parseRVOList(jsondr.errors);
+	this.warnings = dacura.ld.parseRVOList(jsondr.warnings);
+	this.pconfig = pconfig;
+	this.hypotethical = jsondr.hypotethical;
+}
+
+LDGraphResult.prototype.getResultTitle = function(){
+	if(typeof this.message == "object" && typeof this.message.title != "undefined"){
+		return this.message.title;
+	}
+	return this.action;
+};
+
+LDGraphResult.prototype.getResultMessage = function(){
+	var msg = "";
+	if(typeof(this.message) == "object"){
+		msg = typeof this.message.body != "undefined" ? this.message.body : false;
+	}
 	else if(typeof(this.message) == "string") {
 		msg = this.message;
 	}
+	if(!this.isEmpty()){
+		if(this.hypotethical){
+			msg += "<P>" + dacura.ld.hypoResultMsg + "</P>";
+		}
+		else if(this.test){
+			msg += "<P>" + dacura.ld.testResultMsg + "</P>";
+		}
+	}
+	if(this.tests !== false){
+		if(typeof this.tests == "object"){
+			if(isEmpty(this.tests)){
+				msg += "<p>No tests configured (schema free publishing)</p>";
+			}
+			else {
+				msg += "<p>Tests configured: " + this.tests.join(", ") + "</p>";
+			}
+		}
+		else {
+			msg += "<P>" + this.tests.ucfirst() + " tests configured</p>";
+		}
+	}
 	return msg;
+}
+
+LDGraphResult.prototype.getErrorsHTML = LDResult.prototype.getErrorsHTML;
+LDGraphResult.prototype.getWarningsHTML = LDResult.prototype.getWarningsHTML;
+LDGraphResult.prototype.hasWarnings = LDResult.prototype.hasWarnings;
+LDGraphResult.prototype.hasErrors = LDResult.prototype.hasErrors;
+
+LDGraphResult.prototype.isEmpty = function(){
+	return !(this.inserts || this.deletes);
+}
+
+LDGraphResult.prototype.getHTML = function(){
+	var msg = this.getResultMessage();
+	var title = this.getResultTitle();
+	var html ="<div class='api-graph-testresults'>";
+	html += "<h2>" + title + "</h2>";
+	if(msg){
+		html += msg;
+	}
+	if(this.hasErrors()){
+		html += this.getErrorsHTML();
+	}
+	if(this.hasWarnings()){
+		html += this.getWarningsHTML();
+	}
+	if(!this.isEmpty()){
+		if(this.graphtype == 'triples'){
+			if(this.inserts && this.inserts.length > 0){
+				html += dacura.ld.getTripleTableHTML(this.inserts, "Quads Inserted", true); 
+			}
+			if(this.deletes && this.deletes.length > 0){
+				html += dacura.ld.getTripleTableHTML(this.deletes, "Quads Deleted", true); 
+			}
+		}
+		else {
+			html += dacura.ld.getJSONViewHTML(this.inserts, this.deletes);
+		}
+	}
+	html += "</div>";
+	return html;
 };
+
+
 
 function RVO(data){
 	this.cls = data.cls;
@@ -157,7 +382,7 @@ function RVO(data){
 	this.info = data.info;
 	this.subject = data.subject;
 	this.predicate = data.predicate;
-	this.object = data.predicate;
+	this.object = data.object;
 	this.property = data.property;
 	this.element = data.element;
 	this.label = data.label;
@@ -175,10 +400,137 @@ function RVO(data){
 	this.parentProperty = data.parentProperty;
 }
 
+RVO.prototype.getAttributes = function(){
+	var atts = {};
+	if(this.subject) atts.subject = this.subject;
+	if(this.predicate) atts.predicate = this.predicate;
+	if(this.object) atts.object = this.object;
+	if(this.property) atts.property = this.property;
+	if(this.element) atts.element = this.element;
+	//if(this.label) atts.label = this.label;
+	//if(this.comment) atts.comment = this.comment;
+	if(this.path) atts.path = this.path;
+	if(this.constraintType) atts.constraintType = this.constraintType;
+	if(this.cardinality) atts.cardinality = this.cardinality;
+	if(this.value) atts.value = this.value;
+	if(this.qualifiedOn) atts.qualifiedOn = this.qualifiedOn;
+	if(this.parentProperty) atts.parentProperty = this.parentProperty;
+	if(this.parentDomain) atts.parentDomain = this.parentDomain;
+	if(this.domain) atts.domain = this.domain;
+	if(this.range) atts.range = this.range; 
+	if(this.parentRange) atts.parentRange = this.parentRange; 
+	if(this.parentProperty) atts.parentProperty = this.parentProperty;
+	return atts;
+
+}
+
+RVO.prototype.getHTML = function(type){
+	return "<tr><td title='" + this.comment + "'>"+this.label+"</td><td>"+this.message +"</td><td>" + this.info + "</td><td class='rawjson'>" + JSON.stringify(this.getAttributes(), 0, 4) + "</td></tr>";
+}	
+
+
+
+
 function LDOUpdate(data){}
 
-function LDOViewer(ldo){
+function LDOViewer(ldo, pconf){
 	this.ldo = ldo;
+	this.pconf = pconf;
+	this.emode = "view";
+	this.viewstyle = "raw";
+	this.target = "";
+}
+
+LDOViewer.prototype.init = function(vconf){
+	if(typeof vconf.emode == "string"){
+		this.emode = vconf.emode;
+	}
+	if(typeof vconf.viewstyle == "string"){
+		this.viewstyle = vconf.viewstyle;
+	}
+	if(typeof vconf.target != "string"){
+		alert("LDO Viewer called without a target!");
+	}
+	else {
+		this.target = vconf.target;
+		this.prefix = this.target.substring(1);//get rid of the #
+	}
+	if(typeof vconf.view_formats == "object"){
+		this.view_formats = vconf.view_formats;
+	}
+	else {
+		this.view_formats = false;
+	}
+	if(typeof vconf.view_actions == "object"){
+		this.view_actions = vconf.view_actions;
+	}
+	else {
+		this.view_actions = false;
+	}
+	if(typeof vconf.view_options == "object"){
+		this.view_options = vconf.view_options;
+	}
+	else {
+		this.view_options = false;
+	}
+	this.show_options = true;
+}
+
+LDOViewer.prototype.show = function(vconf){
+	this.init(vconf);
+	$(this.target).html("");
+	if(this.show_options){
+		$(this.target).append(this.showOptionsBar());
+	}
+	//html += this.ldo.getContentsHTML(this.emode);
+	//if(this.viewstyle == "raw"){
+	//	this.showRaw();	
+	//}
+	//else {
+	//	$(this.target).html(html);
+	//}
+}
+
+LDOViewer.prototype.showOptionsBar = function(){
+	var html = "<div class='ld-view-bar ld-bar'><table class='ld-bar'><tr><td class='ld-bar ld-bar-left'>";
+	if(this.emode == "view"){
+		if(this.view_formats){
+			html += "<select class='ld-view-formats'>";
+			for(var i in this.view_formats){
+				html += "<option class='foption ld-bar-format' id='" + this.prefix + "_format_" + i + "'>" + this.view_formats[i] + "</option>";							
+			}
+			html += "</select>";
+		}
+		html += "</td>";
+		html += "<td class='ld-bar ld-bar-centre>";
+		if(this.view_options){
+			html += "<span class='ld-view-options'>";
+			for(var i in this.view_options){
+				html += "<input type='checkbox' class='ld-bar-option' id='" + this.prefix + "_option_" + i + "' "; 
+				if(this.view_options[i].value){
+					html += "checked";
+				}
+				html += " /><label for='" + this.prefix + "_option_" + i + "'>" + this.view_options[i].title + "</label>";
+			}
+		}
+		html += "</td>";
+		html += "<td class='ld-bar ld-bar-right'>";
+		if(this.view_actions){
+			html += "<span class='ld-update-actions'>";
+			for(var i in this.view_actions){
+				html += "<button class='ldo-actions' title='" + this.view_actions[i] + "' id='"+ this.prefix + "-action-" + i + "'>" + this.view_actions[i] + "</button>";	
+			}
+			html += "</span>";
+		}
+	}
+	html += "</td></tr></table><span class='browsermax editor-max ui-icon ui-icon-arrow-4-diag'></span>";
+	html += "<span class='browsermin dch editor-min ui-icon ui-icon-closethick'></span></div>";
+	return html;
+}
+
+
+LDOViewer.prototype.showRaw = function(){
+	$(this.target).html(this.ldo.getContentsHTML());	
 }
 
 function LDO(data){
@@ -190,98 +542,39 @@ function LDO(data){
 }
 
 
-LDO.prototype.getHTML = function(){
-	var html ="<div class='api-graph-testresults'>";
+LDO.prototype.getHTML = function(mode){
 	if(!this.contents && !this.meta){
 		if(isEmpty(this.inserts) && isEmpty(this.deletes)){
 			html += "<div class='info'>No changes to graph</div>";		
 		}
 	}
 	else {
-		var html = "<div class='dacura-json-viewer'>";
-		if(this.meta) html += JSON.stringify(this.meta, 0, 4);
-		if(this.contents) html += JSON.stringify(this.contents, 0, 4);
-		html += "</div>";
+		html = this.getMetaHTML(mode) + this.getContentsHTML(mode);
 	}
-	html += "</div>";
 	return html;
 }
 
-
-function LDGraphResult(jsondr, graphtype, pconfig){
-	this.graphtype = graphtype;
-	this.inserts = typeof jsondr.inserts == "undefined" ? false : jsondr.inserts;
-	this.deletes = typeof jsondr.deletes == "undefined" ? false : jsondr.deletes;
-	this.action = jsondr.action;
-	this.status = jsondr.status;
-	this.message = jsondr.message;
-	this.test = typeof jsondr.test == "undefined" ? false : jsondr.test;
-	this.errors = typeof jsondr.errors == "undefined" ? [] : jsondr.errors;
-	this.warnings = typeof jsondr.warnings == "undefined" ? [] : jsondr.warnings;
-	this.pconfig = pconfig;
+LDO.prototype.getMetaHTML = function(mode){
+	return dacura.ld.wrapJSON(this.meta);	
 }
 
-LDGraphResult.prototype.getHTML = function(){
-	var html ="<div class='api-graph-testresults'>";
-	if(isEmpty(this.inserts) && isEmpty(this.deletes)){
-		html += "<div class='info'>No changes to graph</div>";		
+LDO.prototype.getContentsHTML = function(mode){
+	if(this.format == "json" || this.format== "jsonld"){
+		return dacura.ld.wrapJSON(this.contents, mode);
 	}
-	else if(this.graphtype == 'triples'){
-		if(this.inserts && this.inserts.length > 0){
-			html += this.getTripleTableHTML(this.inserts, "Quads Inserted"); 
-		}
-		if(this.deletes && this.deletes.length > 0){
-			html += this.getTripleTableHTML(dr.deletes, "Quads Deleted"); 
-		}
+	else if(this.format == "triples" || this.format == "quads"){
+		return dacura.ld.getTripleTableHTML(this.contents);
 	}
-	else {
-		html += this.getJSONViewHTML(this.inserts, this.deletes);
+	else if(this.format == "html"){
+		return "<div class='dacura-html-viewer'>" + this.contents + "</div>";
 	}
-	html += "</div>";
-	return html;
-};
-
-LDGraphResult.prototype.getJSONViewHTML = function (inserts, deletes){
-	if(typeof inserts == "undefined" || typeof deletes == "undefined"){
-		var html = "<table class='json-graph'><thead><tr><th>Variable</th><th>Value</th></tr></thead><tbody>";
-		var def = typeof inserts == "undefined" ? deletes : inserts;
-		for(var i in def){
-			html += "<tr><td>" + i + "</td><td class='dacura-json-viewer'>";
-			html += (typeof def[i] == "object" ? JSON.stringify(def[i], 0, 4) : def[i]);
-			html += "</td></tr>";
-		}
-		html += "</tbody></table>";
+	else if(this.format == "svg"){
+		return "<object id='svg' type='image/svg+xml'>" + this.contents + "</object>";
 	}
 	else {
-		var html = "<table class='json-graph'><thead><tr><th>Variable</th><th>Before</th><th>After</th></tr></thead><tbody>";
-		if(typeof inserts == "object"){
-			for(var i in inserts){
-				html += "<tr><td>" + i + "</td><td class='dacura-json-viewer'>";
-				if(typeof deletes == "object" && typeof deletes[i] != "undefined"){
-					html += typeof deletes[i] == "object" ? JSON.stringify(deletes[i], 0, 4) : deletes[i];
-				}
-				else {
-					html += "not defined";
-				}
-				html += "</td><td class='dacura-json-viewer'>" + (typeof inserts[i] == "object" ? JSON.stringify(inserts[i], 0, 4) : inserts[i]);
-				html += "</td></tr>";
-			}
-		}
-		if(typeof deletes == "object"){
-			jpr(deletes);
-			for(var i in deletes){
-				if(typeof inserts != "object" || typeof inserts[i] == "undefined"){
-					html += "<tr><td>" + i + "</td><td class='dacura-json-viewer'>undefined</td><td class='dacura-json-viewer'>";	
-					html += typeof deletes[i] == "object" ? JSON.stringify(deletes[i], 0, 4) : deletes[i];
-					html += "</td></tr>";
-				}
-			}
-		}
-		html += "</tbody></table>";
-	}
-	return html;
+		return "<div class='dacura-export-viewer'>" + this.contents + "</div>";
+	}	
 };
-
 
 /*
 dacura.ldresult = {

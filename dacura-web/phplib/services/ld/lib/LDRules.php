@@ -68,7 +68,7 @@ class LDRules extends DacuraObject {
 			//the set of meta properties that may be set in the ldo 
 			'allowed_meta_properties' => $ldo->getValidMetaProperties(),
 			//the set of properties that must be present in meta-data
-			'required_meta_properties' => $ldo->getRequiredMetaProperties(),
+			'required_meta_properties' => $srvr->getServiceSetting("required_meta_properties", false),
 			//if set, plain literals: 'literal', 232, 43.2 are banned and {type: xsd:int, data: 12} are required 
 			'require_object_literals' => $srvr->getServiceSetting("require_object_literals", true),
 			//forbid empty arrays {} [] as property values

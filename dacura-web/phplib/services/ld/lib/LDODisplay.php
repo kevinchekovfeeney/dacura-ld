@@ -1,9 +1,11 @@
 <?php 
 class LDODisplay extends DacuraObject {
 	var $cwurl;
+	var $nsres;
 	
-	function __constructor($id, $cwurl = false){
-		parent::__constructor($id);
+	function __construct($id, &$nsres, $cwurl){
+		$this->id = $id;
+		$this->nsres = $nsres;
 		$this->cwurl = $cwurl;
 	}
 	

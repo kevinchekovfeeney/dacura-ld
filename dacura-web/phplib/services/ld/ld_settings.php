@@ -18,8 +18,11 @@ $settings = array(
 	//"problem_predicates" => false,
 	//"structural_predicates" => false,
 	//"prefixes" => false,
+	"store_rejected" => array("create"),
+	//"decisions" => array...
 	/* if the graph rejects a new object, to we want to roll it back and let it be pending in the object store? */
 	"rollback_new_to_pending_on_dqs_reject"	=> true,
+	"retain_pending_on_dqs_reject"	=> true,
 	/* if there are updates pending on the current version of an object, we may not want to allow us to roll it back to an older version */
 	"pending_updates_prevent_rollback" => true,
 	/* if dqs rejects an update do we want to save it in the object store as a deferred update? */	
@@ -33,9 +36,9 @@ $settings = array(
 		
 	/* these next two should really be in further down classes....	
 	/* the set of tests that will apply when a create schema request is sent to the dqs */
-	"create_dqs_schema_tests" => array(),
+	//"create_dqs_schema_tests" => array(),
 	/* the set of tests that will apply when a create instance request is sent to the dqs */	
-	"create_dqs_instance_tests" => array(),	
+	//"create_dqs_instance_tests" => array(),	
 	/* default options to be sent to api for create command */
 	"create_options" => array("show_dqs_triples" => 1, 
 			"ns" => 1, "addressable" => 1, "analysis" => 1, 
