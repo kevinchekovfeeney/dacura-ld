@@ -7,8 +7,8 @@ $settings['fail_on_ontology_hijack'] = false;
 $settings['required_meta_properties'] = array("url");
 $settings["collapse_blank_nodes_for_dependencies"] = false;
 
-//$settings['create_dqs_schema_tests'] = "all";
-//$settings['create_dqs_instance_tests'] = "all";
+$settings['create_dqs_schema_tests'] = "all";
+$settings['create_dqs_instance_tests'] = "all";
 //$settings['two_tier_schemas'] = false;
 
 $settings["update_options"]  = array("show_dqs_triples" => 1, "show_ld_triples" => 1, "fail_on_id_denied" => 1,
