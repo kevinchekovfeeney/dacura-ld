@@ -174,32 +174,6 @@ function get_ldo($ldo_id, $fragment_id = false){
 }
 
 /**
- * GET /update/$update_id
- * 
- * optional arguments: [options, version, format]
- * version represents the version of the associated linked data object that the update should be applied to to create a before and after display
- * 
- * Retrieve a json representation of a linked data object update from the api
- * @param string $ldo_id the id of the object
- * @return string json LDOUpdate / DacuraResult on error
- */
-function get_update($update_id){
-	global $dacura_server, $ldo_type;
-	$options = isset($_GET['options']) ? $_GET['options'] : array();
-	$version = isset($_GET['version']) ? $_GET['version'] : false;
-	$format = isset($_GET['format']) ? $_GET['format'] : false;
-	$dacura_server->init("get_update", $update_id);
-	$ar = new DacuraResult("view update $update_id");
-	$ar->add($dacura_server->getUpdate($update_id, $version, $options));
-	$params = array("type" => $ldo_type);
-	if($version){
-		$params['version'] = $version;
-	}
-	$dacura_server->recordUserAction("get.update.$update_id", $params);
-	return $dacura_server->sendRetrievedUpdate($ar, $format, $options);
-}
-
-/**
  * POST /$ldo_id
  * 
  * Updates a ldo with the passed version
@@ -263,6 +237,34 @@ function update_ldo($target_id, $fragment_id = false){
 	$ar->add($dacura_server->updateLDO($target_id, $fragment_id, $ldo_type, $update_obj, $update_meta, $format, $editmode, $version, $options, $test_flag));
 	return $dacura_server->writeDecision($ar, $format, $options);
 }
+
+
+/**
+ * GET /update/$update_id
+ *
+ * optional arguments: [options, version, format]
+ * version represents the version of the associated linked data object that the update should be applied to to create a before and after display
+ *
+ * Retrieve a json representation of a linked data object update from the api
+ * @param string $ldo_id the id of the object
+ * @return string json LDOUpdate / DacuraResult on error
+ */
+function get_update($update_id){
+	global $dacura_server, $ldo_type;
+	$options = isset($_GET['options']) ? $_GET['options'] : array();
+	$version = isset($_GET['version']) ? $_GET['version'] : false;
+	$format = isset($_GET['format']) ? $_GET['format'] : false;
+	$dacura_server->init("get_update", $update_id);
+	$ar = new DacuraResult("view update $update_id");
+	$ar->add($dacura_server->getUpdate($update_id, $version, $options));
+	$params = array("type" => $ldo_type);
+	if($version){
+		$params['version'] = $version;
+	}
+	$dacura_server->recordUserAction("get.update.$update_id", $params);
+	return $dacura_server->sendRetrievedUpdate($ar, $format, $options);
+}
+
 
 /**
  * Updates an already existing update

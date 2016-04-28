@@ -28,18 +28,34 @@ class LdService extends DacuraService {
 	function getMinimumFacetForAccess(DacuraServer &$dacura_server){
 		return true;
 	}
-	
-	/*
-	 * The next functions render snippets of html that are needed by multiple services
+
+	/**
+	 * (non-PHPdoc)
+	 * @see DacuraService::renderScreen()
+	 * Overrides method to support screen inheritance from ld service...
+	 * @param string $screen the name of the screen to render
+	 * @param array $params name value associate array of substitution parameters to be passed to screen
+	 * @param string $other_service if set, the screen will be taken from this service, rather than the current one which is default
+	 * @return void
 	 */
-	function getScreenForCall(){
-		if($this->screen == "list"){
-			return "list";
+	public function renderScreen($screen, $params, $other_service = false){
+		if($this->name() != "ld" && !$other_service){ //derived class that has no other service explicitly set.
+			$service =& $this;
+			global $dacura_server;
+			//first check to see if the service has defined its own screen
+			$f = $this->mydir."screens/$screen.php";
+			if(file_exists($f)){
+				include_once($f);
+			}
+			else {
+				//opr($params);
+				//if not then use the one inherited from the ld service....
+				return $this->renderScreen($screen, $params, "ld");
+			}
 		}
-		elseif($this->screen == "update"){
-			return "update";
+		else {
+			return parent::renderScreen($screen, $params, $other_service);
 		}
-		return "view";
 	}
 	
 	function loadArgsFromBrowserURL($sections){
@@ -51,6 +67,17 @@ class LdService extends DacuraService {
 			$this->screen = $this->default_screen;
 		}
 	}
+	
+	function getScreenForCall(){
+		if($this->screen == "list"){
+			return "list";
+		}
+		elseif($this->screen == "update"){
+			return "update";
+		}
+		return "view";
+	}
+	
 
 	/* Organised by screen - list screen first */
 	function readLDListArgs($is_post = false){
@@ -111,7 +138,7 @@ class LdService extends DacuraService {
 	}
 
 	function getDefaultViewOptions(){
-		$a = array("ns" => array("title" => "Namespace prefixes", "value" => 1), "pretty" => array("title" => "Pretty", "value" => 1), "unaddressable" => array("title" => "Blank Nodes", "value" => 1));
+		$a = array("ns" => array("title" => "Namespace prefixes", "value" => 1), "pretty" => array("title" => "Pretty", "value" => 1), "addressable" => array("title" => "Replace Blank Nodes", "value" => 1));
 		return $a;
 	}
 
@@ -419,33 +446,4 @@ class LdService extends DacuraService {
 		return $params;
 	}
 
-	/**
-	 * (non-PHPdoc)
-	 * @see DacuraService::renderScreen()
-	 * Overrides method to support screen inheritance from ld service...
-	 * @param string $screen the name of the screen to render
-	 * @param array $params name value associate array of substitution parameters to be passed to screen
-	 * @param string $other_service if set, the screen will be taken from this service, rather than the current one which is default
-	 * @return void
-	 */
-	public function renderScreen($screen, $params, $other_service = false){
-		if($this->name() != "ld" && !$other_service){ //derived class that has no other service explicitly set. 
-			$service =& $this;
-			global $dacura_server;
-			//first check to see if the service has defined its own screen 
-			$f = $this->mydir."screens/$screen.php";
-			if(file_exists($f)){
-				include_once($f);
-			}
-			else {
-				//opr($params);
-				//if not then use the one inherited from the ld service....
-				return $this->renderScreen($screen, $params, "ld");
-			}
-		}
-		else {
-			return parent::renderScreen($screen, $params, $other_service);
-		}
-	}
-	
 }

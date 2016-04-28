@@ -131,7 +131,6 @@ LDResult.prototype.show = function(rconfig){
 		var self = this;
 		$(this.pconfig.resultbox + " .roption").button().click(function(event){
 			$(self.pconfig.resultbox + " .result-extra").hide();
-			//alert(self.pconfig.resultbox + " .result-extra-" + this.id.substring(11));
 			$(self.pconfig.resultbox + " .result-extra-" + this.id.substring(11)).show();				
 		});	
 	}
@@ -188,7 +187,7 @@ LDResult.prototype.getExtraHTML = function(){
 		var sel = (j++ == 0) ? " checked" : "";
 		dch = (sel == "" ? " dch" : "");
 		headhtml += "<input type='radio' class='resoption roption'" + sel +" id='show_extra_" + i + "' name='result_extra_fields'><label class='resoption' title='" + extras[i].title + "' for='show_extra_" + i + "'>" + extras[i].title + "</label>";
-		bodyhtml += "<div class='result-extra" + dch + " result-extra-" + i + "'>" + extras[i].content + "</div>";
+		bodyhtml += "<div class='result-extra " + dch + " result-extra-" + i + "'>" + extras[i].content + "</div>";
 	}
 	headhtml += "</span></div>";
 	bodyhtml += "</div>";
@@ -206,7 +205,7 @@ LDResult.prototype.getResultHTML = function(){
 	if(this.test){
 		html += "<P>" + dacura.ld.testResultMsg + "</P>";
 	}
-	html += this.result.getHTML();
+	html += this.result.getHTML() + "</div>";
 	return html;
 }
 
@@ -434,12 +433,15 @@ RVO.prototype.getHTML = function(type){
 
 function LDOUpdate(data){}
 
-function LDOViewer(ldo, pconf){
+function LDOViewer(ldo, pconf, vconf){
 	this.ldo = ldo;
 	this.pconf = pconf;
 	this.emode = "view";
 	this.viewstyle = "raw";
 	this.target = "";
+	if(typeof voncf == "object"){
+		this.init(vconf);
+	}
 }
 
 LDOViewer.prototype.init = function(vconf){
@@ -478,28 +480,118 @@ LDOViewer.prototype.init = function(vconf){
 }
 
 LDOViewer.prototype.show = function(vconf){
-	this.init(vconf);
+	if(typeof vconf == "object"){
+		this.init(vconf);
+	}
 	$(this.target).html("");
+	var self = this;
 	if(this.show_options){
 		$(this.target).append(this.showOptionsBar());
+		$('button.ld-control').button().click(function(){
+			var act = this.id.substring(this.id.lastIndexOf("-")+1);
+			self.handleViewAction(act);
+		});
+		$('input.ld-control').button().click(function(){
+			var opt = this.id.substring(this.id.lastIndexOf("-")+1);
+			var val = $('#' + this.id).attr('checked');
+			self.handleViewOptionUpdate(opt, !val)
+		});
+		//$('span.ld-view-options').buttonset();
+		$('select.ld-control').selectmenu({change:function(){
+			var format = $('#'+this.id).val();
+			self.handleViewFormatUpdate(format);}
+		});
 	}
 	$(this.target).append(this.ldo.getContentsHTML(this.emode));
-	//html += ;
-	//if(this.viewstyle == "raw"){
-	//	this.showRaw();	
-	//}
-	//else {
-	//	$(this.target).html(html);
-	//}
+
 }
+
+LDOViewer.prototype.handleViewAction = function(act){
+	if(act == "export"){
+		window.location.href = this.ldo.fullURL() + "&direct=1";	
+	}
+	else if(act == "accept" || act == "pending" || act == "reject"){
+		var upd = {'ldtype': this.ldo.ldtype(), "meta": {"status": act}, "editmode": "update"};
+		this.update(upd);
+	}
+};
+
+LDOViewer.prototype.handleViewFormatUpdate = function(format){
+	if(format != this.ldo.format){
+		var args = this.ldo.getAPIArgs();
+		args.format = format;
+		var idstr = this.ldo.ldtype().ucfirst() + " " + this.ldo.id + " in " + this.view_formats[format] + " format";
+		msgs = {busy: "Fetching " + idstr + " from server", "fail": "Failed to retrieve " + idstr + " from server"};
+		this.refresh(args, msgs);
+	}
+	else {
+		alert("format will not change: still "+this.ldo.format);
+	}
+};
+
+LDOViewer.prototype.handleViewOptionUpdate = function(opt, val){
+	var opts = this.ldo.options;
+	if(val && (typeof opts[opt] == "undefined" || opts[opt] == false)){
+		opts[opt] = 1;
+	}	
+	else if(!val && opts[opt] == true){
+		opts[opt] = 0;
+	}
+	else {
+		return alert(opt + " is set to " + val + " no change");
+	}
+	var args = this.ldo.getAPIArgs();
+	args.options = opts;
+	var idstr = this.ldo.ldtype().ucfirst() + " " + this.ldo.id + " with option " + this.view_options[opt].title;
+	if(opts[opt]){ 
+		idstr += " enabled";
+	}
+	else {
+		idstr += " disabled";
+	}
+	msgs = {busy: "Fetching " + idstr + " from server", "fail": "Failed to retrieve " + idstr + " from server"};
+	this.refresh(args, msgs);
+};
+
+LDOViewer.prototype.refresh = function(args, msgs){
+	var id = this.ldo.id;
+	if(this.ldo.fragment_id){ 
+		id = id + "/" + this.ldo.fragment_id;
+	}
+	var self = this;//this becomes bound to the callback...
+	var handleResp = function(data, pconf){
+		self.ldo = new LDO(data);
+		self.show();
+	}
+	$(this.pconf.resultbox).empty();
+	dacura.ld.fetch(id, args, handleResp, this.pconf, msgs);
+};
+
+LDOViewer.prototype.update = function(upd){
+	var id = this.ldo.id;
+	if(this.ldo.fragment_id){ 
+		id = id + "/" + this.ldo.fragment_id;
+	}
+	var self = this;//this becomes bound to the callback...
+	var handleResp = function(data, pconf){
+		jpr(data);
+	}
+	dacura.ld.update(id, upd, handleResp, this.pconf, false);
+}
+
+
 
 LDOViewer.prototype.showOptionsBar = function(){
 	var html = "<div class='ld-view-bar ld-bar'><table class='ld-bar'><tr><td class='ld-bar ld-bar-left'>";
 	if(this.emode == "view"){
 		if(this.view_formats){
-			html += "<select class='ld-view-formats'>";
+			html += "<select class='ld-view-formats ld-control'>";
 			for(var i in this.view_formats){
-				html += "<option class='foption ld-bar-format' id='" + this.prefix + "_format_" + i + "'>" + this.view_formats[i] + "</option>";							
+				var sel = "";
+				if(this.ldo.format == i){
+					sel = "selected "
+				}
+				html += "<option class='foption ld-bar-format' value='" + i + "' id='" + this.prefix + "-format-" + i + "' " + sel + ">" + this.view_formats[i] + "</option>";							
 			}
 			html += "</select>";
 		}
@@ -508,11 +600,11 @@ LDOViewer.prototype.showOptionsBar = function(){
 		if(this.view_options){
 			html += "<span class='ld-view-options'>";
 			for(var i in this.view_options){
-				html += "<input type='checkbox' class='ld-bar-option' id='" + this.prefix + "_option_" + i + "' "; 
-				if(this.view_options[i].value){
+				html += "<input type='checkbox' class='ld-control ld-bar-option' id='" + this.prefix + "-option-" + i + "' ";
+				if(this.ldo.options[i] == 1){
 					html += "checked";
 				}
-				html += " /><label for='" + this.prefix + "_option_" + i + "'>" + this.view_options[i].title + "</label>";
+				html += " /><label for='" + this.prefix + "-option-" + i + "'>" + this.view_options[i].title + "</label>";
 			}
 		}
 		html += "</td>";
@@ -520,7 +612,11 @@ LDOViewer.prototype.showOptionsBar = function(){
 		if(this.view_actions){
 			html += "<span class='ld-update-actions'>";
 			for(var i in this.view_actions){
-				html += "<button class='ldo-actions' title='" + this.view_actions[i] + "' id='"+ this.prefix + "-action-" + i + "'>" + this.view_actions[i] + "</button>";	
+				if((this.ldo.meta.status == "accept" && i != "reject" && i != "accept") || 
+						(this.ldo.meta.status == 'pending' && i != 'pending') || 
+						(this.ldo.meta.status == "reject" && i != "reject" && i != "accept" && i!= "pending")){
+					html += "<button class='ldo-actions ld-control' title='" + this.view_actions[i] + "' id='"+ this.prefix + "-action-" + i + "'>" + this.view_actions[i] + "</button>";
+				}
 			}
 			html += "</span>";
 		}
@@ -547,7 +643,7 @@ function LDO(data){
 LDO.prototype.getHTML = function(mode){
 	if(!this.contents && !this.meta){
 		if(isEmpty(this.inserts) && isEmpty(this.deletes)){
-			html += "<div class='info'>No changes to graph</div>";		
+			html = "<div class='info'>No changes to graph</div>";		
 		}
 	}
 	else {
@@ -577,6 +673,47 @@ LDO.prototype.getContentsHTML = function(mode){
 		return "<div class='dacura-export-viewer'>" + this.contents + "</div>";
 	}	
 };
+
+LDO.prototype.getAPIArgs = function(){
+	var args = {
+		"format": this.format,
+		"options": this.options,
+		"ldtype": this.meta.ldtype
+	};
+	if(this.version > 0){
+		args.version = this.version;
+	}
+	return args;
+}
+
+LDO.prototype.url = function(){
+	return this.meta.cwurl;
+}
+
+
+LDO.prototype.fullURL = function(){
+	var url = this.url() + "?";
+	var args = {"ldtype": this.ldtype()};
+	if(this.format){
+		args['format'] = this.format;
+	}
+	if(this.version > 0){
+		args['version'] = this.version;
+	}
+	for(var i in this.options){
+		if(i == "ns" || i == "addressable"){
+			args['options[' + i + ']'] = this.options[i];
+		}
+	}
+	for(var j in args){
+		url += j + "=" + args[j] + "&";
+	}
+	return url.substring(0, url.length-1);
+}
+
+LDO.prototype.ldtype = function(){
+	return this.meta.ldtype;
+}
 
 /*
 dacura.ldresult = {
