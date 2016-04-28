@@ -217,13 +217,13 @@ function drawLDOPage(data, pconf){
 	}	
 	dacura.system.styleJSONLD("td.rawjson");	
 	var ldo = new LDO(data);
-	var ldov = new LDOViewer(ldo);
+	var ldov = new LDOViewer(ldo, dacura.tool.subscreens["ldo-contents"]);
 	var ldovconfig = {target: "#show-ldo", emode: "view"};
 	ldovconfig.view_formats = <?= json_encode($params['valid_view_formats']);?>;
 	ldovconfig.view_options = <?= json_encode($params['default_view_options']);?>;
 	ldovconfig.view_actions = <?= json_encode($params['view_actions']);?>;
-	ldov.show(ldovconfig);
-	//dacura.ld.viewer.draw(data, "show-ldo");
+	ldov.init(ldovconfig);
+	ldov.show();
 	dacura.tool.button.init("testrawedit",  {
 		"screen": "ldo-raw",			
 		"source": "ldoraw",
