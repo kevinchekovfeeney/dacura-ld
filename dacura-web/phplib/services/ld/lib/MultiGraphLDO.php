@@ -562,6 +562,7 @@ class MultiGraphLDO extends LDO {
 		if(!$this->nsres){
 			return $this->failure_result("No name space resolver object set for LD object - cannot compress Namespaces", 500);
 		}
+		$res = false;
 		foreach($this->ldprops as $gid => $gprops){
 			$res = $this->nsres->compressNamespaces($this->ldprops[$gid], $this->cwurl);
 		}
