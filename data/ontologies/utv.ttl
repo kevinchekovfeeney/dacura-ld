@@ -1,0 +1,765 @@
+#@base           <seshatTest> .
+@prefix   time: <http://www.w3.org/2006/time#> .
+@prefix    owl: <http://www.w3.org/2002/07/owl#> .
+@prefix    xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix   rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix    rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix     dc: <http://purl.org/dc/elements/1.1/> .
+@prefix utv: <http://dacura.cs.tcd.ie/ontology/utv#> .
+@prefix owltime: <http://www.w3.org/2006/time#>.
+
+# Named toplevel resources 
+#
+<http://dacura.cs.tcd.ie/ontology/utv#>
+	a owl:Ontology ;
+	dc:contributor "Bojan Bozic" ,
+		       "Odhran Gavin" ;		       
+	dc:creator "Kevin Feeney" ,
+		   "Gavin Mendel-Gleason" ,	
+		   "Rob Brennan" ;
+	dc:date "2015-12-22" ;
+	dc:description "This ontology is used to describe generic data patterns for describing  uncertain temporal variables of historical entities." ;
+	dc:rights "This ontology is distributed under a Creative Commons Attribution License - http://creativecommons.org/licenses/by/3.0" ;
+	dc:title "Uncertain Temporal Variables" ;
+	rdfs:comment "This ontology is used to describe generic data patterns for describing uncertain temporal variables of historical entities. It is used within the Seshat Global Databank." ;
+	rdfs:label "Uncertain Temporal Variables Ontology." ;
+	owl:versionInfo "0.04.000" .
+#
+# v 0.03.000 add support for xsd:duration datatypes
+# v 0.04.000  rename from dacura to utv: Uncertain Temporal Variables
+#
+# Minimum scaffolding to associate Entities with variables
+utv:Entity
+	a owl:Class ;
+	rdfs:label "Entity" ;
+	rdfs:comment "This is the super-class of all primary entities - the units of data collection. Entities have variables associated with them.".
+
+utv:hasVariable a owl:ObjectProperty;
+	rdfs:label "Has Variable";
+	rdfs:comment "The basic property relation for dacura datasets. Used to relate a entity and the value of a variable with qualified information, e.g. uncertainty, temporal bounds, about the value. All variable properties inherit from this property.";
+	rdfs:range utv:Variable;
+	rdfs:domain utv:Entity.
+
+# Basic Variable handling
+
+utv:Variable
+	a owl:Class ;
+	rdfs:label "Variable" ;
+	rdfs:comment "A variable that is defined in the Dacura system and recorded for an Entity type. This is the base of all data collected for Entities to faciliate the addition of temporal scoping, uncertainty, annotations and PROV records about each individual variable value. It allows us to attach such meta-data and constraints to the edge connecting the entity and the value." .
+
+utv:annotationMandatory
+	a owl:DatatypeProperty ;
+	rdfs:label "Annotation Mandatory" ;
+	rdfs:comment "If true then this variable must have an explanitory annotation associated with it." ;
+	rdfs:domain utv:Variable ;
+	rdfs:range xsd:boolean .
+
+utv:unitOfMeasure
+	a owl:ObjectProperty ;
+	rdfs:label "Unit of Measure" ;
+	rdfs:comment "Associates the variable with a definitions of the units used." ;
+	rdfs:domain utv:Variable ;
+	rdfs:range utv:UnitOfMeasure .
+
+utv:UnitOfMeasure a owl:Class;
+	rdfs:label "Unit of Measure";
+	rdfs:comment "Definitions of the units used by  variables. Units are defined in Seshat" .
+
+# Variable value handling
+ 
+utv:DefiniteValue 
+	a owl:Class ;
+	rdfs:label "Definite Value";
+	rdfs:subClassOf  [a owl:Restriction ;
+			rdfs:onProperty utv:definiteValue ;
+			owl:cardinality "1"^^xsd:nonNegativeInteger 
+		] ;
+	rdfs:comment "A variable that holds a definite value object" .
+
+utv:DefiniteDataValue 
+	a owl:Class ;
+	rdfs:label "Definite Data Value";
+	rdfs:subClassOf  [a owl:Restriction ;
+			rdfs:onProperty utv:definiteDataValue ;
+			owl:cardinality "1"^^xsd:nonNegativeInteger 
+		] ;
+	rdfs:comment "A variable that holds a definite data value object" .
+
+utv:definiteValue 
+	a owl:ObjectProperty ;
+	rdfs:comment "The specified object value of a variable." ;
+	rdfs:domain utv:Variable ;
+	rdfs:range owl:Thing ;
+	rdfs:label "definite value" .
+
+utv:definiteDataValue 
+	a owl:DatatypeProperty ;
+	rdfs:comment "The specified value of a variable for a datatype." ;
+	rdfs:domain utv:Variable ;
+	rdfs:range rdfs:Literal ;
+	rdfs:label "definite data value" .
+
+utv:BagOfValues 
+	a owl:Class ;
+	rdfs:comment "One of a number of possible object values." ;
+	rdfs:label "Bag of Values" ;
+	rdfs:subClassOf [ a owl:Restriction ;
+		rdfs:onProperty utv:valuesFrom ;
+		owl:minCardinality "1"^^xsd:nonNegativeInteger 
+		] .
+
+utv:BagOfDataValues 
+	a owl:Class ;
+	rdfs:comment "One of a number of possible data values." ;
+	rdfs:label "Bag of Data Values" ;
+	rdfs:subClassOf [ a owl:Restriction ;
+		rdfs:onProperty utv:dataValuesFrom ;
+		owl:minCardinality "1"^^xsd:nonNegativeInteger 
+		] .
+
+utv:valuesFrom 
+	a owl:ObjectProperty ;
+	rdfs:comment "The property which points to values of a bag" ;
+	rdfs:label "Values From" ;
+	rdfs:domain utv:BagOfValues ;
+	rdfs:range owl:Thing .
+
+utv:dataValuesFrom 
+	a owl:DatatypeProperty ;
+	rdfs:comment "The property which points to values of a bag of datatypes" ;
+	rdfs:label "Data Values From" ; 
+	rdfs:domain utv:BagOfValues ;
+	rdfs:range rdfs:Literal .
+
+utv:RangeMaxDataValueRestriction 
+	a owl:Restriction ;
+	rdfs:onProperty utv:maxDataValue ;
+	owl:cardinality "1"^^xsd:nonNegativeInteger .
+
+utv:RangeMinDataValueRestriction 
+	a owl:Restriction ;
+	rdfs:onProperty utv:minDataValue ;
+	owl:cardinality "1"^^xsd:nonNegativeInteger .
+
+utv:DataRange 
+	a owl:Class ;
+	owl:intersectionOf ( utv:RangeMinDataValueRestriction 
+			       utv:RangeMaxDataValueRestriction );
+	rdfs:comment "Contains a range of data values." .
+
+utv:maxDataValue 
+	a owl:DatatypeProperty ;
+	rdfs:comment "The maximum data value of a range" ;
+	rdfs:label "max Data Value" ;
+	rdfs:domain utv:DataRange ;
+	rdfs:range rdfs:Literal .
+
+utv:minDataValue 
+	a owl:DatatypeProperty ;
+	rdfs:comment "The maximum value of a data range" ;
+	rdfs:label "min Data Value" ;
+	rdfs:domain utv:DataRange ;
+	rdfs:range rdfs:Literal .
+
+utv:RangeMaxValueRestriction 
+	a owl:Restriction ;
+	rdfs:onProperty utv:maxValue ;
+	owl:cardinality "1"^^xsd:nonNegativeInteger .
+
+utv:RangeMinValueRestriction 
+	a owl:Restriction ;
+	rdfs:onProperty utv:minValue ;
+	owl:cardinality "1"^^xsd:nonNegativeInteger .
+
+utv:Range 
+	a owl:Class ;
+	owl:intersectionOf ( utv:RangeMinValueRestriction 
+			       utv:RangeMaxValueRestriction ) ;
+	rdfs:comment "Contains a range of object values." .
+
+utv:maxValue 
+	a owl:ObjectProperty ;
+	rdfs:comment "The maximum value of a range of objects" ;
+	rdfs:label "maxValue" ;
+	rdfs:domain utv:Range ;
+	rdfs:range owl:Thing .
+
+utv:minValue 
+	a owl:ObjectProperty ;
+	rdfs:comment "The maximum value of a range of objects" ;
+	rdfs:label "minValue" ;
+	rdfs:domain utv:Range ;
+	rdfs:range owl:Thing .
+
+utv:UnknownValue
+	a owl:Class ;
+	rdfs:label "Unknown Value" ;
+	rdfs:comment "The value of the variable has been investigated but is unknown due to the limits of the investigators knowledge (Subjective Epistemic Incompleteness)" ;
+	rdfs:subClassOf utv:UnknownValueRestriction .
+
+utv:UnknownValueRestriction
+	a owl:Restriction ;
+	rdfs:onProperty utv:unknownValue ;
+	owl:hasValue true .
+	 
+utv:unknownValue
+	a owl:DatatypeProperty ;
+	rdfs:domain utv:UnknownValue;
+	rdfs:range xsd:boolean .
+
+utv:Inferred
+	a owl:Class ;
+	rdfs:label "Inferred" ;
+	rdfs:comment "The value of the variable has been investigated but is inferred due to the limits of the investigators knowledge (Subjective Epistemic Vagueness )" ;
+	rdfs:subClassOf utv:InferredRestriction .
+
+utv:InferredRestriction
+	a owl:Restriction ;
+	rdfs:onProperty utv:inferred ;
+	owl:hasValue true .
+	 
+utv:inferred
+	a owl:DatatypeProperty ;
+	rdfs:domain utv:Inferred;
+	rdfs:range xsd:boolean .
+
+utv:InferredValue 
+	a owl:Class ;
+	rdfs:label "Inferred Value" ;
+	rdfs:comment "An object variable value which was inferred" ;
+	owl:intersectionOf ( utv:DefiniteValue 
+		      utv:Inferred ) .
+
+utv:InferredDataValue 
+	a owl:Class ;
+	rdfs:label "Inferred Data Value" ;
+	rdfs:comment "A data variable value which was inferred" ;
+	owl:intersectionOf ( utv:DefiniteDataValue 
+		      utv:Inferred ) .
+
+utv:DataValue
+	a owl:Class ;
+	rdfs:label "Data Value" ;
+	rdfs:comment "A data variable value. It can be a definite value, a range or a bag of values." ;
+	owl:disjointUnionOf ( utv:DefiniteDataValue 
+			utv:BagOfDataValues
+			utv:DataRange ) . 
+utv:Value
+	a owl:Class ;
+	rdfs:label "Value" ;
+	rdfs:comment "An object variable value. It can be a definite value, a range or a bag of values." ;
+	owl:disjointUnionOf ( utv:DefiniteValue 
+			utv:BagOfValues
+			utv:Range ) .
+
+utv:UncertainVariable 
+	a owl:Class ;
+	rdfs:subClassOf utv:Variable ;
+	rdfs:comment "An object variable which is either definite (with our wwithout inference), has some uncertainty or is unknown." ;
+	owl:disjointUnionOf ( utv:Value 
+			      utv:Unknown ) .
+
+utv:UncertainDataVariable 
+	a owl:Class ;
+	rdfs:subClassOf utv:Variable ;
+	rdfs:comment "A data variable which is either definite (with our wwithout inference), has some uncertainty or is unknown." ;
+	owl:disjointUnionOf ( utv:DatValue
+			      utv:Unknown ) .
+
+
+utv:TemporalScoping
+	a owl:Class ;
+	rdfs:label "Temporal Scoping" ;
+	rdfs:comment "Temporal constraints that can be defined for the span of a variable's  validity." ;
+	owl:disjointUnionOf ( utv:Instant 
+	      	      utv:Interval
+		      utv:UncertainInstant	
+		      utv:UncertainInterval) .
+
+utv:TemporalScopedDataVariable
+	a owl:Class ;
+	rdfs:subClassOf utv:Variable ;
+	rdfs:label "Temporal Scoped Data Variable" ;
+	rdfs:comment "An uncertain data variable that also has temporal scoping restrictions." ;
+	owl:intersectionOf (utv:UncertainDataVariable
+			utv:TemporalScoping ) .
+
+utv:TemporalScopedVariable
+	a owl:Class ;
+	rdfs:subClassOf utv:Variable ;
+	rdfs:label "Temporal Scoped Variable" ;
+	rdfs:comment "An uncertain object variable that also has temporal scoping restrictions." ;
+	owl:intersectionOf (utv:UncertainVariable
+			utv:TemporalScoping ) .
+
+utv:UncertainTemporalDataVariable
+	a owl:Class ;
+	rdfs:subClassOf utv:Variable ;
+	rdfs:label "Uncertain Temporal Data Variable" ;
+	rdfs:comment "An uncertain data variable that also has temporal scoping restrictions. This is one of the main base classes for all variables." ;
+	owl:unionOf (utv:UncertainDataVariable
+			utv:TemporalScopedDataVariable ) .
+
+utv:UncertainTemporalVariable
+	a owl:Class ;
+	rdfs:subClassOf utv:Variable ;
+	rdfs:label "Uncertain Temporal Variable" ;
+	rdfs:comment "An uncertain object variable that also has temporal scoping restrictions. This is one of the main base classes for all variables." ;
+	owl:unionOf (utv:UncertainVariable
+			utv:TemporalScopedVariable ) .
+
+utv:Instant 
+	a owl:Class;
+	rdfs:label "Instant";
+	rdfs:comment "A temporal value that is true at a specific point in time.";
+	owl:subClassOf [ a owl:Restriction ;
+		owl:onProperty utv:atDateTime ;
+		owl:cardinality "1"^^xsd:nonNegativeInteger ] .
+
+utv:UncertainInstant 
+	a owl:Class;
+	rdfs:label "Uncertain Instant";
+	rdfs:comment "A temporal value that is true at a specific point in time but there are muliple possible values for the specific point in time.";
+	owl:subClassOf [ a owl:Restriction ;
+		owl:onProperty utv:atDateTime ;
+		owl:minCardinality "2"^^xsd:nonNegativeInteger ] .
+
+utv:InstantValue 
+	a owl:Class;
+	rdfs:label "Instant Value";
+	rdfs:comment "A temporal scoping value that is true at a certain or uncertain specific point in time.";
+	owl:disjointUnionOf (utv:Instant
+			utv:UncertainInstant) .
+
+utv:Interval  
+	a owl:Class;
+	rdfs:label "Interval";
+	rdfs:comment "A temporal value that is true for an interval of time." ;
+	rdfs:subClassOf [ a owl:Restriction ;
+		owl:onProperty utv:hasEnd ;
+		owl:cardinality "1"^^xsd:nonNegativeInteger ] ;
+	rdfs:subClassOf [ a owl:Restriction ;
+		owl:onProperty utv:hasBeginning ;
+		owl:cardinality "1"^^xsd:nonNegativeInteger ] .
+
+
+utv:UncertainInterval 
+	a owl:Class;
+	rdfs:label "Uncertain Interval";
+	rdfs:comment "A time interval that supports uncertainty at one or both ends of the interval.";
+	owl:disjointUnionOf (utv:UncertainEndInterval 
+			utv:UncertainBeginInterval
+			utv:UncertainBothInterval ) .
+
+utv:IntervalValue
+	a owl:Class ;
+	rdfs:label "Interval Value" ;
+	rdfs:comment "A collective class for both certain and uncertain intervals." ;
+	owl:disjointUnionOf (utv:Interval
+				utv:UncertainInterval ) .
+
+utv:UncertainEndInterval 
+	a owl:Class;
+	rdfs:label "Uncertain End Interval";
+	rdfs:comment "A time interval that supports uncertainty for the end of the interval." ;
+	rdfs:subClassOf [ a owl:Restriction ;
+		owl:onProperty utv:hasEnd ;
+		owl:minCardinality "2"^^xsd:nonNegativeInteger ] ;
+	rdfs:subClassOf [ a owl:Restriction ;
+		owl:onProperty utv:hasBeginning ;
+		owl:cardinality "1"^^xsd:nonNegativeInteger ] .
+
+utv:UncertainBeginInterval 
+	a owl:Class;
+	rdfs:label "Uncertain Begin Interval";
+	rdfs:comment "A time interval that supports uncertainty for the beginning of the interval." ;
+	rdfs:subClassOf [ a owl:Restriction ;
+		owl:onProperty utv:hasEnd ;
+		owl:cardinality "1"^^xsd:nonNegativeInteger ] ;
+	rdfs:subClassOf [ a owl:Restriction ;
+		owl:onProperty utv:hasBeginning ;
+		owl:minCardinality "2"^^xsd:nonNegativeInteger ] .
+
+utv:UncertainBothInterval 
+	a owl:Class;
+	rdfs:label "Uncertain Both Interval";
+	rdfs:comment "A time interval that supports uncertainty for the beginning and end of the interval." ;
+	rdfs:subClassOf [ a owl:Restriction ;
+		owl:onProperty utv:hasEnd ;
+		owl:minCardinality "2"^^xsd:nonNegativeInteger ] ;
+	rdfs:subClassOf [ a owl:Restriction ;
+		owl:onProperty utv:hasBeginning ;
+		owl:minCardinality "2"^^xsd:nonNegativeInteger ] .
+
+utv:hasBeginning 
+	a owl:ObjectProperty;
+	rdfs:label "Has Beginning";
+	rdfs:comment "Used to specify the start time of an interval.";
+	rdfs:domain utv:IntervalValue;
+	rdfs:range owltime:DateTimeDescription .
+
+utv:hasEnd a owl:ObjectProperty;
+	rdfs:label "has end";
+	rdfs:comment "Used to specify the end time of an interval.";
+	rdfs:domain utv:IntervalValue;
+	rdfs:range owltime:DateTimeDescription .
+
+utv:inDateTime a owl:ObjectProperty;
+	rdfs:label "In Datetime";
+	rdfs:comment "Used to specify the point in time of an instant. An UncertainInstant may have multiple instances of this property.";
+	rdfs:domain utv:InstantValue;
+	rdfs:range owltime:DateTimeDescription.
+
+######## Basic Datatypes ############
+
+utv:DateTimeDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Date Time Data Value Restriction" ;
+     rdfs:comment "Assures that DateTime value is a proper xsd:datetime." ;
+     owl:onProperty utv:definiteDataValue ;
+     owl:allValuesFrom xsd:datetime .
+
+utv:DateTimeRangeMinDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Date Time Min Data Value Restriction" ;
+     rdfs:comment "Assures that DateTime min value is a proper xsd:datetime." ;
+     owl:onProperty utv:minDataValue ;
+     owl:allValuesFrom xsd:datetime .
+
+utv:DateTimeRangeMaxDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Date Time Max Data Value Restriction" ;
+     rdfs:comment "Assures that DateTime max value is a proper xsd:datetime." ;
+     owl:onProperty utv:maxDataValue ;
+     owl:allValuesFrom xsd:datetime .
+
+utv:DateTimeBagOfDataValuesRestriction
+     a owl:Restriction ;
+     rdfs:label "Date Time Bag of Data Values Restriction" ;
+     rdfs:comment "Assures that DateTime bag value has all elements of type xsd:datetime." ;
+     owl:onProperty utv:dataValuesFrom ;
+     owl:allValuesFrom xsd:datetime .
+
+utv:UncertainTemporalDateTimeDataVariable
+     a owl:Class ;
+     rdfs:subClassOf utv:UncertainTemporalDataVariable ;
+     rdfs:label "Uncertain Temporal Date Time Data Variable" ;
+     rdfs:comment "This is the base class for all utv:DateTime variables. It supports temporal scoping, uncertainty and unknown or inferred values.";
+     owl:intersectionOf ( utv:UncertainTemporalDataVariable 
+                          utv:DateTimeBagOfDataValuesRestriction
+                          utv:DateTimeRangeMaxDataValueRestriction
+                          utv:DateTimeRangeMinDataValueRestriction
+                          utv:DateTimeDataValueRestriction ) .
+
+utv:NonNegativeIntegerDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Non Negative Integer Data Value Restriction" ;
+     rdfs:comment "Assures that NonNegativeInteger value is a proper xsd:nonNegativeInteger." ;
+     owl:onProperty utv:definiteDataValue ;
+     owl:allValuesFrom xsd:nonNegativeInteger .
+
+utv:NonNegativeIntegerRangeMinDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Non Negative Integer Min Data Value Restriction" ;
+     rdfs:comment "Assures that NonNegativeInteger min value is a proper xsd:nonNegativeInteger." ;
+     owl:onProperty utv:minDataValue ;
+     owl:allValuesFrom xsd:nonNegativeInteger .
+
+utv:NonNegativeIntegerRangeMaxDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Non Negative Integer Max Data Value Restriction" ;
+     rdfs:comment "Assures that NonNegativeInteger max value is a proper xsd:nonNegativeInteger." ;
+     owl:onProperty utv:maxDataValue ;
+     owl:allValuesFrom xsd:nonNegativeInteger .
+
+utv:NonNegativeIntegerBagOfDataValuesRestriction
+     a owl:Restriction ;
+     rdfs:label "Non Negative Integer Bag of Data Values Restriction" ;
+     rdfs:comment "Assures that NonNegativeInteger bag value has all elements of type xsd:nonNegativeInteger." ;
+     owl:onProperty utv:dataValuesFrom ;
+     owl:allValuesFrom xsd:nonNegativeInteger .
+
+utv:UncertainTemporalNonNegativeIntegerDataVariable
+     a owl:Class ;
+     rdfs:subClassOf utv:UncertainTemporalDataVariable ;
+     rdfs:label "Uncertain Temporal Non Negative Integer Data Variable" ;
+     rdfs:comment "This is the base class for all utv:NonNegativeInteger variables. It supports temporal scoping, uncertainty and unknown or inferred values.";
+     owl:intersectionOf ( utv:UncertainTemporalDataVariable 
+                          utv:NonNegativeIntegerBagOfDataValuesRestriction
+                          utv:NonNegativeIntegerRangeMaxDataValueRestriction
+                          utv:NonNegativeIntegerRangeMinDataValueRestriction
+                          utv:NonNegativeIntegerDataValueRestriction ) .
+
+utv:BooleanDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Boolean Data Value Restriction" ;
+     rdfs:comment "Assures that Boolean value is a proper xsd:boolean." ;
+     owl:onProperty utv:definiteDataValue ;
+     owl:allValuesFrom xsd:boolean .
+
+utv:BooleanRangeMinDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Boolean Min Data Value Restriction" ;
+     rdfs:comment "Assures that Boolean min value is a proper xsd:boolean." ;
+     owl:onProperty utv:minDataValue ;
+     owl:allValuesFrom xsd:boolean .
+
+utv:BooleanRangeMaxDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Boolean Max Data Value Restriction" ;
+     rdfs:comment "Assures that Boolean max value is a proper xsd:boolean." ;
+     owl:onProperty utv:maxDataValue ;
+     owl:allValuesFrom xsd:boolean .
+
+utv:BooleanBagOfDataValuesRestriction
+     a owl:Restriction ;
+     rdfs:label "Boolean Bag of Data Values Restriction" ;
+     rdfs:comment "Assures that Boolean bag value has all elements of type xsd:boolean." ;
+     owl:onProperty utv:dataValuesFrom ;
+     owl:allValuesFrom xsd:boolean .
+
+utv:UncertainTemporalBooleanDataVariable
+     a owl:Class ;
+     rdfs:subClassOf utv:UncertainTemporalDataVariable ;
+     rdfs:label "Uncertain Temporal Boolean Data Variable" ;
+     rdfs:comment "This is the base class for all utv:Boolean variables. It supports temporal scoping, uncertainty and unknown or inferred values.";
+     owl:intersectionOf ( utv:UncertainTemporalDataVariable 
+                          utv:BooleanBagOfDataValuesRestriction
+                          utv:BooleanRangeMaxDataValueRestriction
+                          utv:BooleanRangeMinDataValueRestriction
+                          utv:BooleanDataValueRestriction ) .
+
+utv:IntegerDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Integer Data Value Restriction" ;
+     rdfs:comment "Assures that Integer value is a proper xsd:integer." ;
+     owl:onProperty utv:definiteDataValue ;
+     owl:allValuesFrom xsd:integer .
+
+utv:IntegerRangeMinDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Integer Min Data Value Restriction" ;
+     rdfs:comment "Assures that Integer min value is a proper xsd:integer." ;
+     owl:onProperty utv:minDataValue ;
+     owl:allValuesFrom xsd:integer .
+
+utv:IntegerRangeMaxDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Integer Max Data Value Restriction" ;
+     rdfs:comment "Assures that Integer max value is a proper xsd:integer." ;
+     owl:onProperty utv:maxDataValue ;
+     owl:allValuesFrom xsd:integer .
+
+utv:IntegerBagOfDataValuesRestriction
+     a owl:Restriction ;
+     rdfs:label "Integer Bag of Data Values Restriction" ;
+     rdfs:comment "Assures that Integer bag value has all elements of type xsd:integer." ;
+     owl:onProperty utv:dataValuesFrom ;
+     owl:allValuesFrom xsd:integer .
+
+utv:UncertainTemporalIntegerDataVariable
+     a owl:Class ;
+     rdfs:subClassOf utv:UncertainTemporalDataVariable ;
+     rdfs:label "Uncertain Temporal Integer Data Variable" ;
+     rdfs:comment "This is the base class for all utv:Integer variables. It supports temporal scoping, uncertainty and unknown or inferred values.";
+     owl:intersectionOf ( utv:UncertainTemporalDataVariable 
+                          utv:IntegerBagOfDataValuesRestriction
+                          utv:IntegerRangeMaxDataValueRestriction
+                          utv:IntegerRangeMinDataValueRestriction
+                          utv:IntegerDataValueRestriction ) .
+
+utv:StringDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "String Data Value Restriction" ;
+     rdfs:comment "Assures that String value is a proper xsd:string." ;
+     owl:onProperty utv:definiteDataValue ;
+     owl:allValuesFrom xsd:string .
+
+utv:StringRangeMinDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "String Min Data Value Restriction" ;
+     rdfs:comment "Assures that String min value is a proper xsd:string." ;
+     owl:onProperty utv:minDataValue ;
+     owl:allValuesFrom xsd:string .
+
+utv:StringRangeMaxDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "String Max Data Value Restriction" ;
+     rdfs:comment "Assures that String max value is a proper xsd:string." ;
+     owl:onProperty utv:maxDataValue ;
+     owl:allValuesFrom xsd:string .
+
+utv:StringBagOfDataValuesRestriction
+     a owl:Restriction ;
+     rdfs:label "String Bag of Data Values Restriction" ;
+     rdfs:comment "Assures that String bag value has all elements of type xsd:string." ;
+     owl:onProperty utv:dataValuesFrom ;
+     owl:allValuesFrom xsd:string .
+
+utv:UncertainTemporalStringDataVariable
+     a owl:Class ;
+     rdfs:subClassOf utv:UncertainTemporalDataVariable ;
+     rdfs:label "Uncertain Temporal String Data Variable" ;
+     rdfs:comment "This is the base class for all utv:String variables. It supports temporal scoping, uncertainty and unknown or inferred values.";
+     owl:intersectionOf ( utv:UncertainTemporalDataVariable 
+                          utv:StringBagOfDataValuesRestriction
+                          utv:StringRangeMaxDataValueRestriction
+                          utv:StringRangeMinDataValueRestriction
+                          utv:StringDataValueRestriction ) .
+
+utv:UnsignedLongDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Unsigned Long Data Value Restriction" ;
+     rdfs:comment "Assures that UnsignedLong value is a proper xsd:unsignedLong." ;
+     owl:onProperty utv:definiteDataValue ;
+     owl:allValuesFrom xsd:unsignedLong .
+
+utv:UnsignedLongRangeMinDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Unsigned Long Min Data Value Restriction" ;
+     rdfs:comment "Assures that UnsignedLong min value is a proper xsd:unsignedLong." ;
+     owl:onProperty utv:minDataValue ;
+     owl:allValuesFrom xsd:unsignedLong .
+
+utv:UnsignedLongRangeMaxDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Unsigned Long Max Data Value Restriction" ;
+     rdfs:comment "Assures that UnsignedLong max value is a proper xsd:unsignedLong." ;
+     owl:onProperty utv:maxDataValue ;
+     owl:allValuesFrom xsd:unsignedLong .
+
+utv:UnsignedLongBagOfDataValuesRestriction
+     a owl:Restriction ;
+     rdfs:label "Unsigned Long Bag of Data Values Restriction" ;
+     rdfs:comment "Assures that UnsignedLong bag value has all elements of type xsd:unsignedLong." ;
+     owl:onProperty utv:dataValuesFrom ;
+     owl:allValuesFrom xsd:unsignedLong .
+
+utv:UncertainTemporalUnsignedLongDataVariable
+     a owl:Class ;
+     rdfs:subClassOf utv:UncertainTemporalDataVariable ;
+     rdfs:label "Uncertain Temporal Unsigned Long Data Variable" ;
+     rdfs:comment "This is the base class for all utv:UnsignedLong variables. It supports temporal scoping, uncertainty and unknown or inferred values.";
+     owl:intersectionOf ( utv:UncertainTemporalDataVariable 
+                          utv:UnsignedLongBagOfDataValuesRestriction
+                          utv:UnsignedLongRangeMaxDataValueRestriction
+                          utv:UnsignedLongRangeMinDataValueRestriction
+                          utv:UnsignedLongDataValueRestriction ) .
+
+utv:FloatDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Float Data Value Restriction" ;
+     rdfs:comment "Assures that Float value is a proper xsd:float." ;
+     owl:onProperty utv:definiteDataValue ;
+     owl:allValuesFrom xsd:float .
+
+utv:FloatRangeMinDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Float Min Data Value Restriction" ;
+     rdfs:comment "Assures that Float min value is a proper xsd:float." ;
+     owl:onProperty utv:minDataValue ;
+     owl:allValuesFrom xsd:float .
+
+utv:FloatRangeMaxDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Float Max Data Value Restriction" ;
+     rdfs:comment "Assures that Float max value is a proper xsd:float." ;
+     owl:onProperty utv:maxDataValue ;
+     owl:allValuesFrom xsd:float .
+
+utv:FloatBagOfDataValuesRestriction
+     a owl:Restriction ;
+     rdfs:label "Float Bag of Data Values Restriction" ;
+     rdfs:comment "Assures that Float bag value has all elements of type xsd:float." ;
+     owl:onProperty utv:dataValuesFrom ;
+     owl:allValuesFrom xsd:float .
+
+utv:UncertainTemporalFloatDataVariable
+     a owl:Class ;
+     rdfs:subClassOf utv:UncertainTemporalDataVariable ;
+     rdfs:label "Uncertain Temporal Float Data Variable" ;
+     rdfs:comment "This is the base class for all utv:Float variables. It supports temporal scoping, uncertainty and unknown or inferred values.";
+     owl:intersectionOf ( utv:UncertainTemporalDataVariable 
+                          utv:FloatBagOfDataValuesRestriction
+                          utv:FloatRangeMaxDataValueRestriction
+                          utv:FloatRangeMinDataValueRestriction
+                          utv:FloatDataValueRestriction ) .
+
+utv:AnyURIDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Any UR I Data Value Restriction" ;
+     rdfs:comment "Assures that AnyURI value is a proper xsd:anyURI." ;
+     owl:onProperty utv:definiteDataValue ;
+     owl:allValuesFrom xsd:anyURI .
+
+utv:AnyURIRangeMinDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Any UR I Min Data Value Restriction" ;
+     rdfs:comment "Assures that AnyURI min value is a proper xsd:anyURI." ;
+     owl:onProperty utv:minDataValue ;
+     owl:allValuesFrom xsd:anyURI .
+
+utv:AnyURIRangeMaxDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Any UR I Max Data Value Restriction" ;
+     rdfs:comment "Assures that AnyURI max value is a proper xsd:anyURI." ;
+     owl:onProperty utv:maxDataValue ;
+     owl:allValuesFrom xsd:anyURI .
+
+utv:AnyURIBagOfDataValuesRestriction
+     a owl:Restriction ;
+     rdfs:label "Any UR I Bag of Data Values Restriction" ;
+     rdfs:comment "Assures that AnyURI bag value has all elements of type xsd:anyURI." ;
+     owl:onProperty utv:dataValuesFrom ;
+     owl:allValuesFrom xsd:anyURI .
+
+utv:UncertainTemporalAnyURIDataVariable
+     a owl:Class ;
+     rdfs:subClassOf utv:UncertainTemporalDataVariable ;
+     rdfs:label "Uncertain Temporal Any URI Data Variable" ;
+     rdfs:comment "This is the base class for all utv:AnyURI variables. It supports temporal scoping, uncertainty and unknown or inferred values.";
+     owl:intersectionOf ( utv:UncertainTemporalDataVariable 
+                          utv:AnyURIBagOfDataValuesRestriction
+                          utv:AnyURIRangeMaxDataValueRestriction
+                          utv:AnyURIRangeMinDataValueRestriction
+                          utv:AnyURIDataValueRestriction ) .
+
+utv:DurationDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Duration Data Value Restriction" ;
+     rdfs:comment "Assures that Duration value is a proper xsd:duration." ;
+     owl:onProperty utv:definiteDataValue ;
+     owl:allValuesFrom xsd:duration .
+
+utv:DurationRangeMinDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Duration Min Data Value Restriction" ;
+     rdfs:comment "Assures that Duration min value is a proper xsd:duration." ;
+     owl:onProperty utv:minDataValue ;
+     owl:allValuesFrom xsd:duration .
+
+utv:DurationRangeMaxDataValueRestriction
+     a owl:Restriction ;
+     rdfs:label "Duration Max Data Value Restriction" ;
+     rdfs:comment "Assures that Duration max value is a proper xsd:duration." ;
+     owl:onProperty utv:maxDataValue ;
+     owl:allValuesFrom xsd:duration .
+
+utv:DurationBagOfDataValuesRestriction
+     a owl:Restriction ;
+     rdfs:label "Duration Bag of Data Values Restriction" ;
+     rdfs:comment "Assures that Duration bag value has all elements of type xsd:duration." ;
+     owl:onProperty utv:dataValuesFrom ;
+     owl:allValuesFrom xsd:duration .
+
+utv:UncertainTemporalDurationDataVariable
+     a owl:Class ;
+     rdfs:subClassOf utv:UncertainTemporalDataVariable ;
+     rdfs:label "Uncertain Temporal Duration Data Variable" ;
+     rdfs:comment "This is the base class for all utv:Duration variables. It supports temporal scoping, uncertainty and unknown or inferred values.";
+     owl:intersectionOf ( utv:UncertainTemporalDataVariable 
+                          utv:DurationBagOfDataValuesRestriction
+                          utv:DurationRangeMaxDataValueRestriction
+                          utv:DurationRangeMinDataValueRestriction
+                          utv:DurationDataValueRestriction ) .
+
