@@ -1,53 +1,94 @@
 <?php 
 class LDODisplay extends DacuraObject {
-	var $cwurl;
-	var $nsres;
+	var $ldo;
+	var $options;
 	
-	function __construct($id, &$nsres, $cwurl){
-		$this->id = $id;
-		$this->nsres = $nsres;
-		$this->cwurl = $cwurl;
+	function __construct($ldo, $options){
+		$this->ldo = $ldo;
+		$this->options = $options;
 	}
 	
-	
-	function displayTriples($trips, $options){
-		return $trips;
-	}
-	
-	function displayQuads($quads, $options){
-		return $quads;
-	}
-	
-	function displayJSON($json, $options){
-		if(isset($options['links']) && $options['links']){
-			return $this->linkify($options, $json);				
+	function display($format){
+		if(!$format || $format == "json"){
+			return $this->displayJSON();
+		}
+		elseif($format == "html"){
+			return $this->displayHTML();
+		}
+		elseif($format == "triples"){
+			return $this->displayTriples();
+		}
+		elseif($format == "quads"){
+			return $this->displayQuads();
+		}
+		elseif($format == "jsonld"){
+			return $this->displayJSONLD();
+		}
+		elseif($format == "nquads"){
+			return $this->displayNQuads();
 		}
 		else {
-			return $json;				
+			return $this->displayExport($format);
+		}		
+	}
+	
+	function displayTriples(){
+		$payload = isset($this->options['typed']) && $this->options['typed'] ? $this->ldo->typedTriples() : $this->ldo->triples();
+		if(!isset($this->options['plain']) || !$this->options['plain']){
+			$this->linkifyTriples($payload, true, $this->getLinkExtras("triples"));
+		}
+		return $payload;
+	}
+	
+	function displayQuads(){
+		$payload = isset($this->options['typed']) && $this->options['typed'] ? $this->ldo->typedQuads() : $this->ldo->quads();
+		if(!isset($this->options['plain']) || !$this->options['plain']){
+			$this->linkifyTriples($payload, true, $this->getLinkExtras("quads"));
+		}
+		return $payload;
+	}
+	
+	function displayJSON(){
+		if(isset($this->options['plain']) && $this->options['plain']){
+			return $this->ldo->ldprops;
+		}
+		else {
+			return $this->linkify($this->getLinkExtras("json"), $this->ldo->ldprops);				
 		}
 	}
 	
-	function displayJSONLD($jsonld, $options){
-		//require_once("JSONLD.php");
-		//print JsonLD::toString($expanded, true);
-		//return $this->displayJSON(ML\JsonLD\JsonLD::toString($jsonld, true), $options);
-		return $this->displayJSON($jsonld, $options);
-		
+	function displayJSONLD(){
+		require_once("JSONLD.php");
+		$ns =  isset($this->options['ns']) && $this->options['ns'] ? $this->ldo->getNS() : false;
+		$jsonld = toJSONLD($this->ldo->ldprops, $ns, $this->ldo->cwurl, $this->ldo->is_multigraph());
+		if(isset($this->options['plain']) && $this->options['plain']){
+			return $jsonld;
+		}
+		else {
+			return $jsonld;
+			//return $this->linkify($this->getLinkExtras("jsonld"), $jsonld);
+		}
 	}
 	
-	function displayHTML($props, $options){
+	function displayHTML(){
 		$html = "";
-		foreach($props as $k => $v){
-			$html .= "<h3>$k</h3>".$this->getPropertiesAsHTMLTable($v, $options);
+		foreach($this->ldo->ldprops as $k => $v){
+			$nk = $this->applyLinkHTML($k, $this->getLinkExtras("html"), "property-subject");
+			$html .= "<h3>$nk</h3>".$this->getPropertiesAsHTMLTable($v, $this->options);
 		}
 		return $html;
 	}
 	
-	function displayNQuads($text, $options){
-		return htmlspecialchars($text);
+	function displayNQuads(){
+		$payload = $this->ldo->nQuads();
+		return htmlspecialchars($payload);
 	}
 	
-	function displayExport($exported, $format, $options){
+	function displayExport($format){
+		$exported = $this->ldo->export($format, $this->options);
+		if($exported === false){
+			return false;
+		}
 		if($format != "svg" && $format != "dot" && $format != "png" && $format != "gif"){
 			return htmlspecialchars($exported);
 		}
@@ -65,53 +106,54 @@ class LDODisplay extends DacuraObject {
 		return $service->renderScreen("editor", $params, "ld");		
 	}
 	
-	function decorated(){
-		return $this->ldprops;
+	function getLinkExtras($format){
+		$str = "?format=$format";
+		foreach($this->options as $opt => $v){
+			$str .= "&option[$opt]=$v";
+		}
+		return $str;
 	}
 	
-	function decoratedTriples(){
-		return array();
-	}	
-	
-	function linkify($vstr, $props=false){
-		if($props === false){
-			$props = $this->ldprops;
-		}
+	function linkify($vstr, $props){
 		$nprops = array();
 		if($props && is_array($props)) {
-			foreach($props as $p => $v){
-				//properties should always be URLs or namespaced URLs
-				$np = $this->applyLinkHTML($p, $vstr, true);
-				$pv = new LDPropertyValue($v, $this->cwurl);
-				if($pv->literal() or $pv->objectliteral()){
-					$nv = $this->applyLiteralHTML($v);
-				}
-				elseif($pv->link()){
-					$nv = $this->applyLinkHTML($v, $vstr);
-				}
-				elseif($pv->valuelist() or $pv->objectliterallist()){
-					$nv = array();
-					foreach($v as $val){
-						if(isURL($val) || isNamespacedURL($val)){
-							$nv[] = $this->applyLinkHTML($val, $vstr);
-						}
-						else {
-							$nv[] = $this->applyLiteralHTML($val);
+			foreach($props as $s => $ldobj){
+				$ns = $this->applyLinkHTML($s, $vstr, "property-subject");
+				$nprops[$ns] = array();
+				foreach($ldobj as $p => $v){
+					//properties should always be URLs or namespaced URLs
+					$np = $this->applyLinkHTML($p, $vstr, "property");
+					$pv = new LDPropertyValue($v, $this->ldo->cwurl);
+					if($pv->literal() or $pv->objectliteral()){
+						$nv = $this->applyLiteralHTML($v);
+					}
+					elseif($pv->link()){
+						$nv = $this->applyLinkHTML($v, $vstr, "property-value");
+					}
+					elseif($pv->valuelist() or $pv->objectliterallist()){
+						$nv = array();
+						foreach($v as $val){
+							if(isURL($val) || isNamespacedURL($val)){
+								$nv[] = $this->applyLinkHTML($val, $vstr, "property-value");
+							}
+							else {
+								$nv[] = $this->applyLiteralHTML($val);
+							}
 						}
 					}
-				}
-				elseif($pv->embeddedlist()){
-					$nv = array();
-					foreach($v as $id => $obj){
-						//ids should always be URLs or namespaced URLs
-						$nid = $this->applyLinkHTML($id, $vstr);
-						$nv[$nid] = $this->linkify($vstr, $obj);
+					elseif($pv->embeddedlist()){
+						$nv = array();
+						foreach($v as $id => $obj){
+							//ids should always be URLs or namespaced URLs
+							$nid = $this->applyLinkHTML($id, $vstr, "property-subject");
+							$nv[$nid] = $this->linkify($vstr, $obj);
+						}
 					}
+					else {
+						$nv = $v;
+					}
+					$nprops[$ns][$np] = $nv;
 				}
-				else {
-					$nv = $v;
-				}
-				$nprops[$np] = $nv;
 			}
 		}
 		return $nprops;
@@ -122,57 +164,120 @@ class LDODisplay extends DacuraObject {
 	 * @param string $val
 	 * @return boolean true if the value is an internal link
 	 */
-	function isDocumentLocalLink($val){
-		return isInternalLink($val, $this->cwurl);
+	function documentLocalLink($val, $vstr, $durl){
+		if($this->ldo->version != $this->ldo->latest_version){
+			$vstr .= "&version=".$this->ldo->version;
+		}
+		if($val == $this->ldo->cwurl) return $val.$vstr;
+		if(isBlankNode($val)) return $this->ldo->cwurl."/".substr($val, 2).$vstr;
+		if($this->ldo->ldtype() == "ontology"){
+			if(substr($val, 0, strlen($this->ldo->meta['url'])) == $this->ldo->meta['url']) {
+				$str = $durl . ($this->ldo->cid() == "all" ? "" : $this->ldo->cid()."/")."ontology/".$this->ldo->id;
+				return $str.$vstr."#".substr($val, strlen($this->ldo->meta['url']));
+			}
+		}
+		if(isInternalLink($val, $this->ldo->cwurl)){
+			return $val.$vstr;
+		}
+		return false;
 	}
 	
-
-	function applyLinkHTML($ln, $vstr, $is_prop = false){
-		if($is_prop){
-			$cls = "dacura-property";
-		}
-		else {
-			$cls = "dacura-property-value";
-		}
-		if(isURL($ln)){
-			if($this->isDocumentLocalLink($ln)){
-				$cls .= " document_local_link";
-				$lh = "<a class='$cls' href='$ln".$vstr."'>$ln</a>";
+	function dacuraLink($ln, $vstr, $position){
+		global $dacura_server;
+		if(isNamespacedURL($ln)){
+			if($this->ldo->ldtype() == "ontology" && getNamespacePortion($ln) == $this->ldo->id){
+				if($this->ldo->version != $this->ldo->latest_version){
+					$vstr .= "&version=". $this->ldo->version;
+				}
+				$lnkln = $this->ldo->cwurl.$vstr."#".getPrefixedURLLocalID($ln);
+				$html = ($position == "property-subject" ? "<a name='".getPrefixedURLLocalID($ln)."'>" : "");
+				$html .="<a class='dacura-$position document-local-link' title='$position: local link to $lnkln' href='$lnkln'>$ln</a>";				
+				return $html;
 			}
-			else {
-				$lh = "<a class='$cls' href='$ln'>$ln</a>";
-			}
-		}
-		elseif(isNamespacedURL($ln)){
-			if($this->isDocumentLocalLink($ln)){
-				$cls .= " document_local_link";
-				$expanded = $this->nsres->expand($ln);
-				if(!$expanded){
-					$lh = "<span class='$cls unknown-namespace' title='warning: unknown namespace'>$ln</span>";
+			elseif($expanded = $this->ldo->nsres->expand($ln)){
+				$ext = $this->ldo->prefixToLocalOntologyURL(getNamespacePortion($ln));
+				if($ext){
+					$lnkln = $dacura_server->durl().$ext.$vstr."#".getPrefixedURLLocalID($ln);
+					$tpid = "ontology ".getPrefixedURLLocalID($ln);				
+					return "<a class='dacura-$position' title='$position: local link to $tpid' href='$lnkln'>$ln</a>";
 				}
 				else {
-					$lh = "<a class='$cls' href='$expanded".$vstr."'>$ln</a>";
+					return false;
 				}
 			}
 			else {
-				$expanded = $this->nsres->expand($ln);
-				if(!$expanded){
-					$lh = "<span class='$cls unknown-namespace'>$ln</span>";
-				}
-				else {
-					$lh = "<a class='$cls' href='$expanded'>$ln</a>";
-				}
+				return false;
 			}
 		}
-		else {
-			$lh = "<span class='$cls not-a-url'>$ln</span>";
+		if(isURL($ln) || isBlankNode($ln)){
+			if($lnkln = $this->documentLocalLink($ln, $vstr, $dacura_server->durl())){
+				if(($x = strpos($lnkln, "#")) && ($position == "property-subject") && ($frag = substr($lnkln, $x + 1))){
+					$html = "<a name='$frag'>";
+				}
+				else {
+					$html = "";
+				}
+				$html .= "<a class='dacura-$position document-local-link' title='$position: local link to $lnkln' href='$lnkln'>$ln</a>";
+				return $html;
+			}
+			elseif($compressed = $this->ldo->nsres->compress($ln)){
+				$ext = $this->ldo->prefixToLocalOntologyURL(getNamespacePortion($compressed));
+				if($ext){
+					$lnkln = $dacura_server->durl().$ext.$vstr."#".getPrefixedURLLocalID($compressed);
+					$tpid = "ontology ".getNamespacePortion($compressed)."#".getPrefixedURLLocalID($compressed);
+					return "<a class='dacura-$position' title='$position: local link to $tpid' href='$lnkln'>$ln</a>";
+				}
+				else {
+					return false;
+				}			
+			}
+			elseif(!($parsed_url = $dacura_server->parseDacuraURL($ln))){
+				return false;
+			}
+			else {
+				if($parsed_url['collection'] = $this->ldo->cid()){
+					$cls = "dacura-$position collection-local-link";
+				}
+				else {
+					$cls = "dacura-$position collection-link";
+				}
+			}
+			if(in_array($parsed_url['service'], array("ontology", "ld", "graph", "candidate")) && isset($parsed_url['args']) && count($parsed_url['args']) > 0){
+				$tpid = $parsed_url['service'] . " " . implode("/", $parsed_url['args']);
+				return "<a class='$cls' title='$position: local link to $tpid' href='$ln"."$vstr'>$ln</a>";
+			}	
+			else {
+				$sv = $parsed_url['service'];
+				return "<a class='$cls' title='$position: local link to $sv service' href='$ln'>$ln</a>";
+			}
 		}
+	}
+	
+	function applyLinkHTML($ln, $vstr, $position){
+		if(!($lh = $this->dacuraLink($ln, $vstr, $position))){
+			$cls = "dacura-".$position;//property-subject, property, property-value, property-graph 
+			if(isURL($ln)){
+				$lh = "<a class='$cls remote-link' title='$position Remote Link to $ln' href='$ln'>$ln</a>";
+			}
+			elseif(isNamespacedURL($ln)){
+				$expanded = $this->ldo->nsres->expand($ln);
+				if(!$expanded){
+					$lh = "<span class='$cls unknown-namespace' title='$position: Broken Link to unknown namespaced link: $ln'>$ln</span>";
+				}
+				else {
+					$lh = "<a class='$cls remote-link' title='$position: Remote link to $ln' href='$expanded'>$ln</a>";
+				}
+			}
+			else {
+				$lh = "<span title='$position: Broken link to $ln - not a url' class='$cls not-a-url'>$ln</span>";
+			}
+		}		
 		return $lh;
 	}
 	
 
 	function getPropertiesAsHTMLTable($props, $options = array(), $depth = 0, $obj_id_prefix = ""){
-		$vstr = "";//should be loaded from $options...
+		$vstr = $this->getLinkExtras("html");
 		if($depth % 2 == 1){
 			$cls_extra = "even_depth";
 		}
@@ -189,11 +294,11 @@ class LDODisplay extends DacuraObject {
 		$props_html = array();
 		foreach($props as $p => $v){
 			$pcount++;
-			$np = $this->applyLinkHTML($p, $vstr, true);
-			$pv = new LDPropertyValue($v, $this->cwurl);
+			$np = $this->applyLinkHTML($p, $vstr, "property");
+			$pv = new LDPropertyValue($v, $this->ldo->cwurl);
 			if($pv->literal()){
 				if(isURL($v) || isNamespacedURL($v)){
-					$nv = $this->applyLinkHTML($v, $vstr);
+					$nv = $this->applyLinkHTML($v, $vstr, "property-value");
 				}
 				else {
 					$nv = $this->applyLiteralHTML($v);
@@ -201,7 +306,7 @@ class LDODisplay extends DacuraObject {
 				array_unshift($props_html, "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>$nv</td></tr>");
 			}
 			elseif($pv->link()){
-				$nv = $this->applyLinkHTML($v, $vstr);				
+				$nv = $this->applyLinkHTML($v, $vstr, "property-value");				
 				array_unshift($props_html, "<tr class='firstp $cls_extra'><td class='prop-pd $cls_extra'>$np</td><td class='prop-vd $cls_extra'>$nv</td></tr>");
 			}
 			elseif($pv->objectliteral()){
@@ -219,7 +324,7 @@ class LDODisplay extends DacuraObject {
 				$nv = array();
 				foreach($v as $val){
 					if(isURL($val) || isNamespacedURL($val)){
-						$nv[] = $this->applyLinkHTML($val, $vstr);
+						$nv[] = $this->applyLinkHTML($val, $vstr, "property-value");
 					}
 					else {
 						$nv[] = $this->applyLiteralHTML($val, $vstr);
@@ -230,7 +335,7 @@ class LDODisplay extends DacuraObject {
 			elseif($pv->embeddedlist()){
 				$count = 0;
 				foreach($v as $id => $obj){
-					$nid = $this->applyLinkHTML($id, $vstr);
+					$nid = $this->applyLinkHTML($id, $vstr, "property-subject");
 					$obj_id = $obj_id_prefix."_".$depth."_".$pcount."_".$count;
 					$rdft = $this->extractTypeFromProps($obj);
 					if($rdft){
@@ -281,7 +386,7 @@ class LDODisplay extends DacuraObject {
 		if(is_array($ln)){
 			$html = "<span class='dacura-property-value dacura-objectliteral'>";
 			foreach($ln as $k => $v){
-				$html .= "<span class='dacura-objectliteral-index>$k</span> <span class='dacura-objectliteral-value'>$v</span> ";
+				$html .= "<span class='dacura-objectliteral-index'>$k</span>[<span class='dacura-objectliteral-value'>$v</span>]";
 			}
 			$html .= "</span>";
 		}
@@ -312,13 +417,34 @@ class LDODisplay extends DacuraObject {
 				}
 				elseif((isURL($k) || isNamespacedURL($k))){
 					if($alink){
-						$k = $this->applyLinkHTML($k, $vstr, $j==1);
+						if($j == 1){
+							$pos = "property";
+						}
+						elseif($j == 0) {
+							$pos = "property-subject";
+						}
+						elseif($j == 2){
+							$pos = "property-value"; 
+						}
+						else {
+							$pos = "property-graph";
+						}
+						$k = $this->applyLinkHTML($k, $vstr, $pos);
 					}
 					$nv = "&lt;".$k."&gt;";
 				}
 				elseif($alink) {
-					if($j == 1 or $j == 0){
-						$nv = $this->applyLinkHTML($k, $vstr, $j==1);
+					if($j == 1 or $j == 0 or $j == 3){
+						if($j == 1){
+							$pos = "property";
+						}
+						elseif($j == 0) {
+							$pos = "property-subject";
+						}
+						else {
+							$pos = "property-graph";
+						}
+						$nv = $this->applyLinkHTML($k, $vstr, $pos);
 					}
 					else {
 						$nv = '"'.$this->applyLiteralHTML($k).'"';

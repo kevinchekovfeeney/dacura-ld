@@ -199,7 +199,30 @@ div#version-header {
  	white-space: pre;
  	unicode-bidi: embed;
  	font-size: 0.85em;
- }
+ 	background-color: #fafffa;
+ 	padding: 4px;
+ 	border: 1px solid #efefef;
+ 	overflow: auto;
+}
+
+.dacura-export-editor,
+.dacura-json-editor {
+	width: 100%;
+	background-color: #fafaff;
+ 	border: 1px solid #afafef; 
+}
+
+.dacura-export-editor textarea,
+.dacura-json-editor textarea {
+ 	unicode-bidi: embed;
+ 	font-family: 'Open Sans', Helvetica;
+ 	font-size: 0.85em;
+	width: 100%;
+	height: 400px;	
+ 	overflow: auto;
+ 	border: 0; 	
+ 	padding: 4px;		
+}
 
 div.ld-meta-bar {
   	background-color: #cceaff;
@@ -532,7 +555,7 @@ position: relative;
 
 .browsermax {
 	float: right;
-	margin-right: -8px;
+	margin-right: 0px;
 	margin-top: -42px;
 	font-size: 0.7em;
 	cursor: pointer;
@@ -564,14 +587,6 @@ td.ld-bar-centre {
   	padding-right: 4px;
 }
 
-td#ld-view-bar-left {
-} 
-
-td#ld-action-bar-left {
-} 
-td#ld-view-bar-centre {
-	text-align: left;
-}
 td.ld-bar-right {
 	text-align: right;
 	padding-right: 14px;
@@ -585,53 +600,15 @@ div.ld-view-bar {
 	padding: 2px 0;
 }
       
-div#ld-action-bar {
-	font-size: 0.6em;
-	background-color: #f8efef;
-	color: #222;
-    border-bottom: 1px solid #888;
-    border-left: 1px solid #aaa;
-    border-right: 1px solid #aaa;
-}
- 
-#ld-action-table {
- 	border-collapse: collapse;
- 	border-bottom: 1px solid white;
- 	border-top: 1px solid white;
-}
- 
-#ld-action-table td {
- 	padding: 2px 4px; 
- 	border: 0;
-}
-
-div#ld-version-controls,
-div#ld-update-controls {
-	display: inline-block;
-}
-
-
-div#ld-edit-bar {
+div.ld-edit-bar {
+	padding: 2px 0;
+	font-size: 0.7em;
 	border-radius: 5px 5px 0 0;
-	font-size: 0.75em;
-   	background-color: #aadaff;
-   	padding: 2px;
+	background-color: #e8eff8;
+	color: #222;
+  	border: 1px solid #aaa;
 }
-
-div#ld-footer-bar{
-	font-size: 0.85em;
-   	background-color: #aadaff;
-   	padding: 2px;
-}  
-
-
-#ld-action-bar-centre {
-	text-align: left;
-}
-
-#ld-edit-bar-right {
-	text-align: right;
-}  
+ 
   
 div.ld-main-body {
  	border: 1px solid #aaa;
@@ -866,4 +843,9 @@ span.ontoption input[type=checkbox]:checked + label {
 	margin-right: 14px;
 }
   
+div.editbar-options {
+	float: left;
+	margin: 4px 4px 0 0;
+	padding: 0px;
+}
   

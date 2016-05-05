@@ -1129,6 +1129,9 @@ dacura.tool.table = {
 	 * @param {DacuraTableConfig} tconfig - table configuration object
 	 */	
 	reincarnate: function(key, objs, tconfig){
+		if(typeof tconfig == "undefined"){
+			tconfig = dacura.tool.tables[key];
+		}
 		var cont = tconfig.container;
 		dacura.tool.table.nuke(key, tconfig);
 		if(typeof dacura.tool.tables[key] == "undefined" || typeof dacura.tool.tables[key].properties == "undefined"){

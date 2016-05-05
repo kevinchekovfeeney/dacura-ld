@@ -265,7 +265,7 @@ dacura.ld.api.update = function (id, data, test){
 	xhr.url = dacura.ld.apiurl + "/" + id;
 	xhr.type = "POST";
 	xhr.contentType = 'application/json'; 
-	if(typeof test != "undefined" && test !== false){
+	if(typeof test != "undefined" && test != false){
 		data.test = true;
 	}
 	xhr.data = JSON.stringify(data);

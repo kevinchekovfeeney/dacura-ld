@@ -554,5 +554,50 @@ class DacuraServer extends DacuraController {
 		);
 		echo json_encode($struct);
 		ob_end_flush();
-	}	
+	}
+
+	/**
+	 * Parses a local url into its constituent parts.... service, collection, args, query
+	 */
+	function parseDacuraURL($url){
+		if(substr($url, 0, strlen($this->durl())) != $this->durl()){ 
+			return $this->failure_result("$url is not a Dacura URL", 404);
+		}
+		$parsed = array("raw" => $url);
+		$rbit = substr($url, strlen($this->durl()));
+		$rbits = explode("?", $url);
+		if(count($rbits) < 1 or count($rbits) > 2){
+			return $this->failure_result("$url is not a valid URL - cant be divided into args and query parts", 400);
+		}
+		if(count($rbits) == 2){
+			$parsed['query'] = $rbits[1];
+		}
+		$allargs = explode("/", $rbits[0]);
+		while(count($allargs) > 0 && $allargs[0] == ""){
+			array_shift($allargs);
+		}
+		if(count($allargs) == 0){
+			$parsed['collection'] = "all";
+			$parsed['service'] = "home";
+		}
+		else {
+			$sl = $this->getServiceList();
+			if(in_array(strtolower($allargs[0]), $sl)){
+				$parsed['service'] = strtolower(array_shift($allargs));
+				$parsed['collection'] = "all";
+			}
+			else {
+				$parsed['collection'] = strtolower(array_shift($allargs));
+				if(count($allargs) == 0){
+					$parsed['service'] = "home";
+				}
+				else {
+					$parsed['service'] = strtolower(array_shift($allargs));
+				}				
+			}
+			$parsed['args'] = $allargs;
+		}
+		return $parsed;
+	}
+	
 }

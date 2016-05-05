@@ -138,7 +138,7 @@ class LdService extends DacuraService {
 	}
 
 	function getDefaultViewOptions(){
-		$a = array("ns" => array("title" => "Namespace prefixes", "value" => 1), "pretty" => array("title" => "Pretty", "value" => 1), "addressable" => array("title" => "Replace Blank Nodes", "value" => 1));
+		$a = array("ns" => array("title" => "Namespace prefixes", "value" => 1), "plain" => array("title" => "Plain", "value" => 0), "addressable" => array("title" => "Replace Blank Nodes", "value" => 1));
 		return $a;
 	}
 
@@ -422,8 +422,11 @@ class LdService extends DacuraService {
 		$params['update_options'] = $this->getServiceSetting("update_options", array());
 		$params['valid_view_formats'] = LDO::$valid_display_formats;
 		$params['default_view_options'] = $this->getDefaultViewOptions();
-		$params['view_actions'] = array("edit" => "Edit", "export" => "Export", "accept" => "Publish", "reject" => "Reject", "pending" => "Unpublish");
-		$params['valid_update_formats'] = LDO::$valid_input_formats;
+		$params['editmode_options'] = array("replace" => "Replace Mode", "update" => "Update Mode");
+		$params['update_result_options'] = array("No LDO result returned", "Updated LDO returned", "LDO Update Object Returned");
+		$params['view_graph_options'] = array("ld" => "LD Object Store", "dqs" => "DQS Triplestore", "meta" => "metadata", "update" => "Update Store");
+		$params['view_actions'] = array("restore" => "Restore this version", "edit" => "Edit", "import" => "Import", "export" => "Export", "accept" => "Publish", "reject" => "Reject", "pending" => "Unpublish");		
+		$params['valid_input_formats'] = LDO::$valid_input_formats;
 		return $params;
 	}
 

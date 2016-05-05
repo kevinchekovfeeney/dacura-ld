@@ -183,7 +183,7 @@ function getNamespacePortion($str){
 function getPrefixedURLLocalID($str){
 	if(is_array($str)) return false;
 	if(!($x = strpos($str, ":"))) return false;
-	return substr($str, $x);
+	return substr($str, $x + 1);
 }
 
 /**
