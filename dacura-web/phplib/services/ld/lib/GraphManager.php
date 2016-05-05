@@ -71,6 +71,7 @@ class GraphManager extends DacuraController {
 		if($proxy = ($this->getSystemSetting('dqs_http_proxy', ""))){
 			curl_setopt($ch, CURLOPT_PROXY, $proxy);
 		}
+
 		curl_setopt($ch, CURLOPT_URL, $dqs_config[$service]);
 		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $qstr);
@@ -124,6 +125,7 @@ class GraphManager extends DacuraController {
 		if($proxy = ($this->getSystemSetting('dqs_http_proxy', ""))){
 			curl_setopt($ch, CURLOPT_PROXY, $proxy);
 		}
+
 		curl_setopt($ch, CURLOPT_URL, $srvc);
 		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $qstr);
