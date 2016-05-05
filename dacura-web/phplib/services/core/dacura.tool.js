@@ -887,13 +887,6 @@ dacura.tool.table = {
 			}
 			dacura.tool.tables[key].rows[ids.length-1] = objs[i]; 
 		}
-		//alert(key + " " + dacura.tool.tables[key].rows.length);
-		$('#' + key).addClass("display");
-		$("#" + key).dataTable( tconfig.dtsettings );
-		$("#" + key + "_length select").addClass("dt-select");
-		if(typeof tconfig.refresh == "object"){
-			dacura.tool.table.drawRefreshButton(tconfig.refresh.label, key, tconfig.refresh.bconfig)
-		}
 		if(typeof tconfig.nohover == "undefined" || tconfig.nohover == false){
 			$("#" + key + ' .dacura-listing-row').hover(function(){
 				$(this).addClass('userhover');
@@ -922,11 +915,20 @@ dacura.tool.table = {
 							var trid = $(event.target).closest('tr').attr('id'); // table row ID 
 							var index = parseInt(/[^_]*$/.exec(trid)[0]);
 							var entid = ids[index];
-							tconfig.cellClick(event, entid, dacura.tool.tables[key].properties[entid]);
+							var rowdata = dacura.tool.tables[key].rows[index];
+							tconfig.cellClick(event, entid, rowdata, dacura.tool.tables[key].properties[entid]);
 						});
 					}						
 				}
 			}
+		}
+
+		//alert(key + " " + dacura.tool.tables[key].rows.length);
+		$('#' + key).addClass("display");
+		$("#" + key).dataTable( tconfig.dtsettings );
+		$("#" + key + "_length select").addClass("dt-select");
+		if(typeof tconfig.refresh == "object"){
+			dacura.tool.table.drawRefreshButton(tconfig.refresh.label, key, tconfig.refresh.bconfig)
 		}
 		$('#' + key).show();
 	},
@@ -1050,8 +1052,9 @@ dacura.tool.table = {
 				disabled: true
 		}).click(function(){
 			var ids = dacura.tool.table.selectedids(key);
+			var rowdatas = dacura.tool.table.selectedrows(key);
 			ustate = $('#' + key + "-update-status").val();//get state from update select
-			multi.update(ids, ustate, ids.length, dacura.tool.subscreens[screen]);		
+			multi.update(ids, ustate, ids.length, dacura.tool.subscreens[screen], rowdatas);		
 		});	
 	},
 	
@@ -1215,6 +1218,20 @@ dacura.tool.table = {
 			}
 		});
 		return ids;
+	},
+	
+	selectedrows: function(key){
+		var rows = [];
+		$('#' + key + " input:checkbox").each(function(){
+			if($(this).is(":checked")){
+				var trid = $(this).closest('tr').attr('id'); // table row ID 
+				var index = parseInt(/[^_]*$/.exec(trid)[0]);
+				var rowdata = dacura.tool.tables[key].rows[index];
+				rows.push(rowdata);
+			}
+		});
+		//jpr(rows);
+		return rows;
 	},
 	
 	/**

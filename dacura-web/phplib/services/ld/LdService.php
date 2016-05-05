@@ -236,7 +236,9 @@ class LdService extends DacuraService {
 	 */
 	function getParamsForScreen($screen, LdDacuraServer &$dacura_server){
 		$params = array("image" => $this->furl("image", "services/".$this->name().".png"));
-		if($this->name() != "ld") $params['ldtype'] = $this->name();
+		if($this->name() != "ld") {
+			$params['ldtype'] = $this->name();
+		}
 		$params['dt'] = true;
 		$params["breadcrumbs"] = array(array(), array());
 		if($screen == "list"){

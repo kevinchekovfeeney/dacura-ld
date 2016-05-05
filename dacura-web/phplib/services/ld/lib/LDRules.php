@@ -162,7 +162,7 @@ class LDRules extends DacuraObject {
 		if(isset($this->rules[$action][$rname])){
 			return $this->rules[$action][$rname];
 		}
-		echo "<P>failed to find $mode -> $action -> $rname";
+		//echo "<P>failed to find $mode -> $action -> $rname";
 		//opr($this->rules);
 		return false;
 	}

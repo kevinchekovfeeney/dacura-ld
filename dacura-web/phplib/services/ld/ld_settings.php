@@ -63,7 +63,7 @@ $settings = array(
 		"ld" => array("datatable_options" => array(
 			"jQueryUI" => true, "searching" => false, "scrollX" => false, "pageLength" => 20, "lengthMenu" => array(10, 20, 50, 75, 100), 
 			"info" => true, "order" => array(8, "desc"), 
-				"aoColumns" => array(null, null, null, null, null, null, array("bVisible" => false, "iDataSort" => 6), array("bVisible" => false), array("iDataSort" => 8), array("bVisible" => false), null, array("orderable" => false)))
+				"aoColumns" => array(null, array("bVisible" => false), null, null, null, null, array("bVisible" => true, "iDataSort" => 7), array("bVisible" => false), array("iDataSort" => 9), array("bVisible" => false), null, array("orderable" => false)))
 		), 
 		"updates" => array("datatable_options" => array(
 			"jQueryUI" => true, "scrollX" => false, "pageLength" => 20, "lengthMenu" => array(10, 20, 50, 75, 100), 

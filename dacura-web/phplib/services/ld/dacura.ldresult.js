@@ -721,10 +721,10 @@ LDOViewer.prototype.refreshPage = function(args, msgs){
 	var self = this;//this becomes bound to the callback...
 	var handleResp = function(data, pconf){
 		dacura.ld.header(data);
-		if(typeof data.history == "object"){
+		if(typeof data.history == "object" && $('#ldo-history').length){
 			dacura.tool.table.reincarnate("history_table", data.history);		
 		}
-		if(typeof data.updates == "object"){
+		if(typeof data.updates == "object" && $('#ldo-updates').length){
 			dacura.tool.table.reincarnate("updates_table", data.updates);		
 		}
 		dacura.system.styleJSONLD("td.rawjson");	
