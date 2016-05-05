@@ -175,6 +175,9 @@ class LDOUpdate extends DacuraObject{
 				$this->changed->setFragment($update->fragment_id, $update->ldprops["_:".$update->fragment_id]);				
 			}
 			else {
+				if(!$update->meta || count($update->meta) == 0){
+					$update->meta = $this->original->meta;
+				}
 				$this->changed = $update;				
 			}		
 			$this->changed->version = $this->original->latest_version + 1;
@@ -542,6 +545,7 @@ class LDOUpdate extends DacuraObject{
 	function forAPI($format, $opts){
 		$meta = deepArrCopy($this->meta);
 		$meta = array_merge($this->getPropertiesAsArray(), $meta);
+		$meta['ldtype'] = $this->original->ldtype();
 		$apirep = array(
 				"type" => "LDOUpdate",
 				"id" => $this->id,
@@ -615,6 +619,14 @@ class LDOUpdate extends DacuraObject{
 	function getContentInFormat($format, $options, LdDacuraServer &$srvr, $for = "internal"){
 		$this->changed->display($format, $options, $srvr);
 		$this->original->display($format, $options, $srvr);
+		return true;
+	}
+	
+	function display($format, $options, LdDacuraServer &$srvr){
+		$this->getContentInFormat($format, $options, $srvr);
+		$this->display = "<h1>hello world - update</h1>";
+		//$lddisp = new LDODisplay($this, $options);
+		//$this->display = $lddisp->display($format);
 		return true;
 	}
 	

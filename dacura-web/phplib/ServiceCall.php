@@ -23,7 +23,7 @@ class ServiceCall extends DacuraObject {
 	 * Parses the input url into its components
 	 * 
 	 * pattern of input urls is /[collection_id]/service_id/screen/args...
-	 * @param string[] a list of all the service names on the system
+	 * @param string[] $snames a list of all the service names on the system
 	 */
 	function parseURLInput($snames){
 		$this->rawpath = isset($_GET['path']) ? $_GET['path'] : "";

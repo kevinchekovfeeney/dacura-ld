@@ -64,6 +64,7 @@ class CandidateDacuraServer extends LdDacuraServer {
 			return false;
 		}
 		$ar = $this->graphman->invokeDCS($mg->schemaGname());
+		//opr($ar->result);
 		if($ar->is_accept()){
 			return json_decode($ar->result, true);
 		}

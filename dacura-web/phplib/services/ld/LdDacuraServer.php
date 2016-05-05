@@ -643,6 +643,23 @@ class LdDacuraServer extends DacuraServer {
 				$ar->set_result($ldoupdate);
 			}
 		}
+		if(($ar->is_accept() || $ar->is_pending()) && !$test_flag){
+			//$cr->msg_body = "<b>".$cr->title()."</b> ".$cr->body();
+			if(!$ar->is_accept()){
+				$ar->msg_title = "Update accepted";
+				$ar->msg_body = "Update has entered into deferred update queue, it must be approved". $ar->msg_body;
+			}
+			else {
+				$ar->msg_title = "Update accepted and published";
+				$ar->msg_body = "Object updated". $ar->msg_body;
+			}
+		}
+		elseif($ar->is_accept() && $test_flag){
+			$ar->msg_title = "Update will be accepted and published";
+		}
+		elseif($ar->is_pending() && $test_flag && !$ar->msg_title){
+			$ar->msg_title = "Update will enter update queue and must be approved before it is published";
+		}
 		return $ar;
 	}
 	
@@ -705,18 +722,17 @@ class LdDacuraServer extends DacuraServer {
 			}
 			$gu = $this->publishUpdateToGraph($uldo, $ar->status(), $hypo || $test_flag);
 			if($ar->is_accept() && !$hypo && $gu->is_reject() && $this->getServiceSetting("rollback_updates_to_pending_on_dqs_reject", true)){
-				$ar->setWarning("Publication", "Rejected by DQS Service", "State changed from accept to pending");
+				$ar->addGraphResult("dqs", $gu, $hypo || $test_flag, false);
 				$ar->status("pending");
-				$ar->addGraphResult("dqs", $gu, true);
 			}
 			else {
-				$ar->addGraphResult("dqs", $gu, $hypo || $test_flag);
+				$ar->addGraphResult("dqs", $gu, $hypo || $test_flag, false);
 			}
 		}
 		elseif($ar->is_pending() && $this->getServiceSetting("test_unpublished", true)){
 			$hypo = true;
 			$gu = $this->publishUpdateToGraph($uldo, "pending", $hypo);
-			$ar->addGraphResult("dqs", $gu, $hypo);
+			$ar->addGraphResult("dqs", $gu, $hypo, false);
 		}
 		else {
 			$hypo = $test_flag || !$ar->is_accept();

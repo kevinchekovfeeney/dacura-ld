@@ -38,7 +38,12 @@ require("phplib/libs/JsonLD/LanguageTaggedString.php");
 function toJSONLD($props, $ns = false, $ismulti, $cwurl){
 	$jsonld = propsToJSONLD($props, $ismulti, $cwurl);
 	if($jsonld){
-		$compressed = ML\JsonLD\JsonLD::compact($jsonld->toJsonLd(), (object) $ns);
+		if($ns){
+			$compressed = ML\JsonLD\JsonLD::compact($jsonld->toJsonLd(), (object) $ns);
+		}
+		else {
+			$compressed = ML\JsonLD\JsonLD::compact($jsonld->toJsonLd());
+		}
 		return $compressed;
 	}
 	return false;
@@ -62,7 +67,7 @@ function fromJSONLD($jsonld){
  * @return string nquad serialisation
  */
 function toNQuads($props, $cwurl, $ismulti = false){
-	$jsonld = propsToJSONLD($props, $cwurl, $ismulti);
+	$jsonld = propsToJSONLD($props, $cwurl, true);
 	$quads = ML\JsonLD\JsonLD::toRdf($jsonld->toJsonLd());
 	$nquads = new ML\JsonLD\NQuads();
 	$ser = $nquads->serialize($quads);

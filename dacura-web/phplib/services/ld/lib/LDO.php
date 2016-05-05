@@ -1209,23 +1209,21 @@ class LDO extends DacuraObject {
 	 * @param array $nsobj a ns resolver object to create the list of namespaces with
 	 * @return boolean|string the serialised export of the object
 	 */
-	function export($format, $nsobj = false){
+	function export($format, $options = array()){
 		$easy = exportEasyRDFPHP($this->ldprops, $this->cwurl);
 		try{
-			foreach($this->nsres->prefixes as $id => $url){
-				EasyRdf_Namespace::set($id, $url);
+			$ns = EasyRdf_Namespace::namespaces();
+			foreach($ns as $id => $url){
+				EasyRdf_Namespace::delete($id);
+			}
+			if(isset($options['ns']) && $options['ns']){
+				foreach($this->nsres->prefixes as $id => $url){
+					EasyRdf_Namespace::set($id, $url);
+				}
 			}
 			$graph = new EasyRdf_Graph($this->cwurl, $easy, "php", $this->id);
 			if($graph->isEmpty()){
 				return "";//return $this->failure_result("exported graph was empty.", 400);
-			}
-			if($nsobj){
-				$nslist = $this->getNS($nsobj);
-				if($nslist){
-					foreach($nslist as $prefix => $full){
-						EasyRdf_Namespace::set($prefix, $full);
-					}
-				}
 			}
 			$res = $graph->serialise($format);
 			if(!$res){
@@ -1286,14 +1284,15 @@ class LDO extends DacuraObject {
 			$payload = isset($options['typed']) && $options['typed'] ? $this->typedQuads() : $this->quads();
 		}
 		elseif($format == "jsonld"){
-			require_once("JSONLD.php");				
-			$payload = toJSONLD($this->ldprops, $this->getNS(), $this->cwurl, $this->is_multigraph());
+			require_once("JSONLD.php");
+			$ns =  isset($options['ns']) && $options['ns'] ? $this->getNS() : false;				
+			$payload = toJSONLD($this->ldprops, $ns, $this->cwurl, $this->is_multigraph());
 		}
 		elseif($format == "nquads"){
 			$payload = $this->nQuads();
 		}
 		else {
-			$exported = $this->export($format);
+			$exported = $this->export($format, $options);
 			if(!$exported){
 				return false;
 			}
@@ -1313,37 +1312,8 @@ class LDO extends DacuraObject {
 	 * @return boolean true if successful
 	 */
 	function display($format, $options, LdDacuraServer &$srvr){
-		$lddisp = new LDODisplay($this->id, $this->nsres, $this->cwurl);
-		if($format == "json"){
-			$this->display = $lddisp->displayJSON($this->ldprops, $options);
-		}
-		elseif($format == "html"){
-			$this->display = $lddisp->displayHTML($this->ldprops, $options);
-		}
-		elseif($format == "triples"){
-			$payload = isset($options['typed']) && $options['typed'] ? $this->typedTriples() : $this->triples();
-			$this->display = $lddisp->displayTriples($payload, $options);
-		}
-		elseif($format == "quads"){
-			$payload = isset($options['typed']) && $options['typed'] ? $this->typedQuads() : $this->quads();
-			$this->display = $lddisp->displayQuads($payload, $options);
-		}
-		elseif($format == "jsonld"){
-			require_once("JSONLD.php");
-			$jsonld = toJSONLD($this->ldprops, $this->getNS(), $this->cwurl, $this->is_multigraph());
-			$this->display = $lddisp->displayJSONLD($jsonld, $options);
-		}
-		elseif($format == "nquads"){
-			$payload = $this->nQuads();
-			$this->display = $lddisp->displayNQuads($payload, $options);
-		}
-		else {
-			$exported = $this->export($format);
-			if($exported === false){
-				return false;
-			}
-			$this->display = $lddisp->displayExport($exported, $format, $options);
-		}
+		$lddisp = new LDODisplay($this, $options);
+		$this->display = $lddisp->display($format);
 		return true;
 	}
 	
@@ -1398,7 +1368,7 @@ class LDO extends DacuraObject {
 		$graphid = $graphid ? $graphid : $this->cwurl;
 		require_once("JSONLD.php");
 		//function assumes that properties are indexed by graph id
-		return toNQuads(array($graphid => $this->ldprops), array("cwurl" => $this->cwurl));
+		return toNQuads(array($graphid => $this->ldprops), $this->cwurl);
 	}
 	
 	/**
@@ -1452,6 +1422,7 @@ class LDO extends DacuraObject {
 	function compare(LDO $other){
 		$cdelta = compareLDGraph($this->ldprops, $other->ldprops, $this->cwurl);
 		$ndd = compareJSON($this->id, $this->meta, $other->meta, $this->cwurl, "meta");
+		//opr($ndd);
 		if($ndd->containsChanges()){
 			$cdelta->addJSONDelta($ndd);
 		}
@@ -1695,6 +1666,27 @@ class LDO extends DacuraObject {
 			return $this->meta['imports'];
 		}
 		return false;
+	}
+	
+	/**
+	 * Gets the url to a local ontology that is imported by this ldo
+	 * @param string $prefix - the ontology prefix
+	 * @return boolean|string - the url extension after the dacura url or false if it is not imported
+	 */
+	function prefixToLocalOntologyURL($prefix){
+		if(!isset($this->meta['imports']) || !isset($this->meta['imports'][$prefix])){
+			return false;
+		}
+		$url = "";
+		$imp = $this->meta['imports'][$prefix];
+		if(isset($imp['collection']) && $imp['collection'] != "all"){
+			$url = $imp['collection'] ."/";
+		} 
+		$url .= "ontology"."/".$imp['id'];
+		if(isset($imp['version']) && $imp['version']){
+			$url .= "?version=".$imp['version'];
+		}
+		return $url;
 	}
 
 }

@@ -113,15 +113,17 @@ Class Ontology extends LDO {
 	 */
 	function importLD($mode, LdDacuraServer &$srvr){
 		parent::importLD($mode, $srvr);
-		if(isset($this->meta['url'])){
-			$this->nsres->addPrefix($this->id, $this->meta['url']);
-		}
-		if($this->rule($mode, "import", 'load_dependencies')){
-			if($srvr->getServiceSetting("two_tier_schemas", true)){
-				$deps = $this->getDependencies($srvr, "schema/schema");
+		if($this->meta){
+			if(isset($this->meta['url'])){
+				$this->nsres->addPrefix($this->id, $this->meta['url']);
 			}
-			else {
-				$deps = $this->getDependencies($srvr, "schema");
+			if($this->rule($mode, "import", 'load_dependencies')){
+				if($srvr->getServiceSetting("two_tier_schemas", true)){
+					$deps = $this->getDependencies($srvr, "schema/schema");
+				}
+				else {
+					$deps = $this->getDependencies($srvr, "schema");
+				}
 			}
 		}
 		return true;
@@ -133,7 +135,7 @@ Class Ontology extends LDO {
 	 * @see LDO::getValidMetaProperties()
 	 */
 	function getValidMetaProperties(){
-		$valids = array_merge(array("import", "schema_import", 'instance_dqs_tests', 'schema_dqs_tests'), parent::getValidMetaProperties());
+		$valids = array_merge(array("imports", "schema_imports", 'instance_dqs_tests', 'schema_dqs_tests'), parent::getValidMetaProperties());
 		return $valids;
 	}
 
@@ -326,7 +328,7 @@ Class Ontology extends LDO {
 	 */
 	function getDependencies(LdDacuraServer $srvr, $type, $ignore = array(), $forcegen = false){
 		$ignore[] = $this->id;
-		$mindex = ($type == "schema") ? "import" : "import_schema";
+		$mindex = ($type == "schema") ? "imports" : "schema_imports";
 		if($forcegen || !isset($this->meta[$mindex])){
 			$deps = array();
 			if($chain = $this->loadDependencyChain($srvr, $type, $ignore)){
@@ -366,8 +368,8 @@ Class Ontology extends LDO {
 		$ignore[] = $this->id;
 		$onts = array();
 		if($type == "schema"){
-			if(isset($this->meta['import'])){
-				foreach($this->meta['import'] as $id => $rec){
+			if(isset($this->meta['imports'])){
+				foreach($this->meta['imports'] as $id => $rec){
 					$onts[$id] = $srvr->loadLDO($id, "ontology", $rec['collection'], false, $rec['version']);					
 				}
 				$this->loaded_dependencies[$type] = $onts;
@@ -376,8 +378,8 @@ Class Ontology extends LDO {
 			return $this->loadDependencyChain($srvr, $type, $ignore);				
 		}
 		else {
-			if(isset($this->meta['schema_import'])){
-				foreach($this->meta['schema_import'] as $id => $rec){
+			if(isset($this->meta['schema_imports'])){
+				foreach($this->meta['schema_imports'] as $id => $rec){
 					$onts[$id] = $srvr->loadLDO($id, "ontology", $rec['collection'], false, $rec['version']);
 				}
 				$this->loaded_dependencies[$type] = $onts;

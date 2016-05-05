@@ -314,10 +314,7 @@ class DacuraResult extends DacuraObject {
 			$this->add($gu);
 		}
 		elseif($gu->is_reject()) { //graph errors and warnings are copied into the warnings of this result
-			if($add_err){
-				$this->errors[] = new GraphTestFailure($gu->action, $gu->msg_title, $gu->msg_body);
-			}
-			elseif(count($gu->errors) > 0 || count($gu->warnings) > 0){
+			if(count($gu->errors) > 0 || count($gu->warnings) > 0){
 				foreach($gu->errors as $err){
 					$this->warnings[] = $err;
 				}
@@ -327,6 +324,9 @@ class DacuraResult extends DacuraObject {
 			}
 			else {
 				$this->warnings[] = new GraphTestFailure($gu->action, $gu->msg_title, $gu->msg_body);
+			}
+			if($add_err){
+				$this->errors[] = new GraphTestFailure($gu->action, $gu->msg_title, $gu->msg_body);
 			}
 		}
 		$this->graphs[$gid] = $gu;//only one result per graph result id				

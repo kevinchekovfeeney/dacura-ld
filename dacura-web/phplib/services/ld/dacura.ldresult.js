@@ -15,7 +15,9 @@ dacura.ld.getTripleTableHTML = function(trips, tit){
 	var html = "";
 	if(trips.length > 0){
 		isquads = trips[0].length == 4;
-		html += "<div class='api-triplestable-title'>" + tit + "</div>";
+		if(typeof tit == "string" && tit.length){
+			html += "<div class='api-triplestable-title'>" + tit + "</div>";
+		}
 		html += "<table class='rbtable'>";
 		html += "<thead><tr><th>Subject</th><th>Predicate</th><th>Object</th>";
 		if(isquads){
@@ -82,9 +84,16 @@ dacura.ld.wrapJSON = function(json, mode){
 		var html = "<div class='dacura-json-viewer'>" + JSON.stringify(json, null, 4) + "</div>";				
 	}
 	else {
-		var html = "<div class='dacura-json-editor'><textarea>" + JSON.stringify(json, null, 4) + "</textarea></div>";			
+		var html = "<div class='dacura-json-editor'><textarea class='dacura-json-editor'>" + JSON.stringify(json, null, 4) + "</textarea></div>";			
 	}
 	return html;
+}
+
+dacura.ld.isJSONFormat = function(format){
+	if(format == "json" || format == "jsonld" || format == "quads" || "format" == "triples"){
+		return true;
+	}
+	return false;
 }
 
 function LDResult(jsondr, pconfig){
@@ -104,7 +113,7 @@ function LDResult(jsondr, pconfig){
 		this.result = new LDO(jsondr.result);
 	}
 	else if(typeof jsondr.result == 'object' &&  jsondr.result.type == "LDOUpdate"){
-		this.result = new LDOUpdate();
+		this.result = new LDOUpdate(jsondr.result);
 	}
 	this.dqsgraph = typeof jsondr.graph_dqs == "object" ? new LDGraphResult(jsondr.graph_dqs, "triples", pconfig) : false;
 	this.ldgraph = typeof jsondr.graph_ld == "object" ? new LDGraphResult(jsondr.graph_ld, "triples", pconfig) : false;
@@ -215,7 +224,7 @@ LDResult.prototype.hasExtraFields = function(){
 
 LDResult.prototype.getExtraFields = function(){
 	var subs = {};
-	if(this.result){
+	if(!isEmpty(this.result)){
 		subs["result"] = {title: 'Linked Data Object', content: this.getResultHTML()};
 	}
 	if(this.ldgraph){
@@ -429,10 +438,6 @@ RVO.prototype.getHTML = function(type){
 }	
 
 
-
-
-function LDOUpdate(data){}
-
 function LDOViewer(ldo, pconf, vconf){
 	this.ldo = ldo;
 	this.pconf = pconf;
@@ -464,6 +469,12 @@ LDOViewer.prototype.init = function(vconf){
 	else {
 		this.view_formats = false;
 	}
+	if(typeof vconf.edit_formats == "object"){
+		this.edit_formats = vconf.edit_formats;
+	}
+	else {
+		this.edit_formats = false;
+	}
 	if(typeof vconf.view_actions == "object"){
 		this.view_actions = vconf.view_actions;
 	}
@@ -475,6 +486,24 @@ LDOViewer.prototype.init = function(vconf){
 	}
 	else {
 		this.view_options = false;
+	}
+	if(typeof vconf.view_graph_options == "object"){
+		this.view_graph_options = vconf.view_graph_options;
+	}
+	else {
+		this.view_graph_options = false;
+	}
+	if(typeof vconf.editmode_options == "object"){
+		this.editmode_options = vconf.editmode_options;
+	}
+	else {
+		this.editmode_options = false;
+	}
+	if(typeof vconf.result_options == "object"){
+		this.result_options = vconf.result_options;
+	}
+	else {
+		this.result_options = false;
 	}
 	this.show_options = true;
 }
@@ -491,29 +520,146 @@ LDOViewer.prototype.show = function(vconf){
 			var act = this.id.substring(this.id.lastIndexOf("-")+1);
 			self.handleViewAction(act);
 		});
-		$('input.ld-control').button().click(function(){
-			var opt = this.id.substring(this.id.lastIndexOf("-")+1);
-			var val = $('#' + this.id).attr('checked');
-			self.handleViewOptionUpdate(opt, !val)
-		});
-		//$('span.ld-view-options').buttonset();
-		$('select.ld-control').selectmenu({change:function(){
-			var format = $('#'+this.id).val();
-			self.handleViewFormatUpdate(format);}
-		});
+		if(this.emode == "view"){
+			$('input.ld-control').button().click(function(){
+				var opt = this.id.substring(this.id.lastIndexOf("-")+1);
+				var val = $('#' + this.id).attr('checked');
+				self.handleViewOptionUpdate(opt, !val)
+			});
+			//$('span.ld-view-options').buttonset();
+			$('select.ld-control').selectmenu({change:function(){
+				var format = $('#'+this.id).val();
+				self.handleViewFormatUpdate(format);}
+			});
+		}
+		else {
+			$('button.api-control').button();
+			$('.view-graph-options').buttonset();
+			$('select.api-control').selectmenu();
+		}
 	}
 	$(this.target).append(this.ldo.getContentsHTML(this.emode));
-
+	if(this.emode == "edit"){
+		$(this.target).append(this.getUpdateButtonsHTML());	
+		$('.subscreen-button').button().click(function(){
+			var act = this.id.substring(this.id.lastIndexOf("-")+1);
+			if(act == "cancelupdate"){
+				self.handleViewAction("cancel")
+			}
+			else { 
+				var updated = self.ldo.getUpdatedContents(self.target);
+				if(dacura.ld.isJSONFormat(self.ldo.format)){
+					try {
+						updated = JSON.parse(updated);
+					}
+					catch(e){
+						alert(e.message);
+						return;
+					}
+				}
+				var test = (act == "testupdate") ? 1 : 0;
+				var j = $(self.target + " .ld-edit-modes").val();
+				var em = j ? j : "replace";
+				j = $(self.target + " .ld-result-modes").val();
+				var rem = j ? j : 0;
+				var opts = {"show_result": rem};
+				if(rem == 2){
+					opts.show_changed = 1;
+					opts.show_original = 1;
+					opts.show_delta = 1;
+				}
+				$(self.target + ' .editbar-options input:checkbox').each(function(){
+					var act = "show_" + this.id.substring(this.id.lastIndexOf("-")+1)+ "_triples";
+					if($(this).is(":checked")){
+						opts[act] = "1";
+					}	
+				});
+				var upd = {
+					'ldtype': self.ldo.ldtype(), 
+					"test": test, 
+					"contents": updated, 
+					"editmode": em,
+					"options" : opts,
+					"format": self.ldo.format
+				};
+				self.update(upd);	
+				//assemble our options for update...
+			}
+		});
+	}
 }
+
+LDOViewer.prototype.getUpdateButtonsHTML = function(){
+	var html = '<div class="subscreen-buttons">'
+	html += "<button id='" + this.prefix + "-cancelupdate' class='dacura-cancel-update subscreen-button'>Cancel Update</button>"	
+	html += "<button id='" + this.prefix + "-testupdate' class='dacura-test-update subscreen-button'>Test Update</button>";	
+	html += "<button id='" + this.prefix + "-update' class='dacura-test-update subscreen-button'>Update</button>";	
+	html += "</div>";
+	return html;
+};
 
 LDOViewer.prototype.handleViewAction = function(act){
 	if(act == "export"){
 		window.location.href = this.ldo.fullURL() + "&direct=1";	
 	}
 	else if(act == "accept" || act == "pending" || act == "reject"){
-		var upd = {'ldtype': this.ldo.ldtype(), "meta": {"status": act}, "editmode": "update"};
+		var upd = {'ldtype': this.ldo.ldtype(), "meta": {"status": act}, "editmode": "update", "format": "json"};
 		this.update(upd);
 	}
+	else if(act == "restore"){
+		alert("restore needs to be written");
+	}
+	else if(act == "import"){
+		alert("import!!");//this.loadEditMode();
+	}
+	else if(act == "edit"){
+		this.loadEditMode();
+	}
+	else if(act == "cancel"){
+		this.clearEditMode();
+	}
+};
+
+LDOViewer.prototype.clearEditMode = function(){
+	var args = typeof this.savedargs == "object" ? this.savedargs : this.ldo.getAPIArgs();
+	delete(this.savedargs);
+	var idstr = this.ldo.ldtype().ucfirst() + " " + this.ldo.id;
+	msgs = {busy: "Loading " + idstr + " in view mode from server", "fail": "Failed to retrieve " + idstr + " in view mode from server"};
+	this.emode="view";
+	this.refresh(args, msgs);
+};
+
+
+LDOViewer.prototype.loadEditMode = function(){
+	var args = this.ldo.getAPIArgs();
+	this.savedargs = jQuery.extend(true, {}, args);
+	if(typeof args.options != "object"){
+		args.options = {"plain": 1};
+	}
+	else {
+		for(var i in args.options){
+			if(i != "ns" && i != "addressable"){
+				delete(args.options[i]);
+			}
+		}
+		args.options.plain = 1;
+	}
+	var idstr = this.ldo.ldtype().ucfirst() + " " + this.ldo.id;
+	msgs = {busy: "Loading " + idstr + " in edit mode from server", "fail": "Failed to retrieve " + idstr + " in edit mode from server"};
+	var id = this.ldo.id;
+	if(this.ldo.fragment_id){ 
+		id = id + "/" + this.ldo.fragment_id;
+	}
+	var self = this;//this becomes bound to the callback...
+	var handleResp = function(data, pconf){
+		self.ldo = new LDO(data);
+		self.emode = "edit";
+		self.show();
+		//self.ldo = new LDO(data);
+		//self.show();
+	}
+	$(this.pconf.resultbox).empty();
+	dacura.ld.fetch(id, args, handleResp, this.pconf, msgs);
 };
 
 LDOViewer.prototype.handleViewFormatUpdate = function(format){
@@ -567,62 +713,175 @@ LDOViewer.prototype.refresh = function(args, msgs){
 	dacura.ld.fetch(id, args, handleResp, this.pconf, msgs);
 };
 
-LDOViewer.prototype.update = function(upd){
+LDOViewer.prototype.refreshPage = function(args, msgs){
 	var id = this.ldo.id;
 	if(this.ldo.fragment_id){ 
 		id = id + "/" + this.ldo.fragment_id;
 	}
 	var self = this;//this becomes bound to the callback...
 	var handleResp = function(data, pconf){
-		jpr(data);
+		dacura.ld.header(data);
+		if(typeof data.history == "object"){
+			dacura.tool.table.reincarnate("history_table", data.history);		
+		}
+		if(typeof data.updates == "object"){
+			dacura.tool.table.reincarnate("updates_table", data.updates);		
+		}
+		dacura.system.styleJSONLD("td.rawjson");	
+		self.ldo = new LDO(data);
+		self.show();
 	}
-	dacura.ld.update(id, upd, handleResp, this.pconf, false);
+	$(this.pconf.resultbox).empty();
+	dacura.ld.fetch(id, args, handleResp, this.pconf, msgs);
+};
+
+LDOViewer.prototype.update = function(upd, handleResp){
+	var id = this.ldo.id;
+	if(this.ldo.fragment_id){ 
+		id = id + "/" + this.ldo.fragment_id;
+	}
+	var self = this;//this becomes bound to the callback...
+	if(typeof handleResp != "function"){
+		handleResp = function(data, pconf){
+			var res = new LDResult(data, pconf);
+			if(res.status == "accept" && !res.test){
+				var args = typeof self.savedargs == "object" ? self.savedargs : self.ldo.getAPIArgs();
+				delete(self.savedargs);
+				var idstr = self.ldo.ldtype().ucfirst() + " " + self.ldo.id;
+				msgs = {busy: "Loading " + idstr + " in view mode from server", "fail": "Failed to retrieve " + idstr + " in view mode from server"};
+				self.emode="view";
+				self.refreshPage(args, msgs);
+			}
+			else if(res.status == "pending" && !res.test){
+				var args = typeof self.savedargs == "object" ? self.savedargs : self.ldo.getAPIArgs();
+				delete(self.savedargs);
+				var idstr = self.ldo.ldtype().ucfirst() + " " + self.ldo.id;
+				msgs = {busy: "Loading " + idstr + " in view mode from server", "fail": "Failed to retrieve " + idstr + " in view mode from server"};
+				self.emode="view";
+				self.refreshPage(args, msgs);			
+			}
+			res.show();
+		}
+		//jpr(data);
+	}
+	dacura.ld.update(id, upd, handleResp, this.pconf, upd.test);
 }
 
-
-
 LDOViewer.prototype.showOptionsBar = function(){
-	var html = "<div class='ld-view-bar ld-bar'><table class='ld-bar'><tr><td class='ld-bar ld-bar-left'>";
 	if(this.emode == "view"){
-		if(this.view_formats){
-			html += "<select class='ld-view-formats ld-control'>";
-			for(var i in this.view_formats){
-				var sel = "";
-				if(this.ldo.format == i){
-					sel = "selected "
-				}
-				html += "<option class='foption ld-bar-format' value='" + i + "' id='" + this.prefix + "-format-" + i + "' " + sel + ">" + this.view_formats[i] + "</option>";							
+		var html = this.showViewOptionsBar();
+	}
+	else {
+		var html = this.showEditOptionsBar();	
+	}
+	html += "<span class='browsermax editor-max ui-icon ui-icon-arrow-4-diag'></span>";
+	html += "<span class='browsermin dch editor-min ui-icon ui-icon-closethick'></span></div>";
+	return html;
+};
+
+LDOViewer.prototype.showViewOptionsBar = function(){
+	var html = "<div class='ld-view-bar ld-bar'><table class='ld-bar'><tr><td class='ld-bar ld-bar-left'>";
+	if(this.view_formats){
+		html += "<select class='ld-view-formats ld-control'>";
+		for(var i in this.view_formats){
+			var sel = "";
+			if(this.ldo.format == i){
+				sel = "selected "
 			}
-			html += "</select>";
+			html += "<option class='foption ld-bar-format' value='" + i + "' id='" + this.prefix + "-format-" + i + "' " + sel + ">" + this.view_formats[i] + "</option>";							
 		}
-		html += "</td>";
-		html += "<td class='ld-bar ld-bar-centre>";
-		if(this.view_options){
-			html += "<span class='ld-view-options'>";
-			for(var i in this.view_options){
-				html += "<input type='checkbox' class='ld-control ld-bar-option' id='" + this.prefix + "-option-" + i + "' ";
-				if(this.ldo.options[i] == 1){
-					html += "checked";
-				}
-				html += " /><label for='" + this.prefix + "-option-" + i + "'>" + this.view_options[i].title + "</label>";
+		html += "</select>";
+	}
+	html += "</td>";
+	html += "<td class='ld-bar ld-bar-centre'>";
+	if(this.view_options){
+		html += "<span class='ld-view-options'>";
+		for(var i in this.view_options){
+			html += "<input type='checkbox' class='ld-control ld-bar-option' id='" + this.prefix + "-option-" + i + "' ";
+			if(this.ldo.options[i] == 1){
+				html += "checked";
+			}
+			html += " /><label for='" + this.prefix + "-option-" + i + "'>" + this.view_options[i].title + "</label>";
+		}
+		html += "</span>";
+	}
+	html += "</td>";
+	html += "<td class='ld-bar ld-bar-right'>";
+	if(this.view_actions){
+		html += "<span class='ld-update-actions'>";
+		if(this.ldo.meta.version != this.ldo.meta.latest_version){
+			if(typeof this.view_actions['restore'] == "string"){
+				html += "<button class='ldo-actions ld-control' title='" + this.view_actions["restore"] + "' id='"+ this.prefix + "-action-restore'>" + this.view_actions["restore"] + "</button>";								
+			}
+			if(typeof this.view_actions['export'] == "string"){
+				html += "<button class='ldo-actions ld-control' title='" + this.view_actions["export"] + "' id='"+ this.prefix + "-action-export'>" + this.view_actions["export"] + "</button>";								
 			}
 		}
-		html += "</td>";
-		html += "<td class='ld-bar ld-bar-right'>";
-		if(this.view_actions){
-			html += "<span class='ld-update-actions'>";
+		else {
 			for(var i in this.view_actions){
+				if(i == "restore") continue;
+				if(i == "edit" && this.edit_formats && typeof(this.edit_formats[this.ldo.format]) == "undefined") continue;
 				if((this.ldo.meta.status == "accept" && i != "reject" && i != "accept") || 
 						(this.ldo.meta.status == 'pending' && i != 'pending') || 
 						(this.ldo.meta.status == "reject" && i != "reject" && i != "accept" && i!= "pending")){
 					html += "<button class='ldo-actions ld-control' title='" + this.view_actions[i] + "' id='"+ this.prefix + "-action-" + i + "'>" + this.view_actions[i] + "</button>";
 				}
 			}
-			html += "</span>";
 		}
+		html += "</span>";
 	}
-	html += "</td></tr></table><span class='browsermax editor-max ui-icon ui-icon-arrow-4-diag'></span>";
-	html += "<span class='browsermin dch editor-min ui-icon ui-icon-closethick'></span></div>";
+	html += "</td></tr></table>";
+	return html;
+};
+
+LDOViewer.prototype.showEditOptionsBar = function(){
+	var html = "<div class='ld-edit-bar ld-bar'><table class='ld-bar'><tr><td class='ld-bar ld-bar-left'>";
+	tit = "format: " + this.view_formats[this.ldo.format];
+	if(typeof(this.ldo.options) == 'object' && this.ldo.options.ns){
+		tit += ", Prefixes on";
+	}
+	else {
+		tit += ", Prefixes off";
+	}
+	if(typeof(this.ldo.options) == 'object' && this.ldo.options.addressable){
+		tit += ", Addressable blank nodes";
+	}
+	else {
+		tit += ", Normal blank nodes";	
+	}
+	html += "<strong title='" + tit + "'>Edit Mode (" + this.ldo.format + ")</strong>";
+	html += "</td>";
+	html += "<td class='ld-bar ld-bar-centre'>";
+	if(this.editmode_options){
+		html += "<div class='editbar-options editmode-options'>";
+		html += "<select class='ld-edit-modes api-control'>";
+		for(var i in this.editmode_options){
+			html += "<option class='foption ld-bar-format' value='" + i + "' id='" + this.prefix + "-editmode-" + i + "'>" + this.editmode_options[i] + "</option>";							
+		}
+		html += "</select></div>";
+	}
+	if(this.result_options){
+		html += "<div class='editbar-options result-options'>";
+		html += "<select class='ld-result-modes api-control'>";
+		for(var i in this.result_options){
+			html += "<option class='foption ld-bar-format' value='" + i + "' id='" + this.prefix + "-resultoption-" + i + "'>" + this.result_options[i] + "</option>";							
+		}
+		html += "</select></div>";
+	}			
+	if(this.view_graph_options){
+		html += "<div class='editbar-options view-graph-options'>";
+		for(var i in this.view_graph_options){
+			html += "<input type='checkbox' class='api-control ld-api-option' id='" + this.prefix + "-graphoption-" + i + "'";
+			html += " /><label for='" + this.prefix + "-graphoption-" + i + "'>" + this.view_graph_options[i] + "</label>";
+		}
+		html += "</div>";
+	}
+	html += "</td>";
+	html += "<td class='ld-bar ld-bar-right'>";
+	html += "<span class='ld-update-actions'>";
+	html += "<button class='ldo-actions ld-control' title='Cancel Editing' id='"+ this.prefix + "-action-cancel'>Cancel Editing</button>";
+	html += "<span>";
+	html += "</td></tr></table>";
 	return html;
 }
 
@@ -635,6 +894,7 @@ function LDO(data){
 	this.id = data.id;
 	this.meta = typeof data.meta == "undefined" ? false : data.meta;
 	this.contents = typeof data.contents == "undefined" ? false : data.contents;
+	this.fragment_id = typeof data.fragment_id == "undefined" ? false : data.fragment_id;
 	this.format = typeof data.format == "undefined" ? "json" : data.format;
 	this.options = typeof data.options == "undefined" ? [] : data.options;
 }
@@ -656,12 +916,27 @@ LDO.prototype.getMetaHTML = function(mode){
 	return dacura.ld.wrapJSON(this.meta);	
 }
 
+LDO.prototype.getUpdatedContents = function(jtarget){
+	if(this.format == "json" || this.format== "jsonld"){
+		return $(jtarget + ' textarea.dacura-json-editor').val();
+	}
+	else if(this.format == "triples" || this.format == "quads"){
+		alert("update not done for this format");
+	}	
+	else if(this.format == "html"){
+		alert("update not done for this format");		
+	}
+	else {
+		return $(jtarget + ' textarea.dacura-text-editor').val();
+	}
+}
+
 LDO.prototype.getContentsHTML = function(mode){
 	if(this.format == "json" || this.format== "jsonld"){
 		return dacura.ld.wrapJSON(this.contents, mode);
 	}
 	else if(this.format == "triples" || this.format == "quads"){
-		return dacura.ld.getTripleTableHTML(this.contents);
+		return dacura.ld.getTripleTableHTML(this.contents, mode);
 	}
 	else if(this.format == "html"){
 		return "<div class='dacura-html-viewer'>" + this.contents + "</div>";
@@ -670,7 +945,12 @@ LDO.prototype.getContentsHTML = function(mode){
 		return "<object id='svg' type='image/svg+xml'>" + this.contents + "</object>";
 	}
 	else {
-		return "<div class='dacura-export-viewer'>" + this.contents + "</div>";
+		if(mode == "edit"){
+			return "<div class='dacura-export-editor'><textarea class='dacura-text-editor'>" + this.contents + "</textarea></div>";			
+		}
+		else {
+			return "<div class='dacura-export-viewer'>" + this.contents + "</div>";
+		}
 	}	
 };
 
@@ -680,8 +960,8 @@ LDO.prototype.getAPIArgs = function(){
 		"options": this.options,
 		"ldtype": this.meta.ldtype
 	};
-	if(this.version > 0){
-		args.version = this.version;
+	if(this.meta.version != this.meta.latest_version){
+		args.version = this.meta.version;
 	}
 	return args;
 }
@@ -697,8 +977,8 @@ LDO.prototype.fullURL = function(){
 	if(this.format){
 		args['format'] = this.format;
 	}
-	if(this.version > 0){
-		args['version'] = this.version;
+	if(this.meta.version != this.meta.latest_version){
+		args['version'] = this.meta.version;
 	}
 	for(var i in this.options){
 		if(i == "ns" || i == "addressable"){
@@ -713,6 +993,39 @@ LDO.prototype.fullURL = function(){
 
 LDO.prototype.ldtype = function(){
 	return this.meta.ldtype;
+}
+
+function LDOUpdate(data){
+	this.id = data.id;
+	this.meta = typeof data.meta == "undefined" ? false : data.meta;
+	this.inserts = typeof data.insert == "undefined" ? false : data.insert;
+	this.deletes = typeof data["delete"] == "undefined" ? false : data["delete"];
+	//this.fragment_id = typeof data.fragment_id == "undefined" ? false : data.fragment_id;
+	this.format = typeof data.format == "undefined" ? "json" : data.format;
+	this.options = typeof data.options == "undefined" ? [] : data.options;
+	this.changed = typeof data.changed == "undefined" ? false : new LDO(data.changed);
+	this.original = typeof data.original == "undefined" ? false : new LDO(data.original);
+}
+
+LDOUpdate.prototype.getHTML = function(mode){
+	if(!this.inserts && !this.deletes){
+		html = "<div class='info'>No Updates</div>";		
+	}
+	else {
+		html = "<h2>Forward</h2>";
+		html += JSON.stringify(this.inserts);
+		html += "<h2>Backward</h2>";
+		html += JSON.stringify(this.deletes);
+		if(this.changed){
+			html += "<h2>After</h2>";
+			html += this.changed.getHTML(mode);
+		}
+		if(this.original){
+			html += "<h2>Before</h2>";
+			html += this.original.getHTML(mode);
+		}
+	}
+	return html;
 }
 
 /*

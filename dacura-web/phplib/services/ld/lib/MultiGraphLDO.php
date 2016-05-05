@@ -243,7 +243,12 @@ class MultiGraphLDO extends LDO {
 	 */
 	function compare(LDO $other){
 		if(!$this->is_multigraph() && !$other->is_multigraph()){
-			return compareLDGraph($this->ldprops, $other->ldprops, $this->cwurl, $this->getDefaultGraphURL());
+			$cdelta = compareLDGraph($this->ldprops, $other->ldprops, $this->cwurl, $this->getDefaultGraphURL());
+			$ndd = compareJSON($this->id, $this->meta, $other->meta, $this->cwurl, "meta");
+			if($ndd->containsChanges()){
+				$cdelta->addJSONDelta($ndd);
+			}
+			return $cdelta;
 		}
 		if($this->is_multigraph() && !$other->is_multigraph()){
 			$other->multigraph = true;
