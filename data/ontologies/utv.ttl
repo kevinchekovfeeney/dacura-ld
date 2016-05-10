@@ -312,7 +312,7 @@ utv:Instant
 	a owl:Class;
 	rdfs:label "Instant";
 	rdfs:comment "A temporal value that is true at a specific point in time.";
-	owl:subClassOf [ a owl:Restriction ;
+	rdfs:subClassOf [ a owl:Restriction ;
 		owl:onProperty utv:atDateTime ;
 		owl:cardinality "1"^^xsd:nonNegativeInteger ] .
 
@@ -320,7 +320,7 @@ utv:UncertainInstant
 	a owl:Class;
 	rdfs:label "Uncertain Instant";
 	rdfs:comment "A temporal value that is true at a specific point in time but there are muliple possible values for the specific point in time.";
-	owl:subClassOf [ a owl:Restriction ;
+	rdfs:subClassOf [ a owl:Restriction ;
 		owl:onProperty utv:atDateTime ;
 		owl:minCardinality "2"^^xsd:nonNegativeInteger ] .
 

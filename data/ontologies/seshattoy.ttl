@@ -1,0 +1,138 @@
+@prefix seshattoy: <http://dacura.cs.tcd.ie/data/seshattoy#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dc11: <http://purl.org/dc/elements/1.1/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix utv: <http://dacura.cs.tcd.ie/ontology/utv#> .
+
+seshattoy:
+  a owl:Ontology ;
+  dc11:title "Seshat Global History Databank Ontology"@en ;
+  rdfs:comment "The Seshat Global History Databank ontology is designed to describe human societies throughout time."@en ;
+  rdfs:label "Seshat Global History Databank Ontology"@en ;
+  owl:versionInfo "0.1.17"@en ;
+  dc11:date "2015-12-22"@en ;
+  dc11:creator "Rob Brennan"@en, "Kevin Feeney"@en, "Gavin Mendel-Gleason"@en ;
+  dc11:contributor "Odhran Gavin"@en, "Bojan Bozic"@en, "Pieter Francois"@en, "Harvey Whitehouse"@en, "Arkadiusz Marciniak"@en, "Thomas E. Currie"@en, "Christopher Chase-Dunn"@en, "Jack A. Goldstone"@en, "J. G. Manning"@en, "Peter N. Peregrine"@en, "Frances Reynolds"@en, "Peter J. Richerson"@en, "Enrico Spolaore"@en, "Romain Wacziarg"@en, "Douglas R. White"@en, "David S. Wilson"@en, "Andrey Korotayev"@en, "David Baker"@en, "Johannes Preiser-Kapeller"@en, "Nikolay Kradin"@en, "Daniel Hoyer"@en, "Peter Turchin"@en ;
+  dc11:rights "This ontology is distributed under a Creative Commons Attribution License - http://creativecommons.org/licenses/by/3.0"@en ;
+  dc11:description "This ontology will be used by the Evolution Institute and its partners to describe time series data collected about all human societies."@en .
+
+seshattoy:Entity
+  a owl:Class ;
+  rdfs:subClassOf utv:Entity ;
+  rdfs:label "Seshat Entitity"@en ;
+  rdfs:comment "This is the super-class of all primary Seshat entities - the units of data collection. For example Organisations, Polities, Territories and NGAs."@en .
+
+seshattoy:Polity
+  a owl:Class ;
+  rdfs:subClassOf seshattoy:Entity ;
+  rdfs:label "Polity"@en ;
+  rdfs:comment "A polity is defined as an independent political unit. Kinds of polities range from villages (local communities) through simple and complex chiefdoms to states and empires. A polity can be either centralized or not (e.g., organized as a confederation). What distinguishes a polity from other human groupings and organizations is that it is politically independent of any overarching authority; it possesses sovereignty. Polities are defined spatially by the area enclosed within a boundary on the world map. There may be more than one such areas. Polities are dynamical entities, and thus their geographical extent may change with time. Thus, typically each polity will be defined by a set of multiple boundaries, each for a specified period of time. For prehistoric periods and for NGAs populated by a multitude of small-scale polities we use a variant called quasi-polity."@en .
+
+seshattoy:hasGeneralVariable
+  a owl:ObjectProperty ;
+  rdfs:subPropertyOf seshattoy:hasVariable ;
+  rdfs:label "has general variable"@en ;
+  rdfs:comment "This sub-property of seshattoy:hasVariable provides a way to define seshattoy:Organisation variables as members of the set of general variables."@en .
+
+seshattoy:hasVariable
+  a owl:ObjectProperty ;
+  rdfs:subPropertyOf utv:hasVariable ;
+  rdfs:label "has variable"@en ;
+  rdfs:comment "The basic property relation for seshat datasets. Used to relate a seshat entity and its value with qualified information, e.g. uncertainty, temporal bounds, about the value. All seshat variable properties inherit from this property."@en ;
+  rdfs:range utv:Variable ;
+  rdfs:domain seshattoy:Entity .
+
+seshattoy:alternativeName
+  a owl:ObjectProperty ;
+  rdfs:subPropertyOf seshattoy:hasGeneralVariable ;
+  rdfs:label "Alternative name"@en ;
+  rdfs:comment "The name of a seshat Entity. Generally same as the name of the wiki page."@en ;
+  rdfs:domain seshattoy:Entity ;
+  rdfs:range seshattoy:NameVariable .
+
+seshattoy:NameVariable
+  a owl:Class ;
+  rdfs:subClassOf utv:UncertainTemporalStringDataVariable ;
+  rdfs:label "Name Variable"@en ;
+  rdfs:comment "A variable holding a name of a seshat entity."@en .
+
+seshattoy:population
+  a owl:ObjectProperty ;
+  rdfs:label "Population"@en, "Polity Population"@en ;
+  rdfs:comment "Estimated population of the polity; can change as a result of both adding/losing new territories or by population growth/decline within a region ."@en ;
+  rdfs:domain seshattoy:Polity ;
+  rdfs:range seshattoy:PopulationVariable .
+
+seshattoy:PopulationUnitOfMeasureRestriction
+  a owl:Restriction ;
+  owl:onProperty seshattoy:unitOfMeasure ;
+  owl:hasValue seshattoy:numPeople .
+
+seshattoy:PopulationVariable
+  a owl:Class ;
+  owl:intersectionOf (
+   utv:UncertainTemporalNonNegativeIntegerDataVariable
+   seshattoy:PopulationUnitOfMeasureRestriction
+ ) ;
+  rdfs:label "Population Variable"@en ;
+  rdfs:comment "Seshat variable to hold a population size value."@en .
+
+seshattoy:numPeople
+  a utv:UnitOfMeasure ;
+  rdfs:label "Number of People"@en ;
+  rdfs:comment "A measure counted in numbers of people."@en .
+
+seshattoy:duration
+  a owl:ObjectProperty ;
+  rdfs:label "Duration"@en ;
+  rdfs:subPropertyOf seshattoy:hasGeneralVariable ;
+  rdfs:domain seshattoy:TemporalEntity ;
+  rdfs:range seshattoy:DurationVariable ;
+  rdfs:comment "A property used to define the temporal bounds of a seshattoy:TemporalEntity. For example, corresponds to the Duration for a Polity from the Seshat codebook."@en .
+
+seshattoy:TemporalEntity
+  a owl:Class ;
+  rdfs:subClassOf seshattoy:Entity ;
+  rdfs:label "temporal entity"@en ;
+  rdfs:comment "An abstract concept describing anything that must have temporal bounds."@en .
+
+seshattoy:DurationVariable
+  a owl:Class ;
+  rdfs:subClassOf utv:UncertainTemporalVariable ;
+  rdfs:label "Duration Variable"@en ;
+  rdfs:comment "Seshat variable to hold the duration of a seshattoy:Temporal Entity."@en ;
+  owl:intersectionOf (
+   utv:UncertainTemporalVariable
+   seshattoy:DurationBagOfValuesRestriction
+   seshattoy:DurationRangeMaxValueRestriction
+   seshattoy:DurationRangeMinValueRestriction
+   seshattoy:DurationValueRestriction
+ ) .
+
+seshattoy:DurationBagOfValuesRestriction
+  a owl:Restriction ;
+  rdfs:label "Duration Bag of Values Restriction"@en ;
+  rdfs:comment "Assures that Duration bag value has all elements of type utv:Interval."@en ;
+  owl:onProperty utv:valuesFrom ;
+  owl:allValuesFrom utv:Interval .
+
+seshattoy:DurationRangeMaxValueRestriction
+  a owl:Restriction ;
+  rdfs:label "Duration Max Value Restriction"@en ;
+  rdfs:comment "Assures that Duration max value is a proper utv:Interval."@en ;
+  owl:onProperty utv:maxValue ;
+  owl:allValuesFrom utv:Interval .
+
+seshattoy:DurationRangeMinValueRestriction
+  a owl:Restriction ;
+  rdfs:label "Duration Min Value Restriction"@en ;
+  rdfs:comment "Assures that Duration min value is a proper utv:Interval."@en ;
+  owl:onProperty utv:minValue ;
+  owl:allValuesFrom utv:Interval .
+
+seshattoy:DurationValueRestriction
+  a owl:Restriction ;
+  rdfs:label "Duration Value Restriction"@en ;
+  rdfs:comment "Assures that Duration value is a proper utv:Interval."@en ;
+  owl:onProperty utv:definiteValue ;
+  owl:allValuesFrom utv:Interval .
