@@ -18,6 +18,7 @@ dacura.ld.header = function(obj){
 			
 	}
 	var msg = obj.meta.ldtype.ucfirst() + " " + obj.id;
+	dacura.tool.header.addBreadcrumb(obj.meta.cwurl, obj.meta.ldtype + " " + obj.id, "ldid");
 	dacura.tool.header.showEntityHeader(msg, params);	
 };
 

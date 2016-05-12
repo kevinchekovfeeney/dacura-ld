@@ -612,15 +612,16 @@ Highlighing table rows on hover
 */
 
 tr.userhover {
-	border: 1px solid white;
 }
+
+
+	
 
 .userhover th, 
 .userhover td {
 	background: rgba(210, 230, 255, 0.9) !important;
 	cursor: pointer;
 	color: #210;
-	border: 0;
 }
 
 /*

@@ -209,7 +209,17 @@ dacura.system.selects = function(key, opts){
  */
 dacura.system.refreshselects = function(){
 	$('select.dacura-select').selectmenu("refresh");
-}
+};
+
+dacura.system.getIcon = function(icon, config){
+	if(typeof dacura.system.resulticons[icon] != "undefined"){
+		return dacura.system.resulticons[icon];
+	}
+	else {
+		var url = dacura.system.iconbase + "/" + icon + ".png";
+		return "<img class='result-icon result-error' src='" + url + "'>";	
+	}
+};
 
 /**
  * @function styleJSONLD
@@ -1113,11 +1123,12 @@ function durationConverter(secs){
  * @summary prints out a date time duration in human readable form
  * @param {Number} UNIX_timestamp - number of seconds since 1970
  */
-function timeConverter(UNIX_timestamp){
+function timeConverter(UNIX_timestamp, type){
 	  var a = new Date(UNIX_timestamp*1000);
 	  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 	  var year = a.getFullYear() % 100;
 	  var month = a.getMonth() + 1;
+	  var mday = a.getUTCDate();
 	  var date = a.getDate();
 	  var hour = a.getHours();
 	  var min = a.getMinutes();
@@ -1125,7 +1136,12 @@ function timeConverter(UNIX_timestamp){
 	  if(hour < 10) hour = "0" + hour;
 	  if(min < 10) min = "0" + min;
 	  if(sec < 10) sec = "0" + sec;
-	  var time = hour + ':' + min + ':' + sec + " " + date + '/' + month + '/' + year ;
+	  if(typeof type == "undefined" || !type){
+		  var time = hour + ':' + min + ':' + sec + " " + date + '/' + month + '/' + year ;
+	  }
+	  else {
+		  var time = hour + ':' + min + ':' + sec + " on " + mday + " " + months[month] + " " +  a.getFullYear();
+	  }
 	  return time;
 }
 
@@ -1181,9 +1197,10 @@ function toggleCheckbox(cbox){
  * @returns a string with the quotes escaped
  */
 function escapeQuotes(text) {
+	if(!text) return text;
 	var map = {
 	    '"': '\\"',
-	    "'": ''
+	    "'": "\\'"
     };
 	return text.replace(/"']/g, function(m) { return map[m]; });
 }
@@ -1194,6 +1211,7 @@ function escapeQuotes(text) {
  * @returns a string with the quotes escaped
  */
 function escapeHtml(text) {
+  if(!text) return text;
   var map = {
     '&': '&amp;',
     '<': '&lt;',

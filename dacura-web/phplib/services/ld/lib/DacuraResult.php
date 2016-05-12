@@ -517,6 +517,7 @@ class GraphResult extends DacuraResult {
 class DQSResult extends GraphResult {
 	/** @var string|array an array of all the configured tests for the dqs test or the string "all" */
 	var $tests = array();
+	var $imports = array();
 	
 	/** 
 	 * Store the set of tests that this result corresponds to 
@@ -524,6 +525,10 @@ class DQSResult extends GraphResult {
 	 */
 	function setTests($tests){
 		$this->tests = $tests;
+	}
+	
+	function setImports($imports){
+		$this->imports = $imports;
 	}
 
 	/**
@@ -533,6 +538,7 @@ class DQSResult extends GraphResult {
 	function forAPI($format, $options, $srvr){
 		$apiobj = parent::forAPI($format, $options, $srvr);
 		$apiobj['tests'] = $this->tests;
+		$apiobj['imports'] = $this->imports;
 		return $apiobj;
 	}
 	
@@ -543,6 +549,16 @@ class DQSResult extends GraphResult {
 	function add($sub, $chain = true, $force_msg = false){
 		if($chain && is_object($sub)){
 			if($this->tests != "all" && isset($sub->tests) && $sub->tests) $this->tests = is_array($sub->tests) ? array_merge($this->tests, $sub->tests) : $sub->tests;
+			if(isset($sub->imports) && $this->imports && $sub->imports){
+				foreach($sub->imports as $i => $imp){
+					if(!isset($this->imports[$i])){
+						$this->imports[$i] = $imp;
+					}
+				}
+			}
+			elseif(isset($sub->imports) && $sub->imports){
+				$this->imports = $sub->imports;
+			}
 		}
 		return parent::add($sub, $chain, $force_msg);
 	}

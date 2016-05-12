@@ -280,8 +280,8 @@ class LdService extends DacuraService {
 	function loadParamsForListScreen(&$params, LdDacuraServer &$dacura_server){
 		$u = $dacura_server->getUser();
 		$args = $this->readLDListArgs();
-		$params["title"] = "Linked Data Objects";
-		$params["subtitle"] = "A list of the linked data objects managed in the system";
+		$params["title"] = $this->smsg("list_page_title");
+		$params["subtitle"] = $this->smsg("list_page_subtitle");
 		if($this->collection_id == "all"){
 			$params['show_collection'] = true;
 		}
@@ -302,8 +302,12 @@ class LdService extends DacuraService {
 		$ldtab = $this->getDatatableSetting("ld", false);
 		$udtab = $this->getDatatableSetting("updates", false);
 		if($this->cid() != "all"){
-			$ldtab['aoColumns'][2] = array("bVisible" => false);
+			$ldtab['aoColumns'][3] = array("bVisible" => false);
 			$udtab['aoColumns'][3] = array("bVisible" => false);
+		}
+		if($this->name() != "ld"){
+			$ldtab['aoColumns'][2] = array("bVisible" => false);
+			$udtab['aoColumns'][2] = array("bVisible" => false);
 		}		
 		$params['ldo_datatable'] = json_encode($ldtab);
 		$params['update_datatable'] = json_encode($udtab);
@@ -369,20 +373,25 @@ class LdService extends DacuraService {
 	}
 		
 	function loadParamsForObjectListTab(&$params, &$dacura_server){
-		
+		$params["ld_list_title"] = $this->smsg('ld_list_title');	
 	}
 	
 	function loadParamsForUpdateListTab(&$params, &$dacura_server){
-		
+		$params["ld_updates_title"] = $this->smsg('ld_updates_title');
 	}
 	
 	function loadParamsForCreateTab(&$params, &$dacura_server){
+		$params["ld_create_title"] = $this->smsg('ld_create_title');
 		$params['create_button_text'] = $this->smsg('create_button_text');
 		$params['testcreate_button_text'] = $this->smsg('testcreate_button_text');
 		$params['create_ldo_fields'] = $this->sform("create_ldo_fields");
 		$params['create_ldo_fields']['ldtype']['options'] = LDO::$ldo_types;
-		$params['create_ldo_fields']['image']['default_value'] = $this->get_system_file_url("image", "services/".$this->name()."_icon.png");
-		$params['create_ldo_fields']['format']['options'] = array_merge(array("" => "Auto-detect"), LDO::$valid_input_formats);
+		if(isset($params['create_ldo_fields']['image'])){
+			$params['create_ldo_fields']['image']['default_value'] = $this->get_system_file_url("image", "services/".$this->name()."_icon.png");
+		}
+		if(isset($params['create_ldo_fields']['format'])){
+			$params['create_ldo_fields']['format']['options'] = array_merge(array("" => "Auto-detect"), LDO::$valid_input_formats);
+		}
 		$params['direct_create_allowed'] = true;
 		$params["demand_id_token"] = $this->getServiceSetting("demand_id_token", "@id");
 		$params['create_options'] = $this->getServiceSetting("create_options", array());
@@ -397,11 +406,11 @@ class LdService extends DacuraService {
 	}
 	
 	function getViewSubscreens(){
-		return array("ldo-meta", "ldo-raw", "ldo-history", "ldo-contents", "ldo-analysis", "ldo-updates");		
+		return array("ldo-meta", "ldo-history", "ldo-contents", "ldo-analysis", "ldo-updates");		
 	}
 	
 	function getUpdateSubscreens(){
-		return array("ldo-meta", "ldo-raw", "ldo-before", "ldo-contents", "ldo-analysis", "ldo-after");
+		return array("ldo-meta", "ldo-before", "ldo-contents", "ldo-analysis", "ldo-after");
 	}
 	
 	
@@ -416,9 +425,9 @@ class LdService extends DacuraService {
 		$params["title"] = "Linked Data Object Manager";
 		$params["subtitle"] = "Object view";
 		$params["description"] = "View and update your managed linked data objects";
-		$params["raw_ldo_fields"] = $this->sform("raw_edit_fields");
-		$params['create_button_text'] = $this->smsg('raw_edit_text');
-		$params['testcreate_button_text'] = $this->smsg('testraw_edit_text');
+		$params["ldo_analysis_fields"] = $this->sform("ldo_analysis_fields");
+		$params['update_meta_button_text'] = $this->smsg('update_meta_button');
+		$params['test_update_meta_button_text'] = $this->smsg('test_update_meta_button');
 		$params['raw_ldo_fields']['format']['options'] = LDO::$valid_input_formats;
 		$params['direct_create_allowed'] = true;
 		$params['update_options'] = $this->getServiceSetting("update_options", array());
@@ -429,6 +438,15 @@ class LdService extends DacuraService {
 		$params['view_graph_options'] = array("ld" => "LD Object Store", "dqs" => "DQS Triplestore", "meta" => "metadata", "update" => "Update Store");
 		$params['view_actions'] = array("restore" => "Restore this version", "edit" => "Edit", "import" => "Import", "export" => "Export", "accept" => "Publish", "reject" => "Reject", "pending" => "Unpublish");		
 		$params['valid_input_formats'] = LDO::$valid_input_formats;
+		$params['update_meta_fields'] = $this->sform("update_meta_fields");
+		
+		$params['dqs_schema_tests'] = json_encode(RVO::getSchemaTests());
+		$params['default_dqs_tests'] = json_encode(RVO::getSchemaTests(false));
+		$params['dqs_instance_tests'] = json_encode(RVO::getInstanceTests());
+		$params['default_instance_dqs_tests'] = json_encode(RVO::getInstanceTests(false));
+		$avs = $dacura_server->ontversions;
+		//if(isset($avs[$this->id])) unset($avs, $this->id);
+		$params['available_ontologies'] = json_encode($avs);
 		return $params;
 	}
 

@@ -835,7 +835,7 @@ class DacuraService extends DacuraObject {
 		}
 		else {
 			$path[] = array("url" => $this->durl(), "title" => "Dacura Platform");
-			$path[] = array("url" => $this->durl()."/".$this->servicename, "title" => $stitle);				
+			$path[] = array("url" => $this->durl().$this->servicename, "title" => $stitle);				
 		}
 		return $path;
 	}

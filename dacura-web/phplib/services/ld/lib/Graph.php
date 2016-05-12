@@ -19,6 +19,7 @@ class Graph extends LDO {
 		parent::setLDRules($srvr);
 		$this->rules->setRule("import", "load_dependencies", true);
 		$this->rules->setRule("import", "replace_blank_ids", false);	
+		$this->rules->setRule("update", "replace_blank_ids", false);	
 	}
 	
 	/**
@@ -109,7 +110,7 @@ class Graph extends LDO {
 		else {
 			$this->dqs['schema'] = $srvr->getServiceSetting("create_dqs_schema_tests", array_keys(RVO::getSchemaTests(false)));
 		}
-		if(!isset($this->meta['two_tier_schemas'])){
+		if($this->meta && !isset($this->meta['two_tier_schemas'])){
 			$this->meta['two_tier_schemas'] = $srvr->getServiceSetting("two_tier_schemas", true);
 		}
 	}
@@ -212,6 +213,43 @@ class Graph extends LDO {
 			}
 		}
 		return $imports;
+	}
+	
+	function analyse(LdDacuraServer &$srvr){
+		$astruct = parent::analyse($srvr);
+		//$quads = $srvr->getGraphSchemaAsQuads($this);
+		//$astruct['schema_triples'] = count($quads);
+		$astruct['instance_triples'] = "?";
+		$astruct['candidates'] = "?";
+		$ometa = deepArrCopy($this->meta);
+		$this->meta['schema_dqs_tests'] = "all";
+		$this->meta['instance_dqs_tests'] = "all";
+		if($this->is_accept()){
+			$astruct['instance_validation'] = $srvr->graphman->validateGraph($this);
+			$astruct['schema_validation'] = $srvr->graphman->validateSchema($this);
+		}
+		else {	
+			$astruct['schema_validation'] = $srvr->objectPublished($this, true);
+		}
+		$this->meta = $ometa;
+		$ar = $srvr->graphman->invokeDCS($this->schemaGname());
+		if($ar->is_accept()){
+			$clss = json_decode($ar->result, true);
+			$ncls = array();
+			foreach($clss as $c){
+				if($comp = $this->nsres->compress($c)){
+					$ncls[] = $comp;
+				}
+				else {
+					$ncls[] = $c;
+				}
+			}
+			$astruct['entity_classes'] = $ncls;
+		}
+		else {
+			$astruct['entity_classes'] = false;
+		}
+		return $astruct;
 	}
 	
 	/**

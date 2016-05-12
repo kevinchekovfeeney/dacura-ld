@@ -209,6 +209,14 @@ class GraphManager extends DacuraController {
 		return $dqsr;	
 	}
 	
+	function validateGraph(Graph $graph){
+		return $this->invokeDQS("validate", $graph->schemaGname(), $graph->instanceGname(), false, false, true, $graph->getCreateInstanceTests());		
+	}
+	
+	function validateSchema(Graph $graph){
+		return $this->invokeDQS("schema_validate", $graph->schemaGname(), false, false, false, true, $graph->getCreateSchemaTests());
+	}
+	
 	/**
 	 * Called to remove a graph's schema from the triple-store
 	 * @param Graph $graph graph object for which the schema is being unpublished

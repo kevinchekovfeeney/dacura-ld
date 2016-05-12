@@ -651,14 +651,12 @@ class LDO extends DacuraObject {
 	 * @return boolean
 	 */
 	function validate($mode, LdDacuraServer &$srvr){
-		if(!$this->validateMeta($mode, $srvr)){
+		if(!(($mode == "update" || $mode == "replace") && !$this->meta) && !$this->validateMeta($mode, $srvr)){
 			return false;
 		}
-		if(!$this->fragment_id){
-			if(!$this->validateLD($mode, $srvr)){
-				return false;
-			}
-		}		
+		if(!$this->fragment_id && !(($mode == "update" || $mode == "replace") && !$this->ldprops) && !$this->validateLD($mode, $srvr)){
+			return false;
+		}
 		return true;
 	}
 	
@@ -854,8 +852,9 @@ class LDO extends DacuraObject {
 	/**
 	 * Called to produce an analysis of the object populated by sub-classes of ldo
 	 */
-	function analyse(){
-		$this->analysis = "something something";
+	function analyse(LdDacuraServer &$srvr){
+		$astruct = array("created" => time(), "version" => $this->version);
+		return $astruct;
 	}
 	
 	/* Some basic gets and sets	 */

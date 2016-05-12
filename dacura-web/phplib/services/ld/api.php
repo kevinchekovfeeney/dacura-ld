@@ -220,7 +220,7 @@ function update_ldo($target_id, $fragment_id = false){
 	}
 	$options = (isset($obj['options'])) ? $obj['options'] : array();
 	$update_obj = array();
-	$editmode = (isset($obj['editmode'])? $obj['editmode'] : false);
+	$editmode = (isset($obj['editmode'])? $obj['editmode'] : "update");
 	$format = (isset($obj['format'])? $obj['format'] : false);
 	if(isset($obj['contents'])){
 		$update_obj['contents'] = $obj['contents'];
@@ -305,7 +305,7 @@ function update_update($target_id){
 	$format = (isset($obj['format'])? $obj['format'] : false);
 	$update_meta = (isset($obj['umeta'])) ? $obj['umeta'] : false;
 	
-	if(count($umeta) == 0 && count($update_obj) == 0 ){
+	if(count($update_meta) == 0 && count($update_obj) == 0 ){
 		$ar->failure(400, "Format Error", "Update Request must have at least one of a meta, a contents or an updatemeta property");				
 	}
 	else {

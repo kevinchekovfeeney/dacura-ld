@@ -472,9 +472,12 @@ class DacuraFormElement extends DacuraObject {
 		elseif($this->id == "ldimport"){
 			$html = $this->drawLDFormatInput($settings, $context);
 		}
+		elseif($this->id == "imports" || $this->id == "schema_imports"){
+			$html = $this->drawOntologyImportsInput($settings, $context);
+		}
 		else {
 			$prefix = $context[count($context)-1]."-";
-			$cls = 'dacura-'.$this->element_size.'-input';
+			$cls = 'dacura-'.$this->element_size.'-input dacura-custom-'.$this->id;
 			$disabled = $this->update_disabled ? "disabled" : "";
 			if(is_array($this->value)){
 				$val = json_encode($this->value, JSON_PRETTY_PRINT);
@@ -579,5 +582,10 @@ class DacuraFormElement extends DacuraObject {
 		$html .= '<input type="radio" class="ldimportoption" id="'.$fid.'-importupload" name="'.$fid.'-importformat"><label for="'.$fid.'-importupload">File Upload</label>';
  		return $html;
 	}
+	
+	function drawOntologyImportsInput($settings, $context){
+		return "<H1>ontology imports</h1>";
+	}
+	
 }
 

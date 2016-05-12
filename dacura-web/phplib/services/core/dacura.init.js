@@ -32,6 +32,8 @@ dacura.system.pagecontext = {
 		"service" : "<?=$service->name()?>"
 };
 
+dacura.system.iconbase = "<?=$service->get_system_file_url('images', 'icons')?>";
+
 dacura.system.resulticons = {
 	"error" : "<img class='result-icon result-error' src='<?=$service->furl("images", "icons/error.png");?>'>",		
 	"success" : "<img class='result-icon result-success' src='<?=$service->furl("images", "icons/success.png");?>'>",

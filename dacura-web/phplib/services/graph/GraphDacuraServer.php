@@ -21,15 +21,18 @@ class GraphDacuraServer extends LdDacuraServer {
 		if($graph->is_empty()){
 			return $nopr->failure(400, "Graph schema is empty", "A schema must be added to the Graph before data can be published to it.");
 		}
-		if($quads = $this->getGraphSchemaAsQuads($graph)){
+		$graph->loadDQSTestConfiguration($this);		
+		$imports = array();
+		if($quads = $this->getGraphSchemaAsQuads($graph, $imports)){
 			if($graph->hasTwoTierSchema()){
 				$squads = $this->getGraphSchemaSchemaAsQuads($graph);
 				if($squads === false){
 					return $nopr->failure($this->errcode, "Failed to serialise schema schema graph ".$graph->id, $this->errmsg);						
 				}
 				$quads = array_merge($quads, $squads);
-			} 
+			}
 			$gr = $this->graphman->publishGraphSchema($graph, $quads, $test_flag);
+			$gr->setImports($imports);				
 			$nopr->add($gr);
 		}
 		elseif($quads === false){
@@ -47,7 +50,8 @@ class GraphDacuraServer extends LdDacuraServer {
 		if($graph->is_empty()){
 			return $nopr->msg("Graph schema is empty");
 		}
-		if($quads = $this->getGraphSchemaAsQuads($graph)){
+		$imports = array();
+		if($quads = $this->getGraphSchemaAsQuads($graph, $imports)){
 			if($graph->hasTwoTierSchema()){
 				$squads = $this->getGraphSchemaSchemaAsQuads($graph);
 				if($squads === false){
@@ -55,7 +59,9 @@ class GraphDacuraServer extends LdDacuraServer {
 				}
 				$quads = array_merge($quads, $squads);
 			}
-			return $this->graphman->unpublishGraphSchema($graph, $quads, $test_flag);
+			$gur = $this->graphman->unpublishGraphSchema($graph, $quads, $test_flag);
+			$gur->setImports($imports);
+			return $gur;				
 		}
 		elseif($quads === false) {
 			return $nopr->failure(400, "Failed graph serialisation", "The system could not produce the quads needed to delete the graph configuration");
@@ -74,6 +80,7 @@ class GraphDacuraServer extends LdDacuraServer {
 		$nopr = new DQSResult("Validating Graph ".$uldo->original->id." update", $test_flag);
 		$del_onts = array();
 		$add_onts = array();
+		$uldo->changed->loadDQSTestConfiguration($this);
 		$oimports = $uldo->original->getSchemaImports($this->durl());
 		$nimports = $uldo->changed->getSchemaImports($this->durl());
 		foreach($oimports as $id => $rec){
@@ -129,7 +136,6 @@ class GraphDacuraServer extends LdDacuraServer {
 		}
 		if(count($iquads) > 0 || count($dquads) > 0){
 			$gr = $this->graphman->updateGraphSchema($uldo->changed, $iquads, $dquads, $test_flag);
-			//opr($gr);
 			$nopr->add($gr);
 		}
 		else {
@@ -143,7 +149,7 @@ class GraphDacuraServer extends LdDacuraServer {
 	 * @param Graph $graph the graph in question
 	 * @return boolean|array: - array of quads or false on failure
 	 */	
-	function getGraphSchemaAsQuads(Graph &$graph){
+	function getGraphSchemaAsQuads(Graph &$graph, &$imports = false){
 		$quads = array();
 		$imports = $graph->getSchemaImports($this->durl());
 		foreach($imports as $id => $rec){

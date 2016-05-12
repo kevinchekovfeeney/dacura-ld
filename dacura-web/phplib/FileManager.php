@@ -35,18 +35,31 @@ class FileManager extends DacuraController {
 		$fpath = $this->getSystemSetting('path_to_collections');
 		if($this->cid()) $fpath .= $this->cid()."/";
 		$fpath .= $this->getSystemSetting('cache_directory');
-		$d_name = $fpath.$cname;
-		if(!file_exists($d_name)){
-			mkdir($d_name);
+		if(!file_exists($fpath)){
+			if(!mkdir($fpath, 0700)){
+					return $this->failure_result("Failed to create cache directory $fpath", 500);
+			}				
+		}
+		$dname = $fpath;
+		if(!is_array($cname)){
+			$cname = array($cname);
+		}
+		foreach($cname as $cn){
+			$dname = $dname ."/".$cn;
+			if(!file_exists($dname)){
+				if(!mkdir($dname, 0700)){
+					return $this->failure_result("Failed to create cache directory $dname", 500);
+				}						
+			}
 		}
 		if(!$config){
 			$config = $this->getSystemSetting('default_cache_config');
 		}
-		$cache_config_file = $d_name."/".$oname.".config";
+		$cache_config_file = $dname."/".$oname.".config";
 		if(!file_exists($cache_config_file)){
 			file_put_contents($cache_config_file, json_encode($config));
 		}
-		$full_name = $d_name."/".$oname.".cache";
+		$full_name = $dname."/".$oname.".cache";
 		$this->logEvent("debug", 200, "Cached $oname");
 		return (file_put_contents($full_name, json_encode($data)));
 	}
@@ -100,6 +113,9 @@ class FileManager extends DacuraController {
 		$fpath = $this->getSystemSetting('path_to_collections');
 		if($this->cid()) $fpath .= $this->service->cid()."/";
 		$fpath .= $this->getSystemSetting('cache_directory');
+		if(is_array($cname)){
+			$cname = implode("/", $cname);
+		}
 		$d_name = $fpath.$cname;
 		$full_name = $d_name."/".$oname.".cache";
 		if(!file_exists($full_name)){
