@@ -100,11 +100,13 @@ dacura.tool.init = function(options){
  */
 dacura.tool.initScreens = function(holder, forms){
 	var listhtml = "<ul class='subscreen-tabs'>";
+	var i = 0;
 	$('.dacura-subscreen').each(function(){
 		//build page configuration from subscreen id
 		dacura.tool.subscreens[this.id] = {
 				resultbox: "#" + this.id + "-msgs", 
 				busybox: "#" + this.id + "-contents",
+				sequence: i++,
 				mopts: {"icon": true, "closeable": false, scrollTo: true}
 		};
 		listhtml += "<li><a href='"+ '#'+ this.id + "'>" + $('#' + this.id).attr("title") + "</a></li>";
@@ -137,6 +139,15 @@ dacura.tool.initScreens = function(holder, forms){
 		$('#'+holder).tabs();
 	}
 }
+
+dacura.tool.enableTab = function(holder, tab){
+	$('#'+holder).tabs( "enable", "#" + tab );
+}
+
+dacura.tool.disableTab = function(holder, tab){
+	$('#'+holder).tabs( "disable", "#" + tab );
+}
+
 
 /**
  * @function loadSubscreen loads a subscreen and collapses the regular contents of the screen

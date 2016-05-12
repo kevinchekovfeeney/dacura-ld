@@ -43,7 +43,9 @@ class Candidate extends MultiGraphLDO {
 			$this->valid_types =& $srvr->valid_candidate_types;
 		}	
 		if(parent::importLD($mode, $srvr)){
-			$this->getRDFType();
+			if($this->meta){
+				$this->getRDFType();
+			}
 			return true;
 		}
 		else {
@@ -108,12 +110,14 @@ class Candidate extends MultiGraphLDO {
 			return false;
 		}
 		if(!$this->fragment_id){
-			$t = $this->getRDFType();
-			if((!$t && $mode != "update") && $this->rule($mode, "validate", 'require_candidate_type')){
-				return $this->failure_result("No rdf:type specified in input candidate", 400);
-			}
-			if($t && ($valids = $this->rule($mode, "validate", 'valid_candidate_types')) && !in_array($t, $valids)){
-				return $this->failure_result("$t is not a valid rdf:type for candidates in ".$srvr->cid(), 400);
+			if($this->ldprops || ($mode != "replace" && $mode != "update")){
+				$t = $this->getRDFType(false);
+				if((!$t && $mode != "update") && $this->rule($mode, "validate", 'require_candidate_type')){
+					return $this->failure_result("No rdf:type specified in input candidate", 400);
+				}
+				if($t && ($valids = $this->rule($mode, "validate", 'valid_candidate_types')) && !in_array($t, $valids)){
+					return $this->failure_result("$t is not a valid rdf:type for candidates in ".$srvr->cid(), 400);
+				}
 			}
 		}
 		return true;
@@ -142,13 +146,13 @@ class Candidate extends MultiGraphLDO {
 	 * Retrieves the rdf:type of the candidate from its contents and copies it into its meta field
 	 * @return string - url of the rdf:type or false if non-existent
 	 */
-	function getRDFType(){
+	function getRDFType($store = true){
 		$clsurls = $this->getPredicateValues($this->cwurl, "type", "rdf", $this->getDefaultGraphURL());
 		if($clsurls){
 			if(is_array($clsurls)){
 				$clsurls = $clsurls[0];
 			}
-			$this->meta['type'] = $clsurls;
+			if($store) $this->meta['type'] = $clsurls;
 		}
 		return $clsurls;
 	}
@@ -159,7 +163,7 @@ class Candidate extends MultiGraphLDO {
 	 * @see LDO::getRequiredMetaProperties()
 	 */
 	function getRequiredMetaProperties(){
-		return array("type");
+		return array();
 	}
 	
 	/**
@@ -199,5 +203,17 @@ class Candidate extends MultiGraphLDO {
 		else {
 			return parent::typedQuads($graphid);
 		}
-	}	
+	}
+
+	function getContentInFormat($format, $options, $srvr, $for){
+		if($format == 'html' && $this->meta['type'] && !$srvr->isBaseLDServer()){
+			$ar = $srvr->getFrame($this->meta['type']);
+			if($ar->is_accept()){
+				$this->display = json_decode($ar->result, true);
+				return $this->display;
+			}
+		}
+		return parent::getContentInFormat($format, $options, $srvr, $for);
+	}
+	
 }

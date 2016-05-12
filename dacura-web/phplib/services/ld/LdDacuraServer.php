@@ -36,6 +36,8 @@ class LdDacuraServer extends DacuraServer {
 	var $graphbase = false;
 	var $graphs = array();
 	
+	var $ontversions = array();//array of [version, id, collection] of latest ontologies in system....
+	
 
 	/**
 	 * Constructor creates helper controller classes - for policy engine and graph connections
@@ -77,12 +79,20 @@ class LdDacuraServer extends DacuraServer {
 			);
 			$onts = array_merge($onts, $this->getLDOs($local_onts));
 		}
+		$ontvlist = array();
 		$this->nsres = new NSResolver($this->service);
 		foreach($onts as $i => $ont){
 			if(isset($ont['id']) && $ont['id'] && isset($ont['meta']['url']) && $ont['meta']['url']){
 				$this->nsres->prefixes[$ont['id']] = $ont['meta']['url'];
+				$ourl = $ont['meta']['url'];				
 			}
+			else {
+				$ourl = $this->durl().($ont['collectionid'] == "all" ? "" : $ont['collectionid']."/")."ontology/".$ont['id'];
+			}
+			$otitle = isset($ont['meta']['title']) ? $ont['meta']['title'] : "";
+			$ontvlist[$ont['id']] = array("collection" => $ont['collectionid'], "url" => $ourl, "title" => $otitle, "version" => $ont['version'], "id" => $ont['id']);
 		}
+		$this->ontversions = $ontvlist;
 	}
 
 	/**
@@ -375,10 +385,34 @@ class LdDacuraServer extends DacuraServer {
 			return $this->failure_result("Failed to load fragment ".htmlspecialchars($fragment_id). " " .$ldo->errmsg, $ldo->errcode);
 		}
 		if($options && isset($options['analysis']) && $options['analysis']){
-			$ldo->analyse();
+			if(!($ldo->analysis = $this->loadLDOAnalysis($ldo, $options['analysis']))){
+				return false;
+			}
 		}
 		return $ldo;
 	}
+	
+	function loadLDOAnalysis(LDO $ldo, $lvl){
+		$cache_path = array("ld", $ldo->ldtype(), $ldo->id);
+		if($this->getServiceSetting('cache_analysis') && $lvl == 1){
+			if($anal = $this->fileman->decache($cache_path, "analysis")){
+				return $anal;
+			}
+		}
+		$anal = $ldo->analyse($this);
+		if($this->getServiceSetting('cache_analysis') && !$this->isBaseLDServer()){ //don't cache anything if it comes from ld
+			if(!$this->fileman->cache($cache_path, "analysis", $anal, $this->getServiceSetting('analysis_cache_config'))){
+				return $this->failure_result("Failed to cache $ldo->id analysis: ".$this->fileman->errmsg, $this->fileman->errcode);
+			}
+		}
+		return $anal;
+		
+	}
+	
+	function isBaseLDServer(){
+		return get_class($this) == "LdDacuraServer";
+	}
+	
 	
 	/**
 	 * Loads an array of historical records about the LDO detailing its previous changes
@@ -605,10 +639,11 @@ class LdDacuraServer extends DacuraServer {
 		}
 		if(!($format = $nldo->loadNewObjectFromAPI($update_obj, $format, $options, $this, $editmode))){
 			return $ar->failure($nldo->errcode, "Protocol Error", "New $ldo_type object sent to API had formatting errors. ".$nldo->errmsg);
-		}
+		}	
 		if(!($nldo->validate($editmode, $this))){
 			return $ar->failure($nldo->errcode, "Format Error", "$ldo_type $editmode sent to API had formatting errors. ".$nldo->errmsg);				
-		}
+		}						
+		
 		$ldoupdate = new LDOUpdate(false, $oldo);
 		if(!$ldoupdate->loadFromAPI($nldo, $update_meta, $editmode, $this)){
 			return $ar->failure($ldoupdate->errcode, "Protocol Error", "Failed to load the update command from the API. ". $ldoupdate->errmsg);
@@ -721,7 +756,7 @@ class LdDacuraServer extends DacuraServer {
 				return $ar;
 			}
 			$gu = $this->publishUpdateToGraph($uldo, $ar->status(), $hypo || $test_flag);
-			if($ar->is_accept() && !$hypo && $gu->is_reject() && $this->getServiceSetting("rollback_updates_to_pending_on_dqs_reject", true)){
+			if($ar->is_accept() && !$hypo && $gu->is_reject() && isset($options["rollback_to_pending_on_dqs_reject"]) && $options["rollback_to_pending_on_dqs_reject"]){
 				$ar->addGraphResult("dqs", $gu, $hypo || $test_flag, false);
 				$ar->status("pending");
 			}

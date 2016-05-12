@@ -178,6 +178,10 @@ class LDOUpdate extends DacuraObject{
 				if(!$update->meta || count($update->meta) == 0){
 					$update->meta = $this->original->meta;
 				}
+				if(!$update->ldprops || count($update->ldprops) == 0){
+					$update->ldprops = deepArrCopy($this->original->ldprops);
+					$update->buildIndex();
+				}
 				$this->changed = $update;				
 			}		
 			$this->changed->version = $this->original->latest_version + 1;

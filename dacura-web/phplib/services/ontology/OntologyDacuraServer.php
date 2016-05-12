@@ -23,8 +23,10 @@ class OntologyDacuraServer extends LdDacuraServer {
 		}
 		$nopr->add($ont->validateDependencies($this, $test_flag), true, true);
 		if($nopr->is_accept() || $this->getServiceSetting("test_unpublished", true)){
-			if($quads = $this->getOntologyAsQuads($ont)){
+			$imports = array();
+			if($quads = $this->getOntologyAsQuads($ont, true, $imports)){
 				$dqs = $this->graphman->validateOntology($ont, $quads, $this->getSchemaTests($ont), $this->getInstanceTests($ont));
+				$dqs->setImports($imports);
 				$nopr->add($dqs);
 			}
 			else {
@@ -63,11 +65,12 @@ class OntologyDacuraServer extends LdDacuraServer {
 	 * @param boolean $include_deps if true, ontology dependencies will be included
 	 * @return Ambigous <multitype:, unknown, multitype:multitype:string Ambigous <string, mixed>  >
 	 */
-	function getOntologyAsQuads(Ontology $ont, $include_deps = true){
+	function getOntologyAsQuads(Ontology $ont, $include_deps = true, &$imports){
 		$quads = $ont->typedQuads($ont->schemaGname());
 		if($include_deps){
 			$deps = $ont->getDependentOntologies($this, "schema");
 			foreach($deps as $id => $dont){
+				$imports[$id] = array("id" => $id, "collection" => $dont->cid(), "version" => $dont->version);
 				$quads = array_merge($quads, $dont->typedQuads($ont->schemaGname()));				
 			}		
 		}

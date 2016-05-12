@@ -1,6 +1,6 @@
 <div class='dacura-screen' id='ld-tool-home'>
 	<?php if(in_array("ldo-list", $params['subscreens'])) { ?>
-	<div class='dacura-subscreen ld-list' id="ldo-list" title="Linked Data Objects">
+	<div class='dacura-subscreen ld-list' id="ldo-list" title="<?=$params['ld_list_title']?>">
 		<div class='subscreen-intro-message'><?=$params['objectlist_intro_msg']?></div>
 		<div class='tholder' id='ld-table-container'>
 			<table id="ld_table" class="dcdt display dacura-api-listing">
@@ -27,7 +27,7 @@
 	</div>
 	
 	<?php } if(in_array("update-list", $params['subscreens'])) { ?>
-	<div class='dacura-subscreen ld-list' id="update-list" title="Updates to Linked Data Objects">
+	<div class='dacura-subscreen ld-list' id="update-list" title="<?=$params['ld_updates_title']?>">
 		<div class='subscreen-intro-message'><?=$params['updates_intro_msg']?></div>
 		<div class='tholder' id='update-table-container'>
 			<table id="update_table" class="dcdt dacura-api-listing display">
@@ -55,7 +55,7 @@
 		<div class="subscreen-buttons" id='update-table-updates'></div>		
 	</div>
 	<?php } if(in_array("ldo-create", $params['subscreens'])) { ?>
-	<div class='dacura-subscreen' id="ldo-create" title="Create New Linked Data Object">
+	<div class='dacura-subscreen' id="ldo-create" title="<?=$params['ld_create_title']?>">
 		<div class='subscreen-intro-message'><?=$params['create_intro_msg']?></div>
 		<?php echo $service->getInputTableHTML("ldo-details", $params['create_ldo_fields'], array("display_type" => "create"));?>
 		<div class="subscreen-buttons">

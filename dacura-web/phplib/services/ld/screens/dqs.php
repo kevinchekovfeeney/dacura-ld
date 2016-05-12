@@ -1,326 +1,350 @@
-<?php 
-/*
- * % Required best practice
-preTestSchema(classCycleSC).
-preTestSchema(propertyCycleSC).
-% best practice
-testSchema(noImmediateDomainSC).
-testSchema(noImmediateRangeSC).
-testSchema(notUniqueClassLabelSC).
-testSchema(notUniqueClassSC).
-testSchema(notUniquePropertySC).
-testSchema(schemaBlankNodeSC).
-% OWL DL
-testSchema(orphanClassSC).
-testSchema(orphanPropertySC). 
-testSchema(invalidRangeSC). 
-testSchema(invalidDomainSC).
-testSchema(domainNotSubsumedSC).
-testSchema(rangeNotSubsumedSC).
-
-%%%% Instance Tests
-%%%% Local testing for violation of specific known elements in update.
-%%%% must be pred/6 and have argument list (X,P,Y,Instance,Schema,Reason)
-%% best Practice
-edgeConstraints(noPropertyDomainIC).
-edgeConstraints(noPropertyRangeIC).
-edgeConstraints(instanceBlankNodeIC).
-%% OWL DL (Constraint)
-edgeConstraints(invalidEdgeIC).
-edgeConstraints(edgeOrphanInstanceIC).
-edgeConstraints(notFunctionalPropertyIC).
-edgeConstraints(notInverseFunctionalPropertyIC).
-edgeConstraints(localOrphanPropertyIC).
-
-
- */
-
-
-$dqs = array();
-$dqs["classCycleSC"] = array(
-	"name" => "Class Cycle",
-	"default" => "on",
-	"type" => "foundation",
-	"graph" => "schema",
-	"text" => "The schema has cycles in the class hierarchy"
-);
-$dqs["propertyCycleSC"] = array(
-	"default" => "on",
-	"name" => "Property Cycle",
-	"type" => "foundation",
-	"graph" => "schema",
-	"text" => "The schema has cycles in the property hierarchy"
-);
-
-$dqs["noImmediateDomainSC"] = array(
-	"name" => "No Immediate Domain",
-	"type" => "bp",
-	"graph" => "schema",
-	"text" => "There is no domain specified directly for the class"
-);
-
-$dqs["noImmediateRangeSC"] = array(
-	"name" => "No Immediate Range",
-	"type" => "bp",
-	"graph" => "schema",
-	"text" => "There is no range specified directly for the class"
-);
-
-$dqs["notUniqueClassLabelSC"] = array(
-	"name" => "Not Unique Class Label",
-	"type" => "bp",
-	"graph" => "schema",
-	"text" => "The class label is not unique"
-);
-
-$dqs["notUniqueClassSC"] = array(
-	"name" => "Not Unique Class",
-	"type" => "bp",
-	"graph" => "schema",
-	"text" => "The class is not unique"
-);
-
-$dqs["notUniquePropertySC"] = array(
-	"name" => "Not Unique Property",
-	"type" => "bp",
-	"graph" => "schema",
-	"text" => "The property is not unique"
-);
-
-$dqs["schemaBlankNodeSC"] = array(
-	"default" => "on",
-	"name" => "Schema Blank Node",
-	"type" => "bp",
-	"graph" => "schema",
-	"text" => "The schema contains blank nodes"
-);
-
-$dqs["orphanClassSC"] = array(
-		"default" => "on",
-		"name" => "Orphan Class",
-		"type" => "owldl",
-		"graph" => "schema",
-		"text" => "The parent class does not exist in the schema"
-);
-
-$dqs["orphanPropertySC"] = array(
-		"default" => "on",
-		"name" => "Orphan Property",
-		"type" => "owldl",
-		"graph" => "schema",
-		"text" => "The parent property does not exist in the schema"
-);
-
-$dqs["invalidRangeSC"] = array(
-		"default" => "on",
-		"name" => "Invalid Range",
-		"type" => "owldl",
-		"graph" => "schema",
-		"text" => "The range is invalid"
-);
-
-$dqs["invalidDomainSC"] = array(
-		"default" => "on",
-		"name" => "Invalid Domain",
-		"type" => "owldl",
-		"graph" => "schema",
-		"text" => "The domain is invalid"
-);
-
-$dqs["domainNotSubsumedSC"] = array(
-		"default" => "on",
-		"name" => "Domain Not Subsumed",
-		"type" => "owldl",
-		"graph" => "schema",
-		"text" => "The domain is not subsumed"
-);
-
-$dqs["rangeNotSubsumedSC"] = array(
-		"default" => "on",
-		"name" => "Range Not Subsumed",
-		"type" => "owldl",
-		"graph" => "schema",
-		"text" => "The range is not subsumed"
-);
-
-$dqs["noPropertyDomainIC"] = array(
-		"default" => "on",
-		"name" => "No Property Domain",
-		"type" => "bp",
-		"graph" => "instance",
-		"text" => "The domain of the property is not defined"
-);
-
-$dqs["noPropertyRangeIC"] = array(
-		"default" => "on",
-		"name" => "No Property Range",
-		"type" => "bp",
-		"graph" => "instance",
-		"text" => "The range of the property is not defined"
-);
-
-$dqs["instanceBlankNodeIC"] = array(
-		"default" => "on",
-		"name" => "Instance Blank Node",
-		"type" => "bp",
-		"graph" => "instance",
-		"text" => "Blank nodes are present in the instance data"
-);
-
-$dqs["invalidEdgeIC"] = array(
-		"default" => "on",
-		"name" => "Invalid Edge",
-		"type" => "owldl",
-		"graph" => "instance",
-		"text" => "Invalid edge in instance data"
-);
-
-$dqs["edgeOrphanInstanceIC"] = array(
-		"default" => "on",
-		"name" => "Edge Orphan Instance",
-		"type" => "owldl",
-		"graph" => "instance",
-		"text" => "Orphan edge in instance data"
-);
-
-$dqs["notFunctionalPropertyIC"] = array(
-		"default" => "on",
-		"name" => "Not Functional Property",
-		"type" => "owldl",
-		"graph" => "instance",
-		"text" => "Not a functional property in instance data"
-);
-
-$dqs["notInverseFunctionalPropertyIC"] = array(
-		"default" => "on",
-		"name" => "Not Inverse Functional Property",
-		"type" => "owldl",
-		"graph" => "instance",
-		"text" => "Not inverse property in instance data"
-);
-
-$dqs["localOrphanPropertyIC"] = array(
-		"default" => "on",
-		"name" => "Local Orphan Property",
-		"type" => "owldl",
-		"graph" => "instance",
-		"text" => "Not inverse property in instance data"
-);
-
-
-function getDQSOptions($dqs, $graph){
-	$options = array();
-	foreach($dqs as $id => $props){
-		//if(in_array($graph, $props['graph'])){
-		if($graph == $props['graph']){
-			$options[$id] = $props;
-		}
-	}
-	return $options;
-}
-
-function constraintTypeText($graph, $ct){
-	if($graph == "schema"){
-		if($ct == "foundation"){
-			$ct = "Foundational Constraints";
-		}
-		elseif($ct == "owldl"){
-			$ct = "Structural Rules";
-		}
-		elseif($ct == "bp"){
-			$ct = "Schema best practice rules";
-		}
-	}
-	else {
-		if($ct == "owldl"){
-			$ct = "Structural Rules";
-		}
-		elseif($ct == "bp"){
-			$ct = "Instance data best practice rules";
-		}
-	}
-	return $ct;
-}
-
-function getDQSCheckboxes($dqs, $graph){
-	$boxes = array();
-	$options = getDQSOptions($dqs, $graph);
-	foreach($options as $id => $props){
-		$checked = (isset($props['default']) && $props['default'] == "on") ? " checked" : "";
-		$html = "<span class='dqs-input-field'><input type='checkbox' class='dqsoption dqsoption-$graph' id='$id' value='$id' title='" . $props['text'] . "' $checked><label for='$id'>".$props['name']."</label></span>";
-		$boxes[$props['type']][] = $html;
-	}
-	$html = "";
-	foreach($boxes as $id => $entries){
-		$ct = constraintTypeText($graph, $id);
-		$html .= "<div class='dqs-type dqs-$id'><div class='dqs-category-title'>".$ct."</div>".implode(" ", $entries)."</div>";
-	}
-	return $html;
-}
-?>
-<?php if ($params['graph'] == "both"){?>
-<table class='dqs-config'>
-	<tr>
-		<th>Schema Graph <span class='dqs-schema-all'><input type='checkbox' id='dqs-schema-all'><label for='dqs-schema-all'>Select All</label></span>
-		</th>
-		<td><?= getDQSCheckboxes($dqs, "schema");  ?></td>
-	</tr>
-	<tr>
-		<th>Instance Graph <span class='dqs-instance-all'><input type='checkbox' id='dqs-instance-all'><label for='dqs-instance-all'>Select All</label></span></th>
-		<td><?= getDQSCheckboxes($dqs, "instance");  ?></td>
-	</tr>
-</table>
-<?php } else {?>
-<div class='dqsopts'>
-	<div class='dqs-opts-title'>Choose which constraints to apply</div>
-	<span class='dqs-all'><input type='checkbox' id='dqs-all'> <label for='dqs-all'>Select All</label></span>
-	<?php echo getDQSCheckboxes($dqs, $params['graph']);?>
+<div id="dqs-control" class='dch'>
+	<div class='pane-header'>Quality Analysis <span class='pane-header-value' id='dqsresult'></span>
+		<div class='pane-header-more' id='dqsmore'>
+			<span class='controlsbox'>
+				<span class='dqsmore'>
+					<a class='show-controls' href='javascript:showDQSControls()'>more</a><a class='show-controls show-controls-icon ui-icon ui-icon-carat-1-s' href='javascript:showDQSControls()'></a>
+				</span>
+				<span class='dqsless dch'>
+					<a class='show-controls' href='javascript:hideDQSControls()'>less</a><a class='show-controls show-controls-icon ui-icon ui-icon-carat-1-n' href='javascript:hideDQSControls()'></a>
+				</span>
+			</span>
+		</div>
+	</div>
+	<div class='pane-summary' id='dqs-summary'>
+	</div>
+	<table id='dqscontroltable' class='pane-full dch'>
+ 		<tbody>
+		</tbody>
+	</table>
+	<div class='dqsanalysis dch'>
+		<div class='analysis'>
+			<span class='analysis-text'></span>
+			<span class='analysis-created'></span>
+		</div>
+		<div class='analysis-button'><button id='analyse'>Analyse Now</button></div>			
+	</div>
 </div>
-<?php } ?>
-
-
+<div id='dqs-subscreens'>
+	<div class='dch dacsub dqs-triples'>
+ 		<div class='subscreen-header'>
+			<span id="subscreen-title">Triples - ontology and dependencies serialised as triples</span>
+			<span class='subscreen-close'></span>
+		</div>
+		<div class='subscreen-body'></div>
+ 	</div>
+ 	<div class='dch dacsub dqs-tests'>
+ 		<div class='subscreen-header'>
+			<span class="subscreen-title">Quality Service Tests</span>
+			<span class="subscreen-title-options">
+				<span id='tmaa' class='manauto testsmanauto'>
+					<input type='radio' name='tma' id='tests-set-manual' value='manual'><label for='tests-set-manual'>Manual</label>
+					<input type='radio' name='tma' id='tests-set-automatic' value='automatic'><label for='tests-set-automatic'>Automatic</label>
+				</span>
+				<input type='checkbox' class='enable-update tests-enable-update' id='enable-update-tests' value="">
+				<label for='enable-update-tests'>Update</label>
+			</span>
+			<span class='subscreen-close'></span>
+		</div>
+		<div class='dqs-messages'></div>		
+		<div class='subscreen-body'></div>
+ 	</div>
+ 	<div class='dch dacsub dqs-errors'>
+ 		<div class='subscreen-header'>
+			<span class="subscreen-title">Errors</span>
+			<span class='subscreen-close'></span>
+		</div>
+		<div class='subscreen-body'></div>
+ 	</div>
+ 	<div class='dch dacsub dqs-warnings'>
+  		<div class='subscreen-header'>
+			<span class="subscreen-title">Warnings</span>
+			<span class='subscreen-close'></span>
+		</div>
+		<div class='subscreen-body'></div>
+ 	</div>
+ 	<div class='dch dacsub dqs-imports'>
+  		<div class='subscreen-header'>
+			<span class="subscreen-title">Imported ontologies</span>
+			<span class="subscreen-title-options">
+				<span id='imaa' class='manauto'>
+					<input type='radio' name='ima' id='imports-set-manual' value='manual'><label for='imports-set-manual'>Manual</label>
+					<input type='radio' name='ima' id='imports-set-automatic' value='automatic'><label for='imports-set-automatic'>Automatic</label>
+				</span>
+				<input type='checkbox' class='enable-update imports-enable-update' id='enable-update-imports' value="">
+				<label for='enable-update-imports'>Update</label>
+			</span>
+			<span class='subscreen-close'></span>
+		</div>
+		<div class='imports-messages'></div>
+		<div class='subscreen-body'>
+			<?php include("imports.php")?>
+		</div>	
+ 	</div>
+ </div>
+ 
 <script>
-dacura.dqs = {}
-dacura.dqs.getSelection = function(graph){
-	var tests = [];
-	$('input:checkbox.dqsoption-' + graph).each(function () {
-		if(this.checked){
-			tests.push($(this).val());
-		}
-    });
-	return tests;
-};
 
-$('.dqsoption').button();
-$( "#dqs-all" ).button().click(function(event){
-	if($('#dqs-all').is(":checked")){
-		$("#dqs-instance-all").prop('checked', true).button("refresh");
-		$("#dqs-schema-all").prop('checked', true).button("refresh");
-		$("input:checkbox.dqsoption").prop('checked', true).button("refresh");
+function getAutomaticImports(data){
+	var available_imports = <?=$params['available_ontologies']?>;
+	imps = {};
+	if(typeof data.analysis == "object" && typeof data.analysis.dependencies == "object" && typeof data.analysis.dependencies.include_tree == "object"){
+		var ents = getTreeEntries(data.analysis.dependencies.include_tree);
+		for(var i = 0; i<ents.length; i++){
+			imps[ents[i]] = {collection: available_imports[ents[i]].collection, version: 0, id: available_imports[ents[i]].id};
+		}
 	}
 	else {
-		$("#dqs-instance-all").prop('checked', false).button("refresh");
-		$("#dqs-schema-all").prop('checked', false).button("refresh");
-		$("input:checkbox.dqsoption").prop('checked', false).button("refresh");
-	}					
-});
-$( "#dqs-instance-all" ).button().click(function(event){
-	if($('#dqs-instance-all').is(":checked")){
-		$("input:checkbox.dqsoption-instance").prop('checked', true).button("refresh");
+		if(typeof data.analysis == "object" && typeof data.analysis.validation == "object" && typeof data.analysis.validation.imports == "object"){
+			for(var k in data.analysis.validation.imports){
+				imps[k] = {
+					collection: data.analysis.validation.imports[k].collection,
+					version: 0, 
+					id: data.analysis.validation.imports[k].id
+				};
+			}
+		}
+	}
+	return imps;
+}
+
+function initDQS(data, pconf){
+	showAnalysisBasics(data, '.analysis-text', pconf);
+	$('.analysis-created').html(" (created with version " + data.analysis.version + " at " + timeConverter(data.analysis.created, true) + ")");
+	var res = new LDGraphResult(data.analysis.validation, "triples", pconf);
+	$('#dqsresult').html(res.getResultHeadlineHTML());
+	if(res.status == "accept"){
+		$('#dqs-control').addClass("dqs-success");
 	}
 	else {
-		$("input:checkbox.dqsoption-instance").prop('checked', false).button("refresh");
-	}					
-});
-$( "#dqs-schema-all" ).button().click(function(event){
-	if($('#dqs-schema-all').is(":checked")){
-		$("input:checkbox.dqsoption-schema").prop('checked', true).button("refresh");
+		$('#dqs-control').addClass("dqs-failure");	
+	}
+	rows = getDQSRows(res, data.meta, pconf, getAutomaticImports(data));
+	for(var i = 0; i<rows.length; i++){
+		$('#dqscontroltable tbody').append(getControlTableRow(rows[i]));
+		$('#dqs-summary').append(getSummaryTableEntry(rows[i]));					
+	}	
+	var hvrin = function(){
+		$(this).addClass('uhover');
+	};
+	var hvrout = function() {
+	    $(this).removeClass('uhover');
+	}
+	var hclick = function(){
+		var act = this.id.substring(4);
+		$('.dacsub').hide();
+		$('#dqs-subscreens .dqs-'+act).show("drop", { direction: "down" });
+  		dacura.system.goTo('#dqs-subscreens');
+	}
+	$('#dqscontroltable tr.control-table-clickable').hover(hvrin, hvrout).click(hclick);
+	$('#dqs-summary .clickable-summary').hover(hvrin, hvrout).click(hclick);
+	$('#dqs-control').show();
+	$('#analyse').button().click( function(){
+		var opts = <?=$params['fetch_args']?>;
+		opts.options.analysis = 2;
+		dacura.ld.fetch("<?=$params['id']?>", opts, drawLDOPage, pconf);		
+	});
+	
+}
+
+function hideDQSControls(){
+	$('.dqsanalysis').hide();
+	$('.dqsless').hide();
+	$('.dqsmore').show();
+	$('#dqscontroltable').hide("slide", {"direction": "up"});	
+	$('#dqs-summary').show("drop", {"direction": "down"});
+}
+
+function showDQSControls(){
+	$('.dqsless').show();
+	$('.dqsmore').hide();
+	$('#dqs-summary').hide("drop", {"direction": "down"});
+	$('#dqscontroltable').show("slide", {"direction": "up"});
+	$('.dqsanalysis').show();
+}
+
+function getDQSRows(res, meta, pconf, auto_imports){
+	var rows = [];
+	if(res.hasWarnings()){
+		$('#dqs-subscreens .dqs-warnings .subscreen-body').html(res.getWarningsHTML());
+		var rowdata = {
+			id: "warnings",
+			icon: dacura.system.getIcon("warning"),
+			count: res.warnings.length,
+			variable: "warning" + (res.warnings.length == 1 ? "" : "s"),
+			value: res.getWarningsSummary(),
+			help: "Warnings may indicate an error or a lapse in best practice but they do not prevent the use of the ontology to validate instance data"
+		};
+		rows.push(rowdata);	
+	}
+	if(res.hasErrors()){
+		$('#dqs-subscreens .dqs-errors  .subscreen-body').html(res.getErrorsHTML());
+		var rowdata = {
+			id: "errors",
+			icon: dacura.system.getIcon("error"),
+			count: res.errors.length,
+			variable: "error" + (res.errors.length == 1 ? "" : "s"),
+			value: res.getErrorsSummary(),
+			help: "Errors indicate problems with the ontology which will prevent it from being used to validate instance data"
+		};	
+		rows.push(rowdata);	
+	}
+	var dqsconfig = new DQSConfigurator(meta.dqs_tests, <?=$params['default_dqs_tests']?>, <?=$params['dqs_schema_tests']?>, "view", handleDQSUpdate);
+	dqsconfig.draw('#dqs-subscreens .dqs-tests .subscreen-body');
+	if(typeof res.tests != "undefined"){
+		rowdata = {id: "tests"};
+		rowdata.count = res.tests;
+		rowdata.icon = dacura.system.getIcon("pending");
+		if(typeof res.tests == "object"){
+			rowdata.count = res.tests.length;
+			if(rowdata.count == 0){
+				rowdata.icon = dacura.system.getIcon("warning");
+				rowdata.value = "No tests configured";
+			}
+			else {
+				rowdata.value = dqsconfig.getTestsSummary();				
+			}
+		}
+		else if(res.tests == "all"){
+			rowdata.value = dqsconfig.getTestsSummary();				
+			rowdata.count = size(dqsconfig.dqs);  			
+		}
+		rowdata.variable = "test" + ((typeof res.tests == 'object' && res.tests.length == 1) ? "" : "s");
+		rowdata.help = "The quality service can be configured to apply many different types of tests to ontologies - the current configuration is listed here";
 	}
 	else {
-		$("input:checkbox.dqsoption-schema").prop('checked', false).button("refresh");
-	}					
-});
+		var rowdata = {
+			id: "tests",
+			icon: dacura.system.getIcon("warning"),
+			count: 0,
+			variable: "tests",
+			value: "No DQS tests configured - this ontology will not be tested by the quality service",
+			help: "You must specify quality tests to be used with this ontology"
+		};
+	}
+	rows.push(rowdata);	
+	if(typeof res.imports != "undefined"){
+		var importer = new OntologyImporter(meta.imports, auto_imports, "view", handleImportUpdate);
+		importer.draw('#dqs-subscreens .dqs-imports .subscreen-body');
+		
+		$('#imaa').buttonset().click(function(){
+			if($('input[name=ima]:checked').val() == "manual"){
+				importer.setManual();
+			}
+			else {
+				importer.setAuto();		
+			}
+		});
+		$('#imaa').buttonset("disable");
+	
+		var rowdata = {
+			id: "imports",
+			icon: dacura.system.getIcon("ontology"),
+			count: size(res.imports),
+			variable: "import" + (size(res.imports) == 1 ? "" : "s"),
+			value: res.getImportsSummary(meta.imports),
+			help: "Ontologies must import those ontologies on which they have a structural dependence. "
+		};
+	}
+	rows.push(rowdata);	
+	if(typeof res.inserts != "undefined" && res.inserts.length > 0){
+		$('#dqs-subscreens .dqs-triples .subscreen-body').html(dacura.ld.getTripleTableHTML(res.inserts));
+		var rowdata = {
+			id: "triples",
+			icon: dacura.system.getIcon("triples"),
+			count: res.inserts.length,
+			variable: "triple" + (res.inserts.length == 1 ? "" : "s"),
+			value: "",
+			actions: "view_triples",
+			help: "Ontologies are serialised into a set of triples before being loaded by the DQS"
+		};
+	}
+	else {
+		var rowdata = {
+			id: "triples",
+			unclickable: true,
+			icon: dacura.system.getIcon("warning"),
+			count: 0,
+			variable: "triples",
+			value: "The graph for this ontology is currently empty, you must add contents to it before it can be serialised",
+			help: "Ontologies are serialised into a set of triples before being loaded by the DQS"
+		};
+	}
+	rows.push(rowdata);
+	return rows;
+}
+
+
+var handleAnalysisUpdate = function(){
+	
+}
+
+var handleImportUpdate = function(conf, isauto, test){
+	//transform conf back into an owl updates request
+	var pconf = {resultbox: ".imports-messages", busybox: ".dqs-imports" }
+	var upd = {
+		meta: {"imports": conf },
+		options: {show_result: 1, plain: 1},
+		format: "json", 
+		editmode: "update",
+		test: test
+	};
+	updateOntology(upd, pconf)	
+} 
+
+function handleDQSUpdate(conf, isauto, test){
+	var pconf = {resultbox: ".dqs-messages", busybox: ".dqs-tests" }
+	
+	var upd = {
+		meta: {},
+		format: "json", 
+		editmode: "update",
+		test: test,
+		options: {show_result: 1, plain: 1},
+	};
+	if(isauto){
+		upd.meta["dqs_tests"] = [];
+	}
+	else {
+		upd.meta["dqs_tests"] = conf;
+	}
+	updateOntology(upd, pconf)	
+} 
+
+function updateOntology(upd, pconf){
+	handleResp = function(data, pconf){
+		var res = new LDResult(data, pconf);
+		res.show();
+	}
+	dacura.ld.update("<?=$params['id']?>", upd, handleResp, pconf, upd.test);
+}
+
+
+
+function createTestsDynamics(){
+	$('.dqs-all-config-element').buttonset();
+}
+
+
+
+function showAnalysisBasics(data, tgt){
+	if(typeof data.analysis != "object"){
+		var html = dacura.system.getIcon('warning') + "No analysis produced";
+		$(tgt).html(html);				
+	}
+	else if(data.analysis.version != data.meta.version){
+		var upds = data.meta.version  - data.analysis.version; 
+		var html = dacura.system.getIcon('warning') + "This analysis is stale, " 
+		html += (upds == 1 ? "there has been an update " : " there have been " + upds + " updates");
+		html += " since this analysis was created";
+		$(tgt).html(html);
+	}
+	else {
+		var html = dacura.system.getIcon('success') + "Analysis is up to date";
+		$(tgt).html(html);			
+	}
+}
+
 
 
 </script>
-

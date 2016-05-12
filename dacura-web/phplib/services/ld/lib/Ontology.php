@@ -135,7 +135,7 @@ Class Ontology extends LDO {
 	 * @see LDO::getValidMetaProperties()
 	 */
 	function getValidMetaProperties(){
-		$valids = array_merge(array("imports", "schema_imports", 'instance_dqs_tests', 'schema_dqs_tests'), parent::getValidMetaProperties());
+		$valids = array_merge(array("imports", "schema_imports", 'dqs_tests', 'schema_dqs_tests'), parent::getValidMetaProperties());
 		return $valids;
 	}
 
@@ -184,14 +184,14 @@ Class Ontology extends LDO {
 	 * Get the set of tests to be used when instance data is being created (only used in testing - ontology is instance)
 	 */
 	function getCreateInstanceTests(){
-		isset($this->meta['instance_dqs_tests']) ? 	$this->meta['instance_dqs_tests'] : false;			
+		isset($this->meta['schema_dqs_tests']) ? 	$this->meta['schema_dqs_tests'] : false;			
 	}
 	
 	/**
 	 * Get the set of tests to be used when ontology is used to create a schema
 	 */
 	function getCreateSchemaTests(){
-		isset($this->meta['schema_dqs_tests']) ? 	$this->meta['schema_dqs_tests'] : false;
+		isset($this->meta['dqs_tests']) ? 	$this->meta['dqs_tests'] : false;
 	}
 	
 	/**
@@ -200,6 +200,24 @@ Class Ontology extends LDO {
 	function getImportURL(){
 		//opr($this);
 		return $this->cwurl.($this->fragment_id ? "/".$this->fragment_id : "") ."?version=".$this->version;
+	}
+	
+	function analyse(LdDacuraServer &$srvr){
+		if(!$this->dependencies){
+			$this->dependencies = $this->generateDependencies($srvr);
+		}
+		$astruct = parent::analyse($srvr);
+		$astruct['dependencies'] = &$this->dependencies;
+		$x = array();
+		$astruct['dependencies']['include_tree'] = $this->getDependencyTree($x, $srvr, "schema");
+		$x = array();
+		$astruct['dependencies']['schema_include_tree'] = $this->getDependencyTree($x, $srvr, "schema/schema");
+		$ometa = deepArrCopy($this->meta);
+		$this->meta['dqs_tests'] = "all";
+		$gr = $srvr->objectPublished($this, true);
+		$astruct['validation'] = $gr;
+		$this->meta = $ometa;
+		return $astruct;
 	}
 	
 	/**
@@ -295,7 +313,7 @@ Class Ontology extends LDO {
 			//4 ontology hijacking -> warning.
 			$violations = array();
 			foreach($this->dependencies as $sh => $ontdata){
-				if(!in_array($sh, array("_", "unknown", $this->id)) && count($ontdata['subject']) > 0){
+				if(!in_array($sh, array("_", "unknown", $this->id)) && isset($ontdata['subject']) && count($ontdata['subject']) > 0){
 					foreach($ontdata['subject'] as $hijack => $hcount){
 						$violations[] = new OntologyHijackViolation(array(
 							"message" => "$hcount assertion" . (($hcount == 1) ? "" : "s" )." about $hijack ($sh ontology)",
@@ -346,12 +364,31 @@ Class Ontology extends LDO {
 				return $deps;
 			}
 			else {
-				return false;
+				return array();
 			}
 		}
 		else {
 			return $this->meta[$mindex];
 		}
+	}
+	
+	function getDependencyTree(&$included, &$srvr, $type = "schema"){
+		$tree = array();
+		$deponts = $this->getDependentOntologies($srvr, $type);
+		$deps = $this->getDirectDependencies($srvr, $type);
+		$onwards = array();
+		foreach($deps as $inc){
+			if(!in_array($inc, $included)){
+				$onwards[] = $inc;
+				$included[] = $inc;
+			}
+		}
+		foreach($onwards as $onw){
+			if(isset($deponts[$onw])){
+				$tree[$onw] = $deponts[$onw]->getDependencyTree($included, $srvr, $type);
+			}
+		}
+		return $tree;
 	}
 	
 	/**
@@ -477,6 +514,19 @@ Class Ontology extends LDO {
 			}
 		}
 		return $deps;
+	}
+	
+	function getDirectDependencies(&$srvr, $type){
+		if(!$this->dependencies){
+			$this->dependencies = $this->generateDependencies($srvr);
+		}
+		$deps = array();
+		foreach($this->dependencies as $sh => $dep){
+			if($this->isImportableOntology($sh) && ($type == 'schema/schema') || (isset($dep['structural_links']) && $dep['structural_links'] > 0)){
+				$deps[] = $sh;
+			}
+		}
+		return $deps;	
 	}
 
 	/**

@@ -1357,7 +1357,7 @@ function nop($s, $p, $o, $t){
 	return array(array($s, $p, $o));
 }
 
-function addgname(&$trip, $gname){
+function addgname(&$trip, $key, $gname){
 	$trip[] = $gname;
 }
 

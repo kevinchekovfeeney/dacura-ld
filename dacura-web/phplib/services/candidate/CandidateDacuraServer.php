@@ -176,7 +176,7 @@ class CandidateDacuraServer extends LdDacuraServer {
 				return $dr->failure("Failed to load main graph", "Every collection must have a main graph for instance data ");
 			}
 			$quads = $cand->typedQuads($graph->instanceGname());
-			$dr->add($this->graphman->createInstance($graph, $quads, $test_flag));
+			$dr->add($this->graphman->deleteInstance($graph, $quads, $test_flag));
 		}
 		return $dr;
 	}

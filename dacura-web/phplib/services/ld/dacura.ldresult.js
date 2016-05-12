@@ -6,7 +6,9 @@ dacura.ld.parseRVOList = function(jsonlist){
 	}
 	var l = [];
 	for(var i = 0; i< jsonlist.length; i++){
-		l.push(new RVO(jsonlist[i]));
+		if(typeof jsonlist[i] == "object"){
+			l.push(new RVO(jsonlist[i]));
+		}
 	}
 	return l;
 }
@@ -96,6 +98,78 @@ dacura.ld.isJSONFormat = function(format){
 	return false;
 }
 
+dacura.ld.getOntologyViewHTML = function(ont, onttit, onturl, ontv){
+	var html = "<span class='ontlabel'";
+	if(onttit) html +=" title='" + onttit+ "'";
+	html += ">";
+	if(onturl){	
+		html += "<a href='" + onturl + "'>" + ont;
+		if(typeof ontv != "undefined"){
+			html += ontv == 0 ? " (latest)" : " (v" + ontv + ")";	
+		}
+		html += "</a>";
+	}
+	else {
+		html += ont;
+		if(typeof ontv != "undefined"){
+			html += ontv == 0 ? " (latest)" : " (v" + ontv + ")";	
+		}
+	}
+	html += "</span>";
+	return html;
+};
+
+dacura.ld.getOntologySelectHTML = function(ont, onttit, ontv, ontlv){
+	if(typeof ontv != "undefined"){
+		var html = "<span class='ontlabel ontlabelrem' title='" + onttit + "' id='imported_ontology_" + ont + "'>";
+		html += ont + "<span class='ont-version-selector'>";
+		html += " <select class='imported_ontology_version' id='imported_ontology_version_" + ont + "'><option value='0'";
+		if(ontv == 0) html += " selected";
+		html += ">latest version</option>";
+		if(typeof ontlv != "undefined"){
+			for(var k = ontlv; k > 0; k--){
+				html += "<option value='" + k + "'";
+				if(k == ontv){
+					html += " selected";
+				}
+				html += ">version " + k + "</option>";
+			}
+		}
+		html += "</select></span>";	
+		html += "<span class='remove-ont' id='remove_ontology_" + ont + "'>" + dacura.system.getIcon('error') + "</span>";
+	}
+	else {
+		var html = "<span class='ontlabel ontlabeladd' title='Click to add ontology " + onttit + "' id='add_ontology_" + ont + "'>";
+		html += ont;
+		html += " <span class='add-ont'>" + dacura.system.getIcon('add') + "</span>";
+	}
+	html += "</span>";
+	return html;
+};
+
+dacura.ld.getDQSHTML = function(i, obj, type){
+	rvo = new RVO(obj);
+	var xtit = "";
+	if(type == 'add'){
+		xtit = "Click to add the test to the configuration</br> ";
+	}
+	var html = "<span title='" + xtit + rvo.getLabelTitle(type) + "' class='dqstile dqstile-" + type + " " + rvo.getLabelCls(type) + "'";
+	if(type == "add"){
+		html += " id='add_dqs_" + i + "'";
+	}
+	html += ">" + rvo.getLabel(type);
+	if(type == 'remove'){
+		var rtit = "Click to remove the test from the configuration";
+
+		html += " <span class='remove-dqs' title='" + rtit + "' id='remove_dqs_" + i + "'>" + dacura.system.getIcon('error') + "</span>";
+	}
+	else if(type == "add"){
+		html += " <span class='add-dqs'>" + dacura.system.getIcon('add') + "</span>";	
+	}
+	html += "</span> ";
+	return html;
+}
+
 function LDResult(jsondr, pconfig){
 	if(typeof jsondr == "undefined") {
 		alert("LD result created without any result json initialisation data - not permitted!");
@@ -174,7 +248,6 @@ LDResult.prototype.getWarningsHTML = function(type){
 		}
 		if(errhtml.length > 0){
 			html = "<div class='api-error-details'>";
-			html += "<h4>Warnings</h4>"
 			html += "<table class='rbtable dqs-warning-table'>"; 
 			var thead = "<thead><tr>" + "<th>Error</th><th>Message</th><th>Attributes</th></thead>";
 			html += "<tbody>" + errhtml + "</tbody></table></div>";
@@ -292,6 +365,7 @@ LDResult.prototype.getResultMessage = function(rconfig){
 function LDGraphResult(jsondr, graphtype, pconfig){
 	this.graphtype = graphtype;
 	this.tests = typeof jsondr.tests == "undefined" ? false : jsondr.tests;
+	this.imports = typeof jsondr.imports == "undefined" ? false : jsondr.imports;
 	this.inserts = typeof jsondr.inserts == "undefined" ? false : jsondr.inserts;
 	this.deletes = typeof jsondr.deletes == "undefined" ? false : jsondr.deletes;
 	this.action = jsondr.action;
@@ -343,6 +417,95 @@ LDGraphResult.prototype.getResultMessage = function(){
 	return msg;
 }
 
+
+
+LDGraphResult.prototype.getDQSConfigPage = function(dqs, current){
+	var html = "<div class='dqsconfig'><div class='dqs-all-config-element'>";
+	html += "<input type='radio' id='dqs-radio-all' name='dqsall' value='all' ";
+	if(current == "all"){
+		html += " checked";
+	}
+	html += "><label for='dqs-radio-all'>All Tests</label>";
+	html += "<input type='radio' id='dqs-radio-notall' name='dqsall' value='notall'";
+	if(typeof current == 'object' && current.length > 0){
+		html += " checked";
+	}
+	html += "><label for='dqs-radio-notall'>Choose Tests</label>"
+	html += "<input type='radio' id='dqs-radio-none' name='dqsall' value='none'";
+	if(current.length == 0){
+		html += " checked";
+	}
+	html += "><label for='dqs-radio-none'>No Tests</label>";
+	html += "</div>";
+	var includes = [];
+	var available = [];
+	if(current == "all"){
+		for(var i in dqs){
+			includes.push(dacura.ld.getDQSHTML(i, dqs[i], "implicit"));
+		}
+	}
+	else if(current.length == 0){
+		for(var i in dqs){
+			available.push(dacura.ld.getDQSHTML(i, dqs[i], "add"));
+		}
+	}
+	else {
+		for(var i in dqs){
+			if(current.indexOf(i) == -1){
+				available.push(dacura.ld.getDQSHTML(i, dqs[i], "add"));				
+			}
+			else {
+				includes.push(dacura.ld.getDQSHTML(i, dqs[i], "remove"));				
+			}
+		}	
+	}
+	html += "<div class='dqs-includes'>" + includes.join(" ") + "</div>";
+	html += "<div class='dqs-available'>" + available.join(" ") + "</div>";
+	return html;
+}
+
+
+LDGraphResult.prototype.getImportsSummary = function(simports){
+	var html = "";
+	for(var i in this.imports){
+		var url = dacura.system.install_url;
+		url += (this.imports[i].collection == "all") ? "" : this.imports[i].collection;
+		url += "/ontology/" + this.imports[i].id;
+		html += dacura.ld.getOntologyViewHTML(i, url, null, this.imports[i].version);
+	}
+	return html;
+};
+
+LDGraphResult.prototype.getResultHeadlineHTML = function(){
+	var html = "<span class='dqsresulticon'>";
+	if(this.status == "accept"){
+		html += dacura.system.getIcon("accept");
+		html += "</span> <span class='dqsresulttext'>Passed</span>";
+	}
+	else {
+		html += dacura.system.getIcon("reject");	
+		html += "</span> <span class='dqsresulttext'>Failed</span>";
+	}
+	return html;
+}
+LDGraphResult.prototype.getResultSummaryHTML = function(){
+	var html = "<div class='dqsresult'>";
+	html += this.getResultHeadlineHTML();
+	if(this.hasErrors()){
+		html += "<span class='dqserrors'>";
+		html += dacura.system.getIcon("error") + this.errors.length + " problem";
+		if(this.warnings.length != 1) html += "s";
+		html += "</span>";
+	}
+	if(this.hasWarnings()){
+		html += "<span class='dqswarnings'>";
+		html += dacura.system.getIcon("warning") + this.warnings.length + " warning";
+		if(this.warnings.length != 1) html += "s";
+		html += "</span>";
+	}
+	html += "</div>";
+	return html;
+}
 LDGraphResult.prototype.getErrorsHTML = LDResult.prototype.getErrorsHTML;
 LDGraphResult.prototype.getWarningsHTML = LDResult.prototype.getWarningsHTML;
 LDGraphResult.prototype.hasWarnings = LDResult.prototype.hasWarnings;
@@ -351,6 +514,15 @@ LDGraphResult.prototype.hasErrors = LDResult.prototype.hasErrors;
 LDGraphResult.prototype.isEmpty = function(){
 	return !(this.inserts || this.deletes);
 }
+
+LDGraphResult.prototype.getErrorsSummary = function(){
+	return summariseRVOList(this.errors)
+}
+LDGraphResult.prototype.getWarningsSummary = function(){
+	return summariseRVOList(this.warnings)
+}
+
+
 
 LDGraphResult.prototype.getHTML = function(){
 	var msg = this.getResultMessage();
@@ -386,6 +558,11 @@ LDGraphResult.prototype.getHTML = function(){
 
 
 function RVO(data){
+	if(typeof data != "object"){
+		alert("not object");
+		return;
+	}
+	this.best_practice = data.best_practice;
 	this.cls = data.cls;
 	this.message = data.message;
 	this.info = data.info;
@@ -406,8 +583,49 @@ function RVO(data){
 	this.domain = data.domain;
 	this.range = data.range;
 	this.parentRange = data.parentRange;
-	this.parentProperty = data.parentProperty;
+	this.parentProperty = data.parentProperty;	
 }
+
+RVO.prototype.getLabel = function(mode){
+	return this.label;
+}
+
+RVO.prototype.getLabelCls = function(mode){
+	if(this.best_practice){
+		return "dqs-bp";
+	}
+	return "dqs-rule";
+}
+
+RVO.prototype.getLabelTitle = function(mode){
+	return this.label + " " + this.comment;
+}
+
+RVO.prototype.getHTML = function(type){
+	return "<tr><td title='" + this.comment + "'>"+this.label+"</td><td>"+this.message +"</td><td>" + this.info + "</td><td class='rawjson'>" + JSON.stringify(this.getAttributes(), 0, 4) + "</td></tr>";
+}
+
+function summariseRVOList(rvolist){
+	if(rvolist.length == 1) return this.label;
+	var entries = [];
+	var bytype = {};
+	for(var i = 0; i < rvolist.length; i++){
+		if(typeof bytype[rvolist[i].cls] == "undefined"){
+			bytype[rvolist[i].cls] = [];			
+		}
+		bytype[rvolist[i].cls].push(rvolist[i]);
+	}
+	for(var j in bytype){
+		if(bytype[j].length == 1){
+			entries.push("1 " + bytype[j][0].label); 
+		}
+		else {
+			entries.push(bytype[j].length + " " + bytype[j][0].label + "s"); 	
+		}
+	}
+	return entries.join(", ");
+}
+
 
 RVO.prototype.getAttributes = function(){
 	var atts = {};
@@ -432,11 +650,6 @@ RVO.prototype.getAttributes = function(){
 	return atts;
 
 }
-
-RVO.prototype.getHTML = function(type){
-	return "<tr><td title='" + this.comment + "'>"+this.label+"</td><td>"+this.message +"</td><td>" + this.info + "</td><td class='rawjson'>" + JSON.stringify(this.getAttributes(), 0, 4) + "</td></tr>";
-}	
-
 
 function LDOViewer(ldo, pconf, vconf){
 	this.ldo = ldo;
@@ -539,6 +752,9 @@ LDOViewer.prototype.show = function(vconf){
 		}
 	}
 	$(this.target).append(this.ldo.getContentsHTML(this.emode));
+	if(this.ldo.format == "html" && this.ldo.ldtype() == "candidate" && typeof this.ldo.contents == "object"){
+		this.initFrameView();
+	}
 	if(this.emode == "edit"){
 		$(this.target).append(this.getUpdateButtonsHTML());	
 		$('.subscreen-button').button().click(function(){
@@ -587,6 +803,21 @@ LDOViewer.prototype.show = function(vconf){
 			}
 		});
 	}
+}
+
+LDOViewer.prototype.initFrameView = function(){
+	var pconf = this.pconf;
+	obusy = pconf.busybox;
+	pconf.busybox = "#dacura-frame-viewer";
+	var cls = this.ldo.meta.type;
+	if(typeof this.ldo.contents == "object"){
+		this.ldo.contents = JSON.stringify(this.ldo.contents);
+	}
+	var frameobj = {result: this.ldo.contents};
+	var frameid = dacura.frame.draw(cls,frameobj,pconf,'frame-container');
+	dacura.frame.fillFrame(this.ldo, pconf, 'frame-container'); 
+	pconf.busybox = obusy;
+	dacura.frame.initInteractors();
 }
 
 LDOViewer.prototype.getUpdateButtonsHTML = function(){
@@ -939,7 +1170,12 @@ LDO.prototype.getContentsHTML = function(mode){
 		return dacura.ld.getTripleTableHTML(this.contents, mode);
 	}
 	else if(this.format == "html"){
-		return "<div class='dacura-html-viewer'>" + this.contents + "</div>";
+		if(this.ldtype() == "candidate" && typeof this.contents == "object"){
+			return "<div id='dacura-frame-viewer'></div>" 
+		}
+		else {
+			return "<div class='dacura-html-viewer'>" + this.contents + "</div>";
+		}
 	}
 	else if(this.format == "svg"){
 		return "<object id='svg' type='image/svg+xml'>" + this.contents + "</object>";
