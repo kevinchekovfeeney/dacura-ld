@@ -224,7 +224,7 @@ function getDQSRows(res, meta, pconf, auto_imports){
 	}
 	rows.push(rowdata);	
 	if(typeof res.imports != "undefined"){
-		var importer = new OntologyImporter(meta.imports, auto_imports, "view", handleImportUpdate);
+		var importer = new OntologyImporter(meta.imports, <?=$params['available_ontologies']?>, auto_imports, "view", handleImportUpdate);
 		importer.draw('#dqs-subscreens .dqs-imports .subscreen-body');
 		
 		$('#imaa').buttonset().click(function(){
@@ -272,11 +272,6 @@ function getDQSRows(res, meta, pconf, auto_imports){
 	}
 	rows.push(rowdata);
 	return rows;
-}
-
-
-var handleAnalysisUpdate = function(){
-	
 }
 
 var handleImportUpdate = function(conf, isauto, test){

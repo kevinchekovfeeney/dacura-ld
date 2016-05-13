@@ -7,7 +7,7 @@
 				<thead>
 				<tr>
 					<th id='lde-id'>ID</th>
-					<th id='lde-title'>Title</th>
+					<th id='lde-meta-title'>Title</th>
 					<th id='lde-type'>Type</th>
 					<th id='lde-collectionid'>Collection</th>
 					<th id='lde-status'>Status</th>
@@ -69,7 +69,6 @@
 </div>
 <script>
 
-
 function updateLDUpdateStatus(ids, status, cnt, pconf, rdatas){
 	var nid = ids.shift();
 	var rdata = rdatas.shift();
@@ -89,7 +88,6 @@ function updateLDUpdateStatus(ids, status, cnt, pconf, rdatas){
 	//for global scope we need to change api url...
 	dacura.ld.apiurl = dacura.system.apiURL(dacura.system.pagecontext.service, rdata.collectionid);
 	dacura.ld.update("update/" + nid, upd, onwards, pconf, false);
-	
 }
 
 function refreshLDUpdateList(){
@@ -123,6 +121,12 @@ function showUpdateStatusSuccess(status, cnt, targets){
 
 function refreshLDList(){
 	dacura.tool.table.refresh("ld_table");
+}
+
+writeLDImportToForm = function(fieldid){
+	var ldov = new LDOViewer(ldo, $params['create_ldoviewer_config']);
+	var ldov = new LDOViewer(false, dacura.tool.subscreens[screen]);
+	ldov.show("create", fieldid);	
 }
 
 

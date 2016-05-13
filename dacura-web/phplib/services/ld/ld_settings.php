@@ -33,8 +33,15 @@ $settings = array(
 	"test_unpublished" => true,
 	"cache_analysis" => true,
 	"analysis_cache_config" => array("type" => "constant"),
+
+	/* the options to pass to the LDOViewer object which manages the create form */
+	"create_ldoviewer_config" => array(
+		"result_options" => array(),
+		"view_options" => array(),
+		"graph_options" => array()
+	),
 		
-	/* these next two should really be in further down classes....	
+	/* these next two should really be overwritten in further down classes....	
 	/* the set of tests that will apply when a create schema request is sent to the dqs */
 	//"create_dqs_schema_tests" => array(),
 	/* the set of tests that will apply when a create instance request is sent to the dqs */	
@@ -77,12 +84,12 @@ $settings = array(
 		"ld_list_title" => "Linked Data Objects",
 		"ld_create_title" => "Create New Linked Data Object",
 		"ld_updates_title" => "Updates to Linked Data Objects",
-		"create_ldo_intro" => "Add a new LDO to the system by filling in the form below and hitting 'create'",
+		"create_ldo_intro" => "",
 		"raw_intro_msg" => "Update the raw underlying data",
-		"list_objects_intro" => "View all LDOs in the system",
-		"list_updates_intro" => "View updates (pending, rejected, accepted) to LDOs",
-		"view_history_intro" => "View previous versions of this LDO",
-		"view_updates_intro" => "View updates (pending, rejected, accepted) to this LDO",
+		"list_objects_intro" => "",
+		"list_updates_intro" => "",
+		"view_history_intro" => "",
+		"view_updates_intro" => "",
 		//"view_contents_intro" => "View the RDF contents of this LDO",
 		//"view_meta_intro" => "View the LDO's meta-data",
 		"create_button_text" => "Create New LDO",
@@ -106,11 +113,12 @@ $settings = array(
 		//"image" => array("type" => "image", "label" => "Image", "help" => "An image which will represent the object on pages."),
 		//"url" => array("label" => "Canonical URL", "type" => "url", "help" => "The External URL which represents the 'canonical' id of this object (to support purls, etc)."),
 		"meta" => array("label" => "Object Meta-data", "type" => "complex", "input_type" => "custom", "help" => "Arbitrary json meta-data that is associated with the object"),
-		"ldsource" => array("label" => "Contents Source", "type" => "choice", "options" => array("text" => "Textbox", "url" => "Import from URL", "file" => "Upload File"), "input_type" => "radio", "help" => "You can choose to import the contents of the linked data object from a url, a local file, or by inputting the text directly into the textbox here"),
-		"format" => array("label" => "Contents Format", "type" => "choice", "help" => "The contents of the object (in RDF - Linked Data format)"),
-		"ldurl" => array("label" => "Import URL", "type" => "url", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("download" => array("title" => "Load URL"))),
-		"ldfile" => array("label" => "Import File", "type" => "file", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("upload" => array("title" => "Upload File"))),
-		"contents" => array("label" => "Contents", "type" => "complex", "input_type" => "custom", "help" => "The contents of the object (in RDF - Linked Data format)"),
+		//"ldsource" => array("label" => "Contents Source", "type" => "choice", "options" => array("text" => "Textbox", "url" => "Import from URL", "file" => "Upload File"), "input_type" => "radio", "help" => "You can choose to import the contents of the linked data object from a url, a local file, or by inputting the text directly into the textbox here"),
+		//"format" => array("label" => "Contents Format", "type" => "choice", "help" => "The contents of the object (in RDF - Linked Data format)"),
+		//"ldurl" => array("label" => "Import URL", "type" => "url", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("download" => array("title" => "Load URL"))),
+		//"ldfile" => array("label" => "Import File", "type" => "file", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("upload" => array("title" => "Upload File"))),
+		//"contents" => array("label" => "Contents", "type" => "complex", "input_type" => "custom", "help" => "The contents of the object (in RDF - Linked Data format)"),
+		"ldcontents" => array("label" => "Contents", "type" => "complex", "input_type" => "custom", "help" => "The contents of the object (contents can be imported in any RDF or Linked Data format)")
 	),
 
 	"update_meta_fields" => array(

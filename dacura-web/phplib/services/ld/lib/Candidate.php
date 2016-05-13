@@ -152,6 +152,7 @@ class Candidate extends MultiGraphLDO {
 			if(is_array($clsurls)){
 				$clsurls = $clsurls[0];
 			}
+			//$clsurls = $this->nsres->compress($clsurls) ? $this->nsres->compress($clsurls) : $clsurls;
 			if($store) $this->meta['type'] = $clsurls;
 		}
 		return $clsurls;

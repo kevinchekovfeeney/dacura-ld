@@ -4,10 +4,179 @@
  */
 
 dacura.ld = {}
-dacura.ld.apiurl = dacura.system.apiURL();
 dacura.ld.ldo_type = "ldo";
-dacura.ld.plurals = {"ldo": "linked data objects", "candidate": "candidates", "ontology": "ontologies", "graph": "graphs"};
-dacura.ld.api = {};
+
+dacura.ld.testResultMsg = "(no changes have been made to the object store as this was a test invocation.)";
+dacura.ld.hypoResultMsg = "(this is a hypotethical result - no changes will be made to the graph until the object is published.)";
+dacura.ld.parseRVOList = function(jsonlist){
+	if(typeof jsonlist != 'object' || jsonlist.length == 0){
+		return [];
+	}
+	var l = [];
+	for(var i = 0; i< jsonlist.length; i++){
+		if(typeof jsonlist[i] == "object"){
+			l.push(new RVO(jsonlist[i]));
+		}
+	}
+	return l;
+}
+
+dacura.ld.getTripleTableHTML = function(trips, tit){
+	var html = "";
+	if(trips.length > 0){
+		isquads = trips[0].length == 4;
+		if(typeof tit == "string" && tit.length){
+			html += "<div class='api-triplestable-title'>" + tit + "</div>";
+		}
+		html += "<table class='rbtable'>";
+		html += "<thead><tr><th>Subject</th><th>Predicate</th><th>Object</th>";
+		if(isquads){
+			html += "<th>Graph</th>";
+		}
+		html += "</tr></thead><tbody>";
+		for(var i = 0; i < trips.length; i++){
+			if(typeof trips[i][2] == "object"){
+				trips[i][2] = JSON.stringify(trips[i][2]);
+			}
+			html += "<tr><td>" + trips[i][0] + "</td><td>" + trips[i][1] + "</td><td>" + trips[i][2] + "</td>";
+			if(isquads){
+				html += "<td>" + trips[i][3] + "</td>";
+			}
+			html += "</tr>";				
+		}
+		html += "</tbody></table>";
+	}
+	return html;
+} 
+
+dacura.ld.getJSONViewHTML = function (inserts, deletes){
+	if(!inserts || !deletes){
+		var html = "<table class='json-graph'><thead><tr><th>Variable</th><th>Value</th></tr></thead><tbody>";
+		var def = inserts ? inserts : deletes;
+		for(var i in def){
+			html += "<tr><td>" + i + "</td><td class='dacura-json-viewer'>";
+			html += (typeof def[i] == "object" ? JSON.stringify(def[i], 0, 4) : def[i]);
+			html += "</td></tr>";
+		}
+		html += "</tbody></table>";
+	}
+	else {
+		var html = "<table class='json-graph'><thead><tr><th>Variable</th><th>Before</th><th>After</th></tr></thead><tbody>";
+		if(typeof inserts == "object"){
+			for(var i in inserts){
+				html += "<tr><td>" + i + "</td><td class='dacura-json-viewer'>";
+				if(typeof deletes == "object" && typeof deletes[i] != "undefined"){
+					html += typeof deletes[i] == "object" ? JSON.stringify(deletes[i], 0, 4) : deletes[i];
+				}
+				else {
+					html += "not defined";
+				}
+				html += "</td><td class='dacura-json-viewer'>" + (typeof inserts[i] == "object" ? JSON.stringify(inserts[i], 0, 4) : inserts[i]);
+				html += "</td></tr>";
+			}
+		}
+		if(typeof deletes == "object"){
+			for(var i in deletes){
+				if(typeof inserts != "object" || typeof inserts[i] == "undefined"){
+					html += "<tr><td>" + i + "</td><td class='dacura-json-viewer'>undefined</td><td class='dacura-json-viewer'>";	
+					html += typeof deletes[i] == "object" ? JSON.stringify(deletes[i], 0, 4) : deletes[i];
+					html += "</td></tr>";
+				}
+			}
+		}
+		html += "</tbody></table>";
+	}
+	return html;
+};
+
+dacura.ld.wrapJSON = function(json, mode){
+	if(!mode || mode == "view"){
+		var html = "<div class='dacura-json-viewer'>" + JSON.stringify(json, null, 4) + "</div>";				
+	}
+	else {
+		var html = "<div class='dacura-json-editor'><textarea class='dacura-json-editor'>" + JSON.stringify(json, null, 4) + "</textarea></div>";			
+	}
+	return html;
+}
+
+dacura.ld.isJSONFormat = function(format){
+	if(format == "json" || format == "jsonld" || format == "quads" || "format" == "triples"){
+		return true;
+	}
+	return false;
+}
+
+dacura.ld.getOntologyViewHTML = function(ont, onttit, onturl, ontv){
+	var html = "<span class='ontlabel'";
+	if(onttit) html +=" title='" + onttit+ "'";
+	html += ">";
+	if(onturl){	
+		html += "<a href='" + onturl + "'>" + ont;
+		if(typeof ontv != "undefined"){
+			html += ontv == 0 ? " (latest)" : " (v" + ontv + ")";	
+		}
+		html += "</a>";
+	}
+	else {
+		html += ont;
+		if(typeof ontv != "undefined"){
+			html += ontv == 0 ? " (latest)" : " (v" + ontv + ")";	
+		}
+	}
+	html += "</span>";
+	return html;
+};
+
+dacura.ld.getOntologySelectHTML = function(ont, onttit, ontv, ontlv){
+	if(typeof ontv != "undefined"){
+		var html = "<span class='ontlabel ontlabelrem' title='" + onttit + "' id='imported_ontology_" + ont + "'>";
+		html += ont + "<span class='ont-version-selector'>";
+		html += " <select class='imported_ontology_version' id='imported_ontology_version_" + ont + "'><option value='0'";
+		if(ontv == 0) html += " selected";
+		html += ">latest version</option>";
+		if(typeof ontlv != "undefined"){
+			for(var k = ontlv; k > 0; k--){
+				html += "<option value='" + k + "'";
+				if(k == ontv){
+					html += " selected";
+				}
+				html += ">version " + k + "</option>";
+			}
+		}
+		html += "</select></span>";	
+		html += "<span class='remove-ont' id='remove_ontology_" + ont + "'>" + dacura.system.getIcon('error') + "</span>";
+	}
+	else {
+		var html = "<span class='ontlabel ontlabeladd' title='Click to add ontology " + onttit + "' id='add_ontology_" + ont + "'>";
+		html += ont;
+		html += " <span class='add-ont'>" + dacura.system.getIcon('add') + "</span>";
+	}
+	html += "</span>";
+	return html;
+};
+
+dacura.ld.getDQSHTML = function(i, obj, type){
+	rvo = new RVO(obj);
+	var xtit = "";
+	if(type == 'add'){
+		xtit = "Click to add the test to the configuration</br> ";
+	}
+	var html = "<span title='" + xtit + rvo.getLabelTitle(type) + "' class='dqstile dqstile-" + type + " " + rvo.getLabelCls(type) + "'";
+	if(type == "add"){
+		html += " id='add_dqs_" + i + "'";
+	}
+	html += ">" + rvo.getLabel(type);
+	if(type == 'remove'){
+		var rtit = "Click to remove the test from the configuration";
+
+		html += " <span class='remove-dqs' title='" + rtit + "' id='remove_dqs_" + i + "'>" + dacura.system.getIcon('error') + "</span>";
+	}
+	else if(type == "add"){
+		html += " <span class='add-dqs'>" + dacura.system.getIcon('add') + "</span>";	
+	}
+	html += "</span> ";
+	return html;
+}
 
 dacura.ld.header = function(obj){
 	if(obj.meta.latest_version == obj.meta.version){
@@ -247,6 +416,104 @@ dacura.ld.viewer = {
 	}
 }
 
+/**
+ * Interactions with api
+ */
+dacura.ld.fetchupdatelist = function(onwards, targets, type, options){
+	if(typeof type == "undefined"){
+		type = this.ldo_type;
+	}
+	var ajs = dacura.ld.api.list("updates");
+	if(typeof options == "object"){
+		ajs.data = {"options": options};	
+	}
+	var msgs = dacura.ld.msg.fetchupdatelist(true);
+	ajs.handleResult = onwards;
+	dacura.system.invoke(ajs, msgs, targets);
+}
+
+dacura.ld.fetchldolist = function(onwards, targets, type, options){
+	if(typeof type == "undefined"){
+		type = this.ldtype;
+	}
+	var ajs = dacura.ld.api.list();
+	if(typeof options == "object"){
+		ajs.data = {"options": options};	
+	}
+	var msgs = dacura.ld.msg.fetchldolist(type);
+	ajs.handleResult = onwards;
+	dacura.system.invoke(ajs, msgs, targets);
+};
+
+dacura.ld.fetch = function(id, args, onwards, targets, msgs){
+	var ajs = dacura.ld.api.view(id, args);
+	if(typeof msgs != "object"){
+		var msgs = {"busy": "Retrieving linked data object " + id + " from server", "fail": "Failed to retrieve linked data object "+ id};
+	}
+	ajs.handleResult = 	onwards;
+	ajs.handleJSONError = onwards;
+	dacura.system.invoke(ajs, msgs, targets);
+}
+
+dacura.ld.create = function(data, onwards, targets, istest){
+	var ajs = dacura.ld.api.create(data, istest);
+	var msgs = dacura.ld.msg.create(istest, this.ldo_type);
+	ajs.handleResult = onwards;
+	ajs.handleJSONError = onwards;
+	//targets.slow = true;
+	dacura.system.invoke(ajs, msgs, targets);
+}
+
+dacura.ld.update = function(id, uobj, onwards, targets, istest){
+	var ajs = dacura.ld.api.update(id, uobj, istest);
+	var msgs = dacura.ld.msg.update(id, istest, this.ldo_type);
+	ajs.handleResult = onwards;
+	ajs.handleJSONError = onwards;
+	dacura.system.invoke(ajs, msgs, targets);
+}
+
+
+dacura.ld.msg = {};
+dacura.ld.msg.plural = function(str){
+	if(str == "ontology"){
+		return "ontologies";
+	}
+	return str + "s";
+}
+
+dacura.ld.msg.fetch = function(id, type){
+	return { "busy": "Fetching " + id + " from Server", "success": "Retrieved " + id + " from server", "fail": "Failed to retrieve " + id};	
+};
+
+dacura.ld.msg.fetchldolist = function(type){
+	return { "success": "Retrieved list of " + type + " from server", "busy": "Retrieving " + dacura.ld.msg.plural(type) + " list from server", "fail": "Failed to retrieve list of " + dacura.ld.msg.plural(type) + " from server"};
+};
+
+dacura.ld.msg.fetchupdatelist = function(type){
+	return { "success": "Retrieved list of updates to " + dacura.ld.msg.plural(type) + " from server", "busy": "Retrieving list of updates to " + dacura.ld.msg.plural(type) + " from server", "fail": "Failed to retrieve list of updates to " + dacura.ld.msg.plural(type) + " from server"};
+};
+
+dacura.ld.msg.create = function(istest, type){
+	if(typeof istest == "undefined" || istest == false){
+		return { "success": "Successfully created new " + type, "busy": "Submitting new " + type + " to Dacura API", "fail": type + " submission was unsuccessful"};
+	}
+	else {
+		return { "success": "Test creation of new " + type + " was successful", "busy": "Testing creation of new " + type + " with Dacura API", "fail": "Test creation of new " + type + " failed."};	
+	}
+}
+
+dacura.ld.msg.update = function(id, istest, type){
+	if(typeof istest == "undefined" || istest == false){
+		return { "success": "Successfully updated " + type + " " + id, "busy": "Submitting updates to " + type + " " + id + " to Dacura API", "fail": "Updates to " + type + " " + id + " failed."};
+	}
+	else {
+		return { "success": "Updates to " + type + " " + id + " were tested successfully", "busy": "Testing updates to " + type + " " + id  + " with Dacura API", "fail": "Updates to " + type + " " + id + " failed Dacura test."};	
+	}
+}
+
+dacura.ld.apiurl = dacura.system.apiURL();
+dacura.ld.api = {};
+
 
 dacura.ld.api.create = function (data, test){
 	var xhr = {};
@@ -296,148 +563,16 @@ dacura.ld.api.list = function (fetch_updates){
 	return xhr;
 }
 
-dacura.ld.msg = {};
-dacura.ld.msg.plural = function(str){
-	if(typeof dacura.ld.plurals[str] != "undefined"){
-		return dacura.ld.plurals[str];
-	}
-	return str + "s";
-}
-
-dacura.ld.msg.fetch = function(id, type){
-	return { "busy": "Fetching " + type + " " + id + " from Server", "success": "Retrieved " + type + " " + id + " from server", "fail": "Failed to retrieve " + type + " " + id};	
-};
-
-dacura.ld.msg.fetchldolist = function(type){
-	return { "success": "Retrieved list of " + dacura.ld.msg.plural(type) + " from server", "busy": "Retrieving " + dacura.ld.msg.plural(type) + " list from server", "fail": "Failed to retrieve list of " + dacura.ld.msg.plural(type) + " from server"};
-};
-
-dacura.ld.msg.fetchupdatelist = function(type){
-	return { "success": "Retrieved list of updates to " + dacura.ld.msg.plural(type) + " from server", "busy": "Retrieving list of updates to " + dacura.ld.msg.plural(type) + " from server", "fail": "Failed to retrieve list of updates to " + dacura.ld.msg.plural(type) + " from server"};
-};
-
-dacura.ld.msg.create = function(istest, type){
-	if(typeof istest == "undefined" || istest == false){
-		return { "success": "Successfully created new " + type, "busy": "Submitting new " + type + " to Dacura API", "fail": type + " submission was unsuccessful"};
-	}
-	else {
-		return { "success": "Test creation of new " + type + " was successful", "busy": "Testing creation of new " + type + " with Dacura API", "fail": "Test creation of new " + type + " failed."};	
-	}
-}
-
-dacura.ld.msg.update = function(id, istest, type){
-	if(typeof istest == "undefined" || istest == false){
-		return { "success": "Successfully updated " + type + " " + id, "busy": "Submitting updates to " + type + " " + id + " to Dacura API", "fail": "Updates to " + type + " " + id + " failed."};
-	}
-	else {
-		return { "success": "Updates to " + type + " " + id + " were tested successfully", "busy": "Testing updates to " + type + " " + id  + " with Dacura API", "fail": "Updates to " + type + " " + id + " failed Dacura test."};	
-	}
-}
-
-
-dacura.ld.fetchupdatelist = function(onwards, targets, type, options){
-	if(typeof type == "undefined"){
-		type = this.ldo_type;
-	}
-	var ajs = dacura.ld.api.list("updates");
-	if(typeof options == "object"){
-		ajs.data = {"options": options};	
-	}
-	var msgs = dacura.ld.msg.fetchupdatelist(true);
-	ajs.handleResult = onwards;
-	dacura.system.invoke(ajs, msgs, targets);
-}
-
-dacura.ld.fetchldolist = function(onwards, targets, type, options){
-	if(typeof type == "undefined"){
-		type = this.ldo_type;
-	}
-	var ajs = dacura.ld.api.list();
-	if(typeof options == "object"){
-		ajs.data = {"options": options};	
-	}
-	var msgs = dacura.ld.msg.fetchldolist(type);
-	ajs.handleResult = onwards;
-	dacura.system.invoke(ajs, msgs, targets);
-};
-
-dacura.ld.fetch = function(id, args, onwards, targets, msgs){
-	var ajs = dacura.ld.api.view(id, args);
-	if(typeof msgs != "object"){
-		var msgs = {"busy": "Retrieving linked data object " + id + " from server", "fail": "Failed to retrieve linked data object "+ id};
-	}
-	ajs.handleResult = 	onwards;
-	ajs.handleJSONError = onwards;
-	dacura.system.invoke(ajs, msgs, targets);
-}
-
-dacura.ld.create = function(data, onwards, targets, istest){
-	var ajs = dacura.ld.api.create(data, istest);
-	var msgs = dacura.ld.msg.create(istest, this.ldo_type);
-	ajs.handleResult = onwards;
-	ajs.handleJSONError = onwards;
-	//targets.slow = true;
-	dacura.system.invoke(ajs, msgs, targets);
-}
-
-dacura.ld.update = function(id, uobj, onwards, targets, istest){
-	var ajs = dacura.ld.api.update(id, uobj, istest);
-	var msgs = dacura.ld.msg.update(id, istest, this.ldo_type);
-	ajs.handleResult = onwards;
-	ajs.handleJSONError = onwards;
-	dacura.system.invoke(ajs, msgs, targets);
-}
-
-
-
-dacura.ld.drawVersionHeader = function(data){
-	$('.version-title').html("version " + data.version);
-	createtxt = "created " + timeConverter(data.version_created);
-	$('.version-created').html(	createtxt);
-	if(data.version_replaced > 0){	
-		repltxt = "replaced " + timeConverter(data.version_replaced); 	
-		$('.version-replaced').html(repltxt);
-	}
-	else {
-		$('.version-replaced').html("");	
-	}
-	$('#version-header').show();
-}
-
-
-
-//need to be moved into the linked data library 
-dacura.ld.setLDSingleValue = function(obj, key, val){
-	if(typeof obj != "undefined"){
-		for(var k in obj){
-			if(typeof obj[k][key] != "undefined"){
-				obj[k][key] = val;
-			}
-		}
-	}
-}
-
-
-
-dacura.ld.setLDToolHeader = function(ldo){
-	options = { subtitle: ldo.id };
-	if(typeof ldo.title != "undefined"){
-		options.subtitle = ldo.title;
-	}
-	if(typeof ldo.image != "undefined"){
-		options.image = ldo.image;
-	}
-	options.description = $('#ldldo-header-template').html();
-	dacura.tool.updateToolHeader(options);
-	if(typeof ldo.metadetails != "undefined"){
-		metadetails = ldo.metadetails;
-	}
-	else {
-		metadetails = timeConverter(ldo.created);
-	}
-	$('.ldo_type').html("<span class='ldo-type'>" + ldo.type + "</span>");
-	$('.ldo_created').html("<span class='ldo-details'>" + metadetails + "</span>");
-	$('.ldo_status').html("<span class='ldo-status ldo-" + ldo.latest_status + "'>" + ldo.latest_status + "</span>");
+dacura.ld.uploadFile = function(payload, onwards, pconf){
+	xhr = {};
+	xhr.url = dacura.system.apiURL("config") + "/files";
+	xhr.type = "POST";
+	xhr.data = payload;
+	xhr.processData= false;
+	xhr.contentType = payload.type;
+	xhr.handleResult = onwards;
+	var msgs = {busy: "Uploading file to server", success: "File uploaded to server", fail: "Failed to upload file"};
+	dacura.system.invoke(xhr, msgs, pconf);
 }
 
 

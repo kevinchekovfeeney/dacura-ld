@@ -469,8 +469,8 @@ class DacuraFormElement extends DacuraObject {
 		if($this->id == "facets"){
 			$html = $this->drawFacetsInput($settings, $context);	
 		}
-		elseif($this->id == "ldimport"){
-			$html = $this->drawLDFormatInput($settings, $context);
+		elseif($this->id == "ldcontents"){
+			$html = $this->drawLDContentsInput($settings, $context);
 		}
 		elseif($this->id == "imports" || $this->id == "schema_imports"){
 			$html = $this->drawOntologyImportsInput($settings, $context);
@@ -574,13 +574,12 @@ class DacuraFormElement extends DacuraObject {
 		}
 	}
 	
-	function drawLDFormatInput($settings, $context){
+	function drawLDContentsInput($settings, $context){
 		$prefix = $context[count($context)-1]."-";
 		$fid = $prefix.$this->id;
-		$html = '<input type="radio" class="ldimportoption" checked="checked" id="'.$fid.'-importtext" name="'.$fid.'-importformat"><label for="'.$fid.'-importtext" >Textbox</label>';
-		$html .= '<input type="radio" class="ldimportoption" id="'.$fid.'-importurl" name="'.$fid.'-importformat"><label for="'.$fid.'-importurl">Import from URL</label>';
-		$html .= '<input type="radio" class="ldimportoption" id="'.$fid.'-importupload" name="'.$fid.'-importformat"><label for="'.$fid.'-importupload">File Upload</label>';
- 		return $html;
+		//fires up an LDOViewer object which takes over the form element
+		$html = "<script>writeLDImportToForm('$fid');</script>";
+		return $html;
 	}
 	
 	function drawOntologyImportsInput($settings, $context){

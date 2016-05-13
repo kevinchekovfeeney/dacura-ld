@@ -199,7 +199,7 @@ function drawGraphPage(data, pconf){
 	}
 	dqsconfig = new DQSConfigurator(data.meta.schema_dqs_tests, <?=$params['default_dqs_tests']?>, <?=$params['dqs_schema_tests']?>, "graph", handleSchemaDQSUpdate);
 	idqsconfig = new DQSConfigurator(data.meta.instance_dqs_tests, <?=$params['default_instance_dqs_tests']?>, <?=$params['dqs_instance_tests']?>, "graph", handleInstanceDQSUpdate);
-	importer = new OntologyImporter(getExplicitImports(data),getImplicitImports(data), "graph", handleImportUpdate);
+	importer = new OntologyImporter(getExplicitImports(data), <?=$params['available_ontologies']?>, getImplicitImports(data), "graph", handleImportUpdate);
 	importer.draw('#graph-imports .subscreen-body');
 	$('#graph-view-home').html(getPageHTML(data));
 	$('.rdaction').button().click(function(){

@@ -36,6 +36,8 @@ $dacura_settings['dacura_logbase'] = $dacura_settings['storage_base'].'logs/';
 $dacura_settings['dacura_request_log'] = $dacura_settings['dacura_logbase'].'request.log';
 $dacura_settings['dacura_system_log'] = $dacura_settings['dacura_logbase'].'event.log';
 $dacura_settings['services_url'] = $dacura_settings['install_url'].$dacura_settings['path_to_services'];
+$dacura_settings['files_url'] = $dacura_settings['install_url'] . $dacura_settings['path_to_files'];
+
 
 /* Quality Service API */
 $dacura_settings['dqs_service'] = array();
@@ -63,9 +65,6 @@ if (!function_exists('default_settings')) {
 		}
 		if(!isset($dacura_settings['services_url'])){
 			$dacura_settings['services_url'] = $dacura_settings['install_url'].$dacura_settings['path_to_services'];
-		}
-		if(!isset($dacura_settings['files_url'])){
-			$dacura_settings['files_url'] = $dacura_settings['install_url'] . $dacura_settings['path_to_files'];
 		}
 		if(!isset($dacura_settings['path_to_collections'])){
 			$dacura_settings['path_to_collections'] = $dacura_settings['storage_base']."collections/";

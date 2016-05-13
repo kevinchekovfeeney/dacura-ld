@@ -214,10 +214,6 @@ function update_ldo($target_id, $fragment_id = false){
 	$action = "update $ldo_type $target_id".($fragment_id ? "/$fragment_id" : "");
 	$test_flag = isset($obj['test']) ? 	$obj['test'] : false;
 	$ar = new DacuraResult($action, $test_flag);
-	$upd_obj = array();
-	if(!isset($obj['contents']) && !isset($obj['meta'])){
-		return $dacura_server->writeDecision($ar->failure(400, "Format Error", "Update Request must have at least one of a meta or a contents property"));
-	}
 	$options = (isset($obj['options'])) ? $obj['options'] : array();
 	$update_obj = array();
 	$editmode = (isset($obj['editmode'])? $obj['editmode'] : "update");

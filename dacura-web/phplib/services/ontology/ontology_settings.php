@@ -5,10 +5,10 @@ $settings['fail_on_missing_dependency'] = true;
 $settings['fail_on_bad_predicate'] = true;
 $settings['fail_on_ontology_hijack'] = false;
 $settings['required_meta_properties'] = array("url");
-$settings["collapse_blank_nodes_for_dependencies"] = false;
+$settings["collapse_blank_nodes_for_dependencies"] = true;
 	
-$settings['create_dqs_schema_tests'] = "all";
-$settings['create_dqs_instance_tests'] = "all";
+//$settings['create_dqs_schema_tests'] = "all";
+//$settings['create_dqs_instance_tests'] = "all";
 //$settings['two_tier_schemas'] = false;
 
 $settings["update_options"]  = array("show_dqs_triples" => 1, "show_ld_triples" => 1, "fail_on_id_denied" => 1,
@@ -53,7 +53,13 @@ $settings["messages"] = array(
 		"view_update_after_msg" => "The Ontology after the update has taken place",
 		"view_update_before_msg" => "The Ontology before the update has taken place",
 		"update_meta_button" => "Save Updated Metadata",
-		"test_update_meta_button" => "Test Metadata Update"
-		
+		"test_update_meta_button" => "Test Metadata Update"	
+);
+
+$settings['tables']["ld"] = array("datatable_options" => 
+		array("jQueryUI" => true, "searching" => false, "scrollX" => false, "pageLength" => 20, 
+			"lengthMenu" => array(10, 20, 50, 75, 100),
+			"info" => true, "order" => array(8, "desc"),
+			"aoColumns" => array(null, null, null, null, null, null, array("bVisible" => true, "iDataSort" => 7), array("bVisible" => false), array("iDataSort" => 9), array("bVisible" => false), null, array("orderable" => false)))
 );
 

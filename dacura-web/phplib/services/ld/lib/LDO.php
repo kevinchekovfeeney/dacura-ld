@@ -328,7 +328,7 @@ class LDO extends DacuraObject {
 	 * @param string $mode the mode in which the object is being loaded from the api (replace, update, create)
 	 * @return string representing the format that the object is in
 	 */
-	function loadNewObjectFromAPI($obj, $format, $options, LdDacuraServer &$srvr, $mode){	
+	function loadNewObjectFromAPI($obj, $format, $options, LdDacuraServer &$srvr, $mode){
 		if(!isset($obj['contents']) && !isset($obj['meta']) && !isset($obj['ldurl']) && !isset($obj['ldfile'])){
 			return $this->failure_result("Create Object was malformed : both meta and contents are missing", 400);
 		}
@@ -418,8 +418,13 @@ class LDO extends DacuraObject {
 	 */
 	function import($source, $arg, $format = false){
 		global $dacura_server;
-		if($source == "file" && ($contents = file_get_contents($arg))){
-			return $this->failure_result("Failed to load file ".htmlspecialchars($arg), 500);				
+		if($source == "file"){
+			if(!file_exists($arg)){
+				return $this->failure_result("File ".htmlspecialchars($arg)." does not exist", 400);				
+			}
+			if(!$contents = file_get_contents($arg)){
+				return $this->failure_result("Failed to load file ".htmlspecialchars($arg), 500);
+			}				
 		}
 		elseif($source == "url"){
 			if(!($contents = $dacura_server->fileman->fetchFileFromURL($arg))){
@@ -1386,6 +1391,9 @@ class LDO extends DacuraObject {
 				"format" => $format, 
 				"options" => $opts
 		);
+		if(isset($opts['ns']) && $opts['ns'] && isset($this->nsres)){
+			$apirep['ns'] = $this->nsres->prefixes;
+		}
 		if($this->fragment_id){
 			$apirep['fragment_id'] = $this->fragment_id;
 			$apirep['fragment_path'] = $this->fragment_path;

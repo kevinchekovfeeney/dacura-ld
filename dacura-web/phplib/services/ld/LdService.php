@@ -22,7 +22,7 @@ class LdService extends DacuraService {
 			$this->included_css[] = $this->get_service_file_url("style.css", "ld");
 			$this->included_scripts[] = $this->get_service_script_url("dacura.ld.js", "ld");
 		}
-		$this->included_scripts[] = $this->get_service_script_url("dacura.ldresult.js", "ld");
+		$this->included_scripts[] = $this->get_service_script_url("ldobjects.js", "ld");
 	}
 	
 	function getMinimumFacetForAccess(DacuraServer &$dacura_server){
@@ -398,7 +398,9 @@ class LdService extends DacuraService {
 		if($this->name() != "ld"){
 			unset($params['create_ldo_fields']['ldtype']);
 		}
-		
+		$cf = $this->getServiceSetting("ldov_create_options", array());
+		$params['create_ldoviewer_config'] = json_encode($cf);
+		return $params;				
 	}
 
 	function getListSubscreens($dacura_server, $u){
@@ -406,7 +408,12 @@ class LdService extends DacuraService {
 	}
 	
 	function getViewSubscreens(){
-		return array("ldo-meta", "ldo-history", "ldo-contents", "ldo-analysis", "ldo-updates");		
+		if($this->name() == "ld"){
+			return array("ldo-meta", "ldo-history", "ldo-contents", "ldo-updates");				
+		}
+		else {
+			return array("ldo-meta", "ldo-history", "ldo-contents", "ldo-analysis", "ldo-updates");		
+		}
 	}
 	
 	function getUpdateSubscreens(){
@@ -421,7 +428,6 @@ class LdService extends DacuraService {
 		$params["id"] = $id;
 		$params['history_datatable'] = $this->getDatatableSetting("history");
 		$params['updates_datatable'] = $this->getDatatableSetting("ldoupdates");
-		
 		$params["title"] = "Linked Data Object Manager";
 		$params["subtitle"] = "Object view";
 		$params["description"] = "View and update your managed linked data objects";
@@ -438,8 +444,7 @@ class LdService extends DacuraService {
 		$params['view_graph_options'] = array("ld" => "LD Object Store", "dqs" => "DQS Triplestore", "meta" => "metadata", "update" => "Update Store");
 		$params['view_actions'] = array("restore" => "Restore this version", "edit" => "Edit", "import" => "Import", "export" => "Export", "accept" => "Publish", "reject" => "Reject", "pending" => "Unpublish");		
 		$params['valid_input_formats'] = LDO::$valid_input_formats;
-		$params['update_meta_fields'] = $this->sform("update_meta_fields");
-		
+		$params['update_meta_fields'] = $this->sform("update_meta_fields");		
 		$params['dqs_schema_tests'] = json_encode(RVO::getSchemaTests());
 		$params['default_dqs_tests'] = json_encode(RVO::getSchemaTests(false));
 		$params['dqs_instance_tests'] = json_encode(RVO::getInstanceTests());
@@ -447,7 +452,6 @@ class LdService extends DacuraService {
 		$avs = $dacura_server->ontversions;
 		//if(isset($avs[$this->id])) unset($avs, $this->id);
 		$params['available_ontologies'] = json_encode($avs);
-		return $params;
 	}
 
 	function loadParamsForUpdateScreen($id, &$params, &$dacura_server){

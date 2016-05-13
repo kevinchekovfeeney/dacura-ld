@@ -213,8 +213,8 @@ div#version-header {
 }
 
 textarea.dacura-custom-meta {
-	background-color: #fafaff;
- 	border: 1px solid #999; 
+	background-color: #fafafa;
+ 	border: 1px solid #bbb; 
 	unicode-bidi: embed;
  	font-family: 'Open Sans', Helvetica;
  	font-size: 0.85em;
@@ -224,12 +224,18 @@ textarea.dacura-custom-meta {
  	padding: 4px;		
 }
 
+div.ld-import-holder {
+	background-color: #fafbf4;
+	border: 1px solid #ccc;
+}
+
+textarea.dacura-import-editor,
 .dacura-export-editor textarea,
 .dacura-json-editor textarea {
  	unicode-bidi: embed;
  	font-family: 'Open Sans', Helvetica;
  	font-size: 0.85em;
-	width: 100%;
+	width: 99%;
 	height: 400px;	
  	overflow: auto;
  	border: 0; 	
@@ -240,8 +246,6 @@ div.ld-meta-bar {
   	background-color: #cceaff;
   	padding: 2px;
 }
-
-
  
 ul#meta-edit-table {
 	background-color: #efefef;
@@ -275,17 +279,13 @@ ul#meta-edit-table li span.meta-value select {
   	font-family: 'Open Sans', Helvetica;
   	font-weight: 400;
   	font-size: 0.9em;
- }
-
-
+}
 
 ul#meta-edit-table li {
 	padding: 3px 8px 3px 0px;
 	background-color: #efefef;
 	float:left;
 }
-
-
 
 .dacura-table-viewer {
  	unicode-bidi: embed;
@@ -309,7 +309,6 @@ ul#meta-edit-table li {
 	padding: 6px 15px 8px 5px;
 	margin-bottom: 0px;
 	margin-right: -4px;
-	
 }
 
 #version-data dl,
@@ -323,7 +322,6 @@ ul#meta-edit-table li {
 	padding-left: 4px;
 	padding-top: 2px;
 	font-weight: bold;
-
 }
 
 #ld-meta-details dd {
@@ -367,7 +365,6 @@ table.ld-invariants td {
 	color: #111;
 }
 
-
 .tool-tab-info {
 	margin-top: 10px;
 	margin-bottom: 10px;
@@ -390,9 +387,6 @@ span#edit-meta select {
 	color: #444;
 	background-color: #eee;
 }
-
-
-
 
 .change-details {
 	font-size: 0.85em;
@@ -431,8 +425,7 @@ span#edit-meta select {
 }
 
 .dacura-ld-message-box {
-	padding: 0px;
-		
+	padding: 0px;		
 }
 
 .dataTables_empty .dacura-user-message-box {
@@ -461,7 +454,6 @@ table.ld-properties {
 table.ld-properties tr.embedded-object td.container {
 	padding: 0 14px 14px 14px;
 }
-
 
 td.prop-pd {
 	padding: 2px 0;
@@ -621,6 +613,30 @@ div.ld-edit-bar {
   	border: 1px solid #aaa;
 }
  
+div.ld-import-bar {
+	padding: 2px 0;
+	font-size: 0.85em;
+	border-radius: 5px 5px 0 0;
+	background-color: #f8f8f2;
+	color: #333;
+  	border: 1px solid #ccc;
+}
+
+#ld-import-holder .dacura-property-table {
+	border: 0 !important;
+}
+
+.ld-import-formats {
+	display: inline-block;
+	vertical-align: -12px;
+}
+
+.import-bar-label {
+	display: inline-block;
+	position: relative;
+	padding: 6px;
+	vertical-align: 10px;
+}
   
 div.ld-main-body {
  	border: 1px solid #aaa;
@@ -972,7 +988,6 @@ span.dqstile-implicit.dqs-rule {
 	color: #553323;
 }
 
-
 .include-treelist {
 	margin: 6px;
 	display: inline-block;
@@ -993,7 +1008,6 @@ div.editbar-options {
 	background-color: #eff8f4;
 	border: 1px solid #d2f8e8;
 }
-
  
 #ns-property,
 #ns-subject,
@@ -1081,9 +1095,7 @@ div.analysis {
 	color: #210;	
 } 
 
-.dacsub {
-}
-
+.dacsub {}
 
 .subscreen-header {
 	background-color: #eff4f8;
@@ -1163,7 +1175,6 @@ div.dqs-includes-title {
 div.dqs-available-title {
 	clear: both;
 }
-
 
 div.dqs-all-config-element {
 	background-color: #d2e8f8;
