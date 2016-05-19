@@ -81,7 +81,7 @@ class CandidateDacuraServer extends LdDacuraServer {
 	 */
 	function objectPublished(Candidate $cand, $test_flag = false){
 		$dr = new DQSResult("Validating Candidate $cand->id", $test_flag);
-		if($cand->is_empty()){
+		if($cand->isEmpty()){
 			return $dr->failure(400, "Candidate is empty", "Data must be added to the candidate before it can be published.");
 		}
 		if($cand->is_multigraph()){
@@ -122,7 +122,7 @@ class CandidateDacuraServer extends LdDacuraServer {
 		}
 		else {
 			if(!$graph = $this->getMainGraph()){
-				return $dr->failure("Failed to load main graph", "Every collection must have a main graph for instance data ");				
+				return $dr->failure(400, "Failed to load main graph", "No main graph found for " . $this->cid() . " context - every collection must have a main graph before instance data can be added to it");				
 			}
 			$quads = $cand->typedQuads($graph->instanceGname());
 			$dr = $this->graphman->createInstance($graph, $quads, $test_flag);				
@@ -132,7 +132,7 @@ class CandidateDacuraServer extends LdDacuraServer {
 	
 	function objectDeleted(Candidate $cand, $test_flag = false){
 		$dr = new DQSResult("Unpublishing Candidate $cand->id", $test_flag);
-		if($cand->is_empty()){
+		if($cand->isEmpty()){
 			return $dr->failure(400, "Candidate is empty", "Data must be added to the candidate before it can be unpublished.");
 		}
 		if($cand->is_multigraph()){
@@ -173,7 +173,7 @@ class CandidateDacuraServer extends LdDacuraServer {
 		}
 		else {
 			if(!$graph = $this->getMainGraph()){
-				return $dr->failure("Failed to load main graph", "Every collection must have a main graph for instance data ");
+				return $dr->failure(400, "Failed to load main graph", "No main graph found for " . $this->cid() . " context - every collection must have a main graph before instance data can be added to it");
 			}
 			$quads = $cand->typedQuads($graph->instanceGname());
 			$dr->add($this->graphman->deleteInstance($graph, $quads, $test_flag));

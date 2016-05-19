@@ -722,7 +722,10 @@ Message box itself
 .user-message-close {
 	float: right;
 	cursor: pointer;
-	margin: 0px 4px 0px 4px;
+	margin: 12px 8px 2px 4px;
+	color: #ccc;
+	font-family: Arial;
+	font-size: 16px;
 }
 
 .dacura-user-message-box {
@@ -757,20 +760,18 @@ Message box itself
 	border: 1px solid #FF8C00;
 }
 .dacura-user-message-box.dacura-info {
-	border: 1px solid #88a;
+	border: 1px solid #cde;
 }
 .dacura-user-message-box.dacura-success{
 	border: 1px solid #4a4;
 }
 
-.dacura-user-message-box.dacura-help{
+.dacura-user-message-box.dacura-help {
 	background: #fafaf4;
 	padding: 8px;
 	border-radius: 0px;
-	weight: 400px;
-		
+	weight: 400px;		
 }
-
 
 .dacura-error .mtitle {
 	background: rgba(255, 200, 200, .2);
@@ -782,7 +783,7 @@ Message box itself
 	background: rgba(255,140,0, .1);
 }
 .dacura-info .mtitle {
-	background: rgba(235, 235, 255, .1);
+	background: rgba(215, 225, 255, .2);
 }
 
 .dacura-error .mtitle {
@@ -792,36 +793,24 @@ Message box itself
 	color: #210;
 }
 .dacura-info .mtitle {
-	color: #112;
+	color: #114;
 }
 .dacura-success .mtitle {
 	color: #121;
 }
 
 .toggle_extra_message {
-	color: blue;
-	float: right;
+	color: #00e;
+	font-weight: 550;
+	display: inline-block;
 	margin: 0 10px 0 10px;
-	margin-top: -26px;
 	cursor: pointer;
 	font-size: 0.9em;
 }
 
 div.message_extra {
 	margin: 6px;
-	padding: 8px;
-	background-color: white;
-	border: 1px solid #888;
-	white-space: pre;
- 	unicode-bidi: embed;
- 	font-size: 0.85em;
- 	overflow: auto;
-}
-
-.progress-container {
-	padding-top: 50px;
-	padding-left: 20px;
-	padding-right: 20px;	
+	padding-bottom: 6px;
 }
 
 .progress-container.medium {
@@ -836,15 +825,31 @@ div.message_extra {
 	margin: 0px auto 6px auto;
 }
 
+/* moved these to jquery in dacura.js for more easy manipulation */
+.progress-container {
+}
+
+.busy-block {
+}
+
+.busy-block.small {
+	width: 250px;
+	max-width: 250px;
+}
+
+.busy-block.medium {
+	width: 450px;
+	max-width: 450px;
+}
+
 .busy-medium-width {}
 .indeterminate-busy {}
+
+
 .dacura-busy-message {
-	width: 100%;
+	margin-top: 20px;
 	text-align: center;
-	color: #111;
 	font-weight: bold;
-	font-size: 0.9em;
-	margin-top: 30px;
 }
 
 .dcaura-widget .dacura-busy-message {
@@ -864,6 +869,14 @@ div.message_extra {
     background-image: url("images/system/dacura-logo@2x.png");
     background-size: 400px 146px;
   }
+}
+
+.ui-button .ui-icon.dacura-help-button-icon {
+   background-image: url("images/icons/test-tube.png");  
+   width: 20px;
+   height: 20px;
+   background-repeat: no-repeat; 
+   border: none;     
 }
 
 /*
@@ -1126,6 +1139,11 @@ Formatting for a tool style page of a service
 	background-color: #ccc;
 }
 
+.tool-holder {
+	border-radius: 6px;
+	border: 1px solid #ccc;
+}
+
 div.tool-close {
 	float:right;
     margin-right: -24px;
@@ -1171,7 +1189,6 @@ div.tool-close a {
 
 .tool-body {
 	font-size: 0.9em;
-	padding-bottom: 6px;
 }
 .tool-contents {
 	min-height: 100px;
@@ -1230,8 +1247,16 @@ div#user-role-add {
 	height: 60px;	
 }
 
+table.update-list-table {
+	max-width: 450px;
+	border: 1px solid #c4c9e2;
+	float: right;
+	border-radius: 3px;
+	background-color: #f4f8fc;
+}
+
+
 table.facet-maker-table,
-table.update-list-table,
 table.create-role-table {
 	border: 1px solid #aaa;
 	float: right;
@@ -1328,21 +1353,18 @@ table.dacura-property-table {
 	border-collapse: collapse;
 	margin: 0;
 	padding: 0;
-	background-color: #f8f8f8;
+	background-color: #f9f7f8;
 }
 
 table.dacura-property-table.property-table-top {
-	margin: 2px auto 2px auto;
-	background-color: #f8f9f4;
+	margin: 2px auto 0 auto;
 	font-size: 0.9em;
-	overflow: hidden;
-	border-radius: 5px;
-	border: 1px solid #c8c8c8;	
+	width: 100%;
 }
 
 
 table.dacura-property-table.property-table-odd  {
-	border: 1px solid #c8c8c8;
+	border: 0;	
 }
 
 table.dacura-property-table.property-table-even {
@@ -1355,8 +1377,8 @@ table.dacura-property-table .dacura-display-json {
 }
 
 table.dacura-property-table td.dacura-embedded-property {
-	background-color: #efefef;
-	padding: 0px 6px 8px 6px;
+	background-color: #e4e4e5;
+	padding: 6px;
 }
 
 
@@ -1365,7 +1387,7 @@ table.dacura-property-table td.dacura-embedded-property table {
 }
 
 table.dacura-property-table td.dacura-embedded-property table.dacura-property-table {
-	border: 1px solid white;
+	border: 2px solid white;
 	border-radius: 4px;	
 }
 
@@ -1382,16 +1404,27 @@ table.dacura-property-table th.dacura-property-label,
 table.dacura-property-table th.dacura-property-meta {
 	border-top: 1px solid #ddd;
 	padding: 20px 4px;	
-	background-color: #efefef;
+	background-color: #d2e8f8;
 	border-bottom: white;
 }
 
 table.dacura-property-table.property-table-top > thead > tr > th.dacura-property-label {
-	border-top: 0;
-	font-size: 1.1em;
-	color:#444;
+	border: 0;
+	font-size: 1.3em;
+	font-weight: 500;
+	font-family: 'Open Sans', Helvetica;	
+	background-color: #d2e8f8;
+	border-radius: 8px 8px 0 0;
+	color:#223;
 }
 
+table.dacura-property-table th.dacura-property-label {
+	font-size: 1.2em;
+	font-weight: 500;
+	font-family: 'Open Sans', Helvetica;	
+	background-color: #d2e8f8;
+	color:#223;
+}
 
 table.dacura-property-table th.dacura-property-label .dacura-property-help {
 	font-size: 0.8em;
@@ -1399,7 +1432,12 @@ table.dacura-property-table th.dacura-property-label .dacura-property-help {
 }
 
 table.dacura-property-table tr.dacura-section-spacer{
-	border-bottom: 1px solid #ddd;	
+	border-top: 1px solid #ccc;	
+	height: 10px;
+}
+
+table.dacura-property-table tr.dacura-presection-spacer{
+	height: 20px;
 }
 
 td.dacura-property-meta .ui-selectmenu-button,	 
@@ -1426,8 +1464,6 @@ table.dacura-property-table tr.dacura-property-spacer{
 table.dacura-property-table tr.dacura-property-section {
 }
 
-
-
 table.dacura-property-table td.dacura-property-value {
 	padding: 12px 12px 12px 6px;
 	max-width: 800px;
@@ -1436,10 +1472,18 @@ table.dacura-property-table td.dacura-property-value {
 
 table.dacura-property-table td.dacura-property-label {
 	padding: 12px 4px 12px 10px;
-	text-align: right;
 	min-width: 100px;
-	font-weight: 550;
-	color: #131;
+	color: #444;
+	font-size: 1.1em;
+	font-weight: normal;
+	text-align: right;
+	font-family: 'Open Sans', Helvetica;
+	
+}
+
+.dacura-property-help {
+	font-weight: 300 !important;
+	
 }
 
 table.dacura-property-table td.dacura-property-help {

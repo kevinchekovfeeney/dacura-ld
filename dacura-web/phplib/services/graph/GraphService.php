@@ -9,4 +9,13 @@ class GraphService extends LdService {
 		parent::loadParamsForViewScreen($id, $params, $dacura_server);
 		return $params;
 	}
+	
+	function loadParamsForCreateTab(&$params, &$dacura_server){
+		parent::loadParamsForCreateTab($params, $dacura_server);
+		$avs = $dacura_server->ontversions;
+		//if(isset($avs[$this->id])) unset($avs, $this->id);
+		$params['available_ontologies'] = json_encode($avs);
+		return $params;
+	}
+
 }

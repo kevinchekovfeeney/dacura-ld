@@ -171,9 +171,10 @@ class LDODisplay extends DacuraObject {
 		if($val == $this->ldo->cwurl) return $val.$vstr;
 		if(isBlankNode($val)) return $this->ldo->cwurl."/".substr($val, 2).$vstr;
 		if($this->ldo->ldtype() == "ontology"){
-			if(substr($val, 0, strlen($this->ldo->meta['url'])) == $this->ldo->meta['url']) {
+			$ourl = isset($this->ldo->meta['url']) ? $this->ldo->meta['url'] : $this->ldo->cwurl;
+			if(substr($val, 0, strlen($ourl)) == $ourl) {
 				$str = $durl . ($this->ldo->cid() == "all" ? "" : $this->ldo->cid()."/")."ontology/".$this->ldo->id;
-				return $str.$vstr."#".substr($val, strlen($this->ldo->meta['url']));
+				return $str.$vstr."#".substr($val, strlen($ourl));
 			}
 		}
 		if(isInternalLink($val, $this->ldo->cwurl)){

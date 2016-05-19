@@ -1181,6 +1181,33 @@ function compareJSON($frag_id, $jo, $ju, $cwurl, $gid = false){
 }
 
 /**
+ * Updates a json object with another
+ * @param array $umeta json object containing update
+ * @param array $dmeta json object to be updated
+ * @return boolean true if successful
+ */
+function updateJSON($umeta, &$dmeta){
+	if(isAssoc($umeta)){
+		if(!is_array($dmeta)){
+			$dmeta = array();
+		}
+		foreach($umeta as $k => $v){
+			if(is_array($v) && count($v) == 0){
+				if(isset($dmeta[$k])){
+					unset($dmeta[$k]);
+				}
+			}
+			elseif(isAssoc($v)){
+				updateJSON($v, $dmeta[$k]);
+			}
+			else {
+				$dmeta[$k] = $v;
+			}
+		}
+	}
+}
+
+/**
  * Compares two ld embedded object lists
  *
  * @param string $frag_id id of the current node id

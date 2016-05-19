@@ -662,6 +662,11 @@ class SystemWarning extends SystemRVO {
 	var $comment = "A warning condition was encountered while processing the request";
 }
 
+class RequestIDRefusalWarning extends SystemWarning {
+	var $label = "Request ID refused Warning";
+	var $comment = "A requested ID  was not allocated";
+}
+
 class UnknownViolation extends RVO {
 	var $label = "Unknown Error";
 	var $comment = "weird shit is happening";

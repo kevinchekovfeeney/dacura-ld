@@ -18,7 +18,7 @@ class OntologyDacuraServer extends LdDacuraServer {
 	 */
 	function objectPublished(Ontology $ont, $test_flag = false){
 		$nopr = new DQSResult("Validating Ontology", $test_flag);
-		if($ont->is_empty()){
+		if($ont->isEmpty()){
 			return $nopr->failure(400, "Ontology is empty", "Content must be added to the ontology before it can be published");
 		}
 		$nopr->add($ont->validateDependencies($this, $test_flag), true, true);

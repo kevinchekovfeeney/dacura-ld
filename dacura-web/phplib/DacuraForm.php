@@ -22,6 +22,7 @@ class DacuraForm extends DacuraObject {
 	function __construct($id, $settings = array()){
 		$this->id = $id;
 		$this->settings = $settings;
+		if(!isset($this->settings['meta'])) $this->settings['meta'] = array();
 	}
 	
 	/**
@@ -77,6 +78,9 @@ class DacuraForm extends DacuraObject {
 		else {
 			$cls_extra = " property-table-odd property-table-level-".count($context);				
 		}
+		if(isset($this->settings['objtype'])){
+			$cls_extra .= " ".$this->settings['objtype']."-".$this->settings['display_type']."-table";
+		}
 		$html = "<table class='dacura-property-table dacura-".$this->settings['display_type']."-table $cls_extra' id='$jdid'>";
 		//echo htmlspecialchars($html);
 		$html.= $this->table_header($context);
@@ -86,7 +90,7 @@ class DacuraForm extends DacuraObject {
 			$is_last = ($rownum == count($this->elements) || isset($this->elements[$rownum]) && $this->elements[$rownum]->isSection());
 			$html .= $el->tr($this->settings, $context, $rownum, $is_last);			
 		}
-		$html .="</tbody></table>";		
+		$html .="<tr class='end-table-spacer'></tr></tbody></table>";		
 		return $html;
 	}
 	

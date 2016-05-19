@@ -342,39 +342,6 @@ function getImports(data){
 	return imps;	
 }
 
-function importToURL(conf){
-	var url = dacura.system.install_url;
-	url += (conf.collection == "all" ? "" : conf.collection + "/");
-	url += "ontology/" + conf.id;
-	if(conf.version > 0){
-		url += "?version=" + conf.version;
-	}
-	return url;
-}
-
-function urlToImport(url){
-	var imp = {};
-	if(url.substring(0, dacura.system.install_url.length) != dacura.system.install_url){
-		return false;
-	}
-	var meat = url.substring(dacura.system.install_url.length);
-	if(meat.substring(0,8) == "ontology"){
-		imp.collection = "all";
-	}
-	else {
-		imp.collection = meat.substring(0, meat.indexOf("/") + 1);
-	}
-	meat = meat.substring(meat.lastIndexOf("/")+1);
-	var bits = meat.split("?version=");
-	imp.id = bits[0];
-	if(bits.length == 2){
-		imp.version = bits[1];
-	}
-	else {
-		imp.version = 0;
-	}
-	return imp;
-}
 
 function getImplicitImports(data){
 	var imps = getImports(data);

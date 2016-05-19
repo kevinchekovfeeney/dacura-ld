@@ -48,6 +48,24 @@ $dacura_settings['mail_headers'] =
 		'Reply-To: dacura@scss.tcd.ie' . "\r\n" .
 		'X-Mailer: Dacura PHP/' . phpversion();
 
+/* 
+ * Tool tip feature on hover - configuration of tooltip object 
+ * saved in json because it includes a function call which won't translate from php
+ */
+$dacura_settings['tooltip_config'] = "{ content: function () {
+		return $(this).prop('title');
+	},
+	show: {delay: 1000}
+}";
+
+/*
+ * Help is different because it has no delay
+ */
+$dacura_settings['help_tooltip_config'] = "{ content: function () {
+		return $(this).prop('title');
+	}
+}";
+
 
 /**
  * Sets up the default system settings by building various other settings from the ones defined in localsettings.php
@@ -57,6 +75,14 @@ $dacura_settings['mail_headers'] =
 if (!function_exists('default_settings')) {
 
 	function default_settings(&$dacura_settings){
+		if(!isset($dacura_settings['url_mappings'])){
+			$dacura_settings['url_mappings'] = array(
+				"http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#" => "http://swat.cse.lehigh.edu/onto/univ-bench.owl#",
+				"http://www.w3.org/2008/05/skos#" => "http://www.w3.org/2004/02/skos/core#",
+				"http://web.resource.org/cc/" => "http://creativecommons.org/ns#",
+				"http://www.w3.org/2001/XMLSchema-datatypes#" => "http://www.w3.org/2001/XMLSchema#",
+			);
+		}
 		if(!isset($dacura_settings['dacura_sessions'])){
 			$dacura_settings['dacura_sessions'] = $dacura_settings['storage_base'].'sessions/';
 		}

@@ -85,8 +85,8 @@ class PolicyEngine extends DacuraController {
 	 * @param DacuraResult $ar the result object that this result will be added to
 	 */
 	function updateUpdate($obj){
-		$orig = $context[0];
-		$upd = $context[1];
+		$orig = $obj[0];
+		$upd = $obj[1];
 		if($orig->is_accept() && $orig->to_version() && ($orig->to_version() != $orig->original->latest_version)){
 			//old published version - disallow
 			return $this->failure_result("Old updates that have been accepted cannot be changed.", 403);

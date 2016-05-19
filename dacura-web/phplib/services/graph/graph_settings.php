@@ -26,10 +26,10 @@ $settings["create_ldo_fields"] = array(
 		//"format" => array("label" => "Contents Format", "type" => "choice", "help" => "The contents of the object (in RDF - Linked Data format)"),
 		///"ldurl" => array("label" => "Import URL", "type" => "url", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("download" => array("title" => "Load URL"))),
 		//"ldfile" => array("label" => "Import File", "type" => "file", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("upload" => array("title" => "Upload File"))),
-		"imports" => array("label" => "Imports", "type" => "complex", "input_type" => "custom", "help" => "The ontologies that will form the schema of the graph"),
+		"ontimports" => array("label" => "Imported Ontologies", "type" => "placeholder", "help" => "The ontologies that will form the schema of the graph"),
 );
 
-$settings["messages"] = array(
+$msg_extensions = array(
 		"list_page_title" => "Manage your Graphs",
 		"list_page_subtitle" => "View and manage your graphs",
 		"ld_list_title" => "Graphs",
@@ -42,7 +42,7 @@ $settings["messages"] = array(
 		//"view_contents_intro" => "View the RDF contents of this LDO",
 		"view_meta_intro" => "View the graph's meta-data",
 		"create_button_text" => "Create New Graph",
-		"testcreate_button_text" => "Test Graph Creation",
+		"test_create_button_text" => "Test Graph Creation",
 		"raw_edit_text" => "Update Graph",
 		"testraw_edit_text" => "Test Graph Update",
 		"view_update_contents_intro" => "The update to the Graph's contents",
@@ -52,3 +52,7 @@ $settings["messages"] = array(
 		"view_update_after_msg" => "The Graph after the update has taken place",
 		"view_update_before_msg" => "The Graph before the update has taken place",
 );
+
+foreach($msg_extensions as $k => $v){
+	$settings["messages"][$k] = $v;
+}

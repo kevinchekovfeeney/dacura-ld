@@ -257,8 +257,7 @@ class LDO extends DacuraObject {
 		if(!is_array($this->meta)){
 			$this->meta = array();
 		}
-		$this->ldtype = $row['type'];
-		/* object properties are copied into metadata array of object - the status value in meta has precedent, the db row values are just indeces for sql queries */
+		/* object properties are copied into metadata array of object - the status value in meta has precedence, the db row values are just indeces for sql queries */
 		if(!isset($this->meta['status'])){
 			$this->status = $row['status'];
 			$this->meta['status'] = $this->status;
@@ -266,6 +265,7 @@ class LDO extends DacuraObject {
 		else {
 			$this->status = $this->meta['status'];
 		}
+		$this->ldtype = $row['type'];
 		$this->version = $row['version'];
 		$this->created = $row['createtime'];
 		$this->modified = $row['modtime'];
@@ -329,8 +329,8 @@ class LDO extends DacuraObject {
 	 * @return string representing the format that the object is in
 	 */
 	function loadNewObjectFromAPI($obj, $format, $options, LdDacuraServer &$srvr, $mode){
-		if(!isset($obj['contents']) && !isset($obj['meta']) && !isset($obj['ldurl']) && !isset($obj['ldfile'])){
-			return $this->failure_result("Create Object was malformed : both meta and contents are missing", 400);
+		if(!$srvr->APIObjectIncludesContents($obj) && !isset($obj['meta'])){
+			return $this->failure_result("Object sento to API was malformed : both meta and contents are missing", 400);
 		}
 		$this->version = 1;
 		$this->meta = array();
@@ -357,6 +357,9 @@ class LDO extends DacuraObject {
 		else {
 			$format = "json";
 			$this->ldprops = array();
+		}
+		if($format === false){
+			return false;
 		}
 		if($this->rule($mode, "import", 'transform_import') && !$this->importLD($mode, $srvr)){//expands structure by generating blank node ids, etc			
 			return false;
@@ -1183,11 +1186,11 @@ class LDO extends DacuraObject {
 	}
 	
 	/**
-	 * Is the object's contents empty
+	 * Are the object's contents empty?
 	 * @return boolean
 	 */
-	function is_empty(){
-		return count($this->ldprops) == 0;
+	function isEmpty(){
+		return count($this->ldprops) == 0 || !$this->ldprops;
 	}
 	
 	/**
@@ -1270,7 +1273,6 @@ class LDO extends DacuraObject {
 			if($this->display($format, $options, $srvr)){
 				return $this->display;
 			}
-			//return $this->display;
 			return false;
 		}
 			
@@ -1445,9 +1447,7 @@ class LDO extends DacuraObject {
 	 */
 	function update($update_obj, $mode){
 		if(isset($update_obj['meta'])){
-			if(!$this->updateJSON($update_obj['meta'], $this->meta, $mode)){
-				return false;
-			}
+			updateJSON($update_obj['meta'], $this->meta);
 			unset($update_obj['meta']);				
 		}	
 		if(count($update_obj) > 0){
@@ -1462,38 +1462,6 @@ class LDO extends DacuraObject {
 		return true;
 	}
 	
-	/**
-	 * Updates a json object with another
-	 * @param array $umeta json object containing update 
-	 * @param array $dmeta json object to be updated
-	 * @param string $mode the update mode
-	 * @return boolean true if successful
-	 */
-	function updateJSON($umeta, &$dmeta, $mode){
-		if(isAssoc($umeta)){
-			if(!is_array($dmeta)){
-				$dmeta = array();
-			}
-			foreach($umeta as $k => $v){
-				if(is_array($v) && count($v) == 0){
-					if(isset($dmeta[$k])){
-						unset($dmeta[$k]);
-					}
-					elseif($this->rule($mode, "update", 'fail_on_bad_delete')){
-						return $this->failure_result("Attempted to remove non-existant property $k", 404);
-					}						
-				}
-				elseif(isAssoc($v)){
-					$this->updateJSON($v, $dmeta[$k], $mode);					
-				} 
-				else {
-					$dmeta[$k] = $v;
-				}				
-			}
-		}
-		return true;
-	}
-
 	/**
 	 * Called to update one ld props array with another 
 	 * @param array $uprops array containing update
@@ -1596,9 +1564,7 @@ class LDO extends DacuraObject {
 				}
 			}
 			elseif($pv->complex()){
-				if(!$this->updateJSON($uprops[$prop], $dprops[$prop], $mode)){
-					return false;
-				}						
+				updateJSON($uprops[$prop], $dprops[$prop]);									
 			}
 			else {
 				return $this->failure_result("Unknown value type in LD structure", 500);

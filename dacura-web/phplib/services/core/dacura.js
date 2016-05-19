@@ -217,7 +217,9 @@ dacura.system.getIcon = function(icon, config){
 	}
 	else {
 		var url = dacura.system.iconbase + "/" + icon + ".png";
-		return "<img class='result-icon result-error' src='" + url + "'>";	
+		var cls = (typeof config == "object" && typeof config.cls != "undefined") ? config.cls : 'result-icon';
+		var titstr = (typeof config == "object" && typeof config.title != "undefined") ? " title='" + config.title + "'" : "";
+		return "<img class='" + cls + "' src='" + url + "' " + titstr + ">";	
 	}
 };
 
@@ -263,7 +265,7 @@ dacura.system.styleJSONLD = function(jqid) {
  * @memberof dacura.system
  * @summary Initialisiation functions telling dacura where to write the different types of messages to
  * @description Result messages are typically used for reporting results of API interactions, especially updates 
- * Busy messages are use for blanking out the screen while the system is busy and doesn't want any more calls
+ * Busy messages are used for blanking out the screen while the system is busy and doesn't want any more calls
  * @param {DacuraPageConfig} [targets=dacura.system.targets] - the configuration for the invocation - where should results be written to?
  */
 dacura.system.getTargets = function (targets){
@@ -437,30 +439,40 @@ dacura.system.showJSONErrorResult = function(json, jqid, tit, opts){
  * @param {ResultMessageConfig} [opts] - an options object containing options about the message 
  */
 dacura.system.writeResultMessage = function(type, title, jqueryid, msg, extra, opts){
-	if(typeof opts == "undefined"){
-		opts = {"icon" : true, "closeable": false};
-	}
+	if(typeof opts == "undefined") opts = {};
+	if(typeof opts.icon == "undefined") opts.icon = true;
+	if(typeof opts.scrollTo == "undefined") opts.scrollTo = true;
+	if(typeof opts.closeable == "undefined") opts.closeable = true;
+	if(typeof opts.tprefix == "undefined") opts.tprefix = "";
+	if(typeof opts.close_position == "undefined") opts.close_position = "title";
+	if(typeof opts.more_html == "undefined") opts.more_html  = "More Details";
+	if(typeof opts.less_html == "undefined") opts.less_html  = "Hide Details";
 	var self = dacura.system;
 	var cls = "dacura-" + type;
 	var contents = "<div class='mtitle'>";
 	if(typeof opts.icon != "undefined" && opts.icon){
-		contents += "<span class='result-icon result-" + type + "'>" + self.resulticons[type] + "</span>";
+		contents += "<span class='result-icon result-" + type + "'>" + self.getIcon(type) + "</span>";
 	}
 	contents += title;
-	if(typeof opts.closeable != "undefined" && opts.closeable){
+	if(opts.close_position == "title" && typeof opts.closeable != "undefined" && opts.closeable){
 		contents += "<span title='remove this message' class='user-message-close ui-icon-close ui-icon'></span>";
 	}
-	contents += "</div>";	
-	if(typeof msg != "undefined" && msg){
-		contents += "<div class='mbody'>" + msg + "</div>";
+	contents += "</div>";
+	if(opts.close_position == "body" && typeof opts.closeable != "undefined" && opts.closeable){
+		contents += "<span title='remove this message' class='user-message-close'>X</span>";
 	}
-	if(typeof extra != "undefined" && extra){
+	if(typeof extra != "undefined" && extra && !(typeof extra == 'object' && (isEmpty(extra) && extra.length == 0))){
 		if(typeof extra == "object"){
 			extra = JSON.stringify(extra, 0, 4);
 		}
 		self.isAnimating = false;
 		var toggle_id = self.lasttoggleid++;
-		contents += "<div id='toggle_extra_" + toggle_id + "' class='toggle_extra_message'>Show More Details</div>";
+		if(typeof msg != "undefined" && msg){
+			contents += "<div class='mbody'>" + msg; 
+		}
+		contents += "<div id='toggle_extra_" + toggle_id + "' class='toggle_extra_message'>" + opts.more_html + "</div></div>";
+		
+		if(opts.tprefix.length) contents = opts.tprefix + "<div class='dacura-test-message'>" + contents + "</div>";
 		contents +=	"<div id='message_extra_" + toggle_id + "' class='message_extra dch'>" + extra + "</div>";
 		var html = "<div class='dacura-user-message-box " + cls + "'>" + contents + "</div>";
 		$(jqueryid).html(html);
@@ -471,10 +483,10 @@ dacura.system.writeResultMessage = function(type, title, jqueryid, msg, extra, o
 		        setTimeout("dacura.system.isAnimating = false", 400); 
 				$("#message_extra_" + toggle_id).toggle( "slow", function() {
 					if($('#message_extra_' + toggle_id).is(":visible")) {
-						$(tgid).text("Hide details");
+						$(tgid).html(opts.less_html);
 					}
 					else {
-						$(tgid).text("Show details");				
+						$(tgid).html(opts.more_html);				
 					}
 				});
 		    } 
@@ -484,7 +496,11 @@ dacura.system.writeResultMessage = function(type, title, jqueryid, msg, extra, o
 		    }
 		});
 	}
-	else {		
+	else {
+		if(typeof msg != "undefined" && msg){
+			contents += "<div class='mbody'>" + msg + "</div>";
+		}
+		if(opts.tprefix.length) contents = opts.tprefix + "<div class='dacura-test-message'>" + contents + "</div>";
 		$(jqueryid).html("<div class='dacura-user-message-box " + cls + "'>" + contents + "</div>");
 	}
 	if(typeof opts.closeable != "undefined" && opts.closeable){
@@ -543,6 +559,9 @@ dacura.system.showBusyOverlay = function(jqueryid, msg, uopts){
 		loaderoptions = uopts.loaderoptions;
 	}
 	$(jqueryid + ' .busy-overlay').remove();
+	if($(jqueryid).height() < 100){
+		$(jqueryid).css("min-height", "120px");
+	}
 	$("<div class='busy-overlay'/>").css({
 	    position: "absolute",
 	    width: "100%",
@@ -552,14 +571,18 @@ dacura.system.showBusyOverlay = function(jqueryid, msg, uopts){
 	    zIndex: 9999,  // to be on the safe side
 		background: "rgba(255, 255, 255, .8)"
 	}).appendTo($(jqueryid).css("position", "relative"));
-	
-	var html = "<div class='progress-container " + busyclass + "'><div class='" + loaderclass + "'></div></div>";
+	var html = "<div class='busy-block " + busyclass + "'><div class='progress-container " + busyclass + "'><div class='" + loaderclass + "'></div></div>";
 	html += "<div class='dacura-busy-message'>"+ msg + "</div></div>"; 
 	$(jqueryid + ' .busy-overlay').html(html);
-	if($(jqueryid).height() < 100){
-		$(jqueryid).css("min-height", "100px");
-	}
 	$(jqueryid + ' .'+loaderclass).progressbar(loaderoptions);
+	$(jqueryid + ' .busy-overlay div.busy-block').css({
+		"position": "absolute",
+		"top": Math.max(0, (($(jqueryid + ' .busy-overlay').height() - $(jqueryid + ' .busy-overlay div.progress-container').outerHeight()) / 2)),
+		"left": Math.max(0, (($(jqueryid + ' .busy-overlay').width() - $(jqueryid + ' .busy-overlay div.progress-container').outerWidth()) / 2))
+	});
+	if(typeof uopts.scrollTo != "undefined" && uopts.scrollTo && $(jqueryid + ' .busy-overlay div.busy-block').is(":visible") && !$(jqueryid + ' .busy-overlay div.busy-block').is_on_screen()){
+		dacura.system.goTo(jqueryid + ' .busy-overlay div.busy-block', 100);
+	}
 };
 
 /**
@@ -705,13 +728,14 @@ dacura.system.leaveFullBrowser = function(jqid){
  * @description used to jump to the results
  * @param {string} [jqid=dacura.system.targets.resultbox] - the jquery selector of the div to go to
  */
-dacura.system.goTo = function (jqid){
+dacura.system.goTo = function (jqid, offset){
+	if(typeof offset == "undefined") offset = 0;
 	if(typeof jqid == "undefined" || jqid == ""){
 		jqid = dacura.system.targets.resultbox;
 	}
 	if($(jqid).length){
 		$("body, html").animate({ 
-			scrollTop: $(jqid).offset().top - 50
+			scrollTop: $(jqid).offset().top - (100 + offset)
 		}, 600);		
 	}
 };
@@ -754,17 +778,26 @@ dacura.system.invoke = function(ajs, cmsgs, ctargets){
 	if(typeof ajs.beforeSend == "undefined"){
 		var bb = targets.busybox;
 		ajs.beforeSend = function(){
-			self.showBusyMessage(msgs.busy, bb, targets.bopts);
+			if(typeof targets.lastchain != "undefined" || (typeof targets.chained != "undefined" && targets.chained > 1)){
+				self.updateBusyMessage(msgs.busy);
+			}
+			else {
+				self.showBusyMessage(msgs.busy, bb, targets.bopts);
+			}
 		};	
 	}
 	if(typeof ajs.always == "undefined"){
 		always = function(data_or_jqXHR, textStatus, jqXHR_or_errorThrown){
-			dacura.system.clearBusyMessage(targets.busybox);
-			if(targets.scrollto){
-				dacura.system.goTo(targets.scrollto);
-			}
-			if(typeof targets.always_callback != "undefined"){
-				targets.always_callback(targets);
+			if(typeof targets.chained == "undefined" || (typeof targets.lastchain != "undefined")){
+				dacura.system.clearBusyMessage(targets.busybox);
+				if(typeof targets.always_callback != "undefined"){
+					targets.always_callback(targets);
+				}
+				if(typeof targets.lastchain != "undefined") { // the chain is over - kill it!
+					targets.mopts.scrollTo = true;
+					delete (targets["lastchain"]);
+					delete (targets["chained"]);
+				}
 			}
 		};	
 	}
@@ -790,6 +823,14 @@ dacura.system.invoke = function(ajs, cmsgs, ctargets){
 	if(typeof ajs.fail == "undefined"){
 		fail = function (jqXHR, textStatus, errorThrown){
 			if(jqXHR.responseText && jqXHR.responseText.length > 0){
+				//tidy up if we failed in the middle of a chained invocation 
+				if(typeof targets.chained != "undefined"){
+					dacura.system.clearBusyMessage(targets.busybox);
+					delete (targets["chained"]);
+					if(typeof targets.always_callback != "undefined"){
+						targets.always_callback(targets);
+					}
+				}
 				try{
 					jsonerror = JSON.parse(jqXHR.responseText);
 				}
@@ -1261,3 +1302,20 @@ function jpr(obj){
 String.prototype.ucfirst = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);
 }
+
+/* http://web-profile.net/jquery/dev/jquery-check-if-element-is-visible-on-screen */
+$.fn.is_on_screen = function(){
+    var win = $(window);
+    var viewport = {
+        top : win.scrollTop(),
+        left : win.scrollLeft()
+    };
+    viewport.right = viewport.left + win.width();
+    viewport.bottom = viewport.top + win.height();
+ 
+    var bounds = this.offset();
+    bounds.right = bounds.left + this.outerWidth();
+    bounds.bottom = bounds.top + this.outerHeight();
+ 
+    return (!(viewport.right < bounds.left || viewport.left > bounds.right || viewport.bottom < bounds.top || viewport.top > bounds.bottom));
+};

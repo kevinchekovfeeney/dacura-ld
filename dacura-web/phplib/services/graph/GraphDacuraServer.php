@@ -18,7 +18,7 @@ class GraphDacuraServer extends LdDacuraServer {
 	 */
 	function objectPublished(Graph $graph, $test_flag = false){
 		$nopr = new DQSResult("Validating Graph $graph->id", $test_flag);
-		if($graph->is_empty()){
+		if($graph->isEmpty()){
 			return $nopr->failure(400, "Graph schema is empty", "A schema must be added to the Graph before data can be published to it.");
 		}
 		$graph->loadDQSTestConfiguration($this);		
@@ -47,7 +47,7 @@ class GraphDacuraServer extends LdDacuraServer {
 	 */
 	function objectDeleted(Graph $graph, $test_flag = false){
 		$nopr = new DQSResult("Deleting Graph $graph->id", $test_flag);
-		if($graph->is_empty()){
+		if($graph->isEmpty()){
 			return $nopr->msg("Graph schema is empty");
 		}
 		$imports = array();

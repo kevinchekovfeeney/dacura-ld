@@ -8,7 +8,7 @@
  */
 class DacuraFormElement extends DacuraObject {
 	/** @var string[] the list of valid types of form element */
-	private static $valid_types = array("text", "file", "url", "image", "password", "boolean", "choice", "status", "section", "email", "complex");
+	private static $valid_types = array("text", "file", "url", "image", "password", "boolean", "choice", "status", "section", "email", "complex", "placeholder");
 	/** @var string[] the list of valid input types of form element */
 	private static $valid_input_types = array("input", "file", "select", "radio", "textarea", "checkbox", "password", "custom");
 	/** @var string[] the list of valid sizes of form elements */
@@ -146,6 +146,10 @@ class DacuraFormElement extends DacuraObject {
 		return $this->type == "section";
 	}
 	
+	function isPlaceholder(){
+		return $this->type == "placeholder";		
+	}
+	
 	/**
 	 * Tests the element to ensure that it has been given valid settings 
 	 * 
@@ -178,8 +182,15 @@ class DacuraFormElement extends DacuraObject {
 			$cls_extra .= " last-row";
 		}
 		$prefix = $context[count($context)-1]."-";
-		if(isset($settings['embedstyle']) && $settings['embedstyle'] == "flat" && $this->isSection() && count($context) % 2 != 0 && count($context) != 0){
-			$html = "<tr class='dacura-property-spacer'></tr>";
+		if($this->isPlaceholder()){
+			$html = "<tr class='dacura-presection-spacer'></tr>";
+			$html .= "<tr class='dacura-property-section dacura-property-placeholder' id='row-".$prefix.$this->id."'>";
+			$html .= "<th colspan='2' class='dacura-property-label'>".$this->label;
+			if($this->help) $html .= " <span class='dacura-property-help'>".$this->help."</span>";
+			$html .= "</th></tr>";				
+		}
+		elseif(isset($settings['embedstyle']) && $settings['embedstyle'] == "flat" && $this->isSection() && count($context) % 2 != 0 && count($context) != 0){
+			$html = "<tr class='dacura-presection-spacer'></tr>";
 			$html .= "<tr class='dacura-property-section'>";
 			$html .= "<th colspan='2' class='dacura-property-label'>".$this->label." <span class='dacura-property-help'>".$this->help."</span></th>";
 			foreach($this->meta as $mk => $mv){
@@ -388,7 +399,7 @@ class DacuraFormElement extends DacuraObject {
 			$i = 0;
 			foreach($opts as $k => $v){
 				$checked = ($k == $this->value || ($i++ == 0 && $this->value == "")) ? 'checked="checked" ' : "";  
-				$html .= '<input type="radio" class="'.$cls.'" id="'.$fid.'-'.$k.'" name="'.$fid.'-radio" '.$checked.'><label for="'.$fid.'-'.$k.'">'.$v.'</label>';				
+				$html .= '<input type="radio" value="' . $k.'" class="'.$cls.'" id="'.$fid.'-'.$k.'" name="'.$fid.'-radio" '.$checked.'><label for="'.$fid.'-'.$k.'">'.$v.'</label>';				
 			}
 			$html .= "</span>";
 		}		
@@ -578,7 +589,8 @@ class DacuraFormElement extends DacuraObject {
 		$prefix = $context[count($context)-1]."-";
 		$fid = $prefix.$this->id;
 		//fires up an LDOViewer object which takes over the form element
-		$html = "<script>writeLDImportToForm('$fid');</script>";
+		//$html = "<script>writeLDImportToForm('$fid');</script>";
+		$html = "<span class='dch'>mommy, I made a thing</span>";
 		return $html;
 	}
 	
