@@ -429,7 +429,7 @@ class LdService extends DacuraService {
 	 * @param array $params key value array of parameters to be substituted into the html via php variable interpolation
 	 * @param LdDacuraServer $dacura_server
 	 */
-	function loadParamsForViewScreen($id, &$params, LdDacuraServer &$dacura_server, DacuraUser &$user){
+	function loadParamsForViewScreen($id, &$params, LdDacuraServer &$dacura_server, DacuraUser $user = null){
 		$options = $this->getLDViewArgs();
 		if($options){
 			$params['fetch_args'] = json_encode($options);

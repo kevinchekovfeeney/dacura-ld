@@ -21,7 +21,8 @@
 <script>
 var history_datatable = <?=$params['history_datatable']?>;
 
-var initHistoryTable = function(history, screen){
+var initHistoryTable = function(data, screen){
+	if(typeof data.history == "undefined") data.history = [];
 	dacura.tool.table.init("history_table", {
 		"screen": screen, 
 		"dtsettings": history_datatable,
@@ -35,7 +36,7 @@ var initHistoryTable = function(history, screen){
 			}
 			window.location.href = dacura.system.pageURL() + "/" + ldid + args;
 		}				
-	}, history);
+	}, data.history);
 }
 
 initfuncs["ldo-history"] = initHistoryTable;

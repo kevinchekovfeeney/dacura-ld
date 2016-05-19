@@ -1,5 +1,4 @@
 <?php include_once("phplib/services/ld/screens/imports.php");?>
-<?php include_once("phplib/services/ld/screens/handies.php");?>
 <div id="graph-view-home">
 </div>
 <div id="graph-view-subscreen">
