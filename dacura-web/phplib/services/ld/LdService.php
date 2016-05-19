@@ -433,15 +433,15 @@ class LdService extends DacuraService {
 		$options = $this->getLDViewArgs();
 		if($options){
 			$params['fetch_args'] = json_encode($options);
-		}	
+		}
+		$params['test_update_options'] = json_encode($this->getUpdateOptions(true));
+		$params['update_options'] = json_encode($this->getUpdateOptions(false));
+		
 		$params['ldoviewer_init'] = array();
 		$params["id"] = $id;
 		$params["title"] = $this->smsg("view_page_title");
 		$params["subtitle"] = $this->smsg("view_page_subtitle");
 		$params["description"] = $this->smsg("view_page_description");
-		$params['update_options'] = json_encode($this->getUpdateOptions(false));
-		$params['test_update_options'] = json_encode($this->getUpdateOptions(true));
-		
 		$params['direct_create_allowed'] = true;
 		$params['valid_view_formats'] = LDO::$valid_display_formats;
 		$params['default_view_options'] = $this->getDefaultViewOptions();
@@ -483,7 +483,8 @@ class LdService extends DacuraService {
 	function getUpdateOptions($test_flag, $uopts = false){
 		$ting = $test_flag ? "test_update" : "update";
 		if($uopts === false){
-			return $this->getServiceSetting($ting."_default_options", array());
+			$x = $this->getServiceSetting($ting."_default_options", array());
+			return $x;
 		}
 		$args = $this->getServiceSetting($ting."_fixed_options", array());
 		$choices = $this->getServiceSetting("update_user_options", array());

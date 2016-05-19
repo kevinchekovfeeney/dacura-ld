@@ -162,7 +162,7 @@ var handleImportUpdate = function(conf, isauto, test){
 		imports.push(importToURL(conf[k]));
 	}
 	if(typeof test == "undefined" || !test){
-		var options = update_options;
+		var options = test_update_options;
 	}
 	else {
 		var options = test_update_options;
