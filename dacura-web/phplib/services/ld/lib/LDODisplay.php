@@ -398,7 +398,11 @@ class LDODisplay extends DacuraObject {
 	}
 	
 	function applyObjectLiteralHTML($olit){
-		$data = "<input value='".$olit['data']."'><button class='update-html-literal'>Update Value</button>";
+		if(!isset($olit['data'])){
+			$x = json_encode($olit);
+			return "<div class='broken-object-literal'>$x</div>";
+		}
+		$data = "<input value='".$olit['data']."'><button class='update-html-literal'>Update Value</button>";		
 		$html = "<span class='dacura-property-value dacura-objectliteral'>";
 		if(isset($olit['type'])){
 			$html .= "<span class='dacura-objectliteral-index>".$olit['type']."</span> <input type='text' class='dacura-objectliteral-value'>$data</span>";
