@@ -29,6 +29,7 @@ var xphp = {};
 xphp.update_datatable = <?php echo isset($params['updates_datatable']) && $params['updates_datatable'] ? $params['updates_datatable'] : "{}";?>;
 
 var initUpdatesTable = function(data, pconf){
+	if(typeof data.updates == "undefined") data.updates = [];
 	dacura.tool.table.init("updates_table", {
 		"screen": "ldo-updates", 
 		"dtsettings": xphp.update_datatable,
@@ -57,7 +58,9 @@ function emptyUpdateTableHTML(key, tconfig){
 	dacura.system.showInfoResult("There have been no updates to this " + ldtn + " since it was created", "Once you make changes to your " + ldtn + ", records of each update will appear on this page", pconfig.resultbox, null, mopts)
 }
 
-initfuncs["ldo-updates"] = initUpdatesTable;
+if(typeof initfuncs == "object"){
+	initfuncs["ldo-updates"] = initUpdatesTable;
+}
 
 function updateUpdateStatus(ids, status, cnt, pconf, rdatas){
 	dacura.tool.clearResultMessages();

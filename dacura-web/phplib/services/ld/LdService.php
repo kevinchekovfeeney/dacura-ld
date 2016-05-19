@@ -439,6 +439,9 @@ class LdService extends DacuraService {
 		$params["title"] = $this->smsg("view_page_title");
 		$params["subtitle"] = $this->smsg("view_page_subtitle");
 		$params["description"] = $this->smsg("view_page_description");
+		$params['update_options'] = json_encode($this->getUpdateOptions(false));
+		$params['test_update_options'] = json_encode($this->getUpdateOptions(true));
+		
 		$params['direct_create_allowed'] = true;
 		$params['valid_view_formats'] = LDO::$valid_display_formats;
 		$params['default_view_options'] = $this->getDefaultViewOptions();
@@ -471,6 +474,27 @@ class LdService extends DacuraService {
 			$this->loadParamsForUpdatesTab($id, $params, $dacura_server);
 		}		
 	}
+	
+	/**
+	 * What options should be sent and read from the Dacura Create API
+	 * merges those updates specified by the request with those configured by the user and filters out the unknown ones
+	 * @param boolean $test_flag
+	 */
+	function getUpdateOptions($test_flag, $uopts = false){
+		$ting = $test_flag ? "test_update" : "update";
+		if($uopts === false){
+			return $this->getServiceSetting($ting."_default_options", array());
+		}
+		$args = $this->getServiceSetting($ting."_fixed_options", array());
+		$choices = $this->getServiceSetting("update_user_options", array());
+		foreach($choices as $choice){
+			if(!isset($args[$choice]) && isset($uopts[$choice])){
+				$args[$choice] = $uopts[$choice];
+			}
+		}
+		return $args;
+	}
+	
 	
 	/**
 	 * Reads the optional arguments supported by the linked data view api

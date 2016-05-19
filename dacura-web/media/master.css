@@ -847,7 +847,9 @@ div.message_extra {
 
 
 .dacura-busy-message {
-	margin-top: 20px;
+	margin-top: 24px;
+	font-size: 0.85em;
+	color: #002;
 	text-align: center;
 	font-weight: bold;
 }

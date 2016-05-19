@@ -21,10 +21,19 @@
 <script>
 var history_datatable = <?=$params['history_datatable']?>;
 
-var initHistoryTable = function(data, screen){
+function emptyHistoryTableHTML(key, tconfig){
+	var pconfig = dacura.tool.subscreens[tconfig.screen];
+	var mopts = $.extend(true, {}, pconfig.mopts);
+	mopts.closeable = false;
+	mopts.scrollTo = false;
+	dacura.system.showInfoResult("When you update your " + ldtn + " records of its old versions will appear on this page", "Your " + ldtn + " has not been updated since it was created", pconfig.resultbox, null, mopts)
+}
+
+var initHistoryTable = function(data, pconf){
 	if(typeof data.history == "undefined") data.history = [];
 	dacura.tool.table.init("history_table", {
-		"screen": screen, 
+		"screen": "ldo-history", 
+		"empty": emptyHistoryTableHTML,
 		"dtsettings": history_datatable,
 		"cellClick": function(event, entid, rowdata) {
 			var ldtype = ldt;
@@ -39,8 +48,8 @@ var initHistoryTable = function(data, screen){
 	}, data.history);
 }
 
-initfuncs["ldo-history"] = initHistoryTable;
-
-
+if(typeof initfuncs == "object"){
+	initfuncs["ldo-history"] = initHistoryTable;
+}
 
 </script>

@@ -1,4 +1,15 @@
-<?php include_once("phplib/services/ld/screens/imports.php");?>
+<script>
+var ldtype = "<?=isset($params['ldtype']) ? $params['ldtype'] : ""?>";
+if(ldtype.length) {
+	dacura.ld.ldo_type = ldtype;
+}
+var ldtn = tname(); 
+var ldtnp = tnplural();
+var ldid = "<?= $params['id'];?>";
+var initfuncs = {};
+var refreshfuncs = {};
+var drawfuncs = {};
+</script>
 <div id="graph-view-home">
 </div>
 <div id="graph-view-subscreen">
@@ -137,6 +148,8 @@ td.rdinfo {
 
 <script>
 var pconf = { resultbox: ".tool-info", busybox: ".tool-holder"};
+var update_options = <?php echo isset($params['update_options']) && $params['update_options'] ? $params['update_options'] : "{}";?>;
+var test_update_options = <?php echo isset($params['test_update_options']) && $params['test_update_options'] ? $params['test_update_options'] : "{}";?>;
 
 var importer;
 var dqsconfig;
@@ -148,11 +161,17 @@ var handleImportUpdate = function(conf, isauto, test){
 	for(var k in conf){
 		imports.push(importToURL(conf[k]));
 	}
+	if(typeof test == "undefined" || !test){
+		var options = update_options;
+	}
+	else {
+		var options = test_update_options;
+	}
 	var upd = {
 		contents: {
 			"_:schema": { "owl:imports" : imports }
 		},
-		options: {show_result: 1, plain: 1},
+		options: options,
 		format: "json", 
 		editmode: "update",
 		test: test
@@ -208,7 +227,7 @@ function drawGraphPage(data, pconf){
 			var upd = {
 				"meta": { "status": act}, 
 				"editmode": "update",
-				"options" : {"rollback_to_pending_on_dqs_reject": 0},
+				"options" : {"rollback_update_to_pending_on_dqs_reject": 0},
 				"format": "json"
 			};
 			updateGraph(upd, pconf);
