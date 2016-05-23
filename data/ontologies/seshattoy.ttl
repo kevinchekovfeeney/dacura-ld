@@ -6,7 +6,7 @@
 
 seshattoy:
   a owl:Ontology ;
-  dc11:title "Seshat Global History Databank Ontology"@en ;
+  dc11:title "Seshat Global History Databank Ontology XXX"@en ;
   rdfs:comment "The Seshat Global History Databank ontology is designed to describe human societies throughout time."@en ;
   rdfs:label "Seshat Global History Databank Ontology"@en ;
   owl:versionInfo "0.1.17"@en ;
