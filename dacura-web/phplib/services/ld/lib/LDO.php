@@ -257,8 +257,7 @@ class LDO extends DacuraObject {
 		if(!is_array($this->meta)){
 			$this->meta = array();
 		}
-		$this->ldtype = $row['type'];
-		/* object properties are copied into metadata array of object - the status value in meta has precedent, the db row values are just indeces for sql queries */
+		/* object properties are copied into metadata array of object - the status value in meta has precedence, the db row values are just indeces for sql queries */
 		if(!isset($this->meta['status'])){
 			$this->status = $row['status'];
 			$this->meta['status'] = $this->status;
@@ -266,6 +265,7 @@ class LDO extends DacuraObject {
 		else {
 			$this->status = $this->meta['status'];
 		}
+		$this->ldtype = $row['type'];
 		$this->version = $row['version'];
 		$this->created = $row['createtime'];
 		$this->modified = $row['modtime'];
@@ -328,9 +328,9 @@ class LDO extends DacuraObject {
 	 * @param string $mode the mode in which the object is being loaded from the api (replace, update, create)
 	 * @return string representing the format that the object is in
 	 */
-	function loadNewObjectFromAPI($obj, $format, $options, LdDacuraServer &$srvr, $mode){	
-		if(!isset($obj['contents']) && !isset($obj['meta']) && !isset($obj['ldurl']) && !isset($obj['ldfile'])){
-			return $this->failure_result("Create Object was malformed : both meta and contents are missing", 400);
+	function loadNewObjectFromAPI($obj, $format, $options, LdDacuraServer &$srvr, $mode){
+		if(!$srvr->APIObjectIncludesContents($obj) && !isset($obj['meta'])){
+			return $this->failure_result("Object sento to API was malformed : both meta and contents are missing", 400);
 		}
 		$this->version = 1;
 		$this->meta = array();
@@ -357,6 +357,9 @@ class LDO extends DacuraObject {
 		else {
 			$format = "json";
 			$this->ldprops = array();
+		}
+		if($format === false){
+			return false;
 		}
 		if($this->rule($mode, "import", 'transform_import') && !$this->importLD($mode, $srvr)){//expands structure by generating blank node ids, etc			
 			return false;
@@ -418,8 +421,13 @@ class LDO extends DacuraObject {
 	 */
 	function import($source, $arg, $format = false){
 		global $dacura_server;
-		if($source == "file" && ($contents = file_get_contents($arg))){
-			return $this->failure_result("Failed to load file ".htmlspecialchars($arg), 500);				
+		if($source == "file"){
+			if(!file_exists($arg)){
+				return $this->failure_result("File ".htmlspecialchars($arg)." does not exist", 400);				
+			}
+			if(!$contents = file_get_contents($arg)){
+				return $this->failure_result("Failed to load file ".htmlspecialchars($arg), 500);
+			}				
 		}
 		elseif($source == "url"){
 			if(!($contents = $dacura_server->fileman->fetchFileFromURL($arg))){
@@ -1178,11 +1186,11 @@ class LDO extends DacuraObject {
 	}
 	
 	/**
-	 * Is the object's contents empty
+	 * Are the object's contents empty?
 	 * @return boolean
 	 */
-	function is_empty(){
-		return count($this->ldprops) == 0;
+	function isEmpty(){
+		return count($this->ldprops) == 0 || !$this->ldprops;
 	}
 	
 	/**
@@ -1265,7 +1273,6 @@ class LDO extends DacuraObject {
 			if($this->display($format, $options, $srvr)){
 				return $this->display;
 			}
-			//return $this->display;
 			return false;
 		}
 			
@@ -1386,6 +1393,9 @@ class LDO extends DacuraObject {
 				"format" => $format, 
 				"options" => $opts
 		);
+		if(isset($opts['ns']) && $opts['ns'] && isset($this->nsres)){
+			$apirep['ns'] = $this->nsres->prefixes;
+		}
 		if($this->fragment_id){
 			$apirep['fragment_id'] = $this->fragment_id;
 			$apirep['fragment_path'] = $this->fragment_path;
@@ -1437,9 +1447,7 @@ class LDO extends DacuraObject {
 	 */
 	function update($update_obj, $mode){
 		if(isset($update_obj['meta'])){
-			if(!$this->updateJSON($update_obj['meta'], $this->meta, $mode)){
-				return false;
-			}
+			updateJSON($update_obj['meta'], $this->meta, $mode);
 			unset($update_obj['meta']);				
 		}	
 		if(count($update_obj) > 0){
@@ -1454,38 +1462,6 @@ class LDO extends DacuraObject {
 		return true;
 	}
 	
-	/**
-	 * Updates a json object with another
-	 * @param array $umeta json object containing update 
-	 * @param array $dmeta json object to be updated
-	 * @param string $mode the update mode
-	 * @return boolean true if successful
-	 */
-	function updateJSON($umeta, &$dmeta, $mode){
-		if(isAssoc($umeta)){
-			if(!is_array($dmeta)){
-				$dmeta = array();
-			}
-			foreach($umeta as $k => $v){
-				if(is_array($v) && count($v) == 0){
-					if(isset($dmeta[$k])){
-						unset($dmeta[$k]);
-					}
-					elseif($this->rule($mode, "update", 'fail_on_bad_delete')){
-						return $this->failure_result("Attempted to remove non-existant property $k", 404);
-					}						
-				}
-				elseif(isAssoc($v)){
-					$this->updateJSON($v, $dmeta[$k], $mode);					
-				} 
-				else {
-					$dmeta[$k] = $v;
-				}				
-			}
-		}
-		return true;
-	}
-
 	/**
 	 * Called to update one ld props array with another 
 	 * @param array $uprops array containing update
@@ -1588,9 +1564,7 @@ class LDO extends DacuraObject {
 				}
 			}
 			elseif($pv->complex()){
-				if(!$this->updateJSON($uprops[$prop], $dprops[$prop], $mode)){
-					return false;
-				}						
+				updateJSON($uprops[$prop], $dprops[$prop], $mode);									
 			}
 			else {
 				return $this->failure_result("Unknown value type in LD structure", 500);
@@ -1678,12 +1652,22 @@ class LDO extends DacuraObject {
 		}
 		$url = "";
 		$imp = $this->meta['imports'][$prefix];
-		if(isset($imp['collection']) && $imp['collection'] != "all"){
-			$url = $imp['collection'] ."/";
-		} 
-		$url .= "ontology"."/".$imp['id'];
-		if(isset($imp['version']) && $imp['version']){
-			$url .= "?version=".$imp['version'];
+		if(is_array($imp)){
+			if(isset($imp['collection']) && $imp['collection'] != "all"){
+				$url = $imp['collection'] ."/";
+			} 
+			$url .= "ontology"."/".$prefix;
+			if(isset($imp['version']) && $imp['version']){
+				$url .= "?version=".$imp['version'];
+			}
+		}	
+		else {
+			global $dacura_server;
+			$cid = $dacura_server->getOntologyCollection($prefix);
+			if($cid != "all"){
+				$url .= $cid."/";
+			}
+			$url .= "ontology/$prefix";
 		}
 		return $url;
 	}

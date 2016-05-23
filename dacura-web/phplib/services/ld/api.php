@@ -51,7 +51,7 @@ set_time_limit (1800);
  * * test
  */	
 function create_ldo(){
-	global $dacura_server, $ldo_type;
+	global $dacura_server, $ldo_type, $service;
 	$dacura_server->init("create ldo");
 	$json = file_get_contents('php://input');
 	$obj = json_decode($json, true);
@@ -78,7 +78,8 @@ function create_ldo(){
 		$demand_id = $obj[$dacura_server->getServiceSetting("demand_id_token", "@id")];
 	}
 	$format = (isset($obj['format'])) ? strtolower($obj['format']) : "";
-	$options = (isset($obj['options'])) ? $obj['options'] : array();
+	$useroptions = (isset($obj['options']) ? $obj['options'] : array());
+	$options = $service->getCreateOptions($test_flag, $useroptions);
 	$create_obj = array();
 	if(isset($obj['contents'])){
 		 $create_obj['contents'] = $obj['contents'];
@@ -94,8 +95,6 @@ function create_ldo(){
 	return $dacura_server->writeDecision($ar, $format, $options);
 }
 
-
-
 /**
  * GET /
  *
@@ -104,14 +103,14 @@ function create_ldo(){
  * @return a list of linked data objects suitable for tabular viewing
  */
 function list_ldos(){
-	global $dacura_server, $ldo_type;
+	global $dacura_server, $ldo_type, $service;
 	//read datatable options from $_GET
 	$dt_options = get_dtoptions($dacura_server->cid());
 	if($ldo_type){
 		$dt_options['type'] = $ldo_type;
 	}
 	//read dacura options from $_GET
-	$dcoptions = isset($_GET['options']) ? $_GET['options'] : false;
+	$dcoptions = $service->getLDListArgs();
 	$dacura_server->init(($ldo_type ? $ldo_type : "ldo")."list");
 	$ldos = $dacura_server->getLDOs($dt_options, $dcoptions);
 	if(is_array($ldos)){
@@ -129,12 +128,12 @@ function list_ldos(){
  * @api
  */
 function list_updates(){
-	global $dacura_server, $ldo_type;
+	global $dacura_server, $ldo_type, $service;
 	$dt_options = get_dtoptions($dacura_server->cid());
 	if($ldo_type){
 		$dt_options['type'] = $ldo_type;
 	}
-	$dcoptions = isset($_GET['options']) ? $_GET['options'] : false;
+	$dcoptions = $service->getLDListUpdatesArgs();
 	$dacura_server->init(($ldo_type ? $ldo_type : "ldo")."list_updates");
 	$ldos = $dacura_server->getUpdates($dt_options, $dcoptions);
 	if(is_array($ldos)){
@@ -154,10 +153,11 @@ function list_updates(){
  * @return string json LDO / DacuraResult on error
  */
 function get_ldo($ldo_id, $fragment_id = false){
-	global $dacura_server, $ldo_type;
-	$options = isset($_GET['options']) ? $_GET['options'] : false;
-	$version = isset($_GET['version']) ? $_GET['version'] : false;
-	$format = isset($_GET['format']) ? $_GET['format'] : false;
+	global $dacura_server, $ldo_type, $service;
+	$args = $service->getLDArgs("ldoview");
+	$options = isset($args['options']) ? $args['options'] : false;
+	$version = isset($args['version']) ? $args['version'] : false;
+	$format = isset($args['format']) ? $args['format'] : false;
 	$dacura_server->init("get".($ldo_type ? $ldo_type : "ldo"), $ldo_id, $fragment_id);
 	$action = "view $ldo_type $ldo_id" . ($fragment_id ? "/$fragment_id" : "");
 	$ar = new DacuraResult($action);
@@ -207,17 +207,13 @@ function update_ldo($target_id, $fragment_id = false){
 			$ldo_type = $obj['ldtype'];
 		}
 		else {
-			$ar = new DacuraResult($action);
+			$ar = new DacuraResult("update ldo ".$target_id);
 			return $dacura_server->writeDecision($ar->failure(400, "Request Error", "update request does not have a valid linked data type associated with it"));
 		}
 	}
 	$action = "update $ldo_type $target_id".($fragment_id ? "/$fragment_id" : "");
 	$test_flag = isset($obj['test']) ? 	$obj['test'] : false;
 	$ar = new DacuraResult($action, $test_flag);
-	$upd_obj = array();
-	if(!isset($obj['contents']) && !isset($obj['meta'])){
-		return $dacura_server->writeDecision($ar->failure(400, "Format Error", "Update Request must have at least one of a meta or a contents property"));
-	}
 	$options = (isset($obj['options'])) ? $obj['options'] : array();
 	$update_obj = array();
 	$editmode = (isset($obj['editmode'])? $obj['editmode'] : "update");

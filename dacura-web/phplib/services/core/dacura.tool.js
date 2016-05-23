@@ -107,7 +107,7 @@ dacura.tool.initScreens = function(holder, forms){
 				resultbox: "#" + this.id + "-msgs", 
 				busybox: "#" + this.id + "-contents",
 				sequence: i++,
-				mopts: {"icon": true, "closeable": false, scrollTo: true}
+				mopts: {}
 		};
 		listhtml += "<li><a href='"+ '#'+ this.id + "'>" + $('#' + this.id).attr("title") + "</a></li>";
 		$('#' + this.id).attr("title", "");
@@ -491,11 +491,14 @@ dacura.tool.form = {
 	 * @param {object} opts - an options array for initialising the form
 	 */
 	init: function(key, opts){
-		if(typeof opts == "object" && typeof opts.icon == "string"){
-			$('#'+key+' td.dacura-property-help').each(function(){
-				$(this).html("<img class='helpicon' title=\"" + escapeQuotes($(this).html()) + "\" src=\"" + opts.icon + "\">");
+		if(typeof opts == "object" && (typeof opts.tooltip == "object" || typeof opts.icon != "undefined")){
+			$('#'+key+' .dacura-property-help').each(function(){
+				$(this).html(dacura.system.getIcon('help-icon', {cls: 'helpicon', title: escapeHtml($(this).html())}));
 			});
-			$('#'+key+' .helpicon').tooltip();
+			if(typeof opts.tooltip == "undefined"){
+				opts.tooltip = { content: function () {	return $(this).prop('title');}};
+			}
+			$('#'+key+' .helpicon').tooltip(opts.tooltip);
 		}
 		if(typeof opts == "object" && typeof opts.initselects != "undefined"){
 			dacura.system.selects();
@@ -722,7 +725,11 @@ dacura.tool.button = {
 		else if(typeof conf.gather != "function"){
 			conf.gather = function(jqid){};
 		}
-		$('#'+key).button().click(function(){
+		var button_init = {};
+		if(typeof conf.test != "undefined" && conf.test){
+			button_init.icons = {primary: "dacura-help-button-icon"};
+		}
+		$('#'+key).button(button_init).click(function(){
 			if(button_pressed){
 				alert("A request is being processed, please be patient");
 				return;
@@ -732,7 +739,7 @@ dacura.tool.button = {
 			var errs = conf.validate(obj);
 			if(errs){
 				button_pressed = false;
-				dacura.system.showErrorResult(errs, "User errors in form input", dacura.tool.subscreens[conf.screen].resultbox);
+				dacura.system.showErrorResult(errs, "Error in input form data", dacura.tool.subscreens[conf.screen].resultbox, false, dacura.tool.subscreens[conf.screen].mopts);
 			}
 			else {
 				var pconf = dacura.tool.subscreens[conf.screen];
@@ -848,7 +855,12 @@ dacura.tool.table = {
 				return "<input type='checkbox' class='dacura-select-listing-row' id='drs-" + obj.id + "' " + chtml + "/>";
 			}
 			else {
-				return window[id](obj);							
+				if(typeof (window[id]) == "function"){
+					return window[id](obj);	
+				}
+				else {
+					alert("Table configuration error - " + id + " is not a function");
+				}
 			}			
 		}
 		else {
@@ -898,6 +910,8 @@ dacura.tool.table = {
 			}
 			dacura.tool.tables[key].rows[ids.length-1] = objs[i]; 
 		}
+		dacura.system.styleJSONLD('#' + key + ' .rawjson');
+
 		if(typeof tconfig.nohover == "undefined" || tconfig.nohover == false){
 			$("#" + key + ' .dacura-listing-row').hover(function(){
 				$(this).addClass('userhover');
@@ -1131,7 +1145,12 @@ dacura.tool.table = {
 		var drawLTable = function(obj){
 			dacura.tool.table.reincarnate(key, obj, tab);			
 		}
-		tab.fetch(drawLTable, dacura.tool.subscreens[tab.screen]);
+		var pconf = dacura.tool.subscreens[tab.screen];
+		if(typeof pconf.mopts != "object") pconf.mopts = {};
+		pconf.mopts.scrollTo = false;
+		if(typeof tab.fetch == "function"){
+			tab.fetch(drawLTable, pconf);
+		}
 	},
 	
 	/**
@@ -1148,8 +1167,11 @@ dacura.tool.table = {
 		}
 		var cont = tconfig.container;
 		dacura.tool.table.nuke(key, tconfig);
-		if(typeof dacura.tool.tables[key] == "undefined" || typeof dacura.tool.tables[key].properties == "undefined"){
-			alert("error - attempt to reincarnate table without having properties " + key);
+		if(typeof dacura.tool.tables[key] == "undefined"){
+			alert("error - attempt to reincarnate unknown table " + key);
+		}
+		else if (typeof dacura.tool.tables[key].properties == "undefined"){
+			dacura.tool.tables[key].properties = dacura.tool.table.readprops(key);
 		}
 		var tab = dacura.tool.tables[key];
 		var html = "<table id='" + key + "' class='dch dacura-api-listing'><thead><tr>";
@@ -1161,7 +1183,7 @@ dacura.tool.table = {
 			html += "</th>";
 		}
 		html += "</thead><tbody></tbody></table>";
-		$('#' + cont).append(html);
+		$('#' + cont).prepend(html);
 		dacura.tool.table.draw(key, objs, tconfig);
 	},
 	

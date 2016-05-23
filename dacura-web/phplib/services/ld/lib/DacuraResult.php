@@ -112,8 +112,13 @@ class DacuraResult extends DacuraObject {
 	 * @param string $txt the body of the warning message
 	 * @return void
 	 */
-	function addWarning($action, $prompt, $txt){
-		$this->warnings[] = new SystemWarning($action, $prompt, $txt);
+	function addWarning($action, $prompt, $txt, $cls = false){
+		if($cls) {
+			$this->warnings[] = new $cls($action, $prompt, $txt);
+		}
+		else {
+			$this->warnings[] = new SystemWarning($action, $prompt, $txt);
+		}
 	}	
 
 	/**
@@ -215,6 +220,11 @@ class DacuraResult extends DacuraObject {
 		return $this;
 	}
 
+	/**
+	 * Adds an (LDO) object to the result (when show_result is specified)
+	 * @param array $obj LDO to be passed back as result
+	 * @return DacuraResult
+	 */
 	function set_result($obj){
 		$this->result = $obj;
 		return $this;
@@ -264,7 +274,18 @@ class DacuraResult extends DacuraObject {
 				}
 			break;
 			case "accept" :
-				if($force_msg || !($this->is_accept() && ($sub->is_accept() && count($sub->warnings) == 0))){
+				if(!$this->msg_title && $sub->msg_title){
+					$this->msg_title = $sub->msg_title;
+				}
+				if($force_msg && $sub->msg_body){
+					if($this->msg_body){
+						$this->msg_body .= " ".$sub->msg_body;
+					}
+					else {
+						$this->msg_body = $sub->msg_body;
+					}
+				}
+				/*if($force_msg || !($this->is_accept() && ($sub->is_accept() && count($sub->warnings) == 0))){
 					if(!$sub->is_accept() && !$this->msg_title && $sub->msg_title){
 						$this->msg_title = $sub->msg_title;
 						if(!$this->msg_body && $sub->msg_body){
@@ -289,7 +310,7 @@ class DacuraResult extends DacuraObject {
 						$this->msg_title = $sub->msg_title;
 						$this->msg_body = $sub->msg_body;						
 					}
-				}
+				}*/
 				break;
 		}
 		if($chain && is_object($sub)){
@@ -313,17 +334,12 @@ class DacuraResult extends DacuraObject {
 		if(!$hypo){
 			$this->add($gu);
 		}
-		elseif($gu->is_reject()) { //graph errors and warnings are copied into the warnings of this result
-			if(count($gu->errors) > 0 || count($gu->warnings) > 0){
-				foreach($gu->errors as $err){
-					$this->warnings[] = $err;
-				}
-				if($gu->warnings && count($gu->warnings) > 0){
-					$this->warnings = array_merge($this->warnings, $gu->warnings);
-				}
+		elseif($gu->is_reject()) { 
+			foreach($gu->errors as $err){
+				$this->errors[] = $err;
 			}
-			else {
-				$this->warnings[] = new GraphTestFailure($gu->action, $gu->msg_title, $gu->msg_body);
+			foreach($gu->warnings as $warn){
+				$this->warnings[] = $warn;
 			}
 			if($add_err){
 				$this->errors[] = new GraphTestFailure($gu->action, $gu->msg_title, $gu->msg_body);
@@ -346,12 +362,19 @@ class DacuraResult extends DacuraObject {
 		if(count($itrips) > 0 || count($dtrips) > 0){
 			$gu->setInserts($itrips);
 			$gu->setDeletes($dtrips);
+			$ting = "quad";
 			if($gid == "meta"){
-				$gu->msg($msg, count($itrips)." values inserted, ".count($dtrips)." values deleted");				
+				$ting = "value";
 			}
-			else {
-				$gu->msg($msg, count($itrips)." quads inserted, ".count($dtrips)." quads deleted");
+			$smsg = "";
+			if(count($itrips) > 0){
+				$smsg .= count($itrips)." $ting" . (count($itrips) == 1 ? "" : "s")." inserted";
 			}
+			if(count($dtrips) > 0){
+				if(count($itrips) > 0) $smsg .= ", ";				
+				$smsg .= count($dtrips)." $ting" . (count($dtrips) == 1 ? "" : "s")." deleted";
+			}
+			$gu->msg($msg, $smsg);				
 		}
 		else {
 			$gu->msg($msg, "No updates");				
@@ -410,7 +433,8 @@ class DacuraResult extends DacuraObject {
 		}
 		if($this->result){
 			if(is_object($this->result) && method_exists($this->result, "display")){
-				if($this->result->display($format, $options, $srvr)){
+				if($this->result->getContentInFormat($format, $options, $srvr, "display")){
+				//if($this->result->display($format, $options, $srvr)){
 					$apiobj['result'] = $this->result->forAPI($format, $options);
 				}
 				else {
@@ -423,6 +447,7 @@ class DacuraResult extends DacuraObject {
 			}
 		}
 		foreach($this->graphs as $gid => $gr){
+			
 			if(isset($options['show_'.$gid.'_triples']) && $options['show_'.$gid.'_triples']){
 				$apiobj['graph_'.$gid] = $gr->forAPI($format, $options, $srvr);
 			}
@@ -581,19 +606,19 @@ class DQSResult extends GraphResult {
 					}
 				}
 				else {
-					return $this->reject("Dacura Quality Service Failure", "DQS returned unknown error class $cls");						
+					return $this->reject("Dacura Quality Service Publication Failure", "DQS returned unknown error class $cls");						
 				}
 			}
 			else {
-				return $this->reject("Dacura Quality Service Failure", "DQS returned error with no violation class specified");				
+				return $this->reject("Dacura Quality Service Public Failure", "DQS returned error with no violation class specified");				
 			}
 		}
 		if(count($this->errors) > 0){
 			if(count($this->errors) == 1){
-				return $this->reject("Dacura Quality Service Tests Failed", $this->errors[0]->msg().$this->errors[0]->info());
+				return $this->reject("Dacura Quality Service Publication Failed", $this->errors[0]->msg().$this->errors[0]->info());
 			}
 			else {
-				return $this->reject("Dacura Quality Service Errors", "DQS identified ".count($this->errors) . " errors in the input data");				
+				return $this->reject("Dacura Quality Service Publication Failed", "DQS identified ".count($this->errors) . " errors in the input data");				
 			}
 		}
 		return $this->accept();

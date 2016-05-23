@@ -167,10 +167,10 @@ class LDDelta extends DacuraObject {
 	 * @param mixed $nvals new value list
 	 */
 	function updObjLiteralList($frag_id, $p, $ovals, $nvals){
-		$unchanged = false;
 		$rems = array();
 		$adds = array();
 		foreach($ovals as $oval){
+			$unchanged = false;
 			foreach($nvals as $i => $nval){
 				if(compareObjLiterals($oval, $nval)){
 					$unchanged = true;
@@ -182,8 +182,8 @@ class LDDelta extends DacuraObject {
 				$rems[] = $oval;
 			}
 		}
-		$unchanged = false;
 		foreach($nvals as $nval){
+			$unchanged = false;
 			foreach($ovals as $i => $oval){
 				if(compareObjLiterals($oval, $nval)){
 					$unchanged = true;
@@ -196,8 +196,8 @@ class LDDelta extends DacuraObject {
 			}
 		}
 		if(count($adds) > 0 or count($rems) > 0){
-			$this->forward[$p] = $adds;
-			$this->backward[$p] = $rems;
+			$this->forward[$p] = $nvals;
+			$this->backward[$p] = $ovals;
 		}
 	}
 	

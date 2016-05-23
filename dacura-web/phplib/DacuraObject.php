@@ -18,7 +18,7 @@ class DacuraObject {
 	/** @var string Dacura IDs are between 2 and 40 characters long [a-z0-9-_]*/
 	var $id;
 	/** @var array the set of valid statuses and their human readable forms */
-	static $valid_statuses = array("accept" => "Active", "reject" => "Rejected", "pending" => "Pending Approval", "deleted" => "Deleted");
+	static $valid_statuses = array("accept" => "Accepted", "pending" => "Pending Approval", "reject" => "Rejected", "deleted" => "Deleted");
 	/** @var array the list of Dacura Reserved Words */
 	static $reserved_words = array("all", "dacura", "structure", "type", "schema");
 	/** @var array a list of phrases that aren't allowed to appear in titles */

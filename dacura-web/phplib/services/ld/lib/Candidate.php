@@ -149,9 +149,13 @@ class Candidate extends MultiGraphLDO {
 	function getRDFType($store = true){
 		$clsurls = $this->getPredicateValues($this->cwurl, "type", "rdf", $this->getDefaultGraphURL());
 		if($clsurls){
-			if(is_array($clsurls)){
+			if(is_array($clsurls) && !isAssoc($clsurls)){
 				$clsurls = $clsurls[0];
 			}
+			elseif(is_array($clsurls)){
+				return false;
+			}
+			//$clsurls = $this->nsres->compress($clsurls) ? $this->nsres->compress($clsurls) : $clsurls;
 			if($store) $this->meta['type'] = $clsurls;
 		}
 		return $clsurls;

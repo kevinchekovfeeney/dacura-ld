@@ -11,18 +11,32 @@ class CandidateService extends LdService {
 	function loadParamsForCreateTab(&$params, &$dacura_server){
 		parent::loadParamsForCreateTab($params, $dacura_server);
 		if(isset($params['create_ldo_fields']['candtype'])){
-			$params['create_ldo_fields']['candtype']['options'] = $dacura_server->getValidCandidateTypes();
-			if(!$params['create_ldo_fields']['candtype']['options'] ){
-				$params['create_ldo_fields']['candtype']['options'] = array("owl:Nothing" => "None");
+			$cands = $dacura_server->getValidCandidateTypes();
+			$choices = array();
+			if($cands){
+				foreach($cands as $cand){
+					if($compressed = $dacura_server->nsres->compress($cand)){
+						if($compressed == "owl:Nothing") continue;
+						$choices[$cand] = $compressed;
+					}
+					else {
+						$choices[$cand] = $cand;
+					}
+				}
 			}
+			else {
+				
+			}
+			if($choices){
+				$params['create_ldo_fields']['candtype']['options'] = $choices;
+			}
+			else {
+				unset($params['create_ldo_fields']['candtype']);
+				unset($params['create_ldo_fields']['imptype']);
+			}
+			
 		}
 		
 	}
-	
-	function getViewSubscreens(){
-		$x = parent::getViewSubscreens();
-		$x[] = "ldo-frame"; 
-		return $x;
-	}
-	
+		
 }

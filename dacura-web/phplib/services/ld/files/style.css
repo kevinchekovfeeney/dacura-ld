@@ -68,12 +68,15 @@ General purpose
 */ 
 
 .ld-list {
-	margin-left: -6px;
-	margin-right: -6px;
-	margin-top: -10px;
-	margin-bottom: 8px;
-	font-size: 0.75em;	
-	border: 1px solid #cdc;	
+	margin-top: -10px;		
+	margin-left: -12px;
+	margin-right: -12px;
+}
+
+.ld-list .tholder {
+	font-size: 0.8em;	
+	border-left: 1px solid #ccc;	
+	border-right: 1px solid #ccc;	
 	border-radius: 5px;
 }
 
@@ -106,9 +109,6 @@ div#ld-body {
 	
 } 
 
-.rb-options {
-	font-size: 0.7em;
-}
 
 div#version-header {
 	font-size: 0.8em;
@@ -186,13 +186,11 @@ div#version-header {
 
  }
 
- .ld-resultbox-content {
-  	border: 1px solid #aaa;
- 	background-color: #fdfdfd;
- 	width: 100%;
-	padding: 4px;
-	overflow: auto;	
- }
+.table-json-viewer {
+ 	overflow: auto;	
+ 	white-space: pre;
+ 	unicode-bidi: embed;
+}
 
 .dacura-export-viewer,
 .dacura-json-viewer {
@@ -213,8 +211,8 @@ div#version-header {
 }
 
 textarea.dacura-custom-meta {
-	background-color: #fafaff;
- 	border: 1px solid #999; 
+	background-color: #fafafa;
+ 	border: 1px solid #bbb; 
 	unicode-bidi: embed;
  	font-family: 'Open Sans', Helvetica;
  	font-size: 0.85em;
@@ -224,23 +222,26 @@ textarea.dacura-custom-meta {
  	padding: 4px;		
 }
 
+div.ld-import-holder {
+	background-color: #fafbf4;
+	border: 1px solid #ccc;
+	padding: 1px;
+}
+
+textarea.dacura-import-editor,
 .dacura-export-editor textarea,
 .dacura-json-editor textarea {
  	unicode-bidi: embed;
  	font-family: 'Open Sans', Helvetica;
  	font-size: 0.85em;
-	width: 100%;
+	width: 99%;
 	height: 400px;	
  	overflow: auto;
  	border: 0; 	
- 	padding: 4px;		
+ 	padding: 4px;
+ 	margin-right: auto;
+ 	margin-left: auto;		
 }
-
-div.ld-meta-bar {
-  	background-color: #cceaff;
-  	padding: 2px;
-}
-
 
  
 ul#meta-edit-table {
@@ -275,17 +276,13 @@ ul#meta-edit-table li span.meta-value select {
   	font-family: 'Open Sans', Helvetica;
   	font-weight: 400;
   	font-size: 0.9em;
- }
-
-
+}
 
 ul#meta-edit-table li {
 	padding: 3px 8px 3px 0px;
 	background-color: #efefef;
 	float:left;
 }
-
-
 
 .dacura-table-viewer {
  	unicode-bidi: embed;
@@ -309,7 +306,6 @@ ul#meta-edit-table li {
 	padding: 6px 15px 8px 5px;
 	margin-bottom: 0px;
 	margin-right: -4px;
-	
 }
 
 #version-data dl,
@@ -323,7 +319,6 @@ ul#meta-edit-table li {
 	padding-left: 4px;
 	padding-top: 2px;
 	font-weight: bold;
-
 }
 
 #ld-meta-details dd {
@@ -367,7 +362,6 @@ table.ld-invariants td {
 	color: #111;
 }
 
-
 .tool-tab-info {
 	margin-top: 10px;
 	margin-bottom: 10px;
@@ -390,9 +384,6 @@ span#edit-meta select {
 	color: #444;
 	background-color: #eee;
 }
-
-
-
 
 .change-details {
 	font-size: 0.85em;
@@ -431,8 +422,7 @@ span#edit-meta select {
 }
 
 .dacura-ld-message-box {
-	padding: 0px;
-		
+	padding: 0px;		
 }
 
 .dataTables_empty .dacura-user-message-box {
@@ -461,7 +451,6 @@ table.ld-properties {
 table.ld-properties tr.embedded-object td.container {
 	padding: 0 14px 14px 14px;
 }
-
 
 td.prop-pd {
 	padding: 2px 0;
@@ -547,15 +536,18 @@ div.odd_depth {
   .updated {
   	color: #66c;
   }
-
+  
+a.unchanged,
   .unchanged {
   	color: #ccc;
   }
 
+a.deleted,
   .deleted {
   	color: #c44;
   }
 
+  a.added,
   .added {
   	color: #4b4;
   }
@@ -620,7 +612,68 @@ div.ld-edit-bar {
 	color: #222;
   	border: 1px solid #aaa;
 }
+
+div.ld-meta-bar {
+  	background-color: #cceaff;
+  	padding: 2px;
+}
  
+div.ld-import-bar {
+	padding: 2px 0;
+	font-size: 0.85em;
+	border-radius: 5px 5px 0 0;
+	background-color: #f8f8f2;
+	color: #333;
+  	border: 1px solid #ccc;
+}
+
+#ld-import-holder .dacura-property-table {
+	border: 0 !important;
+}
+
+table.dacura-property-table div.ld-import-bar {
+	border: 0;
+	background-color: inherit;
+}
+
+.dacura-property-table div.ld-import-holder {
+	border: 0;
+	background-color: inherit;
+}
+
+.dacura-property-table .import-bar-label {
+	font-family: 'Open Sans', Helvetica;
+	font-weight: normal;
+	font-size: 1.1em;
+}
+
+.dacura-property-table div.ld-import-holder textarea {
+	width: 98% !important;
+}
+
+#jsonvphoney, 
+#jsonvphoney tr,
+#jsonvphoney td,
+#jsonvphoney table {
+	border: 0 !important;	
+}
+
+
+#jsonvphoney {
+	width: 100%;
+}
+
+.ld-import-formats {
+	display: inline-block;
+	vertical-align: -12px;
+}
+
+.import-bar-label {
+	display: inline-block;
+	position: relative;
+	padding: 6px;
+	vertical-align: 10px;
+}
   
 div.ld-main-body {
  	border: 1px solid #aaa;
@@ -638,12 +691,10 @@ div#ld-viewer {
 
 div.ld-resultbox .mbuttons {
 	padding: 0px 6px 6px 6px;
-	width: 100%;
 	text-align: right;
 }
 
 div.ld-resultbox-title h2 {
-	background-color: #f9f9ff;
 	color: #666;
 	border: 1px solid #aaa;
 	border-bottom: 2px solid #f9f9ff;
@@ -655,12 +706,18 @@ div.ld-resultbox-title h2 {
 }
 
 div.ld-resultbox-options {
-	width: 100%;
-	background-color: #f9f9ff;
-  	border: 1px solid #aaa;
-	padding: 2px 4px;
-	border-radius: 0px 6px 0px 0px;
+	padding: 1px 0 0 3px;
+	float: left;
 }
+
+ .ld-resultbox-content {
+ 	clear: both;
+ 	font-size: 0.85em;
+ 	background-color: #fefdff;
+  	border: 1px solid #aaa;
+	padding: 4px;
+	overflow: auto;	
+ }
 
 
 div#ld-editor textarea {
@@ -733,67 +790,87 @@ div#ld-editor textarea {
 	border-radius: 5px; 
 }
 
-div.rbdecision {
-  font-family: 'Nunito', sans-serif;
-  color: #384047;
-}
-
 table.ld-triples-viewer {
 	width: 100%;
 	margin-top: 8px;
 }
 
-
-
 table.ont-depend {
-	width: 458px;
-	margin: 0 -4px 1em -4px;
+	width: 456px;
+	margin: 6px -3px 1em -3px;
 	font-size: 0.9em;
 	border-collapse: collapse;
 }
+
 table.rbtable {
   width: 100%;
   margin: 10px auto;
-  font-size: 0.85em;
+  border-collapse: collapse;
+  overflow: auto;
+  font-size: 0.9em;
 }
 
-table.ld-triples-viewer caption,
-table.rbtable caption {
+table.rbtable th, table.rbtable td {
+	border-left: 1px solid white;
+	padding: 6px;
+}
+
+table.ld-triples-viewer caption {
   font-size: 1.6em;
   font-weight: 400;
   padding: 10px 0;
 }
 
+table.json-graph {
+	border-collapse: collapse;
+}
+
+table.json-graph thead th {
+	border-left: 1px solid white;
+	padding: 10px;
+}
+
+table.json-graph td {
+	border-left: 1px solid white;
+	padding: 6px;
+}
+
+
+table.json-graph thead th,
 table.ont-depend thead th,
 table.ld-triples-viewer thead th,
 table.rbtable thead th {
   font-weight: 550;
   background: #8a97a0;
   color: #efefef;
+  padding: 4px;
 }
 
+table.json-graph tr,
 table.ont-depend tr,
 table.ld-triples-viewer tr,
 table.rbtable tr {
+	background: rgba(230, 235, 236, 0.3);
 	background: #e8eeef;
 	border-bottom: 1px solid #FFF;
-  margin-bottom: 5px;
+  	margin-bottom: 5px;
 }
 
+table.json-graph tr:nth-child(even),
 table.ont-depend tr:nth-child(even),
 table.ld-triples-viewer tr:nth-child(even),
 table.rbtable tr:nth-child(even) {
-  background: #f4f7f8;
+  background: rgba(250, 240, 239, 0.5);
 }
 
 table.ont-depend th, table.ont-depend td {
   overflow: hidden;
- padding: 2px 4px;
+  padding: 2px 4px;
 }
 
 
-table.ld-triples-viewer th, table.ld-triples-viewer td,
-table.rbtable th, table.rbtable td {
+table.ld-triples-viewer th, 
+table.ld-triples-viewer td {
   text-align: left;
   padding: 6px;
   font-weight: 300;
@@ -801,14 +878,12 @@ table.rbtable th, table.rbtable td {
   overflow: hidden;
 }
 
-table.ld-triples-viewer tfoot tr,
-table.rbtable tfoot tr {
+table.ld-triples-viewer tfoot tr {
   background: none;
 }
 
 
-table.ld-triples-viewer tfoot td,
-table.rbtable tfoot td {
+table.ld-triples-viewer tfoot td {
   padding: 10px 2px;
   font-size: 0.8em;
   font-style: italic;
@@ -827,17 +902,17 @@ table.pane-full td {
 }
 
 table.pane-full {
-	width: 458px;
-	margin: 0 -4px 1em -4px;
+	width: 456px;
+	margin: 4px -3px 1em -3px;
 }
 
 table.pane-full tr:nth-child(even) {
-	background: #f4f7f8;
+	background: rgba(234, 252, 239, 0.5);
 } 
 
 
 table.pane-full tr:nth-child(odd) {
-	background: #e6f4ed;
+	background: #f4f7f8;
 }
 	
 td.control-table-variable {
@@ -925,17 +1000,18 @@ span.ontlabeladd {
 }
 
 span.ontlabelrem {
-	background-color: #f2fbf4;	
+	background-color: #fefefb;
+	text-align: center;
+	border-radius: 6px;
 }
 
 .ont-version-selector {
-	font-size: 0.7em;
-	padding-top: 6px;
+	font-size: 0.8em;
+	margin-top: 4px;
 	padding-bottom: 0px;
-	display: inline-block;
-	margin-top: -4px;
-	margin-bottom: -8px;
-	margin-left: 4px;	
+	display: block;
+	margin-left: -2px;
+	margin-right: -2px;
 }
 
 
@@ -972,7 +1048,6 @@ span.dqstile-implicit.dqs-rule {
 	color: #553323;
 }
 
-
 .include-treelist {
 	margin: 6px;
 	display: inline-block;
@@ -984,31 +1059,127 @@ div.editbar-options {
 	padding: 0px;
 }
 
+#graph-main {
+	padding: 18px;
+	background-color: #f8f6f9;
+	float: left;
+	width: 960px;
+}
+
+.graph-action {
+	font-size: 0.9em;
+	padding: 3px 8px;
+	margin-left: 4px;
+	border-radius: 3px;
+}
+
+.graph-actions {
+	display: inline-block;
+	font-weight: 400;
+	margin-right: 12px;
+}
+
+.graph-action.graph-pending {
+	border: 1px solid #ccccaa;
+	background-color: #fffff6;
+}
+.graph-action.graph-pending:hover {
+	background-color: #ccc122;
+	cursor: pointer;
+	color: white;
+}
+
+.graph-action.graph-delete {
+	border: 1px solid #bbb;
+	background-color: #eee;
+}
+.graph-action.graph-delete:hover {
+	background-color: #444;
+	cursor: pointer;
+	color: white;
+}
+
+.graph-action.graph-accept {
+	border: 1px solid #aaccaa;
+	background-color: #f4fff6;
+}
+.graph-action.graph-accept:hover {
+	background-color: #229922;
+	cursor: pointer;
+	color: white;
+}
+
+.graph-action.graph-reject {
+	border: 1px solid #ccaaaa;
+	background-color: #fff5f5;
+}
+
+.graph-action.graph-reject:hover {
+	background-color: #cc4444;
+	cursor: pointer;
+	color: white;
+}
+
+#instance-control.dqs-failure,
+#schema-control.dqs-failure,
+#graph-control.dacura-reject,
 #dqs-control.dqs-failure {
 	background-color: #f6eff2;
 	border: 1px solid #f8e8d2;
 }
 
+#instance-control.dqs-disabled {
+	background-color: #eee;
+	border: 1px solid #ccc;
+}
+
+
+#graph-control.dacura-pending {
+	background-color: #f6f6e2;
+	border: 1px solid #eeea92;	
+}
+
+
+#instance-control.dqs-success,
+#schema-control.dqs-success,
+#graph-control.dacura-accept,
 #dqs-control.dqs-success {
 	background-color: #eff8f4;
 	border: 1px solid #d2f8e8;
 }
-
  
+#graph-control, 
 #ns-property,
 #ns-subject,
 #dqs-control {
 	width: 450px;
-	margin: 0px 6px 12px 0px;
+	margin: 0px 4px 12px 0px;
 	float: left;
 	padding: 6px;
 }
 
+#instance-control {
+	background-color: #fafbf4;
+	border: 1px solid #d2e8f8;
+	width: 450px;
+	margin: 12px 6px 12px 0px;
+	padding: 6px;
+	float: right;	
+}
+
+#schema-control {
+	background-color: #fafbf4;
+	border: 1px solid #d2e8f8;
+	width: 450px;
+	margin: 0px 6px 12px 20px;
+	padding: 6px;
+	float: right;	
+}
 #dependencies {
 	background-color: #fafbf4;
 	border: 1px solid #d2e8f8;
 	width: 450px;
-	margin: 0px 6px 6px 0px;
+	margin: 0px 6px 12px 6px;
 	padding: 6px;
 	float: right;
 }
@@ -1017,10 +1188,96 @@ div.editbar-options {
 	background-color: #fafbf4;
 	border: 1px solid #d2e8f8;
 	width: 450px;
-	margin: 6px 6px 0px 0px;
+	margin: 0px 6px 12px 6px;
 	float: right;
 	padding: 6px;
 }
+
+span#graph-subscreen-close {
+	float: right;
+}
+
+span#graph-subscreen-close:hover {
+	cursor: pointer;
+}
+
+th.graph-name {
+	padding-top: 8px;
+	text-align: left;
+	font-weight: 600;
+}
+
+th.graph-url {
+	padding-top: 8px;
+}
+th.graph-url a {
+	text-decoration: none;
+	font-weight: 300;
+	font-size: 0.9em;
+}
+
+a.implicit-import {
+	text-decoration: none;
+	font-weight: 350;
+}
+
+a.explicit-import {
+	text-decoration: none;
+	font-weight: 550;
+}
+
+#graph-subscreen-header {
+	background-color: #eff4f8;
+	border: 1px solid #d2e8f8;
+	margin: 6px 0;
+	font-size: 1.2em;
+	padding: 0.5em 1em;
+}
+
+#graph-details {
+	width: 100%;
+	background-color: #eff4f8;
+	border: 1px solid #d2e8f8;
+	margin: 6px 0;
+}
+
+#graph-schema {
+	width: 100%;
+	background-color: #eff8f4;
+	border: 1px solid #d2f8e8;
+	margin: 6px 0;
+}
+
+#graph-instance {
+	width: 100%;
+	background-color: #eff8f4;
+	border: 1px solid #d2f8e8;
+	margin: 6px 0;
+}
+
+#graph-instance table,
+#graph-schema table,
+#graph-details table {
+	width: 100%;
+	margin: 2px 10px;
+}
+
+td.rdtitle {
+	font-weight: 550;
+	
+}
+
+td.rdactions {
+	font-size: 0.85em;
+	text-align: right;
+	padding-right: 10px;
+	min-width: 180px;
+}
+
+td.rdinfo {
+	font-weight: 400;
+	font-size: 0.85em;
+} 
 
 table.pane-full {
 	font-size: 0.9em;
@@ -1081,9 +1338,7 @@ div.analysis {
 	color: #210;	
 } 
 
-.dacsub {
-}
-
+.dacsub {}
 
 .subscreen-header {
 	background-color: #eff4f8;
@@ -1145,6 +1400,7 @@ div.dqs-includes {
 	margin-bottom: 12px;
 	clear: both;
 	padding: 6px 2px;
+	min-height: 90px;
 }
 
 div.auto-imports-header, 
@@ -1158,12 +1414,13 @@ div.dqs-includes-title {
 	float: left;
 	padding: 6px 12px;
 	margin-bottom: 2px;
+	margin-top: 6px;
+	clear: both;
 }
 
 div.dqs-available-title {
 	clear: both;
 }
-
 
 div.dqs-all-config-element {
 	background-color: #d2e8f8;
@@ -1176,10 +1433,12 @@ div.dqs-all-config-element {
 	font-size: 0.9em;
 }
 
+.empty-ldcontents, 
 .empty-tests, 
 .empty-imports {
 	clear: both;
 	width: 300px;
+	text-align: center;
 	margin: 20px auto;
 	padding: 18px;
 	font-size: 1.2em;
@@ -1203,12 +1462,21 @@ div.dqs-all-config-element {
 	margin-right: 12px;
 }
 
-span.add-ont,
 span.remove-ont  {
+	float: right;
+	margin-right: -4px;
+}
+
+span.add-ont {
 	padding: 4px 6px 4px 6px;	
 	text-align: right;
 	display: inline-block;
 	margin: -12px -8px -5px 0;
+}
+
+span.ontid-label {
+	font-weight: 500;
+	margin-right: 10px;
 }
 
 span.remove-dqs,
@@ -1229,4 +1497,174 @@ span.remove-ont img.result-icon  {
 .updates-table-holder,
 .history-table-holder {
 	font-size: 0.9em;
+}
+
+div.update-status-box.dacura-reject,
+.dacura-user-message-box.dacura-reject .mbody, 
+.dacura-user-message-box.dacura-reject .mtitle,
+.dacura-user-message-box.dacura-reject {
+	background-color: #ffdfdf;	
+	color: #600 !important;
+}
+
+div.update-status-box.dacura-accept,
+.dacura-user-message-box.dacura-accept .mbody,
+.dacura-user-message-box.dacura-accept .title,
+.dacura-user-message-box.dacura-accept {
+	background-color: #e8ffe9;	
+	color: #060 !important;
+}
+
+div.update-status-box.dacura-pending, 
+.dacura-user-message-box.dacura-pending .mbody,
+.dacura-user-message-box.dacura-pending .mtitle,
+.dacura-user-message-box.dacura-pending {
+	background-color: #e9f2ff;	
+	color: #440 !important;
+}
+
+.dacura-accept .mtitle,
+.dacura-reject .mtitle,
+.dacura-pending .mtitle {
+	font-weight: 550;
+	display: inline-block;	
+} 
+
+.dacura-accept .mbody,
+.dacura-reject .mbody,
+.dacura-pending .mbody {
+	display: inline-block;
+}
+
+div.update-status-box {
+	width: 420px;
+	margin-top: -24px;
+	margin-bottom: 4px;
+	float: right;
+	padding: 10px;
+	border: 1px solid #ccc;
+}
+
+div.updates-contents-viewer {
+	clear: both;
+}
+
+div.update-status-header {
+	font-weight: 600;
+	display: inline-block;
+	text-align: center;
+	padding-bottom: 6px;
+	margin-bottom: 2px;
+	border-bottom: 1px solid white;
+}
+div.update-status-actions {
+	display: inline-block;
+	text-align: center;
+	margin-top: -8px;
+	padding-bottom: 6px;
+}
+
+.update-status-details {
+	font-weight: 300;
+	font-size: 0.8em;
+}
+
+div.dacura-test-message {
+	padding-left: 70px;
+}
+
+div.test-result {
+	float: left;
+	padding: 10px 10px 10px 8px;
+	width: 52px;
+	background: black;
+	color: #ff0;
+	font-weight: 600;
+	border-right: 1px solid #ff0;
+}
+
+.graph-result-title {
+	display: inline-block;
+	font-size: 1.4em;
+	padding: 10px;
+	font-weight: 600;
+}
+
+.graph-result-message {
+	display: inline-block;
+	font-size: 1.1em;
+	padding: 10px;
+	font-weight: 300;
+}	
+
+span.ldimport-header {
+	font-size: 1.3em;
+}
+
+table.ontology-create-table {
+	width: 850px;
+}
+
+table.candidate-create-table {
+	min-width: 800px;
+}
+
+
+table.ld-create-table {
+	width: 900px;
+}
+
+span.result-summaries {
+	padding: 2px;
+}
+
+span.result-summaries:hover {
+	background: rgba(210, 230, 255, 0.9) !important;
+	cursor: pointer;
+	color: #210;
+}
+
+span.result-summary-icon {
+	vertical-align: -2px;
+	margin-right: -4px;
+} 
+
+.api-triplestable-title,
+div.graph-result-section-title {
+	margin-top: 12px;
+	margin-bottom: 8px;
+	font-weight: 500;
+	font-size: 1.2em;
+}
+
+span.result-summary-block {
+	padding-right: 6px;
+} 
+
+td.extra-form-element {
+	padding-top: 12px;
+}
+
+span.multi-update-summary {
+	font-size: 1.1em;
+	margin-right: 8px;
+}
+
+th.multi-update-id, td.multi-update-id {
+	width: 150px;
+}
+
+div.update-view-bar {
+	font-size: 0.75em;
+	position: absolute;
+	right: 6px;
+	top: 70px;
+	width: 270px;
+	text-align: center;
+	padding: 6px;
+	background-color: #dd9;
+}
+
+span.view-update-options {
+	font-size: 0.8em;
 }

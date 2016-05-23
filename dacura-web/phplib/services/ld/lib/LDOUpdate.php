@@ -1,4 +1,5 @@
 <?php
+include_once("LDOUpdateDisplay.php");
 /**
 * Class representing an update to an ldo
 *
@@ -97,7 +98,6 @@ class LDOUpdate extends DacuraObject{
 	 */
 	function loadFromDBRow($row){
 		$this->targetid = $row['targetid'];
-		$this->status = $row['status'];
 		$this->type = $row['type'];
 		$this->cid = $row['collectionid'];
 		$this->created = $row['createtime'];
@@ -107,6 +107,17 @@ class LDOUpdate extends DacuraObject{
 		$this->forward = json_decode($row['forward'], true);
 		$this->backward = json_decode($row['backward'], true);
 		$this->meta = json_decode($row['meta'], true);
+		if(!is_array($this->meta)){
+			$this->meta = array();
+		}
+		/* object properties are copied into metadata array of object - the status value in meta has precedence, the db row values are just indeces for sql queries */
+		if(!isset($this->meta['status'])){
+			$this->status = $row['status'];
+			$this->meta['status'] = $this->status;
+		}
+		else {
+			$this->status = $this->meta['status'];
+		}
 	}
 
 	/**
@@ -150,10 +161,7 @@ class LDOUpdate extends DacuraObject{
 			return $this->failure_result("Cannot update object through context ".$this->cid(), 403);
 		}
 		if($update_meta){
-			$this->meta = $update_meta;
-			if(isset($this->meta['status'])){
-				$this->status($this->meta['status']);
-			}
+			$this->updateMeta($update_meta, $mode);
 		}
 		if($mode == "update"){
 			if($update->fragment_id){
@@ -177,6 +185,11 @@ class LDOUpdate extends DacuraObject{
 			else {
 				if(!$update->meta || count($update->meta) == 0){
 					$update->meta = $this->original->meta;
+				}
+				else {
+					$ometa = deepArrCopy($this->original->meta);
+					updateJSON($update->meta, $ometa, $mode);
+					$update->meta = $ometa;
 				}
 				if(!$update->ldprops || count($update->ldprops) == 0){
 					$update->ldprops = deepArrCopy($this->original->ldprops);
@@ -227,6 +240,17 @@ class LDOUpdate extends DacuraObject{
 		return true;
 	}
 	
+	function updateMeta($umeta, $mode){
+		updateJSON($umeta, $this->meta, $mode);
+		$this->readStateFromMeta();
+	}
+	
+	function readStateFromMeta(){
+		if(isset($this->meta['status'])){
+			$this->status = $this->meta['status'];
+		}
+	}
+	
 	/**
 	 * Calculates the differences between the original and stored versions of the LDO and copies the results into the updates forward and backward commands
 	 * @return boolean - always returns true...
@@ -237,7 +261,6 @@ class LDOUpdate extends DacuraObject{
 		$this->backward = $this->delta->backward;
 		return true;
 	}
-	
 	
 	/**
 	 * Returns the properties of the object as an array - for copying into api datastructures without copying the whole object
@@ -568,8 +591,9 @@ class LDOUpdate extends DacuraObject{
 		if(isset($opts['show_delta']) && $opts['show_delta'] && isset($this->delta) && $this->delta){
 			$apirep["delta"] = $this->delta->forAPI($format, $opts);
 		}
-		if(isset($opts['analysis']) && $opts['analysis'] && isset($this->analysis) && $this->analysis){
-			$apirep["analysis"] = $this->analysis;
+		if(isset($opts['show_contents']) && $opts['show_contents']){
+			$ldod = new LDOUpdateDisplay($this, array());
+			$apirep["contents"] = $ldod->getChangeViewHTML();
 		}
 		return $apirep;
 	}

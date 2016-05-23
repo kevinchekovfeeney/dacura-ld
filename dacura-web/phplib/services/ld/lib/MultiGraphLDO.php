@@ -276,9 +276,7 @@ class MultiGraphLDO extends LDO {
 	 */
 	function update($update_obj, $mode){
 		if(isset($update_obj['meta'])){
-			if(!$this->updateJSON($update_obj['meta'], $this->meta, $mode)){
-				return false;
-			}
+			updateJSON($update_obj['meta'], $this->meta, $mode);
 			unset($update_obj['meta']);
 		}
 		if(!($this->is_multigraph() || $this->isMultigraphUpdate($update_obj))){

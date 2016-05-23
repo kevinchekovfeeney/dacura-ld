@@ -307,15 +307,15 @@ Styling icons into a dashboard type effect in browsing
 }
 
 #dashboard {
-	background-color: #FBFAF9;
+	background-color: #FBFAF7;
 	border-collapse: collapse;
 	border: 0;
 }
 
 #dashboard-tasks h4{
-        text-align: left;
-        padding: 0;
-        margin: 0;
+    text-align: left;
+    padding: 0;
+    margin: 0;
 }
 
 #dashboard-header {
@@ -567,7 +567,7 @@ config, core, scraper, users
 }
 
 table.dc-wizard {
-	border-top: 1px solid #888;
+	border-top: 1px solid #aaa;
 	border-collapse: collapse;
 	width: 100%;
 	margin-top: 20px;
@@ -1332,12 +1332,12 @@ table.dacura-property-table {
 	border-collapse: collapse;
 	margin: 0;
 	padding: 0;
-	background-color: #f8f8f8;	
+	background-color: #fafaf0;	
 }
 
 table.dacura-property-table.property-table-top {
 	margin: 2px auto 2px auto;
-	background-color: #f8f8f8;
+	background-color: #f8f8f2;
 	font-size: 0.9em;
 	overflow: hidden;
 }
@@ -1357,7 +1357,7 @@ table.dacura-property-table .dacura-display-json {
 }
 
 table.dacura-property-table td.dacura-embedded-property {
-	background-color: #efefef;
+	background-color: #f4f4e9;
 	padding: 0px 6px 8px 6px;
 }
 

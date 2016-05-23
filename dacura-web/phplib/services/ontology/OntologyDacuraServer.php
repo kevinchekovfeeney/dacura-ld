@@ -18,7 +18,7 @@ class OntologyDacuraServer extends LdDacuraServer {
 	 */
 	function objectPublished(Ontology $ont, $test_flag = false){
 		$nopr = new DQSResult("Validating Ontology", $test_flag);
-		if($ont->is_empty()){
+		if($ont->isEmpty()){
 			return $nopr->failure(400, "Ontology is empty", "Content must be added to the ontology before it can be published");
 		}
 		$nopr->add($ont->validateDependencies($this, $test_flag), true, true);
@@ -42,7 +42,7 @@ class OntologyDacuraServer extends LdDacuraServer {
 	 * @return array|string - either 'all' or an array of tests to use
 	 */
 	function getSchemaTests(Ontology $ont){
-		if($tests = $ont->getCreateSchemaTests()) return $tests;
+		if($tests = $ont->getSchemaTests()) return $tests;
 		$p = array_keys(RVO::getSchemaTests(false)); 
 		$x = $this->getServiceSetting("create_dqs_schema_tests", $p);
 		return $x;
@@ -54,7 +54,7 @@ class OntologyDacuraServer extends LdDacuraServer {
 	 * @return array|string - either 'all' or an array of tests to use
 	 */
 	function getInstanceTests(Ontology $ont){
-		if($tests = $ont->getCreateInstanceTests()) return $tests;
+		if($tests = $ont->getInstanceTests()) return $tests;
 		$p = array_keys(RVO::getInstanceTests(false)); 
 		return $this->getServiceSetting("create_dqs_instance_tests", $p);		
 	}

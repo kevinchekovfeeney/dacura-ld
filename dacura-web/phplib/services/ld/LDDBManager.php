@@ -128,7 +128,10 @@ class LDDBManager extends DBManager {
 			}
 		}
 		if($wsql != ""){
-			$sql .= " WHERE $wsql";
+			$sql .= " WHERE $wsql".$this->where();
+		}
+		else {
+			$sql .= $this->where(true);
 		}
 		return $sql;
 	}
@@ -174,8 +177,8 @@ class LDDBManager extends DBManager {
 	function loadLDOUpdateHistory(LDO $ldo, $version){
 		try {
 			$stmt = $this->link->prepare("SELECT * FROM ldo_update_requests
-				WHERE targetid=? AND to_version <= ? AND from_version >= ? AND status='accept' ORDER BY from_version DESC");
-			$stmt->execute(array($ldo->id, $ldo->version(), $version));
+				WHERE targetid=? AND to_version <= ? AND from_version >= ? AND status='accept' AND type= ? AND collectionid = ? ORDER BY from_version DESC");
+			$stmt->execute(array($ldo->id, $ldo->version(), $version, $ldo->ldtype(), $ldo->cid()));
 			$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			return $rows;
 		}
@@ -183,6 +186,25 @@ class LDDBManager extends DBManager {
 			return $this->failure_result("PDO Error".$e->getMessage(), 500);
 		}
 	}
+
+	/**
+	 * Loads the update history of a linked data object
+	 * @param LDO $ldo the linked data object in question
+	 * @param integer $version the version number to go back to
+	 * @return multitype:|boolean
+	 */
+	function loadLDOUpdateFuture(LDO $ldo, $version){
+		try {
+			$stmt = $this->link->prepare("SELECT * FROM ldo_update_requests
+				WHERE targetid=? AND from_version >= ? AND to_version <= ? AND status='accept' AND type= ? AND collectionid = ? ORDER BY from_version ASC");
+			$stmt->execute(array($ldo->id, $ldo->version(), $version, $ldo->ldtype(), $ldo->cid()));
+			$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			return $rows;
+		}
+		catch(PDOException $e){
+			return $this->failure_result("PDO Error".$e->getMessage(), 500);
+		}
+	}	
 	
 	/**
 	 * Loads a LDO Update object from the database
@@ -235,6 +257,9 @@ class LDDBManager extends DBManager {
 					time()
 			);
 			$res = $stmt->execute($x);
+			if(!$res){
+				return $this->failure_result("DB error - Failed to create $type", 500);				
+			}
 			return true;
 		}
 		catch(PDOException $e){
@@ -251,7 +276,7 @@ class LDDBManager extends DBManager {
 	function updateLDO(LDOUpdate $uldo){
 		if($uldo->is_accept()) {
 			$uldo->to_version = $uldo->changed->version;
-			return ($this->insertLDOUpdate($uldo) && $this->updateLDORecord($uldo->changed));
+			return ($this->updateLDORecord($uldo->changed) && $this->insertLDOUpdate($uldo));
 		}
 		elseif($uldo->is_pending()){
 			$uldo->changed->status("pending");
@@ -272,11 +297,11 @@ class LDDBManager extends DBManager {
 	 * @param LDO $ldo the linked data object to be updated
 	 * @return boolean true if update was successful
 	 */
-	function updateLDORecord(LDO $ldo){
+	function updateLDORecord(LDO $ldo, $isforward = true){
 		try {
 			$stmt = $this->link->prepare("UPDATE ld_objects SET
-					version = ?, contents = ?, meta = ?, status = ?, modtime = ? WHERE id = ? and collectionid = ? and type = ?");
-			$res = $stmt->execute(array(
+					version = ?, contents = ?, meta = ?, status = ?, modtime = ? WHERE id = ? and collectionid = ? and type = ? and version = ?");
+			$args = array(
 					$ldo->version(),
 					json_encode($ldo->ldprops),
 					json_encode($ldo->meta),
@@ -284,9 +309,18 @@ class LDDBManager extends DBManager {
 					time(),
 					$ldo->id,
 					$ldo->cid,
-					$ldo->ldtype()
-			));
-			return true;
+					$ldo->ldtype());
+			if($isforward){
+				$args[] = $ldo->version() - 1;						
+			}
+			else {
+				$args[] = $ldo->version() +1;
+			}
+			$res = $stmt->execute($args);
+			if(!$res){
+				return $this->failure_result("DB error - Failed to update ".$ldo->ldtype() . " $ldo->id - possible version mismatch (not ".$ld->version() - 1, 500);
+			}
+			return true;				
 		}
 		catch(PDOException $e){
 			return $this->failure_result("PDO Error ".$e->getMessage(), 500);
@@ -333,10 +367,11 @@ class LDDBManager extends DBManager {
 	function updateUpdate(LDOUpdate $uldo, $ostatus = false){
 		if($uldo->published()) {
 			$uldo->to_version = $uldo->changed->version;
-			return ($this->updateLDOUpdate($uldo) && $this->updateLDORecord($uldo->changed));
+			$uldo->from_version = $uldo->changed->version - 1;
+			return ($this->updateLDORecord($uldo->changed) && $this->updateLDOUpdate($uldo));
 		}
 		elseif($ostatus == "accept"){//this is a rollback - we have to update the original to set it back to what it was
-			return ($this->updateLDOUpdate($uldo) && $this->updateLDORecord($uldo->original));				
+			return ($this->updateLDOUpdate($uldo) && $this->updateLDORecord($uldo->original, false));				
 		}
 		else {
 			return $this->updateLDOUpdate($uldo);
@@ -365,7 +400,7 @@ class LDDBManager extends DBManager {
 			);
 			$stmt->execute($args);
 			if($stmt->rowCount() == 0){
-				return $this->failure_result("Failed to update update ".$uldo->id, 404);
+				//return $this->failure_result("Failed to update update ".$uldo->id, 404);
 			}
 			return true;
 		}
@@ -383,7 +418,8 @@ class LDDBManager extends DBManager {
 	function rollbackUpdate($oldupd, $newupd){
 		$newupd->from_version = $oldupd->original->version;
 		$newupd->to_version = 0;
-		return ($this->updateLDOUpdate($newupd) && $this->updateLDORecord($oldupd->original));
+		//$newupd->original->version = $oldupd->original->version;
+		return ($this->updateLDOUpdate($newupd) && $this->updateLDORecord($oldupd->original, false));
 	}
 	
 	/** 
@@ -397,8 +433,8 @@ class LDDBManager extends DBManager {
 	function pendingUpdatesExist($targetid, $type, $cid, $ldoversion){
 		try {
 			$stmt = $this->link->prepare("SELECT eurid FROM ld_objects, ldo_update_requests where ld_objects.id = ? AND ld_objects.id = ldo_update_requests.targetid AND 
-					ldo_update_request.status = 'pending' AND ldo_update_requests.from_version = ? AND ld_objects.collectionid = ? AND
-					AND ld_objects.collectionid = ldo_update_requests.collectionid AND ld_objects.type = ?");
+					ldo_update_requests.status = 'pending' AND ldo_update_requests.from_version = ? AND ld_objects.collectionid = ? AND 
+					ld_objects.collectionid = ldo_update_requests.collectionid AND ld_objects.type = ?");
 			$stmt->execute(array($targetid, $ldoversion, $cid, $type));
 			$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			if($rows && count($rows) > 0){
@@ -421,15 +457,15 @@ class LDDBManager extends DBManager {
 	function getRelevantUpdates($ldo){
 		try {
 			if($ldo->isLatestVersion()){
-				$stmt = $this->link->prepare("SELECT * FROM ldo_update_requests WHERE targetid=? ORDER BY createtime DESC");
-				$stmt->execute(array($ldo->id));
+				$stmt = $this->link->prepare("SELECT * FROM ldo_update_requests WHERE targetid=? AND type = ? AND collectionid = ? ORDER BY createtime DESC");
+				$stmt->execute(array($ldo->id, $ldo->type(), $ldo->cid()));
 				$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 				return $rows;
 			}
 			else {
 				$stmt = $this->link->prepare("SELECT * FROM ldo_update_requests 
-					WHERE targetid=? AND from_version <= ? AND (to_version = 0 OR to_version = null OR to_version > ?)");
-				$stmt->execute(array($ldo->id, $ldo->version(), $ldo->version()));
+					WHERE targetid=? AND type = ? AND collectionid = ? AND from_version <= ? AND (to_version = 0 OR to_version = null OR to_version > ?)");
+				$stmt->execute(array($ldo->id, $ldo->ldtype(), $ldo->cid(), $ldo->version(), $ldo->version()));
 				$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 				return $rows;
 			}

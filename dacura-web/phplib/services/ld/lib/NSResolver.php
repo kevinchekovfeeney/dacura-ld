@@ -35,12 +35,7 @@ class NSResolver extends DacuraController {
 	);
 	
 	/** @var array a mapping of 'alternate' urls to be used in dependency analysis - the canonical url is on the right */
-	var $url_mappings = array(
-		"http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#" => "http://swat.cse.lehigh.edu/onto/univ-bench.owl#",
-		"http://www.w3.org/2008/05/skos#" => "http://www.w3.org/2004/02/skos/core#",
-		"http://web.resource.org/cc/" => "http://creativecommons.org/ns#",
-		"http://www.w3.org/2001/XMLSchema-datatypes#" => "http://www.w3.org/2001/XMLSchema#",	
-	);
+	var $url_mappings;
 	
 	/**
 	 * Constructor initialises structural_predicates, url_mappings and prefixes of NSResolver object
@@ -52,7 +47,7 @@ class NSResolver extends DacuraController {
 		$this->prefixes = $this->getServiceSetting("prefixes", $this->default_prefixes);
 		$this->structural_predicates = $this->getServiceSetting("structural_predicates", $this->structural_predicates);
 		$this->problem_predicates = $this->getServiceSetting("problem_predicates", $this->problem_predicates);
-		$this->url_mappings = $this->getServiceSetting("url_mappings", $this->url_mappings);
+		$this->loadURLMappings();
 	}
 	
 	/**
@@ -62,6 +57,10 @@ class NSResolver extends DacuraController {
 	 */
 	function addPrefix($prefix, $url){
 		$this->prefixes[$prefix] = $url;
+	}
+	
+	function loadURLMappings(){
+		$this->url_mappings = array_merge($this->getSystemSetting("url_mappings", array()), $this->getServiceSetting("url_mappings", array()));
 	}
 	
 	/**

@@ -2,7 +2,6 @@
 /**
  * Tool page footer
  * 
- * Just closes the divs that the toolheader opened
  *
  * @package core/snippets
  * @author chekov

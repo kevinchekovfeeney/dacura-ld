@@ -779,16 +779,6 @@ class DacuraService extends DacuraObject {
 	}
 	
 	/**
-	 * Renders the Dacura Quality Service Control screen 
-	 * @param string $graph the name of the graph that it is being applied to 
-	 * @param array $set_tests an array of the ids of the dqs tests that are available
-	 */
-	public function showDQSControls($graph, $set_tests){
-		$params = array("graph" => $graph, "tests" => $set_tests);
-		$this->renderScreen("dqs", $params, "ld");		
-	}
-
-	/**
 	 * Generates the HTML for a service's breadcrumb tabs
 	 * @param array $xcrumbs an array of extra breadcrumbs to add to the regular service ones
 	 * @param string $append a string (non linked) to be added at the end of the breadcrumb list

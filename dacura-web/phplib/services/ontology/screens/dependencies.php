@@ -1,5 +1,32 @@
+<div id="dqs-control" class='dacura-control dch'>
+	<div class='pane-header'>Quality Analysis <span class='pane-header-value' id='dqsresult'></span>
+		<div class='pane-header-more' id='dqsmore'>
+			<span class='controlsbox'>
+				<span class='dqsmore'>
+					<a class='show-controls' href='javascript:showDQSControls()'>more</a><a class='show-controls show-controls-icon ui-icon ui-icon-carat-1-s' href='javascript:showDQSControls()'></a>
+				</span>
+				<span class='dqsless dch'>
+					<a class='show-controls' href='javascript:hideDQSControls()'>less</a><a class='show-controls show-controls-icon ui-icon ui-icon-carat-1-n' href='javascript:hideDQSControls()'></a>
+				</span>
+			</span>
+		</div>
+	</div>
+	<div class='pane-summary' id='dqs-summary'>
+	</div>
+	<table id='dqscontroltable' class='pane-full dch'>
+ 		<tbody>
+		</tbody>
+	</table>
+	<div class='dqsanalysis dch'>
+		<div class='analysis'>
+			<span class='analysis-text'></span>
+			<span class='analysis-created'></span>
+		</div>
+		<div class='analysis-button'><button id='analyse'>Analyse Now</button></div>			
+	</div>
+</div>
 <div id='alldeps' class='dch'>	
-	<div id="dependencies">
+	<div id="dependencies" class='dacura-control'>
 		<div class='pane-header'>Dependencies 
 			<div class='pane-header-more' id='depcount'>
 				<span class='controlsbox'>
@@ -19,7 +46,7 @@
 			</tbody>
 		</table>
 	</div>
-	<div id='nsusage'>
+	<div id='nsusage' class='dacura-control'>
 		<div class='pane-header'>Vocabulary Utilisation 
 			<div class='pane-header-more' id='nsusageresult'>
 				<span class='controlsbox'>
@@ -47,19 +74,19 @@
 		</table>
 	</div>	
 </div>
-<div style='clear: both'>&nbsp;</div>
+
 <div id='structural-links' class='dch dacsub'>
 	<div class='subscreen-header'>
 		<span id="structural-links-title">Structural Links</span>
 		<span class='subscreen-close'></span>
 	</div>
 	<table class='structural-links rbtable'>
-	<thead><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr></thead>
-	<tbody></tbody>
+		<thead><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr></thead>
+		<tbody></tbody>
 	</table>
 </div>
 
-<div id="singleont-dependencies" class='dch dacsub'>
+<div id="singleont-dependencies" style='clear: both' class='dch dacsub'>
 	<div class='subscreen-header'>
 		<span id="singleont-dependencies-title"></span>
 		<span class='subscreen-close'></span>
@@ -119,14 +146,87 @@
 		</table>
 	</div>
 </div>
+<div id='dqs-subscreens'>
+	<div class='dch dacsub dqs-triples'>
+ 		<div class='subscreen-header'>
+			<span class="subscreen-title">Triples - ontology and dependencies serialised as triples</span>
+			<span class='subscreen-close'></span>
+		</div>
+		<div class='subscreen-body'></div>
+ 	</div>
+ 	<div class='dch dacsub dqs-tests'>
+ 		<div class='subscreen-header'>
+			<span class="subscreen-title">Quality Service Tests</span>
+			<span class="subscreen-title-options">
+				<span id='tmaa' class='manauto testsmanauto'>
+					<input type='radio' name='tma' id='tests-set-manual' value='manual'><label for='tests-set-manual'>Manual</label>
+					<input type='radio' name='tma' id='tests-set-automatic' value='automatic'><label for='tests-set-automatic'>Automatic</label>
+				</span>
+				<input type='checkbox' class='enable-update tests-enable-update' id='enable-update-tests' value="">
+				<label for='enable-update-tests'>Update</label>
+			</span>
+			<span class='subscreen-close'></span>
+		</div>
+		<div class='subscreen-messages dqs-messages'></div>		
+		<div class='subscreen-body'></div>
+ 	</div>
+ 	<div class='dch dacsub dqs-errors'>
+ 		<div class='subscreen-header'>
+			<span class="subscreen-title">Errors</span>
+			<span class='subscreen-close'></span>
+		</div>
+		<div class='subscreen-body'></div>
+ 	</div>
+ 	<div class='dch dacsub dqs-warnings'>
+  		<div class='subscreen-header'>
+			<span class="subscreen-title">Warnings</span>
+			<span class='subscreen-close'></span>
+		</div>
+		<div class='subscreen-body'></div>
+ 	</div>
+ 	<div class='dch dacsub dqs-imports'>
+  		<div class='subscreen-header'>
+			<span class="subscreen-title">Imported ontologies</span>
+			<span class="subscreen-title-options">
+				<span id='imaa' class='manauto'>
+					<input type='radio' name='ima' id='imports-set-manual' value='manual'><label for='imports-set-manual'>Manual</label>
+					<input type='radio' name='ima' id='imports-set-automatic' value='automatic'><label for='imports-set-automatic'>Automatic</label>
+				</span>
+				<input type='checkbox' class='enable-update imports-enable-update' id='enable-update-imports' value="">
+				<label for='enable-update-imports'>Update</label>
+			</span>
+			<span class='subscreen-close'></span>
+		</div>
+		<div class='subscreen-messages imports-messages'></div>
+		<div class='subscreen-body'></div>	
+ 	</div>
+ </div>
 <script>
 var depids = [];
+var test_update_dqs_options = <?php echo isset($params['test_update_dqs_options']) && $params['test_update_dqs_options'] ? $params['test_update_dqs_options'] : "{}";?>;
+var update_dqs_options = <?php echo isset($params['update_dqs_options']) && $params['update_dqs_options'] ? $params['update_dqs_options'] : "{}";?>;
 
 function hideDependenciesControls(){
 	$('#deptable').hide("slide", {"direction": "up"});	
 	$('.dependenciesless').hide();
 	$('.dependenciesmore').show();
 	$('#dependencies-summary').show("drop", {"direction": "down"});
+}
+
+function hideDQSControls(){
+	$('.dqsanalysis').hide();
+	$('.dqsless').hide();
+	$('.dqsmore').show();
+	$('#dqscontroltable').hide("slide", {"direction": "up"});	
+	$('#dqs-summary').show("drop", {"direction": "down"});
+}
+
+function showDQSControls(){
+	$('.dqsless').show();
+	$('.dqsmore').hide();
+	$('#dqs-summary').hide("drop", {"direction": "down"});
+	$('#dqscontroltable').show("slide", {"direction": "up"});
+	$('.dqsanalysis').show();
 }
 
 function showDependenciesControls(){
@@ -188,7 +288,6 @@ function getDepRow(dep, id, key, isauto){
 	return html; 
 }
 
-
 function getTreeAsTable(tree){
 	var hasentry = false;
 	var html = "<ul class='include-treelist'>";
@@ -214,7 +313,7 @@ function getIncludeTreeHTML(tree){
 		html += treehtml;
 		var entries = [];
 		if(typeof(tree[r]) == 'object'){
-			entries = getTreeEntries(tree[r]);
+			entries = dacura.ld.getTreeEntries(tree[r]);
 			for(var k = 0; k < entries.length; k++){
 				html += dacura.ld.getOntologyViewHTML(entries[k], entries[k] + " ontology");
 			}
@@ -234,7 +333,7 @@ function showIncludeTree(tree, jqid, htxt){
 		$(jqid).append(treehtml);
 		var entries = [];
 		if(typeof(tree[r]) == 'object'){
-			entries = getTreeEntries(tree[r]);
+			entries = dacura.ld.getTreeEntries(tree[r]);
 			for(var k = 0; k < entries.length; k++){
 				$(jqid).append(dacura.ld.getOntologyViewHTML(entries[k], entries[k] + " ontology"));
 			}
@@ -244,7 +343,6 @@ function showIncludeTree(tree, jqid, htxt){
 	$(jqid + '_header').html(htxt + " (" + cnt + ")");
 	$(jqid + ' .include-treelist').menu();	
 }
-
 
 function getNSUsageRows(count){
 	var rows = [];
@@ -300,7 +398,6 @@ function writeStructuralTable(structurals){
 	}	
 }
 
-
 function getDepsRows(count, deps, imported){
 	var rows = [];
 	rowdata = {
@@ -317,7 +414,7 @@ function getDepsRows(count, deps, imported){
 	rows.push(rowdata);
 	$('#ns-structural').show();	  		
 	if(typeof deps['include_tree'] != "undefined"){
-		var ndeps = getTreeEntries(deps.include_tree);
+		var ndeps = dacura.ld.getTreeEntries(deps.include_tree);
 		rowdata = {
 			icon: dacura.system.getIcon("dependencies"),
 			id: "dependencies",
@@ -332,12 +429,12 @@ function getDepsRows(count, deps, imported){
 	}
 	rows.push(rowdata);
 	if(typeof deps['schema_include_tree'] != "undefined"){
-		var ndeps = getTreeEntries(deps.schema_include_tree);
+		var ndeps = dacura.ld.getTreeEntries(deps.schema_include_tree);
 		rowdata = {
 			icon: dacura.system.getIcon("dependencies"),
 			id: "schema_dependencies",
 			count: ndeps.length,
-			variable: "link" + (ndeps.length == 1 ? "" : "s"),
+			variable: "schema link" + (ndeps.length == 1 ? "" : "s"),
 			value: getIncludeTreeHTML(deps.schema_include_tree), 
 			help: "The ontologies which would be needed to verify updates to this ontology"
 		}
@@ -347,6 +444,13 @@ function getDepsRows(count, deps, imported){
 	}
 	rows.push(rowdata);
 	return rows;
+}
+
+function refreshDependencies(deps){
+	$('#deptable tbody').empty();
+	$('#dependencies-summary').empty();
+	$('#nsusage-summary').empty();
+	showDependencies(deps);
 }
 
 function showDependencies(deps){
@@ -417,12 +521,12 @@ function showDependencies(deps){
 	
 	var nrows = getNSUsageRows(count);
 	for(var i = 0; i<nrows.length; i++){
-		$('#nsusage-summary').append(getSummaryTableEntry(nrows[i]));					
+		$('#nsusage-summary').append(dacura.ld.getSummaryTableEntry(nrows[i]));					
 	}
 	var rows = getDepsRows(count, deps, imported);
 	for(var i = 0; i<rows.length; i++){
-		$('#deptable tbody').append(getControlTableRow(rows[i]));
-		$('#dependencies-summary').append(getSummaryTableEntry(rows[i]));					
+		$('#deptable tbody').append(dacura.ld.getControlTableRow(rows[i]));
+		$('#dependencies-summary').append(dacura.ld.getSummaryTableEntry(rows[i]));					
 	}	
 	
 	$(' .include-treelist').menu();	
@@ -500,7 +604,6 @@ function showDependencies(deps){
 			showNSUsageControls();			
 		}
 	}
-	//$('#dqscontroltable tr.control-table-clickable').hover(hvrin, hvrout).click(hclick);
 	$('#alldeps .clickable-summary').hover(hvrin, hvrout).click(hclick);	
 }
 
@@ -555,6 +658,146 @@ function showNSDependencies(dep, ns){
 	
 }
 
+
+function getAutomaticImports(data){
+	var available_imports = <?=$params['available_ontologies']?>;
+	imps = {};
+	if(typeof data.analysis == "object" && typeof data.analysis.dependencies == "object" && typeof data.analysis.dependencies.include_tree == "object"){
+		var ents = dacura.ld.getTreeEntries(data.analysis.dependencies.include_tree);
+		for(var i = 0; i<ents.length; i++){
+			imps[ents[i]] = {collection: available_imports[ents[i]].collection, version: 0, id: available_imports[ents[i]].id};
+		}
+	}
+	else {
+		if(typeof data.analysis == "object" && typeof data.analysis.validation == "object" && typeof data.analysis.validation.imports == "object"){
+			for(var k in data.analysis.validation.imports){
+				imps[k] = {
+					collection: data.analysis.validation.imports[k].collection,
+					version: 0, 
+					id: data.analysis.validation.imports[k].id
+				};
+			}
+		}
+	}
+	return imps;
+}
+
+function initDQS(data, pconf){
+	drawDQS(data, pconf);
+	$('#dqs-control').show();	
+}
+
+function refreshDQS(data, pconf){
+	$('#dqscontroltable tbody').empty();
+	$('#dqs-summary').empty();					
+	drawDQS(data, pconf);
+}
+
+function drawDQS(data, pconf){
+	dacura.ld.showAnalysisBasics(data, '.analysis-text');
+	$('.analysis-created').html(" (created with version " + data.analysis.version + " at " + timeConverter(data.analysis.created, true) + ")");
+	var res = new LDGraphResult(data.analysis.validation, "triples", pconf);
+	$('#dqsresult').html(res.getResultHeadlineHTML());
+	if(res.status == "accept"){
+		$('#dqs-control').addClass("dqs-success");
+	}
+	else {
+		$('#dqs-control').addClass("dqs-failure");	
+	}
+	var dqsconfig = new DQSConfigurator(data.meta.dqs_tests, <?=$params['default_dqs_tests']?>, <?=$params['dqs_schema_tests']?>, "view", handleDQSUpdate);
+	var importer = new OntologyImporter(data.meta.imports, <?=$params['available_ontologies']?>, getAutomaticImports(data), "view", handleImportUpdate);
+	rows = dacura.ld.getDQSRows("#dqs-subscreens", res, data.meta, pconf,  importer, dqsconfig);
+	for(var i = 0; i<rows.length; i++){
+		$('#dqscontroltable tbody').append(dacura.ld.getControlTableRow(rows[i]));
+		$('#dqs-summary').append(dacura.ld.getSummaryTableEntry(rows[i]));					
+	}
+	setDQSDynamics(data, pconf);
+		
+}
+
+function setDQSDynamics(data, pconf){
+	var hvrin = function(){
+		$(this).addClass('uhover');
+	};
+	var hvrout = function() {
+	    $(this).removeClass('uhover');
+	}
+	var hclick = function(){
+		var act = this.id.substring(4);
+		$('.dacsub').hide();
+		if(act == "imports" || act == "tests"){
+			$('.dacura-control').hide();
+			$('#dqs-subscreens .dqs-'+act).show("drop", { direction: "down" });			
+		}
+		else {
+			$('#dqs-subscreens .dqs-'+act).show("drop", { direction: "down" });
+	  		dacura.system.goTo('#dqs-subscreens .dqs-'+act);
+		}
+	}
+	$('#dqscontroltable tr.control-table-clickable').hover(hvrin, hvrout).click(hclick);
+	$('#dqs-summary .clickable-summary').hover(hvrin, hvrout).click(hclick);
+	$('#analyse').button().click( function(){
+		var opts = <?=$params['fetch_args']?>;
+		opts.options.analysis = 2;
+		dacura.ld.fetch("<?=$params['id']?>", opts, refreshLDOPage, pconf);		
+	});
+
+}
+
+var handleImportUpdate = function(conf, isauto, test){
+	//transform conf back into an owl updates request
+	var pconf = {resultbox: ".imports-messages", busybox: ".dqs-imports" }
+	var upd = {
+		options: (test ? test_update_dqs_options : update_dqs_options ),
+		format: "json", 
+		test: test
+	};
+	if(isauto){
+		upd.editmode = "update";
+		upd.meta = {'imports': []};  
+	}
+	else {
+		upd.editmode = "replace",
+		upd.meta = {'imports': conf};  
+	}
+	updateOntology(upd, pconf)	
+} 
+
+function handleDQSUpdate(conf, isauto, test){
+	var pconf = {resultbox: ".dqs-messages", busybox: ".dqs-tests" }
+	var upd = {
+		meta: {},
+		format: "json", 
+		test: test,
+		options: (test ? test_update_dqs_options : update_dqs_options )
+	};
+	if(isauto){
+		upd.meta["dqs_tests"] = [];
+		upd.editmode = "update";		
+	}
+	else {
+		upd.meta["dqs_tests"] = conf;
+		upd.editmode = "replace";
+	}
+	updateOntology(upd, pconf)	
+} 
+
+function updateOntology(upd, pconf){
+	handleResp = function(data, pconf){
+		var res = new LDResult(data, pconf);
+		if(res.status == "accept" && !res.test){
+			var rconf = { resultbox: ".tool-info", busybox: ".tool-holder"};
+			var refreshargs = $.extend(true, {}, ldov.ldo.getAPIArgs());
+			refreshargs.options.analysis = 2;
+			dacura.ld.fetch("<?=$params['id']?>", refreshargs, refreshLDOPage, rconf);			
+		}
+		//else if(typeof upd_imports != "undefined" && upd_imports){
+		//	importer.setImports(getExplicitImports(data.result), getImplicitImports(data.result));
+		//}
+		res.show();
+	}
+	dacura.ld.update("<?=$params['id']?>", upd, handleResp, pconf, upd.test);
+}
 
 
 </script>

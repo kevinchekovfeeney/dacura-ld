@@ -16,21 +16,21 @@ $settings["create_ldo_fields"] = array(
 		//"ldtype" => array("label" => "Linked Data Type", "input_type" => "select", "help" => "The full title of the object - may include spaces and punctuation."),
 		//"title" => array("label" => "Title", "length" => "long", "help" => "The full title of the object - may include spaces and punctuation."),
 		"status" =>	array("label" => "Status", "help" => "The current status of the object", "type" => "status"),
-		"candtype" =>	array("label" => "Available Types", "help" => "The rdf:type of the candidate (must be present in the contents)", "type" => "choice", "options" => array()),
+		"imptype" => array("label" => "Create From", "type" => "choice", "options" => array("frame" => "Web Form", "import" => "Import from Linked Data"), "input_type" => "radio", "help" => "You can choose to type the contents of the candidate into a form or importing it from a Linked Data file"),
+		"candtype" =>	array("label" => "Entity Type", "help" => "What type of thing are you inputting? This will become the rdf:type of the candidate (must be present in the contents)", "type" => "choice", "options" => array()),
+		"ldcontents" => array("label" => "Import Contents", "type" => "placeholder", "help" => "The contents of the object (in RDF - Linked Data format)"),
 		//"image" => array("type" => "image", "label" => "Image", "help" => "An image which will represent the object on pages."),
 		//"url" => array("label" => "Canonical URL", "type" => "url", "help" => "The External URL which represents the 'canonical' id of this object (to support purls, etc)."),
 		//"meta" => array("label" => "Object Meta-data", "type" => "complex", "input_type" => "custom", "help" => "Arbitrary json meta-data that is associated with the object"),
-		"ldsource" => array("label" => "Contents Source", "type" => "choice", "options" => array("text" => "Textbox", "url" => "Import from URL", "file" => "Upload File"), "input_type" => "radio", "help" => "You can choose to import the contents of the linked data object from a url, a local file, or by inputting the text directly into the textbox here"),
-		"format" => array("label" => "Contents Format", "type" => "choice", "help" => "The contents of the object (in RDF - Linked Data format)"),
-		"ldurl" => array("label" => "Import URL", "type" => "url", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("download" => array("title" => "Load URL"))),
-		"ldfile" => array("label" => "Import File", "type" => "file", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("upload" => array("title" => "Upload File"))),
-		"contents" => array("label" => "Contents", "type" => "complex", "input_type" => "custom", "help" => "The contents of the object (in RDF - Linked Data format)"),
+		//"format" => array("label" => "Contents Format", "type" => "choice", "help" => "The contents of the object (in RDF - Linked Data format)"),
+		//"ldurl" => array("label" => "Import URL", "type" => "url", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("download" => array("title" => "Load URL"))),
+		//"ldfile" => array("label" => "Import File", "type" => "file", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("upload" => array("title" => "Upload File"))),
 );
 
-$settings["messages"] = array(
+$msg_extensions = array(
 		"view_frame_intro" => "This is the frame-based view of the Candidate",
-		"list_page_title" => "Manage your Instance Data",
-		"list_page_subtitle" => "View and manage your candidates - units of instance data",
+		"list_page_title" => "Manage your candidates",
+		"list_page_subtitle" => "Candidates are Dacura's unit of instance-data",
 		"ld_list_title" => "Candidates",
 		"ld_create_title" => "Create New Candidate",
 		"ld_updates_title" => "Updates to Candidates",
@@ -41,9 +41,7 @@ $settings["messages"] = array(
 		//"view_contents_intro" => "View the RDF contents of this LDO",
 		"view_meta_intro" => "View the candidate's meta-data",
 		"create_button_text" => "Create New Candidate",
-		"testcreate_button_text" => "Test Candidate Creation",
-		"raw_edit_text" => "Update Candidate",
-		"testraw_edit_text" => "Test Candidate Update",
+		"test_create_button_text" => "Test Candidate Creation",
 		"view_update_contents_intro" => "The update to the Candidate's contents",
 		"view_update_meta_intro" => "The Candidate update's meta data",
 		"view_update_analysis_intro" => "The Candidate update's analysis",
@@ -53,3 +51,8 @@ $settings["messages"] = array(
 		"update_meta_button" => "Save Updated Metadata",
 		"test_update_meta_button" => "Test Metadata Update",		
 );
+
+
+foreach($msg_extensions as $k => $v){
+	$settings["messages"][$k] = $v;
+}
