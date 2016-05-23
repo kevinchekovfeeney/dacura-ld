@@ -77,10 +77,10 @@ seshattoy:PopulationVariable
   rdfs:label "Population Variable"@en ;
   rdfs:comment "Seshat variable to hold a population size value."@en .
 
-seshat:name
+seshat:name 
     rdfs:subPropertyOf seshat:hasGeneralVariable ;
     rdfs:label "Name" ;
-    rdfs:comment "The name of a seshat Entity. Generally same as the name of the wiki page." ;
+    rdfs:comment "The name of a seshat Entity. Generally same as the name of the wiki page. " ;
     rdfs:domain seshat:Entity ;
     rdfs:range seshat:NameVariable .
 
