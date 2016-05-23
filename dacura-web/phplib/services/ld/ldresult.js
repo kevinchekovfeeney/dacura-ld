@@ -146,7 +146,7 @@ LDResult.prototype.getExtraFields = function(){
 		subs['dqs'] = {title: 'DQS Published Triples', content: this.dqsgraph.getHTML(false)};
 	}
 	if(this.updategraph ){
-		subs["update"] = {title: 'Updated Updates', content: this.updategraph.getHTML(false)};
+		subs["update"] = {title: 'Updates', content: this.updategraph.getHTML(false)};
 	}
 	return subs;
 }

@@ -14,7 +14,7 @@ class PolicyEngine extends DacuraController {
 	/** @var array An array of decisions for actions - these are default decisions, they can be overridden by settings */
 	var $decisions = array(
 		"view" => "accept",	
-		"update" => "accept",	
+		"update" => "pending",	
 		"create" => "accept",	
 		"delete" => "accept",	
 		"view update" => "accept",	

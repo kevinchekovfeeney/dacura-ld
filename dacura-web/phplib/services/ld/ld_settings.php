@@ -9,7 +9,7 @@ $settings = array(
 	/*settings for ld services  - first the general purpose ones, then the ones associated with particular screens */
 	"demand_id_token" => "@id",//if @id clashes with json ld @id then this can be changed 
 	/* are we allowed to create empty linked data objects? */
-	"ldo_allow_empty_create" => true,
+	"ldo_allow_empty_create" => false,
 	/* are we allowed to request that our linked data objects have externally defined ids */
 	"ldo_allow_demand_id" => true,
 	/* the minimum length of the id of a linked data object */
@@ -30,13 +30,14 @@ $settings = array(
 	//uncomment to allow overriding of policy engine stuff
 	//"decisions" => array...
 	/* if the dqs rejects a new object, to we want to roll it back and let it be pending in the object store? */
-	"rollback_new_to_pending_on_dqs_reject"	=> true,
+	"rollback_ldo_to_pending_on_dqs_reject"	=> true,
 	/* if the dqs rejects a request that is in pending state, do we retain the pending state or go to reject? */
 	"retain_pending_on_dqs_reject"	=> true,
 	/* if there are updates pending on the current version of an object, we may not want to allow us to roll it back to an older version */
 	"pending_updates_prevent_rollback" => false,
 	/* if dqs rejects an update because there has been a version clash, do we want to save it in the object store as a deferred update? */	
-	"rollback_updates_to_pending_on_version_reject" => true,
+	"rollback_update_to_pending_on_version_reject" => true,
+	"rollback_update_to_pending_on_dqs_reject"	=> false,
 	/* are two tier schemas in operation */
 	"two_tier_schemas" => false,
 	/* should we apply graph tests to objects even when they are unpublished (hypotethical tests). */		
@@ -81,9 +82,10 @@ $settings = array(
 		//"options_target" => "#row-ldo-details-ldcontents th",
 		//"ldimport_header" => "Import Contents"
 	),
+		
 	/* the list of options that can be sent to api for create command */
 	"create_user_options" => array(
-		"ns", "addressable", "plain", "analysis", "fail_on_id_denied", 
+		"ns", "addressable", "plain", "analysis", "fail_on_id_denied", "show_dqs_triples",
 		"rollback_ldo_to_pending_on_dqs_reject", "show_ld_triples", "show_result", "show_meta_triples"
 	),
 	/* options that are fixed to a particular value for every create command (allows us to limit api selectively) */	
@@ -107,22 +109,39 @@ $settings = array(
 		"id" => array("label" => "ID", "length" => "short", "help" => "The id of the linked data object - must be all lowercase with no spaces or punctuation. Choose carefully - the id appears in all urls that reference the object and cannot be easily changed!"),
 		"ldtype" => array("label" => "Linked Data Type", "input_type" => "select", "help" => "The full title of the object - may include spaces and punctuation."),
 		"status" =>	array("label" => "Status", "help" => "The current status of the object", "type" => "status"),
-		"meta" => array("label" => "Metadata", "type" => "complex", "input_type" => "custom", "help" => "Arbitrary json meta-data that is associated with the object"),
+		"meta" => array("label" => "Metadata", "type" => "complex", "input_type" => "custom", "help" => "Structured json meta-data that is associated with the object"),
 		"ldcontents" => array("type" => "placeholder", "label" => "Import Contents")
 	),
 		
-	/* view screen * /
+	/* view screen */
+	"ldo_viewer_config" => array(),
+	"show_contents_options" => array("show_options" => true, "show_buttons" => true),
+ 	"ldoview_user_options" => array("ns", "addressable", "plain", "history", "updates", "analysis"),
+	/* fill in to set some filters to fixed - they are always a particular value, irrespective of user input */
+	"ldoview_fixed_options" => array(),		
+	"ldoview_default_options" => array("ns" => 1, "history" => 1, "updates" => 1, "analysis" => 1),
+
+	"ldoview_user_args" => array("version", "mode", "ldtype", "format"),
+	/* fill in to set some filters to fixed - they are always a particular value, irrespective of user input */
+	"ldoview_fixed_args" => array(),
+	"ldoview_default_args" => array("format" => "json"),
 	
 	/* contents tab */
+	"ldo_viewer_config" => array(
+	),		
 	/* default options to be sent to api for update command */
-	"update_user_options" => array(
+	"ldo_update_user_options" => array(
 		"ns", "addressable", "plain", "rollback_update_to_pending_on_dqs_reject", "show_dqs_triples", "show_ld_triples", 
 		"fail_on_id_denied", "show_update_triples", "show_meta_triples", "show_result", "show_changed", "show_original"
 	),
-	"update_fixed_options" => array(),
-	"update_default_options" => array("fail_on_id_denied" => 1),
-	"test_update_fixed_options" => array(),
-	"test_update_default_options" => array(
+	"ldo_test_update_user_options" => array(
+		"ns", "addressable", "plain", "rollback_update_to_pending_on_dqs_reject", "show_dqs_triples", "show_ld_triples", 
+		"fail_on_id_denied", "show_update_triples", "show_meta_triples", "show_result", "show_changed", "show_original"
+	),
+	"ldo_update_fixed_options" => array(),
+	"ldo_update_default_options" => array("fail_on_id_denied" => 1),
+	"ldo_test_update_fixed_options" => array(),
+	"ldo_test_update_default_options" => array(
 		"show_dqs_triples" => 1, 
 		"show_ld_triples" => 1, 
 		"fail_on_id_denied" => 0, 
@@ -133,22 +152,100 @@ $settings = array(
 		"show_original" => 1, 
 		"ns" => 1
 	),
-
+	"ldo_update_user_args" => array("version", "editmode", "mode", "ldtype", "format"),
+	/* fill in to set some filters to fixed - they are always a particular value, irrespective of user input */
+	"ldo_update_fixed_args" => array(),
+	"ldo_update_default_args" => array(),
+	"ldo_test_update_user_args" => array("version", "editmode", "mode", "ldtype", "format"),
+	"ldo_test_update_fixed_args" => array(),
+	"ldo_test_update_default_args" => array(),
+	
 	/* Meta Tab */
 	"update_meta_fields" => array(
-		//"status" =>	array("label" => "Status", "help" => "The current status of the object", "type" => "status"),
-		//"image" => array("type" => "image", "label" => "Image", "help" => "An image which will represent the object on pages."),
-		//"title" => array("label" => "Title", "length" => "long", "help" => "The full title of the object - may include spaces and punctuation."),
-		//"url" => array("label" => "Canonical URL", "type" => "url", "help" => "The External URL which represents the 'canonical' id of this object (to support purls, etc)."),
-		"meta" => array("label" => "Object Meta-data", "type" => "complex", "input_type" => "custom", "help" => "Arbitrary json meta-data that is associated with the object"),
+		"meta" => array("label" => "Object Metadata", "type" => "complex", "input_type" => "custom", "help" => "Json meta-data that is associated with the object"),
 	),
-	
-	/* Analysis Tab */
-	"ldo_analysis_fields" => array(
-		"imports" => array("label" => "Imported Ontologies", "type" => "complex", "input_type" => "custom", "help" => "The ontologies that will be imported by this ontology"),
-		"schema_imports" => array("label" => "Used Ontologies", "type" => "complex", "input_type" => "custom", "help" => "The ontologies used by this ontology"),
-		"dqs_tests" => array("label" => "DQS Tests", "type" => "complex", "input_type" => "custom", "help" => "The DQS tests that will be opened.")
+	"ldo_meta_user_options" => array(
+			"ns", "plain", "show_update_triples", "show_meta_triples", "show_result", "show_changed", "show_original"
 	),
+	"ldo_test_meta_user_options" => array(
+			"ns", "plain", "show_update_triples", "show_meta_triples", "show_result", "show_changed", "show_original"
+	),
+	"ldo_meta_fixed_options" => array(),
+	"ldo_meta_default_options" => array("ns" => 1),
+	"ldo_test_meta_fixed_options" => array(),
+	"ldo_test_meta_default_options" => array(
+		"show_update_triples" => 1,
+		"show_meta_triples" => 1,
+		"show_result" => 1,
+		"show_changed" => 1,
+		"show_original" => 1,
+		"ns" => 1
+	),
+		
+	/* View Update Page */	
+	"ldoupdate_viewer_config" => array(),
+		
+	"update_update_user_args" => array("version", "editmode", "mode", "ldtype", "format"),
+	/* fill in to set some filters to fixed - they are always a particular value, irrespective of user input */
+	"update_update_fixed_args" => array(),
+	"update_update_default_args" => array(),
+	"test_update_update_user_args" => array("version", "editmode", "mode", "ldtype", "format"),
+	"test_update_update_fixed_args" => array(),
+	"test_update_update_default_args" => array(),
+
+	"update_update_user_options" => array(
+			"ns", "addressable", "plain", "rollback_update_to_pending_on_dqs_reject", "show_dqs_triples", "show_ld_triples",
+			"fail_on_id_denied", "show_update_triples", "show_meta_triples", "show_result", "show_changed", "show_original"
+	),
+	"test_update_update_user_options" => array(
+			"ns", "addressable", "plain", "rollback_update_to_pending_on_dqs_reject", "show_dqs_triples", "show_ld_triples",
+			"fail_on_id_denied", "show_update_triples", "show_meta_triples", "show_result", "show_changed", "show_original"
+	),
+	"update_update_fixed_options" => array(),
+	"update_update_default_options" => array("fail_on_id_denied" => 1),
+	"test_update_update_fixed_options" => array(),
+	"test_update_update_default_options" => array(
+			"show_dqs_triples" => 1,
+			"show_delta" => 1,
+			"show_ld_triples" => 1,
+			"fail_on_id_denied" => 0,
+			"show_update_triples" => 1,
+			"show_meta_triples" => 1,
+			"show_result" => 1,
+			"show_changed" => 1,
+			"show_original" => 1,
+			"ns" => 1
+	),		
+		
+	"update_meta_user_options" => array(
+		"ns", "plain", "show_update_triples", "show_meta_triples", "show_result", "show_changed", "show_original"
+	),
+	"update_test_meta_user_options" => array(
+		"ns", "plain", "show_update_triples", "show_meta_triples", "show_result", "show_changed", "show_original"
+	),
+	"update_meta_fixed_options" => array(),
+	"update_meta_default_options" => array("ns" => 1),
+	"update_test_meta_fixed_options" => array(),
+	"update_test_meta_default_options" => array(
+		"show_update_triples" => 1,
+		"show_meta_triples" => 1,
+		"show_result" => 1,
+		"show_changed" => 1,
+		"show_original" => 1,
+		"ns" => 1
+	),
+		
+	"show_update_contents_options" => array("show_options" => true, "show_buttons" => false),
+		
+	"update_view_user_options" => array("ns", "addressable", "plain", "show_changed", "show_original", "show_contents", "show_delta"),
+	/* fill in to set some filters to fixed - they are always a particular value, irrespective of user input */
+	"update_view_fixed_options" => array(),
+	"update_view_default_options" => array("ns" => 1, "show_changed" => 1, "show_original" => 1, "show_delta" => 1, "show_contents" => 1),
+	"update_view_user_args" => array("version", "mode", "ldtype", "format"),
+	/* fill in to set some filters to fixed - they are always a particular value, irrespective of user input */
+	"update_view_fixed_args" => array(),
+	"update_view_default_args" => array("format" => "json"),		
+		
 	/* the tables - all sreens together */	
 	"tables" => array(
 		"history" => array("datatable_options" => array(
@@ -182,6 +279,10 @@ $settings = array(
 		"updates_multiselect_button_text" => "Set selected updates to status: ",			
 		"updates_multiselect_text" => "Update",			
 		"create_ldo_intro" => "",
+		"view_page_title" => "Linked Data Object",	
+		"view_page_subtitle" => "",
+		"view_page_description" => "",
+				
 		"list_objects_intro" => "",
 		"list_updates_intro" => "",
 		"view_history_intro" => "",
@@ -198,12 +299,19 @@ $settings = array(
 		"update_meta_button" => "Save Updated Metadata",
 		"test_update_meta_button" => "Test Metadata Update",
 		"test_create_button_text" => "Test Creation",
-		"testraw_edit_text" => "Test LDO Update",
-		"view_update_contents_intro" => "The contents of the update to the LDO",
-		"view_update_meta_intro" => "The LDO update's meta data",
-		"view_update_analysis_intro" => "The LDO update's analysis",
-		"update_raw_intro_msg" => "The LDO update's raw editing interface",
-		"view_update_after_msg" => "The LDO after the update has taken place",
-		"view_update_before_msg" => "The LDO before the update has taken place",
+
+		"update_screen_title" => "View Update",	
+		"update_screen_subtitle" => "",
+		"update_contents_screen_title" => "update contents",
+		"update_commands_screen_title" => "Update Command",	
+		"update_meta_screen_title" => "Update Metadata",
+		"update_after_screen_title" => "after the update",
+		"update_before_screen_title" => "before the update",
+		"update_update_button_text" => "Save Updated Update",
+		"test_update_update_button_text" => "Test Updated Update",
+		"view_update_contents_intro_msg" => "",
+		"view_update_meta_intro" => "",
+		"view_after_intro_msg" => "",
+		"update_before_intro_msg" => ""
 	),
 );

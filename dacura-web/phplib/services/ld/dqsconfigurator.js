@@ -19,7 +19,7 @@ function DQSConfigurator(saved, def, avs, mode, ucallback){
 	else {
 		this.ldtype = "ontology";
 	}
-	this.saved = typeof saved == "object" ? saved : false;
+	this.saved = (typeof saved == "object" ? saved : false);
 	if(this.saved){
 		this.original = this.saved;
 		if(typeof this.saved == 'object'){
@@ -336,6 +336,9 @@ DQSConfigurator.prototype.getButtonsHTML = function (){
 DQSConfigurator.prototype.draw = function(jq, mode, dontfill){
 	if(typeof mode != "undefined"){
 		this.mode = mode; 
+	}
+	if(typeof this.fake != "undefined" && this.fake){
+		return;
 	}
 	var html = "<div class='dqsconfig'>";
 	html += "<div class='dqs-all-config-element'></div>";

@@ -13,14 +13,19 @@ class CandidateService extends LdService {
 		if(isset($params['create_ldo_fields']['candtype'])){
 			$cands = $dacura_server->getValidCandidateTypes();
 			$choices = array();
-			foreach($cands as $cand){
-				if($compressed = $dacura_server->nsres->compress($cand)){
-					if($compressed == "owl:Nothing") continue;
-					$choices[$cand] = $compressed;
+			if($cands){
+				foreach($cands as $cand){
+					if($compressed = $dacura_server->nsres->compress($cand)){
+						if($compressed == "owl:Nothing") continue;
+						$choices[$cand] = $compressed;
+					}
+					else {
+						$choices[$cand] = $cand;
+					}
 				}
-				else {
-					$choices[$cand] = $cand;
-				}
+			}
+			else {
+				
 			}
 			if($choices){
 				$params['create_ldo_fields']['candtype']['options'] = $choices;

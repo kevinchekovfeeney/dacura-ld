@@ -910,6 +910,8 @@ dacura.tool.table = {
 			}
 			dacura.tool.tables[key].rows[ids.length-1] = objs[i]; 
 		}
+		dacura.system.styleJSONLD('#' + key + ' .rawjson');
+
 		if(typeof tconfig.nohover == "undefined" || tconfig.nohover == false){
 			$("#" + key + ' .dacura-listing-row').hover(function(){
 				$(this).addClass('userhover');
@@ -1144,8 +1146,11 @@ dacura.tool.table = {
 			dacura.tool.table.reincarnate(key, obj, tab);			
 		}
 		var pconf = dacura.tool.subscreens[tab.screen];
+		if(typeof pconf.mopts != "object") pconf.mopts = {};
 		pconf.mopts.scrollTo = false;
-		tab.fetch(drawLTable, pconf);
+		if(typeof tab.fetch == "function"){
+			tab.fetch(drawLTable, pconf);
+		}
 	},
 	
 	/**
@@ -1162,8 +1167,11 @@ dacura.tool.table = {
 		}
 		var cont = tconfig.container;
 		dacura.tool.table.nuke(key, tconfig);
-		if(typeof dacura.tool.tables[key] == "undefined" || typeof dacura.tool.tables[key].properties == "undefined"){
-			alert("error - attempt to reincarnate table without having properties " + key);
+		if(typeof dacura.tool.tables[key] == "undefined"){
+			alert("error - attempt to reincarnate unknown table " + key);
+		}
+		else if (typeof dacura.tool.tables[key].properties == "undefined"){
+			dacura.tool.tables[key].properties = dacura.tool.table.readprops(key);
 		}
 		var tab = dacura.tool.tables[key];
 		var html = "<table id='" + key + "' class='dch dacura-api-listing'><thead><tr>";
@@ -1175,7 +1183,7 @@ dacura.tool.table = {
 			html += "</th>";
 		}
 		html += "</thead><tbody></tbody></table>";
-		$('#' + cont).append(html);
+		$('#' + cont).prepend(html);
 		dacura.tool.table.draw(key, objs, tconfig);
 	},
 	

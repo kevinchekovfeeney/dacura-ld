@@ -27,6 +27,7 @@ class LdService extends DacuraService {
 		$this->included_scripts[] = $this->get_service_script_url("ldoviewer.js", "ld");
 		$this->included_scripts[] = $this->get_service_script_url("ldo.js", "ld");
 		$this->included_scripts[] = $this->get_service_script_url("ldoupdate.js", "ld");
+		$this->included_scripts[] = $this->get_service_script_url("ldoupdateviewer.js", "ld");
 		$this->included_scripts[] = $this->get_service_script_url("ldresult.js", "ld");
 		$this->included_scripts[] = $this->get_service_script_url("ldgraphresult.js", "ld");
 		$this->included_scripts[] = $this->get_service_script_url("rvo.js", "ld");
@@ -74,6 +75,20 @@ class LdService extends DacuraService {
 		else {
 			return parent::renderScreen($screen, $params, $other_service);
 		}
+	}
+	
+	function ssInclude($screen){
+		$f = $this->mydir."screens/$screen.php";
+		if(file_exists($f)){
+			return $f;
+		}
+		else if($this->name() != "ld"){
+			$f = $this->getSystemSetting('path_to_services')."ld/screens/".$screen .".php";			
+			if(file_exists($f)){
+				return $f;
+			}
+		}		
+		return $screen.".php";
 	}
 	
 	/**
@@ -202,8 +217,6 @@ class LdService extends DacuraService {
 			$this->loadParamsForViewScreen($id, $params, $dacura_server, $user);				
 		}
 		elseif($screen == "update"){
-			$options = $this->readLDUpdateArgs();
-			$params['fetch_args'] = json_encode($options);
 			$id = "update/".implode("/", $this->args);
 			$params['subscreens'] = $this->getUpdateSubscreens($dacura_server, $user);				
 			$this->loadParamsForUpdateScreen($id, $params, $dacura_server);				
@@ -220,31 +233,18 @@ class LdService extends DacuraService {
 	 * @param DacuraUser $u
 	 * @return array<string> the ids of the subscreens (tabs) to load
 	 */
-	function getListSubscreens(LdDacuraServer &$dacura_server, DacuraUser &$u){
+	function getListSubscreens(LdDacuraServer &$dacura_server, &$u){
 		return array("ldo-list", "update-list", "ldo-create");
 	}
 
-	/**
-	 * What subscreens should we load for the list screen?
-	 * @param LdDacuraServer $dacura_server
-	 * @param DacuraUser $u
-	 * @return array<string> the ids of the subscreens (tabs) to load
-	 */
-	function getUpdateSubscreens(LdDacuraServer &$dacura_server, DacuraUser &$u){
-		return array("update-contents", "update-before", "update-after");
-	}
-	
 	/**
 	 * What subscreens should we load for the view screen? 
 	 * @param LdDacuraServer $dacura_server
 	 * @param DacuraUser $u
 	 * @return array<string> the ids of the subscreens (tabs) to load
 	 */
-	function getViewSubscreens(LdDacuraServer &$dacura_server, DacuraUser &$u){
+	function getViewSubscreens(LdDacuraServer &$dacura_server, &$u){
 		$s = array("ldo-meta", "ldo-history", "ldo-contents", "ldo-updates");
-		if($this->name() != "ld"){
-			$s[] = array("ldo-analysis");
-		}
 		return $s;
 	}
 
@@ -375,6 +375,8 @@ class LdService extends DacuraService {
 		if(!isset($cf['edit_formats'])){
 			$cf['edit_formats'] = LDO::$valid_input_formats;
 		}
+		$cf['show_options'] = true;
+		$cf['show_buttons'] = true;
 		$params['create_ldoviewer_config'] = json_encode($cf);
 		//strings
 		$params["ld_create_title"] = $this->smsg('ld_create_title');
@@ -429,35 +431,13 @@ class LdService extends DacuraService {
 	 * @param array $params key value array of parameters to be substituted into the html via php variable interpolation
 	 * @param LdDacuraServer $dacura_server
 	 */
-	function loadParamsForViewScreen($id, &$params, LdDacuraServer &$dacura_server, DacuraUser $user = null){
-		$options = $this->getLDViewArgs();
-		if($options){
-			$params['fetch_args'] = json_encode($options);
-		}
-		$params['test_update_options'] = json_encode($this->getUpdateOptions(true));
-		$params['update_options'] = json_encode($this->getUpdateOptions(false));
-		
-		$params['ldoviewer_init'] = array();
+	function loadParamsForViewScreen($id, &$params, LdDacuraServer &$dacura_server, $user = null){
 		$params["id"] = $id;
 		$params["title"] = $this->smsg("view_page_title");
 		$params["subtitle"] = $this->smsg("view_page_subtitle");
 		$params["description"] = $this->smsg("view_page_description");
-		$params['direct_create_allowed'] = true;
-		$params['valid_view_formats'] = LDO::$valid_display_formats;
-		$params['default_view_options'] = $this->getDefaultViewOptions();
-		$params['editmode_options'] = array("replace" => "Replace Mode", "update" => "Update Mode");
-		$params['update_result_options'] = array("No LDO result returned", "Updated LDO returned", "LDO Update Object Returned");
-		$params['view_graph_options'] = array("ld" => "LD Object Store", "dqs" => "DQS Triplestore", "meta" => "metadata", "update" => "Update Store");
-		$params['view_actions'] = array("restore" => "Restore this version", "edit" => "Edit", "import" => "Import", "export" => "Export", "accept" => "Publish", "reject" => "Reject", "pending" => "Unpublish");		
-		$params['valid_input_formats'] = LDO::$valid_input_formats;
-		$params['dqs_schema_tests'] = json_encode(RVO::getSchemaTests());
-		$params['default_dqs_tests'] = json_encode(RVO::getSchemaTests(false));
-		$params['dqs_instance_tests'] = json_encode(RVO::getInstanceTests());
-		$params['default_instance_dqs_tests'] = json_encode(RVO::getInstanceTests(false));
-		$avs = $dacura_server->ontversions;
-		//an ontology is not available to itself...
-		if($this->name() == "ontology" && isset($avs[$id])) unset($avs[$id]);
-		$params['available_ontologies'] = json_encode($avs);
+		$params['fetch_args'] = json_encode($this->getLDArgs("ldoview"));
+		$params['ldov_config'] = json_encode($this->getLDOViewerConfig("ldo_viewer_config"));
 		if(in_array('ldo-contents', $params['subscreens'])){
 			$this->loadParamsForContentsTab($id, $params, $dacura_server);
 		}
@@ -475,67 +455,113 @@ class LdService extends DacuraService {
 		}		
 	}
 	
-	/**
-	 * What options should be sent and read from the Dacura Create API
-	 * merges those updates specified by the request with those configured by the user and filters out the unknown ones
-	 * @param boolean $test_flag
+	/** 
+	 * Loads the various configuration fields to be sent to the LDOViewer javascript object
+	 * @param string $id - the id of the configuration variable in the ld settings file to start from
+	 * @return Ambigous <multitype:string , string, string, mixed>
 	 */
-	function getUpdateOptions($test_flag, $uopts = false){
-		$ting = $test_flag ? "test_update" : "update";
-		if($uopts === false){
-			$x = $this->getServiceSetting($ting."_default_options", array());
-			return $x;
+	function getLDOViewerConfig($id){
+		$ldov_config = $this->getServiceSetting($id, array());
+		if(!isset($ldov_config['view_formats'])){
+			$ldov_config['view_formats'] = LDO::$valid_display_formats;
 		}
-		$args = $this->getServiceSetting($ting."_fixed_options", array());
-		$choices = $this->getServiceSetting("update_user_options", array());
+		if(!isset($ldov_config['edit_formats'])){
+			$ldov_config['edit_formats'] = LDO::$valid_input_formats;
+		}
+		if(!isset($ldov_config['update_options'])){
+			$ldov_config['update_options'] = $this->getLDOptions("ldo_update");
+		}
+		if(!isset($ldov_config['test_update_options'])){
+			$ldov_config['test_update_options'] = $this->getLDOptions("ldo_test_update");
+		}
+		if(!isset($ldov_config['view_options'])){
+			$ldov_config['view_options'] = $this->getViewOptions();
+		}
+		if(!isset($ldov_config['editmode_options'])){
+			$ldov_config['editmode_options'] =  array("replace" => "Replace Mode", "update" => "Update Mode");
+		}
+		if(!isset($ldov_config['result_options'])){
+			$ldov_config['result_options'] = array("No LDO result returned", "Updated LDO returned", "LDO Update Object Returned");
+		}
+		if(!isset($ldov_config['view_graph_options'])){
+			$ldov_config['view_graph_options'] = array("ld" => "LD Object Store", "dqs" => "DQS Triplestore", "meta" => "metadata", "update" => "Update Store");
+		}
+		if(!isset($ldov_config['view_actions'])){
+			$ldov_config['view_actions'] = array("restore" => "Restore this version", "edit" => "Edit", "import" => "Import", "export" => "Export", "accept" => "Publish", "reject" => "Reject", "pending" => "Unpublish");
+		}
+		return $ldov_config;
+	}
+	
+	/**
+	 * Reads the arguments supported by the linked data view api
+	 * @return array arguments array
+	 */
+	function getLDArgs($prefix){
+		$args = $this->getServiceSetting($prefix."_fixed_args", array());
+		$defs = $this->getServiceSetting($prefix."_default_args", array());
+		$choices = $this->getServiceSetting($prefix."_user_args", array());
 		foreach($choices as $choice){
-			if(!isset($args[$choice]) && isset($uopts[$choice])){
-				$args[$choice] = $uopts[$choice];
+			if(!isset($args[$choice])){
+				if(isset($_GET[$choice])){
+					$args[$choice] = $_GET[$choice];
+				}
+				elseif(isset($defs[$choice])){
+					$args[$choice] = $defs[$choice];
+				}
 			}
+		}
+		$opts = $this->getLDOptions($prefix);
+		if($opts){
+			$args['options'] = $opts;
 		}
 		return $args;
 	}
 	
-	
 	/**
-	 * Reads the optional arguments supported by the linked data view api
-	 * @return array options array
+	 * Unifies the options set in the request (?option[a]=b&option[c]=d ..) with the configured options
+	 * @return array - options array
 	 */
-	function getLDViewArgs(){
-		$args = array();
-		if(isset($_GET['version'])){
-			$args['version'] = $_GET['version'];
+	function getLDOptions($prefix){
+		$args = $this->getServiceSetting($prefix."_fixed_options", array());
+		$defs = $this->getServiceSetting($prefix."_default_options", array());
+		$choices = $this->getServiceSetting($prefix."_user_options", array());
+		if(isset($_GET['options']) && is_array($_GET['options'])){
+			foreach($choices as $choice){
+				if(!isset($args[$choice])){
+					if(isset($_GET['options'][$choice])){
+						$args[$choice] = $_GET['options'][$choice];
+					}
+				}
+			}
 		}
-		if(isset($_GET['mode'])){
-			$args['mode'] = $_GET['mode'];
-		}
-		else {
-			$args['mode'] = "view";
-		}
-		if(isset($_GET['format'])){
-			$args['format'] = $_GET['format'];
-		}
-		else {
-			$args['format'] = "json";
-		}
-		if(isset($_GET['ldtype']) && $_GET['ldtype']){
-			$args['ldtype'] = $_GET['ldtype'];
-		}
-		if(isset($_GET['options'])){
-			$args['options'] = $_GET['options'];
-		}
-		else {
-			$args['options'] = array("history" => 1, "updates" => 1, "ns" => 1, "addressable" => 0, "analysis" => 1);
+		foreach($choices as $choice){
+			if(isset($defs[$choice]) && !isset($args[$choice])){
+				$args[$choice] = $defs[$choice];
+			}
 		}
 		return $args;
+	}	
+
+	/**
+	 * Loads the necessary parameters from php -> html / js for drawing the contents subscreen
+	 * @param string $id the id of the ld object
+	 * @param array $params the parameters to be interpolated into the contents html subscreen
+	 * @param LdDacuraServer $dacura_server
+	 */
+	function loadParamsForContentsTab($id, &$params, LdDacuraServer &$dacura_server){
+		$params['contents_screen_title'] = $this->smsg('contents_screen_title');
+		$params['contents_intro_msg'] = $this->smsg('view_contents_intro');
+		$params['update_contents_args'] = json_encode($this->getLDArgs("ldo_update"));
+		$params['test_update_contents_args'] = json_encode($this->getLDArgs("ldo_test_update"));
+		$params['show_contents_options'] = json_encode($this->getServiceSetting("show_contents_options", array()));//facet
 	}
 	
 	/** 
 	 * Read the default view options from config
 	 * @return array options array
 	 */
-	function getDefaultViewOptions(){
-		$a = array("ns" => array("title" => "Namespace prefixes", "value" => 1), "plain" => array("title" => "Plain", "value" => 0), "addressable" => array("title" => "Replace Blank Nodes", "value" => 1));
+	function getViewOptions(){
+		$a = array("ns" => "Namespaces", "plain" => "Plain", "addressable" => "Addressable");
 		return $a;
 	}
 	
@@ -557,10 +583,7 @@ class LdService extends DacuraService {
 	 * @param array $params the parameters to be interpolated into the analysis html subscreen
 	 * @param LdDacuraServer $dacura_server
 	 */
-	function loadParamsForAnalysisTab($id, &$params, LdDacuraServer &$dacura_server){
-		$params['analysis_screen_title'] = $this->smsg('analysis_screen_title');	
-		$params['analysis_intro_msg'] = $this->smsg('view_analysis_intro');		
-	}	
+	function loadParamsForAnalysisTab($id, &$params, LdDacuraServer &$dacura_server){}	
 
 	/**
 	 * Loads the necessary parameters from php -> html / js for drawing the meta subscreen
@@ -570,10 +593,15 @@ class LdService extends DacuraService {
 	 */
 	function loadParamsForMetaTab($id, &$params, LdDacuraServer &$dacura_server){
 		$params['meta_screen_title'] = $this->smsg('meta_screen_title');	
-		$params["ldo_analysis_fields"] = $this->sform("ldo_analysis_fields");
+		$params['meta_intro_msg'] = $this->smsg('view_meta_intro');
+		$params['update_meta_config'] = array("display_type" => "create", "show-header" => 2, "objtype" => $this->name(), "header-html" => $this->ldtn(). " Metadata");
+		$params['show_update_meta_button'] = true;
+		$params['show_update_meta_test_button'] = true;
 		$params['update_meta_button_text'] = $this->smsg('update_meta_button');
 		$params['test_update_meta_button_text'] = $this->smsg('test_update_meta_button');
 		$params['update_meta_fields'] = $this->sform("update_meta_fields");		
+		$params['test_update_meta_options'] = json_encode($this->getLDOptions("ldo_test_meta"));
+		$params['update_meta_options'] = json_encode($this->getLDOptions("ldo_meta"));
 	}	
 	
 	/**
@@ -585,87 +613,89 @@ class LdService extends DacuraService {
 	function loadParamsForUpdatesTab($id, &$params, LdDacuraServer &$dacura_server){	
 		$params['updates_screen_title'] = $this->smsg('updates_screen_title');	
 		$params['updates_intro_msg'] = $this->smsg('view_updates_intro');
-		$params['updates_datatable'] = $this->getDatatableSetting("ldoupdates");		
-	}
-	
-	/**
-	 * Loads the necessary parameters from php -> html / js for drawing the contents subscreen
-	 * @param string $id the id of the ld object
-	 * @param array $params the parameters to be interpolated into the contents html subscreen
-	 * @param LdDacuraServer $dacura_server
-	 */
-	function loadParamsForContentsTab($id, &$params, LdDacuraServer &$dacura_server){
-		$params['contents_screen_title'] = $this->smsg('contents_screen_title');	
-		$params['contents_intro_msg'] = $this->smsg('view_contents_intro');	
-		$params['update_options'] = $this->getServiceSetting("update_options", array());	
+		$udtab = $this->getDatatableSetting("ldoupdates", false);
+		$params['multi_updates_update_allowed'] = true;//facet
+		if(!$params['multi_updates_update_allowed']){
+			$udtab['aoColumns'][10] = array("bVisible" => false);
+		}
+		else {
+			$params['updates_multiselect_options'] = json_encode(DacuraObject::$valid_statuses);
+		}
+		$params['updates_datatable'] = json_encode($udtab);
 	}
 	
 	/* Update Screen Related Functions */
 	
 	/**
-	 * Loads the parameters specific to the list screen
+	 * What subscreens should we load for the update screen?
+	 * @param LdDacuraServer $dacura_server
+	 * @param DacuraUser $u
+	 * @return array<string> the ids of the subscreens (tabs) to load
+	 */
+	function getUpdateSubscreens(LdDacuraServer &$dacura_server, &$u){
+		return array("update-contents", "update-commands", "ldo-meta", "update-before", "update-after");
+	}
+	
+	/**
+	 * Loads the parameters specific to the view update screen
+	 * @param string $id the id of the update
 	 * @param array $params key value array of parameters to be substituted into the html via php variable interpolation
 	 * @param LdDacuraServer $dacura_server
 	 */		
 	function loadParamsForUpdateScreen($id, &$params, &$dacura_server){
-		$params['ldoviewer_init'] = array();
-		if(in_array("ldo-meta", $params['subscreens'] )){
-			$params['meta_intro_msg'] = $this->smsg('view_update_meta_intro');
-		}
-		if(in_array("ldo-analysis", $subscreens)){
-			$params['analysis_intro_msg'] = $this->smsg('view_update_analysis_intro');
-		}
-		if(in_array("ldo-raw", $subscreens)){
-			$params['raw_intro_msg'] = $this->smsg('update_raw_intro_msg');
-		}
-		if(in_array("ldo-after", $subscreens)){
-			$params['after_intro_msg'] = $this->smsg('view_update_after_msg');
-		}
-		if(in_array("ldo-before", $subscreens)){
-			$params['before_intro_msg'] = $this->smsg('view_before_after_msg');
-		}
+		$tn = (isset($params['ldtype']) && $params['ldtype']) ? $params['ldtype'] : "LDO";
 		$params["id"] = $id;
-		$params["title"] = "Linked Data Object Manager";
-		$params["subtitle"] = "Object view";
-		$params["description"] = "View and update your managed linked data objects";
-		$params['create_button_text'] = $this->smsg('raw_edit_text');
-		$params['testcreate_button_text'] = $this->smsg('testraw_edit_text');
-		$params['raw_ldo_fields']['format']['options'] = LDO::$valid_input_formats;
-		$params['direct_create_allowed'] = true;
-		$params['update_options'] = $this->getServiceSetting("update_options", array());
+		
+		$params["title"] = $this->smsg("update_screen_title");
+		$params["subtitle"] = $this->smsg("update_screen_subtitle");
+		if(in_array("ldo-meta", $params['subscreens'] )){
+			$this->loadParamsForUpdateMetaTab($id, $params, $dacura_server);
+		}
+		if(in_array("update-contents", $params['subscreens'])){
+			$params["update_contents_screen_title"] = $tn . " " . $this->getServiceSetting("update_contents_screen_title", "update contents");
+			$params['view_update_contents_intro_msg'] = $this->smsg('view_update_contents_intro_msg');
+		}
+		if(in_array("update-after", $params['subscreens'])){
+			$params["update_after_screen_title"] = $tn . " " . $this->getServiceSetting("update_after_screen_title", "after update");
+			$params['view_after_intro_msg'] = $this->smsg('view_after_intro_msg');
+		}
+		if(in_array("update-before", $params['subscreens'])){
+			$params["update_before_screen_title"] = $tn . " " . $this->getServiceSetting("update_before_screen_title", "before update");
+			$params['view_before_intro_msg'] = $this->smsg('view_before_intro_msg');
+		}
+		$params['fetch_args'] = json_encode($this->getLDArgs("update_view"));
+		$params['update_button_text'] = $this->smsg('update_update_button_text');
+		$params['test_update_button_text'] = $this->smsg('test_update_update_button_text');
+		$params['update_args'] = json_encode($this->getLDArgs("update_update"));
+		$params['test_update_args'] = json_encode($this->getLDArgs("test_update_update"));
+		$params['show_contents_options'] = json_encode($this->getServiceSetting("show_update_contents_options", array()));//facet	
+		$params['update_commands_screen_title'] = $this->smsg("update_commands_screen_title");
 		return $params;
 	}
+	
 
-	/*
-	 * The various optional arguments supported by the linked data api
+	/**
+	 * Loads the necessary parameters from php -> html / js for drawing the update metadata subscreen
+	 * @param string $id the id of the update
+	 * @param array $params the parameters to be interpolated into the meta html subscreen
+	 * @param LdDacuraServer $dacura_server
 	 */
-	function readLDUpdateArgs(){
-		$args = array();
-		if(isset($_GET['version'])){
-			$args['version'] = $_GET['version'];
-		}
-		if(isset($_GET['mode'])){
-			$args['mode'] = $_GET['mode'];
-		}
-		else {
-			$args['mode'] = "view";
-		}
-		if(isset($_GET['format'])){
-			$args['format'] = $_GET['format'];
-		}
-		else {
-			$args['format'] = "json";
-		}
-		if(isset($_GET['ldtype']) && $_GET['ldtype']){
-			$args['ldtype'] = $_GET['ldtype'];
-		}
-		if(isset($_GET['options'])){
-			$args['options'] = $_GET['options'];
-		}
-		else {
-			$args['options'] = array("show_changed" => 1, "show_original" => 1, "ns" => 1, "addressable" => 0, "analysis" => 1);
-		}
-		return $args;
+	function loadParamsForUpdateMetaTab($id, &$params, LdDacuraServer &$dacura_server){
+		$params['meta_screen_title'] = $this->smsg('update_meta_screen_title');
+		$params['meta_intro_msg'] = $this->smsg('view_update_meta_intro');
+		$params['update_meta_config'] = array("display_type" => "create", "show-header" => 2, "objtype" => "update", "header-html" => "Update to ".$this->ldtn(). " Metadata");
+		$params['show_update_meta_button'] = true;
+		$params['show_update_meta_test_button'] = true;
+		$params['update_meta_button_text'] = $this->smsg('update_meta_button');
+		$params['test_update_meta_button_text'] = $this->smsg('test_update_meta_button');
+		$params['update_meta_fields'] = $this->sform("update_meta_fields");
+		$params['test_update_meta_options'] = json_encode($this->getLDOptions("update_test_meta"));
+		$pldov = $this->getLDOViewerConfig("ldoupdate_viewer_config");
+		$pldov['update_options'] = $this->getLDOptions("update_update");
+		$pldov['test_update_options'] = $this->getLDOptions("test_update_update");
+		$params['ldov_config'] = json_encode($pldov);
+		$params['update_meta_options'] = json_encode($this->getLDOptions("update_meta"));
 	}
+	
 
 }

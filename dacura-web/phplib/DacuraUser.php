@@ -387,6 +387,8 @@ class DacuraUser extends DacuraObject {
 			}
 		}
 		$hco = 0;
+		$founds = array();
+		$gotchas = array();
 		foreach($sessdirs as $colid => $sdir){
 			if (file_exists($sdir) && $handle = opendir($sdir)) {
 				while (false !== ($entry = readdir($handle))) {
@@ -394,6 +396,7 @@ class DacuraUser extends DacuraObject {
 					if ($ext == "session"){
 						$sess_id = substr($entry, 0, strrpos($entry, '.'));
 						$sfile = $sdir."/".$entry;
+						$founds[] = $sfile;
 						if(file_exists($sfile) && ($fhandle = fopen($sfile, "r"))){
 							while (($line = fgets($fhandle)) !== false) {
 								$ds = new DacuraSession($sess_id, $colid, false);
@@ -409,11 +412,13 @@ class DacuraUser extends DacuraObject {
 							}
 							fclose($fhandle);
 						}
+						
 					}
 				}
 				closedir($handle);
 			}
 		}
+		//opr($history);
 		$this->history = $history;
 		return $history;
 	}

@@ -371,6 +371,7 @@ class DacuraResult extends DacuraObject {
 				$smsg .= count($itrips)." $ting" . (count($itrips) == 1 ? "" : "s")." inserted";
 			}
 			if(count($dtrips) > 0){
+				if(count($itrips) > 0) $smsg .= ", ";				
 				$smsg .= count($dtrips)." $ting" . (count($dtrips) == 1 ? "" : "s")." deleted";
 			}
 			$gu->msg($msg, $smsg);				
@@ -432,7 +433,8 @@ class DacuraResult extends DacuraObject {
 		}
 		if($this->result){
 			if(is_object($this->result) && method_exists($this->result, "display")){
-				if($this->result->display($format, $options, $srvr)){
+				if($this->result->getContentInFormat($format, $options, $srvr, "display")){
+				//if($this->result->display($format, $options, $srvr)){
 					$apiobj['result'] = $this->result->forAPI($format, $options);
 				}
 				else {
@@ -445,6 +447,7 @@ class DacuraResult extends DacuraObject {
 			}
 		}
 		foreach($this->graphs as $gid => $gr){
+			
 			if(isset($options['show_'.$gid.'_triples']) && $options['show_'.$gid.'_triples']){
 				$apiobj['graph_'.$gid] = $gr->forAPI($format, $options, $srvr);
 			}

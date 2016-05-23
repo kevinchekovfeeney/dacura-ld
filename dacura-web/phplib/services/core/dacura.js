@@ -578,7 +578,7 @@ dacura.system.showBusyOverlay = function(jqueryid, msg, uopts){
 	$(jqueryid + ' .busy-overlay div.busy-block').css({
 		"position": "absolute",
 		"top": Math.max(0, (($(jqueryid + ' .busy-overlay').height() - $(jqueryid + ' .busy-overlay div.progress-container').outerHeight()) / 2)),
-		"left": Math.max(0, (($(jqueryid + ' .busy-overlay').width() - $(jqueryid + ' .busy-overlay div.progress-container').outerWidth()) / 2))
+		"left": Math.max(0, (($(jqueryid + ' .busy-overlay').width() - $(jqueryid + ' .busy-overlay .busy-block').outerWidth()) / 2))
 	});
 	if(typeof uopts.scrollTo != "undefined" && uopts.scrollTo && $(jqueryid + ' .busy-overlay div.busy-block').is(":visible") && !$(jqueryid + ' .busy-overlay div.busy-block').is_on_screen()){
 		dacura.system.goTo(jqueryid + ' .busy-overlay div.busy-block', 100);

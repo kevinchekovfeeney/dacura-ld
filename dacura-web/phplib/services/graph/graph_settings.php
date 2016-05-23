@@ -6,13 +6,17 @@ include_once "phplib/services/ld/ld_settings.php";
 $settings['two_tier_schemas'] = false;
 $settings['ldo_allow_demand_id'] = true;
 $settings["replace_blank_ids"] = false;
-$settings["view_page_options"] = array("ns" => 1, "addressable" => 0, "plain" => 1, "history" => 1, "updates" => 1, "analysis" => 1);
+//$settings["view_page_options"] = array("ns" => 1, "addressable" => 0, "plain" => 1, "history" => 1, "updates" => 1, "analysis" => 1);
 //$settings["create_options"] = array("show_dqs_triples" => 0,
 //		"ns" => 1, "addressable" => 1, "analysis" => 1,
 //		"show_ld_triples" => 1, "fail_on_id_denied" => 1, "show_result" => 1);
 //$settings["update_options"] = array("show_dqs_triples" => 1, "show_ld_triples" => 0, "fail_on_id_denied" => 1,
 //		"show_update_triples" => 1, "show_meta_triples" => 0, "show_result" => 1,
 //		"show_changed" => 1, "show_original" => 1, "ns" => 1, "addressable" => 1);
+
+$settings["ldoview_fixed_options"] = array("plain" => 1, "ns" => 1);		
+$settings["ldo_update_fixed_options"] = array("plain" => 1, "ns" => 1);
+$settings["ldo_test_update_fixed_options"] = array("plain" => 1, "ns" => 1);
 
 $settings["create_ldo_fields"] = array(
 		"id" => array("label" => "ID", "length" => "short", "help" => "The id of the linked data object - must be all lowercase with no spaces or punctuation. Choose carefully - the id appears in all urls that reference the object and cannot be easily changed!"),

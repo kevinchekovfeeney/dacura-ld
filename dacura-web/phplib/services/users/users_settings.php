@@ -69,7 +69,7 @@ $settings = array(
 		"roles"	=> array("datatable_options" => array("searching" => false, "info" => true, "jQueryUI" => true,
 				"aoColumns" => array(array("bVisible" => false), null, array("bSortable" => false), array("bSortable" => false)))),
 		"system_history" => array("datatable_options" => array("searching" => false, "info" => true, "jQueryUI" =>  true, "order"=> array(5, "desc"),
-				"aoColumns" => array(array("bVisible" => false), null, null, null, array("bVisible" => false), array("iDataSort" => 5), array("bVisible" => false), array("iDataSort" => 7), array("bVisible" => false), array("iDataSort" => 9), array("bVisible" => false)))),
+				"aoColumns" => array(array("bVisible" => false), null, null, null, array("bVisible" => false), array("iDataSort" => 4), array("bVisible" => false), array("iDataSort" => 6), array("bVisible" => false), array("iDataSort" => 8), array("bVisible" => false)))),
 		"collection_history" => array("datatable_options" => array("searching" => false, "info" => true, "jQueryUI" =>  true, "order"=> array(5, "desc"),
 				"aoColumns" => array(array("bVisible" => false), null, array("bVisible" => false), null, array("bVisible" => false), array("iDataSort" => 5), array("bVisible" => false), array("iDataSort" => 7),  array("bVisible" => false), array("iDataSort" => 9), array("bVisible" => false)))),
 		),

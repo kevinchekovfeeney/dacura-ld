@@ -50,8 +50,6 @@ function drawFragmentHeader(data){
 	}	
 }
 
-
-
 dacura.ld.parseRVOList = function(jsonlist){
 	if(typeof jsonlist != 'object' || jsonlist.length == 0){
 		return [];
@@ -92,6 +90,21 @@ dacura.ld.getTripleTableHTML = function(trips, tit){
 	}
 	return html;
 };
+
+dacura.ld.getJSONUpdateViewHTML = function(def){
+	var html = "<table class='json-graph'><thead><tr><th>Variable</th><th>Value Before</th><th>Value After</th></tr></thead><tbody>";
+	for(var i in def){
+		html += "<tr><td>" + i + "</td>";
+		html += "<td class='table-json-viewer'>";
+		html += (typeof def[i][0] == "object" ? JSON.stringify(def[i][0], 0, 4) : def[i][0]);
+		html += "</td><td class='table-json-viewer'>";
+		html += (typeof def[i][1] == "object" ? JSON.stringify(def[i][1], 0, 4) : def[i][1]);
+		html += "</td></tr>";
+	}
+	html += "</tbody></table>";
+	return html;
+}
+
 
 dacura.ld.getJSONViewHTML = function(inserts, deletes){
 	if(!inserts || !deletes){
@@ -245,6 +258,134 @@ dacura.ld.getSummaryTableEntry = function(rowdata){
 	return html;
 };
 
+dacura.ld.showAnalysisBasics = function(data, tgt){
+	if(typeof data.analysis != "object"){
+		var html = dacura.system.getIcon('warning') + "No analysis produced";
+		$(tgt).html(html);				
+	}
+	else if(data.analysis.version != data.meta.version){
+		var upds = data.meta.version  - data.analysis.version; 
+		var html = dacura.system.getIcon('warning') + "This analysis is stale, " 
+		html += (upds == 1 ? "there has been an update " : " there have been " + upds + " updates");
+		html += " since this analysis was created";
+		$(tgt).html(html);
+	}
+	else {
+		var html = dacura.system.getIcon('success') + "Analysis is up to date";
+		$(tgt).html(html);			
+	}
+};
+
+dacura.ld.getDQSRows = function(target, res, meta, pconf, importer, dqsconfig, include_triples){
+	var rows = [];
+	if(res.hasWarnings()){
+		$(target + ' .dqs-warnings .subscreen-body').html(res.getWarningsHTML());
+		var rowdata = {
+			id: "warnings",
+			icon: dacura.system.getIcon("warning"),
+			count: res.warnings.length,
+			variable: "warning" + (res.warnings.length == 1 ? "" : "s"),
+			value: res.getWarningsSummary(),
+			help: "Warnings may indicate an error or a lapse in best practice but they do not prevent the use of the ontology to validate instance data"
+		};
+		rows.push(rowdata);	
+	}
+	if(res.hasErrors()){
+		$(target + ' .dqs-errors  .subscreen-body').html(res.getErrorsHTML());
+		var rowdata = {
+			id: "errors",
+			icon: dacura.system.getIcon("error"),
+			count: res.errors.length,
+			variable: "error" + (res.errors.length == 1 ? "" : "s"),
+			value: res.getErrorsSummary(),
+			help: "Errors indicate problems with the ontology which will prevent it from being used to validate instance data"
+		};	
+		rows.push(rowdata);	
+	}
+	dqsconfig.draw(target + ' .dqs-tests .subscreen-body');
+	if(typeof res.tests != "undefined"){
+		rowdata = {id: "tests"};
+		rowdata.count = res.tests;
+		rowdata.icon = dacura.system.getIcon("pending");
+		if(typeof res.tests == "object"){
+			rowdata.count = res.tests.length;
+			if(rowdata.count == 0){
+				rowdata.icon = dacura.system.getIcon("warning");
+				rowdata.value = "No tests configured";
+			}
+			else {
+				rowdata.value = dqsconfig.getTestsSummary();				
+			}
+		}
+		else if(res.tests == "all"){
+			rowdata.value = dqsconfig.getTestsSummary();				
+			rowdata.count = size(dqsconfig.dqs);  			
+		}
+		rowdata.variable = "test" + ((typeof res.tests == 'object' && res.tests.length == 1) ? "" : "s");
+		rowdata.help = "The quality service can be configured to apply many different types of tests to ontologies - the current configuration is listed here";
+	}
+	else {
+		var rowdata = {
+			id: "tests",
+			icon: dacura.system.getIcon("warning"),
+			count: 0,
+			variable: "tests",
+			value: "No DQS tests configured - this ontology will not be tested by the quality service",
+			help: "You must specify quality tests to be used with this ontology"
+		};
+	}
+	rows.push(rowdata);	
+	if(typeof importer == "object" && typeof res.imports != "undefined"){
+		importer.draw(target + ' .dqs-imports .subscreen-body');
+		$('#imaa').buttonset().click(function(){
+			if($('input[name=ima]:checked').val() == "manual"){
+				importer.setManual();
+			}
+			else {
+				importer.setAuto();		
+			}
+		});
+		$('#imaa').buttonset("disable");
+	
+		var rowdata = {
+			id: "imports",
+			icon: dacura.system.getIcon("ontology"),
+			count: size(res.imports),
+			variable: "import" + (size(res.imports) == 1 ? "" : "s"),
+			value: res.getImportsSummary(meta.imports),
+			help: "Ontologies must import those ontologies on which they have a structural dependence. "
+		};
+		rows.push(rowdata);	
+	}
+	if(typeof res.inserts != "undefined" && res.inserts.length > 0){
+		$(target + ' .dqs-triples .subscreen-body').html(dacura.ld.getTripleTableHTML(res.inserts));
+		var rowdata = {
+			id: "triples",
+			icon: dacura.system.getIcon("triples"),
+			count: res.inserts.length,
+			variable: "triple" + (res.inserts.length == 1 ? "" : "s"),
+			value: "",
+			actions: "view_triples",
+			help: "Ontologies are serialised into a set of triples before being loaded by the DQS"
+		};
+	}
+	else {
+		var rowdata = {
+			id: "triples",
+			unclickable: true,
+			icon: dacura.system.getIcon("warning"),
+			count: 0,
+			variable: "triples",
+			value: "The graph for this ontology is currently empty, you must add contents to it before it can be serialised",
+			help: "Ontologies are serialised into a set of triples before being loaded by the DQS"
+		};
+	}
+	rows.push(rowdata);
+	return rows;
+}
+
+
+
 dacura.ld.getTreeEntries = function(tree){
 	var ents = [];
 	for(var i in tree){
@@ -252,7 +393,7 @@ dacura.ld.getTreeEntries = function(tree){
 			ents.push(i);
 		}
 		if(typeof(tree[i]) == 'object'){
-			var ments = getTreeEntries(tree[i]);
+			var ments = dacura.ld.getTreeEntries(tree[i]);
 			for(var j = 0; j<ments.length; j++){
 				if(ents.indexOf(ments[j]) == -1){
 					ents.push(ments[j]);
@@ -416,8 +557,29 @@ dacura.ld.header = function(obj){
 	}
 	var msg = obj.meta.ldtype.ucfirst() + " " + obj.id;
 	dacura.tool.header.addBreadcrumb(obj.meta.cwurl, obj.meta.ldtype + " " + obj.id, "ldid");
-	dacura.tool.header.showEntityHeader(msg, params);	
+	dacura.tool.header.showEntityHeader(msg, params);
+	if(typeof obj.meta.title == "string"){
+		dacura.tool.header.setSubtitle(obj.meta.title);
+	}
+	else if(typeof obj.meta.url == "string"){
+		dacura.tool.header.setSubtitle(obj.meta.url);			
+	}
+	else if(typeof obj.meta.type == "string"){
+		dacura.tool.header.setSubtitle(obj.meta.type);						
+	}
 };
+
+dacura.ld.updateHeader = function(obj){
+	var params = {status: obj.meta.status, "from version": obj.meta.from_version};
+	if(obj.meta.to_version != 0){
+		params["to version"] = obj.meta.to_version;
+	}
+	var msg = obj.meta.targetid + " " + obj.meta.ldtype.ucfirst() + " - update " + obj.id;
+	dacura.tool.header.addBreadcrumb(obj.original.meta.cwurl, obj.meta.ldtype + " " + obj.original.id, "ldid");
+	var objurl = obj.original.meta.cwurl.substring(0, obj.original.meta.cwurl.lastIndexOf("/")) + "/update/" + obj.id;
+	dacura.tool.header.addBreadcrumb(objurl, "Update " + obj.id, "udid");
+	dacura.tool.header.showEntityHeader(msg, params);
+}
 
 dacura.ld.isJSONFormat = function(f){
 	if(f == "json" || f == "jsonld" || f == "quads" || f == "triples") return true;
@@ -571,8 +733,3 @@ dacura.ld.uploadFile = function(payload, onwards, pconf){
 	var msgs = {busy: "Uploading file to server", success: "File uploaded to server", fail: "Failed to upload file"};
 	dacura.system.invoke(xhr, msgs, pconf);
 }
-
-
-
-
-

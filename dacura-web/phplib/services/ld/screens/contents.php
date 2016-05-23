@@ -4,21 +4,20 @@
 </div>
 
 <script>
+var show_contents_options = <?php echo isset($params['show_contents_options']) && $params['show_contents_options'] ? $params['show_contents_options'] : "{}";?>;
+var refreshContents = function(data, pconf){
+	ldov.pconf = pconf;
+	ldov.show("#show-ldo", "view", show_contents_options, refreshLDOPage);
+};
+
 var initContents = function(data, pconf){
-	var ldo = new LDO(data);
-	var ldov = new LDOViewer(ldo, pconf);
-	var ldovconfig = {target: "#show-ldo", emode: "view"};
-	ldovconfig.view_formats = <?= json_encode($params['valid_view_formats']);?>;
-	ldovconfig.edit_formats = <?= json_encode($params['valid_input_formats']);?>;
-	ldovconfig.view_options = <?= json_encode($params['default_view_options']);?>;
-	ldovconfig.view_actions = <?= json_encode($params['view_actions']);?>;
-	ldovconfig.view_graph_options = <?= json_encode($params['view_graph_options']);?>;
-	ldovconfig.result_options = <?= json_encode($params['update_result_options']);?>;
-	ldovconfig.editmode_options = <?= json_encode($params['editmode_options']);?>;
-	ldov.init(ldovconfig);
-	ldov.show();
-}
+	ldov.pconf = pconf;
+	ldov.show("#show-ldo", "view", show_contents_options, refreshLDOPage);
+};
+
 	
+refreshfuncs["ldo-contents"] = refreshContents;
+
 initfuncs["ldo-contents"] = initContents;
 
 

@@ -37,7 +37,7 @@ function createLDO(data, result, pconf){
 	dacura.system.clearResultMessage(pconf.resultbox);
 	var uinput = cphp.ldov.readCreateForm(data, cphp.demand_id_token, cphp.create_options);
 	if(uinput){
-		if(typeof importer == "object"){
+		if(typeof cphp.importer == "object"){
 			uinput = getImports(uinput);
 		}
 		cphp.ldov.create(uinput, result);
@@ -66,7 +66,9 @@ initarg.forms = {
 
 var initcreate = function(pconfig){
 	cphp.lconf.ldtype = ldtype;
-	cphp.ldov = new LDOViewer(false, pconfig);
+	cphp.lconf.target = '#ldcontentsinform';
+	cphp.lconf.emode = 'import';
+	cphp.ldov = new LDOViewer(false, pconfig, cphp.lconf);
 	if(cphp.show_test_button){
 		dacura.tool.button.init("ldotestcreate", {
 			"test": true,
@@ -88,8 +90,7 @@ var initcreate = function(pconfig){
 	}
 	if(document.getElementById("row-ldo-details-ldcontents") !== null){
 		$('#row-ldo-details-ldcontents').after("<tr><td class='ldcontents-form extra-form-element' id='ldcontentsinform' colspan='3'></td></tr>");
-		cphp.lconf.target = '#ldcontentsinform';	
-		cphp.ldov.show(cphp.lconf);		
+		cphp.ldov.show();		
 	}
 	if(document.getElementById("ldo-details-candtype") !== null){
 		$('#row-ldo-details-candtype').after("<tr><td class='candframe-form extra-form-element' id='candframeinform' colspan='3'></td></tr>");

@@ -536,15 +536,18 @@ div.odd_depth {
   .updated {
   	color: #66c;
   }
-
+  
+a.unchanged,
   .unchanged {
   	color: #ccc;
   }
 
+a.deleted,
   .deleted {
   	color: #c44;
   }
 
+  a.added,
   .added {
   	color: #4b4;
   }
@@ -793,8 +796,8 @@ table.ld-triples-viewer {
 }
 
 table.ont-depend {
-	width: 458px;
-	margin: 0 -4px 1em -4px;
+	width: 456px;
+	margin: 6px -3px 1em -3px;
 	font-size: 0.9em;
 	border-collapse: collapse;
 }
@@ -847,6 +850,7 @@ table.json-graph tr,
 table.ont-depend tr,
 table.ld-triples-viewer tr,
 table.rbtable tr {
+	background: rgba(230, 235, 236, 0.3);
 	background: #e8eeef;
 	border-bottom: 1px solid #FFF;
   	margin-bottom: 5px;
@@ -856,7 +860,7 @@ table.json-graph tr:nth-child(even),
 table.ont-depend tr:nth-child(even),
 table.ld-triples-viewer tr:nth-child(even),
 table.rbtable tr:nth-child(even) {
-  background: #f4f7f8;
+  background: rgba(250, 240, 239, 0.5);
 }
 
 table.ont-depend th, table.ont-depend td {
@@ -898,17 +902,17 @@ table.pane-full td {
 }
 
 table.pane-full {
-	width: 458px;
-	margin: 0 -4px 1em -4px;
+	width: 456px;
+	margin: 4px -3px 1em -3px;
 }
 
 table.pane-full tr:nth-child(even) {
-	background: #f4f7f8;
+	background: rgba(234, 252, 239, 0.5);
 } 
 
 
 table.pane-full tr:nth-child(odd) {
-	background: #e6f4ed;
+	background: #f4f7f8;
 }
 	
 td.control-table-variable {
@@ -1055,30 +1059,127 @@ div.editbar-options {
 	padding: 0px;
 }
 
+#graph-main {
+	padding: 18px;
+	background-color: #f8f6f9;
+	float: left;
+	width: 960px;
+}
+
+.graph-action {
+	font-size: 0.9em;
+	padding: 3px 8px;
+	margin-left: 4px;
+	border-radius: 3px;
+}
+
+.graph-actions {
+	display: inline-block;
+	font-weight: 400;
+	margin-right: 12px;
+}
+
+.graph-action.graph-pending {
+	border: 1px solid #ccccaa;
+	background-color: #fffff6;
+}
+.graph-action.graph-pending:hover {
+	background-color: #ccc122;
+	cursor: pointer;
+	color: white;
+}
+
+.graph-action.graph-delete {
+	border: 1px solid #bbb;
+	background-color: #eee;
+}
+.graph-action.graph-delete:hover {
+	background-color: #444;
+	cursor: pointer;
+	color: white;
+}
+
+.graph-action.graph-accept {
+	border: 1px solid #aaccaa;
+	background-color: #f4fff6;
+}
+.graph-action.graph-accept:hover {
+	background-color: #229922;
+	cursor: pointer;
+	color: white;
+}
+
+.graph-action.graph-reject {
+	border: 1px solid #ccaaaa;
+	background-color: #fff5f5;
+}
+
+.graph-action.graph-reject:hover {
+	background-color: #cc4444;
+	cursor: pointer;
+	color: white;
+}
+
+#instance-control.dqs-failure,
+#schema-control.dqs-failure,
+#graph-control.dacura-reject,
 #dqs-control.dqs-failure {
 	background-color: #f6eff2;
 	border: 1px solid #f8e8d2;
 }
 
+#instance-control.dqs-disabled {
+	background-color: #eee;
+	border: 1px solid #ccc;
+}
+
+
+#graph-control.dacura-pending {
+	background-color: #f6f6e2;
+	border: 1px solid #eeea92;	
+}
+
+
+#instance-control.dqs-success,
+#schema-control.dqs-success,
+#graph-control.dacura-accept,
 #dqs-control.dqs-success {
 	background-color: #eff8f4;
 	border: 1px solid #d2f8e8;
 }
  
+#graph-control, 
 #ns-property,
 #ns-subject,
 #dqs-control {
 	width: 450px;
-	margin: 0px 6px 12px 0px;
+	margin: 0px 4px 12px 0px;
 	float: left;
 	padding: 6px;
 }
 
+#instance-control {
+	background-color: #fafbf4;
+	border: 1px solid #d2e8f8;
+	width: 450px;
+	margin: 12px 6px 12px 0px;
+	padding: 6px;
+	float: right;	
+}
+
+#schema-control {
+	background-color: #fafbf4;
+	border: 1px solid #d2e8f8;
+	width: 450px;
+	margin: 0px 6px 12px 20px;
+	padding: 6px;
+	float: right;	
+}
 #dependencies {
 	background-color: #fafbf4;
 	border: 1px solid #d2e8f8;
 	width: 450px;
-	margin: 0px 6px 6px 0px;
+	margin: 0px 6px 12px 6px;
 	padding: 6px;
 	float: right;
 }
@@ -1087,10 +1188,96 @@ div.editbar-options {
 	background-color: #fafbf4;
 	border: 1px solid #d2e8f8;
 	width: 450px;
-	margin: 6px 6px 0px 0px;
+	margin: 0px 6px 12px 6px;
 	float: right;
 	padding: 6px;
 }
+
+span#graph-subscreen-close {
+	float: right;
+}
+
+span#graph-subscreen-close:hover {
+	cursor: pointer;
+}
+
+th.graph-name {
+	padding-top: 8px;
+	text-align: left;
+	font-weight: 600;
+}
+
+th.graph-url {
+	padding-top: 8px;
+}
+th.graph-url a {
+	text-decoration: none;
+	font-weight: 300;
+	font-size: 0.9em;
+}
+
+a.implicit-import {
+	text-decoration: none;
+	font-weight: 350;
+}
+
+a.explicit-import {
+	text-decoration: none;
+	font-weight: 550;
+}
+
+#graph-subscreen-header {
+	background-color: #eff4f8;
+	border: 1px solid #d2e8f8;
+	margin: 6px 0;
+	font-size: 1.2em;
+	padding: 0.5em 1em;
+}
+
+#graph-details {
+	width: 100%;
+	background-color: #eff4f8;
+	border: 1px solid #d2e8f8;
+	margin: 6px 0;
+}
+
+#graph-schema {
+	width: 100%;
+	background-color: #eff8f4;
+	border: 1px solid #d2f8e8;
+	margin: 6px 0;
+}
+
+#graph-instance {
+	width: 100%;
+	background-color: #eff8f4;
+	border: 1px solid #d2f8e8;
+	margin: 6px 0;
+}
+
+#graph-instance table,
+#graph-schema table,
+#graph-details table {
+	width: 100%;
+	margin: 2px 10px;
+}
+
+td.rdtitle {
+	font-weight: 550;
+	
+}
+
+td.rdactions {
+	font-size: 0.85em;
+	text-align: right;
+	padding-right: 10px;
+	min-width: 180px;
+}
+
+td.rdinfo {
+	font-weight: 400;
+	font-size: 0.85em;
+} 
 
 table.pane-full {
 	font-size: 0.9em;
@@ -1227,6 +1414,8 @@ div.dqs-includes-title {
 	float: left;
 	padding: 6px 12px;
 	margin-bottom: 2px;
+	margin-top: 6px;
+	clear: both;
 }
 
 div.dqs-available-title {
@@ -1310,6 +1499,7 @@ span.remove-ont img.result-icon  {
 	font-size: 0.9em;
 }
 
+div.update-status-box.dacura-reject,
 .dacura-user-message-box.dacura-reject .mbody, 
 .dacura-user-message-box.dacura-reject .mtitle,
 .dacura-user-message-box.dacura-reject {
@@ -1317,6 +1507,7 @@ span.remove-ont img.result-icon  {
 	color: #600 !important;
 }
 
+div.update-status-box.dacura-accept,
 .dacura-user-message-box.dacura-accept .mbody,
 .dacura-user-message-box.dacura-accept .title,
 .dacura-user-message-box.dacura-accept {
@@ -1324,6 +1515,7 @@ span.remove-ont img.result-icon  {
 	color: #060 !important;
 }
 
+div.update-status-box.dacura-pending, 
 .dacura-user-message-box.dacura-pending .mbody,
 .dacura-user-message-box.dacura-pending .mtitle,
 .dacura-user-message-box.dacura-pending {
@@ -1342,6 +1534,39 @@ span.remove-ont img.result-icon  {
 .dacura-reject .mbody,
 .dacura-pending .mbody {
 	display: inline-block;
+}
+
+div.update-status-box {
+	width: 420px;
+	margin-top: -24px;
+	margin-bottom: 4px;
+	float: right;
+	padding: 10px;
+	border: 1px solid #ccc;
+}
+
+div.updates-contents-viewer {
+	clear: both;
+}
+
+div.update-status-header {
+	font-weight: 600;
+	display: inline-block;
+	text-align: center;
+	padding-bottom: 6px;
+	margin-bottom: 2px;
+	border-bottom: 1px solid white;
+}
+div.update-status-actions {
+	display: inline-block;
+	text-align: center;
+	margin-top: -8px;
+	padding-bottom: 6px;
+}
+
+.update-status-details {
+	font-weight: 300;
+	font-size: 0.8em;
 }
 
 div.dacura-test-message {
@@ -1427,4 +1652,19 @@ span.multi-update-summary {
 
 th.multi-update-id, td.multi-update-id {
 	width: 150px;
+}
+
+div.update-view-bar {
+	font-size: 0.75em;
+	position: absolute;
+	right: 6px;
+	top: 70px;
+	width: 270px;
+	text-align: center;
+	padding: 6px;
+	background-color: #dd9;
+}
+
+span.view-update-options {
+	font-size: 0.8em;
 }

@@ -217,20 +217,16 @@ class Graph extends LDO {
 	
 	function analyse(LdDacuraServer &$srvr){
 		$astruct = parent::analyse($srvr);
-		//$quads = $srvr->getGraphSchemaAsQuads($this);
-		//$astruct['schema_triples'] = count($quads);
-		$astruct['instance_triples'] = "?";
-		$astruct['candidates'] = "?";
 		$ometa = deepArrCopy($this->meta);
-		$this->meta['schema_dqs_tests'] = "all";
-		$this->meta['instance_dqs_tests'] = "all";
+		//$this->meta['schema_dqs_tests'] = "all";
+		//$this->meta['instance_dqs_tests'] = array_keys(RVO::getInstanceTests(true));
 		if($this->is_accept()){
-			$astruct['instance_validation'] = $srvr->graphman->validateGraph($this);
 			$astruct['schema_validation'] = $srvr->graphman->validateSchema($this);
 		}
 		else {	
 			$astruct['schema_validation'] = $srvr->objectPublished($this, true);
 		}
+		$astruct['instance_validation'] = $srvr->graphman->validateGraph($this);
 		$this->meta = $ometa;
 		$ar = $srvr->graphman->invokeDCS($this->schemaGname());
 		if($ar->is_accept()){

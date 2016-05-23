@@ -1447,7 +1447,7 @@ class LDO extends DacuraObject {
 	 */
 	function update($update_obj, $mode){
 		if(isset($update_obj['meta'])){
-			updateJSON($update_obj['meta'], $this->meta);
+			updateJSON($update_obj['meta'], $this->meta, $mode);
 			unset($update_obj['meta']);				
 		}	
 		if(count($update_obj) > 0){
@@ -1564,7 +1564,7 @@ class LDO extends DacuraObject {
 				}
 			}
 			elseif($pv->complex()){
-				updateJSON($uprops[$prop], $dprops[$prop]);									
+				updateJSON($uprops[$prop], $dprops[$prop], $mode);									
 			}
 			else {
 				return $this->failure_result("Unknown value type in LD structure", 500);
@@ -1652,12 +1652,22 @@ class LDO extends DacuraObject {
 		}
 		$url = "";
 		$imp = $this->meta['imports'][$prefix];
-		if(isset($imp['collection']) && $imp['collection'] != "all"){
-			$url = $imp['collection'] ."/";
-		} 
-		$url .= "ontology"."/".$imp['id'];
-		if(isset($imp['version']) && $imp['version']){
-			$url .= "?version=".$imp['version'];
+		if(is_array($imp)){
+			if(isset($imp['collection']) && $imp['collection'] != "all"){
+				$url = $imp['collection'] ."/";
+			} 
+			$url .= "ontology"."/".$prefix;
+			if(isset($imp['version']) && $imp['version']){
+				$url .= "?version=".$imp['version'];
+			}
+		}	
+		else {
+			global $dacura_server;
+			$cid = $dacura_server->getOntologyCollection($prefix);
+			if($cid != "all"){
+				$url .= $cid."/";
+			}
+			$url .= "ontology/$prefix";
 		}
 		return $url;
 	}

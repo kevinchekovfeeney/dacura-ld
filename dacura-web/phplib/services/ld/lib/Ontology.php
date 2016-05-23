@@ -183,15 +183,15 @@ Class Ontology extends LDO {
 	/**
 	 * Get the set of tests to be used when instance data is being created (only used in testing - ontology is instance)
 	 */
-	function getCreateInstanceTests(){
-		isset($this->meta['schema_dqs_tests']) ? 	$this->meta['schema_dqs_tests'] : false;			
+	function getInstanceTests(){
+		return (isset($this->meta['schema_dqs_tests']) ? $this->meta['schema_dqs_tests'] : false);			
 	}
 	
 	/**
 	 * Get the set of tests to be used when ontology is used to create a schema
 	 */
-	function getCreateSchemaTests(){
-		isset($this->meta['dqs_tests']) ? 	$this->meta['dqs_tests'] : false;
+	function getSchemaTests(){
+		return (isset($this->meta['dqs_tests']) ? $this->meta['dqs_tests'] : false);
 	}
 	
 	/**
@@ -212,11 +212,11 @@ Class Ontology extends LDO {
 		$astruct['dependencies']['include_tree'] = $this->getDependencyTree($x, $srvr, "schema");
 		$x = array();
 		$astruct['dependencies']['schema_include_tree'] = $this->getDependencyTree($x, $srvr, "schema/schema");
-		$ometa = deepArrCopy($this->meta);
-		$this->meta['dqs_tests'] = "all";
+		//$ometa = deepArrCopy($this->meta);
+		//$this->meta['dqs_tests'] = "all";
 		$gr = $srvr->objectPublished($this, true);
 		$astruct['validation'] = $gr;
-		$this->meta = $ometa;
+		//$this->meta = $ometa;
 		return $astruct;
 	}
 	
@@ -372,6 +372,13 @@ Class Ontology extends LDO {
 		}
 	}
 	
+	/**
+	 * Returns the ontology's dependencies as a tree a -> (b => c, d...)
+	 * @param array $included an array of ontologies that have already been included (don't include twice to cut out cycles)
+	 * @param LdDacuraServer $srvr
+	 * @param string $type - schema or schema/schema
+	 * @return array - tree array of dependencies
+	 */
 	function getDependencyTree(&$included, &$srvr, $type = "schema"){
 		$tree = array();
 		$deponts = $this->getDependentOntologies($srvr, $type);

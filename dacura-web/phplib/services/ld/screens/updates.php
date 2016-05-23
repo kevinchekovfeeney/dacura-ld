@@ -1,6 +1,6 @@
-<div class='dacura-subscreen' id='ldo-updates' title="<?=$params['updates_screen_title']?>">
+<div class='dacura-subscreen ld-list' id='ldo-updates' title="<?=$params['updates_screen_title']?>">
 	<div class='subscreen-intro-message'><?=$params['updates_intro_msg']?></div>
-	<div class='tholder dch updates-table-holder' id='updates-table-holder'>
+	<div class='tholder updates-table-holder' id='updates-table-holder'>
 		<table id="updates_table" class="dacura-api-listing">
 			<thead>
 			<tr>
@@ -24,27 +24,34 @@
 		<div class="subscreen-buttons" id='updates-table-updates'></div>				
 	</div>
 </div>
+
 <script>
 var xphp = {};
 xphp.update_datatable = <?php echo isset($params['updates_datatable']) && $params['updates_datatable'] ? $params['updates_datatable'] : "{}";?>;
+xphp.multiselect = <?php echo isset($params['updates_multiselect_options']) && $params['updates_multiselect_options'] ? $params['updates_multiselect_options'] : "{}";?>;
+xphp.canmulti = <?php echo isset($params['multi_updates_update_allowed']) && $params['multi_updates_update_allowed'] ? "true" : "false"; ?>;
 
-var initUpdatesTable = function(data, pconf){
-	if(typeof data.updates == "undefined") data.updates = [];
-	dacura.tool.table.init("updates_table", {
+var initLDOUpdatesTable = function(data, pconf){
+	var tabinit = {
 		"screen": "ldo-updates", 
 		"dtsettings": xphp.update_datatable,
 		cellClick: function(event, entid, rowdata) {
 			window.location.href = "update/" + entid;
 		},
-		empty: emptyUpdateTableHTML,
-		"multiselect": {
-			options: {"accept": "Accept", "pending": "Pending", "reject": "Reject"}, 
+		"fetch": function(onwards, pconfig) { dacura.ld.fetch("<?=$params['id']?>", ldov.ldo.getAPIArgs(), refreshLDOPage, pconf);},
+		empty: emptyUpdateTableHTML
+	}
+	if(xphp.canmulti){
+		tabinit.multiselect = {
+			options: xphp.multiselect, 
 			intro: "Update status of selected updates to: ", 
 			container: "updates-table-updates",
 			label: "Update",
 			update: updateUpdateStatus 
-		},				
-	}, data.updates);
+		};
+	}			
+	if(typeof data.updates == "undefined") data.updates = [];
+	dacura.tool.table.init("updates_table", tabinit, data.updates);
 };
 
 function emptyUpdateTableHTML(key, tconfig){
@@ -58,14 +65,18 @@ function emptyUpdateTableHTML(key, tconfig){
 	dacura.system.showInfoResult("There have been no updates to this " + ldtn + " since it was created", "Once you make changes to your " + ldtn + ", records of each update will appear on this page", pconfig.resultbox, null, mopts)
 }
 
-if(typeof initfuncs == "object"){
-	initfuncs["ldo-updates"] = initUpdatesTable;
+var refreshLDOUpdatesTable = function(data, pconf){
+	if(typeof data.updates == "undefined") data.updates = [];
+	dacura.tool.table.reincarnate("updates_table", data.updates);
 }
+
+refreshfuncs["ldo-updates"] = refreshLDOUpdatesTable;
+initfuncs["ldo-updates"] = initLDOUpdatesTable;
 
 function updateUpdateStatus(ids, status, cnt, pconf, rdatas){
 	dacura.tool.clearResultMessages();
 	var upd = {"umeta": {"status": status}, "editmode": "update", "format": "json"};
-	dacura.ld.multiUpdateStatus(upd, ids, status, pconf, rdatas, "update_table");
+	dacura.ld.multiUpdateStatus(upd, ids, status, pconf, rdatas, "updates_table");
 }
 
 </script>

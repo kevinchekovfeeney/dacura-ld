@@ -19,10 +19,13 @@ LDO.prototype.isEmpty = function(){
 	return true;
 };
 
+LDO.prototype.status = function(){
+	return this.meta.status;
+}
+
 LDO.prototype.getEmptyHTML = function(type){
 	return "<div class='empty-ldcontents'>Empty</div>";
 };
-
 
 LDO.prototype.getHTML = function(mode){
 	if(!this.contents && !this.meta){

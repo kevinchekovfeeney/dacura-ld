@@ -38,6 +38,9 @@ class GraphDacuraServer extends LdDacuraServer {
 		elseif($quads === false){
 			return $nopr->failure($this->errcode, "Failed to serialise graph ".$graph->id, $this->errmsg);
 		}
+		else {
+			return $nopr->failure(400, "Graph schema contains only empty ontologies", "You must add an ontology with some content to enable this graph.");
+		}
 		return $nopr;
 	}
 	

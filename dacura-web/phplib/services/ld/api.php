@@ -154,9 +154,10 @@ function list_updates(){
  */
 function get_ldo($ldo_id, $fragment_id = false){
 	global $dacura_server, $ldo_type, $service;
-	$options = isset($_GET['options']) ? $_GET['options'] : false;
-	$version = isset($_GET['version']) ? $_GET['version'] : false;
-	$format = isset($_GET['format']) ? $_GET['format'] : false;
+	$args = $service->getLDArgs("ldoview");
+	$options = isset($args['options']) ? $args['options'] : false;
+	$version = isset($args['version']) ? $args['version'] : false;
+	$format = isset($args['format']) ? $args['format'] : false;
 	$dacura_server->init("get".($ldo_type ? $ldo_type : "ldo"), $ldo_id, $fragment_id);
 	$action = "view $ldo_type $ldo_id" . ($fragment_id ? "/$fragment_id" : "");
 	$ar = new DacuraResult($action);
@@ -206,7 +207,7 @@ function update_ldo($target_id, $fragment_id = false){
 			$ldo_type = $obj['ldtype'];
 		}
 		else {
-			$ar = new DacuraResult($action);
+			$ar = new DacuraResult("update ldo ".$target_id);
 			return $dacura_server->writeDecision($ar->failure(400, "Request Error", "update request does not have a valid linked data type associated with it"));
 		}
 	}

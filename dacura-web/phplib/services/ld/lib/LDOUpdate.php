@@ -1,4 +1,5 @@
 <?php
+include_once("LDOUpdateDisplay.php");
 /**
 * Class representing an update to an ldo
 *
@@ -185,6 +186,11 @@ class LDOUpdate extends DacuraObject{
 				if(!$update->meta || count($update->meta) == 0){
 					$update->meta = $this->original->meta;
 				}
+				else {
+					$ometa = deepArrCopy($this->original->meta);
+					updateJSON($update->meta, $ometa, $mode);
+					$update->meta = $ometa;
+				}
 				if(!$update->ldprops || count($update->ldprops) == 0){
 					$update->ldprops = deepArrCopy($this->original->ldprops);
 					$update->buildIndex();
@@ -235,7 +241,7 @@ class LDOUpdate extends DacuraObject{
 	}
 	
 	function updateMeta($umeta, $mode){
-		updateJSON($umeta, $this->meta);
+		updateJSON($umeta, $this->meta, $mode);
 		$this->readStateFromMeta();
 	}
 	
@@ -585,8 +591,9 @@ class LDOUpdate extends DacuraObject{
 		if(isset($opts['show_delta']) && $opts['show_delta'] && isset($this->delta) && $this->delta){
 			$apirep["delta"] = $this->delta->forAPI($format, $opts);
 		}
-		if(isset($opts['analysis']) && $opts['analysis'] && isset($this->analysis) && $this->analysis){
-			$apirep["analysis"] = $this->analysis;
+		if(isset($opts['show_contents']) && $opts['show_contents']){
+			$ldod = new LDOUpdateDisplay($this, array());
+			$apirep["contents"] = $ldod->getChangeViewHTML();
 		}
 		return $apirep;
 	}

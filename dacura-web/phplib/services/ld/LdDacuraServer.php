@@ -138,7 +138,8 @@ class LdDacuraServer extends DacuraServer {
 		if($cr->is_accept() || ($cr->is_pending() && $this->getServiceSetting("test_unpublished", true))){
 			$gur = $this->objectPublished($nldo, !$cr->is_accept() || $test_flag);
 			$gur->setHypothetical(!$cr->is_accept());
-			if($gur->is_reject() && $cr->is_accept() && ($nldo->isEmpty() || (isset($options["rollback_ldo_to_pending_on_dqs_reject"]) && $options["rollback_ldo_to_pending_on_dqs_reject"]))){
+			$rb = (isset($options["rollback_ldo_to_pending_on_dqs_reject"]) && $options["rollback_ldo_to_pending_on_dqs_reject"]) || $this->getServiceSetting("rollback_ldo_to_pending_on_dqs_reject", false);				
+			if($gur->is_reject() && $cr->is_accept() && ($nldo->isEmpty() || $rb)){
 				$cr->msg_body = "New $type failed DQS tests";
 				$cr->status("pending");
 				$nldo->status($cr->status());
@@ -152,7 +153,7 @@ class LdDacuraServer extends DacuraServer {
 			}
 			else {
 				$nldo->status($cr->status());
-				$cr->addGraphResult("dqs", $gur);				
+				$cr->addGraphResult("dqs", $gur);
 			}
 		}
 		if(!$test_flag && (!$cr->is_reject() || $this->policy->storeRejected("create", $nldo)) && !$this->dbman->createLDO($nldo, $type)){
@@ -208,7 +209,7 @@ class LdDacuraServer extends DacuraServer {
 			else {
 				$cr->msg_body = "Available at: <a href='$nldo->cwurl'>$nldo->cwurl</a>";
 			}
-		}
+		}	
 		return $cr;
 	}
 	
@@ -711,13 +712,12 @@ class LdDacuraServer extends DacuraServer {
 		if(!($nldo->validate($editmode, $this))){
 			return $ar->failure($nldo->errcode, "Format Error", "$ldo_type $editmode sent to API had formatting errors. ".$nldo->errmsg);				
 		}						
-		
 		$ldoupdate = new LDOUpdate(false, $oldo);
 		if(!$ldoupdate->loadFromAPI($nldo, $update_meta, $editmode, $this)){
 			return $ar->failure($ldoupdate->errcode, "Protocol Error", "Failed to load the update command from the API. ". $ldoupdate->errmsg);
 		}
 		if($ldoupdate->nodelta()){
-			return $ar->reject("No Changes", "The submitted version is identical to the current version.");
+			return $ar->failure(409, "No Changes", "The submitted version is identical to the current version.");
 		}
 		$ar->add($this->policy->getPolicyDecision("update", $ldoupdate));
 		if($ar->is_reject()){
@@ -749,19 +749,19 @@ class LdDacuraServer extends DacuraServer {
 		if(($ar->is_accept() || $ar->is_pending()) && !$test_flag){
 			//$cr->msg_body = "<b>".$cr->title()."</b> ".$cr->body();
 			if(!$ar->is_accept()){
-				$ar->msg_title = "Update accepted";
-				$ar->msg_body = "Update has entered into deferred update queue, it must be approved". $ar->msg_body;
+				$ar->msg_title = $ldoupdate->ldtype() ." $ldoupdate->targetid update accepted";
+				$ar->msg_body = "Update has entered into deferred update queue, it must be approved before the ".$ldoupdate->ldtype()." will be updated. ". $ar->msg_body;
 			}
 			else {
-				$ar->msg_title = "Update accepted and published";
-				$ar->msg_body = "Object updated". $ar->msg_body;
+				$ar->msg_title = $ldoupdate->ldtype() ." $ldoupdate->targetid updated";
+				$ar->msg_body . "Update accepted and published. ".$ar->msg_body;
 			}
 		}
 		elseif($ar->is_accept() && $test_flag){
-			$ar->msg_title = "Update will be accepted and published";
+			$ar->msg_title = $ldoupdate->ldtype() ." $ldoupdate->targetid update would be accepted and published";
 		}
 		elseif($ar->is_pending() && $test_flag && !$ar->msg_title){
-			$ar->msg_title = "Update will enter update queue and must be approved before it is published";
+			$ar->msg_title = $ldoupdate->ldtype() ." $ldoupdate->targetid update would enter update queue and must be approved before it is published";
 		}
 		return $ar;
 	}
@@ -809,7 +809,7 @@ class LdDacuraServer extends DacuraServer {
 	function checkUpdate(DacuraResult &$ar, LDOUpdate &$uldo, $options = array(), $test_flag = false){
 		//check version information
 		if(!$uldo->original->isLatestVersion()){
-			if($ar->is_accept() && $this->getServiceSetting("rollback_updates_to_pending_on_version_reject")){
+			if($ar->is_accept() && $this->getServiceSetting("rollback_update_to_pending_on_version_reject")){
 				$ar->status("pending");
 				$ar->setWarning("Update check", "Update version clash", "The object you are updating has been updated to version ".$uldo->original->latest_version." since the version that you saw (".$uldo->original->version.")");
 			}
@@ -824,7 +824,8 @@ class LdDacuraServer extends DacuraServer {
 				return $ar;
 			}
 			$gu = $this->publishUpdateToGraph($uldo, $ar->status(), $hypo || $test_flag);
-			if($ar->is_accept() && !$hypo && $gu->is_reject() && isset($options["rollback_update_to_pending_on_dqs_reject"]) && $options["rollback_update_to_pending_on_dqs_reject"]){
+			$rb = (isset($options["rollback_update_to_pending_on_dqs_reject"]) && $options["rollback_update_to_pending_on_dqs_reject"]) || $this->getServiceSetting("rollback_update_to_pending_on_dqs_reject", false);
+			if($ar->is_accept() && !$hypo && $gu->is_reject() && $rb){
 				$ar->addGraphResult("dqs", $gu, $hypo || $test_flag, false);
 				$ar->status("pending");
 			}
@@ -842,7 +843,25 @@ class LdDacuraServer extends DacuraServer {
 		}
 		$uldo->status($ar->status());
 		if(isset($options['show_meta_triples']) && $options['show_meta_triples']){
-			//$ar->createMetaResult($uldo->getMetaUpdates(), $ar->status(), $test_flag);
+			$ometau = array();
+			$nmetau = array();
+			foreach($uldo->original->meta as $k => $v){
+				if(!isset($uldo->changed->meta[$k])){
+					$ometau[$k] = $v;
+					$nmetau[$k] = "";
+				}
+				elseif($v != $uldo->changed->meta[$k]){
+					$ometau[$k] = $v;
+					$nmetau[$k] = $uldo->changed->meta[$k];						
+				}				
+			}
+			foreach($uldo->changed->meta as $k => $v){
+				if(!isset($uldo->original->meta[$k])){
+					$nmetau[$k] = $v;
+					$ometau[$k] = "";
+				}
+			}			
+			$ar->createGraphResult("meta", "Updates to " .$uldo->ldtype()."'s metadata", $ar->status(), $nmetau, $ometau, $test_flag);
 		}
 		if(isset($options['show_update_triples']) && $options['show_update_triples']){
 			$msg = "Updates to update ".$uldo->id;
@@ -992,7 +1011,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @return boolean|LDOUpdate update objecct 
 	 */
 	function loadUpdatedUpdate(LDOUpdate $orig_upd, $update_obj, $umeta, $format, $editmode, $options = array()){
-		if(isset($umeta['from_version']) && $umeta['from_version'] && $umeta['from_version'] != $orig_upd->original->get_version()){
+		if(isset($umeta['from_version']) && $umeta['from_version'] && $umeta['from_version'] != $orig_upd->original->version){
 			$norig = $this->loadLDO($orig_upd->targetid, $orig_upd->ldtype(), $this->cid(), false, $umeta['version']);
 			if(!$norig)	return false;
 		}
@@ -1053,7 +1072,9 @@ class LdDacuraServer extends DacuraServer {
 		$md = $capture_meta ? $meta_delta : false;
 		if($capture_update){
 			$msg = "Updates to update ".$new_upd->id;
-			$ar->createGraphResult("update", $msg, $ar->status(), $new_upd, $orig_upd, $test_flag);
+			$mupdate = array("forward" => $new_upd->forward, "backward" => $new_upd->backward);
+			$oupdate = array("forward" => $orig_upd->forward, "backward" => $orig_upd->backward);
+			$ar->createGraphResult("update", $msg, $ar->status(), $mupdated, $oupdate, $test_flag);
 		}
 		if($new_upd->published() && $orig_upd->published()){ //live edit
 			$umode = "live";
@@ -1313,8 +1334,13 @@ class LdDacuraServer extends DacuraServer {
 			$this->logResult($ar->errcode, $ar->status()." : ".$ar->action);
 		}
 		elseif($ar->is_reject()){
-			http_response_code(401);
-			$this->logResult(401, $ar->status()." : ".$ar->action);
+			if($ar->errcode){
+				http_response_code($ar->errcode);					
+			}
+			else {
+				http_response_code(406);					
+			}
+			$this->logResult(406, $ar->status()." : ".$ar->action);
 		}
 		elseif($ar->is_pending()){
 			http_response_code(202);

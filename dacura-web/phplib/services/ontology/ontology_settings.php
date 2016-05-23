@@ -4,31 +4,48 @@ include_once "phplib/services/ld/ld_settings.php";
 $settings['fail_on_missing_dependency'] = true;
 $settings['fail_on_bad_predicate'] = true;
 $settings['fail_on_ontology_hijack'] = false;
-//$settings['required_meta_properties'] = array("url");
 $settings["collapse_blank_nodes_for_dependencies"] = true;
-	
-//$settings['create_dqs_schema_tests'] = "all";
-//$settings['create_dqs_instance_tests'] = "all";
-//$settings['two_tier_schemas'] = false;
 
 $settings["update_options"]  = array("show_dqs_triples" => 1, "show_ld_triples" => 1, "fail_on_id_denied" => 1,
 		"show_update_triples" => 1, "show_meta_triples" => 1, "show_result" => 1,
 		"show_changed" => 1, "show_original" => 1, "ns" => 1, "addressable" => 1);
 
+$settings["update_dqs_user_options"] = array(
+	"ns", "plain", "show_update_triples", "show_dqs_triples", "show_meta_triples", "show_result", "show_changed", "show_original"
+);
+$settings["test_update_dqs_user_options"] = array(
+	"ns", "plain", "show_update_triples", "show_dqs_triples", "show_meta_triples", "show_result", "show_changed", "show_original"
+);
+$settings["update_dqs_fixed_options"] = array();
+$settings["update_dqs_default_options"] = array("ns" => 1, "plain" => 1);
+$settings["test_update_dqs_fixed_options"] = array();
+$settings["test_update_dqs_default_options"] = array(
+		"show_update_triples" => 1,
+		"show_meta_triples" => 1,
+		"show_dqs_triples" => 1,
+		"show_result" => 1,
+		"ns" => 1,
+		"plain" => 1
+);
+
+
 $settings["create_ldo_fields"] = array(
 		"id" => array("label" => "Prefix", "length" => "short", "help" => "The ontology's namespace prefix, also the ontology's identifier in the system - must be all lowercase with no spaces or punctuation. Choose carefully - the prefix appears in all urls that reference the object and cannot be easily changed!"),
 		"status" =>	array("label" => "Status", "help" => "The current status of the object", "type" => "status"),
 		"title" => array("label" => "Title", "length" => "long", "help" => "The full title of the object - may include spaces and punctuation."),
-		"url" => array("label" => "Canonical URL", "type" => "url", "length" => "long", "help" => "The External URL which represents the 'canonical' id of this object (to support purls, etc)."),
-		//"ldtype" => array("label" => "Linked Data Type", "input_type" => "select", "help" => "The full title of the object - may include spaces and punctuation."),
-		//"image" => array("type" => "image", "label" => "Image", "help" => "An image which will represent the object on pages."),
-		//"meta" => array("label" => "Object Meta-data", "type" => "complex", "input_type" => "custom", "help" => "Arbitrary json meta-data that is associated with the object"),
-		//"ldsource" => array("label" => "Contents Source", "type" => "choice", "options" => array("text" => "Textbox", "url" => "Import from URL", "file" => "Upload File"), "input_type" => "radio", "help" => "You can choose to import the contents of the linked data object from a url, a local file, or by inputting the text directly into the textbox here"),
-		//"format" => array("label" => "Contents Format", "type" => "choice", "help" => "The contents of the object (in RDF - Linked Data format)"),
-		//"ldurl" => array("label" => "Import URL", "type" => "url", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("download" => array("title" => "Load URL"))),
-		//"ldfile" => array("label" => "Import File", "type" => "file", "help" => "The contents of the object (in RDF - Linked Data format)", "actions" => array("upload" => array("title" => "Upload File"))),
+		"url" => array("label" => "Namespace URL", "type" => "url", "length" => "long", "help" => "The External URL which represents the 'canonical' id of this object (to support purls, etc)."),
 		"ldcontents" => array("type" => "placeholder", "label" => "Import Ontology Contents"),
 );
+
+/* Meta Tab */
+$settings["update_meta_fields"] = array(
+		//"status" =>	array("label" => "Status", "help" => "The current status of the object", "type" => "status"),
+		"image" => array("type" => "image", "label" => "Image", "help" => "An image which will represent the object on pages."),
+		"title" => array("label" => "Title", "length" => "long", "help" => "The full title of the object - may include spaces and punctuation."),
+		"url" => array("label" => "Namespace URL", "length" => "long", "type" => "url", "help" => "The External URL which represents the 'canonical' namespace of this object (to support purls, etc)."),
+		//"description" => array("label" => "Description", "help" => "A textual description of the ontology", "type" => "text", "input_type" => "textarea"),
+);
+
 $msg_extensions = array(
 		"list_page_title" => "Manage your Ontologies",
 		"list_page_subtitle" => "Ontologies define the structure of Dacura's data",
@@ -60,9 +77,9 @@ foreach($msg_extensions as $k => $v){
 }
 
 $settings['tables']["ld"] = array("datatable_options" => 
-		array("jQueryUI" => true, "searching" => false, "scrollX" => false, "pageLength" => 20, 
-			"lengthMenu" => array(10, 20, 50, 75, 100),
-			"info" => true, "order" => array(8, "desc"),
-			"aoColumns" => array(null, null, null, null, null, null, array("bVisible" => true, "iDataSort" => 7), array("bVisible" => false), array("iDataSort" => 9), array("bVisible" => false), null, array("orderable" => false)))
+	array("jQueryUI" => true, "searching" => false, "scrollX" => false, "pageLength" => 20, 
+		"lengthMenu" => array(10, 20, 50, 75, 100),
+		"info" => true, "order" => array(8, "desc"),
+		"aoColumns" => array(null, null, null, null, null, null, array("bVisible" => true, "iDataSort" => 7), array("bVisible" => false), array("iDataSort" => 9), array("bVisible" => false), null, array("orderable" => false)))
 );
 

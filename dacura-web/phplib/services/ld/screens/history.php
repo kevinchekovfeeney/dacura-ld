@@ -19,6 +19,7 @@
 	</div>
 </div>
 <script>
+var tooltipconf = <?php echo isset($params['tooltip_config']) ? $params['tooltip_config'] : "{}" ?>;
 var history_datatable = <?=$params['history_datatable']?>;
 
 function emptyHistoryTableHTML(key, tconfig){
@@ -36,17 +37,26 @@ var initHistoryTable = function(data, pconf){
 		"empty": emptyHistoryTableHTML,
 		"dtsettings": history_datatable,
 		"cellClick": function(event, entid, rowdata) {
-			var ldtype = ldt;
 			if(!ldtype){
 				args = "?ldtype=" + "<?=isset($_GET['ldtype'])? $_GET['ldtype'] : ""?>" + "&version=" + rowdata.version;
 			}
 			else {
 				args = "?version=" + rowdata.version;
 			}
-			window.location.href = dacura.system.pageURL() + "/" + ldid + args;
+			window.location.href = dacura.system.pageURL() + "/" + "<?=$params['id']?>" + args;
 		}				
 	}, data.history);
+	//$('#history_table').tooltip(tooltipconf);	
 }
+
+var refreshHistoryTable = function(data, pconf){
+	if(typeof data.history == "undefined") data.history = [];
+	dacura.tool.table.reincarnate("history_table", data.history);
+}
+
+
+refreshfuncs['ldo-history'] = refreshHistoryTable;
+
 
 if(typeof initfuncs == "object"){
 	initfuncs["ldo-history"] = initHistoryTable;

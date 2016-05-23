@@ -1186,19 +1186,24 @@ function compareJSON($frag_id, $jo, $ju, $cwurl, $gid = false){
  * @param array $dmeta json object to be updated
  * @return boolean true if successful
  */
-function updateJSON($umeta, &$dmeta){
+function updateJSON($umeta, &$dmeta, $mode){
 	if(isAssoc($umeta)){
 		if(!is_array($dmeta)){
 			$dmeta = array();
 		}
 		foreach($umeta as $k => $v){
-			if(is_array($v) && count($v) == 0){
-				if(isset($dmeta[$k])){
-					unset($dmeta[$k]);
+			if($mode == "update"){
+				if(is_array($v) && count($v) == 0){
+					if(isset($dmeta[$k])){
+						unset($dmeta[$k]);
+					}
 				}
-			}
-			elseif(isAssoc($v)){
-				updateJSON($v, $dmeta[$k]);
+				elseif(isAssoc($v)){
+					updateJSON($v, $dmeta[$k], $mode);
+				}
+				else {
+					$dmeta[$k] = $v;
+				}				
 			}
 			else {
 				$dmeta[$k] = $v;

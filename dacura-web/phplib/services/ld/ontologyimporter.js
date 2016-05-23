@@ -26,6 +26,22 @@ function OntologyImporter(orig, available, autos, mode, ucallback){
 	this.show_buttons = true;
 }
 
+OntologyImporter.prototype.setImports = function(explicit, automatic){
+	var changed = false;
+	if(!this.importListsMatch(this.automatic_imports, automatic)){
+		this.automatic_imports = automatic;
+		changed = true;
+	}
+	if(!this.importListsMatch(this.current, explicit)){
+		this.current = explicit;
+		changed = true;
+	}
+	if(changed){
+		this.refresh();
+	}
+	return changed;
+}
+
 OntologyImporter.prototype.setManual = function(){
 	if(this.isauto){
 		this.isauto = false;
@@ -119,6 +135,18 @@ OntologyImporter.prototype.importListsMatch = function(a, b){
 		} 
 	}
 	return true;	
+}
+
+OntologyImporter.prototype.reset = function(){
+	if(this.hasStateChange()){
+		this.current = $.extend(true, {}, this.orig); 
+		this.is_auto = this.orig_isauto;
+		this.mode = "edit";
+		this.setViewMode();
+	}
+	else if(this.mode != "view"){
+		this.setViewMode();
+	}
 }
 
 OntologyImporter.prototype.refresh = function(){

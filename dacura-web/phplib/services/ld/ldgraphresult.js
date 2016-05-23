@@ -165,11 +165,12 @@ LDGraphResult.prototype.getDQSConfigPage = function(dqs, current){
 
 LDGraphResult.prototype.getImportsSummary = function(simports){
 	var html = "";
-	for(var i in this.imports){
+	simports = (typeof simports == "object") ? simports : this.imports;
+	for(var i in simports){
 		var url = dacura.system.install_url;
-		url += (this.imports[i].collection == "all") ? "" : this.imports[i].collection;
-		url += "/ontology/" + this.imports[i].id;
-		html += dacura.ld.getOntologyViewHTML(i, url, null, this.imports[i].version);
+		url += (simports[i].collection == "all") ? "" : simports[i].collection;
+		url += "/ontology/" + simports[i].id;
+		html += dacura.ld.getOntologyViewHTML(i, url, null, simports[i].version);
 	}
 	return html;
 };
@@ -197,6 +198,7 @@ LDGraphResult.prototype.getGraphUpdatesSummary = function(){
 		html += "<span class='graph-summary-element graph-inserts-summary'>" + this.inserts.length + " inserts</span>";
 	}
 	if(this.deletes && this.deletes.length > 0){
+		html += (this.inserts && this.inserts.length > 0) ? ", " : "";
 		html += "<span class='graph-summary-element graph-deletes-summary'>" + this.deletes.length + " deletes</span>";
 	}	
 	return html;

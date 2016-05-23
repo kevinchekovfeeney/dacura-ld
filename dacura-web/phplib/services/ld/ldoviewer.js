@@ -6,7 +6,8 @@ function LDOViewer(ldo, pconf, vconf){
 	this.pconf = pconf;
 	this.emode = "view";
 	this.target = "";
-	if(typeof voncf == "object"){
+	this.prefix = "";
+	if(typeof vconf == "object"){
 		this.init(vconf);
 	}
 }
@@ -15,12 +16,8 @@ LDOViewer.prototype.init = function(vconf){
 	if(typeof vconf.emode == "string"){
 		this.emode = vconf.emode;
 	}
-	if(typeof vconf.target != "string"){
-		alert("LDO Viewer called without a target!");
-	}
-	else {
-		this.target = vconf.target;
-		this.prefix = this.target.substring(1);//get rid of the #
+	if(typeof vconf.target == "string"){
+		this.setTarget(vconf.target, vconf.options_target);
 	}
 	if(typeof vconf.view_formats == "object"){
 		this.view_formats = vconf.view_formats;
@@ -76,18 +73,18 @@ LDOViewer.prototype.init = function(vconf){
 	else {
 		this.show_options = true;
 	}
-	if(this.show_options){
-		this.options_target = (typeof vconf.options_target != "undefined") ? vconf.options_target : this.target;
-	}
+	this.test_update_options = (typeof vconf.test_update_options != "undefined") ? vconf.test_update_options : {};
+	this.update_options = (typeof vconf.update_options != "undefined") ? vconf.update_options : {};
 	this.allow_empty_contents = (typeof vconf.allow_empty_contents != "undefined") ? vconf.allow_empty_contents : false;
 	this.ldimport_header = (typeof vconf.ldimport_header != "undefined") ? vconf.ldimport_header : false;
 	this.tooltip = (typeof vconf.tooltip != "undefined") ? vconf.tooltip :  { content: function () {	return $(this).prop('title');}};
 }
 
-LDOViewer.prototype.show = function(vconf, showconf){
-	if(typeof vconf == "object"){
-		this.init(vconf);
-	}
+LDOViewer.prototype.show = function(target, mode, showconf, callback){
+	if(typeof target == "string"){
+		this.setTarget(target);
+	}	
+	this.emode = (typeof mode == "string") ? mode : this.emode;	
 	if(typeof showconf == "undefined"){
 		showconf = {};
 	}
@@ -100,7 +97,7 @@ LDOViewer.prototype.show = function(vconf, showconf){
 	$(this.target).html("");
 	if(this.show_options){
 		$(this.options_target).append(this.showOptionsBar());
-		this.initOptionsBar();
+		this.initOptionsBar(callback);
 	}
 	var body = "<div class='ldo-viewer-contents' id='" + this.prefix + "-ldo-viewer-contents'>";
 	if(this.emode == 'import'){
@@ -116,7 +113,7 @@ LDOViewer.prototype.show = function(vconf, showconf){
 		}
 		if(showconf.show_buttons && this.emode != "view"){
 			$(this.target).append(this.getUpdateButtonsHTML(this.emode));
-			this.initUpdateButtons();
+			this.initUpdateButtons(this.pconf, callback);
 		}
 	}
 };
@@ -144,7 +141,7 @@ LDOViewer.prototype.showOptionsBar = function(){
 LDOViewer.prototype.showViewOptionsBar = function(){
 	var html = "<div class='ld-view-bar ld-bar'><table class='ld-bar'><tr><td class='ld-bar ld-bar-left'>";
 	if(this.view_formats){
-		html += "<select class='ld-view-formats ld-control'>";
+		html += "<select class='ld-view-formats ld-control dacura-select'>";
 		for(var i in this.view_formats){
 			var sel = "";
 			if(this.ldo.format == i){
@@ -163,7 +160,7 @@ LDOViewer.prototype.showViewOptionsBar = function(){
 			if(this.ldo.options[i] == 1){
 				html += "checked";
 			}
-			html += " /><label for='" + this.prefix + "-option-" + i + "'>" + this.view_options[i].title + "</label>";
+			html += " /><label for='" + this.prefix + "-option-" + i + "'>" + this.view_options[i] + "</label>";
 		}
 		html += "</span>";
 	}
@@ -217,7 +214,7 @@ LDOViewer.prototype.showImportOptionsBar = function(){
 	html += "<td class='ld-bar ld-bar-right'>";
 	html += "<strong class='import-bar-label'>Import Format:</strong> ";
 	if(this.edit_formats){
-		html += "<select id='" + this.prefix + "-ldformat' + class='ld-import-formats ld-control'>";
+		html += "<select id='" + this.prefix + "-ldformat' + class='ld-import-formats ld-control dacura-select'>";
 		html += "<option class='foption ld-bar-format' value='0' id='" + this.prefix + "-format-" + i + "' selected>Auto-detect</option>";							
 		for(var i in this.edit_formats){
 			html += "<option class='foption ld-bar-format' value='" + i + "' id='" + this.prefix + "-format-" + i + "'>" + this.edit_formats[i] + "</option>";							
@@ -248,7 +245,7 @@ LDOViewer.prototype.showEditOptionsBar = function(){
 	html += "<td class='ld-bar ld-bar-centre'>";
 	if(this.editmode_options){
 		html += "<div class='editbar-options editmode-options'>";
-		html += "<select class='ld-edit-modes api-control'>";
+		html += "<select class='ld-edit-modes api-control dacura-select'>";
 		for(var i in this.editmode_options){
 			html += "<option class='foption ld-bar-format' value='" + i + "' id='" + this.prefix + "-editmode-" + i + "'>" + this.editmode_options[i] + "</option>";							
 		}
@@ -256,7 +253,7 @@ LDOViewer.prototype.showEditOptionsBar = function(){
 	}
 	if(this.result_options){
 		html += "<div class='editbar-options result-options'>";
-		html += "<select class='ld-result-modes api-control'>";
+		html += "<select class='ld-result-modes api-control dacura-select'>";
 		for(var i in this.result_options){
 			html += "<option class='foption ld-bar-format' value='" + i + "' id='" + this.prefix + "-resultoption-" + i + "'>" + this.result_options[i] + "</option>";							
 		}
@@ -279,11 +276,11 @@ LDOViewer.prototype.showEditOptionsBar = function(){
 	return html;
 }
 
-LDOViewer.prototype.initOptionsBar = function(){
+LDOViewer.prototype.initOptionsBar = function(callback){
 	var self = this;
 	$('button.ld-control').button().click(function(){
 		var act = this.id.substring(this.id.lastIndexOf("-")+1);
-		self.handleViewAction(act);
+		self.handleViewAction(act, callback);
 	});
 	if(this.emode == "view"){
 		$('input.ld-control').button().click(function(){
@@ -329,7 +326,7 @@ LDOViewer.prototype.getUpdateButtonsHTML = function(mode){
 	return html;
 };
 
-LDOViewer.prototype.initUpdateButtons = function(){
+LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 	var self = this;
 	if(this.emode == "edit"){
 		$('.subscreen-button').button().click(function(){
@@ -348,23 +345,36 @@ LDOViewer.prototype.initUpdateButtons = function(){
 						return;
 					}
 				}
+				var opts = (test ? self.test_update_options : self.update_options);
 				var test = (act == "testupdate") ? 1 : 0;
-				var j = $(self.target + " .ld-edit-modes").val();
-				var em = j ? j : "replace";
-				j = $(self.target + " .ld-result-modes").val();
-				var rem = j ? j : 0;
-				var opts = {"show_result": rem};
-				if(rem == 2){
-					opts.show_changed = 1;
-					opts.show_original = 1;
-					opts.show_delta = 1;
+				if(self.editmode_options){
+					var j = $(self.target + " .ld-edit-modes").val();
+					var em = j ? j : "replace";					
 				}
-				$(self.target + ' .editbar-options input:checkbox').each(function(){
-					var act = "show_" + this.id.substring(this.id.lastIndexOf("-")+1)+ "_triples";
-					if($(this).is(":checked")){
-						opts[act] = "1";
-					}	
-				});
+				else {
+					var em = "update";
+				}
+				if(self.view_result_options){
+					j = $(self.target + " .ld-result-modes").val();
+					var rem = j ? j : 0;
+					opts.show_result = rem;
+					if(rem == 2){
+						opts.show_changed = 1;
+						opts.show_original = 1;
+						opts.show_delta = 1;
+					}
+				}
+				if(self.view_graph_options){
+					$(self.target + ' .editbar-options input:checkbox').each(function(){
+						var act = "show_" + this.id.substring(this.id.lastIndexOf("-")+1)+ "_triples";
+						if($(this).is(":checked")){
+							opts[act] = "1";
+						}
+						else {
+							opts[act] = 0;
+						}
+					});					
+				}
 				var upd = {
 					'ldtype': self.ldo.ldtype(), 
 					"test": test, 
@@ -373,7 +383,7 @@ LDOViewer.prototype.initUpdateButtons = function(){
 					"options" : opts,
 					"format": self.ldo.format
 				};
-				self.update(upd);	
+				self.update(upd, callback, tpconf);	
 				//assemble our options for update...
 			}
 		});
@@ -399,10 +409,10 @@ LDOViewer.prototype.initUpdateButtons = function(){
 							updated.ldfile = fname;
 							self.update(updated);
 						}
-						dacura.ld.uploadFile(updated.ldfile, handleUpload, this.pconf)
+						dacura.ld.uploadFile(updated.ldfile, handleUpload, tpconf)
 					}
 					else {
-						self.update(updated);
+						self.update(updated, callback, tpconf);
 					}
 				}
 			}
@@ -491,6 +501,12 @@ LDOViewer.prototype.getImportBodyHTML = function(){
 	return "<div class='ld-import-holder'>" + hcont + "</div>";
 };
 
+LDOViewer.prototype.setTarget = function(jqid, barjqid){
+	this.target = jqid;
+	this.prefix = jqid.substring(1);
+	this.options_target = (typeof barjqid != "undefined") ? barjqid : this.target;
+}
+
 LDOViewer.prototype.showFrame = function(cls, target){
 	if(typeof target == "undefined"){
 		target = this.target;
@@ -525,13 +541,14 @@ LDOViewer.prototype.initFrameView = function(){
 	dacura.frame.initInteractors();
 };
 
-LDOViewer.prototype.handleViewAction = function(act){
+LDOViewer.prototype.handleViewAction = function(act, callback){
+	
 	if(act == "export"){
 		window.location.href = this.ldo.fullURL() + "&direct=1";	
 	}
 	else if(act == "accept" || act == "pending" || act == "reject"){
 		var upd = {'ldtype': this.ldo.ldtype(), "meta": {"status": act}, "editmode": "update", "format": "json"};
-		this.update(upd);
+		this.update(upd, callback);
 	}
 	else if(act == "restore"){
 		alert("restore needs to be written");
@@ -593,8 +610,7 @@ LDOViewer.prototype.loadEditMode = function(){
 		self.ldo = new LDO(data);
 		self.emode = "edit";
 		self.show();
-		//self.ldo = new LDO(data);
-		//self.show();
+
 	}
 	$(this.pconf.resultbox).empty();
 	dacura.ld.fetch(id, args, handleResp, this.pconf, msgs);
@@ -637,6 +653,7 @@ LDOViewer.prototype.handleViewOptionUpdate = function(opt, val){
 	this.refresh(args, msgs);
 };
 
+/* refresh only rewrites the body of the ldo, not the rest of the stuff like history..*/
 LDOViewer.prototype.refresh = function(args, msgs){
 	var id = this.ldo.id;
 	if(this.ldo.fragment_id){ 
@@ -651,26 +668,24 @@ LDOViewer.prototype.refresh = function(args, msgs){
 	dacura.ld.fetch(id, args, handleResp, this.pconf, msgs);
 };
 
-LDOViewer.prototype.refreshPage = function(args, msgs){
+LDOViewer.prototype.refreshPage = function(args, msgs, callback){
 	var id = this.ldo.id;
 	if(this.ldo.fragment_id){ 
 		id = id + "/" + this.ldo.fragment_id;
 	}
 	var self = this;//this becomes bound to the callback...
-	var handleResp = function(data, pconf){
-		dacura.ld.header(data);
-		if(typeof data.history == "object" && $('#ldo-history').length){
-			dacura.tool.table.reincarnate("history_table", data.history);		
-		}
-		if(typeof data.updates == "object" && $('#ldo-updates').length){
-			dacura.tool.table.reincarnate("updates_table", data.updates);		
-		}
-		dacura.system.styleJSONLD("td.rawjson");	
-		self.ldo = new LDO(data);
-		self.show();
+	if(typeof callback == "function") {
+		var ref = function (data, pconf) { 
+			callback(data, pconf);
+		};
 	}
-	$(this.pconf.resultbox).empty();
-	dacura.ld.fetch(id, args, handleResp, this.pconf, msgs);
+	else {
+		var ref = function (data, pconf) { 
+			self.ldo = new LDO(data);
+			self.show();
+		};
+	}
+	dacura.ld.fetch(id, args, ref, this.pconf, msgs);
 };
 
 LDOViewer.prototype.validateNew = function(obj){
@@ -716,14 +731,14 @@ LDOViewer.prototype.validateNew = function(obj){
 		return errs;
 	}
 	return false;
-},
+};
 
 LDOViewer.prototype.ldtype = function(){
 	if(typeof this.ldo == "object"){
 		return this.ldo.ldtype();
 	}
 	return this.ldtype;
-}
+};
 
 LDOViewer.prototype.readCreateForm = function(obj, demand_id_token, options){
 	apiobj = {};
@@ -779,7 +794,7 @@ LDOViewer.prototype.readCreateForm = function(obj, demand_id_token, options){
 		delete(apiobj.meta);
 	}
 	return apiobj;		
-}
+};
 
 LDOViewer.prototype.create = function(created, result, test_flag){
 	var self = this;
@@ -797,11 +812,12 @@ LDOViewer.prototype.create = function(created, result, test_flag){
 	}	
 };
 
-LDOViewer.prototype.update = function(upd, handleResp){
+LDOViewer.prototype.update = function(upd, resultCallback, pageconfig, handleResp){
 	var id = this.ldo.id;
 	if(this.ldo.fragment_id){ 
 		id = id + "/" + this.ldo.fragment_id;
 	}
+	pageconfig = typeof pageconfig == "object" ? pageconfig : this.pconf;
 	var self = this;//this becomes bound to the callback...
 	if(typeof handleResp != "function"){
 		handleResp = function(data, pconf){
@@ -812,7 +828,7 @@ LDOViewer.prototype.update = function(upd, handleResp){
 				var idstr = self.ldo.ldtype().ucfirst() + " " + self.ldo.id;
 				msgs = {busy: "Loading " + idstr + " in view mode from server", "fail": "Failed to retrieve " + idstr + " in view mode from server"};
 				self.emode="view";
-				self.refreshPage(args, msgs);
+				self.refreshPage(args, msgs, resultCallback);
 			}
 			else if(res.status == "pending" && !res.test){
 				var args = typeof self.savedargs == "object" ? self.savedargs : self.ldo.getAPIArgs();
@@ -820,14 +836,22 @@ LDOViewer.prototype.update = function(upd, handleResp){
 				var idstr = self.ldo.ldtype().ucfirst() + " " + self.ldo.id;
 				msgs = {busy: "Loading " + idstr + " in view mode from server", "fail": "Failed to retrieve " + idstr + " in view mode from server"};
 				self.emode="view";
-				self.refreshPage(args, msgs);			
+				self.refreshPage(args, msgs, resultCallback);			
+			}
+			else {
+				if(typeof resultCallback == "function"){
+					resultCallback(data, pconf);
+				}
 			}
 			res.show();
 		}
-		//jpr(data);
 	}
-	dacura.ld.update(id, upd, handleResp, this.pconf, upd.test);
-}
+	dacura.ld.update(id, upd, handleResp, pageconfig, upd.test);
+};
+
+LDOViewer.prototype.isLDOUpdate = function(){
+	return false;
+};
 
 function wrapIPFieldInDacuraForm(l, d, h){
 	var html = '<table id="jsonvphoney" style="border: 0">';
