@@ -25,6 +25,8 @@ class RVO {
 	/** @var This is a generic property which indicates whether a violation is considered only best practice or more serious. */
 	var $best_practice;
 	/** @var The set of supported violation classes in the ontology */
+	var $munge;
+	var $class;
 	static $violation_classes = array(
 		"NoImmediateClass", "noImmediateDomain", "noImmediateRange", "OrphanClass", "ClassCycle", "NotDomainClass", "NotUniqueClassLabel", "NotUniqueClassName", 
 		"NotSuperClassOfClass", "NotSubClassofClass", "NotIntersectionOfClass", "NotUnionOfClass", "NotUniquePropertyName", 
@@ -66,7 +68,11 @@ class RVO {
 			}	
 			if(isset($props['constraintType'])){
 				$this->constraintType = $props['constraintType'];
-			}	
+			}
+			if(isset($props['class'])){
+				$this->class = $props['class'];
+			}
+			$this->munge = json_encode($props);	
 		}
 	}
 
