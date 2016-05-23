@@ -6,7 +6,7 @@
 
 seshattoy:
   a owl:Ontology ;
-  dc11:title "Seshat Global History Databank Ontology XXX"@en ;
+  dc11:title "Seshat Global History Databank Ontology"@en ;
   rdfs:comment "The Seshat Global History Databank ontology is designed to describe human societies throughout time."@en ;
   rdfs:label "Seshat Global History Databank Ontology"@en ;
   owl:versionInfo "0.1.17"@en ;
@@ -69,7 +69,7 @@ seshattoy:PopulationUnitOfMeasureRestriction
   owl:hasValue seshattoy:numPeople .
 
 seshattoy:PopulationVariable
-  a owl:Class ;
+  a owl:Class;
   owl:intersectionOf (
    utv:UncertainTemporalNonNegativeIntegerDataVariable
    seshattoy:PopulationUnitOfMeasureRestriction
@@ -78,11 +78,11 @@ seshattoy:PopulationVariable
   rdfs:comment "Seshat variable to hold a population size value."@en .
 
 seshattoy:name 
-    rdfs:subPropertyOf seshat:hasGeneralVariable ;
+    rdfs:subPropertyOf seshattoy:hasGeneralVariable ;
     rdfs:label "Name" ;
     rdfs:comment "The name of a seshat Entity. Generally same as the name of the wiki page. " ;
-    rdfs:domain seshat:Entity ;
-    rdfs:range seshat:NameVariable .
+    rdfs:domain seshattoy:Entity ;
+    rdfs:range seshattoy:NameVariable .
 
 seshattoy:numPeople
   a utv:UnitOfMeasure ;

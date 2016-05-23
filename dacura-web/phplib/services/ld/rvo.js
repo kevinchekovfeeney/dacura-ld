@@ -8,6 +8,7 @@ function RVO(data){
 		alert("not object");
 		return;
 	}
+	this['class'] = data["class"];
 	this.best_practice = data.best_practice;
 	this.cls = data.cls;
 	this.message = data.message;
@@ -89,7 +90,7 @@ RVO.prototype.getAttributes = function(){
 	if(this.object) atts.object = this.object;
 	if(this.property) atts.property = this.property;
 	if(this.element) atts.element = this.element;
-	//if(this.label) atts.label = this.label;
+	if(this['class']) atts['class'] = this['class'];
 	//if(this.comment) atts.comment = this.comment;
 	if(this.path) atts.path = this.path;
 	if(this.constraintType) atts.constraintType = this.constraintType;
