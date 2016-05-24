@@ -28,71 +28,34 @@ seshattoy:Polity
   rdfs:label "Polity"@en ;
   rdfs:comment "A polity is defined as an independent political unit. Kinds of polities range from villages (local communities) through simple and complex chiefdoms to states and empires. A polity can be either centralized or not (e.g., organized as a confederation). What distinguishes a polity from other human groupings and organizations is that it is politically independent of any overarching authority; it possesses sovereignty. Polities are defined spatially by the area enclosed within a boundary on the world map. There may be more than one such areas. Polities are dynamical entities, and thus their geographical extent may change with time. Thus, typically each polity will be defined by a set of multiple boundaries, each for a specified period of time. For prehistoric periods and for NGAs populated by a multitude of small-scale polities we use a variant called quasi-polity."@en .
 
-seshattoy:hasGeneralVariable
-  a owl:ObjectProperty ;
-  rdfs:subPropertyOf seshattoy:hasVariable ;
-  rdfs:label "has general variable"@en ;
-  rdfs:comment "This sub-property of seshattoy:hasVariable provides a way to define seshattoy:Organisation variables as members of the set of general variables."@en .
-
-seshattoy:hasVariable
-  a owl:ObjectProperty ;
-  rdfs:subPropertyOf utv:hasVariable ;
-  rdfs:label "has variable"@en ;
-  rdfs:comment "The basic property relation for seshat datasets. Used to relate a seshat entity and its value with qualified information, e.g. uncertainty, temporal bounds, about the value. All seshat variable properties inherit from this property."@en ;
-  rdfs:range utv:Variable ;
-  rdfs:domain seshattoy:Entity .
-
 seshattoy:alternativeName
   a owl:ObjectProperty ;
-  rdfs:subPropertyOf seshattoy:hasGeneralVariable ;
   rdfs:label "Alternative name"@en ;
   rdfs:comment "The name of a seshat Entity. Generally same as the name of the wiki page."@en ;
   rdfs:domain seshattoy:Entity ;
-  rdfs:range seshattoy:NameVariable .
-
-seshattoy:NameVariable
-  a owl:Class ;
-  rdfs:subClassOf utv:UncertainTemporalStringDataVariable ;
-  rdfs:label "Name Variable"@en ;
-  rdfs:comment "A variable holding a name of a seshat entity."@en .
+  rdfs:range xsd:string.
 
 seshattoy:population
   a owl:ObjectProperty ;
   rdfs:label "Population"@en, "Polity Population"@en ;
   rdfs:comment "Estimated population of the polity; can change as a result of both adding/losing new territories or by population growth/decline within a region ."@en ;
   rdfs:domain seshattoy:Polity ;
-  rdfs:range seshattoy:PopulationVariable .
+  rdfs:range xsd:integer.
 
 seshattoy:PopulationUnitOfMeasureRestriction
   a owl:Restriction ;
   owl:onProperty seshattoy:unitOfMeasure ;
   owl:hasValue seshattoy:numPeople .
 
-seshattoy:PopulationVariable
-  a owl:Class;
-  owl:intersectionOf (
-   utv:UncertainTemporalNonNegativeIntegerDataVariable
-   seshattoy:PopulationUnitOfMeasureRestriction
- ) ;
-  rdfs:label "Population Variable"@en ;
-  rdfs:comment "Seshat variable to hold a population size value."@en .
-
 seshattoy:name 
-    rdfs:subPropertyOf seshattoy:hasGeneralVariable ;
     rdfs:label "Name" ;
     rdfs:comment "The name of a seshat Entity. Generally same as the name of the wiki page. " ;
     rdfs:domain seshattoy:Entity ;
-    rdfs:range seshattoy:NameVariable .
-
-seshattoy:numPeople
-  a utv:UnitOfMeasure ;
-  rdfs:label "Number of People"@en ;
-  rdfs:comment "A measure counted in numbers of people."@en .
+    rdfs:range xsd:string.
 
 seshattoy:duration
   a owl:ObjectProperty ;
   rdfs:label "Duration"@en ;
-  rdfs:subPropertyOf seshattoy:hasGeneralVariable ;
   rdfs:domain seshattoy:TemporalEntity ;
   rdfs:range seshattoy:DurationVariable ;
   rdfs:comment "A property used to define the temporal bounds of a seshattoy:TemporalEntity. For example, corresponds to the Duration for a Polity from the Seshat codebook."@en .

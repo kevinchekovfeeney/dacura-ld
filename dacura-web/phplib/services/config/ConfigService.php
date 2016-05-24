@@ -140,7 +140,7 @@ class ConfigService extends DacuraService {
 	function getSysconfigTabParams(&$params, ConfigDacuraServer &$dacura_server, $screen, Collection $col, $u = false){
 		$params['sysconfig_settings'] = $this->getSysConfigFormSettings($dacura_server, $col);
 		if($screen == 'system'){
-			$params['sysconfig_fields'] = $dacura_server->getSysconfigFields($this->sform("sysconfig_form_fields"));			
+			$params['sysconfig_fields'] = $dacura_server->getSysconfigFields($this->sform("sysconfig_form_fields"));
 		}
 		else {
 			$basic_fields = array("id" => array("id" => "id", "length" => "short", "type" => "text", "value" => $dacura_server->cid(), "disabled" => true, "label" => "id", "help" => "The id of the collection - used in urls"));

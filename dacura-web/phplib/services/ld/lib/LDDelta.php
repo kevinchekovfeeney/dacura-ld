@@ -241,7 +241,7 @@ class LDDelta extends DacuraObject {
 	function addTypeChange($frag_id, $p, $v, LDPropertyValue $t, $v2, LDPropertyValue $t2){
 		$this->forward[$frag_id] = array($p => $v2);
 		$this->backward[$frag_id] = array($p => $v);
-		if($t2->complex() || $t1->complex()){
+		if($t2->complex() || $t->complex()){
 			$this->failure_result("Type change includes complex (non-ld) change - not recorded as triples", 400);
 		}
 		$del = $t->isempty() || $t->complex() ? array() : getValueAsTypedTriples($frag_id, $p, $v, $this->cwurl);

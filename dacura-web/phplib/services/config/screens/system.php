@@ -183,7 +183,7 @@ function drawCollection(obj){
 		lconfig = obj;
 	}
 	if((typeof obj.collection == "object") && (typeof obj.collection.config == "object") && obj.collection.config && typeof obj.collection.config.meta == "object"){
-		dacura.tool.form.populate("sysconfig", lconfig.settings, obj.collection.config.meta);
+		//dacura.tool.form.populate("sysconfig", lconfig.settings, obj.collection.config.meta);
 	}
 	else if(typeof obj.settings == "object"){
 		dacura.tool.form.populate("sysconfig", lconfig.settings);

@@ -76,16 +76,18 @@ class BrowseDacuraServer extends DacuraServer {
 			$params['user-count'] = 0;
 		}
 		/* this will be put back once the ld sub-system is back in place */
-		//$lds = $this->createDependantServer("ld"); 
-		//$filter = array("collection_id" => $this->cid(), "type" => "graph");
-		//$graphs = $lds->getEntities($filter);
-		//$params['graph-count'] = count($graphs);
-		//filter['type'] = "ontology";
-		//$ontologies = $lds->getEntities($filter);
-		$params['ontology-count'] = 0;//count($ontologies);
-		$params['instance-count'] = 0;
+		$lds = $this->createDependantServer("ld"); 
+		$filter = array("collection_id" => $this->cid(), "type" => "graph");
+		$graphs = $lds->getLDOs($filter);
+		$params['graph-count'] = count($graphs);
+		$filter['type'] = "ontology";
+		$ontologies = $lds->getLDOs($filter);
+		$filter['type'] = "candidate";
+		$cands = $lds->getLDOs($filter);
+		$params['ontology-count'] = count($ontologies);
+		$params['instance-count'] = count($cands);
 		$params['schema-count'] = 0;
-		$params['graph-count'] = 0;
+		$params['graph-count'] = count($graphs);
 		return $params;
 	}
 	

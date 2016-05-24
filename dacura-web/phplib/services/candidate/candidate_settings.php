@@ -1,5 +1,9 @@
 <?php 
 include_once "phplib/services/ld/ld_settings.php";
+$settings["service-title"] = "Candidate Service";
+$settings["service-description"] = "The candidate service allows you to manage instance data";
+$settings["service-button-title"] = "Data";
+
 //$settings['create_dqs_instance_tests'] = array("notInverseFunctionalPropertyIC");
 $settings['require_candidate_type'] = true;
 $settings['ignore_graph_fail'] = false;

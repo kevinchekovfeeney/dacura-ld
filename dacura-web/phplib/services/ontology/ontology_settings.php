@@ -1,6 +1,11 @@
 <?php 
 include_once "phplib/services/ld/ld_settings.php";
 
+$settings["facet-list"] = array("view" => "Browse the data on the system");
+$settings["service-title"] = "Ontology Management Service";
+$settings["service-button-title"] = "Ontologies";
+
+
 $settings['fail_on_missing_dependency'] = true;
 $settings['fail_on_bad_predicate'] = true;
 $settings['fail_on_ontology_hijack'] = false;

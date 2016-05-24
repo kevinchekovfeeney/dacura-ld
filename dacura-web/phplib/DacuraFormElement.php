@@ -384,7 +384,7 @@ class DacuraFormElement extends DacuraObject {
 			$html = "<input id=\"$prefix"."$this->id\" class=\"$cls\" $disabled type=\"file\" value=\"$val\"/>";
 		}
 		elseif( $this->input_type == "checkbox"){
-			$val = $val ? "checked" : "" ;
+			$val = $this->value ? "checked" : "" ;
 			$html = "<input id=\"$prefix"."$this->id\" class=\"$cls\" $disabled type=\"checkbox\" $val/>";				
 		}
 		elseif($this->input_type == "radio"){

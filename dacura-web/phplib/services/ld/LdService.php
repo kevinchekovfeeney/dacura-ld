@@ -489,6 +489,7 @@ class LdService extends DacuraService {
 		if(!isset($ldov_config['view_actions'])){
 			$ldov_config['view_actions'] = array("restore" => "Restore this version", "edit" => "Edit", "import" => "Import", "export" => "Export", "accept" => "Publish", "reject" => "Reject", "pending" => "Unpublish");
 		}
+		$ldov_config['show_buttons'] = true;
 		return $ldov_config;
 	}
 	
@@ -553,7 +554,6 @@ class LdService extends DacuraService {
 		$params['contents_intro_msg'] = $this->smsg('view_contents_intro');
 		$params['update_contents_args'] = json_encode($this->getLDArgs("ldo_update"));
 		$params['test_update_contents_args'] = json_encode($this->getLDArgs("ldo_test_update"));
-		$params['show_contents_options'] = json_encode($this->getServiceSetting("show_contents_options", array()));//facet
 	}
 	
 	/** 
@@ -668,7 +668,6 @@ class LdService extends DacuraService {
 		$params['test_update_button_text'] = $this->smsg('test_update_update_button_text');
 		$params['update_args'] = json_encode($this->getLDArgs("update_update"));
 		$params['test_update_args'] = json_encode($this->getLDArgs("test_update_update"));
-		$params['show_contents_options'] = json_encode($this->getServiceSetting("show_update_contents_options", array()));//facet	
 		$params['update_commands_screen_title'] = $this->smsg("update_commands_screen_title");
 		return $params;
 	}

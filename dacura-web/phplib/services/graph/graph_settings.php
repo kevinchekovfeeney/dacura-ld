@@ -1,5 +1,8 @@
 <?php 
 include_once "phplib/services/ld/ld_settings.php";
+$settings["service-button-title"] = "Schema";
+$settings["service-title"] = "Graph Management Service";
+$settings["service-description"] = "The graph management service allows you to manage your dataset's schema by adding ontologies to it";
 
 //$settings['create_dqs_schema_tests'] = "all";
 //$settings['create_dqs_instance_tests'] = "all";

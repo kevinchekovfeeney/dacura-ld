@@ -6,10 +6,14 @@
  * can easily cascade inadvertently 
  */
 $settings = array(
+	"facet-list" => array("view" => "Browse the data on the system"),
+	"service-title" => "Linked Data Service",
+	"service-button-title" => "Raw Data",		
+	"service-description" => "The Linked Data service provides access to raw-data management",
 	/*settings for ld services  - first the general purpose ones, then the ones associated with particular screens */
 	"demand_id_token" => "@id",//if @id clashes with json ld @id then this can be changed 
 	/* are we allowed to create empty linked data objects? */
-	"ldo_allow_empty_create" => false,
+	"ldo_allow_empty_create" => 1,
 	/* are we allowed to request that our linked data objects have externally defined ids */
 	"ldo_allow_demand_id" => true,
 	/* the minimum length of the id of a linked data object */
@@ -112,7 +116,6 @@ $settings = array(
 		"meta" => array("label" => "Metadata", "type" => "complex", "input_type" => "custom", "help" => "Structured json meta-data that is associated with the object"),
 		"ldcontents" => array("type" => "placeholder", "label" => "Import Contents")
 	),
-		
 	/* view screen */
 	"ldo_viewer_config" => array(),
 	"show_contents_options" => array("show_options" => true, "show_buttons" => true),
@@ -313,5 +316,15 @@ $settings = array(
 		"view_update_meta_intro" => "",
 		"view_after_intro_msg" => "",
 		"update_before_intro_msg" => ""
+	),
+
+	/* field settings that will appear on configuration form of this service */
+	"config_form_fields" => array(
+		"demand_id_token" => array("label" => "Demand ID Token", "type" => "text", "help" => "The token that will be used to indicate the required id of the new element"),
+		"ldo_allow_empty_create" => array("label" => "Allow Empty Objects", "type" => "choice", "options" => array(1 => "Allow", 0 => "Forbid"), "help" => "Can users create new linked data objects with empty contents?"),
+		"ldo_mimimum_id_length" => array("label" => "Minimum ID length", "type" => "text", "help" => "What is the minimum length of an id that users can create?"),
+		"create_ldo_fields" => array("hidden" => true, "type" => "complex", "label" => "config stuff"),
+		"tables" => array("hidden" => true, "type" => "complex", "label" => "config stuff"),
+		"messages" => array("type" => "section", "label" => "Text messages that will be reported to the user"),
 	),
 );

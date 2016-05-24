@@ -73,6 +73,7 @@ LDOViewer.prototype.init = function(vconf){
 	else {
 		this.show_options = true;
 	}
+	this.show_buttons = (typeof vconf.show_buttons != "undefined") ? vconf.show_buttons : false;
 	this.test_update_options = (typeof vconf.test_update_options != "undefined") ? vconf.test_update_options : {};
 	this.update_options = (typeof vconf.update_options != "undefined") ? vconf.update_options : {};
 	this.allow_empty_contents = (typeof vconf.allow_empty_contents != "undefined") ? vconf.allow_empty_contents : false;
@@ -80,20 +81,11 @@ LDOViewer.prototype.init = function(vconf){
 	this.tooltip = (typeof vconf.tooltip != "undefined") ? vconf.tooltip :  { content: function () {	return $(this).prop('title');}};
 }
 
-LDOViewer.prototype.show = function(target, mode, showconf, callback){
+LDOViewer.prototype.show = function(target, mode, callback){
 	if(typeof target == "string"){
 		this.setTarget(target);
 	}	
 	this.emode = (typeof mode == "string") ? mode : this.emode;	
-	if(typeof showconf == "undefined"){
-		showconf = {};
-	}
-	if(typeof showconf.show_options == "undefined"){
-		showconf.show_options = this.show_options;
-	}
-	if(typeof showconf.show_buttons == "undefined"){
-		showconf.show_buttons = true;
-	}
 	$(this.target).html("");
 	if(this.show_options){
 		$(this.options_target).append(this.showOptionsBar());
@@ -111,10 +103,10 @@ LDOViewer.prototype.show = function(target, mode, showconf, callback){
 		if(this.ldo.format == "html" && this.ldo.ldtype() == "candidate" && typeof this.ldo.contents == "object"){
 			this.initFrameView();
 		}
-		if(showconf.show_buttons && this.emode != "view"){
-			$(this.target).append(this.getUpdateButtonsHTML(this.emode));
-			this.initUpdateButtons(this.pconf, callback);
-		}
+	}
+	if(this.show_buttons && this.emode != "view"){
+		$(this.target).append(this.getUpdateButtonsHTML(this.emode));
+		this.initUpdateButtons(this.pconf, callback);
 	}
 };
 
@@ -396,7 +388,7 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 				self.show();
 			}
 			else { //act is update
-				updobj = {'ldtype': this.ldo.ldtype(), "editmode": "replace"};
+				updobj = {'ldtype': self.ldo.ldtype(), "editmode": "replace"};
 				updobj.options = {show_result: 1};
 				var updated = self.getImportData(updobj, true);
 				if(updated){ 

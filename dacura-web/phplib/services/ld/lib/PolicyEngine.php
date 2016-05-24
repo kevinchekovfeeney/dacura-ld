@@ -14,7 +14,7 @@ class PolicyEngine extends DacuraController {
 	/** @var array An array of decisions for actions - these are default decisions, they can be overridden by settings */
 	var $decisions = array(
 		"view" => "accept",	
-		"update" => "pending",	
+		"update" => "accept",	
 		"create" => "accept",	
 		"delete" => "accept",	
 		"view update" => "accept",	
@@ -25,7 +25,7 @@ class PolicyEngine extends DacuraController {
 	 * Loads some basic settings 
 	 * @param LdService $service
 	 */
-	function __construct(LdService &$service){
+	function __construct(DacuraService &$service){
 		parent::__construct($service);
 		$this->store_rejected = $this->getServiceSetting("store_rejected", $this->store_rejected);
 		$this->decisions = $this->getServiceSetting("decisions", $this->decisions);

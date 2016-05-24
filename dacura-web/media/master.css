@@ -307,15 +307,15 @@ Styling icons into a dashboard type effect in browsing
 }
 
 #dashboard {
-	background-color: #FBFAF9;
+	background-color: #F1F1F9;
 	border-collapse: collapse;
 	border: 0;
 }
 
 #dashboard-tasks h4{
-        text-align: left;
-        padding: 0;
-        margin: 0;
+       text-align: left;
+       padding: 0;
+       margin: 0;
 }
 
 #dashboard-header {
@@ -425,7 +425,7 @@ ul.dashboard-menu li.dashboard-menu-selected a {
 	padding-left: 10px;
 	padding-top: 10px;
 	width: 840px;
-	background-color: #FBFAF9;
+	background-color: #F2F3F9;
 }
 
 div.dacura-dashboard-task-button {
@@ -1301,6 +1301,7 @@ table.dacura-api-listing,
 .dacura-subscreen-inactive {
 	display: none;	
 }
+
 
 .dacura-screen {
 	font-family: 'Open Sans', Helvetica;

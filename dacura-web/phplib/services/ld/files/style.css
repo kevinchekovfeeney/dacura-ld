@@ -658,6 +658,9 @@ table.dacura-property-table div.ld-import-bar {
 	border: 0 !important;	
 }
 
+#jsonvphoney td {
+	padding-top: 12px;
+}
 
 #jsonvphoney {
 	width: 100%;

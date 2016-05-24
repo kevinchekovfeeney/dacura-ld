@@ -89,6 +89,7 @@ $settings = array(
 		"ajaxurl" => array("label" => "Ajax URL", "type" => "url", "help" => "Base URL for all Dacura AJAX / API calls."),
 		"files_url" => array("label" => "Media Files URL", "type" => "url", "help" => "URL where Dacura serves its media files."),
 		"path_to_collections" => array("label" => "Path to collections' file storage area", "type" => "text"),
+		"url_mappings" => array("type" => "complex", "label" => "URL Mappings", "help" => "A list of urls that will always be mapped to alternatives."),
 		"collections_urlbase" => array("label" => "URL of collections' web-files", "type" => "text"),
 	),
 	/* field settings that apply to all services */
