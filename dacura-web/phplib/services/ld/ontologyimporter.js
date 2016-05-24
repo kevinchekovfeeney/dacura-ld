@@ -93,6 +93,11 @@ OntologyImporter.prototype.Update = function(){
 	}
 }
 
+//called when the imports have been updated to reground the original as the updated one...
+OntologyImporter.prototype.reground = function(){
+	this.orig_isauto = this.isauto;
+	this.orig = $.extend(true, {}, this.current);
+};
 
 OntologyImporter.prototype.hasStateChange = function(){
 	if(this.isauto != this.orig_isauto) return true;
@@ -299,7 +304,7 @@ OntologyImporter.prototype.getEmptyImportsHTML = function(){
 OntologyImporter.prototype.setViewMode = function(){
 	$('#enable-update-imports').prop("checked", false);
 	if(this.mode != "view"){
-		$('#enable-update-imports').button('option', 'label', 'Update Configuration');
+		$('#enable-update-imports').button('option', 'label', 'Edit Configuration');
 		$('#enable-update-imports').button("refresh");		
 		if(this.ldtype == "ontology"){
 			$('#imaa').buttonset("disable");
@@ -339,7 +344,8 @@ OntologyImporter.prototype.getButtonsHTML = function(){
 	if(this.ldtype == "graph"){
 		html += "<div id='graph-update' class='subscreen-buttons'>";
 		html += "<input type='checkbox' class='enable-update imports-enable-update' id='enable-update-imports'>";
-		html += "<label for='enable-update-imports'>Update Configuration</label>";
+		html += "<label for='enable-update-imports'>Edit Configuration</label>";
+		html += "<button id='refresh-imports'>Update all to latest versions</button>";
 		html += "</div>";
 	}
 	return html;
@@ -386,7 +392,7 @@ OntologyImporter.prototype.draw = function(target){
 }
 
 OntologyImporter.prototype.initUpdateButton = function(){
-	var txt = "Update Configuration";
+	var txt = "Edit Configuration";
 	if(this.mode == 'edit'){
 		txt = "Cancel Update";
 		$('#enable-update-imports').prop("checked", true);
@@ -405,6 +411,18 @@ OntologyImporter.prototype.initUpdateButton = function(){
 			self.setViewMode();		
 		}
 	});
+	if(this.ldtype == 'graph'){
+		var self = this;
+		$('#refresh-imports').button().click(function(){
+			if(typeof self.updatecallback == "function"){
+				self.updatecallback(self.current, self.isauto, false);
+			}
+			else {		
+				jpr(self.current);
+			}
+		});
+		
+	}
 }
 
 

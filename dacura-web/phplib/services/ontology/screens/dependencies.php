@@ -785,7 +785,7 @@ function handleDQSUpdate(conf, isauto, test){
 function updateOntology(upd, pconf){
 	handleResp = function(data, pconf){
 		var res = new LDResult(data, pconf);
-		if(res.status == "accept" && !res.test){
+		if(!res.test && (res.status == "accept" || res.status == "pending")){
 			var rconf = { resultbox: ".tool-info", busybox: ".tool-holder"};
 			var refreshargs = $.extend(true, {}, ldov.ldo.getAPIArgs());
 			refreshargs.options.analysis = 2;

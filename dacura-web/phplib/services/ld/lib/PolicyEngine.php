@@ -14,7 +14,7 @@ class PolicyEngine extends DacuraController {
 	/** @var array An array of decisions for actions - these are default decisions, they can be overridden by settings */
 	var $decisions = array(
 		"view" => "accept",	
-		"update" => "accept",	
+		//"update" => "accept",	
 		"create" => "accept",	
 		"delete" => "accept",	
 		"view update" => "accept",	
@@ -32,6 +32,13 @@ class PolicyEngine extends DacuraController {
 		if(!isset($this->decisions["update update"])){
 			$this->decisions["update update"] = array($this, "updateUpdate");
 		}
+		$x = function($obj){ 
+			if(strtolower(get_class($obj->original)) == "candidate") {
+				return "pending"; 
+			}
+			return "accept";
+		};
+		$this->decisions['update'] = $x;
 	}
 	
 	/**
@@ -55,7 +62,7 @@ class PolicyEngine extends DacuraController {
 				$res = $this->decisions[$action];
 			}
 			elseif(is_callable($this->decisions[$action])){
-				$res = call_user_func_array($this->decisions[$action], array($obj, $context));
+				$res = call_user_func_array($this->decisions[$action], array($obj));
 			}
 			$ar->status($res);
 			if($res == "reject"){

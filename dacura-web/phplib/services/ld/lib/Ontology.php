@@ -414,7 +414,14 @@ Class Ontology extends LDO {
 		if($type == "schema"){
 			if(isset($this->meta['imports'])){
 				foreach($this->meta['imports'] as $id => $rec){
-					$onts[$id] = $srvr->loadLDO($id, "ontology", $rec['collection'], false, $rec['version']);					
+					if(is_array($rec)){
+						$v = isset($rec['version']) ? $rec['version'] : 0;
+						$col = isset($rec['collection']) ? $rec['collection'] : $srvr->getOntologyCollection($id);
+						$onts[$id] = $srvr->loadLDO($id, "ontology", $col, false, $v);
+					}
+					else {
+						$onts[$id] = $srvr->loadLDO($id, "ontology", $srvr->getOntologyCollection($id), false, 0);						
+					}
 				}
 				$this->loaded_dependencies[$type] = $onts;
 				return $onts;

@@ -22,7 +22,7 @@ class BrowseDacuraServer extends DacuraServer {
 		$wl = array();
 		$servs = $this->getServiceList();
 		foreach($servs as $sid){
-			if(in_array($sid, array("browse", "login", "home", "candidate", "schema"))) continue;//have no widgets associated
+			if(in_array($sid, array("browse", "login", "home", "ld"))) continue;//have no widgets associated
 			$ns = $this->createDependantService($sid);
 			//get service setting to make sure it is enabled...
 			
@@ -72,12 +72,13 @@ class BrowseDacuraServer extends DacuraServer {
 			$params['collection-count'] = count($cols);
 		}
 		else {
+			$users = $this->userman->getUsersInContext($this->cid());
 			$params['type'] = "admin";
-			$params['user-count'] = 0;
+			$params['user-count'] = count($users);
 		}
 		/* this will be put back once the ld sub-system is back in place */
 		$lds = $this->createDependantServer("ld"); 
-		$filter = array("collection_id" => $this->cid(), "type" => "graph");
+		$filter = array("collectionid" => $this->cid(), "type" => "graph");
 		$graphs = $lds->getLDOs($filter);
 		$params['graph-count'] = count($graphs);
 		$filter['type'] = "ontology";

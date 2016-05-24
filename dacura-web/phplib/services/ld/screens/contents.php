@@ -6,7 +6,7 @@
 <script>
 var refreshContents = function(data, pconf){
 	ldov.pconf = pconf;
-	ldov.show("#show-ldo", "view", show_contents_options, refreshLDOPage);
+	ldov.show("#show-ldo", "view", refreshLDOPage);
 };
 
 var initContents = function(data, pconf){

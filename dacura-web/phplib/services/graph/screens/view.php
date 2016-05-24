@@ -235,7 +235,6 @@ function initGraphPage(data, pconf){
 function showInstanceSubscreen(act, data, pconf){
 	$("#idqs-" + act + "-subscreen").show();
 	dacura.system.goTo('#idqs-'+act + "-subscreen  .subscreen-header");
-		
 }
 
 function showSubscreen(act, data, pconf){
@@ -705,11 +704,19 @@ function handleDQSUpdate(which, conf, isauto, test, vconf){
 function updateGraph(upd, nconf, upd_imports){
 	handleResp = function(data, xconf){
 		var res = new LDResult(data, nconf);
-		if(res.status == "accept" && !res.test){
-			dacura.ld.fetch("<?=$params['id']?>", refetch_args, refreshLDOPage, pconf);			
+		if(!res.test && (res.status == "accept" || res.status == "pending")){
+			dacura.ld.fetch("<?=$params['id']?>", refetch_args, refreshLDOPage, pconf);	
+			if(res.status == "accept"){
+				importer.reground();
+			}		
 		}
 		else if(typeof upd_imports != "undefined" && upd_imports){
-			importer.setImports(getExplicitImports(data.result), getImplicitImports(data.result));
+			if(typeof data.result != "undefined"){
+				importer.setImports(getExplicitImports(data.result), getImplicitImports(data.result));			
+			}
+			else {
+				importer.setImports(getExplicitImports(data), getImplicitImports(data));
+			}
 		}
 		res.show();
 	}
