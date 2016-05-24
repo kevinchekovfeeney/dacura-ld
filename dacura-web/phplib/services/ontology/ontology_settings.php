@@ -33,7 +33,6 @@ $settings["test_update_dqs_default_options"] = array(
 		"plain" => 1
 );
 
-
 $settings["create_ldo_fields"] = array(
 		"id" => array("label" => "Prefix", "length" => "short", "help" => "The ontology's namespace prefix, also the ontology's identifier in the system - must be all lowercase with no spaces or punctuation. Choose carefully - the prefix appears in all urls that reference the object and cannot be easily changed!"),
 		"status" =>	array("label" => "Status", "help" => "The current status of the object", "type" => "status"),

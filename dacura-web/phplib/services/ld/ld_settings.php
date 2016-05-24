@@ -83,6 +83,7 @@ $settings = array(
 		"graph_options" => array(),
 		'emode' => "import",
 		"show_cancel" => false,
+		"show_buttons" => false
 		//"options_target" => "#row-ldo-details-ldcontents th",
 		//"ldimport_header" => "Import Contents"
 	),
