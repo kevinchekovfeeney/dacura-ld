@@ -121,6 +121,5 @@ class PolicyEngine extends DacuraController {
 		}
 		return false;
 	}
-
 }
 

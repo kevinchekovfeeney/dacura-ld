@@ -376,7 +376,7 @@ class LdService extends DacuraService {
 			$cf['edit_formats'] = LDO::$valid_input_formats;
 		}
 		$cf['show_options'] = true;
-		$cf['show_buttons'] = true;
+		$cf['show_buttons'] = false;
 		$params['create_ldoviewer_config'] = json_encode($cf);
 		//strings
 		$params["ld_create_title"] = $this->smsg('ld_create_title');

@@ -732,7 +732,7 @@ LDOViewer.prototype.ldtype = function(){
 	return this.ldtype;
 };
 
-LDOViewer.prototype.readCreateForm = function(obj, demand_id_token, options){
+LDOViewer.prototype.readCreateForm = function(obj, demand_id_token, options, pconf){
 	apiobj = {};
 	if(typeof options != "undefined"){
 		apiobj.options = options;
@@ -769,9 +769,10 @@ LDOViewer.prototype.readCreateForm = function(obj, demand_id_token, options){
 		apiobj.ldurl = obj.ldurl;
 	}
 	else if (obj.contents) {
-		if(typeof apiobj.format == "string" && dacura.ld.isJSONFormat(apiobj.format)){
+		if(typeof apiobj.format == "string" && dacura.ld.isJSONFormat(apiobj.format) && typeof obj.contents == "string"){
 			try {
 				apiobj.contents = JSON.parse(obj.contents);
+				
 			}
 			catch(e){
 				alert("Failed to parse contents as JSON object " + e.message);

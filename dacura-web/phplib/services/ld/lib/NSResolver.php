@@ -341,7 +341,9 @@ class NSResolver extends DacuraController {
 		if($ldprops && is_array($ldprops) && count($ldprops) > 0){
 			foreach($ldprops as $eid => $ldobj){
 				$this->addSubjectToNSUtilisation($ns, $eid);
-				$this->getLDONamespaceUtilisation($eid, $ldobj, $cwurl, $ns);
+				if(is_array($ldobj)){
+					$this->getLDONamespaceUtilisation($eid, $ldobj, $cwurl, $ns);
+				}
 			}
 		}
 	}
