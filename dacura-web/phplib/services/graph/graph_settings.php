@@ -25,7 +25,7 @@ $settings["create_ldo_fields"] = array(
 		"id" => array("label" => "ID", "length" => "short", "help" => "The id of the linked data object - must be all lowercase with no spaces or punctuation. Choose carefully - the id appears in all urls that reference the object and cannot be easily changed!"),
 		//"ldtype" => array("label" => "Linked Data Type", "input_type" => "select", "help" => "The full title of the object - may include spaces and punctuation."),
 		//"title" => array("label" => "Title", "length" => "long", "help" => "The full title of the object - may include spaces and punctuation."),
-		"status" =>	array("label" => "Status", "help" => "The current status of the object", "type" => "status"),
+		//"status" =>	array("label" => "Status", "help" => "The current status of the object", "type" => "status"),
 		//"image" => array("type" => "image", "label" => "Image", "help" => "An image which will represent the object on pages."),
 		//"url" => array("label" => "Canonical URL", "type" => "url", "help" => "The External URL which represents the 'canonical' id of this object (to support purls, etc)."),
 		//"meta" => array("label" => "Object Meta-data", "type" => "complex", "input_type" => "custom", "help" => "Arbitrary json meta-data that is associated with the object"),

@@ -20,7 +20,7 @@ $settings["create_ldo_fields"] = array(
 		"id" => array("label" => "ID", "length" => "short", "help" => "The id of the linked data object - must be all lowercase with no spaces or punctuation. Choose carefully - the id appears in all urls that reference the object and cannot be easily changed!"),
 		//"ldtype" => array("label" => "Linked Data Type", "input_type" => "select", "help" => "The full title of the object - may include spaces and punctuation."),
 		//"title" => array("label" => "Title", "length" => "long", "help" => "The full title of the object - may include spaces and punctuation."),
-		"status" =>	array("label" => "Status", "help" => "The current status of the object", "type" => "status"),
+		//"status" =>	array("label" => "Status", "help" => "The current status of the object", "type" => "status"),
 		"imptype" => array("label" => "Create From", "type" => "choice", "options" => array("frame" => "Web Form", "import" => "Import from Linked Data"), "input_type" => "radio", "help" => "You can choose to type the contents of the candidate into a form or importing it from a Linked Data file"),
 		"candtype" =>	array("label" => "Entity Type", "help" => "What type of thing are you inputting? This will become the rdf:type of the candidate (must be present in the contents)", "type" => "choice", "options" => array()),
 		"ldcontents" => array("label" => "Import Contents", "type" => "placeholder", "help" => "The contents of the object (in RDF - Linked Data format)"),

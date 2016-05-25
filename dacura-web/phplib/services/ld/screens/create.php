@@ -55,7 +55,6 @@ function testCreateLDO(data, result, pconf){
 				input = $.extend(true, input, loadInputFromFrame());	
 			}
 		}
-		jpr(input);
 		cphp.ldov.create(input, result, true);
 	}
 }

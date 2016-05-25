@@ -98,10 +98,15 @@ LDOViewer.prototype.show = function(target, mode, callback){
 		this.tooltipLDImport();
 	}
 	else {
-		body += this.ldo.getContentsHTML(this.emode) + "</div>";
-		$(this.target).append(body);
 		if(this.ldo.format == "html" && this.ldo.ldtype() == "candidate" && typeof this.ldo.contents == "object"){
 			this.initFrameView();
+		}
+		else if(this.ldo.format == "json" && this.ldo.ldtype() == "candidate" && typeof this.ldo.contents == "object"){
+			this.showFrame(this.ldo.meta.type, "frame-container", this.ldo.contents);
+		}
+		else {
+			body += this.ldo.getContentsHTML(this.emode) + "</div>";
+			$(this.target).append(body);	
 		}
 	}
 	if(this.show_buttons && this.emode != "view"){
@@ -499,7 +504,7 @@ LDOViewer.prototype.setTarget = function(jqid, barjqid){
 	this.options_target = (typeof barjqid != "undefined") ? barjqid : this.target;
 }
 
-LDOViewer.prototype.showFrame = function(cls, target){
+LDOViewer.prototype.showFrame = function(cls, target, data){
 	if(typeof target == "undefined"){
 		target = this.target;
 	}
@@ -509,11 +514,11 @@ LDOViewer.prototype.showFrame = function(cls, target){
 	var self = this;
 	ajs.handleResult = function(resultobj, pconf){
 		var ob = pconf.busybox;
-		pconf.busybox = target
-		var frameid = dacura.frame.draw(cls, resultobj, pconf, "frame-container");
+		pconf.busybox = '#show-ldo';
+		var frameid = dacura.frame.draw(cls, resultobj, pconf, target);
 		pconf.busybox = ob;
 		dacura.frame.initInteractors();
-		dacura.frame.fillFrame(resultobj, "frame-container");
+		dacura.frame.fillFrame(data, target);
 	}
 	dacura.system.invoke(ajs, msgs, this.pconf);	
 	
@@ -524,12 +529,13 @@ LDOViewer.prototype.initFrameView = function(){
 	obusy = pconf.busybox;
 	pconf.busybox = "#dacura-frame-viewer";
 	var cls = this.ldo.meta.type;
+	this.showFrame(cls, 'frame-container');
 	if(typeof this.ldo.contents != "object"){
 		this.ldo.contents = JSON.parse(this.ldo.contents);
 	}
 	var frameobj = {result: JSON.stringify(this.ldo.contents)};
 	var frameid = dacura.frame.draw(cls,frameobj,pconf,'frame-container');
-	//dacura.frame.fillFrame(this.ldo.contents, 'frame-container'); 
+	//dacura.frame.fillFrame(this.ldo.4contents, 'frame-container'); 
 	pconf.busybox = obusy;
 	dacura.frame.initInteractors();
 };
