@@ -13,11 +13,8 @@ var initContents = function(data, pconf){
 	ldov.pconf = pconf;
 	ldov.show("#show-ldo", "view", refreshLDOPage);
 };
-
 	
 refreshfuncs["ldo-contents"] = refreshContents;
-
 initfuncs["ldo-contents"] = initContents;
-
 
 </script>

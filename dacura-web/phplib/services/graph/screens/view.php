@@ -363,6 +363,10 @@ function showGraphPage(data, pconf){
 function showInstancePane(data, pconf){
 	$('#instancecontroltable tbody').empty();
 	$('#instance-summary').empty();
+	if(!(typeof data.analysis == 'object' && typeof data.analysis.instance_validation == "object")){
+		$('#instancestatus').html("<span class='dqsresulticon'>" + dacura.system.getIcon("error") + "</span><span class='dqsresulttext'>No analysis carried out</span>");
+		return;
+	}
 	var res = new LDGraphResult(data.analysis.instance_validation, "triples", pconf);
 	if(data.meta.status == "accept"){
 		if(res.status == "accept"){
@@ -395,6 +399,10 @@ function showInstancePane(data, pconf){
 function showSchemaPane(data, pconf){
 	$('#schemacontroltable tbody').empty();
 	$('#schema-summary').empty();
+	if(!(typeof data.analysis == 'object' && typeof data.analysis.schema_validation == "object")){
+		$('#schemastatus').html("<span class='dqsresulticon'>" + dacura.system.getIcon("error") + "</span><span class='dqsresulttext'>No analysis carried out</span>");
+		return;
+	}
 	var res = new LDGraphResult(data.analysis.schema_validation, "triples", pconf);
 	if(res.status == "accept"){
 		$('schema-control').addClass("dqs-success");

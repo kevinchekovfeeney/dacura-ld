@@ -22,13 +22,40 @@ cphp.test_create_options = <?php echo isset($params['test_create_options']) && $
 cphp.importstooltip = <?php echo isset($params['tooltip_config']) ? $params['tooltip_config'] : "{}" ?>;
 cphp.available_ontologies = <?php echo isset($params['available_ontologies']) ? $params['available_ontologies'] : "{}"?>;
 
+function loadInputFromFrame(){
+	var rdftype = $('#ldo-details-candtype').val();
+	//var ipobj = dacura.frame.entityExtractor('#frame-container');
+	var obj = {};
+	var pop = $('#fupopulation').val();
+	if(pop){
+		obj[pref + "population"] = {data: $('#fupopulation').val(), type: "http://www.w3.org/2001/XMLSchema#integer"}; 
+	}
+	var nm = $('#funame').val();
+	if(nm){
+		obj[pref + "name"] = {data: nm, lang: "en"}; 
+	}
+	var an = $('#fualtname').val();
+	if(an){
+		obj[pref + "alternativeName"] = {data: an, lang: "en"};  
+	}
+	obj['rdf:type'] = rdftype;
+	return {format: "json", contents: obj};
+}
+
 function testCreateLDO(data, result, pconf){
 	dacura.system.clearResultMessage(pconf.resultbox);
-	var input = cphp.ldov.readCreateForm(data, cphp.demand_id_token, cphp.test_create_options);
+	var input = cphp.ldov.readCreateForm(data, cphp.demand_id_token, cphp.test_create_options);	
 	if(input){
 		if(typeof cphp.importer == "object"){
 			input = getImports(input);
 		}
+		else {
+			v = $("#ldo-details-imptype :radio:checked").val();		
+			if(v == "frame"){
+				input = $.extend(true, input, loadInputFromFrame());	
+			}
+		}
+		jpr(input);
 		cphp.ldov.create(input, result, true);
 	}
 }
@@ -39,6 +66,12 @@ function createLDO(data, result, pconf){
 	if(uinput){
 		if(typeof cphp.importer == "object"){
 			uinput = getImports(uinput);
+		}
+		else {
+			v = $("#ldo-details-imptype :radio:checked").val();		
+			if(v == "frame"){
+				uinput = $.extend(true, uinput, loadInputFromFrame());	
+			}
 		}
 		cphp.ldov.create(uinput, result);
 	}
@@ -117,7 +150,14 @@ var initcreate = function(pconfig){
 
 function drawCandidateFrame(){
 	etype = $('#ldo-details-candtype').val();
-	cphp.ldov.showFrame(etype, '#candframeinform');			
+	var tp = etype.substring(etype.lastIndexOf('#') + 1);
+	pref = etype.substring(0, etype.lastIndexOf('#') + 1);
+	if(tp == 'Polity'){
+		showPhoneyPolityForm('#candframeinform');
+	}
+	else {
+		cphp.ldov.showFrame(etype, '#candframeinform');			
+	}
 }
 
 function setImportType(){
@@ -134,6 +174,25 @@ function setImportType(){
 		$('#ldcontentsinform').show();
 		$('#row-ldo-details-candtype').hide();
 	}		
+}
+
+
+function showPhoneyPolityForm(target){
+	var html = '</td></tr><tr class="dacura-property-spacer"></tr>';
+	html += '<tr class="dacura-property row-5">';
+	html += '<td class="dacura-property-label">Name</td><td class="dacura-property-value">';
+	html += '<table style="border: 0" class="dacura-property-value-bundle"><tbody><tr><td class="dacura-property-input"><input class="dacura-long-input" type="text" id="funame">';
+	html += '</td><td class="dacura-property-help"></td></tr></tbody></table></td></tr>';
+	html += '<tr class="dacura-property row-6">';
+	html += '<td class="dacura-property-label">Population</td><td class="dacura-property-value">';
+	html += '<table style="border: 0" class="dacura-property-value-bundle"><tbody><tr><td class="dacura-property-input"><input type="text" id="fupopulation">';
+	html += '</td><td class="dacura-property-help"></td></tr></tbody></table></td></tr>';
+	html += '<tr class="dacura-property row-7">';
+	html += '<td class="dacura-property-label">Alternative Name</td><td class="dacura-property-value">';
+	html += '<table style="border: 0" class="dacura-property-value-bundle"><tbody><tr><td class="dacura-property-input"><input class="dacura-long-input" type="text" id="fualtname">';
+	html += '</td><td class="dacura-property-help"></td></tr></tbody></table></td></tr>';
+	html += '</tbody></table>';
+	$(target).html(html);	
 }
 
 initfuncs["ldo-create"] = initcreate;

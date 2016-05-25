@@ -8,6 +8,7 @@ $settings["service-button-title"] = "Data";
 $settings['require_candidate_type'] = true;
 $settings['ignore_graph_fail'] = false;
 $settings['rollback_on_graph_fail'] = true;
+$settings["ldoview_default_args"] = array("format" => "turtle");
 
 //$settings["create_options"] = array("show_dqs_triples" => 1, "ns" => 1, "addressable" => 1, "analysis" => 1,
 //		"show_ld_triples" => 1, "fail_on_id_denied" => 1, "show_result" => 1);

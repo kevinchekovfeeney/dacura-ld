@@ -513,6 +513,7 @@ LDOViewer.prototype.showFrame = function(cls, target){
 		var frameid = dacura.frame.draw(cls, resultobj, pconf, "frame-container");
 		pconf.busybox = ob;
 		dacura.frame.initInteractors();
+		dacura.frame.fillFrame(resultobj, "frame-container");
 	}
 	dacura.system.invoke(ajs, msgs, this.pconf);	
 	
@@ -528,7 +529,7 @@ LDOViewer.prototype.initFrameView = function(){
 	}
 	var frameobj = {result: JSON.stringify(this.ldo.contents)};
 	var frameid = dacura.frame.draw(cls,frameobj,pconf,'frame-container');
-	dacura.frame.fillFrame(this.ldo, pconf, 'frame-container'); 
+	//dacura.frame.fillFrame(this.ldo.contents, 'frame-container'); 
 	pconf.busybox = obusy;
 	dacura.frame.initInteractors();
 };
