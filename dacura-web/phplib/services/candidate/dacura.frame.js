@@ -24,7 +24,9 @@ dacura.frame.draw = function(cls,resultobj,pconf,target){
 	res = dacura.frame.frameGenerator(frame, obj, gensym);
 	
 	var elt = document.getElementById(pconf.busybox.substring(1));
-	elt.appendChild(res);
+	if(typeof elt != "undefined"){
+		elt.appendChild(res);
+	}
 	return elt; 
 };
 

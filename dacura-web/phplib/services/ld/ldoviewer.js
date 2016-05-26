@@ -541,7 +541,6 @@ LDOViewer.prototype.initFrameView = function(){
 };
 
 LDOViewer.prototype.handleViewAction = function(act, callback){
-	
 	if(act == "export"){
 		window.location.href = this.ldo.fullURL() + "&direct=1";	
 	}
