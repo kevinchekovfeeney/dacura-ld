@@ -232,7 +232,7 @@ dacura.frame.fillFrame = function(entity, target){
 	var cls = frame.attr('data-class');
 	var jsonobj = {};
 	
-	var id = entity.id;
+	//var id = entity.id;
 	for( var i ; i < entity.length ; i++){
 		
 	}
