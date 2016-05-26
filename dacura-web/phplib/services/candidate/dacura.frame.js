@@ -23,7 +23,7 @@ dacura.frame.draw = function(cls,resultobj,pconf,target){
 	gensym = dacura.frame.Gensym("query");
 	res = dacura.frame.frameGenerator(frame, obj, gensym);
 	
-	var elt = target;//document.getElementById(pconf.busybox.substring(1));
+	var elt = document.getElementById(pconf.busybox.substring(1));
 	if(typeof elt != "undefined" && elt){
 		elt.appendChild(res);
 	}
