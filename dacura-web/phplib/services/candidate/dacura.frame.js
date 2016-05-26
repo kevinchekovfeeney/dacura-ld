@@ -23,7 +23,7 @@ dacura.frame.draw = function(cls,resultobj,pconf,target){
 	gensym = dacura.frame.Gensym("query");
 	res = dacura.frame.frameGenerator(frame, obj, gensym);
 	
-	var elt = document.getElementById(pconf.busybox.substring(1));
+	var elt = target;//document.getElementById(pconf.busybox.substring(1));
 	if(typeof elt != "undefined" && elt){
 		elt.appendChild(res);
 	}
@@ -269,7 +269,7 @@ dacura.frame.init = function(entity, pconf){
 		var frameid = dacura.frame.draw(cls,resultobj,pconf,'frame-container');
 		//alert(JSON.stringify(entity, null, 4));
 		console.log(resultobj);
-		dacura.frame.fillFrame(entity, pconf, 'frame-container'); 
+		//dacura.frame.fillFrame(entity, pconf, 'frame-container'); 
 		dacura.frame.initInteractors();
 	}
 	

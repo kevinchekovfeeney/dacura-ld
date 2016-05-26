@@ -514,7 +514,6 @@ LDOViewer.prototype.showFrame = function(cls, target, data){
 	var self = this;
 	ajs.handleResult = function(resultobj, pconf){
 		var ob = pconf.busybox;
-		pconf.busybox = '#show-ldo';
 		var frameid = dacura.frame.draw(cls, resultobj, pconf, target);
 		pconf.busybox = ob;
 		dacura.frame.initInteractors();
