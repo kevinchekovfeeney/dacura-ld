@@ -93,6 +93,9 @@ var refreshfuncs = {};
 				<span class='subscreen-close'></span>
 			</div>
 			<div class='subscreen-body'>
+				<?php if(in_array("ldo-history", $params['subscreens'])) {
+					include_once($service->ssInclude("history"));		
+				} ?>			
 		 	</div>
 		</div>
 		<div id='ldo-updates-screen' class='dacsub dch'>
@@ -103,6 +106,9 @@ var refreshfuncs = {};
 			<div class='subscreen-body'>
 				<div class='tool-tab-info' class='subscreen-messages' id='ldo-updates-msgs'></div>
 				<div class='tool-tab-contents' id='ldo-updates-contents'>
+					<?php if(in_array("ldo-updates", $params['subscreens'])) { 		
+						include_once($service->ssInclude("updates"));
+					} ?>				
 				</div>
 			</div>
 		</div>
@@ -203,11 +209,11 @@ function initGraphPage(data, pconf){
 		return x.show();
 	}
 	var hconf = {resultbox: "#ldo-history .subscreen-intro-message", busybox: "#ldo-history .subscreen-body"};
-	//dacura.tool.subscreens["ldo-history"] = hconf;
-	//initfuncs['ldo-history'](data, "ldo-history");
-	//var uconf = {resultbox: "#ldo-updates .subscreen-intro-message", busybox: "#ldo-updates .subscreen-body"};
-	//dacura.tool.subscreens["ldo-updates"] = uconf;
-	//initfuncs['ldo-updates'](data, "ldo-updates");
+	dacura.tool.subscreens["ldo-history"] = hconf;
+	initfuncs['ldo-history'](data, "ldo-history");
+	var uconf = {resultbox: "#ldo-updates .subscreen-intro-message", busybox: "#ldo-updates .subscreen-body"};
+	dacura.tool.subscreens["ldo-updates"] = uconf;
+	initfuncs['ldo-updates'](data, "ldo-updates");
 	dqsconfig = new DQSConfigurator(data.meta.schema_dqs_tests, <?=$params['default_dqs_tests']?>, <?=$params['dqs_schema_tests']?>, "graph", handleSchemaDQSUpdate);
 	idqsconfig = new DQSConfigurator(data.meta.instance_dqs_tests, <?=$params['default_instance_dqs_tests']?>, <?=$params['dqs_instance_tests']?>, "graph", handleInstanceDQSUpdate);
 	importer = new OntologyImporter(getExplicitImports(data), <?=$params['available_ontologies']?>, getImplicitImports(data), "graph", handleImportUpdate);
@@ -269,10 +275,10 @@ function refreshLDOPage(data, pconf){
 		return x.show();
 	}
 	if(typeof data.history == "object"){
-		//refreshfuncs['ldo-history'](data, "ldo-history");
+		refreshfuncs['ldo-history'](data, "ldo-history");
 	}
 	if(typeof data.updates == "object"){
-		//refreshfuncs['ldo-updates'](data, "ldo-updates");
+		refreshfuncs['ldo-updates'](data, "ldo-updates");
 	}
 	$('#graphcontroltable tbody').empty();
 	$('#graph-summary').empty();
