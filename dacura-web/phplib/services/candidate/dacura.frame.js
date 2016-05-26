@@ -233,9 +233,9 @@ dacura.frame.fillFrame = function(entity, target){
 	var jsonobj = {};
 	
 	//var id = entity.id;
-	for( var i ; i < entity.length ; i++){
+	//for( var i ; i < entity.length ; i++){
 		
-	}
+	//}
 		
 };
 
