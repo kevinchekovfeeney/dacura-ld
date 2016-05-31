@@ -138,4 +138,3 @@ class Collection extends DacuraObject {
 	}
 	
 }
-

@@ -258,4 +258,3 @@ class RequestLog {
 		$this->dumpToLog();
 	}	
 }
-

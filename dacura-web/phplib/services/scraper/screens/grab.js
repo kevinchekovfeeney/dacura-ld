@@ -353,14 +353,19 @@ $(document).ready(function() {
 		style.setAttribute("href", "<?=$service->get_service_file_url('grab.css')?>");
 		document.body.appendChild(style);
 		dacura.grabber.insertResultPane();
-		dacura.grabber.pageFacts = dacura.grabber.grabFacts();
-		$("<li id='ca-grab'><span><a>Validate</a></span></li>").insertBefore("#ca-view");
-		$('#ca-grab').click( function(){
-			if(!grabison){
-				grabison = true;
-				dacura.grabber.sendFactsToParser();
-			}
-		});
+		if(document.url.substring(document.url.lastIndexOf("#") + 1) == "Code_book"){
+			alert("adfadsf");
+		}
+		else {
+			dacura.grabber.pageFacts = dacura.grabber.grabFacts();
+			$("<li id='ca-grab'><span><a>Validate</a></span></li>").insertBefore("#ca-view");
+			$('#ca-grab').click( function(){
+				if(!grabison){
+					grabison = true;
+					dacura.grabber.sendFactsToParser();
+				}
+			});
+		}
 	}
 	else {
 		//do nothing - can only be invoked on a media wiki page with the view tab

@@ -38,5 +38,4 @@ class CandidateService extends LdService {
 		}
 		
 	}
-		
 }

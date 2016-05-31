@@ -144,7 +144,7 @@ class ScraperDacuraServer extends DacuraServer {
 				
 			}
 		}
-		$this->fileman->cache("scraper", "index", $this->index, $this->settings['scraper']['indexcache_config']);
+		$this->fileman->cache("scraper", "index", $this->index, $this->getServiceSetting('indexcache_config'));
 	}
 	
 	function seshatInit($action, $object=""){
@@ -170,19 +170,19 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Returns an array of URLs
 	 */
 	function getNGAList($suppress_cache = false){
-		if($this->settings['scraper']['use_cache'] && !$suppress_cache){
-			$x = $this->fileman->decache("scraper", $this->settings['scraper']['mainPage'], $this->ch);
+		if($this->getServiceSetting('use_cache') && !$suppress_cache){
+			$x = $this->fileman->decache("scraper", $this->getServiceSetting('mainPage'), $this->ch);
 			if($x) {
 				return $x;
 			}
 		}
-		curl_setopt($this->ch, CURLOPT_URL, $this->settings['scraper']['mainPage']);
+		curl_setopt($this->ch, CURLOPT_URL, $this->getServiceSetting('mainPage'));
 		//curl_setopt($this->ch, CURLOPT_HEADER, true);
 		curl_setopt($this->ch, CURLOPT_FILETIME, true);
 		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
 		$content = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$content){
-			return $this->failure_result("Failed to retrieve nga list page ".$this->settings['scraper']['mainPage'], curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "warning");
+			return $this->failure_result("Failed to retrieve nga list page ".$this->getServiceSetting('mainPage'), curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "warning");
 		}
 		$fmod = curl_getinfo($this->ch, CURLINFO_FILETIME);
 		$dom = new DOMDocument;
@@ -195,10 +195,10 @@ class ScraperDacuraServer extends DacuraServer {
 			$url = 'http://seshat.info'.$x;
 			$ngaURLs[] = $url;
 		}
-		if($this->settings['scraper']['use_cache']){
-			$config = $this->settings['scraper']['ngacache_config'];
-			$config["url"] = $this->settings['scraper']['mainPage'];
-			$this->fileman->cache("scraper", $this->settings['scraper']['mainPage'], $ngaURLs, $config);				
+		if($this->getServiceSetting('use_cache')){
+			$config = $this->getServiceSetting('ngacache_config');
+			$config["url"] = $this->getServiceSetting('mainPage');
+			$this->fileman->cache("scraper", $this->getServiceSetting('mainPage'), $ngaURLs, $config);				
 			$this->index['nga_list'] = array(time(), $ngaURLs);
 			$this->saveIndex();
 		}
@@ -213,7 +213,7 @@ class ScraperDacuraServer extends DacuraServer {
 	 * Returns an array of URLs
 	 */
 	function getPolities($pageURL, $suppress_cache = false ){
-		if($this->settings['scraper']['use_cache'] && !$suppress_cache){
+		if($this->getServiceSetting('use_cache') && !$suppress_cache){
 			$x = $this->fileman->decache("scraper", $pageURL, $this->ch);
 			if($x) return $x;
 		}
@@ -241,8 +241,8 @@ class ScraperDacuraServer extends DacuraServer {
 				$polities[] = $url;
 			}
 		}
-		if($this->settings['scraper']['use_cache']){
-			$config = $this->settings['scraper']['cache_config'];
+		if($this->getServiceSetting('use_cache')){
+			$config = $this->getServiceSetting('cache_config');
 			$config["url"] = $pageURL;
 			$this->fileman->cache("scraper", $pageURL, $polities, $config);				
 			if(!isset($this->index['ngas'])){
@@ -260,7 +260,7 @@ class ScraperDacuraServer extends DacuraServer {
 	 */
 	function getFactsFromURL($pageURL, $suppress_cache = false, $fetch_remote = true){
 		$facts = false;
-		if($this->settings['scraper']['use_cache'] && !$suppress_cache){
+		if($this->getServiceSetting('use_cache') && !$suppress_cache){
 			$facts = $this->fileman->decache("scraper", $pageURL, $this->ch, !$fetch_remote);
 		}
 		if(!$facts && $fetch_remote){
@@ -270,8 +270,8 @@ class ScraperDacuraServer extends DacuraServer {
 				return $this->failure_result("Failed to retrieve url: $pageURL", curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "info");
 			}
 			$facts = $this->getFactsFromPage($content);
-			if($this->settings['scraper']['use_cache']){
-				$config = $this->settings['scraper']['cache_config'];
+			if($this->getServiceSetting('use_cache')){
+				$config = $this->getServiceSetting('cache_config');
 				$config["url"] = $pageURL;
 				$this->fileman->cache("scraper", $pageURL, $facts, $config);
 				if(!isset($this->index['polities'])){
@@ -293,7 +293,7 @@ class ScraperDacuraServer extends DacuraServer {
 	 */
 	function getDump($data, $suppress_cache = false, $on_date = false){
 		$polities_retrieved = array();
-		$field_sep = ($this->settings['scraper']['dump_format'] == "csv") ? "," : "\t";
+		$field_sep = ($this->getServiceSetting('dump_format') == "csv") ? "," : "\t";
 		$summaries = array();
 		$headers = array("NGA", "Polity", "Section", "Subsection", "Variable", "Value From", "Value To",
 				"Date From", "Date To", "Fact Type", "Value Note", "Date Note", "Comment");
@@ -306,7 +306,7 @@ class ScraperDacuraServer extends DacuraServer {
 		$this->fileman->dumpData($error_op, "<table><tr><th>".implode("</th><th>", $error_headers)."</th></tr>");
 		$html_op = $this->fileman->startServiceDump("scraper", "Export", "html", true, true);
 		$this->fileman->dumpData($html_op, "<table><tr><th>".implode("</th><th>", $headers)."</th></tr>");
-		$tsv_op = $this->fileman->startServiceDump("scraper", "Export", $this->settings['scraper']['dump_format'], true, true);
+		$tsv_op = $this->fileman->startServiceDump("scraper", "Export", $this->getServiceSetting('dump_format'), true, true);
 		$this->fileman->dumpData($tsv_op, implode($field_sep, $headers)."\n");
 		foreach($data as $nga => $polities){
 			$stats['ngas']++;
@@ -369,7 +369,7 @@ class ScraperDacuraServer extends DacuraServer {
 		//start op buffering
 		ob_start();
 		$this->service->renderScreen("results", array("stats" => $stats, "failures" => $polity_failures, "summary" => $summaries,
-				"files" => array("errors" => $this->ucontext->my_url("rest")."/view/".$error_op->filename("rest"), "html" => $this->ucontext->my_url("rest")."/view/".$html_op->filename(), "tsv" => $this->ucontext->my_url("rest")."/view/".$tsv_op->filename())));
+				"files" => array("errors" => $this->service->my_url("rest")."/view/".$error_op->filename("rest"), "html" => $this->service->my_url("rest")."/view/".$html_op->filename(), "tsv" => $this->service->my_url("rest")."/view/".$tsv_op->filename())));
 		$page = ob_get_contents();
 		ob_end_clean();
 		$this->end_comet_output("success", $page);
@@ -391,7 +391,7 @@ class ScraperDacuraServer extends DacuraServer {
 	function getReport($repname){
 		$fpath = $this->getSystemSetting('path_to_collections');
 		if($this->cid()) $fpath .= $this->cid()."/";
-		$fpath .= $this->settings['dump_directory'];
+		$fpath .= $this->getSystemSetting('dump_directory');
 		$fname = $fpath . $repname;
 		$fsize = filesize($fname);
 		$path_parts = pathinfo($fname);
@@ -1307,19 +1307,18 @@ class ScraperDacuraServer extends DacuraServer {
 	function login(){
 		$this->ch = curl_init();
 		//initial curl setting
-		curl_setopt($this->ch, CURLOPT_URL, $this->settings['scraper']['loginUrl']);
-		curl_setopt($this->ch, CURLOPT_COOKIEJAR, $this->settings['scraper']['cookiejar']);
+		curl_setopt($this->ch, CURLOPT_URL, $this->getServiceSetting('loginUrl'));
+		curl_setopt($this->ch, CURLOPT_COOKIEJAR, $this->getServiceSetting('cookiejar'));
 		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
-		if(isset ($this->settings['http_proxy']) && $this->settings['http_proxy']){
-			curl_setopt($this->ch, CURLOPT_PROXY, $this->settings['http_proxy']);
+		if($prox = $this->getSystemSetting('http_proxy', "")){
+			curl_setopt($this->ch, CURLOPT_PROXY, $prox);
 		}
-		
 		$this->timeEvent("Start Login", "debug");
 		//get token from login page
 		$store = curl_exec($this->ch);
 		if(curl_getinfo($this->ch, CURLINFO_HTTP_CODE) != 200 || !$store){
-			$this->ucontext->logger->timeEvent("Logging in Failed");				
-			return $this->failure_result("Failed to retrieve login page ".$this->settings['scraper']['loginUrl'], curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "warning");				
+			$this->service->logger->timeEvent("Logging in Failed");				
+			return $this->failure_result("Failed to retrieve login page ".$this->getServiceSetting('loginUrl', ""), curl_getinfo($this->ch, CURLINFO_HTTP_CODE), "warning");				
 		}
 		$this->timeEvent("Login Page Retrieved", "debug");				
 		$loginToken = false;
@@ -1336,16 +1335,16 @@ class ScraperDacuraServer extends DacuraServer {
 		}
 		$this->timeEvent("Login Page Parsed", "debug");		
 		if(!$loginToken){
-			return $this->failure_result("Failed to find login token on login page ".$this->settings['scraper']['loginUrl'], 404, "error");				
+			return $this->failure_result("Failed to find login token on login page ".$this->getServiceSetting('loginUrl'), 404, "error");				
 		}
 		libxml_clear_errors();
 		//login
 		curl_setopt($this->ch, CURLOPT_POST, 1);
-		curl_setopt($this->ch, CURLOPT_POSTFIELDS, 'wpName='.$this->settings['scraper']['username'].'&wpPassword='.$this->settings['scraper']['password'].'&wpLoginAttempt=Log+in&wpLoginToken='.$loginToken);
+		curl_setopt($this->ch, CURLOPT_POSTFIELDS, 'wpName='.$this->getServiceSetting('username').'&wpPassword='.$this->getServiceSetting('password').'&wpLoginAttempt=Log+in&wpLoginToken='.$loginToken);
 		$store = curl_exec($this->ch);
 		$http_status = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
 		if($http_status >= 400){
-			$this->ucontext->logger->timeEvent("Login Failed");				
+			$this->service->logger->timeEvent("Login Failed");				
 			return $this->failure_result("Failed to login to wiki", 400, "warning");
 		}
 		$this->timeEvent("Login Successful", "info");				
@@ -1377,7 +1376,7 @@ class ScraperDacuraServer extends DacuraServer {
 			$dates_list[] = array($current_year, $k);
 		}
 		foreach($dates_list as $i => $one_date){
-			$dates_list[$i][] = $this->getWikiURLforDate($this->settings['scraper']['mainPage'], $one_date[0], $one_date[1]);
+			$dates_list[$i][] = $this->getWikiURLforDate($this->getServiceSetting('mainPage'), $one_date[0], $one_date[1]);
 		}
 		return $dates_list;
 	}

@@ -1,6 +1,4 @@
 <?php
-require_once("phplib/libs/epiphany/src/Epi.php");
-
 getRoute()->get('/nga', 'getngas');
 getRoute()->get('/status', 'getstatus');
 getRoute()->get('/schema', 'schema');
@@ -26,7 +24,7 @@ function updatestatus(){
 		$dacura_server->write_comet_error();
 	}
 }
-
+	
 
 function getstatus(){
 	global $dacura_server;
@@ -183,16 +181,17 @@ function getGrabScript(){
 	global $dacura_server, $service;
 	$dacura_server->init("grabscript");
 	ob_start();
-	if(isset($dacura_server->settings['scraper']['grabScriptFiles'])){}
-	foreach($dacura_server->settings['scraper']['grabScriptFiles'] as $f){
-		if(file_exists($f)){
-			include($f);
+	if($dacura_server->getServiceSetting('grabScriptFiles', false)){
+		foreach($dacura_server->getServiceSetting('grabScriptFiles') as $f){
+			if(file_exists($f)){
+				include($f);
+			}
+			else {
+				ob_end_clean();	
+				return $dacura_server->write_http_error(500, "File $f not found");
+			}
 		}
-		else {
-			ob_end_clean();	
-			return $dacura_server->write_http_error(500, "File $f not found");
-		}
-	}
+	}	
 	$f = $dacura_server->service->mydir."screens/grab.js";
 	if(file_exists($f)){
 		include_once($f);

@@ -214,6 +214,3 @@ class DacuraSession extends DacuraObject {
 		return isset($this->current_entity) && $this->current_entity ? $this->current_entity : false;
 	}
 }	
-	
-
-

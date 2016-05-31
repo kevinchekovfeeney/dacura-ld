@@ -127,5 +127,4 @@ class DacuraController extends DacuraObject {
 		}
 		return parent::failure_result($msg, $code);
 	}
-	
 }

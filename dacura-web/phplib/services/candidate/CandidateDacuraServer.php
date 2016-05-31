@@ -239,7 +239,4 @@ class CandidateDacuraServer extends LdDacuraServer {
 		}
 		return $dr;
 	}	
-	
-
-	
 }

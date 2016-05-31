@@ -521,7 +521,7 @@ class DacuraServer extends DacuraController {
 	function write_comet_update($status, $ting){
 		$struct = array(
 			"message_type" => "comet_update",
-			"status" => $type,
+			"status" => $status,
 			"payload" => $ting
 		);
 		echo json_encode($struct)."\n";
@@ -599,5 +599,4 @@ class DacuraServer extends DacuraController {
 		}
 		return $parsed;
 	}
-	
 }

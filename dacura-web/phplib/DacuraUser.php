@@ -572,7 +572,3 @@ class DacuraUser extends DacuraObject {
 		}
 	}
 }
-
-
-
-
