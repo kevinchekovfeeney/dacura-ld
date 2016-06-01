@@ -23,23 +23,9 @@ cphp.importstooltip = <?php echo isset($params['tooltip_config']) ? $params['too
 cphp.available_ontologies = <?php echo isset($params['available_ontologies']) ? $params['available_ontologies'] : "{}"?>;
 
 function loadInputFromFrame(){
-	var rdftype = $('#ldo-details-candtype').val();
-	//var ipobj = dacura.frame.entityExtractor('#frame-container');
-	var obj = {};
-	var pop = $('#fupopulation').val();
-	if(pop){
-		obj[pref + "population"] = {data: $('#fupopulation').val(), type: "http://www.w3.org/2001/XMLSchema#integer"}; 
-	}
-	var nm = $('#funame').val();
-	if(nm){
-		obj[pref + "name"] = {data: nm, lang: "en"}; 
-	}
-	var an = $('#fualtname').val();
-	if(an){
-		obj[pref + "alternativeName"] = {data: an, lang: "en"};  
-	}
-	obj['rdf:type'] = rdftype;
-	return {format: "json", contents: obj};
+	var frameinput = cphp.ldov.frm.extract();
+	frameinput["rdf:type"] = $('#ldo-details-candtype').val();
+	return {format: "json", contents: frameinput};
 }
 
 function testCreateLDO(data, result, pconf){
@@ -149,14 +135,7 @@ var initcreate = function(pconfig){
 
 function drawCandidateFrame(){
 	etype = $('#ldo-details-candtype').val();
-	var tp = etype.substring(etype.lastIndexOf('#') + 1);
-	pref = etype.substring(0, etype.lastIndexOf('#') + 1);
-	if(tp == 'Polity'){
-		showPhoneyPolityForm('#candframeinform');
-	}
-	else {
-		cphp.ldov.showFrame(etype, '#candframeinform');			
-	}
+	cphp.ldov.showFrame(etype, '#candframeinform', "create");			
 }
 
 function setImportType(){
@@ -175,7 +154,7 @@ function setImportType(){
 	}		
 }
 
-
+/*
 function showPhoneyPolityForm(target){
 	var html = '</td></tr><tr class="dacura-property-spacer"></tr>';
 	html += '<tr class="dacura-property row-5">';
@@ -192,7 +171,7 @@ function showPhoneyPolityForm(target){
 	html += '</td><td class="dacura-property-help"></td></tr></tbody></table></td></tr>';
 	html += '</tbody></table>';
 	$(target).html(html);	
-}
+}*/
 
 initfuncs["ldo-create"] = initcreate;
 </script>

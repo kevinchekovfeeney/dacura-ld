@@ -98,11 +98,8 @@ LDOViewer.prototype.show = function(target, mode, callback){
 		this.tooltipLDImport();
 	}
 	else {
-		if(this.ldo.format == "html" && this.ldo.ldtype() == "candidate" && typeof this.ldo.contents == "object"){
-			this.initFrameView();
-		}
-		else if(this.ldo.format == "json" && this.ldo.ldtype() == "candidate" && typeof this.ldo.contents == "object"){
-			this.showFrame(this.ldo.meta.type, "frame-container", this.ldo.contents);
+		if(this.ldo.format == "html" && this.ldo.ldtype() == "candidate"){
+			this.showFrame(this.ldo.meta.type, this.prefix + "-ldo-viewer-contents", "view");
 		}
 		else {
 			body += this.ldo.getContentsHTML(this.emode) + "</div>";
@@ -332,14 +329,19 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 				self.handleViewAction("cancel")
 			}
 			else { //act is update
-				var updated = self.ldo.getUpdatedContents(self.target);
-				if(dacura.ld.isJSONFormat(self.ldo.format)){
-					try {
-						updated = JSON.parse(updated);
-					}
-					catch(e){
-						alert(e.message);
-						return;
+				if(self.ldo.format == "html"){
+					var updated = self.frm.extract();
+				}
+				else {
+					var updated = self.ldo.getUpdatedContents(self.target);
+					if(dacura.ld.isJSONFormat(self.ldo.format)){
+						try {
+							updated = JSON.parse(updated);
+						}
+						catch(e){
+							alert(e.message);
+							return;
+						}
 					}
 				}
 				var opts = (test ? self.test_update_options : self.update_options);
@@ -504,38 +506,39 @@ LDOViewer.prototype.setTarget = function(jqid, barjqid){
 	this.options_target = (typeof barjqid != "undefined") ? barjqid : this.target;
 }
 
-LDOViewer.prototype.showFrame = function(cls, target, data){
-	if(typeof target == "undefined"){
-		target = this.target;
-	}
+LDOViewer.prototype.showFrame = function(cls, target, mode){
 	var ajs = dacura.frame.api.getFrame(cls);
 	msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};
 	//alert(cls);
+	this.frm = new FrameViewer(cls, target, this.pconf);
 	var self = this;
 	ajs.handleResult = function(resultobj, pconf){
-		var ob = pconf.busybox;
-		var frameid = dacura.frame.draw(cls, resultobj, pconf, target);
-		pconf.busybox = ob;
-		dacura.frame.initInteractors();
-		dacura.frame.fillFrame(data, target);
+		var frames = resultobj.result;
+		if(typeof frames == "string"){
+			try {
+				frames = JSON.parse(frames);
+			}	
+			catch(e){
+				alert("Failed to parse frames from sever: " + e.message);
+				return;
+			}
+		}
+		self.frm.draw(frames, mode);
+				
 	}
 	dacura.system.invoke(ajs, msgs, this.pconf);	
 	
 };
 
 LDOViewer.prototype.initFrameView = function(){
-	var pconf = this.pconf;
-	obusy = pconf.busybox;
-	pconf.busybox = "#dacura-frame-viewer";
 	var cls = this.ldo.meta.type;
-	this.showFrame(cls, 'frame-container');
+	this.showFrame(cls, 'frame-container', "create");
 	if(typeof this.ldo.contents != "object"){
 		this.ldo.contents = JSON.parse(this.ldo.contents);
 	}
 	var frameobj = {result: JSON.stringify(this.ldo.contents)};
 	var frameid = dacura.frame.draw(cls,frameobj,pconf,'frame-container');
 	//dacura.frame.fillFrame(this.ldo.4contents, 'frame-container'); 
-	pconf.busybox = obusy;
 	dacura.frame.initInteractors();
 };
 

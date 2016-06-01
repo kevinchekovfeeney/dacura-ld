@@ -13,6 +13,30 @@ dacura.frame.api.getFrame = function (cls){
 };
 
 
+function FrameViewer(cls, target, pconfig){
+	this.cls = cls;
+	this.target = target;
+	this.pconfig = pconfig;
+}
+
+FrameViewer.prototype.draw = function(frames, mode){
+	this.mode = mode;
+	this.frames = frames;
+	if(frames.length > 0){
+		alert("drawing in " + mode + " mode " + frames.length + " frames in list");
+		
+	}
+	else {
+		
+	}
+};
+
+FrameViewer.prototype.extract = function(){
+	alert("called extract");
+	return {};
+}
+
+
 dacura.frame.draw = function(cls,resultobj,pconf,target){
 	var framestr = resultobj.result;
 	var frame = JSON.parse(framestr);
@@ -72,7 +96,7 @@ dacura.frame.frameGenerator = function(frame, obj, gensym){
 				var labelnode = document.createElement("label");
 			
 				if (elt.label){
-					var label = elt.label.data;
+					var label = elt.label.data; // {'data' : someDataHere, 'type' : SomeTyping}
 					var textnode = document.createTextNode(label + ':');
 					/* if(label == 'Unit of Measure'){
 						alert(JSON.stringify(elt))

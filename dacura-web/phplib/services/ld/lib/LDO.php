@@ -70,6 +70,7 @@ class LDO extends DacuraObject {
 	
 	/** @var the set of input formats that are supported by the system (including those supported by easy rdf) */	
 	static $valid_input_formats = array(
+			"html" => "HTML",
 			"json" => "Dacura JSON", 
 			"jsonld" => "JSON LD", 
 			"nquads" => "N-Quads", 
