@@ -55,6 +55,19 @@ dacura.grabber.insertValidationResultPane = function (){
 	$("#validator-results").hide();	
 };
 
+dacura.grabber.parsePage = function(page, refresh, xhr){
+	if(typeof xhr == "undefined"){
+		xhr = {};
+		xhr.data ={};
+	}
+	if(typeof refresh != "undefined" && refresh == true){
+		xhr.data["refresh"] = true;
+	}
+	xhr.type = "POST";
+	xhr.data.url = page;
+	xhr.url = dacura.scraper.apiurl + "/parsepage";
+	return xhr;
+}
 
 dacura.grabber.grabFacts = function(){
 	var regex = /♠([^♠♥]*)♣([^♠♥]*)♥/gm;
@@ -399,7 +412,8 @@ $(document).ready(function() {
 		$('#ca-grab').remove();
 		dacura.grabber.insertValidationResultPane();
 		if(window.location.href.substring(window.location.href.lastIndexOf("/") + 1) == "Code_book"){
-			dacura.grabber.pageFacts = dacura.grabber.grabFacts();
+			alert("on code book");
+			dacura.grabber.pageFacts = dacura.grabber.parsePage(window.location.href);
 			$("<li id='ca-grab'><span><a>Ontologize</a></span></li>").insertBefore("#ca-view");
 			$('#ca-grab').click( function(){
 				if(!grabison){
@@ -409,7 +423,8 @@ $(document).ready(function() {
 			});
 		}
 		else {
-			dacura.grabber.pageFacts = dacura.grabber.grabFacts();
+			dacura.grabber.pageFacts = dacura.grabber.parsePage(window.location.href);
+			//dacura.grabber.pageFacts = dacura.grabber.grabFacts();
 			$("<li id='ca-grab'><span><a>Validate</a></span></li>").insertBefore("#ca-view");
 			$('#ca-grab').click( function(){
 				if(!grabison){
