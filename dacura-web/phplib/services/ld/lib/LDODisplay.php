@@ -143,12 +143,7 @@ class LDODisplay extends DacuraObject {
 							}
 						}
 						elseif($pv->embeddedlist()){
-							$nv = array();
-							foreach($v as $id => $obj){
-								//ids should always be URLs or namespaced URLs
-								$nid = $this->applyLinkHTML($id, $vstr, "property-subject");
-								$nv[$nid] = $this->linkify($vstr, $obj);
-							}
+							$nv =  $this->linkify($vstr, $v);
 						}
 						else {
 							$nv = $v;

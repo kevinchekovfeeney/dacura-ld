@@ -20,6 +20,8 @@ class Candidate extends MultiGraphLDO {
 	function setLDRules(&$srvr){
 		parent::setLDRules($srvr);
 		$req = $srvr->getServiceSetting("require_candidate_type", false);
+		//$this->rules->setRule("import", "transform_import", false);
+		$this->rules->setRule("update", 'expand_embedded_objects', false);		
 		$this->rules->setRule("validate", "require_candidate_type", $req);
 		if($req){ 	
 			$this->rules->setRule("validate", "valid_candidate_types", $srvr->valid_candidate_types); 

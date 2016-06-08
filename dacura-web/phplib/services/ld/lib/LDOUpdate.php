@@ -173,6 +173,7 @@ class LDOUpdate extends DacuraObject{
 			if($update->meta){
 				$this->forward['meta'] = $update->meta;
 			}
+			
 			if(!$this->calculateChanged($mode)){
 				return false;
 			}
@@ -201,7 +202,7 @@ class LDOUpdate extends DacuraObject{
 			$this->from_version = $this->original->version;
 			//$this->changed->to_version
 			$this->changed->readStateFromMeta();
-		}		
+		}
 		if($this->original->validate("view", $srvr) && !$this->changed->validate("view", $srvr)){
 			return $this->failure_result($this->changed->errmsg, $this->changed->errcode);
 		}

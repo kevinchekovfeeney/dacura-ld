@@ -66,6 +66,29 @@ dacura.grabber.parsePage = function(page, refresh, xhr){
 	xhr.type = "POST";
 	xhr.data.url = page;
 	xhr.url = dacura.scraper.apiurl + "/parsepage";
+	xhr.beforeSend = function(){
+		var msg = fact_ids.length + " Variables being analysed";
+		dacura.grabber.showBusyMessage(msg);
+	};
+	$.ajax(xhr)
+	.done(function(response, textStatus, jqXHR) {
+		try {
+			var results = JSON.parse(response);
+			for(i in results){
+				dacura.grabber.pageFacts[fact_ids[i]].parsed = results[i];
+			}
+			dacura.grabber.clearBusyMessage();
+
+			dacura.grabber.displayFacts();
+			$('button#validator-close-button').button().click(function(){
+				dacura.grabber.clear();
+			});
+		}
+		catch(e){
+			dacura.grabber.showParseErrorMessage("Failed to contact server to parse variables: " + e.message);
+			grabison = false;
+		}
+	}
 	return xhr;
 }
 
