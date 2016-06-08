@@ -19,21 +19,66 @@ function FrameViewer(cls, target, pconfig){
 	this.pconfig = pconfig;
 }
 
+/*
+TO DO:
+ 	--> How to fill the json file with the data inserted ? Where it data should be?
+ 	--> How to fix the var mode to detect the editing mode ?
+*/
+
 FrameViewer.prototype.draw = function(frames, mode){
+	//alert("draw called. mode = " + mode);
+	$('br').remove();
+	$('.html-create-form').remove();
+	$('.dacura-html-viewer').remove();
+
 	this.mode = mode;
 	this.frames = frames;
-	if(frames.length > 0){
-		alert("drawing in " + mode + " mode " + frames.length + " frames in list");
-		
-	}
-	else {
-		
-	}
+
+		if(frames.length > 0){
+			for (var i = 0; i <  frames.length; i++) {
+				var f = JSON.stringify(frames[i]);
+				var parsed = JSON.parse(f);
+				
+	             if(typeof parsed.frame != "undefined"){ 
+	             	   var insiderObj1 = "<br><br> " +  parsed.frame[0].label.data + " : "; 
+	             	   var insiderObj2 = "<br><br> " +  parsed.frame[1].label.data + " : "; 
+	             }
+	             else{ 
+	             	var insiderObj1 = "";
+	             	insiderObj2 = "";
+				 }
+
+	             if(mode == "view")
+	                $('#ldo-contents').append("<div class='dacura-html-viewer'>" + parsed.label.data + ": " + insiderObj1 + insiderObj2 + "<br><br>");	
+	             else if(mode == "create"){ 
+	             	if(insiderObj1 != "" && insiderObj2 != ""){
+	             		insiderObj1 += " <input type='text' name='" +parsed.property+ "' >";
+	             		insiderObj2 += " <input type='text' name='" +parsed.property+ "'>";
+	             		$('#ldo-details').append("<div class='html-create-form'>" + parsed.label.data + ": " + insiderObj1  + insiderObj2  + "<br><br>");
+	             	}else
+ 						$('#ldo-details').append("<div class='html-create-form'>" + parsed.label.data + ": <input type='text' name='" + parsed.property + "' id='label" + i +"'>  " + insiderObj1  + insiderObj2  + "<br><br>");	
+  				  }
+			};
+				$('#ldo-contents').append("</div> <br><br>");
+		}
+		else {
+			
+		}	
+
 };
 
 FrameViewer.prototype.extract = function(){
 	alert("called extract");
-	return {};
+	var $inputs = $('.html-create-form :input');
+
+    var values = {};
+    $inputs.each(function() {
+        values[this.name] = $(this).val();
+        console.log("VALUES: " + JSON.stringify(values));
+
+    });
+
+	return values;
 }
 
 
