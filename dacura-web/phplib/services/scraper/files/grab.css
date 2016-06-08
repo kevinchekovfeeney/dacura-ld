@@ -151,7 +151,11 @@ div.vardatapoints  {
 	display: none;
 } 
 
-
+div.varontology  {
+	padding: 6px;
+	text-align: center; 
+	display: none;
+}	
 
 #validator-variable {
 	width: 96%;

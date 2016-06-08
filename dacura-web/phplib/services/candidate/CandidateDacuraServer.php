@@ -48,11 +48,27 @@ class CandidateDacuraServer extends LdDacuraServer {
 	 * @return DacuraResult the Dacura Result object incorporating the frame
 	 */
 	function getFrame($cls){
-		$ar = new DacuraResult("Creating Frame $cls");
 		$cls = ($expanded = $this->nsres->expand($cls)) ? $expanded : $cls;
-		$mg = $this->getMainGraph();
+		if(!($mg = $this->getMainGraph())){
+			return false;
+		}
 		return $this->graphman->invokeDCS($mg->schemaGname(), $cls);
 	}
+
+	/**
+	 * Creates a frame for the given class by calling the DCS frame function
+	 * @param string $cls the name of the class in question
+	 * @return DacuraResult the Dacura Result object incorporating the frame
+	 */
+	function getFilledFrame($candid){
+		$mg = $this->getMainGraph();
+		if(!($mg = $this->getMainGraph())){
+			return false;
+		}
+		$candurl = $this->service->my_url()."/$candid";
+		return $this->graphman->invokeDCS($mg->schemaGname(), false, $candurl, $mg->instanceGname());
+	}
+	
 	
 	/**
 	 * Asks the DCS service for the set of valid types as specified in the context schema for candidates

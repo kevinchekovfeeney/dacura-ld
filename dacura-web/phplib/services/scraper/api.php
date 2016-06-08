@@ -192,7 +192,7 @@ function getGrabScript(){
 			}
 		}
 	}	
-	$f = $dacura_server->service->mydir."screens/grab.js";
+	$f = $dacura_server->service->mydir."screens/codebook.js";
 	if(file_exists($f)){
 		include_once($f);
 		$page = ob_get_contents();
