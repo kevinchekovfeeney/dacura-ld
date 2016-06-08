@@ -12,6 +12,12 @@ dacura.frame.api.getFrame = function (cls){
 	return xhr;
 };
 
+dacura.frame.api.getFilledFrame = function (candid){
+	var xhr = {};
+	xhr.type = "GET";
+	xhr.url = dacura.frame.apiurl + "/frame/" + candid;
+	return xhr;
+};
 
 function FrameViewer(cls, target, pconfig){
 	this.cls = cls;

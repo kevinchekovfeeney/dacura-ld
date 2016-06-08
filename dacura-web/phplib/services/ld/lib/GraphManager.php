@@ -102,7 +102,7 @@ class GraphManager extends DacuraController {
 	 * we call the entity function to retrieve the list of entity classes. 
 	 * @return DQSResult
 	 */
-	function invokeDCS($graphid, $clsname = false, $entid = false){
+	function invokeDCS($graphid, $clsname = false, $entid = false, $instance_graphid = false){
 		$args = array("schema" => $graphid);
 		$dqs_config = $this->getSystemSetting("dqs_service");
 		$dqsr = new DQSResult("invoking DQS class analysis");
@@ -120,6 +120,9 @@ class GraphManager extends DacuraController {
 		foreach($args as $k => $v){
 			if(strlen($qstr) > 0) $qstr.= "&";
 			$qstr .= $k."=".urlencode($v);
+		}
+		if($dqs_config['dumplast']){
+			$this->dumpDCSRequest($dqs_config['dumplast'], $srvc, $graphid, $clsname, $entid, $instance_graphid, $qstr);
 		}
 		$ch = curl_init();
 		if($proxy = ($this->getSystemSetting('dqs_http_proxy', ""))){
@@ -354,6 +357,16 @@ class GraphManager extends DacuraController {
 		foreach($dtrips as $itrip){
 			$dumpstr .= json_encode($itrip)."\n";
 		}
+		$dumpstr .= "Query: $qstr";
+		file_put_contents($fname, $dumpstr);
+	}
+	
+	function dumpDCSRequest($fname, $service, $graphid, $clsname, $entid, $insgraphid, $qstr){
+		$dumpstr = "Service: $service\n";		
+		$dumpstr .= "Graph: ".$graphid."\n";
+		$dumpstr .= "Instance Graph: ".$insgraphid."\n";
+		$dumpstr .= "Classname: ".$clsname."\n";
+		$dumpstr .= "Entity ID: ".$entid."\n";
 		$dumpstr .= "Query: $qstr";
 		file_put_contents($fname, $dumpstr);
 	}

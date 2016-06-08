@@ -42,9 +42,9 @@ dacura.grabber.getParsedTableHTML = function(variable, factoids){
 	return html;
 };
 
-dacura.grabber.insertResultPane = function (){
+dacura.grabber.insertValidationResultPane = function (){
 	var pane = "<div id='validator-results'><div id='validator-branding'>"; 
-	pane += "<img height='24' src='<?=$service->url('image', 'dacura-logo-simple.png')?>'></div>";
+	pane += "<img height='24' src='<?=$service->furl('image', 'dacura-logo-simple.png')?>'></div>";
 	pane += "<div id='validator-name'>Seshat Validation Tool</div>";
 	pane += "<div id='validator-stats'></div>";
 	pane += "<div id='validator-controls'></div>"
@@ -55,6 +55,19 @@ dacura.grabber.insertResultPane = function (){
 	$("#validator-results").hide();	
 };
 
+dacura.grabber.parsePage = function(page, refresh, xhr){
+	if(typeof xhr == "undefined"){
+		xhr = {};
+		xhr.data ={};
+	}
+	if(typeof refresh != "undefined" && refresh == true){
+		xhr.data["refresh"] = true;
+	}
+	xhr.type = "POST";
+	xhr.data.url = page;
+	xhr.url = dacura.scraper.apiurl + "/parsepage";
+	return xhr;
+}
 
 dacura.grabber.grabFacts = function(){
 	var regex = /♠([^♠♥]*)♣([^♠♥]*)♥/gm;
@@ -84,6 +97,47 @@ dacura.grabber.grabFacts = function(){
 	return facts;
 }
 
+dacura.grabber.getCodebookToOntologyHTML = function(fid){
+	var html = "<span id='" + fid + "-ontinput' class='ontology-chooser'>";
+	html += dacura.grabber.getVariableOntologyType(fid) + " "; 
+	html += dacura.grabber.getVariableLabel(fid) + " "; 
+	html += dacura.grabber.getVariableProperty(fid) + " "; 
+	html += dacura.grabber.getVariableCardinality(fid) + " "; 
+	html += dacura.grabber.getVariableHelp(fid) + " "; 
+	html += "</span>";
+	return html;
+}
+
+dacura.grabber.getVariableLabel = function(fid){
+	var html = "Label: <input type='input' id='" + fid + "-label'>";
+	return html;
+}
+
+dacura.grabber.getVariableHelp = function(fid){
+	var html = "Help: <textarea id='" + fid + "-help'></textarea>";
+	return html;
+}
+
+dacura.grabber.getVariableProperty = function(fid){
+	var html = "Property: <input type='input' id='" + fid + "-type'>";
+	return html;
+}
+
+dacura.grabber.getVariableCardinality = function(fid){
+	var html = "<input type='checkbox' id='" + fid + "-cardinality'><label for='" + fid + "-cardinality'>Multiple Values</label>";
+	return html;
+}
+
+dacura.grabber.getVariableOntologyType = function(fid){
+	var html = "<select id='" + fid + "-ontselect'>";
+	html += "<option value='ignore'>Ignore</option>"; 
+	html += "<option value='literal'>XSD Literal</option>"; 
+	html += "<option value='choice'>Choice</option>"; 
+	html += "<option value='object'>Object</option>"; 
+	html += "<option value='complex'>Logical</option>"; 
+	html += "</select>";
+	return html;
+}
 
 dacura.grabber.displayFacts = function (){
 	var stats = {"error": 0, "warning": 0, "complex": 0, "simple" : 0, "empty": 0};
@@ -116,7 +170,7 @@ dacura.grabber.displayFacts = function (){
 			cstr += " seshatCorrect";
 			imgstr = "<img class='seshat_fact_img seshat_correct' src='<?=$service->get_service_file_url('correct.png')?>' alt='error' title='variable parsed correctly'> ";
 		}
-		var sd = "<div class='" + cstr + "' id='fact_" + json[i]["id"] + "'>" + imgstr + json[i]["full"] + "</div>";
+		var sd = "<div class='" + cstr + "' id='fact_" + json[i]["id"] + "'>" + imgstr + json[i]["full"] + this.getCodebookToOntologyHTML(json[i].id) + "</div>";
 		//now update the page....
 		npage += this.originalpage.substring(npage_offset, json[i]["location"]) + sd;
 		npage_offset = json[i]["location"] + json[i]["length"];
@@ -299,7 +353,7 @@ dacura.grabber.updateBusyMessage = function(msg){
 }
 
 dacura.grabber.showBusyMessage = function(msg){
-	$('body').append("<div id='grabber-busy'><img class='dialog-busy' src='<?=$service->url('image', 'ajax-loader.gif')?>'><div id='dialog-busy-text'>"+msg+"</div></div>");
+	$('body').append("<div id='grabber-busy'><img class='dialog-busy' src='<?=$service->furl('image', 'ajax-loader.gif')?>'><div id='dialog-busy-text'>"+msg+"</div></div>");
 	$('#grabber-busy').dialog({
 		 modal: true,
 		 title: "Analysing Page",
@@ -338,26 +392,39 @@ var grabison = false;
 dacura.grabber.error_ids = [];
 
 $(document).ready(function() {
-	if($("#ca-grab").length){
+
+	//if($("#ca-grab").length){
 		//do nothing - the grabber has already been added to the page
-	}
-	else if ($('#ca-view').length){
+	//}
+	//else
+	if ($('#ca-view').length){
 		style=document.createElement("link");
 		style.setAttribute("rel", "stylesheet");
 		style.setAttribute("type", "text/css");
-		style.setAttribute("href", "<?=$service->url('css', 'jquery-ui.css')?>");
+		style.setAttribute("href", "<?=$service->furl('css', 'jquery-ui.css')?>");
 		document.body.appendChild(style);
 		style=document.createElement("link");
 		style.setAttribute("rel", "stylesheet");
 		style.setAttribute("type", "text/css");
 		style.setAttribute("href", "<?=$service->get_service_file_url('grab.css')?>");
 		document.body.appendChild(style);
-		dacura.grabber.insertResultPane();
-		if(document.url.substring(document.url.lastIndexOf("#") + 1) == "Code_book"){
-			alert("adfadsf");
+		$('#validator-results').remove();
+		$('#ca-grab').remove();
+		dacura.grabber.insertValidationResultPane();
+		if(window.location.href.substring(window.location.href.lastIndexOf("/") + 1) == "Code_book"){
+			alert("on code book");
+			dacura.grabber.pageFacts = dacura.grabber.parsePage(window.location.href);
+			$("<li id='ca-grab'><span><a>Ontologize</a></span></li>").insertBefore("#ca-view");
+			$('#ca-grab').click( function(){
+				if(!grabison){
+					grabison = true;
+					dacura.grabber.sendFactsToParser();
+				}
+			});
 		}
 		else {
-			dacura.grabber.pageFacts = dacura.grabber.grabFacts();
+			dacura.grabber.pageFacts = dacura.grabber.parsePage(window.location.href);
+			//dacura.grabber.pageFacts = dacura.grabber.grabFacts();
 			$("<li id='ca-grab'><span><a>Validate</a></span></li>").insertBefore("#ca-view");
 			$('#ca-grab').click( function(){
 				if(!grabison){
