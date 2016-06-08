@@ -19,23 +19,19 @@ function FrameViewer(cls, target, pconfig){
 	this.pconfig = pconfig;
 }
 
-/*
-TO DO:
- 	--> How to fill the json file with the data inserted ? Where it data should be?
- 	--> How to fix the var mode to detect the editing mode ?
-*/
+
 
 FrameViewer.prototype.draw = function(frames, mode){
-	//alert("draw called. mode = " + mode);
-	$('br').remove();
-	$('.html-create-form').remove();
-	$('.dacura-html-viewer').remove();
+		$('br').remove();
+		$('.html-create-form').remove();
+		$('.dacura-html-viewer').remove();
 
-	this.mode = mode;
-	this.frames = frames;
-
+		this.mode = mode;
+		this.frames = frames;
+		
 		if(frames.length > 0){
 			for (var i = 0; i <  frames.length; i++) {
+				
 				var f = JSON.stringify(frames[i]);
 				var parsed = JSON.parse(f);
 				
@@ -68,7 +64,6 @@ FrameViewer.prototype.draw = function(frames, mode){
 };
 
 FrameViewer.prototype.extract = function(){
-	alert("called extract");
 	var $inputs = $('.html-create-form :input');
 
     var values = {};
