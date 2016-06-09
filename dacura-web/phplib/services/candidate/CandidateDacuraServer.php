@@ -65,8 +65,45 @@ class CandidateDacuraServer extends LdDacuraServer {
 		if(!($mg = $this->getMainGraph())){
 			return false;
 		}
-		$candurl = $this->service->my_url()."/$candid";
-		return $this->graphman->invokeDCS($mg->schemaGname(), false, $candurl, $mg->instanceGname());
+		if(!$cand = $this->loadLDO($candid, "candidate", $this->cid())){
+			return false;	
+		}
+		$cls = $cand->getRDFType();
+		//$candurl = $this->service->my_url()."/$candid";
+		$ar = $this->graphman->invokeDCS($mg->schemaGname(), $cls);
+		if($ar->result){
+			if(!is_array($ar->result)){
+				$ar->result = json_decode($ar->result, true);
+			}
+			if($this->fillFrame($ar->result, $cand)){
+				return $ar->success("accept");				
+			}
+			return $ar->failure($this->errcode, "failed to generate filled frame for candidate $candid", $this->errmsg);
+		}
+		return $ar;		
+	}
+	
+	function fillFrame(&$frames, Candidate $cand, $frag_id = false){
+		if($frag_id == false){
+			$frag_id = $cand->cwurl;
+		}
+		foreach($frames as $i => $f){
+			if($f['type'] == "datatypeProperty"){
+				if(($vals = $cand->getPredicateValues($frag_id, $f['property'])) !== false){
+					$frames[$i]['value'] = $vals;
+				}
+			}
+			elseif($f['type'] == "objectProperty"){
+				if(($objs = $cand->getPredicateValues($frag_id, $f['property'])) !== false){
+					foreach(array_keys($objs) as $oid){
+						$this->fillFrame($frames[$i]['frame'], $cand, $oid);	
+					}
+					//$frames[$i]['value'] = json_encode($objs);
+					//$this->fillFrame($)
+				}
+			}
+		}
+		return true;
 	}
 	
 	

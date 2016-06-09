@@ -12,9 +12,9 @@ function getFilledFrame($cid){
 	global $dacura_server;
 	$dacura_server->init("fill frame $cid");
 	$ar = $dacura_server->getFilledFrame($cid);
-	opr($ar->result);
+	//opr($ar->result);
 	$dacura_server->writeDecision($ar, "json", array());
-	$dacura_server->write_http_error(400, "No class present in frame request");
+	//$dacura_server->write_http_error(400, "No class present in frame request");
 }
 
 function getEmptyFrame(){

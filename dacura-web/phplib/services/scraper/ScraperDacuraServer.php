@@ -120,28 +120,31 @@ class ScraperDacuraServer extends DacuraServer {
 		if($updated_page){
 			$this->index['stats'] = array(0, 0, 0, 0, 0);
 			//first update the nga stats.
-			foreach($this->index['polities'] as $p => $val){
-				$stat = $val[1]["stats"];
-				foreach($stat as $i => $v){
-					$this->index["stats"][$i] += $v;
+			if(isset($this->index['polities'])){
+				foreach($this->index['polities'] as $p => $val){
+					$stat = $val[1]["stats"];
+					foreach($stat as $i => $v){
+						$this->index["stats"][$i] += $v;
+					}
 				}
 			}
-			foreach($this->index['ngas'] as $nga => $ngal){
-				if(in_array($updated_page, $ngal[1])){
-					if(!isset($this->index["ngastats"])){
-						$this->index["ngastats"] = array();
-					}
-					$this->index["ngastats"][$nga] = array(0, 0, 0, 0, 0);
-					foreach($ngal[1] as $pageid){
-						if(isset($this->index['polities'][$pageid])){
-							$prec = $this->index['polities'][$pageid][1];
-							foreach($prec["stats"] as $i => $v){
-								$this->index["ngastats"][$nga][$i] += $v;
+			if(isset($this->index['ngas'])){
+				foreach($this->index['ngas'] as $nga => $ngal){
+					if(in_array($updated_page, $ngal[1])){
+						if(!isset($this->index["ngastats"])){
+							$this->index["ngastats"] = array();
+						}
+						$this->index["ngastats"][$nga] = array(0, 0, 0, 0, 0);
+						foreach($ngal[1] as $pageid){
+							if(isset($this->index['polities'][$pageid])){
+								$prec = $this->index['polities'][$pageid][1];
+								foreach($prec["stats"] as $i => $v){
+									$this->index["ngastats"][$nga][$i] += $v;
+								}
 							}
 						}
 					}
 				}
-				
 			}
 		}
 		$this->fileman->cache("scraper", "index", $this->index, $this->getServiceSetting('indexcache_config'));
@@ -1235,6 +1238,57 @@ class ScraperDacuraServer extends DacuraServer {
 			return array($dr2, $dr1);
 		}
 		return array($dr1, $dr2);
+	}
+	
+	function getLocator() {
+		
+	}
+	
+	function factToAPIOutput($loc, $vals){
+		$fact = array(
+			"locator" => $loc,
+			"result_code" => $this->valuesToResultCode($vals),
+			"values" => $vals	
+		);
+		return $fact;
+	}
+	
+	function valuesToResultCode($vals){
+		if(!is_array($vals) || count($vals) == 0){
+			return "empty";
+		}
+		if(isset($vals['warnings']) && count($vals['warnings']) > 0){
+			return "warning";
+		}
+		if(isset($vals['errors']) && count($vals['errors']) > 0){
+			return "error";
+		}
+		return "correct";
+	}
+	
+	function factListToAPIOutput($fl){
+		$output = deepArrCopy($fl);
+		foreach($fl["variables"] as $varname => $varvals){
+			$varlocator = array("property" => $varname);
+			$output[] = $this->factToAPIOutput($varlocator, $varvals);	
+		}
+		if(isset($fl['sections'])){
+			foreach($fl["sections"] as $sname => $section){
+				foreach($section["variables"] as $varname => $varvals){
+					$varlocator = array("property" => $varname, "section" => $sname);
+					$output[] = $this->factToAPIOutput($varlocator, $varvals);
+				}
+				if(isset($section["sections"])){
+					foreach($section["sections"] as $subsname => $subsection){
+						foreach($subsection["variables"] as $varname => $varvals){
+							$varlocator = array("property" => $varname, "section" => $sname, "subsection" => $subsname);
+							$output[] = $this->factToAPIOutput($varlocator, $varvals);							
+						}
+					}
+				}
+			}
+		}
+		return $output;
 	}
 	
 	/*

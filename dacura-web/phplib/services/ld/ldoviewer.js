@@ -334,7 +334,7 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 				}
 				else {
 					var updated = self.ldo.getUpdatedContents(self.target);
-					if(typeof self.frm == "object"){
+					if(typeof self.frm == "object" && self.ldo.format == "html"){
 						updated = $.extend(true, updated, self.frm.extract());	
 					}
 					if(dacura.ld.isJSONFormat(self.ldo.format)){
@@ -356,7 +356,7 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 				else {
 					var em = "update";
 				}
-				if(self.view_result_options){
+				if(self.result_options){
 					j = $(self.target + " .ld-result-modes").val();
 					var rem = j ? j : 0;
 					opts.show_result = rem;
@@ -365,6 +365,9 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 						opts.show_original = 1;
 						opts.show_delta = 1;
 					}
+				}
+				else {
+					alert("no view options");
 				}
 				if(self.view_graph_options){
 					$(self.target + ' .editbar-options input:checkbox').each(function(){
@@ -510,14 +513,21 @@ LDOViewer.prototype.setTarget = function(jqid, barjqid){
 }
 
 LDOViewer.prototype.showFrame = function(ldo, target, mode){
-	var cls = ldo.meta.type;
-	if(ldo.id){ 
-		msgs = { "success": "Retrieved frame for candidate "+ldo.id+ " from server", "busy": "retrieving frame for candidate "+ldo.id+ " class from server", "fail": "Failed to retrieve frame for candidate " + ldo.id+ " from server"};
-		var ajs = dacura.frame.api.getFilledFrame(ldo.id);		
+	if(mode == 'create'){
+		var cls = ldo;
+		var msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};
+		var ajs = dacura.frame.api.getFrame(cls);		
 	}
 	else {
-		msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};
-		var ajs = dacura.frame.api.getFrame(cls);		
+		var cls = ldo.meta.type;
+		if(ldo.id){ 
+			var msgs = { "success": "Retrieved frame for candidate "+ldo.id+ " from server", "busy": "retrieving frame for candidate "+ldo.id+ " class from server", "fail": "Failed to retrieve frame for candidate " + ldo.id+ " from server"};
+			var ajs = dacura.frame.api.getFilledFrame(ldo.id);		
+		}
+		else {
+			var msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};
+			var ajs = dacura.frame.api.getFrame(cls);		
+		}
 	}
 	this.frm = new FrameViewer(cls, target, this.pconf);
 	var self = this;

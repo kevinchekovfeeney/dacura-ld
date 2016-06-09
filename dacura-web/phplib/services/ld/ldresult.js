@@ -137,7 +137,12 @@ LDResult.prototype.getExtraFields = function(){
 		subs["result"] = {title: this.result.ldtype().ucfirst() + ' Contents', content: this.getResultHTML()};
 	}
 	if(this.metagraph ){
-		subs['meta'] = {title: this.result.ldtype().ucfirst() + ' Metadata', content: this.metagraph.getHTML()};
+		if(typeof this.result == "object"){
+			subs['meta'] = {title: this.result.ldtype().ucfirst() + ' Metadata', content: this.metagraph.getHTML()};
+		}
+		else {
+			subs['meta'] = {title: 'Metadata', content: this.metagraph.getHTML()};	
+		}
 	}
 	if(this.ldgraph){
 		subs["ld"] = {title: 'Stored Triples', content: this.ldgraph.getHTML(false)};
