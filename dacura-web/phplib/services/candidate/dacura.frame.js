@@ -28,40 +28,59 @@ function FrameViewer(cls, target, pconfig){
 
 
 FrameViewer.prototype.draw = function(frames, mode){
+		
 		$('br').remove();
 		$('.html-create-form').remove();
 		$('.dacura-html-viewer').remove();
 
 		this.mode = mode;
 		this.frames = frames;
-		
+		var insiderObj = "";
+		var data = "";
+
 		if(frames.length > 0){
 			for (var i = 0; i <  frames.length; i++) {
-				
+				//alert(frames[i].toSource());
 				var f = JSON.stringify(frames[i]);
 				var parsed = JSON.parse(f);
-				
-	             if(typeof parsed.frame != "undefined"){ 
-	             	   var insiderObj1 = "<br><br> " +  parsed.frame[0].label.data + " : "; 
-	             	   var insiderObj2 = "<br><br> " +  parsed.frame[1].label.data + " : "; 
-	             }
-	             else{ 
-	             	var insiderObj1 = "";
-	             	insiderObj2 = "";
-				 }
 
-	             if(mode == "view")
-	                $('#ldo-contents').append("<div class='dacura-html-viewer'>" + parsed.label.data + ": " + insiderObj1 + insiderObj2 + "<br><br>");	
-	             else if(mode == "create"){ 
-	             	if(insiderObj1 != "" && insiderObj2 != ""){
-	             		insiderObj1 += " <input type='text' name='" +parsed.property+ "' >";
-	             		insiderObj2 += " <input type='text' name='" +parsed.property+ "'>";
-	             		$('#ldo-details').append("<div class='html-create-form'>" + parsed.label.data + ": " + insiderObj1  + insiderObj2  + "<br><br>");
-	             	}else
- 						$('#ldo-details').append("<div class='html-create-form'>" + parsed.label.data + ": <input type='text' name='" + parsed.property + "' id='label" + i +"'>  " + insiderObj1  + insiderObj2  + "<br><br>");	
-  				  }
+				
+				if(parsed.type == "objectProperty"){
+					$('#ldo-contents').append("<div class='dacura-html-viewer'> " + parsed.label.data + "</div>");
+					$('#ldo-details').append("<div class='html-create-form'> " + parsed.label.data + "</div><br>");
+
+					for (var i = 0; i <  parsed.frame.length; i++) {
+						if(parsed.frame[i].value != undefined)
+							data = parsed.value.data;
+						else
+							 data = "";
+						if(mode == "create"){
+							$('#ldo-details').append("<div class='html-create-form'> " + parsed.frame[i].label.data + " <br> <input type='text' name='"+parsed.frame[i].property+"' id=" +parsed.property+"'><br>");
+
+						}else if(mode == "view"){
+							$('#ldo-contents').append("<div class='dacura-html-viewer'> " +parsed.frame[i].label.data + " <br>" + data + "<br></div>");	
+
+						}else{/*EDIT MODE HERE*/}
+					}	
+
+				}else if(parsed.type == "datatypeProperty"){
+					//Since data can be empty, this is used to set in case it is not empty
+					if(parsed.value != undefined)
+						data = parsed.value.data;
+					else 
+						data = "";
+				
+					if(mode == "create"){
+						$('#ldo-details').append("<div class='html-create-form'> " + parsed.label.data + " <br> <input type='text' name='"+parsed.property+"'><br>");	
+					}else if(mode == "view"){
+						$('#ldo-contents').append("<div class='dacura-html-viewer'>" + parsed.label.data + " <br><p>" + data + "</p><br>");	
+					}else{/*EDIT MODE HERE*/}
+
+
+				}
 			};
 				$('#ldo-contents').append("</div> <br><br>");
+
 		}
 		else {
 			
@@ -69,14 +88,22 @@ FrameViewer.prototype.draw = function(frames, mode){
 
 };
 
+// To do: sub labels such as slongitude or latitude are not being displayed, but are filled.
+
 FrameViewer.prototype.extract = function(){
 	var $inputs = $('.html-create-form :input');
 
     var values = {};
+    var embedded = {};
     $inputs.each(function() {
-        values[this.name] = $(this).val();
-        console.log("VALUES: " + JSON.stringify(values));
-
+        console.log("name : " + this.name);
+        if(this.id != ""){
+        	embedded[this.name] = $(this).val();
+        	values[this.id] = embedded;
+        }
+        else
+        	values[this.name] = $(this).val();
+        
     });
 
 	return values;
