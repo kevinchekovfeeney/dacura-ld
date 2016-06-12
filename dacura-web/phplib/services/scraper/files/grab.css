@@ -25,6 +25,11 @@
 	color: #842;
 }
 
+.seshatInfo {
+	color: #22a;	
+}
+
+
 .seshatEmpty {
 	color: #228;	
 }
@@ -147,15 +152,10 @@ dl.parsedVariable dd.varmsg {
 
 div.vardatapoints  {
 	padding: 6px;
-	text-align: center; 
 	display: none;
 } 
 
-div.varontology  {
-	padding: 6px;
-	text-align: center; 
-	display: none;
-}	
+
 
 #validator-variable {
 	width: 96%;
@@ -213,7 +213,101 @@ div.varontology  {
 	
 }
 
+div.property-editor {
+	text-align: left;
+	padding: 2px;
+	 font-family: 'Open Sans', Helvetica;
+	
+}
 
 button {
 	font-size: .8em !important;
+}
+
+div.vartoontology  {
+	padding: 6px;
+	display: none;
+}	
+
+.variable-property-domain {
+	float: left;
+	padding-right: 8px; 
+	border-right: 1px solid white;
+}
+
+.variable-property-predicate {
+	float: left;
+	padding-right: 8px; 
+	padding-left: 8px; 
+	border-right: 1px solid white;
+	margin-bottom: 8px;
+}
+
+.range-input-object input,
+.variable-property-domain input, 
+.variable-property-predicate input {
+	width: 250px;
+}
+
+.variable-property-range {
+	display: inline-block;
+}
+
+.variable-property-range select {
+	padding: 6px;	
+	margin-right: 6px;
+}
+
+.property-editor textarea,
+.property-editor input[type="password"],
+.property-editor input[type="text"] {
+  padding: 8px;
+  border: solid 1px #dcdcdc;
+  transition: box-shadow 0.3s, border 0.3s;
+  font-family: 'Open Sans', Helvetica;
+  font-size: 0.9em;
+  font-weight: 400;
+  border-radius: 2px;
+}
+
+.property-editor textarea:focus,
+.property-editor input[type="password"]:focus,
+.property-editor input[type="password"].focus,
+.property-editor input[type="text"]:focus,
+.property-editor input[type="text"].focus {
+  border: solid 1px #707070;
+  box-shadow: 0 0 5px 1px #969696;
+}
+
+.property-editor textarea {
+	height: 100px;
+}
+
+span.variable-property-label {
+	padding-left: 12px;
+	padding-right: 12px;
+}
+
+div.property-buttons {
+	width: 100%;
+	text-align: right;
+	padding: 10px;
+	margin-top: 6px;
+}
+
+div.property-buttons button {
+	margin: 0 6px;
+}
+
+div.property-headline{
+	margin-bottom: 12px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid #aaa;
+}
+
+.dacura-property-triple {
+	clear: both;
+	margin-bottom: 12px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid #aaa;
 }

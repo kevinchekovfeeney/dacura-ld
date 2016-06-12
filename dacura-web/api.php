@@ -14,7 +14,6 @@
  * @author Chekov
  * @license GPL v2
  */
-
 include_once("phplib/settings.php");
 include_once("phplib/RequestLog.php");
 //start request log at once to capture as much of the performance data as possible...
@@ -24,6 +23,7 @@ require_once("phplib/libs/epiphany/src/Epi.php");
 include_once("phplib/DacuraObject.php");
 include_once("phplib/ServiceLoader.php");
 include_once("phplib/DacuraUser.php");
+
 /**
  * In case we fail before we load our libraries for sending errors...
  * @param string $str message

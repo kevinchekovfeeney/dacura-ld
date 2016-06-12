@@ -1267,7 +1267,7 @@ class ScraperDacuraServer extends DacuraServer {
 	}
 	
 	function factListToAPIOutput($fl){
-		$output = deepArrCopy($fl);
+		$output = array();
 		foreach($fl["variables"] as $varname => $varvals){
 			$varlocator = array("property" => $varname);
 			$output[] = $this->factToAPIOutput($varlocator, $varvals);	

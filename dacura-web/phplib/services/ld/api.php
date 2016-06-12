@@ -7,6 +7,11 @@
  * @package ld/api
  * @license GPL v2
  */
+
+header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
+header("Access-Control-Max-Age: 1728000");
+header('Access-Control-Allow-Headers: Accept, Accept-Encoding, Accept-Language, Host, Origin, Referer, Content-Type, Content-Length, Content-Range, Content-Disposition, Content-Description');
+header("Access-Control-Allow-Origin: *");
 $x = @$ldo_type;
 //if(!$x && !$dacura_server->userHasRole("admin", "all")){//meaning that this API is being accessed directly 
 //	$dacura_server->write_http_error(403, "No permission to directly access linked data API");	
@@ -197,6 +202,7 @@ function update_ldo($target_id, $fragment_id = false){
 	global $dacura_server, $ldo_type;
 	$dacura_server->init("update ldo ".$target_id);
 	$json = file_get_contents('php://input');
+	
 	$obj = json_decode($json, true);
 	if(!$obj){
 		$ar = new DacuraResult($action);
