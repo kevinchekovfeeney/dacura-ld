@@ -99,7 +99,6 @@ class CandidateDacuraServer extends LdDacuraServer {
 						$this->fillFrame($frames[$i]['frame'], $cand, $oid);	
 					}
 					$frames[$i]['value'] = json_encode(array_keys($objs));
-					//$this->fillFrame($)
 				}
 			}
 		}
