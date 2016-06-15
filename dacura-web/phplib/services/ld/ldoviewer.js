@@ -99,7 +99,7 @@ LDOViewer.prototype.show = function(target, mode, callback){
 	}
 	else {
 		if(this.ldo.format == "html" && this.ldo.ldtype() == "candidate"){
-			this.showFrame(this.ldo.meta.type, this.prefix + "-ldo-viewer-contents", "view");
+			this.showFrame(this.ldo, this.prefix + "-ldo-viewer-contents", "view");
 		}
 		else {
 			body += this.ldo.getContentsHTML(this.emode) + "</div>";
@@ -334,6 +334,9 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 				}
 				else {
 					var updated = self.ldo.getUpdatedContents(self.target);
+					if(typeof self.frm == "object" && self.ldo.format == "html"){
+						updated = $.extend(true, updated, self.frm.extract());	
+					}
 					if(dacura.ld.isJSONFormat(self.ldo.format)){
 						try {
 							updated = JSON.parse(updated);
@@ -353,7 +356,7 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 				else {
 					var em = "update";
 				}
-				if(self.view_result_options){
+				if(self.result_options){
 					j = $(self.target + " .ld-result-modes").val();
 					var rem = j ? j : 0;
 					opts.show_result = rem;
@@ -362,6 +365,9 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 						opts.show_original = 1;
 						opts.show_delta = 1;
 					}
+				}
+				else {
+					alert("no view options");
 				}
 				if(self.view_graph_options){
 					$(self.target + ' .editbar-options input:checkbox').each(function(){
@@ -506,10 +512,23 @@ LDOViewer.prototype.setTarget = function(jqid, barjqid){
 	this.options_target = (typeof barjqid != "undefined") ? barjqid : this.target;
 }
 
-LDOViewer.prototype.showFrame = function(cls, target, mode){
-	var ajs = dacura.frame.api.getFrame(cls);
-	msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};
-	//alert(cls);
+LDOViewer.prototype.showFrame = function(ldo, target, mode){
+	if(mode == 'create'){
+		var cls = ldo;
+		var msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};
+		var ajs = dacura.frame.api.getFrame(cls);		
+	}
+	else {
+		var cls = ldo.meta.type;
+		if(ldo.id){ 
+			var msgs = { "success": "Retrieved frame for candidate "+ldo.id+ " from server", "busy": "retrieving frame for candidate "+ldo.id+ " class from server", "fail": "Failed to retrieve frame for candidate " + ldo.id+ " from server"};
+			var ajs = dacura.frame.api.getFilledFrame(ldo.id);		
+		}
+		else {
+			var msgs = { "success": "Retrieved frame for "+cls + " class from server", "busy": "retrieving frame for "+cls + " class from server", "fail": "Failed to retrieve frame for class " + cls + " from server"};
+			var ajs = dacura.frame.api.getFrame(cls);		
+		}
+	}
 	this.frm = new FrameViewer(cls, target, this.pconf);
 	var self = this;
 	ajs.handleResult = function(resultobj, pconf){
@@ -524,22 +543,9 @@ LDOViewer.prototype.showFrame = function(cls, target, mode){
 			}
 		}
 		self.frm.draw(frames, mode);
-				
 	}
 	dacura.system.invoke(ajs, msgs, this.pconf);	
 	
-};
-
-LDOViewer.prototype.initFrameView = function(){
-	var cls = this.ldo.meta.type;
-	this.showFrame(cls, 'frame-container', "create");
-	if(typeof this.ldo.contents != "object"){
-		this.ldo.contents = JSON.parse(this.ldo.contents);
-	}
-	var frameobj = {result: JSON.stringify(this.ldo.contents)};
-	var frameid = dacura.frame.draw(cls,frameobj,pconf,'frame-container');
-	//dacura.frame.fillFrame(this.ldo.4contents, 'frame-container'); 
-	dacura.frame.initInteractors();
 };
 
 LDOViewer.prototype.handleViewAction = function(act, callback){

@@ -1454,6 +1454,10 @@ class LDO extends DacuraObject {
 		if(count($update_obj) > 0){
 			if(!$this->updateLDProps($update_obj, $this->ldprops, $this->idmap, $mode)){
 				return false;
+			}
+			if($mode != "rollback"){
+				//echo "<P>mode is $mode";
+				//opr($this->ldprops);
 			}				
 		}				
 		if(count($this->idmap) > 0){

@@ -193,6 +193,7 @@ div#version-header {
 }
 
 .dacura-export-viewer,
+.dacura-html-viewer,
 .dacura-json-viewer {
  	white-space: pre;
  	unicode-bidi: embed;

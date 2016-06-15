@@ -156,13 +156,15 @@ function viewReport($rep){
 
 function parsePage(){
 	global $dacura_server;
-	if($dacura_server->userHasRole("admin") && $dacura_server->seshatInit("parsepage")){
+	header("Access-Control-Allow-Origin: *");
+	if($dacura_server->seshatInit("parsepage")){
 		$suppress_cache = isset($_POST['refresh']);
 		$url = $_POST["url"];
 		$facts = $dacura_server->getFactsFromURL($url, $suppress_cache);
 		if($facts){
-			$rows = $dacura_server->factListToRows("NA", $dacura_server->formatNGAName($url), $facts, true);
-			$dacura_server->write_json_result($rows, "Returned list of ".count($facts)." Facts");				
+			$op = $dacura_server->factListToAPIOutput($facts);
+			$dacura_server->write_json_result($op, "Returned list of ".count($facts)." Facts");	
+			//$dacura_server->write_json_result($facts, "Returned list of ".count($facts)." Facts");
 		}
 		else {
 			$dacura_server->write_http_error();
@@ -192,7 +194,7 @@ function getGrabScript(){
 			}
 		}
 	}	
-	$f = $dacura_server->service->mydir."screens/grab.js";
+	$f = $dacura_server->service->mydir."screens/codebook.js";
 	if(file_exists($f)){
 		include_once($f);
 		$page = ob_get_contents();

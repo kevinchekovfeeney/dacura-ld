@@ -438,9 +438,6 @@ function showPage(p, refresh){
 	dacura.system.setToolSubtitle("View the extracted variables");
 }    
     
-
-
-
 function osize(obj) {
     var size = 0, key;
     for (key in obj) {

@@ -6,12 +6,21 @@
 $ldo_type = "candidate";
 
 getRoute()->post('/frame', 'getEmptyFrame');
+getRoute()->get('/frame/(\w+)', 'getFilledFrame');
+getRoute()->get('/entities', 'getEntityClasses');
+
+function getFilledFrame($cid){
+	global $dacura_server;
+	$dacura_server->init("fill frame $cid");
+	$ar = $dacura_server->getFilledFrame($cid);
+	//opr($ar->result);
+	$dacura_server->writeDecision($ar, "json", array());
+	//$dacura_server->write_http_error(400, "No class present in frame request");
+}
 
 function getEmptyFrame(){
 	global $dacura_server;
-
 	$dacura_server->init("create");
-	
 	$cls = isset($_POST['class']) ? $_POST['class'] : false;
 	if($cls){
 		$ar = $dacura_server->getFrame($cls);
@@ -21,5 +30,12 @@ function getEmptyFrame(){
 		$dacura_server->write_http_error(400, "No class present in frame request");
 	}
 }
+
+function getEntityClasses(){
+	global $dacura_server;
+	$dacura_server->init("get entities");
+	$dacura_server->write_json_result($dacura_server->valid_candidate_types, "returned entity classes");
+}
+
 
 include_once "phplib/services/ld/api.php";

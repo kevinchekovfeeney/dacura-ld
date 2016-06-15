@@ -33,9 +33,9 @@ class PolicyEngine extends DacuraController {
 			$this->decisions["update update"] = array($this, "updateUpdate");
 		}
 		$x = function($obj){ 
-			if(strtolower(get_class($obj->original)) == "candidate") {
-				return "pending"; 
-			}
+			//if(strtolower(get_class($obj->original)) == "candidate") {
+			//	return "pending"; 
+			//}
 			return "accept";
 		};
 		$this->decisions['update'] = $x;

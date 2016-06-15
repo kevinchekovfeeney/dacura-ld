@@ -8,8 +8,8 @@ $settings = array(
 	"mainPage" => 'http://seshat.info/Main_Page',
 	"codeBook" => 'http://seshat.info/Code_book',
 		"grabScriptFiles" => array(
-			$dacura_settings['path_to_files']."js/jquery.js", 
-			$dacura_settings['path_to_files']."js/jquery-ui.js"	
+			//$dacura_settings['path_to_files']."js/jquery.js", 
+			//$dacura_settings['path_to_files']."js/jquery-ui.js"	
 	),
 	"dump_format" => "csv",
 	"cache_config" => array( "type" => "time", "value" => 10000),

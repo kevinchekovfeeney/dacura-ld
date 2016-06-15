@@ -48,11 +48,63 @@ class CandidateDacuraServer extends LdDacuraServer {
 	 * @return DacuraResult the Dacura Result object incorporating the frame
 	 */
 	function getFrame($cls){
-		$ar = new DacuraResult("Creating Frame $cls");
 		$cls = ($expanded = $this->nsres->expand($cls)) ? $expanded : $cls;
-		$mg = $this->getMainGraph();
+		if(!($mg = $this->getMainGraph())){
+			return false;
+		}
 		return $this->graphman->invokeDCS($mg->schemaGname(), $cls);
 	}
+
+	/**
+	 * Creates a frame for the given class by calling the DCS frame function
+	 * @param string $cls the name of the class in question
+	 * @return DacuraResult the Dacura Result object incorporating the frame
+	 */
+	function getFilledFrame($candid){
+		$mg = $this->getMainGraph();
+		if(!($mg = $this->getMainGraph())){
+			return false;
+		}
+		if(!$cand = $this->loadLDO($candid, "candidate", $this->cid())){
+			return false;	
+		}
+		$cls = $cand->getRDFType();
+		//$candurl = $this->service->my_url()."/$candid";
+		$ar = $this->graphman->invokeDCS($mg->schemaGname(), $cls);
+		if($ar->result){
+			if(!is_array($ar->result)){
+				$ar->result = json_decode($ar->result, true);
+			}
+			if($this->fillFrame($ar->result, $cand)){
+				return $ar->success("accept");				
+			}
+			return $ar->failure($this->errcode, "failed to generate filled frame for candidate $candid", $this->errmsg);
+		}
+		return $ar;		
+	}
+	
+	function fillFrame(&$frames, Candidate $cand, $frag_id = false){
+		if($frag_id == false){
+			$frag_id = $cand->cwurl;
+		}
+		foreach($frames as $i => $f){
+			if($f['type'] == "datatypeProperty"){
+				if(($vals = $cand->getPredicateValues($frag_id, $f['property'])) !== false){
+					$frames[$i]['value'] = $vals;
+				}
+			}
+			elseif($f['type'] == "objectProperty"){
+				if(($objs = $cand->getPredicateValues($frag_id, $f['property'])) !== false){
+					foreach(array_keys($objs) as $oid){
+						$this->fillFrame($frames[$i]['frame'], $cand, $oid);	
+					}
+					$frames[$i]['value'] = json_encode(array_keys($objs));
+				}
+			}
+		}
+		return true;
+	}
+	
 	
 	/**
 	 * Asks the DCS service for the set of valid types as specified in the context schema for candidates

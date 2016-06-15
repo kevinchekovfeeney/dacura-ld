@@ -234,7 +234,7 @@ class LdService extends DacuraService {
 	 * @return array<string> the ids of the subscreens (tabs) to load
 	 */
 	function getListSubscreens(LdDacuraServer &$dacura_server, &$u){
-		return array("ldo-list", "update-list", "ldo-create");
+		return array("ldo-list", "update-list", "ldo-create", "ldo-export");
 	}
 
 	/**
@@ -265,6 +265,9 @@ class LdService extends DacuraService {
 			$this->loadParamsForUpdateListTab($params, $dacura_server);			
 		}
 		if(in_array('ldo-create', $params['subscreens'])){
+			$this->loadParamsForCreateTab($params, $dacura_server);
+		}
+        if(in_array('ldo-export', $params['subscreens'])){
 			$this->loadParamsForCreateTab($params, $dacura_server);
 		}
 	}
@@ -325,6 +328,7 @@ class LdService extends DacuraService {
 		}
 		$params["ld_updates_title"] = $this->smsg('ld_updates_title');
 		$params['updates_intro_msg'] = $this->smsg('list_updates_intro');
+        $params['ld_export_query_title'] = $this->smsg('ld_export_query_title');
 		$udtab = $this->getDatatableSetting("updates", false);
 		if($this->cid() != "all"){
 			$udtab['aoColumns'][3] = array("bVisible" => false);
@@ -452,7 +456,7 @@ class LdService extends DacuraService {
 		}
 		if(in_array('ldo-updates', $params['subscreens'])){
 			$this->loadParamsForUpdatesTab($id, $params, $dacura_server);
-		}		
+		}	
 	}
 	
 	/** 

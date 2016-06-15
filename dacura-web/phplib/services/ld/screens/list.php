@@ -34,7 +34,9 @@ $(function() {
 	<?php } if(in_array("update-list", $params['subscreens'])) { ?>
 		<?php include("updateslist.php");?>		
 	<?php } if(in_array("ldo-create", $params['subscreens'])) { ?>
-		<?php include("create.php");?>		
+		<?php include("create.php");?>	
+    <?php } if(in_array("ldo-export", $params['subscreens'])) { ?>
+		<?php include("export.php");?>	
 	<?php } ?>
 </div>
 
