@@ -32,7 +32,7 @@ seshatbox:population a owl:ObjectProperty ;
  rdfs:label "Population"@en, "Polity Population"@en ;
  rdfs:comment "Estimated population of the polity; can change as a result of both adding/losing new territories or by population growth/decline within a region ."@en ;
  rdfs:domain seshatbox:Polity ;
- rdfs:range seshatbox:Box . 
+ rdfs:range seshatbox:NonNegativeInteger . 
 
 seshatbox:name rdfs:label "Name"@en ;
  rdfs:comment "The name of a seshat Entity. Generally same as the name of the wiki page. "@en ;
@@ -47,7 +47,7 @@ seshatbox:TemporalEntity a owl:Class ;
 seshatbox:peakDate a owl:ObjectProperty ;
  rdfs:label "Duration"@en ;
  rdfs:domain seshatbox:TemporalEntity ;
- rdfs:range seshatbox:Box ;
+ rdfs:range seshatbox:GYear ;
  rdfs:comment "A property used to define the temporal bounds of a seshatbox:TemporalEntity. For example, corresponds to the Duration for a Polity from the Seshat codebook."@en .
 
 seshatbox:PointInSpace a owl:Class ;
@@ -73,11 +73,12 @@ seshatbox:capitalCityLocation a owl:ObjectProperty ;
  rdfs:range seshatbox:PointInSpace .
 
 # Box class monkey business
-seshatbox:Box a owl:Class
+seshatbox:Box a owl:Class ;
  rdfs:label "Box"@en ;
- rdfs:comment "Box super-class to facilitiate user-interface design."@en ;
+ rdfs:comment "Box super-class to facilitiate user-interface design."@en.
 
 seshatbox:GYear a owl:Class ;
+ rdfs:subClassOf seshatbox:Box ;
  rdfs:label "GYear Box"@en ;
  rdfs:comment "Class for boxing gYear."@en.
 
@@ -88,6 +89,7 @@ seshatbox:gYear a owl:DatatypeProperty ;
  rdfs:range xsd:gYear .
 
 seshatbox:NonNegativeInteger a owl:Class ;
+ rdfs:subClassOf seshatbox:Box ;
  rdfs:label "NonNegativeInteger Box"@en ;
  rdfs:comment "Class for boxing nonNegativeInteger."@en.
 
