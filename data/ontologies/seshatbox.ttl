@@ -28,11 +28,11 @@ seshatbox:alternativeName a owl:DatatypeProperty ;
   rdfs:domain utv:Entity ;
   rdfs:range xsd:string .
 
-seshatbox:population a owl:DatatypeProperty ;
+seshatbox:population a owl:ObjectProperty ;
  rdfs:label "Population"@en, "Polity Population"@en ;
  rdfs:comment "Estimated population of the polity; can change as a result of both adding/losing new territories or by population growth/decline within a region ."@en ;
  rdfs:domain seshatbox:Polity ;
- rdfs:range seshatbox:nonNegativeInteger .
+ rdfs:range seshatbox:Box . 
 
 seshatbox:name rdfs:label "Name"@en ;
  rdfs:comment "The name of a seshat Entity. Generally same as the name of the wiki page. "@en ;
@@ -44,10 +44,10 @@ seshatbox:TemporalEntity a owl:Class ;
  rdfs:label "temporal entity"@en ;
  rdfs:comment "An abstract concept describing anything that must have temporal bounds."@en .
 
-seshatbox:peakDate a owl:DatatypeProperty ;
+seshatbox:peakDate a owl:ObjectProperty ;
  rdfs:label "Duration"@en ;
  rdfs:domain seshatbox:TemporalEntity ;
- rdfs:range seshatbox:gYear ;
+ rdfs:range seshatbox:Box ;
  rdfs:comment "A property used to define the temporal bounds of a seshatbox:TemporalEntity. For example, corresponds to the Duration for a Polity from the Seshat codebook."@en .
 
 seshatbox:PointInSpace a owl:Class ;
@@ -66,7 +66,7 @@ seshatbox:latitude a owl:DatatypeProperty ;
  rdfs:label "Latitude"@en ;
  rdfs:comment "The latitude in numeric form of something"@en .
 
-seshatbox:capitalCityLocation a owl:objectProperty ;
+seshatbox:capitalCityLocation a owl:ObjectProperty ;
  rdfs:label "Location of Capital City"@en ;
  rdfs:comment "The latitude and longitude of the capital city"@en ;
  rdfs:domain seshatbox:Polity ;
@@ -82,7 +82,7 @@ seshatbox:type a owl:DatatypeProperty ;
  rdfs:label "type"@en ;
  rdfs:comment "The xsd datatype of a Box"@en ;
  rdfs:domain seshatbox:Box ;
- rdfs:range xsd:literal .
+ rdfs:range xsd:string .
 
 seshatbox:gYear a owl:DatatypeProperty ;
  rdfs:label "type"@en ;
