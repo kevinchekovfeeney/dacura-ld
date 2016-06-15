@@ -395,17 +395,6 @@ class DacuraResult extends DacuraObject {
 	}
 	
 	/**
-	 * Adds a meta result (detailing updates to object's meta-data) to the result
-	 * @param unknown $metabox - output of LDOUpdate->getMetaUpdates()
-	 * @param string $status - the status of the result (is the update okay)
-	 * @param boolean $is_test - is this a test invocation
-	 * @param boolean $is_hypo - is this a hypothetical result
-	 */
-	//function createMetaResult($metabox, $msg, $status, $is_test = false, $is_hypo = false){
-	//	$this->createGraphResult("meta", $status, array_keys($metabox), array_values($metabox),$is_test, $is_hypo);
-	//}
-	
-	/**
 	 * Returns a representation of the result for the api. 
 	 * @param string $format one of LDO::$valid_display_formats
 	 * @param array $options - options as submitted to api
@@ -434,7 +423,6 @@ class DacuraResult extends DacuraObject {
 		if($this->result){
 			if(is_object($this->result) && method_exists($this->result, "display")){
 				if($this->result->getContentInFormat($format, $options, $srvr, "display")){
-				//if($this->result->display($format, $options, $srvr)){
 					$apiobj['result'] = $this->result->forAPI($format, $options);
 				}
 				else {

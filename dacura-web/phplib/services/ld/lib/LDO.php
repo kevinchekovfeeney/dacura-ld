@@ -542,6 +542,7 @@ class LDO extends DacuraObject {
 	
 	/**
 	 * Import from array of triples
+	 * @param $triples array an array of triples to be imported
 	 */
 	function importFromTriples($triples){
 		$this->ldprops = getPropsFromTriples($triples);
@@ -1454,11 +1455,7 @@ class LDO extends DacuraObject {
 		if(count($update_obj) > 0){
 			if(!$this->updateLDProps($update_obj, $this->ldprops, $this->idmap, $mode)){
 				return false;
-			}
-			if($mode != "rollback"){
-				//echo "<P>mode is $mode";
-				//opr($this->ldprops);
-			}				
+			}			
 		}				
 		if(count($this->idmap) > 0){
 			$this->ldprops = updateLDReferences($this->ldprops, $this->idmap, $this->cwurl, false);			

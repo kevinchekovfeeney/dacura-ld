@@ -1389,10 +1389,22 @@ function nop($s, $p, $o, $t){
 	return array(array($s, $p, $o));
 }
 
+/**
+ * Adds a graph id to a triple to make it a quad
+ * @param array $trip triple
+ * @param string $key the key passed by array_walk 
+ * @param string $gname the id of the graph
+ */
 function addgname(&$trip, $key, $gname){
 	$trip[] = $gname;
 }
 
+/**
+ * Turns an array of triples into an array of quads by appending the passed graph id to each triple
+ * @param array $trips triples array
+ * @param string $gname graph id
+ * @return array quads
+ */
 function quadify($trips, $gname){
 	array_walk($trips, "addgname", $gname);
 	return $trips;

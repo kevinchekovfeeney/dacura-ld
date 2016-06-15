@@ -69,10 +69,18 @@ class LDOUpdate extends DacuraObject{
 		$this->backward = deepArrCopy($this->backward);
 	}
 	
+	/**
+	 * Is this an update across multiple graphs?
+	 * @return boolean true if it is multigraph
+	 */
 	function is_multigraph(){
 		return $this->original->isMultigraphUpdate($this->forward);
 	}
 	
+	/**
+	 * Is this an undo to multiple graphs?
+	 * @return boolean true if it is 
+	 */
 	function is_multigraph_undo(){
 		if($this->changed){
 			return $this->changed->isMultigraphUpdate($this->backward);
@@ -81,8 +89,6 @@ class LDOUpdate extends DacuraObject{
 			return $this->is_multigraph();
 		}
 	}
-	
-	
 	
 	/**
 	 * Sets the Namespace Resolver object for the update methods to use
@@ -241,11 +247,19 @@ class LDOUpdate extends DacuraObject{
 		return true;
 	}
 	
+	/**
+	 * Updates the metadata of a linked data object
+	 * @param array $umeta the updated metadata
+	 * @param string $mode the update mode (import|update)
+	 */
 	function updateMeta($umeta, $mode){
 		updateJSON($umeta, $this->meta, $mode);
 		$this->readStateFromMeta();
 	}
 	
+	/**
+	 * Reads the object's status from its metadata
+	 */
 	function readStateFromMeta(){
 		if(isset($this->meta['status'])){
 			$this->status = $this->meta['status'];
@@ -651,11 +665,16 @@ class LDOUpdate extends DacuraObject{
 		return true;
 	}
 	
+	/**
+	 * Fills in the display field of the update with a html representation of the update.
+	 * @param string $format
+	 * @param unknown $options
+	 * @param LdDacuraServer $srvr
+	 * @return boolean
+	 */
 	function display($format, $options, LdDacuraServer &$srvr){
 		$this->getContentInFormat($format, $options, $srvr);
 		$this->display = "<h1>hello world - update</h1>";
-		//$lddisp = new LDODisplay($this, $options);
-		//$this->display = $lddisp->display($format);
 		return true;
 	}
 	

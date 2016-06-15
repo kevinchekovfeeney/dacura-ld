@@ -223,7 +223,6 @@ dacura.grabber.getEntityType = function(fid, fact, prop){
 	return html;
 }
 
-
 dacura.grabber.getPropertySubject = function(fid, fact, prop){
 	var subj = entid;
 	var html = "<span class='variable-property variable-property-subject'> Subject <input type='text' id='" + fid + "-subject' value='" + subj + "'></span>";
@@ -1052,8 +1051,7 @@ function jpr(obj){
 	alert(JSON.stringify(obj));
 }
 
-function toTitleCase(str)
-{
+function toTitleCase(str) {
     return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 }
 

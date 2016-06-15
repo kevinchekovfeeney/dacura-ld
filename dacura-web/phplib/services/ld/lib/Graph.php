@@ -215,11 +215,12 @@ class Graph extends LDO {
 		return $imports;
 	}
 	
+	/**
+	 * Analyses the graph by invoking schema validation, then instance validation, also identifies entity classes
+	 * @see LDO::analyse()
+	 */
 	function analyse(LdDacuraServer &$srvr){
 		$astruct = parent::analyse($srvr);
-		$ometa = deepArrCopy($this->meta);
-		//$this->meta['schema_dqs_tests'] = "all";
-		//$this->meta['instance_dqs_tests'] = array_keys(RVO::getInstanceTests(true));
 		if($this->is_accept()){
 			$astruct['schema_validation'] = $srvr->graphman->validateSchema($this);
 		}
@@ -227,7 +228,6 @@ class Graph extends LDO {
 			$astruct['schema_validation'] = $srvr->objectPublished($this, true);
 		}
 		$astruct['instance_validation'] = $srvr->graphman->validateGraph($this);
-		$this->meta = $ometa;
 		$ar = $srvr->graphman->invokeDCS($this->schemaGname());
 		if($ar->is_accept()){
 			$clss = json_decode($ar->result, true);

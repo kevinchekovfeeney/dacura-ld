@@ -228,7 +228,6 @@ class LDDelta extends DacuraObject {
 		}
 	}
 	
-	
 	/**
 	 * Indicates that there has been a change of structure (ld type to get from a to b)
 	 * @param string $frag_id - the parent fragment id
@@ -352,14 +351,21 @@ class LDDelta extends DacuraObject {
 		$this->triples_added[] = $trip;
 	}
 	
+	/**
+	 * returns the array of triples added
+	 * @param string $gname the graph name in question (only relevant in multi-graph derived class, just here for tidy signatures)
+	 * @return multitype:
+	 */
 	function added($gname = false){
 		return $this->triples_added;
 	}
 
+	/**
+	 * returns the array of triples removed to get from a to b
+	 */
 	function removed($gname = false){
 		return $this->triples_removed;
 	}
-	
 	
 	/**
 	 * indicate that a triple has been updated from [s,p,o] to [s,p,n] 
@@ -435,18 +441,31 @@ class LDDelta extends DacuraObject {
 		$nsres->compressTriples($this->triples_overwritten, $this->cwurl, $this->is_multigraph());
 	}
 	
+	/**
+	 * Packages up the object for presentation to the API
+	 * @param string $format the format in question
+	 * @param array $opts the options 
+	 * @return array the version of the object as assoc array for api
+	 */
 	function forAPI($format, $opts){
-		return $this;
+		$apiobj = array("forward" => $this->forward, 
+				"backward" => $this->backward, 
+				"added" => $this->triples_added, 
+				"removed" => $this->triples_removed, 
+				"type_changes" => $this->type_changes
+		);
+		return $apiobj;
 	}
-	
 }
 
 /**
- * Class which represents a delta across multiple graphs - i.e. two candidates which span multiple graphs, or a meta delta and a ld delta
+ * Class which represents a delta across multiple graphs - i.e. two candidates which span multiple graphs, 
+ * or a meta delta and a ld delta
  * @author chekov
  *
  */
 class MultiGraphLDDelta extends LDDelta {
+	/** @var array of named graphs that this delta includes */
 	var $named_graphs = array();
 
 	/**
@@ -457,6 +476,9 @@ class MultiGraphLDDelta extends LDDelta {
 	}
 	
 	/**
+	 * returns deleted quads for a given graphname 
+	 * @param $gname the id of the graph to use in quads
+	 * @param $ognmae the original id of the graph (if different from above)
 	 * @see LDDelta::getDeleteQuads()
 	 */
 	function getDeleteQuads($gname = false, $ogname = false){
@@ -527,10 +549,3 @@ class MultiGraphLDDelta extends LDDelta {
 	}
 	
 }
-
-
-
-
-
-
-
