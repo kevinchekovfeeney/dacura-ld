@@ -20,55 +20,115 @@ function FrameViewer(cls, target, pconfig) {
 }
 
 
+
+
+//Loading google maps api
+window.onload = function loadScript() {
+  var script = document.createElement("script");
+  script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
+  document.body.appendChild(script);
+}
+
+//global variables for maps use
+var marker = null;
+var position;
+var longitudeId, latitudeId; 
+
+function initMap() {     var myLatlng = {lat: -25.363, lng: 131.044};
+	 var mapProp = {
+	  center:myLatlng,
+	  zoom: 8,
+	  mapTypeId: google.maps.MapTypeId.ROADMAP
+	};
+
+	var map=new google.maps.Map(document.getElementById("googleMap"), mapProp);
+	  
+	google.maps.event.addListener(map, 'click', function(event) {
+		    position = event.latLng;
+		    if(marker == null)
+		    	placeMarker(position);
+   		    else{
+   		    	marker.setPosition(position);	
+   		    } 		 
+		    var long = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#longitude");
+		    long.value = marker.getPosition().lng();
+		    var lat = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#latitude");
+		    lat.value = marker.getPosition().lat();
+   		});
+
+	function placeMarker(location) {
+	     marker = new google.maps.Marker({
+	        position: location, 
+	        map: map
+	    });
+	}
+}
+
+function createMap(){
+	$('#ldo-details').append('<div id="googleMap" style="width:200%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
+ 	//google.maps.event.trigger(googleMap, 'resize');
+	initMap();	
+
+}
+function deleteMap(){
+    marker = null;
+ 	$("#googleMap").remove();
+}
+
 FrameViewer.prototype.draw = function(frames, mode){
-		
 		$('br').remove();
 		$('.html-create-form').remove();
 		$('.dacura-html-viewer').remove();
-
+		deleteMap();
 		this.mode = mode;
 		this.frames = frames;
 		var insiderObj = "";
 		var data = "";
 
 		if(frames.length > 0){
-			for (var i = 0; i <  frames.length; i++) {
-				alert(frames[i].toSource());
+			for (var i = 0; i < frames.length; i++) {
 				var f = JSON.stringify(frames[i]);
 				var parsed = JSON.parse(f);
 
-				
 				if(parsed.type == "objectProperty"){
-					$('#ldo-contents').append("<div class='dacura-html-viewer'> " + parsed.label.data + "</div>");
-					$('#ldo-details').append("<div class='html-create-form'> " + parsed.label.data + "</div><br>");
 
-					for (var i = 0; i <  parsed.frame.length; i++) {
-						if(parsed.frame[i].value != undefined)
+					$('#ldo-contents').append("<br><div class='dacura-html-viewer'> " + parsed.label.data + "</div>");
+					$('#ldo-details').append("<br><div class='html-create-form'> " + parsed.label.data + "</div>");
+					if(((parsed.range).split('#'))[1] == "PointInSpace"){
+						createMap();
+					}
+					for (var j = 0; j <  parsed.frame.length; j++) {
+						if(parsed.frame[j].value != undefined)
 							data = parsed.value.data;
 						else
 							 data = "";
 						if(mode == "create"){
-							$('#ldo-details').append("<div class='html-create-form'> " + parsed.frame[i].label.data + " <br> <input type='text' name='"+parsed.frame[i].property+"' id=" +parsed.property+"'><br>");
+							$('#ldo-details').append("<div class='html-create-form'> " + parsed.frame[j].label.data + " <br> <input type='text' name='"+parsed.property+"' id=" +parsed.frame[j].property+">");
+							if(parsed.frame[j].label.data == "Latitude")
+								latitudeId = parsed.frame[j].label.data;
+							else if(parsed.frame[j].label.data == "Longitude")
+								longitudeId = parsed.frame[j].label.data;
 
 						}else if(mode == "view"){
-							$('#ldo-contents').append("<div class='dacura-html-viewer'> " +parsed.frame[i].label.data + " <br>" + data + "<br></div>");	
+							$('#ldo-contents').append("<div class='dacura-html-viewer'> " +parsed.frame[j].label.data + " <br>" + data + "<br></div>");	
 
 						}else{/*EDIT MODE HERE*/}
 					}	
 
 				}else if(parsed.type == "datatypeProperty"){
+
 					//Since data can be empty, this is used to set in case it is not empty
-					if(parsed.value != undefined)
+					if(parsed.value != undefined){
 						data = parsed.value.data;
+					}
 					else 
 						data = "";
 				
 					if(mode == "create"){
-						$('#ldo-details').append("<div class='html-create-form'> " + parsed.label.data + " <br> <input type='text' name='"+parsed.property+"'><br>");	
+						$('#ldo-details').append("<div class='html-create-form'> " + parsed.label.data + " <br> <input type='text' name='"+parsed.property+"'><br>");						
 					}else if(mode == "view"){
-						$('#ldo-contents').append("<div class='dacura-html-viewer'>" + parsed.label.data + " <br><p>" + data + "</p><br>");	
+						$('#ldo-contents').append("<br><div class='dacura-html-viewer'>" + parsed.label.data + " <br><p>" + data + "</p><br>");	
 					}else{/*EDIT MODE HERE*/}
-
 
 				}
 			};
@@ -83,21 +143,8 @@ FrameViewer.prototype.draw = function(frames, mode){
 
 // To do: sub labels such as slongitude or latitude are not being displayed, but are filled.
 
-
-/*FrameViewer.prototype.draw = function (frames, mode) {
-    this.mode = mode;
-    this.frames = frames;
-    if (frames.length > 0) {
-        //alert("drawing in " + mode + " mode " + frames.length + " frames in list");
-        //console.log(frames);
-        dacura.frame.draw("dummyClass", frames, this.pconfig, "dummyTarget");
-    } else {
-        //alert(mode);
-    }
-};*/
-
 FrameViewer.prototype.extract = function () {
-    var y = '{"rdf:type": "' + this.cls + '", '
+    var y = '{"rdf:type": "' + this.cls + '", ';
     y = y + dacura.frame.extractionConverter(this.frames);
     y = y + '}';
     return y;
