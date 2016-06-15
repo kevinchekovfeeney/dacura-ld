@@ -39,6 +39,7 @@ $msg_extensions = array(
 		"ld_list_title" => "Candidates",
 		"ld_create_title" => "Create New Candidate",
 		"ld_updates_title" => "Updates to Candidates",
+        "ld_export_query_title" => "Data Export Query",
 		"create_ldo_intro" => "Add a new candidate to the system by filling in the form below and hitting 'create'",
 		"list_updates_intro" => "View updates (pending, rejected, accepted) to candidates",
 		"view_history_intro" => "View previous versions of this candidate",
@@ -54,7 +55,7 @@ $msg_extensions = array(
 		"view_update_after_msg" => "The Candidate after the update has taken place",
 		"view_update_before_msg" => "The Candidate before the update has taken place",
 		"update_meta_button" => "Save Updated Metadata",
-		"test_update_meta_button" => "Test Metadata Update",		
+		"test_update_meta_button" => "Test Metadata Update",	
 );
 
 

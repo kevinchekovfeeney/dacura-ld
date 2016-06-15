@@ -1,11 +1,11 @@
-@prefix seshattiny: <http://dacura.cs.tcd.ie/data/seshattiny#> .
+@prefix seshatbox: <http://dacura.cs.tcd.ie/data/seshatbox#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix dc11: <http://purl.org/dc/elements/1.1/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix utv: <http://dacura.cs.tcd.ie/ontology/utv#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-seshattiny:
+seshatbox:
   a owl:Ontology ;
   dc11:title "Seshat Global History Databank Ontology"@en ;
   rdfs:comment "The Seshat Global History Databank ontology is designed to describe human societies throughout time."@en ;
@@ -17,62 +17,87 @@ seshattiny:
   dc11:rights "This ontology is distributed under a Creative Commons Attribution License - http://creativecommons.org/licenses/by/3.0"@en ;
   dc11:description "This ontology will be used by the Evolution Institute and its partners to describe time series data collected about all human societies."@en .
 
-seshattiny:Polity a owl:Class ;
+seshatbox:Polity a owl:Class ;
   rdfs:subClassOf utv:Entity ;
   rdfs:label "Polity"@en ;
   rdfs:comment "A polity is defined as an independent political unit. Kinds of polities range from villages (local communities) through simple and complex chiefdoms to states and empires. A polity can be either centralized or not (e.g., organized as a confederation). What distinguishes a polity from other human groupings and organizations is that it is politically independent of any overarching authority; it possesses sovereignty. Polities are defined spatially by the area enclosed within a boundary on the world map. There may be more than one such areas. Polities are dynamical entities, and thus their geographical extent may change with time. Thus, typically each polity will be defined by a set of multiple boundaries, each for a specified period of time. For prehistoric periods and for NGAs populated by a multitude of small-scale polities we use a variant called quasi-polity."@en .
 
-seshattiny:alternativeName a owl:DatatypeProperty ;
+seshatbox:alternativeName a owl:DatatypeProperty ;
   rdfs:label "Alternative name"@en ;
   rdfs:comment "The name of a seshat Entity. Generally same as the name of the wiki page."@en ;
   rdfs:domain utv:Entity ;
   rdfs:range xsd:string .
 
-seshattiny:population a owl:DatatypeProperty ;
+seshatbox:population a owl:ObjectProperty ;
  rdfs:label "Population"@en, "Polity Population"@en ;
  rdfs:comment "Estimated population of the polity; can change as a result of both adding/losing new territories or by population growth/decline within a region ."@en ;
- rdfs:domain seshattiny:Polity ;
- rdfs:range xsd:integer .
+ rdfs:domain seshatbox:Polity ;
+ rdfs:range seshatbox:Box . 
 
-seshattiny:name rdfs:label "Name"@en ;
+seshatbox:name rdfs:label "Name"@en ;
  rdfs:comment "The name of a seshat Entity. Generally same as the name of the wiki page. "@en ;
  rdfs:domain utv:Entity ;
  rdfs:range xsd:string .
 
-seshattiny:TemporalEntity a owl:Class ;
+seshatbox:TemporalEntity a owl:Class ;
  rdfs:subClassOf utv:Entity ;
  rdfs:label "temporal entity"@en ;
  rdfs:comment "An abstract concept describing anything that must have temporal bounds."@en .
 
-seshattiny:peakDate a owl:DatatypeProperty ;
+seshatbox:peakDate a owl:ObjectProperty ;
  rdfs:label "Duration"@en ;
- rdfs:domain seshattiny:TemporalEntity ;
- rdfs:range xsd:gYear ;
- rdfs:comment "A property used to define the temporal bounds of a seshattiny:TemporalEntity. For example, corresponds to the Duration for a Polity from the Seshat codebook."@en .
+ rdfs:domain seshatbox:TemporalEntity ;
+ rdfs:range seshatbox:Box ;
+ rdfs:comment "A property used to define the temporal bounds of a seshatbox:TemporalEntity. For example, corresponds to the Duration for a Polity from the Seshat codebook."@en .
 
-seshattiny:PointInSpace a owl:Class ;
+seshatbox:PointInSpace a owl:Class ;
  rdfs:label "Point in space"@en ;
  rdfs:comment "This is an abstract class for all points in space"@en .
 
-seshattiny:longitude a owl:DatatypeProperty ;
- rdfs:domain seshattiny:PointInSpace ;
+seshatbox:longitude a owl:DatatypeProperty ;
+ rdfs:domain seshatbox:PointInSpace ;
  rdfs:range xsd:float ;
  rdfs:label "Longitude"@en ;
  rdfs:comment "The longitude in numeric form of something"@en .
 
-seshattiny:latitude a owl:DatatypeProperty ;
- rdfs:domain seshattiny:PointInSpace ;
+seshatbox:latitude a owl:DatatypeProperty ;
+ rdfs:domain seshatbox:PointInSpace ;
  rdfs:range xsd:float ;
  rdfs:label "Latitude"@en ;
  rdfs:comment "The latitude in numeric form of something"@en .
 
-seshattiny:capitalCityLocation a owl:objectProperty ;
+seshatbox:capitalCityLocation a owl:ObjectProperty ;
  rdfs:label "Location of Capital City"@en ;
  rdfs:comment "The latitude and longitude of the capital city"@en ;
- rdfs:domain seshattiny:Polity ;
- rdfs:range seshattiny:PointInSpace .
+ rdfs:domain seshatbox:Polity ;
+ rdfs:range seshatbox:PointInSpace .
 
-utv:Entity a owl:Class.
+# Box class monkey business
+seshatbox:Box a owl:Class
+ rdfs:label "Box"@en ;
+ rdfs:comment "Box super-class to facilitiate user-interface design."@en ;
 
+seshatbox:GYear a owl:Class ;
+ rdfs:label "GYear Box"@en ;
+ rdfs:comment "Class for boxing gYear."@en.
 
+seshatbox:gYear a owl:DatatypeProperty ;
+ rdfs:label "gYear"@en ;
+ rdfs:comment "The xsd:gYear of a GYear Box"@en ;
+ rdfs:domain seshatbox:GYear ;
+ rdfs:range xsd:gYear .
 
+seshatbox:NonNegativeInteger a owl:Class ;
+ rdfs:label "NonNegativeInteger Box"@en ;
+ rdfs:comment "Class for boxing nonNegativeInteger."@en.
+
+seshatbox:nonNegativeInteger a owl:DatatypeProperty ;
+ rdfs:label "nonNegativeInteger"@en ;
+ rdfs:comment "The xsd:nonNegativeInteger of a NonNegativeInteger Box"@en ;
+ rdfs:domain seshatbox:NonNegativeInteger ;
+ rdfs:range xsd:nonNegativeInteger .
+
+# And the mission critical Entity class
+utv:Entity a owl:Class ;
+ rdfs:label "Entity Class"@en ;
+ rdfs:comment "The Entity Class for clipping graphs"@en .
