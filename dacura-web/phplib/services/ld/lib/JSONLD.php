@@ -172,8 +172,7 @@ function addLDOToJSONLDNode(&$node, $ldo, $cwurl){
 				else {
 					$node->setProperty($p, ML\JsonLD\Value::fromJsonLd((object) array('@value' => $oneval)));
 				}				
-			}
-						
+			}				
 		}
 		elseif($pv->literal()){
 			$node->setProperty($p, ML\JsonLD\Value::fromJsonLd((object) array('@value' => $v)));				

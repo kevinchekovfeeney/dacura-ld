@@ -12,6 +12,14 @@ dacura.frame.api.getFrame = function (cls) {
     return xhr;
 };
 
+dacura.frame.api.getFilledFrame = function (id) {
+    var xhr = {};
+    xhr.type = "GET";
+    xhr.url = dacura.frame.apiurl + "/frame/" + id;
+    //xhr.data = {'class': cls};
+    //xhr.dataType = "json";
+    return xhr;
+};
 
 function FrameViewer(cls, target, pconfig) {
     this.cls = cls;
@@ -33,7 +41,7 @@ FrameViewer.prototype.draw = function(frames, mode){
 
 		if(frames.length > 0){
 			for (var i = 0; i <  frames.length; i++) {
-				alert(frames[i].toSource());
+				//alert(frames[i].toSource());
 				var f = JSON.stringify(frames[i]);
 				var parsed = JSON.parse(f);
 

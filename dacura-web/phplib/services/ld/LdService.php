@@ -35,6 +35,10 @@ class LdService extends DacuraService {
 		$this->included_scripts[] = $this->get_service_script_url("dqsconfigurator.js", "ld");
 	}
 	
+	/**
+	 * Returns the current linked data type name (may be a derived type)
+	 * @return string
+	 */
 	function ldtn(){
 		$tn = $this->name();
 		if($tn == "ld") $tn = "linked data object";
@@ -77,6 +81,12 @@ class LdService extends DacuraService {
 		}
 	}
 	
+	/**
+	 * Subscreen include - used by derived services to first try loading the service's subscreen, 
+	 * then loading the ld base class's server
+	 * @param string $screen the name of the subscreen in question
+	 * @return string 
+	 */
 	function ssInclude($screen){
 		$f = $this->mydir."screens/$screen.php";
 		if(file_exists($f)){
@@ -695,6 +705,4 @@ class LdService extends DacuraService {
 		$params['ldov_config'] = json_encode($pldov);
 		$params['update_meta_options'] = json_encode($this->getLDOptions("update_meta"));
 	}
-	
-
 }

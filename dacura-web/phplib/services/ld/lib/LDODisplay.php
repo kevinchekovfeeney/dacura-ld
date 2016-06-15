@@ -1,13 +1,30 @@
 <?php 
+/**
+ * Utility Class that contains some functionality for displaying linked data objects
+ * @author chekov
+ *
+ */
 class LDODisplay extends DacuraObject {
+	/** @var $ldo the linked data object in question */
 	var $ldo;
+	/** @var $options display options in effect. */
 	var $options;
 	
-	function __construct($ldo, $options){
+	/**
+	 * 
+	 * @param LDO $ldo linked data object to be displayed
+	 * @param array $options display options
+	 */
+	function __construct(LDO $ldo, $options){
 		$this->ldo = $ldo;
 		$this->options = $options;
 	}
 	
+	/**
+	 * Display the ldo in a particular format
+	 * @param string $format
+	 * @return depends on format - json, html, triples, 
+	 */
 	function display($format){
 		if(!$format || $format == "json"){
 			return $this->displayJSON();
@@ -32,6 +49,10 @@ class LDODisplay extends DacuraObject {
 		}		
 	}
 	
+	/**
+	 * Adds links and various flourishes to an array of triples
+	 * @return array<triples>
+	 */
 	function displayTriples(){
 		$payload = isset($this->options['typed']) && $this->options['typed'] ? $this->ldo->typedTriples() : $this->ldo->triples();
 		if(!isset($this->options['plain']) || !$this->options['plain']){
@@ -40,6 +61,10 @@ class LDODisplay extends DacuraObject {
 		return $payload;
 	}
 	
+	/**
+	 * Adds links and various flourishes to an array of triples
+	 * @return array<quads>
+	 */
 	function displayQuads(){
 		$payload = isset($this->options['typed']) && $this->options['typed'] ? $this->ldo->typedQuads() : $this->ldo->quads();
 		if(!isset($this->options['plain']) || !$this->options['plain']){
@@ -48,6 +73,10 @@ class LDODisplay extends DacuraObject {
 		return $payload;
 	}
 	
+	/**
+	 * Add links and html to json array
+	 * @return json
+	 */
 	function displayJSON(){
 		if(isset($this->options['plain']) && $this->options['plain']){
 			return $this->ldo->ldprops;
@@ -57,6 +86,10 @@ class LDODisplay extends DacuraObject {
 		}
 	}
 	
+	/**
+	 * Displays the object as json ld
+	 * @return json
+	 */
 	function displayJSONLD(){
 		require_once("JSONLD.php");
 		$ns =  isset($this->options['ns']) && $this->options['ns'] ? $this->ldo->getNS() : false;
@@ -65,11 +98,15 @@ class LDODisplay extends DacuraObject {
 			return $jsonld;
 		}
 		else {
-			return $jsonld;
+			return $jsonld;//no flourishes!
 			//return $this->linkify($this->getLinkExtras("jsonld"), $jsonld);
 		}
 	}
 	
+	/**
+	 * Displays the object as html
+	 * @return string
+	 */
 	function displayHTML(){
 		$html = "";
 		foreach($this->ldo->ldprops as $k => $v){
@@ -79,11 +116,20 @@ class LDODisplay extends DacuraObject {
 		return $html;
 	}
 	
+	/**
+	 * Displays the ldo as nquads (string)
+	 * @return string
+	 */
 	function displayNQuads(){
 		$payload = $this->ldo->nQuads();
 		return htmlspecialchars($payload);
 	}
 	
+	/**
+	 * Display the ldo in one of the easy rdf formats
+	 * @param string $format
+	 * @return string the ldo displayed in the format in question...
+	 */
 	function displayExport($format){
 		$exported = $this->ldo->export($format, $this->options);
 		if($exported === false){
@@ -101,11 +147,12 @@ class LDODisplay extends DacuraObject {
 			}
 		}
 	}
-	
-	function showLDOViewer($params, $service){
-		return $service->renderScreen("editor", $params, "ld");		
-	}
-	
+
+	/**
+	 * produces the necessary query string to be appended to local links
+	 * @param string $format
+	 * @return string the query string to be appended
+	 */
 	function getLinkExtras($format){
 		$str = "?format=$format";
 		foreach($this->options as $opt => $v){
@@ -114,6 +161,12 @@ class LDODisplay extends DacuraObject {
 		return $str;
 	}
 	
+	/**
+	 * Turns the various elements of a json ld array into html links
+	 * @param string $vstr query string to be appended to links
+	 * @param string $props ld properties array
+	 * @return array props updated array
+	 */
 	function linkify($vstr, $props){
 		$nprops = array();
 		if($props && is_array($props)) {
@@ -180,6 +233,13 @@ class LDODisplay extends DacuraObject {
 		return false;
 	}
 	
+	/**
+	 * generates the html to represent a dacura link (or false if the link is not a local dacura link)
+	 * @param string $ln the link
+	 * @param string $vstr the query string
+	 * @param string $position the position in the assertion (subject, predicate, object)
+	 * @return string|boolean the link or false for not a local link or not a link
+	 */
 	function dacuraLink($ln, $vstr, $position){
 		global $dacura_server;
 		if(isNamespacedURL($ln)){
@@ -251,6 +311,13 @@ class LDODisplay extends DacuraObject {
 		}
 	}
 	
+	/**
+	 * Applies html to the passed link for display
+	 * @param string $ln the link
+	 * @param string $vstr query string 
+	 * @param string $position the position in the assertion (subject, predicate, object)
+	 * @return string
+	 */
 	function applyLinkHTML($ln, $vstr, $position){
 		if(!($lh = $this->dacuraLink($ln, $vstr, $position))){
 			$cls = "dacura-".$position;//property-subject, property, property-value, property-graph 
@@ -273,7 +340,14 @@ class LDODisplay extends DacuraObject {
 		return $lh;
 	}
 	
-
+	/**
+	 * Generates a HTML table to represent the passed properties array
+	 * @param array $props the properties array
+	 * @param array $options the options array
+	 * @param number $depth how deep in the table are we (recursive calls deep)
+	 * @param string $obj_id_prefix a html id prefix to prepend to the object id
+	 * @return string the html table
+	 */
 	function getPropertiesAsHTMLTable($props, $options = array(), $depth = 0, $obj_id_prefix = ""){
 		$vstr = $this->getLinkExtras("html");
 		if($depth % 2 == 1){
@@ -373,6 +447,11 @@ class LDODisplay extends DacuraObject {
 		return $html;
 	}
 	
+	/**
+	 * Extracts the RDF type from the property
+	 * @param array $props the property array
+	 * @return unknown|boolean
+	 */
 	function extractTypeFromProps($props){
 		if(isset($props['rdf:type'])){
 			return $props['rdf:type'];
@@ -380,6 +459,11 @@ class LDODisplay extends DacuraObject {
 		return false;
 	}
 	
+	/**
+	 * Applies html to the passed link
+	 * @param string $ln the link
+	 * @return string htmlified link
+	 */
 	function applyLiteralHTML($ln){
 		if(is_array($ln)){
 			$html = "<span class='dacura-property-value dacura-objectliteral'>";
@@ -394,6 +478,11 @@ class LDODisplay extends DacuraObject {
 		return $html;
 	}
 	
+	/**
+	 * Applies html to the passed object literal
+	 * @param string $olit the object literal
+	 * @return string the htmlified version
+	 */
 	function applyObjectLiteralHTML($olit){
 		if(!isset($olit['data'])){
 			$x = json_encode($olit);
@@ -411,6 +500,12 @@ class LDODisplay extends DacuraObject {
 		//opr($olit);
 	}
 
+	/**
+	 * adds html links to triple array
+	 * @param array $trips triples array
+	 * @param string $alink link
+	 * @param string $vstr 
+	 */
 	function linkifyTriples(&$trips, $alink, $vstr){
 		foreach($trips as $i => $v){
 			foreach($v as $j => $k){
@@ -460,6 +555,15 @@ class LDODisplay extends DacuraObject {
 		}
 	}
 	
+	/**
+	 * Display triple 
+	 * @param string $s subject
+	 * @param string $p predicate
+	 * @param string $o object
+	 * @param string $t type 
+	 * @param string $g graph
+	 * @return multitype:multitype:unknown string
+	 */
 	function showTriples($s, $p, $o, $t, $g = false){
 		if($t == 'literal'){
 			$o = '"'.$o.'"';
