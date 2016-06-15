@@ -33,12 +33,6 @@ $( document ).ready(function() {
 });
 
 
-/*$( document ).ready = function loadScript() {
-	var head = document.getElementsByTagName("head")[0];
-	var script = document.createElement("script");
-	script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
-	head.appendChild(script);
-}*/
 
 //global variables for maps use
 var marker = null;
