@@ -37,10 +37,8 @@ class Candidate extends MultiGraphLDO {
 	 */
 	function importLD($mode, $srvr){
 		if(!$srvr->graphs){
-			//echo "<P>Why hasn't the server read the graphs?";
 			$srvr->readGraphConfiguration();
 		}
-		//$this->graphs =& $srvr->graphs;//too late..
 		if(isset($srvr->valid_candidate_types) && $srvr->valid_candidate_types) {
 			$this->valid_types =& $srvr->valid_candidate_types;
 		}	
@@ -81,9 +79,8 @@ class Candidate extends MultiGraphLDO {
 	
 	/**
 	 * Called immediately after a candidate is loaded from the DB
-	 * Sets the 
 	 * 
-	 * Transforms the ldprops to ensure that the representation shown to the user is 
+	 * Transforms the ldprops array to ensure that the representation shown to the user is 
 	 * consistently single graph or multi-graph
 	 * (non-PHPdoc)
 	 * @see LDO::deserialise()
@@ -210,7 +207,11 @@ class Candidate extends MultiGraphLDO {
 			return parent::typedQuads($graphid);
 		}
 	}
-
+	
+	/**
+	 * Returns the content in a particular format - if the format is html, a frame representation is returned
+	 * @see LDO::getContentInFormat()
+	 */
 	function getContentInFormat($format, $options, $srvr, $for){
 		if($format == 'html' && $this->meta['type'] && !$srvr->isBaseLDServer()){
 			$ar = $srvr->getFrame($this->meta['type']);

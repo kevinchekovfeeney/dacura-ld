@@ -264,8 +264,7 @@ class ClassViolation extends SchemaViolation {
 
 class OrphanClassViolation extends ClassViolation {
 	var $label = "Orphan Class Violation";
-	var $comment = "The class is not a subclass, intersection, or union of a valid class.";
-	
+	var $comment = "The class is not a subclass, intersection, or union of a valid class.";	
 }
 
 /* class cycles have associated paths */
@@ -370,8 +369,7 @@ class PropertyRangeViolation extends PropertyViolation {
 				$this->range = $props['range'];
 			}
 		}
-	}	
-	
+	}		
 }
 
 class noImmediateRangeViolation extends PropertyRangeViolation {
@@ -652,7 +650,6 @@ class SystemRVO extends RVO {
 	}
 }
 
-
 class SystemViolation extends SystemRVO {
 	var $label = "Dacura System Error";
 	var $comment = "An error was encountered while processing the request";	
@@ -661,7 +658,6 @@ class SystemViolation extends SystemRVO {
 class GraphTestFailure extends SystemViolation {
 	var $label = "Graph Test Failure";
 }
-
 
 class SystemWarning extends SystemRVO {
 	var $label = "Dacura System Warning";

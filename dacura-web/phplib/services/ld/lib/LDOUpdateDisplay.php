@@ -1,11 +1,22 @@
 <?php 
 require_once("LDODisplay.php");
-
+/**
+ * Utility class that contains some display functionality for linked data object updates
+ * 
+ */
 class LDOUpdateDisplay extends LDODisplay {
 	
+	/**
+	 * The dacura url of the ldo 
+	 */
 	function cwurl(){
 		return $this->ldo->cwurl();
 	}
+	
+	/**
+	 * Get the html to display a change 
+	 * @return string html 
+	 */
 	function getChangeViewHTML(){
 		$cstruct = array("meta" => $this->ldo->getMetaUpdates());
 		if(count($this->ldo->forward) == 1 && isset($this->ldo->forward['meta'])){
@@ -18,6 +29,12 @@ class LDOUpdateDisplay extends LDODisplay {
 		return $cstruct;
 	}
 	
+	/**
+	 * Display the changes in properties in html
+	 * @param array $props original properties
+	 * @param array $dprops changed properties
+	 * @return boolean|array of properties
+	 */
 	function showChanges($props, $dprops){
 		$allprops = array();
 		foreach($props as $subj => $ldobj){
@@ -172,26 +189,62 @@ class LDOUpdateDisplay extends LDODisplay {
 		return $allprops;
 	}
 	
+	/**
+	 * Show a change in value in html
+	 * @param string $v the original value
+	 * @param string $nv the new value
+	 * @return array object literal array
+	 */
 	function getValueChangeHTML($v, $nv){
 		return array($this->applyLiteralHTML($v, "updated added"), $this->applyLiteralHTML($nv, "updated deleted"));
 	}
 	
+	/**
+	 * Show a deleted type in json html
+	 * @param multitype $v the value
+	 * @param LDPropertyValue $pv the property value object
+	 * @return string html 
+	 */
 	function getDeletedTypeJSONHTML($v, $pv){
 		return $this->getJSONHTML($v, "deleted structural", $pv);
 	}
 	
+	/**
+	 * Show an added type in json html
+	 * @param multitype $v the value
+	 * @param LDPropertyValue $pv the property value object
+	 * @return string html 
+	 */
 	function getAddedTypeJSONHTML($v, $pv){
 		return $this->getJSONHTML($v, "added structural", $pv);
 	}
 	
+	/**
+	 * Show added json in json html
+	 * @param multitype $v the value
+	 * @param LDPropertyValue $pv the property value object
+	 * @return string html
+	 */	
 	function getAddedJSONHTML($v, $pv){
 		return $this->getJSONHTML($v, "added", $pv);
 	}
 	
+	/**
+	 * Show deleted json html
+	 * @param multitype $v the value
+	 * @param LDPropertyValue $pv the property value object
+	 * @return string html
+	 */
 	function getDeletedJSONHTML($v, $pv){
 		return $this->getJSONHTML($v, "deleted", $pv);
 	}
 	
+	/**
+	 * Show unchanged json html
+	 * @param multitype $v the value
+	 * @param LDPropertyValue $pv the property value object
+	 * @return string html 
+	 */
 	function getUnchangedJSONHTML($v, $pv){
 		return $this->getJSONHTML($v, "unchanged", $pv);
 	}
@@ -236,6 +289,10 @@ class LDOUpdateDisplay extends LDODisplay {
 		return $nv;
 	}
  
+	/**
+	 * Applies html to the passed link
+	 * @see LDODisplay::applyLinkHTML()
+	 */
 	function applyLinkHTML($ln, $t, $is_prop = false){
 		if($is_prop){
 			$cls = "dacura-property $t";
@@ -302,6 +359,9 @@ class LDOUpdateDisplay extends LDODisplay {
 		return false;
 	}	
 
+	/**
+	 * @see LDODisplay::applyLiteralHTML()
+	 */
 	function applyLiteralHTML($ln, $tp){
 		if(is_array($ln)){
 			$html = "<span class='dacura-property-value $tp dacura-objectliteral'>";
@@ -316,38 +376,3 @@ class LDOUpdateDisplay extends LDODisplay {
 		return $html;
 	}
 }
-	/*
-
-	function displayJSON($srvr){
-		$vstr = "?format=json";
-		$this->changed->display = $this->changed->ldprops;
-		$this->original->display = $this->original->ldprops;
-		$this->display = $this->forward;
-	}
-
-	function displayHTML($srvr){
-		$vstr = "?format=html";
-		$flags = array("ns", "links");
-		$this->changed->displayHTML($flags, $vstr, $srvr);
-		$this->original->displayHTML($flags, $vstr, $srvr);
-		$this->display = $this->getChangeViewHTML();
-	}
-
-	function displayTriples($srvr){
-		$vstr = "?format=triples";
-		$flags = array("ns", "links");
-		$this->changed->displayTriples($flags, $vstr, $srvr);
-		$this->original->displayTriples($flags, $vstr, $srvr);
-		$this->display = $this->deltaAsTriples($orig_upd);
-	}
-
-	function displayQuads($srvr){
-		$vstr = "?format=quads";
-		$flags = array("ns", "links");
-		$this->changed->displayQuads($flags, $vstr, $srvr);
-		$this->original->displayQuads($flags, $vstr, $srvr);
-		$this->display = $this->deltaAsTriples();
-	}
-
-
- */

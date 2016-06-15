@@ -5,7 +5,8 @@ $settings["facet-list"] = array("view" => "Browse the data on the system");
 $settings["service-title"] = "Ontology Management Service";
 $settings["service-button-title"] = "Ontologies";
 
-
+$settings['import_replace_blank_ids'] = false;
+$settings['update_replace_blank_ids'] = false;
 $settings['fail_on_missing_dependency'] = true;
 $settings['fail_on_bad_predicate'] = true;
 $settings['fail_on_ontology_hijack'] = false;

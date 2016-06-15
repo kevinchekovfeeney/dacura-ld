@@ -1,4 +1,3 @@
-
 dacura.frame = {};
 dacura.frame.api = {};
 dacura.frame.apiurl = dacura.system.apiURL();
@@ -12,6 +11,14 @@ dacura.frame.api.getFrame = function (cls) {
     return xhr;
 };
 
+dacura.frame.api.getFilledFrame = function (id) {
+    var xhr = {};
+    xhr.type = "GET";
+    xhr.url = dacura.frame.apiurl + "/frame/" + id;
+    //xhr.data = {'class': cls};
+    //xhr.dataType = "json";
+    return xhr;
+};
 
 function FrameViewer(cls, target, pconfig) {
     this.cls = cls;
@@ -21,27 +28,19 @@ function FrameViewer(cls, target, pconfig) {
 
 
 //Loading google maps api
-//window.onload 
-
-// A $( document ).ready() block.
-$( document ).ready(function() {
-    console.log( "ready!" );
-    var head = document.getElementsByTagName("head")[0];
-	var script = document.createElement("script");
-	script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
-	head.appendChild(script);
-});
-
-
+window.onload = function loadScript() {
+  var script = document.createElement("script");
+  script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
+  document.body.appendChild(script);
+}
 
 //global variables for maps use
 var marker = null;
 var position;
 var longitudeId, latitudeId; 
 
-function initMap() {     
-	  var myLatlng = {lat: -25.363, lng: 131.044};
-	  var mapProp = {
+function initMap() {     var myLatlng = {lat: -25.363, lng: 131.044};
+	 var mapProp = {
 	  center:myLatlng,
 	  zoom: 8,
 	  mapTypeId: google.maps.MapTypeId.ROADMAP
@@ -72,6 +71,7 @@ function initMap() {
 
 function createMap(){
 	$('#ldo-details').append('<div id="googleMap" style="width:200%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
+ 	//google.maps.event.trigger(googleMap, 'resize');
 	initMap();	
 
 }
@@ -116,6 +116,7 @@ FrameViewer.prototype.draw = function(frames, mode){
 
 						}else if(mode == "view"){
 							$('#ldo-contents').append("<div class='dacura-html-viewer'> " +parsed.frame[j].label.data + " <br>" + data + "<br></div>");	
+
 						}else{/*EDIT MODE HERE*/}
 					}	
 
@@ -145,6 +146,7 @@ FrameViewer.prototype.draw = function(frames, mode){
 
 };
 
+// To do: sub labels such as slongitude or latitude are not being displayed, but are filled.
 
 FrameViewer.prototype.extract = function () {
     var y = '{"rdf:type": "' + this.cls + '", ';
@@ -456,6 +458,5 @@ dacura.frame.init = function (entity, pconf) {
 
     dacura.system.invoke(ajs, msgs, pconf);
 }
-
 
 

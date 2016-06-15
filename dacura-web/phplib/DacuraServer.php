@@ -558,6 +558,7 @@ class DacuraServer extends DacuraController {
 
 	/**
 	 * Parses a local url into its constituent parts.... service, collection, args, query
+	 * @param string $url the url to be parsed
 	 */
 	function parseDacuraURL($url){
 		if(substr($url, 0, strlen($this->durl())) != $this->durl()){ 
