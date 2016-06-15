@@ -97,5 +97,6 @@ seshatbox:nonNegativeInteger a owl:DatatypeProperty ;
  rdfs:range xsd:nonNegativeInteger .
 
 # And the mission critical Entity class
-
-utv:Entity a owl:Class.
+utv:Entity a owl:Class ;
+ rdfs:label "Entity Class"@en ;
+ rdfs:comment "The Entity Class for clipping graphs"@en .
