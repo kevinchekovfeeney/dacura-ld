@@ -76,7 +76,7 @@ seshatbox:capitalCityLocation a owl:objectProperty ;
 
 seshatbox:Box a owl:Class ;
  rdfs:label "Box"@en ;
- rdfs:comment "Class for boxing datatypes in order to add annotations."@en ;
+ rdfs:comment "Class for boxing datatypes in order to add annotations."@en.
  
 seshatbox:type a owl:DatatypeProperty ;
  rdfs:label "type"@en ;
@@ -93,7 +93,7 @@ seshatbox:gYear a owl:DatatypeProperty ;
 seshatbox:nonNegativeInteger a owl:DatatypeProperty ;
  rdfs:label "type"@en ;
  rdfs:comment "The xsd datatype of a Box"@en ;
- rdfs:domain seshatbox:Box
+ rdfs:domain seshatbox:Box ;
  rdfs:range xsd:nonNegativeInteger .
 
 # And the mission critical Entity class
