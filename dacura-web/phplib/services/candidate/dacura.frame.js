@@ -39,40 +39,48 @@ var marker = null;
 var position;
 var longitudeId, latitudeId; 
 
-function initMap() {     var myLatlng = {lat: -25.363, lng: 131.044};
-	 var mapProp = {
+function initMap(mode) {
+      var myLatlng = {lat: -25.363, lng: 131.044};
+	  var mapProp = {
 	  center:myLatlng,
 	  zoom: 8,
 	  mapTypeId: google.maps.MapTypeId.ROADMAP
 	};
 
 	var map=new google.maps.Map(document.getElementById("googleMap"), mapProp);
-	  
-	google.maps.event.addListener(map, 'click', function(event) {
-		    position = event.latLng;
-		    if(marker == null)
-		    	placeMarker(position);
-   		    else{
-   		    	marker.setPosition(position);	
-   		    } 		 
-		    var long = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#longitude");
-		    long.value = marker.getPosition().lng();
-		    var lat = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#latitude");
-		    lat.value = marker.getPosition().lat();
-   		});
+	
+    if(mode == "create"){ 
+    	google.maps.event.addListener(map, 'click', function(event) {
+    		    position = event.latLng;
+    		    if(marker == null)
+    		    	placeMarker(position);
+       		    else{
+       		    	marker.setPosition(position);	
+       		    } 		 
+    		    var long = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#longitude");
+    		    long.value = marker.getPosition().lng();
+    		    var lat = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#latitude");
+    		    lat.value = marker.getPosition().lat();
+       		});
 
-	function placeMarker(location) {
-	     marker = new google.maps.Marker({
-	        position: location, 
-	        map: map
-	    });
-	}
+    	function placeMarker(location) {
+    	     marker = new google.maps.Marker({
+    	        position: location, 
+    	        map: map
+    	    });
+    	}
+    }
 }
 
-function createMap(){
-	$('#ldo-details').append('<div id="googleMap" style="width:200%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
- 	//google.maps.event.trigger(googleMap, 'resize');
-	initMap();	
+function createMap(mode){
+    if(mode == "create"){
+        $('#ldo-details').append('<div id="googleMap" style="width:200%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
+        initMap(mode);    
+    }else if(mode == "view"){
+        $('#ldo-contents').append('<div id="googleMap" style="width:80%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
+        initMap(mode);    
+    }
+		
 
 }
 function deleteMap(){
@@ -81,7 +89,8 @@ function deleteMap(){
 }
 
 FrameViewer.prototype.draw = function(frames, mode){
-		$('br').remove();
+		
+        $('br').remove();
 		$('.html-create-form').remove();
 		$('.dacura-html-viewer').remove();
 		deleteMap();
@@ -100,7 +109,7 @@ FrameViewer.prototype.draw = function(frames, mode){
 					$('#ldo-contents').append("<br><div class='dacura-html-viewer'> " + parsed.label.data + "</div>");
 					$('#ldo-details').append("<br><div class='html-create-form'> " + parsed.label.data + "</div>");
 					if(((parsed.range).split('#'))[1] == "PointInSpace"){
-						createMap();
+						createMap(mode);
 					}
 					for (var j = 0; j <  parsed.frame.length; j++) {
 						if(parsed.frame[j].value != undefined)
@@ -115,9 +124,11 @@ FrameViewer.prototype.draw = function(frames, mode){
 								longitudeId = parsed.frame[j].label.data;
 
 						}else if(mode == "view"){
-							$('#ldo-contents').append("<div class='dacura-html-viewer'> " +parsed.frame[j].label.data + " <br>" + data + "<br></div>");	
+							$('#ldo-contents').append("<div class='dacura-html-viewer'> " +parsed.frame[j].label.data + ": <br>" + data + "<br></div>");	
 
-						}else{/*EDIT MODE HERE*/}
+						}else{
+
+                        /*EDIT MODE HERE*/}
 					}	
 
 				}else if(parsed.type == "datatypeProperty"){
@@ -132,7 +143,7 @@ FrameViewer.prototype.draw = function(frames, mode){
 					if(mode == "create"){
 						$('#ldo-details').append("<div class='html-create-form'> " + parsed.label.data + " <br> <input type='text' name='"+parsed.property+"'><br>");						
 					}else if(mode == "view"){
-						$('#ldo-contents').append("<br><div class='dacura-html-viewer'>" + parsed.label.data + " <br><p>" + data + "</p><br>");	
+						$('#ldo-contents').append("<br><div class='dacura-html-viewer'>" + parsed.label.data + ": <br><p>" + data + "</p><br>");	
 					}else{/*EDIT MODE HERE*/}
 
 				}
