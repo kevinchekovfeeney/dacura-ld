@@ -97,7 +97,7 @@ function create_ldo(){
 	}
 	if(isset($obj['meta'])) $create_obj['meta'] = $obj['meta'];
 	$ar->add($dacura_server->createLDO($ldo_type, $create_obj, $demand_id, $format, $options, $test_flag), true, true);
-	$this->recordUserAction("create ".$ldo_type, array("status" => $ar->status));
+	$dacura_server->recordUserAction("create ".$ldo_type, array("status" => $ar->status));
 	return $dacura_server->writeDecision($ar, $format, $options);
 }
 
