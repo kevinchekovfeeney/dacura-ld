@@ -45,7 +45,6 @@ function initMap(mode) {
       zoom: 8,
       mapTypeId: google.maps.MapTypeId.ROADMAP
     };
-    alert("mode = " + mode);
 
 
     var map=new google.maps.Map(document.getElementById("googleMap"), mapProp);
