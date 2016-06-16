@@ -38,45 +38,42 @@ var marker = null;
 var position;
 var longitudeId, latitudeId; 
 
-function initMap(mode) {
-      var myLatlng = {lat: -25.363, lng: 131.044};
-      var mapProp = {
+function initMap() {     var myLatlng = {lat: -25.363, lng: 131.044};
+     var mapProp = {
       center:myLatlng,
       zoom: 8,
       mapTypeId: google.maps.MapTypeId.ROADMAP
     };
 
-
     var map=new google.maps.Map(document.getElementById("googleMap"), mapProp);
-    
-    if(mode == "create"){ 
-        google.maps.event.addListener(map, 'click', function(event) {
-                position = event.latLng;
-                if(marker == null)
-                    placeMarker(position);
-                else{
-                    marker.setPosition(position);   
-                }        
-                var long = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#longitude");
-                long.value = marker.getPosition().lng();
-                var lat = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#latitude");
-                lat.value = marker.getPosition().lat();
-            });
+      
+    google.maps.event.addListener(map, 'click', function(event) {
+            position = event.latLng;
+            if(marker == null)
+                placeMarker(position);
+            else{
+                marker.setPosition(position);   
+            }        
+            var long = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#longitude");
+            long.value = marker.getPosition().lng();
+            var lat = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#latitude");
+            lat.value = marker.getPosition().lat();
+        });
 
-        function placeMarker(location) {
-             marker = new google.maps.Marker({
-                position: location, 
-                map: map
-            });
-        }
+    function placeMarker(location) {
+         marker = new google.maps.Marker({
+            position: location, 
+            map: map
+        });
     }
 }
 
-function createMap(jQueryObject, mode){
-    jQueryObject.parent().append('<div id="googleMap" style="width:80%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
-    initMap(mode);  
-}
+function createMap(jQueryObject){
+    jQueryObject.parent().append('<div id="googleMap" style="width:200%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
+    //google.maps.event.trigger(googleMap, 'resize');
+    //initMap();  
 
+}
 function deleteMap(){
     marker = null;
     $("#googleMap").remove();
@@ -85,29 +82,33 @@ function deleteMap(){
 FrameViewer.prototype.draw = function(frames, mode){
     this.mode = mode;
     this.frames = frames;
-	
+    $('#ldo-frame-contents').remove();
+
     if(mode=="create"){
-        var container = document.getElementById("ldo-create-contents");
+        var parent = document.getElementById("ldo-create");
     }else{
-        var container = document.getElementById("ldo-contents");
+        var parent = document.getElementById("ldo-contents");
     }
+    var container = document.createElement("div");
+    container.setAttribute('id', "ldo-frame-contents");
     gensym = dacura.frame.Gensym("query");
     res = dacura.frame.frameGenerator(frames, container, gensym, mode);
-    dacura.frame.insertWidgets(mode);
-    return res;
+    dacura.frame.insertWidgets();
+    parent.appendChild(res);
+    return;
 };
 
 FrameViewer.prototype.extract = function () {
     var y = dacura.frame.extractionConverter(this.frames, this.cls);
+    console.log(y);
     return y;
 }
 
-dacura.frame.insertWidgets = function (mode) {
+dacura.frame.insertWidgets = function () {
     //this will go through the generated frame and insert complex widgets where necessary
     //shim for now, just adds in the map
     var x = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#capitalCityLocation']");
-    console.log(x);
-    createMap(x, mode);
+    //createMap(x);
     return;
 }
 
