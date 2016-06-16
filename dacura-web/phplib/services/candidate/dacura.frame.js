@@ -71,7 +71,7 @@ function initMap() {     var myLatlng = {lat: -25.363, lng: 131.044};
 function createMap(jQueryObject){
     jQueryObject.parent().append('<div id="googleMap" style="width:200%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
     //google.maps.event.trigger(googleMap, 'resize');
-    //initMap();  
+    initMap();  
 
 }
 function deleteMap(){
