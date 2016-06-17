@@ -47,7 +47,7 @@ var marker = null;
 var position;
 var longitudeId, latitudeId; 
 
-function initMap() {     
+function initMap(mode) {     
      var myLatlng = {lat: -25.363, lng: 131.044};
      var mapProp = {
       center:myLatlng,
@@ -57,20 +57,20 @@ function initMap() {
     
     var map=new google.maps.Map(document.getElementById("googleMap"), mapProp);
 
-    google.maps.event.addListener(map, 'click', function(event) {
-            alert("clicked on map");
-            position = event.latLng;
-            if(marker == null)
-                placeMarker(position);
-            else{
-                marker.setPosition(position);   
-            }        
-           /* var long = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#longitude");
-            long.value = marker.getPosition().lng();
-            var lat = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#latitude");
-            lat.value = marker.getPosition().lat();*/
-        });
-
+    if(mode == "create"){   
+        google.maps.event.addListener(map, 'click', function(event) {
+                position = event.latLng;
+                if(marker == null)
+                    placeMarker(position);
+                else{
+                    marker.setPosition(position);   
+                }        
+               /* var long = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#longitude");
+                long.value = marker.getPosition().lng();
+                var lat = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#latitude");
+                lat.value = marker.getPosition().lat();*/
+            });
+    }
     function placeMarker(location) {
          marker = new google.maps.Marker({
             position: location, 
@@ -79,9 +79,9 @@ function initMap() {
     }
 }
 
-function createMap(jQueryObject){
+function createMap(jQueryObject, mode){
     jQueryObject.next().append('<div id="googleMap" style="width:80%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
-    initMap();  
+    initMap(mode);  
 
 }
 function deleteMap(){
@@ -105,7 +105,7 @@ FrameViewer.prototype.draw = function(frames, mode){
     res = dacura.frame.frameGenerator(frames, container, gensym, mode);
     parent.appendChild(res);
     if(this.cls == "http://dacura.cs.tcd.ie/data/seshattiny#Polity")
-       dacura.frame.insertWidgets();
+       dacura.frame.insertWidgets(mode);
     else
         marker = null; 
     return;
@@ -122,7 +122,7 @@ dacura.frame.insertWidgets = function (mode) {
     //shim for now, just adds in the map
     var x = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#capitalCityLocation']");
 
-    createMap(x);
+    createMap(x, mode);
     return;
 }
 
