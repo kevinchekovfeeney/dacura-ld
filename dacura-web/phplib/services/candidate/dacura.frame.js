@@ -69,7 +69,7 @@ function initMap() {     var myLatlng = {lat: -25.363, lng: 131.044};
 }
 
 function createMap(jQueryObject){
-    jQueryObject.parent().append('<div id="googleMap" style="width:200%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
+    jQueryObject.next().append('<div id="googleMap" style="width:200%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
     //google.maps.event.trigger(googleMap, 'resize');
     //initMap();  
 
@@ -93,8 +93,8 @@ FrameViewer.prototype.draw = function(frames, mode){
     container.setAttribute('id', "ldo-frame-contents");
     gensym = dacura.frame.Gensym("query");
     res = dacura.frame.frameGenerator(frames, container, gensym, mode);
-    dacura.frame.insertWidgets();
     parent.appendChild(res);
+    dacura.frame.insertWidgets();
     return;
 };
 
@@ -108,7 +108,8 @@ dacura.frame.insertWidgets = function () {
     //this will go through the generated frame and insert complex widgets where necessary
     //shim for now, just adds in the map
     var x = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#capitalCityLocation']");
-    //createMap(x);
+    console.log(x);
+    createMap(x);
     return;
 }
 
@@ -236,7 +237,7 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
 
                 //create left hand side
                 var labelDiv = document.createElement("div");
-                labelDiv.setAttribute('background-color', '#f00');
+                labelDiv.setAttribute('class', 'property-label');
                 if (elt.label) {
                     var label = elt.label.data; // {'data' : someDataHere, 'type' : SomeTyping}
                     var textnode = document.createTextNode(label + ':');
@@ -255,6 +256,8 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                     dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
                     contentDiv.appendChild(subframeDiv);
                 } else if (elt.type == 'datatypeProperty') {
+                    var inputDiv = document.createElement("div");
+                    inputDiv.setAttribute('class', 'property-value');
                     var input = dacura.frame.inputSelector(mode);
                     var ty = dacura.frame.typeConvert(elt.range);
                     input.setAttribute('type', ty);
@@ -269,7 +272,8 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                         var value = document.createTextNode(test);
                         input.appendChild(value);
                     }
-                    contentDiv.appendChild(input);
+                    inputDiv.appendChild(input);
+                    contentDiv.appendChild(inputDiv);
                 } else {
                     alert("Impossible: must be either an object or datatype property.");
                 }

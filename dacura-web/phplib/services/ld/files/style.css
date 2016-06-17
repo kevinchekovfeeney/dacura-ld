@@ -1710,3 +1710,33 @@ ul.tab li a:focus, .active {background-color: #ccc;}
     border: 1px solid #ccc;
     border-top: none;
 }
+
+/*frame display CSS*/
+.property-label{
+	width:30%;
+	padding: 0.2em;
+}
+
+.property-value, .embedded-object{
+	width: 70%;
+	padding: 0.2em;
+}
+
+div[data-class]{
+	display: flex;
+	padding: 0.2em;
+}
+
+div[data-class]:nth-child(even){
+	background-color: #ddd;
+}
+
+div[data-class] div[data-class]:nth-child(even){
+	background-color: #bbb;
+}
+
+/* this could get silly if we try and do this for all possibilities
+this is only here to cover our bases for the moment*/
+div[data-class] div[data-class] div[data-class]:nth-child(even){
+	background-color: #ddd;
+}
