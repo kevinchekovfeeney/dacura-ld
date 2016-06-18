@@ -132,7 +132,7 @@ if (!function_exists('default_settings')) {
 			$dacura_settings['dqs_service']["logfile"] = false;
 		}
 		if(!isset($dacura_settings['dqs_service']['fake'])){
-			//$dacura_settings['dqs_service']["fake"] = $dacura_settings['dacura_logbase'].'fakets.json';
+			$dacura_settings['dqs_service']["fake"] = "";//$dacura_settings['dacura_logbase'].'fakets.json';
 		}
 		if(!isset($dacura_settings['dqs_service']['dumplast'])){
 			$dacura_settings['dqs_service']["dumplast"] = $dacura_settings['dacura_logbase'].'lastdqs.log';

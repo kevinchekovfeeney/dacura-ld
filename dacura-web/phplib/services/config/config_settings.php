@@ -73,7 +73,7 @@ $settings = array(
 		"dacura_request_log" => array("label" => "Request Logfile", "help" => "Absolute path of file where dacura keeps its request logs", "type" => "text"),				
 		"dacura_system_log" => array("label" => "Event Log", "help" => "Absolute path of file where dacura keeps its event logs", "type" => "text"),				
 		"services_url" => array("label" => "URL of dacura services", "help" => "URL for accessing dacura's services", "type" => "url"),				
-		"dqs_service" => array("label" => "URL of DQS methods", "type" => "section"),				
+		"dqs_service" => array("label" => "URL of DQS methods", "hidden" => true, "type" => "section"),				
 		"instance" => array("label" => "Instance API", "type" => "url"),				
 		"schema" => array("label" => "Schema API", "type" => "url"),				
 		"schema_validate" => array("label" => "Schema Validate API", "type" => "url"),				
