@@ -1090,7 +1090,7 @@ class LdDacuraServer extends DacuraServer {
 			$msg = "Updates to update ".$new_upd->id;
 			$mupdate = array("forward" => $new_upd->forward, "backward" => $new_upd->backward);
 			$oupdate = array("forward" => $orig_upd->forward, "backward" => $orig_upd->backward);
-			$ar->createGraphResult("update", $msg, $ar->status(), $mupdated, $oupdate, $test_flag);
+			$ar->createGraphResult("update", $msg, $ar->status(), $mupdate, $oupdate, $test_flag);
 		}
 		if($new_upd->published() && $orig_upd->published()){ //live edit
 			$umode = "live";

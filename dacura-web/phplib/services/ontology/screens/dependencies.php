@@ -162,8 +162,10 @@
 					<input type='radio' name='tma' id='tests-set-manual' value='manual'><label for='tests-set-manual'>Manual</label>
 					<input type='radio' name='tma' id='tests-set-automatic' value='automatic'><label for='tests-set-automatic'>Automatic</label>
 				</span>
-				<input type='checkbox' class='enable-update tests-enable-update' id='enable-update-tests' value="">
-				<label for='enable-update-tests'>Update</label>
+				<?php if(isset($params['can_update']) && $params['can_update']){?>
+					<input type='checkbox' class='enable-update tests-enable-update' id='enable-update-tests' value="">
+					<label for='enable-update-tests'>Update</label>
+				<?php } ?>
 			</span>
 			<span class='subscreen-close'></span>
 		</div>
@@ -192,8 +194,10 @@
 					<input type='radio' name='ima' id='imports-set-manual' value='manual'><label for='imports-set-manual'>Manual</label>
 					<input type='radio' name='ima' id='imports-set-automatic' value='automatic'><label for='imports-set-automatic'>Automatic</label>
 				</span>
+				<?php if(isset($params['can_update']) && $params['can_update']){?>
 				<input type='checkbox' class='enable-update imports-enable-update' id='enable-update-imports' value="">
 				<label for='enable-update-imports'>Update</label>
+				<?php } ?>
 			</span>
 			<span class='subscreen-close'></span>
 		</div>
@@ -205,6 +209,8 @@
 var depids = [];
 var test_update_dqs_options = <?php echo isset($params['test_update_dqs_options']) && $params['test_update_dqs_options'] ? $params['test_update_dqs_options'] : "{}";?>;
 var update_dqs_options = <?php echo isset($params['update_dqs_options']) && $params['update_dqs_options'] ? $params['update_dqs_options'] : "{}";?>;
+
+/* visibility control functions */
 
 function hideDependenciesControls(){
 	$('#deptable').hide("slide", {"direction": "up"});	
@@ -266,6 +272,7 @@ function structuralNSCount(dep){
 	return dep['structural_links'];
 }
 
+//generate data for the namespace utilisation row
 function getNSUsageRow(dep, id, key, isauto){
 	var s = dep['subjects_used']; ;
 	if(dep['distinct_subjects'] > 1) s += " (" + dep['distinct_subjects'] + " distinct)"; 
@@ -279,6 +286,7 @@ function getNSUsageRow(dep, id, key, isauto){
 	return html;
 }
 
+//generate data for the dependencies entry
 function getDepRow(dep, id, key, isauto){
 	var html = "";
 	if(dep['structural_links'] > 0){ 
@@ -288,6 +296,7 @@ function getDepRow(dep, id, key, isauto){
 	return html; 
 }
 
+//display a tree as a table - return html string
 function getTreeAsTable(tree){
 	var hasentry = false;
 	var html = "<ul class='include-treelist'>";
@@ -304,6 +313,7 @@ function getTreeAsTable(tree){
 	return "";
 }
 
+//generate dependency tree 
 function getIncludeTreeHTML(tree){
 	var html = "";
 	for(var r in tree){
@@ -322,6 +332,7 @@ function getIncludeTreeHTML(tree){
 	return html;
 }
 
+//add include tree to dom
 function showIncludeTree(tree, jqid, htxt){
 	var cnt = 0;
 	$(jqid).html("");
@@ -344,6 +355,7 @@ function showIncludeTree(tree, jqid, htxt){
 	$(jqid + ' .include-treelist').menu();	
 }
 
+//generate data for the namespace utilisation entry
 function getNSUsageRows(count){
 	var rows = [];
 	var rowdata = {
@@ -392,12 +404,14 @@ function getNSUsageRows(count){
 	return rows;	
 }
 
+//add table of structural links to dom
 function writeStructuralTable(structurals){
 	for (var i in structurals) {
 		$('.structural-links tbody').append("<tr><td>" + structurals[i][0] + "</td><td>" + structurals[i][1] + "</td><td>" + structurals[i][2] + "</td></tr>");
 	}	
 }
 
+//get data to populate the dependencies pane
 function getDepsRows(count, deps, imported){
 	var rows = [];
 	rowdata = {
@@ -446,6 +460,7 @@ function getDepsRows(count, deps, imported){
 	return rows;
 }
 
+//refresh the dependencies from the passed deps object
 function refreshDependencies(deps){
 	$('#deptable tbody').empty();
 	$('#dependencies-summary').empty();
@@ -453,6 +468,7 @@ function refreshDependencies(deps){
 	showDependencies(deps);
 }
 
+//show the dependencies table
 function showDependencies(deps){
 	depids = [];
 	var count = {unknown: 0, internal: 0, builtins: 0, structural: 0, total: 0, predicates: 0, distinct_predicates: 0, namespaces: 0};
@@ -607,7 +623,7 @@ function showDependencies(deps){
 	$('#alldeps .clickable-summary').hover(hvrin, hvrout).click(hclick);	
 }
 
-
+//show the namespace dependencies
 function showNSDependencies(dep, ns){
 	$('#singleont-dependencies-title').html("Dependencies on " + ns + " ontology");
 	var hassubj = false;
@@ -658,7 +674,7 @@ function showNSDependencies(dep, ns){
 	
 }
 
-
+//generate the list of automatically imported ontologies 
 function getAutomaticImports(data){
 	var available_imports = <?=$params['available_ontologies']?>;
 	imps = {};
@@ -681,6 +697,8 @@ function getAutomaticImports(data){
 	}
 	return imps;
 }
+
+/* dqs configuration management */
 
 function initDQS(data, pconf){
 	drawDQS(data, pconf);
@@ -706,15 +724,19 @@ function drawDQS(data, pconf){
 	}
 	var dqsconfig = new DQSConfigurator(data.meta.dqs_tests, <?=$params['default_dqs_tests']?>, <?=$params['dqs_schema_tests']?>, "view", handleDQSUpdate);
 	var importer = new OntologyImporter(data.meta.imports, <?=$params['available_ontologies']?>, getAutomaticImports(data), "view", handleImportUpdate);
+	if(!can_update){
+		importer.show_buttons = false;
+		dqsconfig.show_buttons = false;
+	}
 	rows = dacura.ld.getDQSRows("#dqs-subscreens", res, data.meta, pconf,  importer, dqsconfig);
 	for(var i = 0; i<rows.length; i++){
 		$('#dqscontroltable tbody').append(dacura.ld.getControlTableRow(rows[i]));
 		$('#dqs-summary').append(dacura.ld.getSummaryTableEntry(rows[i]));					
 	}
-	setDQSDynamics(data, pconf);
-		
+	setDQSDynamics(data, pconf);	
 }
 
+//attach events to dqs pane
 function setDQSDynamics(data, pconf){
 	var hvrin = function(){
 		$(this).addClass('uhover');
@@ -744,6 +766,7 @@ function setDQSDynamics(data, pconf){
 
 }
 
+//called when the list of imported ontologies is updated
 var handleImportUpdate = function(conf, isauto, test){
 	//transform conf back into an owl updates request
 	var pconf = {resultbox: ".imports-messages", busybox: ".dqs-imports" }
@@ -763,6 +786,7 @@ var handleImportUpdate = function(conf, isauto, test){
 	updateOntology(upd, pconf)	
 } 
 
+//called when the dqs configuration is changed
 function handleDQSUpdate(conf, isauto, test){
 	var pconf = {resultbox: ".dqs-messages", busybox: ".dqs-tests" }
 	var upd = {
@@ -782,6 +806,7 @@ function handleDQSUpdate(conf, isauto, test){
 	updateOntology(upd, pconf)	
 } 
 
+//called to update the ontology in response to a dqs or import update
 function updateOntology(upd, pconf){
 	handleResp = function(data, pconf){
 		var res = new LDResult(data, pconf);
@@ -798,6 +823,4 @@ function updateOntology(upd, pconf){
 	}
 	dacura.ld.update("<?=$params['id']?>", upd, handleResp, pconf, upd.test);
 }
-
-
 </script>

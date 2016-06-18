@@ -16,8 +16,7 @@
 				<th id='dfu-printModified'>Modified</th>
 				<th id='ldu-modtime'>Sortable Modified</th>
 				<th id='ldu-size'>Size</th>				
-				<th id='dfu-rowselector'>Select</th>
-				
+				<th id='dfu-rowselector'>Select</th>				
 			</tr>
 			</thead>
 			<tbody></tbody>
@@ -34,12 +33,14 @@ uphp.canmulti = <?php echo isset($params['multi_updates_update_allowed']) && $pa
 uphp.multiselect_text = "<?php echo isset($params['updates_multiselect_text']) ? $params['updates_multiselect_text'] : "Update status of selected updates to: " ?>";
 uphp.multiselect_button_text = "<?php echo isset($params['updates_multiselect_button_text']) ? $params['updates_multiselect_button_text'] : "Update" ?>";
 
+/* updates the status of an ld update */
 function updateLDUpdateStatus(ids, status, cnt, pconf, rdatas){
 	dacura.tool.clearResultMessages();
 	var upd = {"umeta": {"status": status}, "editmode": "update", "format": "json"};
 	dacura.ld.multiUpdateStatus(upd, ids, status, pconf, rdatas, "update_table");
 }
 
+/* draw empty updates table */
 function emptyUpdatesTableHTML(key, tconfig){
 	if(typeof tconfig.multiselect == "object" && typeof tconfig.multiselect.container == "string"){
 		$('#' + tconfig.multiselect.container).hide();	
@@ -50,7 +51,7 @@ function emptyUpdatesTableHTML(key, tconfig){
 	mopts.scrollTo = false;
 	dacura.system.showInfoResult("No " + ldtnp + " have been updated in your collection - once you make changes to your " + ldtn + ", records of each update will appear on this page", "No " + ldtnp + " have been updated in " + dacura.system.cid(), pconfig.resultbox, null, mopts)
 }
-
+/* initialise updates table */
 var initupds = function(pconfig){
 	var tabinit = {
 		"screen": "update-list", 
@@ -73,6 +74,8 @@ var initupds = function(pconfig){
 	}
 	dacura.tool.table.init("update_table", tabinit);	
 }
-
-initfuncs['update-list'] = initupds;
+/* add init function to initialisation array */
+if(typeof initfuncs == "object"){
+	initfuncs['update-list'] = initupds;
+}
 </script>

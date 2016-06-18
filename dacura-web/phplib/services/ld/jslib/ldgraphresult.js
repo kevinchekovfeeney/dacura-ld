@@ -1,4 +1,16 @@
+/**
+ * @file Javascript object for interpreting graph update results
+ * @author Chekov
+ * @license GPL V2
+ */
 
+/**
+ * @function LDGraphResult
+ * @constructor
+ * @param jsondr {Object} the json intialisation object (returned by API)
+ * @param graphtype {String} ld|dqs|meta|update - which graph is the result about
+ * @param pconfig {DacuraPageConfig} page config object
+ */
 function LDGraphResult(jsondr, graphtype, pconfig){
 	this.graphtype = graphtype;
 	this.tests = typeof jsondr.tests == "undefined" ? false : jsondr.tests;
@@ -9,12 +21,44 @@ function LDGraphResult(jsondr, graphtype, pconfig){
 	this.status = jsondr.status;
 	this.message = jsondr.message;
 	this.test = typeof jsondr.test == "undefined" ? false : jsondr.test;
-	this.errors = dacura.ld.parseRVOList(jsondr.errors);
-	this.warnings = dacura.ld.parseRVOList(jsondr.warnings);
+	this.errors = parseRVOList(jsondr.errors);
+	this.warnings = parseRVOList(jsondr.warnings);
 	this.pconfig = pconfig;
 	this.hypotethical = jsondr.hypotethical;
 }
 
+/**
+ * @summary is the result empty (no inserts, no deletes)?
+ * @returns {Boolean}
+ */
+LDGraphResult.prototype.isEmpty = function(){
+	return !(this.inserts || this.deletes);
+};
+
+/**
+ * @summary is the result totally empty (no inserts, deletes, errors or warnings)
+ * @returns {Boolean}
+ */
+LDGraphResult.prototype.isTotallyEmpty = function(){
+	return !(this.hasErrors() || this.hasWarnings() || !this.isEmpty());
+};
+
+/**
+ * Returns the title text of the result
+ * @returns {String}
+ */
+LDGraphResult.prototype.getResultTitle = function(){
+	if(typeof this.message == "object" && typeof this.message.title != "undefined"){
+		return this.message.title;
+	}
+	return this.action;
+};
+
+/**
+ * @summary generates the html to show a graph result
+ * @param show_errors {boolean} should we show errors and warnings?
+ * @returns {String} the html
+ */
 LDGraphResult.prototype.getHTML = function(show_errors){
 	var html = "<div class='api-graph-testresults'>";
 	if(this.isTotallyEmpty()){
@@ -64,10 +108,19 @@ LDGraphResult.prototype.getHTML = function(show_errors){
 	return html;
 };
 
+/**
+ * @summary generates the empty box html 
+ * @param type {string} 
+ * @returns {String}
+ */
 LDGraphResult.prototype.getEmptyHTML = function(type){
 	return "<div class='empty-ldcontents'>Empty</div>";
 };
 
+/**
+ * @summary generates the html to display the result title
+ * @returns {String} html
+ */
 LDGraphResult.prototype.getResultTitleHTML = function(){
 	var html = "<div class='graph-result-title' title='" + this.action + "'>";
 	if(this.test || this.hypothetical){
@@ -85,13 +138,10 @@ LDGraphResult.prototype.getResultTitleHTML = function(){
 	return html;
 };
 
-LDGraphResult.prototype.getResultTitle = function(){
-	if(typeof this.message == "object" && typeof this.message.title != "undefined"){
-		return this.message.title;
-	}
-	return this.action;
-};
-
+/**
+ * @summary Generates the result message html
+ * @returns {String} html
+ */
 LDGraphResult.prototype.getResultMessageHTML = function(){
 	var html = "<div class='graph-result-message'>";
 	var msg = "";
@@ -105,6 +155,10 @@ LDGraphResult.prototype.getResultMessageHTML = function(){
 	return html;
 }
 
+/**
+ * @summary Generates html to show a summary of the object
+ * @returns {String} html
+ */
 LDGraphResult.prototype.getSummaryHTML = function(){
 	var html = "";
 	if(this.hasErrors()) html += this.getErrorsSummary();
@@ -117,6 +171,10 @@ LDGraphResult.prototype.getSummaryHTML = function(){
 	return html;
 };
 
+/**
+ * @summary Generates html to show a dqs configuration page (to show which tests were configured)
+ * @returns {String} html
+ */
 LDGraphResult.prototype.getDQSConfigPage = function(dqs, current){
 	var html = "<div class='dqsconfig'><div class='dqs-all-config-element'>";
 	html += "<input type='radio' id='dqs-radio-all' name='dqsall' value='all' ";
@@ -162,7 +220,10 @@ LDGraphResult.prototype.getDQSConfigPage = function(dqs, current){
 	return html;
 }
 
-
+/**
+ * @summary Generates html to show a summary of the ontologies that were imported
+ * @returns {String} html
+ */
 LDGraphResult.prototype.getImportsSummary = function(simports){
 	var html = "";
 	simports = (typeof simports == "object") ? simports : this.imports;
@@ -175,6 +236,10 @@ LDGraphResult.prototype.getImportsSummary = function(simports){
 	return html;
 };
 
+/**
+ * @summary Generates html to show a summary of the DQS tests configured
+ * @returns {String} html
+ */
 LDGraphResult.prototype.getTestsSummary = function(){
 	var html = "<span class='graph-summary-element'>";
 	if(typeof this.tests == "string"){
@@ -192,6 +257,10 @@ LDGraphResult.prototype.getTestsSummary = function(){
 	return html;
 };
 
+/**
+ * @summary Generates html to show a summary of the updates graph result
+ * @returns {String} html
+ */
 LDGraphResult.prototype.getGraphUpdatesSummary = function(){
 	var html = "";
 	if(this.inserts && this.inserts.length > 0){
@@ -204,7 +273,10 @@ LDGraphResult.prototype.getGraphUpdatesSummary = function(){
 	return html;
 };
 
-
+/**
+ * @summary Generates html to show the result 'headline' passed or failed with icon
+ * @returns {String} html
+ */
 LDGraphResult.prototype.getResultHeadlineHTML = function(){
 	var html = "<span class='dqsresulticon'>";
 	if(this.status == "accept"){
@@ -217,6 +289,11 @@ LDGraphResult.prototype.getResultHeadlineHTML = function(){
 	}
 	return html;
 }
+
+/**
+ * @summary Generates html to show a summary of the result (headline + errors + warnings)
+ * @returns {String} html
+ */
 LDGraphResult.prototype.getResultSummaryHTML = function(){
 	var html = "<div class='dqsresult'>";
 	html += this.getResultHeadlineHTML();
@@ -235,6 +312,7 @@ LDGraphResult.prototype.getResultSummaryHTML = function(){
 	html += "</div>";
 	return html;
 }
+/* a bunch of functions that are identical to LDResult */
 LDGraphResult.prototype.getErrorsHTML = LDResult.prototype.getErrorsHTML;
 LDGraphResult.prototype.getWarningsHTML = LDResult.prototype.getWarningsHTML;
 LDGraphResult.prototype.hasWarnings = LDResult.prototype.hasWarnings;
@@ -242,11 +320,3 @@ LDGraphResult.prototype.hasErrors = LDResult.prototype.hasErrors;
 LDGraphResult.prototype.getErrorsSummary = LDResult.prototype.getErrorsSummary;
 LDGraphResult.prototype.getWarningsSummary = LDResult.prototype.getWarningsSummary;
 
-
-LDGraphResult.prototype.isEmpty = function(){
-	return !(this.inserts || this.deletes);
-};
-
-LDGraphResult.prototype.isTotallyEmpty = function(){
-	return !(this.hasErrors() || this.hasWarnings() || !this.isEmpty());
-};

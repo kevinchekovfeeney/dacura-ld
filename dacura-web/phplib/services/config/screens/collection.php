@@ -132,108 +132,20 @@ function drawCollection(obj){
 /* Storing various data in javascript variables for access by screens */
 <?php if(in_array("view-services", $params['subscreens'])) { ?>
 var allroles = <?=isset($params['all_roles']) ? json_encode($params['all_roles']) : "{}"?>;
-var service_tables = <?= json_encode($params['service_tables']); ?>;
 
 /* result reporting */ 
 function showDeleteResult(obj, targets){
 	dacura.system.showWarningResult("This collection has been deleted", "Collection " + dacura.system.cid() + " deleted", targets.resultbox, false, targets.mopts);
 }
 
-/* Called when user clicks 'remove' link of facet page */
-function facet_remove(divid, r, f){
-	id = current_service;
-	var nfacets = [];
-	for(var i = 0; i < lconfig.services[id].facets.length; i++){
-		if(lconfig.services[id].facets[i].facet == f && lconfig.services[id].facets[i].role == r){
-			
-		}
-		else {
-			nfacets.push(lconfig.services[id].facets[i]);
-		}
-	}
-	lconfig.services[id].facets = nfacets;
-	var ndata = {"services": {}};
-	ndata.services[id] = lconfig.services[id];
-	var onwards = function(data, pconf){
-		$('#'+divid).remove();
-		showUpdateSuccess(data, pconf, id + " updated");
-	}
-	dacura.config.updateCollection(ndata, onwards, service_subpage_conf);	
-}
-
-/* Called when user updates list of facets for a service */
-function updateFacetList(key, facets, pconf, allfacets){
-	var html = "";
-	for(var i = 0; i < facets.length; i++){
-		var rtitle = allroles[facets[i].role];
-		if(typeof allfacets == "object" && typeof allfacets[facets[i].facet] == "string"){
-			fac = allfacets[facets[i].facet];
-		}
-		else {
-			fac = facets[i].facet;
-		}
-		html += dacura.config.getFacetButtonHTML(key+"-facet-" + i, facets[i].role, rtitle, facets[i].facet, fac);
-	}
-	$('#' + key + ' .dacura-facets-listing').html(html);
-}
-
 /* Loads the service with the passed id into the screen */
 function loadService(id){
-	current_service = id;
-	dacura.tool.clearResultMessages();
-	if(!isEmpty(service_tables[id])){
-		$('#servicebox-contents').empty().append(service_tables[id].body);
-		dacura.tool.form.init('service-'+id, {initselects: true, icon: "<?= $service->furl("images", "icons/help-icon.png")?>"});
-		$('.addfacet').button().click(function(event){
-			var f = $('.facet-maker select.facets').val();
-			var r = $('.facet-maker select.roles').val();
-			if(typeof lconfig.services[id].facets == "object"){
-				lconfig.services[id].facets.push({"facet": f, "role": r});
-			}
-			var ndata = {"services": {}};
-			ndata.services[id] = lconfig.services[id];
-			var onwards = function(data, pconf){
-				updateFacetList("servicebox-contents", lconfig.services[id].facets, pconf, lconfig.services[id]["facet-list"]); 
-				showUpdateSuccess(data, pconf, id + " updated");
-			}
-			dacura.config.updateCollection(ndata, onwards, service_subpage_conf);	
-		});
-		dacura.tool.form.populate('service-'+id, lconfig.services);		
-	}
-	else {
-		dacura.system.showErrorResult("Found no service configuration information for " + id, "Error loading service", '#servicebox-contents');
-	}
-	
-	service_subpage_conf = dacura.tool.loadSubscreen('servicelist', 'servicebox', "return to list of services", service_tables[id].header);
+	var x = window.location.href.split("?")[0];
+	x = x.split("#")[0];
+	if(x.substring(x.length-1) != "/"){ x += "/";}
+	window.location.href = x + id;
 }
 
-/* updates the config of a particular service */
-function updateServiceConfig(obj, result, pconf){
-	var sid = obj.id;
-	delete(obj.id);
-	var data = {"services": {}};
-	data.services[sid] = obj;
-	pconf = typeof service_subpage_conf == "object" ? service_subpage_conf : pconf;
-	dacura.config.updateCollection(data, result, pconf);
-}
-
-/* reads the data from the form, marshalls it and sends it to the update api */
-function readServiceUpdate(screen){
-	//get id of currently loaded serviced
-	if($('#servicebox-contents table').length){
-		var tid = $("#servicebox-contents table").attr("id");
-		var obj = dacura.tool.form.gather(tid);
-		if(typeof obj.meta == "object" && typeof obj.values == "object"){
-
-		}
-		obj.id = tid.substring(8);
-		return obj;
-	}
-	else {
-		alert("No input data available to update service configuration");
-	}
-	return {};
-}
 
 /* draws the table which lists the services available */
 function drawServiceTable(services, col){
@@ -293,13 +205,6 @@ var sloaded = false; // the currently loaded service
 		"source": "sysconfig",
 		"submit": updateSettings,
 		"result": function(data, pconf){showUpdateSuccess(data, pconf, "Configuration settings updated ok");}
-	});
-    <?php } if(in_array("view-services", $params['subscreens']) && isset($params['service_config_settings']['display_type']) && $params['service_config_settings']['display_type'] == "update") { ?>
-	dacura.tool.button.init("serviceupdate", {
-		"screen": "view-services",			
-		"gather": readServiceUpdate,
-		"submit": updateServiceConfig,
-		"result": function(data, pconf) { showUpdateSuccess(data, pconf, "System Configuration Updated OK");}
 	});
     <?php } if(isset($params['candelete'])){?>
 	dacura.tool.button.init("deletecollection", {

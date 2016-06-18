@@ -83,6 +83,13 @@ class CandidateDacuraServer extends LdDacuraServer {
 		return $ar;		
 	}
 	
+	/**
+	 * Fills a frame with data from a candidate object
+	 * @param array $frames an array of frames
+	 * @param Candidate $cand the candidate to be used to fill the frame
+	 * @param string $frag_id the fragment id in question 
+	 * @return boolean true - always true...
+	 */
 	function fillFrame(&$frames, Candidate $cand, $frag_id = false){
 		if($frag_id == false){
 			$frag_id = $cand->cwurl;
@@ -104,7 +111,6 @@ class CandidateDacuraServer extends LdDacuraServer {
 		}
 		return true;
 	}
-	
 	
 	/**
 	 * Asks the DCS service for the set of valid types as specified in the context schema for candidates
@@ -182,6 +188,10 @@ class CandidateDacuraServer extends LdDacuraServer {
 		return $dr;	
 	}
 	
+	/**
+	 * Invokes the DQS service to delete a candidate from the graph
+	 * @see LdDacuraServer::objectDeleted()
+	 */
 	function objectDeleted(Candidate $cand, $test_flag = false){
 		$dr = new DQSResult("Unpublishing Candidate $cand->id", $test_flag);
 		if($cand->isEmpty()){
@@ -233,6 +243,10 @@ class CandidateDacuraServer extends LdDacuraServer {
 		return $dr;
 	}
 	
+	/**
+	 * Invokes the DQS to update a candidate in the graph
+	 * @see LdDacuraServer::objectUpdated()
+	 */
 	function objectUpdated(LDOUpdate $uldo, $test_flag = false){
 		$dr = new DQSResult("Updating Candidate ". $uldo->original->id, $test_flag);
 		$ngs = $uldo->getUpdatedNamedGraphs($this->getMainGraph()->instanceGname());
@@ -284,6 +298,11 @@ class CandidateDacuraServer extends LdDacuraServer {
 		return $dr;
 	}
 	
+	/**
+	 * Called to rollback an update when it fails on a single graph - rollsback all the written to graphs
+	 * @param array $gquads array of quads to rollback referenced by graph id
+	 * @return DQSResult
+	 */
 	function rollbackPartialObjectUpdate($gquads){
 		$dr = new DQSResult("Rolling back partial update");
 		foreach($gquads as $gid => $gstruct){

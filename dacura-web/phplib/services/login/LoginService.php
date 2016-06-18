@@ -43,6 +43,10 @@ class LoginService extends DacuraService {
 	 */
 	protected function renderTopbarSnippet(){}	
 	
+	function getMinimumFacetForAccess(DacuraServer &$dacura_server){
+		return true;
+	}
+	
 	/**
 	 * The page-drawing logic
 	 * 

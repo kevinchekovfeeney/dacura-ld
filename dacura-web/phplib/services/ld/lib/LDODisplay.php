@@ -15,7 +15,7 @@ class LDODisplay extends DacuraObject {
 	 * @param LDO $ldo linked data object to be displayed
 	 * @param array $options display options
 	 */
-	function __construct(LDO $ldo, $options){
+	function __construct($ldo, $options){
 		$this->ldo = $ldo;
 		$this->options = $options;
 	}

@@ -16,27 +16,41 @@ $x = @$ldo_type;
 	if(!$x){
 		$ldo_type = isset($_GET['ldtype']) ? $_GET['ldtype'] : "";
 	}
-	getRoute()->get('/', 'list_ldos');//list the linked data objects of a certain type (or updates to them)
-	getRoute()->get('/update', 'list_updates');//list the linked data objects of a certain type (or updates to them)
-	getRoute()->get('/update/(\w+)', 'get_update');
-	getRoute()->get('/(\w+)/(\w+)', 'get_ldo');//with fragment id
-	getRoute()->get('/(\w+)', 'get_ldo');//no fragment id
-	getRoute()->post('/update/(\w+)', 'update_update');
-	getRoute()->post('/(\w+)/(\w+)', 'update_ldo');//with frag id
-	getRoute()->post('/', 'create_ldo');//create a new ldo of a given type
-	getRoute()->post('/(\w+)', 'update_ldo');//no frag id
-	getRoute()->delete('/(\w+)/(\w+)', 'delete_ldo');//with fragment id
-	getRoute()->delete('/(\w+)', 'delete_ldo');//no fragment id
-	getRoute()->delete('/update/(\w+)', 'delete_update');//no fragment id
-	//we really should have config settings for these fellas	
+	if($dacura_server->userHasFacet("list")){
+		getRoute()->get('/', 'list_ldos');//list the linked data objects of a certain type (or updates to them)
+	}
+	if($dacura_server->userHasFacet("inspect")){
+		getRoute()->get('/update', 'list_updates');//list the linked data objects of a certain type (or updates to them)
+		getRoute()->get('/update/(\w+)', 'get_update');
+	}
+	if($dacura_server->userHasFacet("view")){
+		getRoute()->get('/(\w+)/(\w+)', 'get_ldo');//with fragment id
+		getRoute()->get('/(\w+)', 'get_ldo');//no fragment id		
+	}
+	if($dacura_server->userHasFacet("manage")){
+		getRoute()->post('/update/(\w+)', 'update_update');
+		getRoute()->delete('/update/(\w+)', 'delete_update');
+		getRoute()->post('/(\w+)/(\w+)', 'update_ldo');//with frag id
+		getRoute()->post('/(\w+)', 'update_ldo');//no frag id
+		getRoute()->delete('/(\w+)/(\w+)', 'delete_ldo');//with fragment id
+		getRoute()->delete('/(\w+)', 'delete_ldo');//no fragment id
+	}
+	if($dacura_server->userHasFacet("create")){
+		getRoute()->post('/', 'create_ldo');//create a new ldo of a given type
+	}
+	//we really should have config settings for these fellas and only push them out when we are coming from remote...
 	set_time_limit (1800);//set a long timeout - 30 minutes for testing purposes anyway
 	header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
+	header("Access-Control-Allow-Credentials: true");
 	header("Access-Control-Max-Age: 1728000");
 	header('Access-Control-Allow-Headers: Accept, Accept-Encoding, Accept-Language, Host, Origin, Referer, Content-Type, Content-Length, Content-Range, Content-Disposition, Content-Description');
-	header("Access-Control-Allow-Origin: *");	
+	if(isset($_SERVER['HTTP_ORIGIN'])){
+        header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
+	}
+	else {
+		header("Access-Control-Allow-Origin: *");	
+	}
 //}
-
-	
 	
 /**
  * Create a new Linked Data Object and return the result to the user
@@ -97,7 +111,7 @@ function create_ldo(){
 	}
 	if(isset($obj['meta'])) $create_obj['meta'] = $obj['meta'];
 	$ar->add($dacura_server->createLDO($ldo_type, $create_obj, $demand_id, $format, $options, $test_flag), true, true);
-	$this->recordUserAction("create ".$ldo_type, array("status" => $ar->status));
+	$dacura_server->recordUserAction("create ".$ldo_type, array("status" => $ar->status));
 	return $dacura_server->writeDecision($ar, $format, $options);
 }
 

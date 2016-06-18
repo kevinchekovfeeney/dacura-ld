@@ -96,8 +96,14 @@ class DacuraFormElement extends DacuraObject {
 		elseif($this->type == 'boolean'){
 			$this->input_type = "checkbox";
 		}
+		elseif($this->type == 'complex'){
+			$this->input_type = "custom";
+		}
 		else {
 			$this->input_type = "input";
+		}
+		if($this->type == 'complex' && isset($row['extras'])){
+			$this->complex = $row['extras'];
 		}
 		if($this->type == "section"){
 			$this->input_type = "section";
@@ -117,9 +123,6 @@ class DacuraFormElement extends DacuraObject {
 			if(isset($row['fields'])){
 				$this->subfields->addElements($row['fields']);
 			}
-		}
-		if($this->type == "complex" && isset($row['extras'])){
-			$this->complex = $row['extras'];			
 		}
 		return $this->hasValidSettings();
 	}
@@ -465,7 +468,7 @@ class DacuraFormElement extends DacuraObject {
 			$html = "<div class='dacura-display-json raw-json'>" . json_encode($this->value, JSON_PRETTY_PRINT)."</div>";
 		}
 		else {
-			$html = "Unknown thing to display (".$this->value.")";
+			$html = "<span class='dacura-display-value dacura-display-json'>Unknown thing to display (".$this->value.")</span>";
 		}
 		return $html;
 	}

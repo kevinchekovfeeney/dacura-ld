@@ -138,9 +138,9 @@ class ConfigForm extends DacuraObject {
 		if(!isset($settings['status'])){
 			$settings['status'] = "enable";
 		}
-		if($this->cid() !== "all" && !isset($settings['facets'])){
+		//if($this->cid() !== "all" && !isset($settings['facets'])){
 			$settings['facets'] = array();
-		}
+		//}
 		$fields = $this->generateFieldsFromSettings($settings, $sfields);
 		//if($sname == "config") opr ($fields);
 		$nfields = array();

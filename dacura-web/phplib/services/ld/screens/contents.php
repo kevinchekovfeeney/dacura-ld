@@ -4,17 +4,20 @@
 </div>
 
 <script>
+//just load the configuration and the object and call show...
 var refreshContents = function(data, pconf){
 	ldov.pconf = pconf;
 	ldov.show("#show-ldo", "view", refreshLDOPage);
 };
-
+//just load the configuration and the object and call show...
 var initContents = function(data, pconf){
 	ldov.pconf = pconf;
 	ldov.show("#show-ldo", "view", refreshLDOPage);
 };
-	
-refreshfuncs["ldo-contents"] = refreshContents;
-initfuncs["ldo-contents"] = initContents;
-
+if(typeof initfuncs == "object"){
+	initfuncs["ldo-contents"] = initContents;
+}
+if(typeof refreshfuncs == "object"){
+	refreshfuncs["ldo-contents"] = refreshContents;
+}
 </script>

@@ -15,7 +15,7 @@ $settings = array(
 	"default_status" => "pending",
 	"default_profile" => array(),
 	"default_collection_config" => array(),
-	"collection_paths_to_create" => array("logs", "cache", "dumps", "files"),
+	"collection_paths_to_create" => array("logs", "cache", "dumps", "files", "sessions"),
 	"messages" => array(
 		"system-view-files-intro" => "Upload and manage images and other server files",
 		"system-view-logs-intro" => "Keep track of all the activity on the platform",
@@ -46,8 +46,6 @@ $settings = array(
 		"icon" => array("type" => "image", "label" => "Icon", "help" => "An icon (16 x 16 pixels) which will represent the collection in menus, etc."),
 		"collection_url" => array("label" => "Collection Home", "type" => "url", "help" => "The Dacura URL for the collection"),		
 		"collection_path" => array("label" => "Collection Storage", "help" => "The directory in which the collection's files are stored"),		
-	//	"instance_idbase" => array("hidden" => true, "label" => "Instance Data ID prefix", "type" => "url", "help" => "This URL will be prepended to the internal IDs of all collection instance data to make a global id"),		
-	//	"graph_idbase" => array("hidden" => true, "label" => "Named Graph ID prefix", "type" => "url", "help" => "This URL will be prepended to the internal IDs of all collection named graphs to make a global id"),		
 	),
 	/* System configuration fields that will appear on the collection / system configuration form */
 	"sysconfig_form_fields" => array(
@@ -96,7 +94,7 @@ $settings = array(
 	"service_form_fields" => array(
 		"status" =>	array("label" => "Status", "help" => "Is the service currently enabled?", "type" => "choice", "options" => array("enable" => "Enabled", "disable" => "Disabled")),			
 		"facets" =>	array("label" => "Access Control", "input_type" => "custom", "extras" => array(), "help" => "What facets of the service are available to which users", "type" => "complex"),			
-		"facet-list" =>	array("label" => "Access Control Facets", "disabled" => true),
+		"facet-list" =>	array("label" => "Access Control Facets", "hidden" => true, "disabled" => true),
 		"service-title" => array("hidden" => true),
 		"service-button-title" => array("hidden" => true),
 		"status_locked" => array("hidden" => true),

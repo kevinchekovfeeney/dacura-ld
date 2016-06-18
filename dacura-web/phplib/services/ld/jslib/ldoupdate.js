@@ -1,8 +1,14 @@
-
 /**
- * LDOUpdate object for interpreting LDOUpdate objects returned in responses by the Dacura API
+ * @file Javascript object for interpreting LDOUpdate objects returned in responses by the Dacura API
+ * @author Chekov
+ * @license GPL V2
  */
 
+/**
+ * @function LDOUpdate
+ * @constructor
+ * @param data {Object} the ldo update json object (returned by API)
+ */
 function LDOUpdate(data){
 	this.id = data.id;
 	this.meta = typeof data.meta == "undefined" ? false : data.meta;
@@ -16,14 +22,26 @@ function LDOUpdate(data){
 	this.contents = typeof data.contents == "undefined" ? false : data.contents;
 }
 
+/**
+ * @summary Retrieves the linked data type (candidate, ontology, graph) of the update 
+ * @returns {String}
+ */
 LDOUpdate.prototype.ldtype = function(){
 	return this.meta.ldtype;
 }
 
+/**
+ * @summary is the update empty (no update)? 
+ * @returns {Boolean} true if empty
+ */
 LDOUpdate.prototype.isEmpty = function(){
 	return size(this.inserts) == 0 && size(this.deletes) == 0;
 }
 
+/**
+ * @summary retrieves the api arguments used to generate the update
+ * @returns {Object} format, options, ldtype
+ */
 LDOUpdate.prototype.getAPIArgs = function(){
 	var args = {
 		"format": this.format,
@@ -33,8 +51,10 @@ LDOUpdate.prototype.getAPIArgs = function(){
 	return args;
 }
 
-
-
+/**
+ * @summary generates html to show the forward and backward commands of the update
+ * @returns {String} html
+ */
 LDOUpdate.prototype.getCommandsHTML = function(){
 	if(!this.inserts && !this.deletes){
 		var html = "<div class='info'>No Updates</div>";		
@@ -45,9 +65,10 @@ LDOUpdate.prototype.getCommandsHTML = function(){
 	return html;
 };
 
-
-
-
+/**
+ * @summary generates html to show the update object
+ * @returns {String} html
+ */
 LDOUpdate.prototype.getHTML = function(mode){
 	var html = "";
 	var box = (typeof box == "string") ? box : "";
@@ -69,4 +90,7 @@ LDOUpdate.prototype.getHTML = function(mode){
 	return (html.length ? html : "<div class='dacura-error'>No contents in ldo update object</div>");
 }
 
+/**
+ * @summary make these the same function
+ */
 LDOUpdate.prototype.getContentsHTML = LDOUpdate.prototype.getHTML;

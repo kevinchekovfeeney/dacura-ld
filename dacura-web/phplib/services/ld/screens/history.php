@@ -22,6 +22,7 @@
 var tooltipconf = <?php echo isset($params['tooltip_config']) ? $params['tooltip_config'] : "{}" ?>;
 var history_datatable = <?=$params['history_datatable']?>;
 
+//draw the empty table html for when there is no history 
 function emptyHistoryTableHTML(key, tconfig){
 	var pconfig = dacura.tool.subscreens[tconfig.screen];
 	var mopts = $.extend(true, {}, pconfig.mopts);
@@ -30,6 +31,7 @@ function emptyHistoryTableHTML(key, tconfig){
 	dacura.system.showInfoResult("When you update your " + ldtn + " records of its old versions will appear on this page", "Your " + ldtn + " has not been updated since it was created", pconfig.resultbox, null, mopts)
 }
 
+//initialise the table 
 var initHistoryTable = function(data, pconf){
 	if(typeof data.history == "undefined") data.history = [];
 	dacura.tool.table.init("history_table", {
@@ -49,15 +51,15 @@ var initHistoryTable = function(data, pconf){
 	//$('#history_table').tooltip(tooltipconf);	
 }
 
+//refresh from api data
 var refreshHistoryTable = function(data, pconf){
 	if(typeof data.history == "undefined") data.history = [];
 	dacura.tool.table.reincarnate("history_table", data.history);
 }
 
-
-refreshfuncs['ldo-history'] = refreshHistoryTable;
-
-
+if(typeof refreshfuncs == "object"){
+	refreshfuncs['ldo-history'] = refreshHistoryTable;
+}
 if(typeof initfuncs == "object"){
 	initfuncs["ldo-history"] = initHistoryTable;
 }

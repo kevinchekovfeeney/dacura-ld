@@ -35,6 +35,19 @@ class ConfigService extends DacuraService {
 		}
 		return $stables;
 	}
+
+	/**
+	 * Generates a tml tables, with a header and body element for the service 
+	 * @param array $fsettings an array of settings to be passed to the DacuraForm element underlying the tables...
+	 * @param unknown $sfields
+	 * @return multitype:multitype:NULL string
+	 */
+	function getServiceConfigTable(ConfigDacuraServer &$dacura_server, $s, $fsettings, $sfields = array()){
+		$fields = $dacura_server->getServiceConfigFields($s, isset($sfields) ? $sfields : array());
+		$tid = "service-".$s;
+		$stable = $this->getInputTableHTML($tid, $fields, $fsettings);
+		return $stable;
+	}
 	
 	/**
 	 * Generates the HTML for the service page subscreen headers
@@ -205,8 +218,33 @@ class ConfigService extends DacuraService {
 			$params['service_table_settings'] = json_encode($sx);
 		}
 		$params['services_config'] = $dacura_server->getServicesConfig();
-		$params['service_tables'] = $this->getServiceConfigTables($dacura_server, $ss, $sf);
 		$params['service_config_settings'] = $ss;
+	}
+	
+	/**
+	 * Loads the parameters necessary for drawing the service configuration pages
+	 * @param array $params
+	 * @param ConfigDacuraServer $dacura_server
+	 */
+	function getServicePageParams(&$params, ConfigDacuraServer &$dacura_server, $col){
+		$sconfig = $dacura_server->getServiceConfig($this->screen);
+		$params["service-title"] = (isset($sconfig['service-title']) ? $sconfig['service-title'] : ucfirst($this->screen));
+		$params["title"] = $params["service-title"] ." Configuration Management";
+		$params["subtitle"] = "Manage the configuration of the ".$this->screen ." service.";
+		$ss = $this->getServiceConfigFormSettings($dacura_server);
+		$sf = $this->getServiceSetting("service_form_fields");
+		$sf["facets"]['extras'] = UserRole::$extended_dacura_roles;
+		$params['all_roles'] = UserRole::$extended_dacura_roles;
+		$params['services_config'] = $sconfig;
+		$params['serviceconfig_fields'] = $dacura_server->getServiceConfigFields($this->screen, $sf);
+		$params['serviceconfig_settings'] = $ss;
+		if($this->cid() == "all"){
+			$smeta = $col->getConfig("servicesmeta");
+			if(isset($smeta[$this->screen])){
+				$params['smeta'] = $smeta[$this->screen];					
+			}	
+		}
+		$params['id'] = $this->screen;
 	}
 	
 	/**
@@ -283,11 +321,16 @@ class ConfigService extends DacuraService {
 	 * @see DacuraService::getScreenForCall()
 	 */
 	function getScreenForCall(){
+		global $dacura_server;
 		if($this->screen == "view"){
 			return ($this->cid() == "all" ?  "system" : "collection");
 		}
 		else {
-			return "service";
+			$servs = $dacura_server->getServiceList();
+			if(in_array($this->screen, $servs)){
+				return "service";
+			}
+			return false;
 		}
 	}
 	
@@ -296,39 +339,40 @@ class ConfigService extends DacuraService {
 	 * @see DacuraService::getParamsForScreen()
 	 */
 	function getParamsForScreen($screen, ConfigDacuraServer &$dacura_server){
-		$u = $dacura_server->getUser();
-		$col = $dacura_server->getCollection();
-		$ss = $this->getSubscreens($screen, $dacura_server);
-		if(in_array('collection-configuration', $ss) || in_array('system-configuration', $ss)){
-			$this->getSysconfigTabParams($params, $dacura_server, $screen, $col, $u);
-		}
-		if(in_array('view-services', $ss)){
-			$this->getServicesTabParams($params, $dacura_server, $screen, $col, $u);
-		}
-		if(in_array('view-logs', $ss)){
-			$this->getLogTabParams($params, $dacura_server, $screen, $col, $u);				
-		}
-		if(in_array("add-collection", $ss)){
-			$this->getCreateTabParams($params, $dacura_server, $screen, $col, $u);				
-		}
-		$params['messages'] = $this->loadSubscreenMessages($params, $screen, $ss);
-		$params['subscreens'] = $ss;
 		$params['image'] = $this->furl("images", "services/config.png");
 		$params['dt'] = true;
 		$params["breadcrumbs"] = array(array(), array());
-		
-		if($screen == "system"){
-			$params['dacura_table_settings'] = $this->getDatatableSetting("collections");
-			$params["title"] = "Dacura Platform Management";
-			$params["subtitle"] = "Manage the configuration of the Dacura Platform and all of its hosted collections";				
-			$params['subscreens'] = array("system-configuration", "view-services", "list-collections", "add-collection", "view-logs", "view-files");
-		}
-		elseif($screen == "service") {
-			
+		$col = $dacura_server->getCollection();
+		if($screen == "service") {
+			$this->getServicePageParams($params, $dacura_server, $col);
 		}
 		else {
-			$params["title"] = $col->id." settings";
-			$params["subtitle"] = "Manage the configuration of the ".$col->name . " collection";
+			$u = $dacura_server->getUser();
+			$ss = $this->getSubscreens($screen, $dacura_server);
+			if(in_array('collection-configuration', $ss) || in_array('system-configuration', $ss)){
+				$this->getSysconfigTabParams($params, $dacura_server, $screen, $col, $u);
+			}
+			if(in_array('view-services', $ss)){
+				$this->getServicesTabParams($params, $dacura_server, $screen, $col, $u);
+			}
+			if(in_array('view-logs', $ss)){
+				$this->getLogTabParams($params, $dacura_server, $screen, $col, $u);				
+			}
+			if(in_array("add-collection", $ss)){
+				$this->getCreateTabParams($params, $dacura_server, $screen, $col, $u);				
+			}
+			$params['messages'] = $this->loadSubscreenMessages($params, $screen, $ss);
+			$params['subscreens'] = $ss;
+			if($screen == "system"){
+				$params['dacura_table_settings'] = $this->getDatatableSetting("collections");
+				$params["title"] = "Dacura Platform Management";
+				$params["subtitle"] = "Manage the configuration of the Dacura Platform and all of its hosted collections";				
+				$params['subscreens'] = array("system-configuration", "view-services", "list-collections", "add-collection", "view-logs", "view-files");
+			}
+			else {
+				$params["title"] = $col->id." settings";
+				$params["subtitle"] = "Manage the configuration of the ".$col->name . " collection";
+			}
 		}
 		return $params;
 	}

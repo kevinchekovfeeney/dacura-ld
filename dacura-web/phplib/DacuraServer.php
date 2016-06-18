@@ -163,7 +163,9 @@ class DacuraServer extends DacuraController {
 	function getServiceConfig($sname){
 		$dacura_settings = $this->service->settings;
 		$fp = $this->getSystemSetting('path_to_services').$sname."/".$sname."_settings.php";
-		if(file_exists($fp)) include($fp);
+		if(file_exists($fp)) {
+			include($fp);
+		}
 		else { $settings = array();}
 		//incorporate settings from collection configurations
 		$this->service->loadServiceContextSettings($sname, $settings, $this);

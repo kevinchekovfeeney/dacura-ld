@@ -53,7 +53,7 @@ class ServiceLoader extends DacuraObject {
 	 * @return DacuraService|boolean
 	 */
 	function loadServiceFromURL(RequestLog &$logger){
-		$service_call = $this->parseServiceCall("html");		
+		$service_call = $this->parseServiceCall("html");
 		if($service_call){
 			return $this->loadServiceFromCall($service_call, $logger);
 		}

@@ -31,6 +31,7 @@ lphp.ldo_datatable = <?php echo isset($params['ldo_datatable']) && $params['ldo_
 lphp.multiselect = <?php echo isset($params['ldo_multiselect_options']) && $params['ldo_multiselect_options'] ? $params['ldo_multiselect_options'] : "{}";?>;
 lphp.canmulti = <?php echo isset($params['multi_ldo_update_allowed']) && $params['multi_ldo_update_allowed'] ? "true" : "false"; ?>;
 
+/* Updates the stataus of the linked data object */
 function updateLDStatus(ids, status, cnt, pconf, rdatas){
 	dacura.tool.clearResultMessages();
 	var uconfig = $.extend(true, {}, pconf);
@@ -42,6 +43,7 @@ function updateLDStatus(ids, status, cnt, pconf, rdatas){
 	dacura.ld.multiUpdateStatus(upd, ids, status, uconfig, rdatas, "ld_table", true);
 }
 
+/* draw an empty ldo table */
 function emptyLDOTableHTML(key, tconfig){
 	if(typeof tconfig.multiselect == "object" && typeof tconfig.multiselect.container == "string"){
 		$('#' + tconfig.multiselect.container).hide();	
@@ -53,6 +55,7 @@ function emptyLDOTableHTML(key, tconfig){
 	dacura.system.showInfoResult("No " + ldtnp + " have been added to the your collection - once you create a new " + ldtn + " it will appear on this page", "No " + ldtnp + " in " + dacura.system.cid(), pconfig.resultbox, null, mopts)
 }
 
+/* initialise ldo table */
 var initLDOT = function(pconfig){
 	var tabinit = {
 		"screen": "ldo-list", 
@@ -85,5 +88,8 @@ var initLDOT = function(pconfig){
 	dacura.tool.table.init("ld_table", tabinit);	
 };
 
-initfuncs["ldo-list"] = initLDOT;
+/* add init function to initialisation array */
+if(typeof initfuncs == "object"){
+	initfuncs["ldo-list"] = initLDOT;
+}
 </script>

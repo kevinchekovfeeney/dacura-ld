@@ -1,4 +1,18 @@
+/**
+ * @file Javascript object for managing the configuration of the Dacura Quality Service
+ * @author Chekov
+ * @license GPL V2
+ */
 
+/**
+ * @function DQSConfigurator
+ * @constructor
+ * @param {object} saved the saved state of the DQS config
+ * @param {object} def the default state of the DQS config
+ * @param {object} avs array of available ontologies for import
+ * @param {string} mode the mode that the config object is to be shown in: view|edit|create
+ * @param {function} ucallback - the callback function to be called on update
+ */
 function DQSConfigurator(saved, def, avs, mode, ucallback){
 	this.updatecallback = ucallback;
 	this.mode = typeof mode == "undefined" ? "view" : mode;
@@ -45,37 +59,13 @@ function DQSConfigurator(saved, def, avs, mode, ucallback){
 	else {
 		this.original_isauto = false;
 	}
+	this.show_buttons = true;
 }
 
-DQSConfigurator.prototype.testUpdate = function(){
-	if(this.hasChanged()){
-		if(typeof this.updatecallback == "function"){
-			this.updatecallback(this.current, this.isauto, true);
-		}
-		else {		
-			jpr(this.current);
-		}
-	}
-	else {
-		alert("No changes");
-	}
-}
-
-DQSConfigurator.prototype.Update = function(){
-	if(this.hasChanged()){
-		if(typeof this.updatecallback == "function"){
-			this.updatecallback(this.current, this.isauto, false);
-		}
-		else {		
-			jpr(this.current);
-		}
-	}
-	else {
-		alert("No changes");
-	}
-}
-
-
+/**
+ * @summary Has the configuration changed since it was loaded?
+ * @returns {Boolean} true if it has changed
+ */
 DQSConfigurator.prototype.hasChanged = function(){
 	if(this.isauto != this.original_isauto) return true;
 	if(typeof this.current != typeof this.original) return true;
@@ -89,6 +79,9 @@ DQSConfigurator.prototype.hasChanged = function(){
 	return false;
 }
 
+/**
+ * @summary Set the mode of the configuration editor to 'edit' - enables configuration updates
+ */
 DQSConfigurator.prototype.setEditMode = function(){
 	if(this.mode != "edit"){
 		$('#enable-update-tests').prop("checked", true);
@@ -105,6 +98,9 @@ DQSConfigurator.prototype.setEditMode = function(){
 	}
 };
 
+/**
+ * @summary Set the mode of the configuration editor to 'view' - disables updates
+ */
 DQSConfigurator.prototype.setViewMode = function(){
 	$('#enable-update-tests').prop("checked", false);
 	if(this.mode == "edit"){
@@ -119,6 +115,9 @@ DQSConfigurator.prototype.setViewMode = function(){
 	}
 };
 
+/**
+ * @summary Set the configuration to automatic - the dacura defaults are used 
+ */
 DQSConfigurator.prototype.setAuto = function(){
 	if(!this.isauto){
 		this.isauto = true;
@@ -132,6 +131,9 @@ DQSConfigurator.prototype.setAuto = function(){
 	}
 };
 
+/**
+ * @summary Set the configuration to manual - the user chooses which tests are configured
+ */
 DQSConfigurator.prototype.setManual = function(){
 	if(this.isauto){
 		this.isauto = false;
@@ -139,49 +141,95 @@ DQSConfigurator.prototype.setManual = function(){
 	}
 };
 
-DQSConfigurator.prototype.getEmptyHTML = function(){
-	return "<div class='empty-dqs'>No Tests Selected</div>";
-};
-
-DQSConfigurator.prototype.getTestsSummary = function(){
-	var html = "<span class='dqs-summary'>";
-	if(this.current == 'all'){
-		html += "all</span><span class='implicit-dqs'>";
-		for(var i in this.dqs){
-			html += dacura.ld.getDQSHTML(i, this.dqs[i], "view");
-		}
+/**
+ * @summary Draws the configuration editor in html 
+ * @param {string} jq the jquery selector of the html to draw into
+ * @param {string} mode the mode to draw the editor in (default to current mode) 
+ * @param {any} dontfill if set, the object will not be filled in with a refresh after drawing
+ */
+DQSConfigurator.prototype.draw = function(jq, mode, dontfill){
+	if(typeof mode != "undefined"){
+		this.mode = mode; 
 	}
-	else if(isEmpty(this.current)){
-		html += this.getEmptyHTML();
+	if(typeof this.fake != "undefined" && this.fake){
+		return;
+	}
+	var html = "<div class='dqsconfig'>";
+	html += "<div class='dqs-all-config-element'></div>";
+	html += "<div class='dqs-includes-title'>Currently Included Tests</div>";
+	html += "<div class='dqs-includes'></div>";
+	if(this.show_buttons){
+		html += this.getButtonsHTML();
+	}
+	html += "<div class='dqs-available-title'>Available Tests</div>";
+	html += "<div class='dqs-available'></div>";
+	html += "</div>";
+	$(jq).html(html);
+	var self = this;
+	$('#cancelupdatetests').button().click( function(){
+		self.cancelUpdate();
+	});
+	$('#testupdatetests').button().click( function(){
+		self.testUpdate();
+	});	
+	$('#updatetests').button().click( function(){
+		self.Update();
+	});		
+	if(this.isauto){
+		$('#tests-set-automatic').prop("checked", true);
 	}
 	else {
-		for(var i = 0; i<this.current.length; i++){
-			html += dacura.ld.getDQSHTML(this.current[i], this.dqs[this.current[i]], "view");	
+		$('#tests-set-manual').prop("checked", true);
+	}
+	if(this.mode == 'edit'){
+		$('#enable-update-tests').prop("checked", true);
+	}
+	else {
+		$('#enable-update-tests').prop("checked", false);
+	}
+	this.initUpdateButton();
+	if(typeof dontfill == "undefined"){	
+		this.refresh();
+	}
+};
+
+/**
+ * @summary Called to initiate the events and so on attached to the update button
+ */
+DQSConfigurator.prototype.initUpdateButton = function(){
+	var txt = "Update Configuration";
+	if(this.mode == 'edit'){
+		txt = "Cancel Update";
+		$('#enable-update-tests').prop("checked", true);
+	}
+	else {
+		$('#enable-update-tests').prop("checked", false);
+	}
+	var self = this;
+	$('#enable-update-tests').button({
+		label: txt
+	}).click(function(){
+		if($('#enable-update-tests').is(':checked')){
+			self.setEditMode();
 		}
-	}
-	html += "</span>";
-	return html;
+		else {
+			self.setViewMode();		
+		}
+	});
+	$('#tmaa').buttonset().click(function(){
+		if($('input[name=tma]:checked').val() == "manual"){
+			self.setManual();
+		}
+		else {
+			self.setAuto();		
+		}
+	});	
+	$('#tmaa').buttonset("disable");	
 };
 
-DQSConfigurator.prototype.getChooseAllHTML = function(){
-	var html = "<input type='radio' id='dqs-radio-all' name='dqsall' value='all'";
-	if(this.current == "all"){
-		html += " checked";
-	}
-	html += "><label for='dqs-radio-all'>All Tests</label>";
-	html += "<input type='radio' id='dqs-radio-none' name='dqsall' value='none'";
-	if(this.current.length == 0){
-		html += " checked";
-	}
-	html += "><label for='dqs-radio-none'>No Tests</label>";
-	html += "<input type='radio' id='dqs-radio-notall' name='dqsall' value='notall' ";
-	if(typeof this.current == 'object' && this.current.length > 0){
-		html += " checked";
-	}
-	html += "><label for='dqs-radio-notall'>Choose Tests</label>";
-	return html;
-};
-
+/**
+ * @summary Redraws the object with its current configuration
+ */
 DQSConfigurator.prototype.refresh = function(){
 	var includes = [];
 	var available = [];
@@ -220,7 +268,9 @@ DQSConfigurator.prototype.refresh = function(){
 	else {
 		$('.dqs-available').html(this.getEmptyTestsHTML());
 	}
-	$('.dqs-all-config-element').html(this.getChooseAllHTML(this.mode));	
+	if(this.show_buttons){
+		$('.dqs-all-config-element').html(this.getChooseAllHTML(this.mode));	
+	}
 	var self = this;
 	$('.dqs-all-config-element').buttonset().click(function(){
 		if($('.dqs-all-config-element input:checked').val() == "all"){
@@ -241,7 +291,6 @@ DQSConfigurator.prototype.refresh = function(){
 				self.refresh();
 			}
 		}	
-			
 	});
 	if(this.mode == "view" || this.isauto){
 		$('.dqs-all-config-element').buttonset("disable");
@@ -272,6 +321,43 @@ DQSConfigurator.prototype.refresh = function(){
 	}
 };
 
+/**
+ * @summary Called when user hits test update button
+ */
+DQSConfigurator.prototype.testUpdate = function(){
+	if(this.hasChanged()){
+		if(typeof this.updatecallback == "function"){
+			this.updatecallback(this.current, this.isauto, true);
+		}
+		else {		
+			jpr(this.current);
+		}
+	}
+	else {
+		alert("No changes");
+	}
+}
+
+/**
+ * @summary Called when user hits update button
+ */
+DQSConfigurator.prototype.Update = function(){
+	if(this.hasChanged()){
+		if(typeof this.updatecallback == "function"){
+			this.updatecallback(this.current, this.isauto, false);
+		}
+		else {		
+			jpr(this.current);
+		}
+	}
+	else {
+		alert("No changes");
+	}
+};
+
+/**
+ * @summary Called to cancel the update when the user hits the cancel button 
+ */
 DQSConfigurator.prototype.cancelUpdate = function(){
 	if(typeof this.original == 'object'){
 		this.current = $.extend(true, [], this.original); 
@@ -283,6 +369,10 @@ DQSConfigurator.prototype.cancelUpdate = function(){
 	this.setViewMode();
 };
 
+/**
+ * @summary Adds a configuration variable to the object
+ * @param {string} id the id of the dqs test to add
+ */
 DQSConfigurator.prototype.add = function(id){
 	if(typeof this.current == "object" && this.current.indexOf(id) == -1){
 		this.current.push(id);
@@ -290,6 +380,10 @@ DQSConfigurator.prototype.add = function(id){
 	}
 };
 
+/**
+ * @summary Removes a dqs test from the configuration
+ * @param {string} id the id of the dqs test to remove
+ */
 DQSConfigurator.prototype.remove = function(id){
 	if(typeof this.current == "object" && this.current.indexOf(id) != -1){
 		this.current.splice(this.current.indexOf(id), 1);
@@ -300,11 +394,10 @@ DQSConfigurator.prototype.remove = function(id){
 	}
 };
 
-DQSConfigurator.prototype.getEmptyTestsHTML = function(){
-	var html = "<div class='empty-tests'>No DQS tests configured</div>";
-	return html;
-};
-
+/**
+ * @summary get a list of all dqs tests
+ * @returns {Array} the array of tests
+ */
 DQSConfigurator.prototype.getAllTestsArray = function(){
 	var allt = [];
 	for(var k in this.dqs){
@@ -313,6 +406,12 @@ DQSConfigurator.prototype.getAllTestsArray = function(){
 	return allt;
 };
 
+/* html producing function */
+
+/**
+ * @summary generates the html necessary to display the buttons on the dqs form.
+ * @return {string} html
+ */
 DQSConfigurator.prototype.getButtonsHTML = function (){
 	var html = "<div id='dqs-buttons' class='subscreen-buttons dch'>";
 	html += "<button id='cancelupdatetests' class='dacura-update-cancel subscreen-button'>Cancel Changes</button>";		
@@ -333,79 +432,62 @@ DQSConfigurator.prototype.getButtonsHTML = function (){
 };
 
 
-DQSConfigurator.prototype.draw = function(jq, mode, dontfill){
-	if(typeof mode != "undefined"){
-		this.mode = mode; 
-	}
-	if(typeof this.fake != "undefined" && this.fake){
-		return;
-	}
-	var html = "<div class='dqsconfig'>";
-	html += "<div class='dqs-all-config-element'></div>";
-	html += "<div class='dqs-includes-title'>Currently Included Tests</div>";
-	html += "<div class='dqs-includes'></div>";
-	html += this.getButtonsHTML();
-	html += "<div class='dqs-available-title'>Available Tests</div>";
-	html += "<div class='dqs-available'></div>";
-	html += "</div>";
-	$(jq).html(html);
-	var self = this;
-	$('#cancelupdatetests').button().click( function(){
-		self.cancelUpdate();
-	});
-	$('#testupdatetests').button().click( function(){
-		self.testUpdate();
-	});	
-	$('#updatetests').button().click( function(){
-		self.Update();
-	});		
-	if(this.isauto){
-		$('#tests-set-automatic').prop("checked", true);
-	}
-	else {
-		$('#tests-set-manual').prop("checked", true);
-	}
-	if(this.mode == 'edit'){
-		$('#enable-update-tests').prop("checked", true);
-	}
-	else {
-		$('#enable-update-tests').prop("checked", false);
-	}
-	this.initUpdateButton();
-	if(typeof dontfill == "undefined"){	
-		this.refresh();
-	}
+DQSConfigurator.prototype.getEmptyHTML = function(){
+	return "<div class='empty-dqs'>No Tests Selected</div>";
 };
 
-DQSConfigurator.prototype.initUpdateButton = function(){
-	var txt = "Update Configuration";
-	if(this.mode == 'edit'){
-		txt = "Cancel Update";
-		$('#enable-update-tests').prop("checked", true);
+/**
+ * @summary Generates the html to show the summary of selected tests
+ * @returns {String} the html
+ */
+DQSConfigurator.prototype.getTestsSummary = function(){
+	var html = "<span class='dqs-summary'>";
+	if(this.current == 'all'){
+		html += "all</span><span class='implicit-dqs'>";
+		for(var i in this.dqs){
+			html += dacura.ld.getDQSHTML(i, this.dqs[i], "view");
+		}
+	}
+	else if(isEmpty(this.current)){
+		html += this.getEmptyTestsHTML();
 	}
 	else {
-		$('#enable-update-tests').prop("checked", false);
+		for(var i = 0; i<this.current.length; i++){
+			html += dacura.ld.getDQSHTML(this.current[i], this.dqs[this.current[i]], "view");	
+		}
 	}
-	var self = this;
-	$('#enable-update-tests').button({
-		label: txt
-	}).click(function(){
-		if($('#enable-update-tests').is(':checked')){
-			self.setEditMode();
-		}
-		else {
-			self.setViewMode();		
-		}
-	});
-	$('#tmaa').buttonset().click(function(){
-		if($('input[name=tma]:checked').val() == "manual"){
-			self.setManual();
-		}
-		else {
-			self.setAuto();		
-		}
-	});	
-	$('#tmaa').buttonset("disable");	
+	html += "</span>";
+	return html;
 };
 
+/**
+ * @summary Generates the html to show the select all tests radio buttons
+ * @returns {String} the html
+ */
+DQSConfigurator.prototype.getChooseAllHTML = function(){
+	var html = "<input type='radio' id='dqs-radio-all' name='dqsall' value='all'";
+	if(this.current == "all"){
+		html += " checked";
+	}
+	html += "><label for='dqs-radio-all'>All Tests</label>";
+	html += "<input type='radio' id='dqs-radio-none' name='dqsall' value='none'";
+	if(this.current.length == 0){
+		html += " checked";
+	}
+	html += "><label for='dqs-radio-none'>No Tests</label>";
+	html += "<input type='radio' id='dqs-radio-notall' name='dqsall' value='notall' ";
+	if(typeof this.current == 'object' && this.current.length > 0){
+		html += " checked";
+	}
+	html += "><label for='dqs-radio-notall'>Choose Tests</label>";
+	return html;
+};
 
+/**
+ * @summary Generates the html to say the configuration is empty
+ * @returns {String} the html
+ */
+DQSConfigurator.prototype.getEmptyTestsHTML = function(){
+	var html = "<div class='empty-tests'>No DQS tests configured</div>";
+	return html;
+};

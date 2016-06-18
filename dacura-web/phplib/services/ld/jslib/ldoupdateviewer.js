@@ -1,5 +1,14 @@
 /**
- * LDO Viewer object - useful functions for representing Linked data objects in html
+ * @file Javascript object for viewing linked data object updates returned in responses by the Dacura API
+ * @author Chekov
+ * @license GPL V2
+ */
+
+/**
+ * @constructor 
+ * @param ldou {Ojbect} ldo update json object returned by api
+ * @param pconf {DacuraPageConfig} page config object
+ * @param vconf {Object} viewer config object
  */
 function LDOUpdateViewer(ldou, pconf, vconf){
 	this.ldo = ldou;
@@ -15,7 +24,11 @@ function LDOUpdateViewer(ldou, pconf, vconf){
 	}
 }
 
-LDOUpdateViewer.prototype.showOptionsBar = function(target){
+/**
+ * Generates the html to represent the options bar on top of the viewer
+ * @returns {String} html
+ */
+LDOUpdateViewer.prototype.showOptionsBar = function(){
 	var html = "<div class='update-view-bar update-bar'><span class='view-update-formats'>";
 	if(this.view_formats){
 		html += "<select class='ld-view-formats ld-control dacura-select'>";
@@ -44,6 +57,10 @@ LDOUpdateViewer.prototype.showOptionsBar = function(target){
 	return html;
 } 
 
+/**
+ * Called to initialise the options bar (attach events, etc) 
+ * @param callback {function} update result callback
+ */
 LDOUpdateViewer.prototype.initOptionsBar = function(callback){
 	var self = this;
 	$('input.ld-control').button().click(function(){
@@ -58,13 +75,17 @@ LDOUpdateViewer.prototype.initOptionsBar = function(callback){
 	});
 }
 
-
+/**
+ * Called to redraw the ldo update contents and trigger the callback function to allow the rest of the page to redraw itself
+ * @param args {Object} args to be passed to fetch
+ * @param msgs {Object} messages to be displayed while busy
+ * @param callback {function} callback for other elements to refresh themselves
+ */
 LDOUpdateViewer.prototype.refreshPage = function(args, msgs, callback){
 	var id = "update/" + this.ldo.id;
 	var self = this;//this becomes bound to the callback...
 	if(typeof callback == "function") {
 		var ref = function (data, pconf) { 
-			alert("in callback");
 			callback(data, pconf);
 		};
 	}
@@ -77,8 +98,34 @@ LDOUpdateViewer.prototype.refreshPage = function(args, msgs, callback){
 	dacura.ld.fetch(id, args, ref, this.pconf, msgs);
 }
 
+/**
+ * No need to have these distinct in this object
+ */
 LDOUpdateViewer.prototype.refresh = LDOUpdateViewer.prototype.refreshPage; 
 
+/**
+ * Is this an update viewer?
+ * @returns {boolean} true - yes it is
+ */
+LDOUpdateViewer.prototype.isLDOUpdate = function(){
+	return true;
+}; 
+
+/**
+ * Retrieve the ld type (candidate, ontology, graph) of the object being updated
+ * @returns {string} the ld type
+ */
+LDOUpdateViewer.prototype.ldtype = function(){
+	return this.ldo.meta.ldtype;
+}
+
+/**
+ * Specifies the targets (jquery selectors) where the viewer will output
+ * @param t {String} main viewer jquery selector
+ * @param b {String} 'before' view jquery selector
+ * @param a {String} 'after' view jquery selector
+ * @param c {String} 'commands' box jquery selector - where the buttons go
+ */
 LDOUpdateViewer.prototype.setTargets = function(t, b, a, c){
 	this.setTarget(t);
 	this.before_target = b;
@@ -86,6 +133,15 @@ LDOUpdateViewer.prototype.setTargets = function(t, b, a, c){
 	this.commands_target = c;
 }
 
+/**
+ * Displays the viewer in the page
+ * @param target  {String} main viewer jquery selector
+ * @param btarget {String} 'before' view jquery selector
+ * @param atarget {String} 'after' view jquery selector
+ * @param ctarget {String} 'commands' box jquery selector - where the buttons go
+ * @param mode {String} edit|view|create
+ * @param callback {function} refresh page callback
+ */
 LDOUpdateViewer.prototype.show = function(target, btarget, atarget, ctarget, mode, callback){
 	this.setTargets(target, btarget, atarget, ctarget);
 	this.emode = (typeof mode == "string") ? mode : this.emode;	
@@ -97,6 +153,11 @@ LDOUpdateViewer.prototype.show = function(target, btarget, atarget, ctarget, mod
 
 };
 
+/**
+ * Displays the contents of the update
+ * @param mode {String} view|edit
+ * @param callback {function} the update callback function to handle update results
+ */
 LDOUpdateViewer.prototype.showContents = function(mode, callback){
 	$(this.target).empty();
 	var body = "<div class='ldo-viewer-contents' id='" + this.prefix + "-ldo-viewer-contents'>";
@@ -117,7 +178,12 @@ LDOUpdateViewer.prototype.showContents = function(mode, callback){
 	}
 };
 
-
+/**
+ * Called to update an ldo update via the server
+ * @param upd {Object} the update object
+ * @param resultCallback {function} the function that will handle the result
+ * @param pageconfig {DacuraPageConfig} page config
+ */
 LDOUpdateViewer.prototype.update = function(upd, resultCallback, pageconfig){
 	var id = "update/" + this.ldo.id;
 	pageconfig = typeof pageconfig == "object" ? pageconfig : this.pconf;
@@ -138,9 +204,14 @@ LDOUpdateViewer.prototype.update = function(upd, resultCallback, pageconfig){
 			res.show();
 		}
 	}
-	dacura.ld.update(id, upd, handleResp, pageconfig);
+	dacura.ld.update(id, upd, handleResp, pageconfig, upd.test);
 };
 
+/**
+ * Initialises the status update buttons by attaching events
+ * @param pconf {DacuraPageConfig} pconfig object
+ * @param callback {function} callback function to handle result of updates
+ */
 LDOUpdateViewer.prototype.initStatusUpdateButtons = function(pconf, callback){
 	var self = this;
 	$('.update-status-action').button().click(function(){
@@ -158,6 +229,10 @@ LDOUpdateViewer.prototype.initStatusUpdateButtons = function(pconf, callback){
 	});
 }
 
+/**
+ * Generates the html to represent the status box on the update page
+ * @returns {String} html
+ */
 LDOUpdateViewer.prototype.showStatusBox = function(){
 	var html = "<div class='update-status-box dacura-" + this.ldo.meta.status +"'>";
 	html += "<div class='update-status-header'>Update ";
@@ -209,14 +284,21 @@ LDOUpdateViewer.prototype.showStatusBox = function(){
 	return html;
 }
 
-LDOUpdateViewer.prototype.showCommands = function(mode, callback){
+/**
+ * Displays the command buttons on the screen 
+ * @param mode {String} edit|view
+ */
+LDOUpdateViewer.prototype.showCommands = function(mode){
 	$(this.commands_target).empty();
 	var body = "<div class='ldo-viewer-commands dacura-json-viewer' id='" + this.prefix + "-commands-ldo-viewer-contents'>";
 	body += this.ldo.getCommandsHTML(this.emode) + "</div>";
 	$(this.commands_target).append(body);
 }
 
-LDOUpdateViewer.prototype.showOriginal = function(mode, callback){
+/**
+ * Shows the "before" version of the ldo 
+ */
+LDOUpdateViewer.prototype.showOriginal = function(){
 	$(this.before_target).empty();
 	$(this.before_target).append(this.showOptionsBar());
 	var body = "<div class='ldo-viewer-contents' id='" + this.prefix + "-before-ldo-viewer-contents'>";
@@ -224,7 +306,10 @@ LDOUpdateViewer.prototype.showOriginal = function(mode, callback){
 	$(this.before_target).append(body);
 }
 
-LDOUpdateViewer.prototype.showChanged = function(target, emode, callback){
+/**
+ * Shows the "after" version of the ldo 
+ */
+LDOUpdateViewer.prototype.showChanged = function(){
 	$(this.after_target).empty();
 	$(this.after_target).append(this.showOptionsBar());
 	var body = "<div class='ldo-viewer-contents' id='" + this.prefix + "-after-ldo-viewer-contents'>";
@@ -232,14 +317,8 @@ LDOUpdateViewer.prototype.showChanged = function(target, emode, callback){
 	$(this.after_target).append(body);
 }
 
-LDOUpdateViewer.prototype.isLDOUpdate = function(){
-	return true;
-}; 
 
-LDOUpdateViewer.prototype.ldtype = function(){
-	return this.ldo.meta.ldtype;
-}
-
+/* inherited from ldoviewer */
 LDOUpdateViewer.prototype.init = LDOViewer.prototype.init;
 LDOUpdateViewer.prototype.tooltipLDImport = LDOViewer.prototype.tooltipLDImport;
 LDOUpdateViewer.prototype.showImportOptionsBar = LDOViewer.prototype.showImportOptionsBar;

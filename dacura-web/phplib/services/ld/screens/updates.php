@@ -31,6 +31,7 @@ xphp.update_datatable = <?php echo isset($params['updates_datatable']) && $param
 xphp.multiselect = <?php echo isset($params['updates_multiselect_options']) && $params['updates_multiselect_options'] ? $params['updates_multiselect_options'] : "{}";?>;
 xphp.canmulti = <?php echo isset($params['multi_updates_update_allowed']) && $params['multi_updates_update_allowed'] ? "true" : "false"; ?>;
 
+// initialises the table, buttons, etc
 var initLDOUpdatesTable = function(data, pconf){
 	var tabinit = {
 		"screen": "ldo-updates", 
@@ -54,6 +55,7 @@ var initLDOUpdatesTable = function(data, pconf){
 	dacura.tool.table.init("updates_table", tabinit, data.updates);
 };
 
+//draw empty table (no updates)
 function emptyUpdateTableHTML(key, tconfig){
 	if(typeof tconfig.multiselect == "object" && typeof tconfig.multiselect.container == "string"){
 		$('#' + tconfig.multiselect.container).hide();	
@@ -65,18 +67,24 @@ function emptyUpdateTableHTML(key, tconfig){
 	dacura.system.showInfoResult("There have been no updates to this " + ldtn + " since it was created", "Once you make changes to your " + ldtn + ", records of each update will appear on this page", pconfig.resultbox, null, mopts)
 }
 
+//refresh table with new data from api
 var refreshLDOUpdatesTable = function(data, pconf){
 	if(typeof data.updates == "undefined") data.updates = [];
 	dacura.tool.table.reincarnate("updates_table", data.updates);
 }
 
-refreshfuncs["ldo-updates"] = refreshLDOUpdatesTable;
-initfuncs["ldo-updates"] = initLDOUpdatesTable;
-
+//update the status of an update in the list 
 function updateUpdateStatus(ids, status, cnt, pconf, rdatas){
 	dacura.tool.clearResultMessages();
 	var upd = {"umeta": {"status": status}, "editmode": "update", "format": "json"};
 	dacura.ld.multiUpdateStatus(upd, ids, status, pconf, rdatas, "updates_table");
 }
 
+//register refresh and init events
+if(typeof refreshfuncs == "object"){
+	refreshfuncs["ldo-updates"] = refreshLDOUpdatesTable;
+}
+if(typeof initfuncs == "object"){
+	initfuncs["ldo-updates"] = initLDOUpdatesTable;
+}
 </script>

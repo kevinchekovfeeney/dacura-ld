@@ -85,11 +85,10 @@ class OntologyDacuraServer extends LdDacuraServer {
 		}
 		return $quads;		
 	}
-	
 
 	/**
 	 * As Ontologies are never permanently published to their own graph, 
-	 * updates and publications are the same..
+	 * updates and new publications are the same..
 	 * @see LdDacuraServer::objectUpdated()
 	 */	
 	function objectUpdated(LDOUpdate $uldo, $test_flag = false){

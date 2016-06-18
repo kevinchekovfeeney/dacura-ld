@@ -192,5 +192,4 @@ class GraphDacuraServer extends LdDacuraServer {
 		}
 		return ($ont = $this->loadLDO($parsed_url['id'], "ontology", $parsed_url['collection'], $parsed_url['fragment'], $parsed_url['version']));
 	}
-	
 }

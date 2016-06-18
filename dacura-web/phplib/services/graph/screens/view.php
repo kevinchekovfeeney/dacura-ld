@@ -37,7 +37,9 @@ var refreshfuncs = {};
 						<span class='analysis-text'></span>
 						<span class='analysis-created'></span>
 					</div>
-					<div class='analysis-button'><button id='analyse'>Analyse Now</button></div>			
+					<?php if(isset($params['can_update']) && $params['can_update']){?>
+						<div class='analysis-button'><button id='analyse'>Analyse Now</button></div>		
+					<?php } ?>	
 				</div>
 			</div>
 		</div>
@@ -188,12 +190,14 @@ var refreshfuncs = {};
 </div>
 <div style='clear: both'></div>
 <script>
+//marshalling of data from php 					
 var update_options = <?php echo isset($params['update_options']) && $params['update_options'] ? $params['update_options'] : "{}";?>;
 var test_update_options = <?php echo isset($params['test_update_options']) && $params['test_update_options'] ? $params['test_update_options'] : "{}";?>;
 var ldovconfig = <?php echo isset($params['ldov_config']) && $params['ldov_config'] ? $params['ldov_config'] : "{}";?>;
 var fetch_args = <?php echo isset($params['fetch_args']) && $params['fetch_args'] ? $params['fetch_args'] : "{}";?>;
 var refetch_args = $.extend(true, {}, fetch_args);
 refetch_args.options.analysis = 2;
+var can_update = <?php echo isset($params['can_update']) && $params['can_update'] ? "true" : "false";?>;
 
 var importer;
 var dqsconfig;
@@ -202,21 +206,31 @@ var ldov;
 
 var pconf = { resultbox: ".tool-info", busybox: ".tool-holder"};
 
-
+/* initialises the graph page, constructs the objects, etc */
 function initGraphPage(data, pconf){
 	if(data.status == "reject"){
 		var x = new LDResult(data, pconf);
 		return x.show();
 	}
-	var hconf = {resultbox: "#ldo-history .subscreen-intro-message", busybox: "#ldo-history .subscreen-body"};
-	dacura.tool.subscreens["ldo-history"] = hconf;
-	initfuncs['ldo-history'](data, "ldo-history");
-	var uconf = {resultbox: "#ldo-updates .subscreen-intro-message", busybox: "#ldo-updates .subscreen-body"};
-	dacura.tool.subscreens["ldo-updates"] = uconf;
-	initfuncs['ldo-updates'](data, "ldo-updates");
+	<?php if(in_array("ldo-history", $params['subscreens'])){ ?>
+		var hconf = {resultbox: "#ldo-history .subscreen-intro-message", busybox: "#ldo-history .subscreen-body"};
+		dacura.tool.subscreens["ldo-history"] = hconf;
+		initfuncs['ldo-history'](data, "ldo-history");
+	<?php } ?>
+	<?php if(in_array("ldo-updates", $params['subscreens'])){ ?>
+		var uconf = {resultbox: "#ldo-updates .subscreen-intro-message", busybox: "#ldo-updates .subscreen-body"};
+		dacura.tool.subscreens["ldo-updates"] = uconf;
+		initfuncs['ldo-updates'](data, "ldo-updates");
+	<?php } ?>
 	dqsconfig = new DQSConfigurator(data.meta.schema_dqs_tests, <?=$params['default_dqs_tests']?>, <?=$params['dqs_schema_tests']?>, "graph", handleSchemaDQSUpdate);
 	idqsconfig = new DQSConfigurator(data.meta.instance_dqs_tests, <?=$params['default_instance_dqs_tests']?>, <?=$params['dqs_instance_tests']?>, "graph", handleInstanceDQSUpdate);
+
 	importer = new OntologyImporter(getExplicitImports(data), <?=$params['available_ontologies']?>, getImplicitImports(data), "graph", handleImportUpdate);
+	if(!can_update){
+		importer.show_buttons = false;
+		dqsconfig.show_buttons = false;
+		idqsconfig.show_buttons = false;
+	}
 	ldov = new LDOViewer(new LDO(data), pconf, ldovconfig);
 	
 	showGraphPage(data, pconf);
@@ -235,12 +249,13 @@ function initGraphPage(data, pconf){
 	refreshGraphDynamics(data, pconf);	
 }
 
-
+//show the dqs instance configuration page
 function showInstanceSubscreen(act, data, pconf){
 	$("#idqs-" + act + "-subscreen").show();
 	dacura.system.goTo('#idqs-'+act + "-subscreen  .subscreen-header");
 }
 
+//show a distinct subscreen 
 function showSubscreen(act, data, pconf){
 	$(".dacsub").hide();
 	$('#graph-controllers').hide();
@@ -269,6 +284,7 @@ function showSubscreen(act, data, pconf){
 	$("#graph-" + act).show();
 }
 
+//called to refresh the whole page when the graph is updated
 function refreshLDOPage(data, pconf){
 	if(data.status == "reject"){
 		var x = new LDResult(data, pconf);
@@ -290,6 +306,7 @@ function refreshLDOPage(data, pconf){
 	dacura.system.styleJSONLD("td.rawjson");					
 }
 
+//sets up the various events that are attached to graph elements after the graph is redrawn
 function refreshGraphDynamics(data, pconf){
 	$('.graph-action').click(function(){
 		var act = this.id.substring(6);
@@ -343,11 +360,14 @@ function refreshGraphDynamics(data, pconf){
 	$('#instancecontroltable tr.control-table-clickable').hover(hvrin, hvrout).click(sclick);	
 }
 
+//draw the graph page to the screen 
 function showGraphPage(data, pconf){
 	dacura.ld.header(data);
-	dacura.tool.header.setSubtitle(data.meta.cwurl);	
-	dacura.ld.showAnalysisBasics(data, '.analysis-text');
-	$('.analysis-created').html(" (created with version " + data.analysis.version + " at " + timeConverter(data.analysis.created, true) + ")");
+	dacura.tool.header.setSubtitle(data.meta.cwurl);
+	if(typeof data.analysis == "object"){		
+		dacura.ld.showAnalysisBasics(data, '.analysis-text');
+		$('.analysis-created').html(" (created with version " + data.analysis.version + " at " + timeConverter(data.analysis.created, true) + ")");
+	}
 	var ldo = new LDO(data);
 	$('#graphstatus').html(getHeadlineHTML(ldo));
 	$('#graph-control').addClass("dacura-" + ldo.status());
@@ -358,12 +378,15 @@ function showGraphPage(data, pconf){
 		}
 		$('#graph-summary').append(dacura.ld.getSummaryTableEntry(rows[i]));
 	}
-	$('#graphmore').prepend(getGraphActionsHTML(ldo));
+	if(can_update){
+		$('#graphmore').prepend(getGraphActionsHTML(ldo));
+	}
 	$('#graph-control').show();	
 	showSchemaPane(data, pconf);
 	showInstancePane(data, pconf);
 }
 
+//generates the html to show the instance box on the view page
 function showInstancePane(data, pconf){
 	$('#instancecontroltable tbody').empty();
 	$('#instance-summary').empty();
@@ -400,6 +423,7 @@ function showInstancePane(data, pconf){
 	$('#instance-control').show();
 }	
 
+//generates the html to show the schema status box on the view page
 function showSchemaPane(data, pconf){
 	$('#schemacontroltable tbody').empty();
 	$('#schema-summary').empty();
@@ -439,6 +463,8 @@ function showSchemaPane(data, pconf){
 	$('#schema-control').show();
 }
 
+/* visibility management functions */
+ 
 function hideGraphControls(){
 	$('.graphless').hide();
 	$('.graphmore').show();
@@ -481,6 +507,7 @@ function showSchemaControls(){
 	$('#schema-contents').show("slide", {"direction": "up"});
 }	
 
+//generate the data to populate the rows in the graph status table
 function getGraphStatusRows(data, pconf){
 	var rows = [];
 	var rowdata = {
@@ -529,6 +556,9 @@ function getGraphStatusRows(data, pconf){
 			variable: "import" + (size(imps) == 1 ? "" : "s"),
 			value: getImportsSummary(explicits, implicits),			
 		};
+		if(typeof data.analysis == 'undefined'){
+			rowdata.unclickable = true;
+		} 
 		rows.push(rowdata);			
 		rowdata = {
 			id: "implicit",
@@ -541,6 +571,7 @@ function getGraphStatusRows(data, pconf){
 	return rows;		
 }
 
+//generates the html to display the imports in the summary table
 function getImportsSummary(explicits, implicits){
 	var html = "Explicit: ";
 	for(var i in explicits){
@@ -561,6 +592,7 @@ function getImportsSummary(explicits, implicits){
 	return html;
 }
 
+// generates the html to show the activation buttons on the graph box on the view page
 function getGraphActionsHTML(ldo){
 	var html = "";
 	if(ldo.status() == "accept"){
@@ -579,6 +611,7 @@ function getGraphActionsHTML(ldo){
 	return html;
 }
 
+//generates the html to show the headline on the graph status box on the view page
 function getHeadlineHTML(ldo){
 	var html = "";
 	if(ldo.status() == "accept"){
@@ -599,6 +632,7 @@ function getHeadlineHTML(ldo){
 	return html;
 }
 
+//returns a list of the ontologies imported by the graph
 function getImports(data){
 	imps = {};
 	if(typeof data.contents == "object" && typeof data.contents["_:schema"] == "object" && typeof data.contents["_:schema"]["owl:imports"] == "object"){
@@ -615,6 +649,7 @@ function getImports(data){
 	return imps;	
 }
 
+//returns a list of the ontologies implicitly imported by the graph
 function getImplicitImports(data){
 	var imps = getImports(data);
 	var exps = getExplicitImports(data);
@@ -626,6 +661,7 @@ function getImplicitImports(data){
 	return imps;
 }
 
+//returns a list of the ontologies explicitly imported by the graph
 function getExplicitImports(data){
 	var exps = {};
 	var exp = data.meta.explicit_schema_imports;
@@ -651,6 +687,7 @@ function getExplicitImports(data){
 	return exps;
 }
 
+//called to handle the situation when the list of imported ontologies is updated
 var handleImportUpdate = function(conf, isauto, test){
 	//transform conf back into an owl updates request
 	var impconf = {resultbox: "#imports-messages", busybox: "#dqs-imports-subscreen .subscreen-body"};
@@ -681,6 +718,7 @@ var handleImportUpdate = function(conf, isauto, test){
 	updateGraph(upd, impconf, test)	
 } 
 
+// handlers for the updates of the dqs configurations
 var handleSchemaDQSUpdate = function(conf, isauto, test){
 	var sconf = {resultbox: "#schema-dqs-messages", busybox: "#graph-schema-dqs .subscreen-body"};
 	handleDQSUpdate("schema_dqs_tests", conf, isauto, test, sconf);			
@@ -713,6 +751,7 @@ function handleDQSUpdate(which, conf, isauto, test, vconf){
 	updateGraph(upd, vconf)	
 } 
 
+//update the state of the graph
 function updateGraph(upd, nconf, upd_imports){
 	handleResp = function(data, xconf){
 		var res = new LDResult(data, nconf);

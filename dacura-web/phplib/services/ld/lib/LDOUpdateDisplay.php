@@ -97,8 +97,6 @@ class LDOUpdateDisplay extends LDODisplay {
 							else {
 								//$xprop = $this->applyLinkHTML($prop, "unchanged", true);
 							}
-							echo "<P>this is for $xprop";
-							opr($entries);
 							$cprops[$xprop] = $entries;
 						}
 						elseif($x == "objectliterallist"){
@@ -174,17 +172,22 @@ class LDOUpdateDisplay extends LDODisplay {
 		}
 		foreach($dprops as $s2 => $ldobj){
 			if($s2 == "meta") continue;
-  			$cprops = array();
-			foreach($ldobj as $dprop => $dv){
-				$dpv = new LDPropertyValue($dv, $this->cwurl());
-				if(!isset($props[$s2][$dprop])){
-					$xprop = $this->applyLinkHTML($dprop, "deleted");
-					$cprops[$xprop] = $this->getDeletedJSONHTML($v, $pv);
+  			if(count($ldobj) == 0 && count($props[$s2]) > 0){
+  				$xprop = $this->applyLinkHTML($s2, "added", true);
+  				$allprops[$xprop] = $this->getAddedJSONHTML($props[$s2], new LDPropertyValue($props[$s2], $this->cwurl()));
+  			}
+  			else {
+				foreach($ldobj as $dprop => $dv){
+					$dpv = new LDPropertyValue($dv, $this->cwurl());
+					if(!isset($props[$s2][$dprop])){
+						$xprop = $this->applyLinkHTML($dprop, "deleted");
+						$allprops[$xprop] = $this->getDeletedJSONHTML($v, $dpv);
+					}
 				}
-			}
-			if(count($cprops) > 0){
-				$allprops[$s2] = deepArrCopy($cprops);				
-			}
+				if(count($cprops) > 0){
+					$allprops[$s2] = deepArrCopy($cprops);				
+				}
+  			}
 		}
 		return $allprops;
 	}
@@ -284,6 +287,14 @@ class LDOUpdateDisplay extends LDODisplay {
 					$np2 = $this->applyLinkHTML($p2, $t, true);
 					$nv[$nid][$np2] = $this->getJSONHTML($val2, $t, $pv2);
 				}
+			}
+		}
+		elseif($pv->embedded()){
+			$nv = array();
+			foreach($v as $p2 => $val2){
+				$pv2 = new LDPropertyValue($val2, $this->cwurl());
+				$np2 = $this->applyLinkHTML($p2, $t, true);
+				$nv[$np2] = $this->getJSONHTML($val2, $t, $pv2);
 			}
 		}
 		return $nv;

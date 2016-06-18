@@ -157,8 +157,13 @@ class DacuraService extends DacuraObject {
 					return false;
 				}
 			}
-			$this->loadContextSettings($this->settings, $srvr);
-			$this->loadServiceContextSettings($this->servicename, $this->settings[$this->servicename], $srvr);
+			if(!$this->loadContextSettings($this->settings, $srvr)){
+				default_settings($this->settings);//must load them explicitly as they aren't loaded yet
+				return false;				
+			}
+			if(!$this->loadServiceContextSettings($this->servicename, $this->settings[$this->servicename], $srvr)){
+				return false;
+			}
 			return $srvr; 
 		}
 		catch(Exception $e){
@@ -195,13 +200,19 @@ class DacuraService extends DacuraObject {
 	 */
 	function loadContextSettings(&$settings, DacuraServer $srvr){
 		$sys = $srvr->getCollection("all");
+		if(!$sys){
+			return $this->failure_result("Failed to load system configuration from db", 500);
+		}
 		$this->applyCollectionSettings($settings, $sys);
 		if($this->cid() != "all"){
-			$c = $srvr->getCollection();
+			if(!($c = $srvr->getCollection())){
+				return $this->failure_result("Failed to load collection configuration " . $this->cid() . " from db", 500);	
+			}
 			$this->applyCollectionSettings($settings, $c);
 		}
 		$this->overwriteLocked($settings, $sys->getConfig("settings"), $sys->getConfig("meta"));
 		default_settings($settings);
+		return true;
 	}
 
 	/**
@@ -212,9 +223,14 @@ class DacuraService extends DacuraObject {
 	 */
 	function loadServiceContextSettings($sid, &$settings, DacuraServer $srvr){
 		$sys = $srvr->getCollection("all");
+		if(!$sys){
+			return $this->failure_result("Failed to load system configuration from db", 500);
+		}
 		$this->applyServiceSettings($sid, $settings, $sys);
 		if($this->cid() != "all"){
-			$c = $srvr->getCollection();
+			if(!($c = $srvr->getCollection())){
+				return $this->failure_result("Failed to load collection configuration " . $this->cid() . " from db", 500);	
+			}
 			$this->applyServiceSettings($sid, $settings, $c);
 		}
 		$sset = $sys->getConfig("services.".$sid);
@@ -227,6 +243,7 @@ class DacuraService extends DacuraObject {
 		if(isset($sset['status']) && $sset['status'] != "enable"){
 			$settings['status'] = 'disable';
 		}
+		return true;
 	}
 	
 	/**

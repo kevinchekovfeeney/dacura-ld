@@ -15,19 +15,21 @@ cphp.demand_id_token = "<?php echo isset($params['demand_id_token']) ? $params['
 cphp.tooltip = <?php echo isset($params['help_tooltip_config']) ? $params['help_tooltip_config'] :  "{}" ?>;
 cphp.fburl = "<?php echo $service->getFileBrowserURL()?>";
 cphp.lconf = <?php echo isset($params['create_ldoviewer_config']) ? $params['create_ldoviewer_config'] : "{}" ?>;
-cphp.show_create_button = <?php echo isset($params['show_create_button']) ? $params['show_create_button'] : false ?>;
-cphp.show_test_button = <?php echo isset($params['show_test_button']) ? $params['show_test_button'] : false ?>;
+cphp.show_create_button = <?php echo isset($params['show_create_button']) ? $params['show_create_button'] : 0 ?>;
+cphp.show_test_button = <?php echo isset($params['show_test_button']) ? $params['show_test_button'] : 0 ?>;
 cphp.create_options = <?php echo isset($params['create_options']) && $params['create_options'] ? $params['create_options'] : "{}";?>;
 cphp.test_create_options = <?php echo isset($params['test_create_options']) && $params['test_create_options'] ? $params['test_create_options'] : "{}";?>;
 cphp.importstooltip = <?php echo isset($params['tooltip_config']) ? $params['tooltip_config'] : "{}" ?>;
 cphp.available_ontologies = <?php echo isset($params['available_ontologies']) ? $params['available_ontologies'] : "{}"?>;
 
+/* merges the frame input with the rest of the form input to make an object ready to be sent to the create api */
 function loadInputFromFrame(){
 	var frameinput = cphp.ldov.frm.extract();
 	frameinput["rdf:type"] = $('#ldo-details-candtype').val();
 	return {format: "json", contents: frameinput};
 }
 
+/* called when the user hits the test creation button - loads input and send to create api */
 function testCreateLDO(data, result, pconf){
 	dacura.system.clearResultMessage(pconf.resultbox);
 	var input = cphp.ldov.readCreateForm(data, cphp.demand_id_token, cphp.test_create_options);	
@@ -45,6 +47,7 @@ function testCreateLDO(data, result, pconf){
 	}
 }
 
+/* called when the user hits the create ldo button - loads input and sends to api */
 function createLDO(data, result, pconf){
 	dacura.system.clearResultMessage(pconf.resultbox);
 	var uinput = cphp.ldov.readCreateForm(data, cphp.demand_id_token, cphp.create_options);
@@ -62,6 +65,7 @@ function createLDO(data, result, pconf){
 	}
 }
 
+/* retrieves the set of imported ontologies from the ontology importer object (if present) */
 function getImports(data){
 	imports = [];
 	for(var k in cphp.importer.current){
@@ -76,12 +80,14 @@ function getImports(data){
 	return data;
 }
 
+/* specify some arguments for the dacura.tool.form initialisation */
 initarg.forms = { 
 	ids: ['ldo-details'], 			
 	tooltip: cphp.tooltip,
 	fburl: cphp.fburl			
 };
 
+/* initialisation function - sets up events, etc */
 var initcreate = function(pconfig){
 	cphp.lconf.ldtype = ldtype;
 	cphp.lconf.target = '#ldcontentsinform';
@@ -110,6 +116,12 @@ var initcreate = function(pconfig){
 		$('#row-ldo-details-ldcontents').after("<tr><td class='ldcontents-form extra-form-element' id='ldcontentsinform' colspan='3'></td></tr>");
 		cphp.ldov.show();		
 	}
+	if(document.getElementById("ldo-details-imptype") !== null){
+		$("#ldo-details-imptype :radio").click(function(){
+			setImportType();
+		});
+		setImportType();
+	}	
 	if(document.getElementById("ldo-details-candtype") !== null){
 		$('#row-ldo-details-candtype').after("<tr><td class='candframe-form extra-form-element' id='candframeinform' colspan='3'></td></tr>");
 		$('#ldo-details-candtype').selectmenu({
@@ -117,12 +129,6 @@ var initcreate = function(pconfig){
 		});
 		drawCandidateFrame();
 	}
-	if(document.getElementById("ldo-details-imptype") !== null){
-		$("#ldo-details-imptype :radio").click(function(){
-			setImportType();
-		});
-		setImportType();
-	}	
 	if(document.getElementById("row-ldo-details-ontimports") !== null){
 		$('#row-ldo-details-ontimports').after("<tr><td class='ontimports-form extra-form-element' id='ontimportsinform' colspan='3'></td></tr>");
 		$('#row-ldo-details-ontimports').hide();
@@ -133,11 +139,13 @@ var initcreate = function(pconfig){
 	}
 }
 
+/* draws a frame into the form in <div id='candframeinform'>*/
 function drawCandidateFrame(){
 	etype = $('#ldo-details-candtype').val();
 	cphp.ldov.showFrame(etype, '#candframeinform', "create");			
 }
 
+/* called to update the form when the import type is changed */
 function setImportType(){
 	v = $("#ldo-details-imptype :radio:checked").val();		
 	if(v == "frame"){
@@ -153,25 +161,8 @@ function setImportType(){
 		$('#row-ldo-details-candtype').hide();
 	}		
 }
-
-/*
-function showPhoneyPolityForm(target){
-	var html = '</td></tr><tr class="dacura-property-spacer"></tr>';
-	html += '<tr class="dacura-property row-5">';
-	html += '<td class="dacura-property-label">Name</td><td class="dacura-property-value">';
-	html += '<table style="border: 0" class="dacura-property-value-bundle"><tbody><tr><td class="dacura-property-input"><input class="dacura-long-input" type="text" id="funame">';
-	html += '</td><td class="dacura-property-help"></td></tr></tbody></table></td></tr>';
-	html += '<tr class="dacura-property row-6">';
-	html += '<td class="dacura-property-label">Population</td><td class="dacura-property-value">';
-	html += '<table style="border: 0" class="dacura-property-value-bundle"><tbody><tr><td class="dacura-property-input"><input type="text" id="fupopulation">';
-	html += '</td><td class="dacura-property-help"></td></tr></tbody></table></td></tr>';
-	html += '<tr class="dacura-property row-7">';
-	html += '<td class="dacura-property-label">Alternative Name</td><td class="dacura-property-value">';
-	html += '<table style="border: 0" class="dacura-property-value-bundle"><tbody><tr><td class="dacura-property-input"><input class="dacura-long-input" type="text" id="fualtname">';
-	html += '</td><td class="dacura-property-help"></td></tr></tbody></table></td></tr>';
-	html += '</tbody></table>';
-	$(target).html(html);	
-}*/
-
-initfuncs["ldo-create"] = initcreate;
+/* add intialisation function to page array */
+if(typeof initfuncs == "object"){
+  initfuncs["ldo-create"] = initcreate;
+}
 </script>

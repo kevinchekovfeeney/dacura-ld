@@ -24,8 +24,10 @@ var drawfuncs = {};
 </div>
 <div style='clear:both'></div>
 <script>
+//set up ldoviewer config from php
 var ldovconfig = <?php echo isset($params['ldov_config']) && $params['ldov_config'] ? $params['ldov_config'] : "{}";?>;
 
+/* callback for refreshing page from server when the ldo is updated - calls all functions in refreshfuncs (registered by subscreens) */
 var refreshLDOPage = function(data, pconf){
 	if(data.status == "reject"){
 		var x = new LDResult(data, pconf);
@@ -39,6 +41,7 @@ var refreshLDOPage = function(data, pconf){
 	dacura.system.styleJSONLD("td.rawjson");				
 }
 
+/* page initialisation function - calls all init functions registered by subscreens in initfuncs array */
 function initLDOPage(data, pconf){
 	if(data.status == "reject"){
 		var x = new LDResult(data, pconf);
@@ -59,6 +62,7 @@ function initLDOPage(data, pconf){
 	dacura.system.styleJSONLD("td.rawjson");				
 }
 
+/* start off by fetching the ldo, then call the initialisation function */
 $('document').ready(function(){
 	var pconf = { resultbox: ".tool-info", busybox: ".tool-holder"};
 	dacura.ld.fetch("<?=$params['id']?>", <?=$params['fetch_args']?>, initLDOPage, pconf);

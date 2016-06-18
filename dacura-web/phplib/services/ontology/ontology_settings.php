@@ -1,7 +1,6 @@
 <?php 
-include_once "phplib/services/ld/ld_settings.php";
+include "phplib/services/ld/ld_settings.php";
 
-$settings["facet-list"] = array("view" => "Browse the data on the system");
 $settings["service-title"] = "Ontology Management Service";
 $settings["service-button-title"] = "Ontologies";
 

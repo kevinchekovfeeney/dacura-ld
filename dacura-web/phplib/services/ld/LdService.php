@@ -23,16 +23,17 @@ class LdService extends DacuraService {
 		if($this->name() != "ld"){
 			$this->included_scripts[] = $this->get_service_script_url("dacura.ld.js", "ld");
 		}
+		$this->included_scripts[] = $this->get_service_script_url("dacura.upload.js", "upload");
 		$this->included_css[] = $this->get_service_file_url("style.css", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("ldoviewer.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("ldo.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("ldoupdate.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("ldoupdateviewer.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("ldresult.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("ldgraphresult.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("rvo.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("ontologyimporter.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("dqsconfigurator.js", "ld");
+		$this->included_scripts[] = $this->get_service_script_url("jslib/ldoviewer.js", "ld");
+		$this->included_scripts[] = $this->get_service_script_url("jslib/ldo.js", "ld");
+		$this->included_scripts[] = $this->get_service_script_url("jslib/ldoupdate.js", "ld");
+		$this->included_scripts[] = $this->get_service_script_url("jslib/ldoupdateviewer.js", "ld");
+		$this->included_scripts[] = $this->get_service_script_url("jslib/ldresult.js", "ld");
+		$this->included_scripts[] = $this->get_service_script_url("jslib/ldgraphresult.js", "ld");
+		$this->included_scripts[] = $this->get_service_script_url("jslib/rvo.js", "ld");
+		$this->included_scripts[] = $this->get_service_script_url("jslib/ontologyimporter.js", "ld");
+		$this->included_scripts[] = $this->get_service_script_url("jslib/dqsconfigurator.js", "ld");
 	}
 	
 	/**
@@ -46,13 +47,37 @@ class LdService extends DacuraService {
 	}
 	
 	/**
-	 * (non-PHPdoc)
-	 * @see DacuraService::getMinimumFacetForAccess()
+	 * In the whole LD sub-system there are only three top level screens
+	 * We are either viewing a LD object, viewing a list of LD objects or viewing an update to a LD object
+	 * @see DacuraService::getScreenForCall()
 	 */
-	function getMinimumFacetForAccess(DacuraServer &$dacura_server){
-		return true;
+	function getScreenForCall(){
+		if($this->screen == "list"){
+			return "list";
+		}
+		elseif($this->screen == "update"){
+			return "update";
+		}
+		return "view";
 	}
 
+	function compareFacets($a, $b){
+		if($b != 'admin' && $a == "approve"){ //approve is above all but admin
+			return true;
+		}
+		return parent::compareFacets($a, $b);
+	}
+	
+	function getMinimumFacetForAccess(DacuraServer &$dacura_server){
+		if($this->screen == "list"){
+			return "create";
+		}
+		elseif($this->screen == "update"){
+			return "inspect";
+		}
+		return $this->getScreenForAC($dacura_server);
+	}
+	
 	/**
 	 * Overrides method to support screen inheritance from ld service
 	 * If the screen exists in the derived service, it is loaded, otherwise the generic ld screen is loaded 
@@ -116,21 +141,6 @@ class LdService extends DacuraService {
 		}
 	}
 
-	/**
-	 * In the whole LD sub-system there are only three top level screens
-	 * We are either viewing a LD object, viewing a list of LD objects or viewing an update to a LD object
-	 * @see DacuraService::getScreenForCall()
-	 */
-	function getScreenForCall(){
-		if($this->screen == "list"){
-			return "list";
-		}
-		elseif($this->screen == "update"){
-			return "update";
-		}
-		return "view";
-	}
-	
 	/**
 	 * Renders a screen when viewed in full page mode
 	 * @param DacuraServer $dacura_server
@@ -244,7 +254,20 @@ class LdService extends DacuraService {
 	 * @return array<string> the ids of the subscreens (tabs) to load
 	 */
 	function getListSubscreens(LdDacuraServer &$dacura_server, &$u){
-		return array("ldo-list", "update-list", "ldo-create", "ldo-export");
+		$subscreens = array();
+		if($dacura_server->userHasFacet("list")){
+			$subscreens[] = 'ldo-list';
+		}
+		if($dacura_server->userHasFacet("inspect")){
+			$subscreens[] = 'update-list';
+		}
+		if($dacura_server->userHasFacet("create")){
+			$subscreens[] = 'ldo-create';
+		}
+		if($dacura_server->userHasFacet("export")){
+			$subscreens[] = 'ldo-export';
+		}
+		return $subscreens;
 	}
 
 	/**
@@ -254,7 +277,15 @@ class LdService extends DacuraService {
 	 * @return array<string> the ids of the subscreens (tabs) to load
 	 */
 	function getViewSubscreens(LdDacuraServer &$dacura_server, &$u){
-		$s = array("ldo-meta", "ldo-history", "ldo-contents", "ldo-updates");
+		$s = array();
+		if($dacura_server->userHasFacet("inspect")){
+			$s[] = "ldo-history";
+			$s[] = "ldo-updates";
+		}
+		if($dacura_server->userHasFacet("view")){
+			$s[] = "ldo-contents";
+			$s[] = "ldo-meta";
+		}
 		return $s;
 	}
 
@@ -278,7 +309,7 @@ class LdService extends DacuraService {
 			$this->loadParamsForCreateTab($params, $dacura_server);
 		}
         if(in_array('ldo-export', $params['subscreens'])){
-			$this->loadParamsForCreateTab($params, $dacura_server);
+			$this->loadParamsForExportTab($params, $dacura_server);
 		}
 	}
 
@@ -302,7 +333,7 @@ class LdService extends DacuraService {
 		if($this->name() != "ld"){
 			$ldtab['aoColumns'][2] = array("bVisible" => false);
 		}
-		$params['multi_ldo_update_allowed'] = true;//facet
+		$params['multi_ldo_update_allowed'] = $dacura_server->userHasFacet("approve");//facet
 		if(!$params['multi_ldo_update_allowed']){
 			$ldtab['aoColumns'][11] = array("bVisible" => false);					
 		}		
@@ -346,9 +377,9 @@ class LdService extends DacuraService {
 		if($this->name() != "ld"){
 			$udtab['aoColumns'][2] = array("bVisible" => false);
 		}
-		$params['multi_updates_update_allowed'] = true;//facet
+		$params['multi_updates_update_allowed'] = $dacura_server->userHasFacet("approve");//facet
 		if(!$params['multi_updates_update_allowed']){
-			$udtab['aoColumns'][11] = array("bVisible" => false);
+			$udtab['aoColumns'][12] = array("bVisible" => false);
 		}
 		else {
 			$params['updates_multiselect_options'] = json_encode(DacuraObject::$valid_statuses);				
@@ -374,6 +405,14 @@ class LdService extends DacuraService {
 	}
 	
 	/**
+	 * Placeholder for loading the export ldo tab
+	 * @param array $params
+	 * @param LdDacuraServer $dacura_server
+	 */
+	function loadParamsForExportTab(&$params, LdDacuraServer &$dacura_server){
+	}
+	
+	/**
 	 * Loads the necessary parameters from php -> html / js for drawing the create subscreen
 	 * @param array $params the parameters to be interpolated into the object list html subscreen
 	 * @param LdDacuraServer $dacura_server
@@ -383,14 +422,18 @@ class LdService extends DacuraService {
 		$params["demand_id_token"] = $this->getServiceSetting("demand_id_token", "@id");
 		$params['create_options'] = json_encode($this->getCreateOptions(false));
 		$params['test_create_options'] = json_encode($this->getCreateOptions(true));
-		$params['show_create_button'] = $this->getServiceSetting("show_create_button", true);
-		$params['show_test_button'] = $this->getServiceSetting("show_test_button", true);
+		$params['show_create_button'] = $this->getServiceSetting("show_create_button", 1);
+		$params['show_test_button'] = $this->getServiceSetting("show_test_button", 1);
 		$cf = $this->getServiceSetting("create_ldoviewer_config", array());
 		if(!isset($cf['edit_formats'])){
 			$cf['edit_formats'] = LDO::$valid_input_formats;
 		}
 		$cf['show_options'] = true;
 		$cf['show_buttons'] = false;
+		$ns = $dacura_server->createDependantService("upload");
+		if($dacura_server->userHasFacet("manage", $ns)){
+			$cf['fileupload'] = true;
+		}
 		$params['create_ldoviewer_config'] = json_encode($cf);
 		//strings
 		$params["ld_create_title"] = $this->smsg('ld_create_title');
@@ -409,7 +452,7 @@ class LdService extends DacuraService {
 		if($this->name() != "ld"){
 			unset($params['create_ldo_fields']['ldtype']);
 		}
-		$params['specify_create_status_allowed'] = true;//facet
+		$params['specify_create_status_allowed'] = $dacura_server->userHasFacet("approve");
 		if(!$params['specify_create_status_allowed']){
 			unset($params['create_ldo_fields']['status']);
 		}
@@ -450,8 +493,15 @@ class LdService extends DacuraService {
 		$params["title"] = $this->smsg("view_page_title");
 		$params["subtitle"] = $this->smsg("view_page_subtitle");
 		$params["description"] = $this->smsg("view_page_description");
-		$params['fetch_args'] = json_encode($this->getLDArgs("ldoview"));
-		$params['ldov_config'] = json_encode($this->getLDOViewerConfig("ldo_viewer_config"));
+		$lv = $this->getLDArgs("ldoview");
+		if(!$dacura_server->userHasFacet("inspect")){
+			$lv['options']['history'] = 0;
+			$lv['options']['updates'] = 0;
+			$lv['options']['analysis'] = 0;
+		}
+		$params['fetch_args'] = json_encode($lv);
+		$ldov = $this->getLDOViewerConfig("ldo_viewer_config", $dacura_server);
+		$params['ldov_config'] = json_encode($ldov);
 		if(in_array('ldo-contents', $params['subscreens'])){
 			$this->loadParamsForContentsTab($id, $params, $dacura_server);
 		}
@@ -474,7 +524,7 @@ class LdService extends DacuraService {
 	 * @param string $id - the id of the configuration variable in the ld settings file to start from
 	 * @return Ambigous <multitype:string , string, string, mixed>
 	 */
-	function getLDOViewerConfig($id){
+	function getLDOViewerConfig($id, LdDacuraServer &$dacura_server){
 		$ldov_config = $this->getServiceSetting($id, array());
 		if(!isset($ldov_config['view_formats'])){
 			$ldov_config['view_formats'] = LDO::$valid_display_formats;
@@ -491,21 +541,61 @@ class LdService extends DacuraService {
 		if(!isset($ldov_config['view_options'])){
 			$ldov_config['view_options'] = $this->getViewOptions();
 		}
-		if(!isset($ldov_config['editmode_options'])){
-			$ldov_config['editmode_options'] =  array("replace" => "Replace Mode", "update" => "Update Mode");
-		}
-		if(!isset($ldov_config['result_options'])){
-			$ldov_config['result_options'] = array("No LDO result returned", "Updated LDO returned", "LDO Update Object Returned");
-		}
-		if(!isset($ldov_config['view_graph_options'])){
-			$ldov_config['view_graph_options'] = array("ld" => "LD Object Store", "dqs" => "DQS Triplestore", "meta" => "metadata", "update" => "Update Store");
+		if($dacura_server->userHasFacet("admin")){
+			if(!isset($ldov_config['editmode_options'])){
+				$ldov_config['editmode_options'] =  array("replace" => "Replace Mode", "update" => "Update Mode");
+			}
+			if(!isset($ldov_config['result_options'])){
+				$ldov_config['result_options'] = array("No LDO result returned", "Updated LDO returned", "LDO Update Object Returned");
+			}
+			if(!isset($ldov_config['view_graph_options'])){
+				$ldov_config['view_graph_options'] = array("ld" => "LD Object Store", "dqs" => "DQS Triplestore", "meta" => "metadata", "update" => "Update Store");
+			}
 		}
 		if(!isset($ldov_config['view_actions'])){
-			$ldov_config['view_actions'] = array("restore" => "Restore this version", "edit" => "Edit", "import" => "Import", "export" => "Export", "accept" => "Publish", "reject" => "Reject", "pending" => "Unpublish");
+			$va = array();
+			if($dacura_server->userHasFacet("manage")){
+				$va = array("restore" => "Restore this version", "edit" => "Edit", "import" => "Import");
+			}
+			if($dacura_server->userHasFacet("export")){
+				$va["export"] = "Export";
+			}
+			if($dacura_server->userHasFacet("approve")){
+			 	$va = array_merge($va, array("accept" => "Publish", "reject" => "Reject", "pending" => "Unpublish"));
+			}
+			$ldov_config['view_actions'] = $va;
+		}
+		$ns = $dacura_server->createDependantService("upload");
+		if($dacura_server->userHasFacet("manage", $ns)){
+			$ldov_config['fileupload'] = true;
 		}
 		$ldov_config['show_buttons'] = true;
 		return $ldov_config;
 	}
+	
+	function getLDOUpdateViewerConfig($id, LdDacuraServer &$dacura_server){
+		$ldov_config = $this->getServiceSetting($id, array());
+		if(!isset($ldov_config['view_formats'])){
+			$ldov_config['view_formats'] = LDO::$valid_display_formats;
+		}
+		if(!isset($ldov_config['edit_formats'])){
+			$ldov_config['edit_formats'] = LDO::$valid_input_formats;
+		}
+		if(!isset($ldov_config['update_options'])){
+			$ldov_config['update_options'] = $this->getLDOptions("update_update");
+		}
+		if(!isset($ldov_config['test_update_options'])){
+			$ldov_config['test_update_options'] = $this->getLDOptions("test_update_update");
+		}
+		if(!isset($ldov_config['view_options'])){
+			$ldov_config['view_options'] = $this->getViewOptions();
+		}
+		if(!isset($ldov_config['view_actions']) && $dacura_server->userHasFacet("approve")){
+			$ldov_config['view_actions'] = array("approve" => "Approve");
+		}
+		return $ldov_config;
+	}
+	
 	
 	/**
 	 * Reads the arguments supported by the linked data view api
@@ -608,9 +698,10 @@ class LdService extends DacuraService {
 	function loadParamsForMetaTab($id, &$params, LdDacuraServer &$dacura_server){
 		$params['meta_screen_title'] = $this->smsg('meta_screen_title');	
 		$params['meta_intro_msg'] = $this->smsg('view_meta_intro');
-		$params['update_meta_config'] = array("display_type" => "create", "show-header" => 2, "objtype" => $this->name(), "header-html" => $this->ldtn(). " Metadata");
-		$params['show_update_meta_button'] = true;
-		$params['show_update_meta_test_button'] = true;
+		$display = $dacura_server->userHasFacet("manage") ? "update" : "view";
+		$params['update_meta_config'] = array("display_type" => $display, "show-header" => 2, "objtype" => $this->name(), "header-html" => $this->ldtn(). " Metadata");
+		$params['show_update_meta_button'] = $dacura_server->userHasFacet("approve");
+		$params['show_update_meta_test_button'] = $dacura_server->userHasFacet("manage");
 		$params['update_meta_button_text'] = $this->smsg('update_meta_button');
 		$params['test_update_meta_button_text'] = $this->smsg('test_update_meta_button');
 		$params['update_meta_fields'] = $this->sform("update_meta_fields");		
@@ -628,7 +719,7 @@ class LdService extends DacuraService {
 		$params['updates_screen_title'] = $this->smsg('updates_screen_title');	
 		$params['updates_intro_msg'] = $this->smsg('view_updates_intro');
 		$udtab = $this->getDatatableSetting("ldoupdates", false);
-		$params['multi_updates_update_allowed'] = true;//facet
+		$params['multi_updates_update_allowed'] = $dacura_server->userHasFacet("approve");
 		if(!$params['multi_updates_update_allowed']){
 			$udtab['aoColumns'][10] = array("bVisible" => false);
 		}
@@ -683,6 +774,8 @@ class LdService extends DacuraService {
 		$params['update_args'] = json_encode($this->getLDArgs("update_update"));
 		$params['test_update_args'] = json_encode($this->getLDArgs("test_update_update"));
 		$params['update_commands_screen_title'] = $this->smsg("update_commands_screen_title");
+		$pldov = $this->getLDOUpdateViewerConfig("ldoupdate_viewer_config", $dacura_server);
+		$params['ldov_config'] = json_encode($pldov);
 		return $params;
 	}
 	
@@ -696,17 +789,14 @@ class LdService extends DacuraService {
 	function loadParamsForUpdateMetaTab($id, &$params, LdDacuraServer &$dacura_server){
 		$params['meta_screen_title'] = $this->smsg('update_meta_screen_title');
 		$params['meta_intro_msg'] = $this->smsg('view_update_meta_intro');
-		$params['update_meta_config'] = array("display_type" => "create", "show-header" => 2, "objtype" => "update", "header-html" => "Update to ".$this->ldtn(). " Metadata");
-		$params['show_update_meta_button'] = true;
-		$params['show_update_meta_test_button'] = true;
+		$display = $dacura_server->userHasFacet("manage") ? "update" : "view";
+		$params['update_meta_config'] = array("display_type" => $display, "show-header" => 2, "objtype" => "update", "header-html" => "Update to ".$this->ldtn(). " Metadata");
+		$params['show_update_meta_button'] = $dacura_server->userHasFacet("approve");
+		$params['show_update_meta_test_button'] = $dacura_server->userHasFacet("manage");
 		$params['update_meta_button_text'] = $this->smsg('update_meta_button');
 		$params['test_update_meta_button_text'] = $this->smsg('test_update_meta_button');
 		$params['update_meta_fields'] = $this->sform("update_meta_fields");
 		$params['test_update_meta_options'] = json_encode($this->getLDOptions("update_test_meta"));
-		$pldov = $this->getLDOViewerConfig("ldoupdate_viewer_config");
-		$pldov['update_options'] = $this->getLDOptions("update_update");
-		$pldov['test_update_options'] = $this->getLDOptions("test_update_update");
-		$params['ldov_config'] = json_encode($pldov);
 		$params['update_meta_options'] = json_encode($this->getLDOptions("update_meta"));
 	}
 }
