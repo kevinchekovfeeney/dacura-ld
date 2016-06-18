@@ -16,8 +16,7 @@ dacura.frame.api.getFilledFrame = function (id) {
     var xhr = {};
     xhr.type = "GET";
     xhr.url = dacura.frame.apiurl + "/frame/" + id;
-    //xhr.data = {'class': cls};
-    //xhr.dataType = "json";
+    xhr.dataType = "json";
     return xhr;
 };
 
@@ -27,156 +26,164 @@ function FrameViewer(cls, target, pconfig) {
     this.pconfig = pconfig;
 }
 
-
-
-
 //Loading google maps api
-window.onload = function loadScript() {
+/*window.onload = function loadScript() {
   var script = document.createElement("script");
   script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
   document.body.appendChild(script);
-}
+
+  console.log('script loaded');
+}*/
+$('document').ready(function(){
+
+  var script = document.createElement("script");
+  script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
+  document.body.appendChild(script);
+});
+
 
 //global variables for maps use
 var marker = null;
 var position;
 var longitudeId, latitudeId; 
 
-function initMap() {     var myLatlng = {lat: -25.363, lng: 131.044};
-	 var mapProp = {
-	  center:myLatlng,
-	  zoom: 8,
-	  mapTypeId: google.maps.MapTypeId.ROADMAP
-	};
+function initMap(mode) {     
+     var myLatlng = {lat: -25.363, lng: 131.044};
+     var mapProp = {
+      center:myLatlng,
+      zoom: 8,
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+    };
+    
+    var map=new google.maps.Map(document.getElementById("googleMap"), mapProp);
 
-	var map=new google.maps.Map(document.getElementById("googleMap"), mapProp);
-	  
-	google.maps.event.addListener(map, 'click', function(event) {
-		    position = event.latLng;
-		    if(marker == null)
-		    	placeMarker(position);
-   		    else{
-   		    	marker.setPosition(position);	
-   		    } 		 
-		    var long = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#longitude");
-		    long.value = marker.getPosition().lng();
-		    var lat = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#latitude");
-		    lat.value = marker.getPosition().lat();
-   		});
-
-	function placeMarker(location) {
-	     marker = new google.maps.Marker({
-	        position: location, 
-	        map: map
-	    });
-	}
+    if(mode == "create"){   
+        google.maps.event.addListener(map, 'click', function(event) {
+                position = event.latLng;
+                if(marker == null)
+                    placeMarker(position);
+                else{
+                    marker.setPosition(position);   
+                }        
+               /* var long = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#longitude");
+                long.value = marker.getPosition().lng();
+                var lat = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#latitude");
+                lat.value = marker.getPosition().lat();*/
+            });
+    }
+    function placeMarker(location) {
+         marker = new google.maps.Marker({
+            position: location, 
+            map: map
+        });
+    }
 }
 
-function createMap(){
-	$('#ldo-details').append('<div id="googleMap" style="width:200%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
- 	//google.maps.event.trigger(googleMap, 'resize');
-	initMap();	
+function createMap(jQueryObject, mode){
+    jQueryObject.next().append('<div id="googleMap" style="width:80%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
+    initMap(mode);  
 
 }
 function deleteMap(){
     marker = null;
- 	$("#googleMap").remove();
+    $("#googleMap").remove();
 }
 
 FrameViewer.prototype.draw = function(frames, mode){
-		$('br').remove();
-		$('.html-create-form').remove();
-		$('.dacura-html-viewer').remove();
-		deleteMap();
-		this.mode = mode;
-		this.frames = frames;
-		var insiderObj = "";
-		var data = "";
+    this.mode = mode;
+    this.frames = frames;
+    $('#ldo-frame-contents').remove();
 
-		if(frames.length > 0){
-			for (var i = 0; i < frames.length; i++) {
-				var f = JSON.stringify(frames[i]);
-				var parsed = JSON.parse(f);
-
-				if(parsed.type == "objectProperty"){
-
-					$('#ldo-contents').append("<br><div class='dacura-html-viewer'> " + parsed.label.data + "</div>");
-					$('#ldo-details').append("<br><div class='html-create-form'> " + parsed.label.data + "</div>");
-					if(((parsed.range).split('#'))[1] == "PointInSpace"){
-						createMap();
-					}
-					for (var j = 0; j <  parsed.frame.length; j++) {
-						if(parsed.frame[j].value != undefined)
-							data = parsed.value.data;
-						else
-							 data = "";
-						if(mode == "create"){
-							$('#ldo-details').append("<div class='html-create-form'> " + parsed.frame[j].label.data + " <br> <input type='text' name='"+parsed.property+"' id=" +parsed.frame[j].property+">");
-							if(parsed.frame[j].label.data == "Latitude")
-								latitudeId = parsed.frame[j].label.data;
-							else if(parsed.frame[j].label.data == "Longitude")
-								longitudeId = parsed.frame[j].label.data;
-
-						}else if(mode == "view"){
-							$('#ldo-contents').append("<div class='dacura-html-viewer'> " +parsed.frame[j].label.data + " <br>" + data + "<br></div>");	
-
-						}else{/*EDIT MODE HERE*/}
-					}	
-
-				}else if(parsed.type == "datatypeProperty"){
-
-					//Since data can be empty, this is used to set in case it is not empty
-					if(parsed.value != undefined){
-						data = parsed.value.data;
-					}
-					else 
-						data = "";
-				
-					if(mode == "create"){
-						$('#ldo-details').append("<div class='html-create-form'> " + parsed.label.data + " <br> <input type='text' name='"+parsed.property+"'><br>");						
-					}else if(mode == "view"){
-						$('#ldo-contents').append("<br><div class='dacura-html-viewer'>" + parsed.label.data + " <br><p>" + data + "</p><br>");	
-					}else{/*EDIT MODE HERE*/}
-
-				}
-			};
-				$('#ldo-contents').append("</div> <br><br>");
-
-		}
-		else {
-			
-		}	
-
+    if(mode=="create"){
+        var parent = document.getElementById("ldo-create");
+    }else{
+        var parent = document.getElementById("ldo-contents");
+    }
+    var container = document.createElement("div");
+    container.setAttribute('id', "ldo-frame-contents");
+    gensym = dacura.frame.Gensym("query");
+    res = dacura.frame.frameGenerator(frames, container, gensym, mode);
+    parent.appendChild(res);
+    if(this.cls == "http://dacura.cs.tcd.ie/data/seshattiny#Polity")
+       dacura.frame.insertWidgets(mode);
+    else
+        marker = null; 
+    return;
 };
 
-// To do: sub labels such as slongitude or latitude are not being displayed, but are filled.
-
 FrameViewer.prototype.extract = function () {
-    var y = '{"rdf:type": "' + this.cls + '", ';
-    y = y + dacura.frame.extractionConverter(this.frames);
-    y = y + '}';
+    var y = dacura.frame.extractionConverter(this.frames, this.cls);
+    console.log(y);
     return y;
 }
 
-dacura.frame.extractionConverter = function (frameArray){
-    //how do we handle sub-properties of things?
+dacura.frame.insertWidgets = function (mode) {
+    //this will go through the generated frame and insert complex widgets where necessary
+    //shim for now, just adds in the map
+    var x = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#capitalCityLocation']");
+
+    createMap(x, mode);
+    return;
+}
+
+dacura.frame.generateUUID = function(){
+    var d = new Date().getTime();
+    if(window.performance && typeof window.performance.now === "function"){
+        d += performance.now(); //use high-precision timer if available
+    }
+    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = (d + Math.random()*16)%16 | 0;
+        d = Math.floor(d/16);
+        return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+    });
+    return uuid;
+}
+
+dacura.frame.extractionConverter = function (frameArray, cls){
+    //this and subframeExtraction can probably be refactored to reduce duplication
     var tmpArray = [];
+    tmpArray.push('"rdf:type": "' + cls + '"')
     for(var i = 0;i<frameArray.length;i++){
         var tmp = frameArray[i];
         var prop = tmp.property;
         var type = tmp.range;
         if(typeof tmp.frame !== 'undefined' && tmp.frame){
-            var data = dacura.frame.extractionConverter(tmp.frame);
-            var y = '"' + prop + '": {"data": {' + data + '}, "type": "' + type + '"}'
+            var data = dacura.frame.subframeExtraction(tmp.frame, type);
+            var y = '"' + prop + '": ' + data;
         }else if(typeof tmp.contents !== 'undefined' && tmp.contents){
+            //is this the correct language type?
+            var lang = tmp.label.lang;
             var data = tmp.contents;
-            var y = '"' + prop + '": {"data": "' + data + '", "type": "' + type + '"}'
+            var y = '"' + prop + '": {"data": "' + data + '", "type": "' + type + '", "lang": "' + lang + '"}'
         }else{
             alert("something's gone wrong");
         }
         tmpArray.push(y);
     }
-    return tmpArray.join(", ");
+    return "{" + tmpArray.join(", ") + "}";
+}
+
+dacura.frame.subframeExtraction = function(frameArray, cls){
+    var tmpArray = []
+    for(var i = 0;i<frameArray.length;i++){
+        var uniqueID = "_:" + dacura.frame.generateUUID();
+        var tmp = frameArray[i];
+        var prop = tmp.property;
+        var type = tmp.range;
+        if(typeof tmp.frame !== 'undefined' && tmp.frame){
+            var data = dacura.frame.subframeExtraction(tmp.frame, type);
+            var y = '"' + prop + '": ' + data;
+        }else if(typeof tmp.contents !== 'undefined' && tmp.contents){
+            var data = tmp.contents;
+            var lang = tmp.label.lang;
+            var y = '"' + uniqueID + '": {"rdf:type": "' + cls + '", ';
+            y = y + '"' + prop + '": {' + '"type": "' + type + '", "data": "' + data + '"}}'
+        }else{
+            alert("something's gone wrong");
+        }
+        tmpArray.push(y);
+    }
+    return "{" + tmpArray.join(", ") + "}";
 }
 
 dacura.frame.draw = function (cls, resultobj, pconf, target) {
@@ -225,86 +232,79 @@ dacura.frame.bind = function(obj, prop, elt){
     });
 }
 
-dacura.frame.frameGenerator = function (frame, obj, gensym) {
-    //bind each part of the DOM to the relevant part of the JSON object
-    //handler to automatically update the frame in memory
-    //write this naively - don't worry about potential performance concerns
-    //add in a function call that returns an input element
-    //rewrite this for better structure
-    ////make sure to add refresh option
-    //alert(JSON.stringify(frame,null,4));
-    /* list of frame options */
+dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
+    //console.log(JSON.stringify(frame));
     if (frame.constructor == Array) {
-
         for (var i = 0; i < frame.length; i++) {
             var elt = frame[i];
-
             if (elt.type == "objectProperty" || elt.type == "datatypeProperty") {
-
-                var propdiv = document.createElement("div");
+                //create container
+                var contentDiv = document.createElement("div");
                 if (elt.domain) {
-                    propdiv.setAttribute('data-class', elt.domain);
+                    contentDiv.setAttribute('data-class', elt.domain);
                 } else {
                     alert("No domain for: " + (elt.label
                             || elt.property
                             || JSON.stringify(elt, null, 4)));
                 }
 
-                var labelnode = document.createElement("label");
-
+                //create left hand side
+                var labelDiv = document.createElement("div");
+                labelDiv.setAttribute('class', 'property-label');
                 if (elt.label) {
                     var label = elt.label.data; // {'data' : someDataHere, 'type' : SomeTyping}
                     var textnode = document.createTextNode(label + ':');
-                    /* if(label == 'Unit of Measure'){
-                     alert(JSON.stringify(elt))
-                     }*/
                 } else {
                     var textnode = document.createTextNode(elt.property + ':');
                 }
-                var divlabel = document.createElement("div");
-                divlabel.setAttribute('style', 'float: left');
-                divlabel.appendChild(textnode);
-                labelnode.appendChild(divlabel);
-                labelnode.setAttribute('data-property', elt.property);
+                labelDiv.appendChild(textnode);
+                labelDiv.setAttribute('data-property', elt.property);
+                contentDiv.appendChild(labelDiv);
 
-                propdiv.appendChild(labelnode);
-
+                //create right hand side
                 if (elt.type == 'objectProperty') {
                     var subframe = elt.frame;
-                    var framediv = document.createElement("div");
-                    framediv.setAttribute('class', 'embedded-object');
-                    framediv.setAttribute('style', 'padding-left: 5px; display: inline-block;');
-
-                    dacura.frame.frameGenerator(subframe, framediv, gensym);
-                    labelnode.appendChild(framediv);
+                    var subframeDiv = document.createElement("div");
+                    subframeDiv.setAttribute('class', 'embedded-object');
+                    dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
+                    contentDiv.appendChild(subframeDiv);
                 } else if (elt.type == 'datatypeProperty') {
-                    var input = document.createElement("input");
+                    var inputDiv = document.createElement("div");
+                    inputDiv.setAttribute('class', 'property-value');
+                    var input = dacura.frame.inputSelector(mode);
                     var ty = dacura.frame.typeConvert(elt.range);
                     input.setAttribute('type', ty);
-                    dacura.frame.bind(elt, "contents", input);
-                    elt.contents = elt.label.data;
-                    
-                    //console.log(elt);
-
-                    labelnode.appendChild(input);
+                    if(mode =="create"){
+                        dacura.frame.bind(elt, "contents", input);
+                        elt.contents = elt.label.data;
+                    }else{
+                        test = elt.label.data;
+                        if(typeof elt.value != "undefined"){
+                            test = elt.value.data;
+                        }
+                        var value = document.createTextNode(test);
+                        input.appendChild(value);
+                    }
+                    inputDiv.appendChild(input);
+                    contentDiv.appendChild(inputDiv);
                 } else {
                     alert("Impossible: must be either an object or datatype property.");
                 }
-
-                propdiv.appendChild(labelnode);
-                obj.appendChild(propdiv);
-
+                obj.appendChild(contentDiv);
             } else if (elt.type == 'failure') {
+                //don't think we should hit this, but check again
                 //alert(elt.message + ' class :' + elt.domain);
                 alert(JSON.stringify(elt, null, 4));
+                var failnode = document.createTextNode(elt.message);
+                obj.appendChild(failnode);
             } else {
-                alert(JSON.stringify(elt, null, 4));
-                //alert("What in gods name are we?");
+                //console.log("Element - restriction");
+                //console.log(elt);
+                //alert(JSON.stringify(elt,null,4));
             }
-        } // for loop
+        }
     } else if (frame.constructor == Object && frame.type == 'entity' || frame.type == 'thing') {
         // we are an entity
-
         var input = document.createElement("input");
         input.setAttribute('class', 'entity-class');
         input.setAttribute('id', gensym.next());
@@ -312,12 +312,18 @@ dacura.frame.frameGenerator = function (frame, obj, gensym) {
         // This should really be a specialised search box.
         input.setAttribute('type', 'text');
         obj.appendChild(input);
+    } else if (frame.constructor == Object && frame.type == 'failure') {
+        // log to console
+        console.log("Entity - failure");
+        console.log(frame);
+    } else if (frame.constructor == Object && frame.type == 'restriction') {
+        // log to console
+        console.log("Entity - restriction");
+        console.log(frame);
     } else {
         alert("We are neither a property nor an entity:" + JSON.stringify(frame, null, 4));
     }
-
     return obj;
-
 };
 
 dacura.frame.getId = function (obj, gs) {
@@ -335,6 +341,18 @@ dacura.frame.entityExtractor = function (target) {
     jsonobj[id] = res;
     return jsonobj;
 };
+
+dacura.frame.inputSelector = function (mode){
+    //for now, just mode - will include the type of input later
+    if(mode == "create"){
+        var input = document.createElement("input");
+    }else if(mode == "edit"){
+        var input = document.createElement("div");
+    }else{
+        var input = document.createElement("div");
+    }
+    return input;
+}
 
 dacura.frame.hasSubObject = function (obj) {
     if ($(obj).children('div.embedded-object').length > 0) {
