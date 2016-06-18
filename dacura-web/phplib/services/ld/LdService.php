@@ -70,7 +70,7 @@ class LdService extends DacuraService {
 	
 	function getMinimumFacetForAccess(DacuraServer &$dacura_server){
 		if($this->screen == "list"){
-			return "create";
+			return "list";
 		}
 		elseif($this->screen == "update"){
 			return "inspect";
