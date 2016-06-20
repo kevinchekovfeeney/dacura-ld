@@ -1,5 +1,5 @@
 <?php 
-include_once "phplib/services/ld/ld_settings.php";
+include "phplib/services/ld/ld_settings.php";
 $settings["service-title"] = "Candidate Service";
 $settings["service-description"] = "The candidate service allows you to manage instance data";
 $settings["service-button-title"] = "Data";
@@ -57,7 +57,6 @@ $msg_extensions = array(
 		"update_meta_button" => "Save Updated Metadata",
 		"test_update_meta_button" => "Test Metadata Update",	
 );
-
 
 foreach($msg_extensions as $k => $v){
 	$settings["messages"][$k] = $v;

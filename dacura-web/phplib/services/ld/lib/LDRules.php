@@ -114,7 +114,7 @@ class LDRules extends DacuraObject {
 			'regularise_literals' => $srvr->getServiceSetting("update_regularise_literals", false),
 			//if we encounter a delete of a non-existant fragment
 			"fail_on_bad_delete" => $srvr->getServiceSetting("fail_on_bad_delete", true),
-			"replace_blank_ids" => $srvr->getServiceSetting("update_replace_blank_ids", true)
+			"replace_blank_ids" => $srvr->getServiceSetting("update_replace_blank_ids", false)
 		);
 	}
 	

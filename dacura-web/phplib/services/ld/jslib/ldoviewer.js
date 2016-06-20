@@ -1,5 +1,14 @@
 /**
- * LDO Viewer object - useful functions for representing Linked data objects in html
+ * @file Javascript object for viewing linked data objects returned in responses by the Dacura API
+ * @author Chekov
+ * @license GPL V2
+ */
+
+/**
+ * @constructor 
+ * @param ldo {Ojbect} ldo json object returned by api
+ * @param pconf {DacuraPageConfig} page config object
+ * @param vconf {Object} viewer config object
  */
 function LDOViewer(ldo, pconf, vconf){
 	this.ldo = ldo;
@@ -12,6 +21,21 @@ function LDOViewer(ldo, pconf, vconf){
 	}
 }
 
+/**
+ * Retrieves the ldtype (candidate, ontology, graph) of the viewer
+ * @returns {String} ldtype
+ */
+LDOViewer.prototype.ldtype = function(){
+	if(typeof this.ldo == "object"){
+		return this.ldo.ldtype();
+	}
+	return this.ldtype;
+};
+
+/**
+ * Initialises the viewer with the config passed
+ * @param vconf {Object} viewer config object 
+ */
 LDOViewer.prototype.init = function(vconf){
 	if(typeof vconf.emode == "string"){
 		this.emode = vconf.emode;
@@ -73,6 +97,7 @@ LDOViewer.prototype.init = function(vconf){
 	else {
 		this.show_options = true;
 	}
+	this.show_fileupload = (typeof vconf.fileupload != "undefined") ? vconf.fileupload : false;
 	this.show_buttons = (typeof vconf.show_buttons != "undefined") ? vconf.show_buttons : false;
 	this.test_update_options = (typeof vconf.test_update_options != "undefined") ? vconf.test_update_options : {};
 	this.update_options = (typeof vconf.update_options != "undefined") ? vconf.update_options : {};
@@ -81,6 +106,12 @@ LDOViewer.prototype.init = function(vconf){
 	this.tooltip = (typeof vconf.tooltip != "undefined") ? vconf.tooltip :  { content: function () {	return $(this).prop('title');}};
 }
 
+/**
+ * Called to draw the viewer into the screen
+ * @param target {String} the jquery selector in which the viewer will be drawn
+ * @param mode {String} view|edit|create
+ * @param callback {function} the callback that will be called upon update
+ */
 LDOViewer.prototype.show = function(target, mode, callback){
 	if(typeof target == "string"){
 		this.setTarget(target);
@@ -112,6 +143,9 @@ LDOViewer.prototype.show = function(target, mode, callback){
 	}
 };
 
+/**
+ * Called to add jquery ui tooltips to the viewer
+ */
 LDOViewer.prototype.tooltipLDImport = function(){
 	$('.ld-import-holder .dacura-property-help').each(function(){
 		$(this).html(dacura.system.getIcon('help-icon', {cls: 'helpicon', title: $(this).html()}));
@@ -119,6 +153,10 @@ LDOViewer.prototype.tooltipLDImport = function(){
 	$('.ld-import-holder .helpicon').tooltip(this.tooltip);
 };
 
+/**
+ * Generates the html for showing the options bar on top of the viewer
+ * @returns {String} html
+ */
 LDOViewer.prototype.showOptionsBar = function(){
 	if(this.emode == "view"){
 		var html = this.showViewOptionsBar();
@@ -132,6 +170,10 @@ LDOViewer.prototype.showOptionsBar = function(){
 	return html;
 };
 
+/**
+ * Generates the html for showing the options bar in view mode on top of the viewer
+ * @returns {String} html
+ */
 LDOViewer.prototype.showViewOptionsBar = function(){
 	var html = "<div class='ld-view-bar ld-bar'><table class='ld-bar'><tr><td class='ld-bar ld-bar-left'>";
 	if(this.view_formats){
@@ -187,12 +229,18 @@ LDOViewer.prototype.showViewOptionsBar = function(){
 	return html;
 };
 
+/**
+ * Generates the html for showing the options bar on top of the importer
+ * @returns {String} html
+ */
 LDOViewer.prototype.showImportOptionsBar = function(){
 	var html = "<div class='ld-import-bar ld-bar'><table class='ld-bar'><tr><td class='ld-bar ld-bar-left'>";
 	html += "<span id='" + this.prefix + "-ld-uploadtype'>";
 	html += '<input type="radio" class="ldimportoption"  value="textbox" id="'+ this.prefix + '-importtext" name="' + this.prefix + '-importformat"><label for="' + this.prefix + '-importtext" >Paste into Textbox</label>';
 	html += '<input type="radio" class="ldimportoption" checked value="url" id="' + this.prefix + '-importurl" name="' + this.prefix + '-importformat"><label for="'+ this.prefix + '-importurl">Import from URL</label>';
-	html += '<input type="radio" class="ldimportoption" value="file" id="'+ this.prefix + '-importupload" name="' + this.prefix + '-importformat"><label for="' + this.prefix + '-importupload">Upload File</label>';
+	if(this.show_fileupload){
+		html += '<input type="radio" class="ldimportoption" value="file" id="'+ this.prefix + '-importupload" name="' + this.prefix + '-importformat"><label for="' + this.prefix + '-importupload">Upload File</label>';
+	}
 	html += "</span>";
 	html += "</td>";
 	html += "<td class='ld-bar ld-bar-centre'>";
@@ -219,6 +267,10 @@ LDOViewer.prototype.showImportOptionsBar = function(){
 	return html;
 }
 
+/**
+ * Generates the html for showing the options bar in edit mode on top of the viewer
+ * @returns {String} html
+ */
 LDOViewer.prototype.showEditOptionsBar = function(){
 	var html = "<div class='ld-edit-bar ld-bar'><table class='ld-bar'><tr><td class='ld-bar ld-bar-left'>";
 	tit = "format: " + this.view_formats[this.ldo.format];
@@ -270,6 +322,10 @@ LDOViewer.prototype.showEditOptionsBar = function(){
 	return html;
 }
 
+/**
+ * Initialises the viewer's options bar by attaching events, etc
+ * @param callback {function} the callback function to call upon update of the options
+ */
 LDOViewer.prototype.initOptionsBar = function(callback){
 	var self = this;
 	$('button.ld-control').button().click(function(){
@@ -304,6 +360,10 @@ LDOViewer.prototype.initOptionsBar = function(callback){
 	}
 }
 
+/**
+ * Generates the html for showing the update buttons
+ * @returns {String} html
+ */
 LDOViewer.prototype.getUpdateButtonsHTML = function(mode){
 	var html = '<div class="subscreen-buttons">';
 	if(mode == 'edit'){		
@@ -320,6 +380,11 @@ LDOViewer.prototype.getUpdateButtonsHTML = function(mode){
 	return html;
 };
 
+/**
+ * Intialises the update buttons by adding various events, etc
+ * @param tpconf {DacuraPageConfig} page configuration object
+ * @param callback {function} update callback function
+ */
 LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 	var self = this;
 	if(this.emode == "edit"){
@@ -328,7 +393,7 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 			if(act == "cancelupdate"){
 				self.handleViewAction("cancel")
 			}
-			else { //act is update
+			else { //action is update or test update
 				if(self.ldo.format == "html"){
 					var updated = self.frm.extract();
 				}
@@ -347,8 +412,8 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 						}
 					}
 				}
-				var opts = (test ? self.test_update_options : self.update_options);
 				var test = (act == "testupdate") ? 1 : 0;
+				var opts = (test ? self.test_update_options : self.update_options);
 				if(self.editmode_options){
 					var j = $(self.target + " .ld-edit-modes").val();
 					var em = j ? j : "replace";					
@@ -365,9 +430,6 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 						opts.show_original = 1;
 						opts.show_delta = 1;
 					}
-				}
-				else {
-					alert("no view options");
 				}
 				if(self.view_graph_options){
 					$(self.target + ' .editbar-options input:checkbox').each(function(){
@@ -389,7 +451,6 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 					"format": self.ldo.format
 				};
 				self.update(upd, callback, tpconf);	
-				//assemble our options for update...
 			}
 		});
 	}
@@ -414,7 +475,7 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 							updated.ldfile = fname;
 							self.update(updated);
 						}
-						dacura.ld.uploadFile(updated.ldfile, handleUpload, tpconf)
+						dacura.upload.uploadFile(updated.ldfile, handleUpload, tpconf)
 					}
 					else {
 						self.update(updated, callback, tpconf);
@@ -424,7 +485,13 @@ LDOViewer.prototype.initUpdateButtons = function(tpconf, callback){
 		});
 	}
 };
-		
+
+/**
+ * Retrieves the data that has been input by the user and packs it into a json object
+ * @param updobj {object} json object to add the inputs to
+ * @param validate {boolean} if true, the data should be validated before being returned
+ * @returns {object} the object with format & ldurl|ldfile|contents filled in from the import screen
+ */
 LDOViewer.prototype.getImportData = function(updobj, validate){
 	var format = $("#" + this.prefix + "-ldformat").val();
 	if(format && format != "0"){
@@ -474,12 +541,15 @@ LDOViewer.prototype.getImportData = function(updobj, validate){
 			else {
 				updobj.contents = text;
 			}				
-			
 		}
 	}
 	return updobj;
 };
-		
+
+/**
+ * Sets the import type 
+ * @param v {String} the new import mode
+ */
 LDOViewer.prototype.setImportType = function(v){
 	if(v != this.impmode){
 		this.impmode = v;
@@ -488,10 +558,18 @@ LDOViewer.prototype.setImportType = function(v){
 	}
 };
 
+/**
+ * Replaces the contents of the viewer with the passed html
+ * @param html {string} new contents
+ */
 LDOViewer.prototype.replaceContents = function(html){
 	$('#' + this.prefix + "-ldo-viewer-contents").html(html);
 };
 
+/**
+ * Generates the html to show the body of the imports section 
+ * @returns {String} html
+ */
 LDOViewer.prototype.getImportBodyHTML = function(){
 	if(typeof this.impmode == "undefined") this.impmode = "url";
 	if(this.impmode == "file"){
@@ -506,12 +584,23 @@ LDOViewer.prototype.getImportBodyHTML = function(){
 	return "<div class='ld-import-holder'>" + hcont + "</div>";
 };
 
+/**
+ * Sets the jquery target selector for the viewer
+ * @param jqid the jquery selector for the viewer
+ * @param barjqid the jquery selector for the options bar
+ */
 LDOViewer.prototype.setTarget = function(jqid, barjqid){
 	this.target = jqid;
 	this.prefix = jqid.substring(1);
 	this.options_target = (typeof barjqid != "undefined") ? barjqid : this.target;
 }
 
+/**
+ * Called when there is a frame associated with an ldo
+ * @param ldo {String} the class of the frame
+ * @param target {String} the jquery place where the frame will be written
+ * @param mode {String} the view|edit|create mode of the viewer
+ */
 LDOViewer.prototype.showFrame = function(ldo, target, mode){
 	if(mode == 'create'){
 		var cls = ldo;
@@ -545,9 +634,13 @@ LDOViewer.prototype.showFrame = function(ldo, target, mode){
 		self.frm.draw(frames, mode);
 	}
 	dacura.system.invoke(ajs, msgs, this.pconf);	
-	
 };
 
+/**
+ * Called to handle the situation when a user clicks on some action button while in view mode
+ * @param act {string} the action
+ * @param callback {function} the callback function to pass to the update function (if required by action)
+ */
 LDOViewer.prototype.handleViewAction = function(act, callback){
 	if(act == "export"){
 		window.location.href = this.ldo.fullURL() + "&direct=1";	
@@ -576,6 +669,9 @@ LDOViewer.prototype.handleViewAction = function(act, callback){
 	}
 };
 
+/**
+ * Returns the viewer to view mode from edit mode
+ */
 LDOViewer.prototype.clearEditMode = function(){
 	var args = typeof this.savedargs == "object" ? this.savedargs : this.ldo.getAPIArgs();
 	delete(this.savedargs);
@@ -585,12 +681,18 @@ LDOViewer.prototype.clearEditMode = function(){
 	this.refresh(args, msgs);
 };
 
+/**
+ * Load the viewer's import mode
+ */
 LDOViewer.prototype.loadImportMode = function(){
 	this.emode = 'import';
 	this.impmode = 'url';
 	this.show();
 }
 
+/**
+ * Load the viewer's edit mode settings
+ */
 LDOViewer.prototype.loadEditMode = function(){
 	var args = this.ldo.getAPIArgs();
 	this.savedargs = jQuery.extend(true, {}, args);
@@ -622,6 +724,10 @@ LDOViewer.prototype.loadEditMode = function(){
 	dacura.ld.fetch(id, args, handleResp, this.pconf, msgs);
 };
 
+/**
+ * Called when a user chooses a different format for the ldo
+ * @param format {string} the chosen format
+ */
 LDOViewer.prototype.handleViewFormatUpdate = function(format){
 	if(format != this.ldo.format){
 		var args = this.ldo.getAPIArgs();
@@ -635,6 +741,11 @@ LDOViewer.prototype.handleViewFormatUpdate = function(format){
 	}
 };
 
+/**
+ * Called when a user changes some of the view options on the options bar
+ * @param opt {String} the option that was changed
+ * @param val {String} the value the option has been changed to
+ */
 LDOViewer.prototype.handleViewOptionUpdate = function(opt, val){
 	var opts = this.ldo.options;
 	if(val && (typeof opts[opt] == "undefined" || opts[opt] == false)){
@@ -659,21 +770,12 @@ LDOViewer.prototype.handleViewOptionUpdate = function(opt, val){
 	this.refresh(args, msgs);
 };
 
-/* refresh only rewrites the body of the ldo, not the rest of the stuff like history..*/
-LDOViewer.prototype.refresh = function(args, msgs){
-	var id = this.ldo.id;
-	if(this.ldo.fragment_id){ 
-		id = id + "/" + this.ldo.fragment_id;
-	}
-	var self = this;//this becomes bound to the callback...
-	var handleResp = function(data, pconf){
-		self.ldo = new LDO(data);
-		self.show();
-	}
-	$(this.pconf.resultbox).empty();
-	dacura.ld.fetch(id, args, handleResp, this.pconf, msgs);
-};
-
+/** 
+ * Called to refresh the entire ldo page from the server when an ldo has been updated 
+ * @param args {Object} argument array to be sent to server
+ * @param msgs {Object} messages array to be displayed while busy
+ * @param callback {function} callback function to refresh page elements
+ */
 LDOViewer.prototype.refreshPage = function(args, msgs, callback){
 	var id = this.ldo.id;
 	if(this.ldo.fragment_id){ 
@@ -694,6 +796,31 @@ LDOViewer.prototype.refreshPage = function(args, msgs, callback){
 	dacura.ld.fetch(id, args, ref, this.pconf, msgs);
 };
 
+/* refresh ..*/
+/**
+ * Variation on above that does not call callback - only rewrites the body of the ldo, not the rest of the stuff like history
+ * @param args {Object} argument array to send to server ldo fetch
+ * @param msgs {Object} messages array to be displayed while busy
+ */
+LDOViewer.prototype.refresh = function(args, msgs){
+	var id = this.ldo.id;
+	if(this.ldo.fragment_id){ 
+		id = id + "/" + this.ldo.fragment_id;
+	}
+	var self = this;//this becomes bound to the callback...
+	var handleResp = function(data, pconf){
+		self.ldo = new LDO(data);
+		self.show();
+	}
+	$(this.pconf.resultbox).empty();
+	dacura.ld.fetch(id, args, handleResp, this.pconf, msgs);
+};
+
+/**
+ * Called to validate an ldo created with the new ldo form
+ * @param obj {Object} json object with various data extracted from form into it
+ * @returns {Array} an error of errors or false if no errors (ie false = valid)
+ */
 LDOViewer.prototype.validateNew = function(obj){
 	var errs = [];
 	this.getImportData(obj, false);
@@ -739,13 +866,14 @@ LDOViewer.prototype.validateNew = function(obj){
 	return false;
 };
 
-LDOViewer.prototype.ldtype = function(){
-	if(typeof this.ldo == "object"){
-		return this.ldo.ldtype();
-	}
-	return this.ldtype;
-};
-
+/**
+ * Reads input data from the create form to populate the linked data object
+ * @param obj {Object} the object directly read from the form
+ * @param demand_id_token {string} the string that signifies a demand id
+ * @param options {Object} the options to be passed to api
+ * @param pconf {DacuraPageConfig} page config object
+ * @returns {Object} json object with form inputs filled in ready to send to api
+ */
 LDOViewer.prototype.readCreateForm = function(obj, demand_id_token, options, pconf){
 	apiobj = {};
 	if(typeof options != "undefined"){
@@ -803,6 +931,12 @@ LDOViewer.prototype.readCreateForm = function(obj, demand_id_token, options, pco
 	return apiobj;		
 };
 
+/**
+ * Called to create a new LDO
+ * @param created {Object} the new ldo object
+ * @param result {function} callback for handling result of api call
+ * @param test_flag {boolean} if true, just a test invocation
+ */
 LDOViewer.prototype.create = function(created, result, test_flag){
 	var self = this;
 	if(typeof created.ldfile != "undefined" && typeof created.uploaded_earlier == 'undefined'){
@@ -812,13 +946,20 @@ LDOViewer.prototype.create = function(created, result, test_flag){
 			self.create(created, result, test_flag);
 		}
 		var upconf = {}
-		dacura.ld.uploadFile(created.ldfile, handleUpload, self.pconf);
+		dacura.upload.uploadFile(created.ldfile, handleUpload, self.pconf);
 	}
 	else {
 		dacura.ld.create(created, result, self.pconf, test_flag);
 	}	
 };
 
+/**
+ * Called to update an existing LDO on the server
+ * @param upd {Object} the ldo update object
+ * @param resultCallback {function} the function that will be called to handle the result
+ * @param pageconfig {DacuraPageConfig} the page config
+ * @param handleResp 
+ */
 LDOViewer.prototype.update = function(upd, resultCallback, pageconfig, handleResp){
 	var id = this.ldo.id;
 	if(this.ldo.fragment_id){ 
@@ -856,12 +997,24 @@ LDOViewer.prototype.update = function(upd, resultCallback, pageconfig, handleRes
 	dacura.ld.update(id, upd, handleResp, pageconfig, upd.test);
 };
 
+/**
+ * Is this a ldoupdate viewer object - used to distinguish between this object and ldoupdateviewer object
+ * @returns {Boolean} false - 
+ */
 LDOViewer.prototype.isLDOUpdate = function(){
 	return false;
 };
 
+/**
+ * Wraps an input field in dacura form html - to add ldo fields to dacura forms 
+ * @function wrapIPFieldInDacuraForm
+ * @param l {string} label - the field label
+ * @param d {string} input element html
+ * @param h {string} help text
+ * @returns {String} html
+ */
 function wrapIPFieldInDacuraForm(l, d, h){
-	var html = '<table id="jsonvphoney" style="border: 0">';
+	var html = '<table class="dacura-property-table" id="jsonvphoney" style="border: 0">';
 	html += '<thead></thead><tbody><tr class="dacura-property-spacer"></tr>';
 	html += '<tr class="dacura-property first-row row-1 last-row">';
 	html += '<td class="dacura-property-label">' + l + '</td><td class="dacura-property-value">';

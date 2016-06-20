@@ -138,16 +138,15 @@ dacura.tool.initScreens = function(holder, forms){
 	else {
 		$('#'+holder).tabs();
 	}
-}
+};
 
 dacura.tool.enableTab = function(holder, tab){
 	$('#'+holder).tabs( "enable", "#" + tab );
-}
+};
 
 dacura.tool.disableTab = function(holder, tab){
 	$('#'+holder).tabs( "disable", "#" + tab );
-}
-
+};
 
 /**
  * @function loadSubscreen loads a subscreen and collapses the regular contents of the screen
@@ -580,11 +579,19 @@ dacura.tool.form = {
 					$('#' + metabase + i + "-" + f).val(meta[i][f]);	
 				}
 			}
-			if(typeof struct[i] == "object"){
-				ncontext = context + i + "-";
-				this.populate(key, struct[i], meta, ncontext);
+			if(typeof struct[i] == "object" && this.hasRow(key, i)){
+				var vvar = key + "-" + context + i;
+				if(this.hasValue(vvar)){
+					this.setValue(key, i, JSON.stringify(struct[i], false, 4));
+				}
+				//see if we have a local textarea...
+				else {
+					ncontext = context + i + "-";
+					this.populate(key, struct[i], meta, ncontext);
+				}
 			}
 			else {
+				//alert("setting " + i + "to " + struct[i]);
 				this.setValue(key, i, struct[i]);
 			}
 		}
@@ -624,7 +631,6 @@ dacura.tool.form = {
 	 * @param {mixed} val - a value (possibly complex)
 	 */
 	setValue: function(key, row, val){
-		//alert (key + " " + row + " " + val);
 		var rowid = 'row-' + key + "-" + row;
 		var jqid = '#' + key + " tr#"+rowid;
 		if(typeof val == "string"){
@@ -635,9 +641,26 @@ dacura.tool.form = {
 		$(jqid + ' .dacura-property-input select').each(function(){
 			$('#'+this.id).val(val);
 		});
-		//ert($(jqid).html());
 		$(jqid + ' .dacura-display-value').html(val);
+	},
+	
+	/** 
+	 * @function hasValue
+	 * @memberof dacura.tool.form
+	 * @summary checks for an input value field for a particular input element in the form
+	 * @param {string} key - the html id of the form element
+	 * @param {string} row - the variable name
+	 */
+	hasValue: function(key){
+		return $('textarea#'+key).length;
+	},
+	
+	hasRow: function(key, row){
+		var rowid = 'row-' + key + "-" + row;
+		var jqid = '#' + key + " tr#"+rowid;
+		return $(jqid).length;
 	}
+	
 }
 
 

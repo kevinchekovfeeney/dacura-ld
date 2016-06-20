@@ -142,7 +142,6 @@ class GraphManager extends DacuraController {
 		return $dqsr;
 	}
 	
-	
 	/**
 	 * Called to validate a created or updated ontology.  
 	 * 
@@ -212,10 +211,20 @@ class GraphManager extends DacuraController {
 		return $dqsr;	
 	}
 	
+	/**
+	 * Calls the DQS validate service on the graph represented by the passed graph object
+	 * @param Graph $graph the graph to be validation
+	 * @return DQSResult result object
+	 */
 	function validateGraph(Graph $graph){
 		return $this->invokeDQS("validate", $graph->schemaGname(), $graph->instanceGname(), false, false, true, $graph->getCreateInstanceTests());		
 	}
 	
+	/**
+	 * Calls the DQS schema_validate service on the passed graph
+	 * @param Graph $graph the graph to be validated
+	 * @return DQSResult result
+	 */
 	function validateSchema(Graph $graph){
 		return $this->invokeDQS("schema_validate", $graph->schemaGname(), false, false, false, true, $graph->getCreateSchemaTests());
 	}
@@ -361,6 +370,16 @@ class GraphManager extends DacuraController {
 		file_put_contents($fname, $dumpstr);
 	}
 	
+	/**
+	 * Called to dump a dcs request to file for debugging 
+	 * @param string $fname filename
+	 * @param string $service service name
+	 * @param string $graphid graph id
+	 * @param string $clsname the name of the entity class
+	 * @param string $entid the id of the entity
+	 * @param string $insgraphid the id of the instance graph
+	 * @param string $qstr the query string
+	 */
 	function dumpDCSRequest($fname, $service, $graphid, $clsname, $entid, $insgraphid, $qstr){
 		$dumpstr = "Service: $service\n";		
 		$dumpstr .= "Graph: ".$graphid."\n";

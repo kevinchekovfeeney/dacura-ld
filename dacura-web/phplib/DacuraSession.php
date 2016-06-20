@@ -130,7 +130,7 @@ class DacuraSession extends DacuraObject {
 	function registerEvent($settings){
 		$t_index = time();
 		while(isset($this->events[$t_index])) $t_index++;
-			$this->events[$t_index] = $settings;
+		$this->events[$t_index] = $settings;
 	}
 	
 	/**

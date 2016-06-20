@@ -19,7 +19,7 @@ var show_test_button = <?php echo (isset($params['show_update_meta_test_button']
 var test_update_meta_options = <?php echo isset($params['test_update_meta_options']) && $params['test_update_meta_options'] ? $params['test_update_meta_options'] : "{}";?>;
 var update_meta_options = <?php echo isset($params['update_meta_options']) && $params['update_meta_options'] ? $params['update_meta_options'] : "{}";?>;
 
-
+/* initialises the meta data form, buttons etc and populates the meta field */
 var initMeta = function(data, pconf){
 	dacura.tool.form.init("update-meta", {tooltip: tooltip, fburl: fburl});
 	if(show_test_button){
@@ -47,21 +47,23 @@ var initMeta = function(data, pconf){
 	$('.update-meta-holder').show();
 };
 
+/* reloads the meta into the form */
 var refreshMeta = function(data, pconf){
-	var fp = {"format": data.format, "meta": JSON.stringify(data.meta, 0, 4)};
+	var fp = {"format": data.format};
+	for(var k in data.meta){
+		fp[k] = (typeof data.meta[k] == "object") ? JSON.stringify(data.meta[k], 0, 4) : data.meta[k];
+	}
+	fp.meta = JSON.stringify(data.meta, 0, 4);
 	dacura.tool.form.populate("update-meta", fp);
 };
 
-refreshfuncs["ldo-meta"] = refreshMeta;
-initfuncs["ldo-meta"] = initMeta;
-
-
+/* sends the updated metadata to the server api */
 function updateMeta(obj, result, pconf, test){
 	var uobj = {};
 	if(typeof obj.meta != "undefined" && obj.meta.length > 0){
 		uobj.meta = JSON.parse(obj.meta);
-		uobj.ldtype = obj.meta.ldtype;
-		uobj.version = obj.meta.version;		
+		uobj.ldtype = uobj.meta.ldtype;
+		uobj.version = uobj.meta.version;		
 	}
 	else {
 		uobj.meta = {};
@@ -90,4 +92,11 @@ function updateMeta(obj, result, pconf, test){
 	ldov.update(uobj, handler, pconf);
 }
 
+// register refresh and init functions with the view page
+if(typeof refreshfuncs == "object"){
+	refreshfuncs["ldo-meta"] = refreshMeta;
+}
+if(typeof initfuncs == "object"){
+	initfuncs["ldo-meta"] = initMeta;
+}
 </script>

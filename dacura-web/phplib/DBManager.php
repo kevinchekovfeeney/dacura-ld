@@ -228,16 +228,12 @@ class DBManager extends DacuraController {
 		try {
 			$stmt = $this->link->prepare("INSERT INTO ld_objects
 				(id, collectionid, type, version, contents, meta, status, createtime, modtime)
-				VALUES('main', '$id', 'graph', 1, ?, ?, 'pending', ?, ?)");
-			$ld = json_encode(array("_:schema" => array("owl:imports" => array())));
-			if(!$ld){
-				return $this->failure_result("JSON encoding error: ".json_last_error() . " " . json_last_error_msg(), 500);
-			}
+				VALUES('main', '$id', 'graph', 1, '{}', ?, 'pending', ?, ?)");
 			$meta = json_encode(array("status" => "pending"));
 			if(!$meta){
 				return $this->failure_result("JSON encoding error: ".json_last_error() . " " . json_last_error_msg(), 500);
 			}
-			$params = array($ld, $meta, time(), time());
+			$params = array($meta, time(), time());
 			$res = $stmt->execute($params);
 			return true;
 		}

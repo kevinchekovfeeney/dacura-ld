@@ -2,15 +2,14 @@
 include_once("lib/PolicyEngine.php");
 include_once("lib/LDOUpdate.php");
 include_once("lib/LDO.php");
-include_once("lib/Schema.php");
 include_once("lib/DacuraResult.php");
 include_once("lib/GraphManager.php");
-require_once("lib/NSResolver.php");
+include_once("lib/NSResolver.php");
 include_once("lib/Ontology.php");
-require_once("lib/RVO.php");
+include_once("lib/RVO.php");
 include_once("lib/Graph.php");
 include_once("lib/Candidate.php");
-require_once("LdService.php");
+include_once("LdService.php");
 include_once("LDDBManager.php");
 /**
 * This class implements the basic processing pipeline of dacura linked data objects
@@ -209,17 +208,21 @@ class LdDacuraServer extends DacuraServer {
 			else {
 				$cr->msg_body = "Available at: <a href='$nldo->cwurl'>$nldo->cwurl</a>";
 			}
-		}	
+		}
 		return $cr;
 	}
 	
+	/**
+	 * Simple helper function to say whether the object passed into the api included contents (in url, text or file form)
+	 * @param array $obj json object as passed into API
+	 * @return boolean true if it contains "contents", "ldurl" or "ldfile"
+	 */
 	function APIObjectIncludesContents($obj){
 		if(isset($obj['contents']) || isset($obj['ldurl']) || isset($obj['ldfile'])){
 			return true;
 		}
 		return false;
 	}
-	
 	
 	/**
 	 * Adds a warning when a demand id fails for an ld object 
@@ -306,7 +309,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param array $filter a filter on the objects
 	 * @return boolean|array the linked data objects in an array
 	 */
-	function getLDOs($filter, $options = array()){
+	function getLDOs(&$filter, $options = array()){
 		if(isset($options['include_all'])){
 			$filter['include_all'] = $options['include_all'];
 		}
@@ -334,7 +337,7 @@ class LdDacuraServer extends DacuraServer {
 	 * @param array $filter a filter on the objects
 	 * @return boolean|array the linked data objects in an array
 	 */
-	 function getUpdates($filter, $options = array()){
+	 function getUpdates(&$filter, $options = array()){
 	 	if(isset($options['include_all'])){
 	 		$filter['include_all'] = $options['include_all'];
 	 	}
@@ -426,6 +429,12 @@ class LdDacuraServer extends DacuraServer {
 		return $ldo;
 	}
 	
+	/**
+	 * Analyses the LDO and caches the result 
+	 * @param LDO $ldo linked data object
+	 * @param integer $lvl (if lvl > 1) then the analysis will be created afresh and not load from the cache
+	 * @return array an analysis array, the structure of which varies depending on the type of the linked data object (analyse function)
+	 */
 	function loadLDOAnalysis(LDO $ldo, $lvl){
 		$cache_path = array("ld", $ldo->ldtype(), $ldo->id);
 		if($this->getServiceSetting('cache_analysis') && $lvl == 1){
@@ -443,10 +452,13 @@ class LdDacuraServer extends DacuraServer {
 		
 	}
 	
+	/**
+	 * Check whether we are operating in the context of the base ld server class or one of the derived classes (generally we should always be in the later!).
+	 * @return boolean
+	 */
 	function isBaseLDServer(){
 		return get_class($this) == "LdDacuraServer";
 	}
-	
 	
 	/**
 	 * Loads an array of historical records about the LDO detailing its previous changes
@@ -557,6 +569,12 @@ class LdDacuraServer extends DacuraServer {
 		return $history;
 	}
 	
+	/**
+	 * Rolls an LDO forward from a particular version to the given version (or the latest version if omitted)
+	 * @param LDO $ldo the linked data object (should be in an old version state
+	 * @param number $version the version to roll forward to.
+	 * @return boolean| false on failure or linked data object in its future state. 
+	 */
 	function getLDOFuture(LDO $ldo, $version = 0){
 		if($version == 0) $version = $ldo->latest_version;
 		$future = $this->dbman->loadLDOUpdateFuture($ldo, $version);
@@ -565,8 +583,6 @@ class LdDacuraServer extends DacuraServer {
 		}
 		return $future;		
 	}
-	
-	/* Same pattern applies for retreiving updates */
 	
 	/**
 	 * Returns a particular ldo update object
@@ -1074,7 +1090,7 @@ class LdDacuraServer extends DacuraServer {
 			$msg = "Updates to update ".$new_upd->id;
 			$mupdate = array("forward" => $new_upd->forward, "backward" => $new_upd->backward);
 			$oupdate = array("forward" => $orig_upd->forward, "backward" => $orig_upd->backward);
-			$ar->createGraphResult("update", $msg, $ar->status(), $mupdated, $oupdate, $test_flag);
+			$ar->createGraphResult("update", $msg, $ar->status(), $mupdate, $oupdate, $test_flag);
 		}
 		if($new_upd->published() && $orig_upd->published()){ //live edit
 			$umode = "live";
@@ -1276,8 +1292,7 @@ class LdDacuraServer extends DacuraServer {
 				$this->writeDecision($ar, $options);
 			}
 		}
-	}
-	
+	}	
 	
 	/**
 	 * prepares a linked data object for transmission to the client

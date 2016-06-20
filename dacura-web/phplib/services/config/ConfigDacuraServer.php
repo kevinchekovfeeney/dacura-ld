@@ -55,14 +55,17 @@ class ConfigDacuraServer extends DacuraServer {
 		}
 		$paths_to_create = $this->getServiceSetting("collection_paths_to_create", array());
 		foreach($paths_to_create as $p){
-			if(!mkdir($colbase."/".$p)){
+			if(!file_exists($colbase."/".$p) && !mkdir($colbase."/".$p)){
 				return $this->failure_result("Failed to create collection directory $colbase/$p", 500);
 			}
+		}
+		$webpath = "cfiles/";//$this->getSystemSetting("collections_urlbase");
+		if(!file_exists($webpath.$id) && !mkdir($webpath.$id)){
+			return $this->failure_result("Failed to create collection web directory $webpath". $id, 500);				
 		}
 		if(!$this->dbman->createCollectionInitialEntities($id)){
 			return $this->failure_result("Failed to create collection default linked data entities", 500);				
 		}
-		//finally have to create main graph
 		return true;
 	}
 	
@@ -331,39 +334,42 @@ class ConfigDacuraServer extends DacuraServer {
 		$usets = array();
 		foreach($srvcs as $sid => $ssets){
 			$current = $this->getServiceConfig($sid);
-			$usets[$sid] = array();
+			$uset = array();
 			foreach($ssets as $k => $v){
 				if(!isset($current[$k])){
-					$usets[$sid][$k] = $v;
+					$uset[$k] = $v;
 				}
 				else {
 					$cval = $current[$k];
 					if(is_array($v) && is_array($cval) && isAssoc($v) && count($v) > 0 && isAssoc($cval)){
 						if(!arrayRecursiveCompare($v, $cval)){
-							$usets[$sid][$k] = $v;
+							$uset[$k] = $v;
 						}
 					}
 					elseif(is_array($v) && is_array($cval)){
 						if($v != $cval){
-							$usets[$sid][$k] = $v;
+							$uset[$k] = $v;
 						}
 					}
 					elseif(!is_array($v) && !is_array($cval)){
 						if($cval != $v){
-							$usets[$sid][$k] = $v;
+							$uset[$k] = $v;
 						}
 					}
 					else {
-						$usets[$sid][$k] = $v;
+						$uset[$k] = $v;
 					}
 				}
 			}
 			if(isset($col->config['services'][$sid])){
 				foreach($col->config['services'][$sid] as $cid => $csetting){
-					if(!isset($usets[$sid][$cid])){
-						$usets[$sid][$cid] = $csetting;
+					if(!isset($uset[$cid])){
+						$uset[$cid] = $csetting;
 					}
 				}
+			}
+			if(count($uset) > 0){
+				$usets[$sid] = $uset;
 			}
 		}
 		return $usets;	

@@ -1,68 +1,27 @@
-/*
+/**
+ * @file Javascript client code for ld management service
+ * @author Chekov
+ * @license GPL V2
  * This is the javascript / client side of the Linked Data API
  * This file is included by all services that use the API 
  */
 
+ /** 
+ * @namespace ld
+ * @memberof dacura
+ * @summary dacura.ld
+ * @description Dacura javascript ld service module. provides client functions for accessing the dacura ld management api
+ */
 dacura.ld = {}
 dacura.ld.ldo_type = "ldo";
 
-function tname(){
-	if(dacura.ld.ldo_type == "ldo") return "linked data object";
-	else return dacura.ld.ldo_type; 
-}
-
-function tnplural(){
-	var p = tname();
-	if(p == "ontology"){
-		return "ontologies";
-	}
-	return p + "s";
-}
-
-function printCreated(obj){
-	return timeConverter(obj.createtime);
-}
-
-function printModified(obj){
-	return timeConverter(obj.modtime);
-}
-
-function printCreatedBy(obj){
-	return "<a href='update/" + obj.created_by + "'>" + obj.created_by + "</a>";
-}
-
-function drawFragmentHeader(data){
-	if(typeof data.fragment_id != "undefined"){
-		fids = data.fragment_id.split("/");
-		fid = fids[fids.length -1];
-		fdets = data.fragment_details;
-		fpaths = data.fragment_paths;
-		fpathhtml = "<div class='fragment-paths'>";
-		for(i in fpaths){
-			fpathhtml += "<span class='fragment-path'>";
-			fpathhtml += "<span class='fragment-step'>" + data.id + "</span><span class='fragment-step'>";
-			fpathhtml += fpaths[i].join("</span><span class='fragment-step'>");
-			fpathhtml += "</span><span class='fragment-step'>" + data.fragment_id + "</span></span>";
-		}
-		fpathhtml += "</div>";
-		$('#fragment-data').html("<span class='fragment-title-label'>Fragment</span> <span class='fragment-title'>" + fid + "</span><span class='fragment-details'>" + fdets + "</span>" + fpathhtml);
-		$('#fragment-data').show();
-	}	
-}
-
-dacura.ld.parseRVOList = function(jsonlist){
-	if(typeof jsonlist != 'object' || jsonlist.length == 0){
-		return [];
-	}
-	var l = [];
-	for(var i = 0; i< jsonlist.length; i++){
-		if(typeof jsonlist[i] == "object"){
-			l.push(new RVO(jsonlist[i]));
-		}
-	}
-	return l;
-};
-
+/**
+ * @summary generate the html to display a triple table
+ * @memberof dacura.ld
+ * @param trips {Array} array of triples
+ * @param tit {string} the optional table title
+ * @returns {String} html 
+ */
 dacura.ld.getTripleTableHTML = function(trips, tit){
 	var html = "";
 	if(trips.length > 0){
@@ -91,6 +50,11 @@ dacura.ld.getTripleTableHTML = function(trips, tit){
 	return html;
 };
 
+/**
+ * @summary Generates the HTML to display a json update view 
+ * @param def the object with the changes
+ * @returns {String}
+ */
 dacura.ld.getJSONUpdateViewHTML = function(def){
 	var html = "<table class='json-graph'><thead><tr><th>Variable</th><th>Value Before</th><th>Value After</th></tr></thead><tbody>";
 	for(var i in def){
@@ -105,7 +69,12 @@ dacura.ld.getJSONUpdateViewHTML = function(def){
 	return html;
 }
 
-
+/**
+ * @summary shows the json view of an object
+ * @param inserts the inserted json
+ * @param deletes the delete json
+ * @returns {String} html
+ */
 dacura.ld.getJSONViewHTML = function(inserts, deletes){
 	if(!inserts || !deletes){
 		var html = "<table class='json-graph'><thead><tr><th>Variable</th><th>Value</th></tr></thead><tbody>";
@@ -146,6 +115,12 @@ dacura.ld.getJSONViewHTML = function(inserts, deletes){
 	return html;
 };
 
+/**
+ * @summary wraps the json in html to display it in
+ * @param json {Object} the json object to be wrapped
+ * @param mode {string} edit|view 
+ * @returns {String} html
+ */
 dacura.ld.wrapJSON = function(json, mode){
 	if(!mode || mode == "view"){
 		var html = "<div class='dacura-json-viewer'>" + JSON.stringify(json, null, 4) + "</div>";				
@@ -156,6 +131,11 @@ dacura.ld.wrapJSON = function(json, mode){
 	return html;
 };
 
+/**
+ * Returns true if the passed format uses json as its underlying encoding.
+ * @param format {String} the format
+ * @returns {Boolean} true if it is a json format
+ */
 dacura.ld.isJSONFormat = function(format){
 	if(format == "json" || format == "jsonld" || format == "quads" || "format" == "triples"){
 		return true;
@@ -163,6 +143,14 @@ dacura.ld.isJSONFormat = function(format){
 	return false;
 };
 
+/**
+ * @summary generates the html to show the mini ontology pane
+ * @param ont {string} ontology id 
+ * @param onttit {string} ontology title
+ * @param onturl {string} ontology url
+ * @param ontv {number} ontology version
+ * @returns {String} html
+ */
 dacura.ld.getOntologyViewHTML = function(ont, onttit, onturl, ontv){
 	var html = "<span class='ontlabel'";
 	if(onttit) html +=" title='" + onttit+ "'";
@@ -184,6 +172,14 @@ dacura.ld.getOntologyViewHTML = function(ont, onttit, onturl, ontv){
 	return html;
 };
 
+/**
+ * @summary get the select drop down for drawing the ontology select pane
+ * @param ont {string} the id of the ontology
+ * @param onttit {string} the title of the ontology
+ * @param ontv {number} the version number of the ontology
+ * @param ontlv {number} the latest version number of the ontology
+ * @returns {String} html
+ */
 dacura.ld.getOntologySelectHTML = function(ont, onttit, ontv, ontlv){
 	if(typeof ontv != "undefined"){
 		var html = "<span class='ontlabel ontlabelrem' id='imported_ontology_" + ont + "'>";
@@ -213,7 +209,11 @@ dacura.ld.getOntologySelectHTML = function(ont, onttit, ontv, ontlv){
 	return html;
 };
 
-
+/**
+ * @summary generates the html for a control table row (little summary boxes on graph home page)
+ * @param rowdata {object} configuration object for row with unclickable, help, id, count, variable, value, icon
+ * @returns {String} html
+ */
 dacura.ld.getControlTableRow = function(rowdata){
 	var html ="<tr class='control-table";
 	if(typeof rowdata.unclickable != "undefined" && rowdata.unclickable){
@@ -235,6 +235,11 @@ dacura.ld.getControlTableRow = function(rowdata){
 	return html;
 };
 
+/**
+ * @summary generates the html to depict a 'summary' row in a html table
+ * @param rowdata {object} configuration object for row with unclickable, help, id, count, variable, value, icon
+ * @returns {String} html
+ */
 dacura.ld.getSummaryTableEntry = function(rowdata){
 	var html = "<div class='summary-entry";
 	if(typeof rowdata.unclickable != "undefined" && rowdata.unclickable){
@@ -258,24 +263,17 @@ dacura.ld.getSummaryTableEntry = function(rowdata){
 	return html;
 };
 
-dacura.ld.showAnalysisBasics = function(data, tgt){
-	if(typeof data.analysis != "object"){
-		var html = dacura.system.getIcon('warning') + "No analysis produced";
-		$(tgt).html(html);				
-	}
-	else if(data.analysis.version != data.meta.version){
-		var upds = data.meta.version  - data.analysis.version; 
-		var html = dacura.system.getIcon('warning') + "This analysis is stale, " 
-		html += (upds == 1 ? "there has been an update " : " there have been " + upds + " updates");
-		html += " since this analysis was created";
-		$(tgt).html(html);
-	}
-	else {
-		var html = dacura.system.getIcon('success') + "Analysis is up to date";
-		$(tgt).html(html);			
-	}
-};
-
+/**
+ * Gets a list of DQS rows for entry into summary and control tables (as above)
+ * @param target {String} jquery selector for target to write into
+ * @param res {LDResult} ld result object as returned by dacura api
+ * @param meta {Object} metadata json array
+ * @param pconf {PageConfig} page config object
+ * @param importer {OntologyImporter} ontology importer object
+ * @param dqsconfig {DQSConfigurator} dqs configuration object
+ * @param include_triples {boolean} if true, triples table should be printer
+ * @returns {Array} array of rowdata for passing to getControlTableRow, getSummaryTableRow
+ */
 dacura.ld.getDQSRows = function(target, res, meta, pconf, importer, dqsconfig, include_triples){
 	var rows = [];
 	if(res.hasWarnings()){
@@ -385,7 +383,34 @@ dacura.ld.getDQSRows = function(target, res, meta, pconf, importer, dqsconfig, i
 }
 
 
+/**
+ * @summary shows the basic information about an object's analysis 
+ * @param data {object} linked data object
+ * @param tgt {string} the jquery expression where the output will be written
+ */
+dacura.ld.showAnalysisBasics = function(data, tgt){
+	if(typeof data.analysis != "object"){
+		var html = dacura.system.getIcon('warning') + "No analysis produced";
+		$(tgt).html(html);				
+	}
+	else if(data.analysis.version != data.meta.version){
+		var upds = data.meta.version  - data.analysis.version; 
+		var html = dacura.system.getIcon('warning') + "This analysis is stale, " 
+		html += (upds == 1 ? "there has been an update " : " there have been " + upds + " updates");
+		html += " since this analysis was created";
+		$(tgt).html(html);
+	}
+	else {
+		var html = dacura.system.getIcon('success') + "Analysis is up to date";
+		$(tgt).html(html);			
+	}
+};
 
+/**
+ * Flattens a tree structure into a list of its constituent elements
+ * @param tree {Object} the tree structure of the object
+ * @returns {Array} an array of strings each being an entry
+ */
 dacura.ld.getTreeEntries = function(tree){
 	var ents = [];
 	for(var i in tree){
@@ -404,7 +429,13 @@ dacura.ld.getTreeEntries = function(tree){
 	return ents;
 };
 
-
+/**
+ * @summary parses the results of multiple sequential updates
+ * @param results {Object} object with id => result
+ * @param status {String} status of return
+ * @param isldo {boolean} is this a linked data object? (rather than an update)
+ * @returns {Object} object representing overall result with fields: {title, status, msg, extra} 
+ */
 dacura.ld.parseMultiResults = function(results, status, isldo){
 	var ut = (typeof isldo == "undefined") ? "Update to " : " "; 
 	var utn = (typeof isldo == "undefined") ? "Updates to " : " "; 
@@ -484,6 +515,16 @@ dacura.ld.parseMultiResults = function(results, status, isldo){
 	return x;
 }
 
+/**
+ * Called to update the status of multiple ldos at once by the list pages
+ * @param upd {Object} the update json object
+ * @param ids {Array} array of the ids of the objects being updated
+ * @param status {String} the status they're being updated to
+ * @param pconf {PageConfig} the page config object
+ * @param rdatas {Object} array of the data in the row of the id
+ * @param tabid {String} the id of the table in question
+ * @param resetupdtype - if set the update type will be reset to the rdata.type each call
+ */
 dacura.ld.multiUpdateStatus = function(upd, ids, status, pconf, rdatas, tabid, resetupdtype){
 	pconf.chained = (typeof pconf.chained == 'undefined') ? 1 : pconf.chained + 1;	
 	var nid = ids.shift();
@@ -524,6 +565,11 @@ dacura.ld.multiUpdateStatus = function(upd, ids, status, pconf, rdatas, tabid, r
 	}
 }
 
+/**
+ * @summary Generates html to show a single dqs pane html
+ * @param i {number} sequence number
+ * @param obj {Object} json rvo object for the dqs test in question
+ */
 dacura.ld.getDQSHTML = function(i, obj, type){
 	rvo = new RVO(obj);
 	var xtit = "";
@@ -547,6 +593,10 @@ dacura.ld.getDQSHTML = function(i, obj, type){
 	return html;
 }
 
+/**
+ * @summary Draws the header section of ld pages
+ * @param obj {Object} ldo object
+ */
 dacura.ld.header = function(obj){
 	if(obj.meta.latest_version == obj.meta.version){
 		params = {"status": obj.meta.latest_status, "version": obj.meta.latest_version};
@@ -567,8 +617,13 @@ dacura.ld.header = function(obj){
 	else if(typeof obj.meta.type == "string"){
 		dacura.tool.header.setSubtitle(obj.meta.type);						
 	}
+	//if(this is where we write in the draw fragment header bit)
 };
 
+/**
+ * @summary draws the header on pages where updates are being viewed
+ * @param obj {Object} ldo
+ */
 dacura.ld.updateHeader = function(obj){
 	var params = {status: obj.meta.status, "from version": obj.meta.from_version};
 	if(obj.meta.to_version != 0){
@@ -581,13 +636,22 @@ dacura.ld.updateHeader = function(obj){
 	dacura.tool.header.showEntityHeader(msg, params);
 }
 
+/**
+ * @summary is the passed format a json encoding?
+ * @returns {boolean} true if it is
+ */
 dacura.ld.isJSONFormat = function(f){
 	if(f == "json" || f == "jsonld" || f == "quads" || f == "triples") return true;
 	return false;
 };
 
+/* Interactions with api */
+
 /**
- * Interactions with api
+ * @summary fetches the list of updates from the server
+ * @param onwards {function} the function to handle the result
+ * @param targets {PageConfig} page config object
+ * @param type {String} the type of objects being updated (candidate, ontology, graph)
  */
 dacura.ld.fetchupdatelist = function(onwards, targets, type, options){
 	if(typeof type == "undefined"){
@@ -602,6 +666,13 @@ dacura.ld.fetchupdatelist = function(onwards, targets, type, options){
 	dacura.system.invoke(ajs, msgs, targets);
 }
 
+/**
+ * @summary fetches a list of linked data objects from the server
+ * @param onwards {function} the function to handle the result
+ * @param targets {PageConfig} page config object
+ * @param type {String} the type of objects being updated (candidate, ontology, graph)
+ * @param options {Array} the options to the list function
+ */
 dacura.ld.fetchldolist = function(onwards, targets, type, options){
 	if(typeof type == "undefined"){
 		type = this.ldo_type;
@@ -615,6 +686,14 @@ dacura.ld.fetchldolist = function(onwards, targets, type, options){
 	dacura.system.invoke(ajs, msgs, targets);
 };
 
+/**
+ * @summary fetches a linked data object from the server
+ * @param id {string} id of the ldo to be fetched
+ * @param args {Array} array of arguments to pass to api
+ * @param onwards {function} the function to handle the result
+ * @param targets {PageConfig} page config object
+ * @param msgs {Array} Messages to display whilst busy
+ */
 dacura.ld.fetch = function(id, args, onwards, targets, msgs){
 	var ajs = dacura.ld.api.view(id, args);
 	if(typeof msgs != "object"){
@@ -628,6 +707,13 @@ dacura.ld.fetch = function(id, args, onwards, targets, msgs){
 	dacura.system.invoke(ajs, msgs, targets);
 }
 
+/**
+ * Called to create a new LDO on the server
+ * @param data {Object} the json object to initialise the ldo
+ * @param onwards {function} callback to handle result
+ * @param targets {PageConfig} page configuration object
+ * @param istest {boolean} if true, this is a test invocation
+ */
 dacura.ld.create = function(data, onwards, targets, istest){
 	var ajs = dacura.ld.api.create(data, istest);
 	if(typeof istest == "undefined" || istest == false){
@@ -649,6 +735,14 @@ dacura.ld.create = function(data, onwards, targets, istest){
 	dacura.system.invoke(ajs, msgs, targets);
 }
 
+/**
+ * @summary update an ldo on the server
+ * @param id {string} the id of the ldo to update
+ * @param uobj {Object} json update object
+ * @param onwards {function} callback function to handle result
+ * @param targets {PageConfig} page configuration object
+ * @param istest {boolean} if true, this is a test invocation
+ */
 dacura.ld.update = function(id, uobj, onwards, targets, istest){
 	var ajs = dacura.ld.api.update(id, uobj, istest);
 	if(typeof istest == "undefined" || istest == false){
@@ -664,18 +758,26 @@ dacura.ld.update = function(id, uobj, onwards, targets, istest){
 			"busy": "Testing updates to " + tname() + " " + id  + " with Dacura API", 
 			"fail": "Updates to " + tname() + " " + id + " failed Dacura test."};	
 	}
-	//if(typeof targets.always){
-	//	ajs.always = targets.always;
-	//}
 	ajs.handleResult = onwards;
 	ajs.handleJSONError = onwards;
 	dacura.system.invoke(ajs, msgs, targets);
 }
 
 dacura.ld.apiurl = dacura.system.apiURL();
+/** 
+ * @namespace api
+ * @memberof dacura.ld
+ * @summary dacura.ld.api
+ * @description Dacura ld service api - each one returns an object with url, type and data set, ready for ajaxing
+ */
 dacura.ld.api = {};
 
-
+/**
+ * @summary Creates ajax object for create call
+ * @param data {Object} the ldo to be created
+ * @param test {boolean} true if this is a test
+ * @returns {Object} xhr 
+ */
 dacura.ld.api.create = function (data, test){
 	var xhr = {};
 	xhr.url = dacura.ld.apiurl;
@@ -687,6 +789,13 @@ dacura.ld.api.create = function (data, test){
     return xhr;
 }
 
+/**
+ * @summary Creates ajax object for update call
+ * @param id {string} the id of the ldo to be created
+ * @param data {Object} the ldo to be created
+ * @param test {boolean} true if this is a test
+ * @returns {Object} xhr 
+ */
 dacura.ld.api.update = function (id, data, test){
 	var xhr = {};
 	xhr.url = dacura.ld.apiurl + "/" + id;
@@ -698,6 +807,11 @@ dacura.ld.api.update = function (id, data, test){
     return xhr;	
 }
 
+/**
+ * @summary Creates ajax object for delete call
+ * @param id {string} the id of the ldo to be created
+ * @returns {Object} xhr 
+ */
 dacura.ld.api.del = function (id){
 	xhr = {};
 	xhr.data ={};
@@ -706,12 +820,23 @@ dacura.ld.api.del = function (id){
 	return xhr;
 }
 
+/**
+ * @summary Creates ajax object for view call
+ * @param id {string} the id of the ldo to be created
+ * @param args {Array} arguments to api call
+ * @returns {Object} xhr 
+ */
 dacura.ld.api.view = function (id, args){
 	xhr = {data: args};
 	xhr.url = dacura.ld.apiurl + "/" + id;
 	return xhr;
 }
 
+/**
+ * @summary Creates ajax object for list call
+ * @param fetch_updates if set, we are fetching the list of updates, not ldos
+ * @returns {Object} xhr 
+ */
 dacura.ld.api.list = function (fetch_updates){
 	xhr = { url: dacura.ld.apiurl };
 	if(typeof fetch_updates != "undefined"){
@@ -720,16 +845,73 @@ dacura.ld.api.list = function (fetch_updates){
 	return xhr;
 }
 
-dacura.ld.uploadFile = function(payload, onwards, pconf){
-	xhr = {};
-	xhr.url = dacura.system.apiURL("config") + "/files";
-	xhr.type = "POST";
-	xhr.data = payload;
-	xhr.processData= false;
-	xhr.contentType = payload.type;
-	xhr.handleResult = onwards;
-	//turn off always as this call is always used in a chain - means the handling function can still use busy messages and the buttons remain disabled
-	xhr.always = function(){};
-	var msgs = {busy: "Uploading file to server", success: "File uploaded to server", fail: "Failed to upload file"};
-	dacura.system.invoke(xhr, msgs, pconf);
+/* some utility functions */
+
+/**
+ * @summary returns the current linked data typename (ontology, candidate...)
+ */
+function tname(){
+	if(dacura.ld.ldo_type == "ldo") return "linked data object";
+	else return dacura.ld.ldo_type; 
+}
+
+/**
+ * @summary returns the plural of the current linked data typename
+ */
+function tnplural(){
+	var p = tname();
+	if(p == "ontology"){
+		return "ontologies";
+	}
+	return p + "s";
+}
+
+/**
+ * @summary Simple function to print an object's created time in tables
+ * @param {object} obj the current row object
+ * @returns {string} the printed time
+ */
+function printCreated(obj){
+	return timeConverter(obj.createtime);
+}
+
+/**
+ * @summary Simple function to print an object's modified time in tables
+ * @param {object} obj the current row object
+ * @returns {string} the printed time
+ */
+function printModified(obj){
+	return timeConverter(obj.modtime);
+}
+
+/**
+ * @summary Simple function to print an object's creator in tables
+ * @param {object} obj the current row object
+ * @returns {string} the printed time
+ */
+function printCreatedBy(obj){
+	return "<a href='update/" + obj.created_by + "'>" + obj.created_by + "</a>";
+}
+
+/**
+ * @summary This needs to be patched back into the actual code - currently hanging loose here
+ * @param data
+ */
+function drawFragmentHeader(data){
+	if(typeof data.fragment_id != "undefined"){
+		fids = data.fragment_id.split("/");
+		fid = fids[fids.length -1];
+		fdets = data.fragment_details;
+		fpaths = data.fragment_paths;
+		fpathhtml = "<div class='fragment-paths'>";
+		for(i in fpaths){
+			fpathhtml += "<span class='fragment-path'>";
+			fpathhtml += "<span class='fragment-step'>" + data.id + "</span><span class='fragment-step'>";
+			fpathhtml += fpaths[i].join("</span><span class='fragment-step'>");
+			fpathhtml += "</span><span class='fragment-step'>" + data.fragment_id + "</span></span>";
+		}
+		fpathhtml += "</div>";
+		$('#fragment-data').html("<span class='fragment-title-label'>Fragment</span> <span class='fragment-title'>" + fid + "</span><span class='fragment-details'>" + fdets + "</span>" + fpathhtml);
+		$('#fragment-data').show();
+	}	
 }

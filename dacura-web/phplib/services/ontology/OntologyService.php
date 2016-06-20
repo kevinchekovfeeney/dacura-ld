@@ -1,6 +1,14 @@
 <?php 
 require_once("phplib/services/ld/LdService.php");
 require_once("OntologyDacuraServer.php");
+/**
+ * Ontology Service - provides ontology management services.
+ *
+ *
+ * @package ontology
+ * @author Chekov
+ * @license: GPL v2
+ */
 class OntologyService extends LdService {
 
 	/**
@@ -9,7 +17,9 @@ class OntologyService extends LdService {
 	 */
 	function getViewSubscreens(LdDacuraServer &$dacura_server, &$u){
 		$x = parent::getViewSubscreens($dacura_server, $u);
-		$x[] = "ldo-analysis";
+		if($dacura_server->userHasFacet("inspect")){
+			$x[] = "ldo-analysis";
+		}
 		return $x;
 	}
 	
@@ -22,6 +32,7 @@ class OntologyService extends LdService {
 	function loadParamsForAnalysisTab($id, &$params, LdDacuraServer &$dacura_server){
 		$params['analysis_screen_title'] = $this->smsg('analysis_screen_title');
 		$params['analysis_intro_msg'] = $this->smsg('view_analysis_intro');
+		$params['can_update'] = $dacura_server->userHasFacet("manage");
 		$avs = $dacura_server->ontversions;
 		//an ontology is not available to itself...
 		if(isset($avs[$id])) unset($avs[$id]);

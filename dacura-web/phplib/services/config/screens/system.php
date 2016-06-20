@@ -63,12 +63,6 @@
 				<div id="service-table-updates"></div>
 			</div>
 		</div>
-		<div id='servicebox' class='subsubscreen dch'>
-			<div id='servicebox-contents'></div>
-			<div class="subscreen-buttons">
-				<button id='serviceupdate' class='dacura-update subscreen-button'>Update Service Configuration</button>
-			</div>
-		</div>
 	</div>
 	<?php } if(in_array("view-logs", $params['subscreens'])) { ?>
 	<div class='dacura-subscreen' id="view-logs" title="View Server Logs">
@@ -79,9 +73,6 @@
 </div>
 
 <script>
-/* we pre-format the tables for all the services and embed them in the page as a javascript object */
-var service_tables = <?= json_encode($params['service_tables']); ?>;
-var service_subpage_conf;
 /* Updates each of the selected services statuses in sequence */
 function updateServicesStatus(ids, status, cnt, pconf){
 	dacura.tool.clearResultMessages();
@@ -103,35 +94,10 @@ function loadCollection(e, id){
 
 /* Loads an individual service following a click on it on the service configuration screen */
 function loadService(e, id){
-	dacura.tool.clearResultMessages();
-	if(!isEmpty(service_tables[id])){
-		$('#servicebox-contents').empty().append(service_tables[id].body);
-		dacura.tool.form.init('service-'+id, {initselects: true, icon: "<?= $service->furl("images", "icons/help-icon.png")?>"});
-		if(typeof lconfig.collection == "object" && typeof lconfig.collection.config == "object" && typeof lconfig.collection.config.servicesmeta == "object"){
-			dacura.tool.form.populate('service-'+id, lconfig.services[id], lconfig.collection.config.servicesmeta[id]);
-		}
-		else {
-			dacura.tool.form.populate('service-'+id, lconfig.services[id]);		
-		}		
-	}
-	else {
-		dacura.system.showErrorResult("Found no service configuration information for " + id, "Error loading service", '#servicebox-contents');
-	}
-	service_subpage_conf = dacura.tool.loadSubscreen('servicelist', 'servicebox', "return to list of services", service_tables[id].header);
-}
-
-/* reads the updated state of a service configuration from the html form */
-function readServiceUpdate(screen){
-	if($('#servicebox-contents table').length){
-		var tid = $("#servicebox-contents table").attr("id");
-		var obj = dacura.tool.form.gather(tid);
-		obj.id = tid.substring(8);
-		return obj;
-	}
-	else {
-		alert("No input data available to update service configuration");
-	}
-	return {};
+	var x = window.location.href.split("?")[0];
+	x = x.split("#")[0];
+	if(x.substring(x.length-1) != "/"){ x += "/";}
+	window.location.href = x + id;
 }
 
 /* called to check for illegal and obvious problems with creating collections */
@@ -143,15 +109,6 @@ function inputError(obj){
 		return "The ID must be at least 2 characters long and the title must be at least 5";
 	}
 	return false;
-}
-/* marshalls the data from the passed object then sends it to the server for an update */
-function updateServiceConfig(obj, result, pconf){
-	var sid = obj.id;
-	delete(obj.id);
-	var data = {"services": {}, "servicesmeta": {}};
-	data.services[sid] = obj.values;
-	data.servicesmeta[sid] = obj.meta;
-	dacura.config.updateCollection(data, result, service_subpage_conf);
 }
 
 /* marshalls the data extracted from the update configuration form for passing to the api */
@@ -247,12 +204,6 @@ $(function() {
 		"screen": "system-configuration",			
 		"source": "sysconfig",
 		"submit": updateConfiguration,
-		"result": function(data, pconf) { showUpdateSuccess(data, pconf, "System Configuration Updated OK");}
-	});	
-	dacura.tool.button.init("serviceupdate", {
-		"screen": "view-services",			
-		"gather": readServiceUpdate,
-		"submit": updateServiceConfig,
 		"result": function(data, pconf) { showUpdateSuccess(data, pconf, "System Configuration Updated OK");}
 	});	
 	dacura.tool.button.init("collectioncreate", {

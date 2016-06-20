@@ -21,14 +21,12 @@ include_once("phplib/ServiceLoader.php");
 include_once("phplib/DacuraUser.php");
 include_once("phplib/DacuraForm.php");
 session_start();
-
 $servman = new ServiceLoader($dacura_settings);
 /** @global DacuraService $service the globally accessible service object */
 $service = $servman->loadServiceFromURL($request_log);
 if($service){
 	/** @global DacuraServer $dacura_server the globally accessible server object */
 	$dacura_server = $service->loadServer();
-	
 	if(!$dacura_server){
 		//$dacura_server = new DacuraServer($service);
 		default_settings($service->settings);

@@ -8,10 +8,6 @@
  * @license GPL v2
  */
 
-header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
-header("Access-Control-Max-Age: 1728000");
-header('Access-Control-Allow-Headers: Accept, Accept-Encoding, Accept-Language, Host, Origin, Referer, Content-Type, Content-Length, Content-Range, Content-Disposition, Content-Description');
-header("Access-Control-Allow-Origin: *");
 $x = @$ldo_type;
 //if(!$x && !$dacura_server->userHasRole("admin", "all")){//meaning that this API is being accessed directly 
 //	$dacura_server->write_http_error(403, "No permission to directly access linked data API");	
@@ -20,23 +16,41 @@ $x = @$ldo_type;
 	if(!$x){
 		$ldo_type = isset($_GET['ldtype']) ? $_GET['ldtype'] : "";
 	}
-	getRoute()->get('/', 'list_ldos');//list the linked data objects of a certain type (or updates to them)
-	getRoute()->get('/update', 'list_updates');//list the linked data objects of a certain type (or updates to them)
-	getRoute()->get('/update/(\w+)', 'get_update');
-	getRoute()->get('/(\w+)/(\w+)', 'get_ldo');//with fragment id
-	getRoute()->get('/(\w+)', 'get_ldo');//no fragment id
-	getRoute()->post('/update/(\w+)', 'update_update');
-	getRoute()->post('/(\w+)/(\w+)', 'update_ldo');//with frag id
-	getRoute()->post('/', 'create_ldo');//create a new ldo of a given type
-	getRoute()->post('/(\w+)', 'update_ldo');//no frag id
-	getRoute()->delete('/(\w+)/(\w+)', 'delete_ldo');//with fragment id
-	getRoute()->delete('/(\w+)', 'delete_ldo');//no fragment id
-	getRoute()->delete('/update/(\w+)', 'delete_update');//no fragment id	
+	if($dacura_server->userHasFacet("list")){
+		getRoute()->get('/', 'list_ldos');//list the linked data objects of a certain type (or updates to them)
+	}
+	if($dacura_server->userHasFacet("inspect")){
+		getRoute()->get('/update', 'list_updates');//list the linked data objects of a certain type (or updates to them)
+		getRoute()->get('/update/(\w+)', 'get_update');
+	}
+	if($dacura_server->userHasFacet("view")){
+		getRoute()->get('/(\w+)/(\w+)', 'get_ldo');//with fragment id
+		getRoute()->get('/(\w+)', 'get_ldo');//no fragment id		
+	}
+	if($dacura_server->userHasFacet("manage")){
+		getRoute()->post('/update/(\w+)', 'update_update');
+		getRoute()->delete('/update/(\w+)', 'delete_update');
+		getRoute()->post('/(\w+)/(\w+)', 'update_ldo');//with frag id
+		getRoute()->post('/(\w+)', 'update_ldo');//no frag id
+		getRoute()->delete('/(\w+)/(\w+)', 'delete_ldo');//with fragment id
+		getRoute()->delete('/(\w+)', 'delete_ldo');//no fragment id
+	}
+	if($dacura_server->userHasFacet("create")){
+		getRoute()->post('/', 'create_ldo');//create a new ldo of a given type
+	}
+	//we really should have config settings for these fellas and only push them out when we are coming from remote...
+	set_time_limit (1800);//set a long timeout - 30 minutes for testing purposes anyway
+	header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
+	header("Access-Control-Allow-Credentials: true");
+	header("Access-Control-Max-Age: 1728000");
+	header('Access-Control-Allow-Headers: Accept, Accept-Encoding, Accept-Language, Host, Origin, Referer, Content-Type, Content-Length, Content-Range, Content-Disposition, Content-Description');
+	if(isset($_SERVER['HTTP_ORIGIN'])){
+        header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
+	}
+	else {
+		header("Access-Control-Allow-Origin: *");	
+	}
 //}
-
-//set a long timeout - 30 minutes for testing purposes anyway
-set_time_limit (1800);
-	
 	
 /**
  * Create a new Linked Data Object and return the result to the user
@@ -97,6 +111,7 @@ function create_ldo(){
 	}
 	if(isset($obj['meta'])) $create_obj['meta'] = $obj['meta'];
 	$ar->add($dacura_server->createLDO($ldo_type, $create_obj, $demand_id, $format, $options, $test_flag), true, true);
+	$dacura_server->recordUserAction("create ".$ldo_type, array("status" => $ar->status));
 	return $dacura_server->writeDecision($ar, $format, $options);
 }
 
@@ -119,7 +134,7 @@ function list_ldos(){
 	$dacura_server->init(($ldo_type ? $ldo_type : "ldo")."list");
 	$ldos = $dacura_server->getLDOs($dt_options, $dcoptions);
 	if(is_array($ldos)){
-		$dacura_server->recordUserAction("get.$ldo_type.list");	
+		$dacura_server->recordUserAction("list", $dt_options);
 		return $dacura_server->write_json_result($ldos, "Returned " . count($ldos) . " " . ($ldo_type ? $ldo_type : "ld objects"). "s");
 	}
 	$dacura_server->write_http_error();
@@ -142,7 +157,7 @@ function list_updates(){
 	$dacura_server->init(($ldo_type ? $ldo_type : "ldo")."list_updates");
 	$ldos = $dacura_server->getUpdates($dt_options, $dcoptions);
 	if(is_array($ldos)){
-		$dacura_server->recordUserAction("get.$ldo_type.updates");		
+		$dacura_server->recordUserAction("list updates", $dt_options);
 		return $dacura_server->write_json_result($ldos, "Returned " . count($ldos) . " updates");
 	}
 	$dacura_server->write_http_error();	
@@ -174,7 +189,7 @@ function get_ldo($ldo_id, $fragment_id = false){
 	if($fragment_id){
 		$params['fragment'] = $fragment_id;
 	}
-	$dacura_server->recordUserAction("get.$ldo_type", $params);
+	$dacura_server->recordUserAction("get ".$ldo_type, $params);
 	return $dacura_server->sendRetrievedLdo($ar, $format, $options);
 }
 
@@ -237,6 +252,9 @@ function update_ldo($target_id, $fragment_id = false){
 	$update_meta = (isset($obj['umeta'])) ? $obj['umeta'] : false;
 	$version = isset($obj['version']) ? $obj['version'] : 0;
 	$ar->add($dacura_server->updateLDO($target_id, $fragment_id, $ldo_type, $update_obj, $update_meta, $format, $editmode, $version, $options, $test_flag), true, true);
+	$ua = array("status" => $ar->status, "id" => $target_id);
+	if($fragment_id) $ua['fragment'] = $fragment_id;
+	$dacura_server->recordUserAction("update ".$ldo_type, $ua);		
 	return $dacura_server->writeDecision($ar, $format, $options);
 }
 
@@ -259,14 +277,13 @@ function get_update($update_id){
 	$dacura_server->init("get_update", $update_id);
 	$ar = new DacuraResult("view update $update_id");
 	$ar->add($dacura_server->getUpdate($update_id, $version, $options));
-	$params = array("type" => $ldo_type);
+	$params = array("type" => $ldo_type, "status" => $ar->status);
 	if($version){
 		$params['version'] = $version;
 	}
 	$dacura_server->recordUserAction("get.update.$update_id", $params);
 	return $dacura_server->sendRetrievedUpdate($ar, $format, $options);
 }
-
 
 /**
  * Updates an already existing update
@@ -275,7 +292,9 @@ function get_update($update_id){
  * 
  * Sends a Dacura Linked Data Object Update (LDOUpdate) to the api as json
  * 
- * The fields are the very same as for update ldo. 
+ * The fields are the very same as for update ldo with the addition of a 
+ * umeta
+ * field which contains the update's metadata. 
  * 
  * @api
  * @param string $target_id the id of the update being updated
@@ -306,15 +325,15 @@ function update_update($target_id){
 	$editmode = (isset($obj['editmode'])? $obj['editmode'] : false);
 	$format = (isset($obj['format'])? $obj['format'] : false);
 	$update_meta = (isset($obj['umeta'])) ? $obj['umeta'] : false;
-	
 	if(count($update_meta) == 0 && count($update_obj) == 0 ){
-		$ar->failure(400, "Format Error", "Update Request must have at least one of a meta, a contents or an updatemeta property");				
+		$ar->failure(400, "Format Error", "Update Request must have at least one of a meta, a contents or a umeta property");				
 	}
 	else {
 		$ar = $dacura_server->updateUpdate($target_id, $update_obj, $update_meta, $format, $editmode, $options, $test_flag);				
 	}
+	$ua = array("status" => $ar->status, "id" => $target_id);
+	$dacura_server->recordUserAction("update update", $ua);
 	return $dacura_server->writeDecision($ar, $format, $options);
-	
 }
 
 /**
@@ -329,6 +348,9 @@ function delete_ldo($ldoid, $fragment_id = false){
 	$test_flag = isset($_GET['test']) ? $_GET['test'] : false;
 	$format = isset($_GET['format']) ? $_GET['format'] : false;
 	$ar = $dacura_server->deleteLDO($ldoid, $fragment_id, $ldo_type, $format, $options, $test_flag);
+	$ua = array("status" => $ar->status, "id" => $ldoid);
+	if($fragment_id) $ua['fragment'] = $fragment_id;
+	$dacura_server->recordUserAction("delete", $ua);
 	return $dacura_server->write_decision($ar, $format, $options);
 }
 
@@ -343,6 +365,8 @@ function delete_update($updid){
 	$test_flag = isset($_GET['test']) ? $_GET['test'] : false;
 	$format = isset($_GET['format']) ? $_GET['format'] : false;
 	$ar = $dacura_server->deleteUpdate($updid, $format, $options, $test_flag);
+	$ua = array("status" => $ar->status, "id" => $updid);
+	$dacura_server->recordUserAction("delete update", $ua);
 	return $dacura_server->write_decision($ar, $format, $options);
 }
 

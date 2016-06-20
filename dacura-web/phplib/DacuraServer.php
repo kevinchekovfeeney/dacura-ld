@@ -163,7 +163,9 @@ class DacuraServer extends DacuraController {
 	function getServiceConfig($sname){
 		$dacura_settings = $this->service->settings;
 		$fp = $this->getSystemSetting('path_to_services').$sname."/".$sname."_settings.php";
-		if(file_exists($fp)) include($fp);
+		if(file_exists($fp)) {
+			include($fp);
+		}
 		else { $settings = array();}
 		//incorporate settings from collection configurations
 		$this->service->loadServiceContextSettings($sname, $settings, $this);
@@ -558,6 +560,7 @@ class DacuraServer extends DacuraController {
 
 	/**
 	 * Parses a local url into its constituent parts.... service, collection, args, query
+	 * @param string $url the url to be parsed
 	 */
 	function parseDacuraURL($url){
 		if(substr($url, 0, strlen($this->durl())) != $this->durl()){ 

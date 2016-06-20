@@ -202,6 +202,10 @@ Class Ontology extends LDO {
 		return $this->cwurl.($this->fragment_id ? "/".$this->fragment_id : "") ."?version=".$this->version;
 	}
 	
+	/**
+	 * Analyses the Ontology for namespaces and with the DQS
+	 * @see LDO::analyse()
+	 */
 	function analyse(LdDacuraServer &$srvr){
 		if(!$this->dependencies){
 			$this->dependencies = $this->generateDependencies($srvr);
@@ -212,11 +216,8 @@ Class Ontology extends LDO {
 		$astruct['dependencies']['include_tree'] = $this->getDependencyTree($x, $srvr, "schema");
 		$x = array();
 		$astruct['dependencies']['schema_include_tree'] = $this->getDependencyTree($x, $srvr, "schema/schema");
-		//$ometa = deepArrCopy($this->meta);
-		//$this->meta['dqs_tests'] = "all";
 		$gr = $srvr->objectPublished($this, true);
 		$astruct['validation'] = $gr;
-		//$this->meta = $ometa;
 		return $astruct;
 	}
 	
@@ -530,6 +531,12 @@ Class Ontology extends LDO {
 		return $deps;
 	}
 	
+	/**
+	 * Returns only the direct dependencies of an ontology
+	 * @param LdDacuraServer $srvr the server object
+	 * @param string $type the type of dependency to use (schema or schema/schema)
+	 * @return array of dependencies
+	 */
 	function getDirectDependencies(&$srvr, $type){
 		if(!$this->dependencies){
 			$this->dependencies = $this->generateDependencies($srvr);

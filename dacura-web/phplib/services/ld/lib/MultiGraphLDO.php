@@ -277,12 +277,6 @@ class MultiGraphLDO extends LDO {
 	function update($update_obj, $mode){
 		if(!($this->is_multigraph() || $this->isMultigraphUpdate($update_obj))){
 			return parent::update($update_obj, $mode);
-			//if(count($update_obj) > 0){
-			//	if(!$this->updateLDProps($update_obj, $this->ldprops, $this->idmap, $mode)){
-			//		return false;
-			//	}				
-			//	opr($this->ldprops);
-			//}
 		}				
 		if(isset($update_obj['meta'])){
 			updateJSON($update_obj['meta'], $this->meta, $mode);

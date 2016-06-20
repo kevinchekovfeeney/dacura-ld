@@ -223,7 +223,6 @@ dacura.grabber.getEntityType = function(fid, fact, prop){
 	return html;
 }
 
-
 dacura.grabber.getPropertySubject = function(fid, fact, prop){
 	var subj = entid;
 	var html = "<span class='variable-property variable-property-subject'> Subject <input type='text' id='" + fid + "-subject' value='" + subj + "'></span>";
@@ -591,6 +590,9 @@ dacura.grabber.addPropertyToOntology = function(forminputs){
 	}
 	ldupdate.contents[x] = dacura.grabber.getInputsAsLD(forminputs);
 	var xhr = {};
+	xhr.xhrFields = {
+	    withCredentials: true
+	};
 	xhr.url = onturl;
 	xhr.type = "POST";
 	xhr.data = JSON.stringify(ldupdate);
@@ -742,6 +744,10 @@ dacura.grabber.sendFactsToParser = function(){
 		return;
 	}
 	xhr = {};
+	//xhr.xhrFields = {
+	 //   withCredentials: true
+	//};
+		
     //xhr.crossDomain = true,
 	xhr.data = { "data" : JSON.stringify(pfacts)};
     //xhr.dataType = "json";
@@ -796,7 +802,10 @@ dacura.grabber.classes = {};
 dacura.grabber.entity_classes = [];
 dacura.grabber.getCandidateData = function(candid){
 	xhr = {};
-	xhr.url = candurl + candid;		
+	xhr.url = candurl + candid;	
+	xhr.xhrFields = {
+	    withCredentials: true
+	};
 	xhr.data = {format: "html", options: {plain: 1}};
 	var msg = "Attempting to fetch entity data from " + xhr.url;
 	xhr.beforeSend = function(){
@@ -814,6 +823,9 @@ dacura.grabber.getCandidateData = function(candid){
 	.fail(function(response){
 		//alert("failed to find candidate " + xhr.url);
 		xhr = {};
+		xhr.xhrFields = {
+		    withCredentials: true
+		};
 		xhr.url = candurl + "entities";
 		$.ajax(xhr)
 		.done(function(response, textStatus, jqXHR) {
@@ -850,6 +862,9 @@ dacura.grabber.getPropertyFrameHTML = function(frame, prop, fid){
 dacura.grabber.loadEntityTypeFrame = function(type, fid, prop){
 	xhr = {};
 	xhr.url = candurl + "frame";
+	xhr.xhrFields = {
+	    withCredentials: true
+	};
 	xhr.type = "POST";
 	xhr.data = {"class": type};
 	var msg = "Attempting to fetch " + type + "class frame from " + xhr.url;
@@ -886,6 +901,9 @@ dacura.grabber.loadEntityTypeFrame = function(type, fid, prop){
 dacura.grabber.getOntology = function(url){
 	xhr = {};
 	xhr.url = url;
+	xhr.xhrFields = {
+	    withCredentials: true
+	};
 	xhr.data = {format: "json", options: {plain: 1}};
 	xhr.beforeSend = function(){
 		var msg = "Fetching ontology from " + url;
@@ -982,6 +1000,9 @@ dacura.grabber.parsePage = function(page, refresh, xhr){
 	if(typeof refresh != "undefined" && refresh == true){
 		xhr.data["refresh"] = true;
 	}
+	xhr.xhrFields = {
+	    withCredentials: true
+	};
 	xhr.type = "POST";
 	xhr.data.url = page;
 	xhr.url ="<?=$service->my_url('rest')?>/parsepage";
@@ -1052,8 +1073,7 @@ function jpr(obj){
 	alert(JSON.stringify(obj));
 }
 
-function toTitleCase(str)
-{
+function toTitleCase(str) {
     return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 }
 

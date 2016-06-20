@@ -86,9 +86,11 @@ class DacuraForm extends DacuraObject {
 		$html.= $this->table_header($context);
 		$html .= "<tbody>";
 		foreach($this->elements as $i => $el){
-			$rownum = $i + 1;
-			$is_last = ($rownum == count($this->elements) || isset($this->elements[$rownum]) && $this->elements[$rownum]->isSection());
-			$html .= $el->tr($this->settings, $context, $rownum, $is_last);			
+			if(!$el->hidden){
+				$rownum = $i + 1;
+				$is_last = ($rownum == count($this->elements) || isset($this->elements[$rownum]) && $this->elements[$rownum]->isSection());
+				$html .= $el->tr($this->settings, $context, $rownum, $is_last);		
+			}	
 		}
 		$html .="<tr class='end-table-spacer'></tr></tbody></table>";		
 		return $html;
