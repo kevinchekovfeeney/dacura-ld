@@ -1,3 +1,6 @@
+var script = document.createElement("script");
+script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
+document.body.appendChild(script);
 
 dacura.frame = {};
 dacura.frame.api = {};
@@ -34,12 +37,12 @@ function FrameViewer(cls, target, pconfig) {
 
   console.log('script loaded');
 }*/
-$('document').ready(function(){
-
-  var script = document.createElement("script");
-  script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
-  document.body.appendChild(script);
-});
+//$('document').ready(function(){
+//
+//var script = document.createElement("script");
+//script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
+//document.body.appendChild(script);
+//});
 
 
 //global variables for maps use
@@ -47,16 +50,22 @@ var marker = null;
 var position;
 var longitudeId, latitudeId; 
 
-function initMap(mode) {     
-     var myLatlng = {lat: -25.363, lng: 131.044};
-     var mapProp = {
+function initMap(mode, latitude, longitude) {
+    map = new google.maps.Map(document.getElementById('googleMap'), {
+          center: {lat: latitude, lng: longitude},
+          zoom: 8
+        });
+    google.maps.event.trigger(map, 'resize');
+    //return;
+    /*var myLatlng = {lat: -25.363, lng: 131.044};
+    var mapProp = {
       center:myLatlng,
       zoom: 8,
       mapTypeId: google.maps.MapTypeId.ROADMAP
     };
     
     var map=new google.maps.Map(document.getElementById("googleMap"), mapProp);
-
+    */
     if(mode == "create"){   
         google.maps.event.addListener(map, 'click', function(event) {
                 position = event.latLng;
@@ -64,11 +73,13 @@ function initMap(mode) {
                     placeMarker(position);
                 else{
                     marker.setPosition(position);   
-                }        
-               /* var long = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#longitude");
+                }
+                console.log(marker.getPosition().lat());
+                console.log(marker.getPosition().lng());
+                var long = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#longitude']").next().children("input")[0];
                 long.value = marker.getPosition().lng();
-                var lat = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#latitude");
-                lat.value = marker.getPosition().lat();*/
+                var lat = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#latitude']").next().children("input")[0];
+                lat.value = marker.getPosition().lat();
             });
     }
     function placeMarker(location) {
@@ -79,10 +90,9 @@ function initMap(mode) {
     }
 }
 
-function createMap(jQueryObject, mode){
-    jQueryObject.next().append('<div id="googleMap" style="width:80%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
-    initMap(mode);  
-
+function createMap(jQueryObject, mode, latitude, longitude){
+    jQueryObject.next().append('<div id="googleMap" style="width:100%;height:380px;margin-top:5%;margin-bottom:5%;display:block;"></div>');
+    initMap(mode, latitude, longitude);
 }
 function deleteMap(){
     marker = null;
@@ -104,25 +114,45 @@ FrameViewer.prototype.draw = function(frames, mode){
     gensym = dacura.frame.Gensym("query");
     res = dacura.frame.frameGenerator(frames, container, gensym, mode);
     parent.appendChild(res);
-    if(this.cls == "http://dacura.cs.tcd.ie/data/seshattiny#Polity")
-       dacura.frame.insertWidgets(mode);
-    else
-        marker = null; 
+    if(this.cls == "http://dacura.cs.tcd.ie/data/seshattiny#Polity"){
+        //this is super-hacky for demo purposes
+        latitude = 52;
+        longitude = -1;
+        for(var i=0;i<this.frames.length;i++){
+            if(this.frames[i].property == "http://dacura.cs.tcd.ie/data/seshattiny#capitalCityLocation"){
+                for(var j=0;j<this.frames[i].frame.length;j++){
+                    if(this.frames[i].frame[j].property == "http://dacura.cs.tcd.ie/data/seshattiny#longitude"){
+                        if(typeof this.frames[i].frame[j].value != "undefined"){
+                            longitude = parseInt(this.frames[i].frame[j].value.data);
+                        }
+                    }else if(this.frames[i].frame[j].property == "http://dacura.cs.tcd.ie/data/seshattiny#latitude"){
+                        if(typeof this.frames[i].frame[j].value != "undefined"){
+                            latitude = parseInt(this.frames[i].frame[j].value.data);
+                        }
+                    }
+                }
+                console.log(this.frames[i].frame);
+            }
+        }
+        console.log(typeof latitude);
+        console.log(typeof longitude);
+        dacura.frame.insertWidgets(mode, latitude, longitude);
+    }else{
+        marker = null;
+    }
     return;
 };
 
 FrameViewer.prototype.extract = function () {
     var y = dacura.frame.extractionConverter(this.frames, this.cls);
-    console.log(y);
     return y;
 }
 
-dacura.frame.insertWidgets = function (mode) {
+dacura.frame.insertWidgets = function (mode, latitude, longitude) {
     //this will go through the generated frame and insert complex widgets where necessary
     //shim for now, just adds in the map
     var x = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#capitalCityLocation']");
-
-    createMap(x, mode);
+    createMap(x, mode, latitude, longitude);
     return;
 }
 
