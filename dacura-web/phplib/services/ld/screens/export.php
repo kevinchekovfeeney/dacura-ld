@@ -29,7 +29,15 @@
 <script>
 var DEF_SERVER = "http://dacura.scss.tcd.ie/dqs/dacura/def";
 var SCHEMA = "http://dacura.scss.tcd.ie/seshat-test.ttl";
+//var DEF_SERVER = "http://tcd:3020/dacura/def";
+//var SCHEMA = "http://tcd:3020/data/uploaded/seshat-test.ttl";
 var SESHAT_NS = "http://dacura.cs.tcd.ie/data/seshat#";
+var class_array = new Array();
+var instances_array = new Array();
+var predicates_array = new Array();
+var selected_class = "";
+var selected_instance = "";
+var selected_predicate = "";
     
 function openQuery(evt,query) {
     var i,tabcontent,tablinks;
@@ -49,6 +57,7 @@ function openQuery(evt,query) {
 }
     
 function instQuery(data) {
+    selected_class = data;
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function(response) {
         if(xhttp.readyState === 4) {
@@ -69,6 +78,7 @@ function instQuery(data) {
                 jsonOptions.forEach(function(item) {
                    var option = document.createElement('option');
                     option.value = item;
+                    instances_array.push(item);
                     dataList.appendChild(option);
                 });
             }
@@ -94,6 +104,7 @@ function timeQuery(data, from, to) {
 }
     
 function getProperties(data) {
+    selected_instance = data;
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function(response) {
         if(xhttp.readyState === 4) {
@@ -105,7 +116,7 @@ function getProperties(data) {
                 var btn = document.createElement('input');
                 btn.setAttribute('type','button');
                 btn.setAttribute('value','Export');
-                btn.setAttribute('onclick','_(document.getElementById("properties").value);');
+                btn.setAttribute('onclick','export_to_tsv();');
                 document.getElementById('Instances').innerHTML += '<p>Properties</p>';
                 document.getElementById('Instances').appendChild(lst);
                 document.getElementById('Instances').innerHTML += ' ';
@@ -115,6 +126,7 @@ function getProperties(data) {
                 jsonOptions.forEach(function(item) {
                    var option = document.createElement('option');
                     option.value = item;
+                    predicates_array.push(item);
                     dataList.appendChild(option);
                 });
             }
@@ -135,6 +147,7 @@ function loadClasses() {
                 jsonOptions.forEach(function(item) {
                    var option = document.createElement('option');
                     option.value = item; 
+                    class_array.push(item);
                     dataList.appendChild(option);
                 });
             }
@@ -192,4 +205,30 @@ function resetTime() {
     document.getElementById("Time").innerHTML = "<p>Temporal Entity</p><input type=\"text\" id=\"tempquery\" list=\"time-dl\" size=50>            <p>From:<br><input type=\"date\" id=\"from\"></p><p>To:<br><input type=\"date\" id=\"to\"></p><input type=\"button\" value=\"Query\" onclick=\"timeQuery(document.getElementById('tempquery').value, document.getElementById('from').value, document.getElementById('to').value);\">";
 }
 function resetUncertainty() {}
+function export_to_tsv() { 
+    var tsv_result = "";
+    class_array.forEach(function(c){
+        if(c == selected_class) {
+            instances_array.forEach(function(i){
+                if(i == selected_instance) {
+                    predicates_array.forEach(function(p){
+                       tsv_result += c+'\t'+i+'\t'+p+'\n';
+                    });
+                }
+                else {
+                    tsv_result += c+'\t'+i+'\n'; 
+                }
+            });
+        }
+        else {
+            tsv_result += c+'\n';            
+        }
+    });
+    var downloadLink = document.createElement("a");
+    downloadLink.href = 'data:application/octet-stream,'+encodeURIComponent(tsv_result);
+    downloadLink.download = "data.tsv";
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
 </script>
