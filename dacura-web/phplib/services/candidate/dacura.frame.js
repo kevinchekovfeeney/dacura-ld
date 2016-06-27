@@ -103,7 +103,6 @@ FrameViewer.prototype.draw = function(frames, mode){
     this.mode = mode;
     this.frames = frames;
     $('#ldo-frame-contents').remove();
-
     if(mode=="create"){
         var parent = document.getElementById("ldo-create");
     }else{
@@ -263,10 +262,11 @@ dacura.frame.bind = function(obj, prop, elt){
 }
 
 dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
-    //console.log(JSON.stringify(frame));
+    console.log(JSON.stringify(frame));
     if (frame.constructor == Array) {
         for (var i = 0; i < frame.length; i++) {
             var elt = frame[i];
+
             if (elt.type == "objectProperty" || elt.type == "datatypeProperty") {
                 //create container
                 var contentDiv = document.createElement("div");
@@ -283,27 +283,34 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                 labelDiv.setAttribute('class', 'property-label');
                 if (elt.label) {
                     var label = elt.label.data; // {'data' : someDataHere, 'type' : SomeTyping}
-                    var textnode = document.createTextNode(label + ':');
+                    var textnode = document.createTextNode(label + ': ');
                 } else {
                     var textnode = document.createTextNode(elt.property + ':');
                 }
                 labelDiv.appendChild(textnode);
                 labelDiv.setAttribute('data-property', elt.property);
                 contentDiv.appendChild(labelDiv);
-
                 //create right hand side
-                if (elt.type == 'objectProperty') {
+                if (elt.type == 'objectProperty' && elt.frame != "") {
                     var subframe = elt.frame;
-                    var subframeDiv = document.createElement("div");
-                    subframeDiv.setAttribute('class', 'embedded-object');
-                    dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
-                    contentDiv.appendChild(subframeDiv);
-                } else if (elt.type == 'datatypeProperty') {
+                    //if(elt.frame == ""){
+                     //   alert("empty frame");
+
+                   // }else{
+                        var subframeDiv = document.createElement("div");
+                        subframeDiv.setAttribute('class', 'embedded-object');
+                        dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
+                        contentDiv.appendChild(subframeDiv);
+                   // }
+                    
+                } else if (elt.type == 'datatypeProperty' || (elt.type == 'objectProperty' && elt.frame == "") ) {
                     var inputDiv = document.createElement("div");
                     inputDiv.setAttribute('class', 'property-value');
                     var input = dacura.frame.inputSelector(mode);
                     var ty = dacura.frame.typeConvert(elt.range);
-                    input.setAttribute('type', ty);
+                    inputDiv.setAttribute('id', elt.range);
+
+                    
                     if(mode =="create"){
                         dacura.frame.bind(elt, "contents", input);
                         elt.contents = elt.label.data;
@@ -317,9 +324,25 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                     }
                     inputDiv.appendChild(input);
                     contentDiv.appendChild(inputDiv);
+                    if(ty == "text" || ty == "checkbox")
+                        input.setAttribute('type', ty);
+                    else if(ty == "select"){
+                         var select = document.createElement( 'select' );
+                         var option;
+                         var inputdata = "A.C.||B.C.";
+
+                        inputdata.split( '||' ).forEach(function( item ) {
+                            option = document.createElement( 'option' );
+                            option.value = option.textContent =   item;
+                            select.appendChild( option );
+                        });
+                            inputDiv.appendChild(select);
+                    }
+                    
                 } else {
                     alert("Impossible: must be either an object or datatype property.");
                 }
+
                 obj.appendChild(contentDiv);
             } else if (elt.type == 'failure') {
                 //don't think we should hit this, but check again
@@ -453,6 +476,10 @@ dacura.frame.typeConvert = function (ty) {
             return 'checkbox';
         case "http://www.w3.org/2000/01/rdf-schema#Literal" :
             return 'text';
+        case "http://www.w3.org/2001/XMLSchema#gYear" :
+            return 'select';
+        case "http://dacura.scss.tcd.ie/ontology/seshat#Duration":
+            return 'duration';
         default:
             return 'text';
     }
