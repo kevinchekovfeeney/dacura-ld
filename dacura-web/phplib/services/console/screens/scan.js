@@ -190,7 +190,7 @@ seshatscraper.displayFacts = function (){
 	var npage_offset = 0;
 	for(var i = 0;i < json.length;i++){
 		stats[json[i]["parsed"]["result_code"]]++;
-		if(json[i].parsed.result_code == "error" || json[i].parsed.result_code == "warning"){
+		if(typeof json[i].parsed != "object" || json[i].parsed.result_code == "error" || json[i].parsed.result_code == "warning"){
 			error_sequence[error_sequence.length] = json[i].id;
 		}
 		parsed = (typeof json[i].parsed == "object" ? json[i].parsed : {result_code: "error"});
