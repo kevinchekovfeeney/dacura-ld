@@ -189,13 +189,13 @@ seshatscraper.displayFacts = function (){
 	var npage = "";
 	var npage_offset = 0;
 	for(var i = 0;i < json.length;i++){
-		stats[json[i]["parsed"]["result_code"]]++;
 		if(typeof json[i].parsed != "object" || json[i].parsed.result_code == "error" || json[i].parsed.result_code == "warning"){
 			error_sequence[error_sequence.length] = json[i].id;
 		}
 		parsed = (typeof json[i].parsed == "object" ? json[i].parsed : {result_code: "error"});
 		var cstr = "seshatFact";
 		var imgstr = "";
+		stats[parsed]["result_code"]++;
 		if(parsed.result_code == "error"){
 			cstr += " seshatError";
 			imgstr = "<img class='seshat_fact_img seshat_error' src='<?=$service->get_service_file_url('error.png')?>' alt='error' title='error parsing variable'> ";
