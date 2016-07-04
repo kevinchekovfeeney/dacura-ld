@@ -198,19 +198,19 @@ seshatscraper.displayFacts = function (){
 		stats[parsed.result_code]++;
 		if(parsed.result_code == "error"){
 			cstr += " seshatError";
-			imgstr = "<img class='seshat_fact_img seshat_error' src='<?=$service->get_service_file_url('error.png')?>' alt='error' title='error parsing variable'> ";
+			imgstr = "";//<img class='seshat_fact_img seshat_error' src='' alt='error' title='error parsing variable'> ";
 		}
 		else if(parsed.result_code == "warning"){
 			cstr += " seshatWarning";
-			imgstr = "<img class='seshat_fact_img seshat_warning' src='<?=$service->get_service_file_url('error.png')?>' alt='error' title='variable warning'> ";
+			imgstr = "";//"<img class='seshat_fact_img seshat_warning' src='' alt='error' title='variable warning'> ";
 		}
 		else if(parsed.result_code == "empty"){
 			cstr += " seshatEmpty";
-			imgstr = "<img class='seshat_fact_img seshat_empty' src='<?=$service->get_service_file_url('empty.png')?>' alt='error' title='variable empty'> ";
+			imgstr = "";//<img class='seshat_fact_img seshat_empty' src='' alt='error' title='variable empty'> ";
 		}
 		else {
 			cstr += " seshatCorrect";
-			imgstr = "<img class='seshat_fact_img seshat_correct' src='<?=$service->get_service_file_url('correct.png')?>' alt='error' title='variable parsed correctly'> ";
+			imgstr = "";//<img class='seshat_fact_img seshat_correct' src='' alt='error' title='variable parsed correctly'> ";
 		}
 
 		var sd = "<div class='" + cstr + "' id='fact_" + json[i]["id"] + "'>" + imgstr + json[i]["full"] + "</div>";
