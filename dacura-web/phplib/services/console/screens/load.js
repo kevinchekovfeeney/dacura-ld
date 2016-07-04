@@ -6,7 +6,7 @@ if(typeof dacura_console_loaded == "undefined"){ //don't load script twice
 		script.src = "<?=$service->furl("js", "jquery-2.1.4.min.js")?>";
 		document.getElementsByTagName('head')[0].appendChild(script);
 	}
-	if(typeof window.jQuery == "undefined" || !window.jQuery.ui){
+	if(typeof window.jQuery == "undefined" || !window.jQuery || !window.jQuery.ui){
 		var script = document.createElement('script');
 		script.type = "text/javascript";
 		script.src = "<?=$service->furl("js", "jquery-ui.js")?>";

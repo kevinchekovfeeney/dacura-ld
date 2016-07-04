@@ -24,6 +24,7 @@ $bgimage = isset($params['background']) && $params['background'] ? $params['back
 		<script>
 			<?php include_once($service->settings['path_to_services']."core/dacura.init.js"); //included for variable interpolation ?>
 		</script>
+		<script src="<?=$service->get_service_script_url("dacura.utils.js", "core")?>"></script>
 		<script src="<?=$service->get_service_script_url("dacura.js", "core")?>"></script>
 		<style>
 		#content-container {

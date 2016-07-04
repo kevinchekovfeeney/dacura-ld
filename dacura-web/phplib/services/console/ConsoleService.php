@@ -43,7 +43,9 @@ class ConsoleService extends LdService {
 			else {
 				//depending on the passed context (ORIGIN, credentials), spit out the javascript which loads the appropriate console context
 				$params = $this->getConsoleParams($dacura_server, $u);
-				include_once("screens/dacura.php");				
+				echo "<script>";
+				include_once("screens/dacura.init.js");				
+				echo "</script>";
 				include_once("screens/console.php");				
 			}
 		}
@@ -155,12 +157,11 @@ class ConsoleService extends LdService {
 	function getConsoleParams($dacura_server, DacuraUser $u){
 		$params = array();
 		$params['jslibs'] = array();
-		$params['jslibs'][] = $this->get_service_script_url("jslib/ldresult.js", "ld");
-		$params['jslibs'][] = $this->get_service_script_url("dontology.js");
-		$params['jslibs'][] = $this->get_service_script_url("jslib/rvo.js", "ld");
-		$params['jslibs'][] = $this->get_service_script_url("jslib/ldgraphresult.js", "ld");
+		$params['jslibs'][] = $this->get_service_script_url("dacura.utils.js", "core");
+		$params['jslibs'][] = $this->get_service_script_url("jslib/ldlibs.js", "ld");
 		$params['jslibs'][] = $this->get_service_script_url("dacura.frame.js", "candidate");
-		$params['jslibs'][] = $this->get_service_script_url("jslib/ldo.js", "ld");
+		$params['jslibs'][] = $this->get_service_script_url("dconsole.js");
+		$params['jslibs'][] = $this->get_service_script_url("dontology.js");
 		$params['logouturl'] = $this->get_service_url("login", array("logout"));
 		$params['dacuraurl'] = $this->durl();
 		$params["username"] = $u->handle;
@@ -198,7 +199,13 @@ class ConsoleService extends LdService {
 		$params['new_thing_icon'] = "<img class='console-icon' height='16' src='" . $this->furl("images", "icons/create.png") . "'>";
 		$params['collection_choices'] = $pc;
 		$params['helptexts'] = array();
-		$params['ontology_config'] = array("boxtypes" => $this->getBoxedTypes($dacura_server));
+		$params['ontology_config'] = array(
+				"boxtypes" => $this->getBoxedTypes($dacura_server),
+				"capabilities" => array("update", "test_update", "delete", "deploy"),
+				"entity_tag" => "dacura:Entity",
+				"request_id_token" => $params['demand_id_token'],
+				"helptexts" => array()				
+		);
 		$params['scan'] = file_get_contents(dirname(__DIR__)."/console/screens/scan.js");
 		return $params;
 	}

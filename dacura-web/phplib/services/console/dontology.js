@@ -1,27 +1,25 @@
-
+//variable that changes with each class - global variable as hangover from something...
 var parentClasses = [];
+if(typeof dconsole == "undefined"){
+	dconsole = {};//temporary thing while we're waiting for it to load??
+}
 
 function dOntology(json, config){
 	this.id = json.id;
 	this.bnid = 0;
 	this.boxtypes = config.boxtypes;
-	this.capabilities = ["update", "test_update", "delete", "deploy"];
-	this.entity_tag = "dacura:Entity";
-	this.request_id_token = "@id";
+	this.capabilities = config.capabilities;
+	this.entity_tag = config.entity_tag;;
+	this.request_id_token = config.request_id_token;
 	this.normals = ["rdfs:subClassOf", "rdf:type", "rdfs:label", "rdfs:comment", "owl:oneOf"];
 	this.contents = json.contents;
 	this.meta = json.meta;
 	this.properties = {};
 	this.classes = {};
 	this.errors = [];
-	this.ontologisedProperties = {};
 	for(var id in this.contents){
 		if(this.isProperty(this.contents[id])){
 	    	this.properties[id] = this.contents[id];				
-	    	if(typeof this.contents[id]["dacura:pattern"] != "undefined"){
-				this.ontologisedProperties[this.contents[id]["dacura:pattern"]["data"]] = this.contents[id];
-				this.ontologisedProperties[this.contents[id]["dacura:pattern"]["data"]]['id'] = id;
-			}
 		}
 		else if(this.isClass(this.contents[id])){
 	    	this.classes[id] = this.contents[id];
@@ -29,7 +27,7 @@ function dOntology(json, config){
 	}
 	this.tree = this.buildNodeTree();
 	this.entity_classes = this.calculateEntityClasses();
-	this.setHelpTexts(params.helptexts);
+	this.setHelpTexts(config.helptexts);
 	this.focus = false;
 }
 
@@ -1077,6 +1075,7 @@ dOntology.prototype.getParentClassAddHTML = function(cls){
 	html += "</select></span>";
 	html += "<span class='local-parent'>";
 	html += "<select class='local-parent-list'>";
+	html += "<option value=''>Choose Class</option>";
 	for(var i in this.classes){
 		if(!cls || cls != i){
 			html += "<option value='" + i + "'>" + this.getClassLabel(i) + "</option>";
@@ -1244,7 +1243,7 @@ dOntology.prototype.getDomainSelect = function(prop){
 	var sel = (dtype == "remote" ? " selected" : "");
 	html += "<option value='remote'" + sel + ">Imported Class</option>";
 	html += "</select>";
-	html += "</span>";
+	html += "</span>";	
 	if(dtype == "remote"){
 		html += "<span class='dch local-domain'>";
 	}
@@ -1252,6 +1251,7 @@ dOntology.prototype.getDomainSelect = function(prop){
 		html += "<span class='local-domain'>";
 	}
 	html += "<select class='pdip local-domain-list'>";
+	html += "<option value=''>Choose Class</option>";
 	for(var i in this.classes){
 		if(!prop || prop != i){
 			var sel = ((dtype == "local" && dom == i ) ? " selected" : "");
@@ -1313,6 +1313,7 @@ dOntology.prototype.getRangeBoxedLiteralHTML = function(range, prop){
 	var xsd = (typeof range == "string" && range.substring(0, 4) == "xsd:") ? range.substring(4) : "string";
 	var html = "<span class='range-input range-input-boxedliteral dch'>";
 	html += "<select class='range-box-types'>";
+	html += "<option value=''>Choose type</option>";
 	for(var i in boxtypes){
 		var sel = (range && range.length && range == i ? " selected" : "");
 		var label = (typeof(boxtypes[i]["rdfs:label"]) != "undefined" ? boxtypes[i]["rdfs:label"].data : i);
@@ -1346,6 +1347,7 @@ dOntology.prototype.getRangeObjectHTML = function(range){
 	html += "</span>";
 	html += "<span class='local-range'>";
 	html += "<select class='local-range-list'>";
+	html += "<option value=''>Choose Class</option>";
 	for(var i in this.classes){
 		var sel = (range && range.length && this.classes[i] == range ? " selected" : "");
 		html += "<option value='" + i + "'" + sel + ">" + this.getClassLabel(i) + "</option>";
