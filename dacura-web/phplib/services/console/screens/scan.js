@@ -193,10 +193,10 @@ seshatscraper.displayFacts = function (){
 		if(json[i].parsed.result_code == "error" || json[i].parsed.result_code == "warning"){
 			error_sequence[error_sequence.length] = json[i].id;
 		}
-		parsed = json[i].parsed;
+		parsed = (typeof json[i].parsed == "object" ? json[i].parsed : {result_code: "error"});
 		var cstr = "seshatFact";
 		var imgstr = "";
-		if(typeof parsed != "object" || parsed.result_code == "error"){
+		if(parsed.result_code == "error"){
 			cstr += " seshatError";
 			imgstr = "<img class='seshat_fact_img seshat_error' src='<?=$service->get_service_file_url('error.png')?>' alt='error' title='error parsing variable'> ";
 		}
