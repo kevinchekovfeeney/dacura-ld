@@ -1,9 +1,18 @@
+//general notes:
+//1. edit mode in individual candidate view doesn't work - where do we change modes?
+//2. should probably factor out widget code into a separate section/module - dacura.frame.widget? dacura.widgets?
+//3. add checks for when variable is of correct type
+//4. should this be changed to insert widgets at generation?
+//
+////this needs to be set up to properly wait for correct loading
+//and then call insertWidgets
 var script = document.createElement("script");
-script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
+script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";
 document.body.appendChild(script);
 
 dacura.frame = {};
 dacura.frame.api = {};
+dacura.frame.widgets = {}
 dacura.frame.apiurl = dacura.system.apiURL();
 
 dacura.frame.api.getFrame = function (cls) {
@@ -29,28 +38,14 @@ function FrameViewer(cls, target, pconfig) {
     this.pconfig = pconfig;
 }
 
-//Loading google maps api
-/*window.onload = function loadScript() {
-  var script = document.createElement("script");
-  script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
-  document.body.appendChild(script);
-
-  console.log('script loaded');
-}*/
-//$('document').ready(function(){
-//
-//var script = document.createElement("script");
-//script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
-//document.body.appendChild(script);
-//});
-
-
 //global variables for maps use
 var marker = null;
 var position;
 var longitudeId, latitudeId; 
 
-function initMap(mode, latitude, longitude) {
+dacura.frame.widgets.initMap = function(mode, latitude, longitude) {
+    //this needs to be refactored to deal with multiple maps
+    //also to not need the lat/long to be worked out higher up
     map = new google.maps.Map(document.getElementById('googleMap'), {
           center: {lat: latitude, lng: longitude},
           zoom: 8
@@ -90,16 +85,19 @@ function initMap(mode, latitude, longitude) {
     }
 }
 
-function createMap(jQueryObject, mode, latitude, longitude){
+dacura.frame.widgets.createMap = function(jQueryObject, mode, latitude, longitude){
+    //refactor to deal with multiple maps
     jQueryObject.next().append('<div id="googleMap" style="width:100%;height:380px;margin-top:5%;margin-bottom:5%;display:block;"></div>');
-    initMap(mode, latitude, longitude);
+    dacura.frame.widgets.initMap(mode, latitude, longitude);
 }
-function deleteMap(){
+dacura.frame.widgets.deleteMap = function(){
+    //need to generalise this
     marker = null;
     $("#googleMap").remove();
 }
 
 FrameViewer.prototype.draw = function(frames, mode){
+
     this.mode = mode;
     this.frames = frames;
     $('#ldo-frame-contents').remove();
@@ -109,32 +107,7 @@ FrameViewer.prototype.draw = function(frames, mode){
     gensym = dacura.frame.Gensym("query");
     res = dacura.frame.frameGenerator(frames, container, gensym, mode);
     parent.appendChild(res);
-    if(this.cls == "http://dacura.cs.tcd.ie/data/seshattiny#Polity"){
-        //this is super-hacky for demo purposes
-        latitude = 52;
-        longitude = -1;
-        for(var i=0;i<this.frames.length;i++){
-            if(this.frames[i].property == "http://dacura.cs.tcd.ie/data/seshattiny#capitalCityLocation"){
-                for(var j=0;j<this.frames[i].frame.length;j++){
-                    if(this.frames[i].frame[j].property == "http://dacura.cs.tcd.ie/data/seshattiny#longitude"){
-                        if(typeof this.frames[i].frame[j].value != "undefined"){
-                            longitude = parseInt(this.frames[i].frame[j].value.data);
-                        }
-                    }else if(this.frames[i].frame[j].property == "http://dacura.cs.tcd.ie/data/seshattiny#latitude"){
-                        if(typeof this.frames[i].frame[j].value != "undefined"){
-                            latitude = parseInt(this.frames[i].frame[j].value.data);
-                        }
-                    }
-                }
-                console.log(this.frames[i].frame);
-            }
-        }
-        console.log(typeof latitude);
-        console.log(typeof longitude);
-        dacura.frame.insertWidgets(mode, latitude, longitude);
-    }else{
-        marker = null;
-    }
+    dacura.frame.insertWidgets(mode, this.cls);
     return;
 };
 
@@ -143,12 +116,51 @@ FrameViewer.prototype.extract = function () {
     return y;
 }
 
-dacura.frame.insertWidgets = function (mode, latitude, longitude) {
+dacura.frame.insertWidgets = function (mode, cls) {
     //this will go through the generated frame and insert complex widgets where necessary
     //shim for now, just adds in the map
-    var x = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#capitalCityLocation']");
-    createMap(x, mode, latitude, longitude);
+    //for each property, check if it's one that has a complex widget and add it in
+    //will need to recurse
+    var widgets = dacura.frame.widgets.getWidgetList(cls);
+    $("#ldo-frame-contents").children().each(function(){
+        //dacura.frame.widgets.insertMap(mode, cls);
+        for(var i = 0;i<widgets.length;i++){
+            if($(this).children().data("property") == widgets[i].label){
+                dacura.frame.widgets.insertMap(mode, cls);
+            }
+        }
+    });
+    //dacura.frame.widgets.insertMap(mode, cls)
     return;
+}
+
+dacura.frame.widgets.getWidgetList = function(cls){
+    //shim for functionality - need to find out the best way to set this up for configurability
+    switch(cls){
+        case "http://dacura.cs.tcd.ie/data/seshattiny#Polity":
+            return [{"label":'http://dacura.cs.tcd.ie/data/seshattiny#capitalCityLocation',
+                "function": dacura.frame.widgets.insertMap}];
+            break;
+    }
+}
+
+dacura.frame.widgets.insertMap = function(mode, cls){
+    //refactor this to take a DOM object as input
+    var latitude = 0;
+    var longitude = 0;
+    var x = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#capitalCityLocation']");
+    var y = x.next().children();
+    for(var i = 0;i<y.length;i++){
+        z = $(y[i]).children()
+        if(mode!="create"){
+            if($(z[0]).data("property") == "http://dacura.cs.tcd.ie/data/seshattiny#longitude"){
+                longitude = $(z[1]).data("value")
+            }else if($(z[0]).data("property") == "http://dacura.cs.tcd.ie/data/seshattiny#latitude"){
+                latitude = $(z[1]).data("value")
+            }
+        }
+    }
+    dacura.frame.widgets.createMap(x, mode, latitude, longitude);
 }
 
 dacura.frame.generateUUID = function(){
@@ -212,6 +224,8 @@ dacura.frame.subframeExtraction = function(frameArray, cls){
 }
 
 dacura.frame.draw = function (cls, resultobj, pconf, target) {
+
+    //deprecated?
     //var framestr = resultobj.result;
     var frame = resultobj;//JSON.parse(framestr);
     var obj = document.createElement("div");
@@ -257,8 +271,44 @@ dacura.frame.bind = function(obj, prop, elt){
     });
 }
 
+
+createSelectBox = function(inputdata){
+    var select = document.createElement( 'select' );
+                         var option;
+                         var inp = "A.C.||B.C.";
+                        inp.split( '||' ).forEach(function( item ) {
+                            option = document.createElement( 'option' );
+                            option.value = option.textContent =   item;
+                            select.appendChild( option );
+                        });
+    return select;
+}
+
+
+createInput = function(elt, contentDiv, mode, inputDiv){
+        inputDiv.setAttribute('class', 'property-value');
+        var input = dacura.frame.inputSelector(mode);
+        var ty = dacura.frame.typeConvert(elt.range);
+        inputDiv.setAttribute('id', elt.range);
+        if(mode =="create"){
+            dacura.frame.bind(elt, "contents", input);
+            elt.contents = elt.label.data;
+        }else{
+            test = elt.label.data;
+            if(typeof elt.value != "undefined"){
+                test = elt.value.data;
+            }
+            var value = document.createTextNode(test);
+            input.appendChild(value);
+        }
+        return input;
+
+}
+
 dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
-    console.log(JSON.stringify(frame));
+
+    //this should probably insert the data into the DOM for redundancy and ease of access
+    //console.log(JSON.stringify(frame));
     if (frame.constructor == Array) {
         for (var i = 0; i < frame.length; i++) {
             var elt = frame[i];
@@ -266,6 +316,8 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
             if (elt.type == "objectProperty" || elt.type == "datatypeProperty") {
                 //create container
                 var contentDiv = document.createElement("div");
+                contentDiv.setAttribute('id', "content-div");
+
                 if (elt.domain) {
                     contentDiv.setAttribute('data-class', elt.domain);
                 } else {
@@ -286,27 +338,27 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                 labelDiv.appendChild(textnode);
                 labelDiv.setAttribute('data-property', elt.property);
                 contentDiv.appendChild(labelDiv);
-                //create right hand side
-                if (elt.type == 'objectProperty' && elt.frame != "") {
-                    var subframe = elt.frame;
-                    //if(elt.frame == ""){
-                     //   alert("empty frame");
 
-                   // }else{
-                        var subframeDiv = document.createElement("div");
-                        subframeDiv.setAttribute('class', 'embedded-object');
-                        dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
-                        contentDiv.appendChild(subframeDiv);
-                   // }
+
+
+
+
+                //create right hand side- BEGIN OF INPUTS
+                if (elt.type == 'objectProperty' && elt.frame != "") {
+                  
+                    var subframe = elt.frame;
+                    var subframeDiv = document.createElement("div");
+                    subframeDiv.setAttribute('class', 'embedded-object');
+                    dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
+                    contentDiv.appendChild(subframeDiv);
                     
-                } else if (elt.type == 'datatypeProperty' || (elt.type == 'objectProperty' && elt.frame == "") ) {
+                } else if (elt.type == 'datatypeProperty' || (elt.type == 'objectProperty' && elt.frame == "")) {
+                  
                     var inputDiv = document.createElement("div");
                     inputDiv.setAttribute('class', 'property-value');
                     var input = dacura.frame.inputSelector(mode);
                     var ty = dacura.frame.typeConvert(elt.range);
                     inputDiv.setAttribute('id', elt.range);
-
-                    
                     if(mode =="create"){
                         dacura.frame.bind(elt, "contents", input);
                         elt.contents = elt.label.data;
@@ -316,41 +368,54 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                             test = elt.value.data;
                         }
                         var value = document.createTextNode(test);
+                        inputDiv.setAttribute('data-value', test);
                         input.appendChild(value);
-                    }
+                    } 
                     inputDiv.appendChild(input);
                     contentDiv.appendChild(inputDiv);
+                    var ty = dacura.frame.typeConvert(elt.range);
+                    var inputdata = "A.C.||B.C.";
                     if(ty == "text" || ty == "checkbox")
-                        input.setAttribute('type', ty);
+                       input.setAttribute('type', ty);
                     else if(ty == "select"){
-                         var select = document.createElement( 'select' );
-                         var option;
-                         var inputdata = "A.C.||B.C.";
+                        var select = createSelectBox(inputdata);
+                        inputDiv.appendChild(select);
+                    }else if(ty == "duration"){
+                        var select = createSelectBox(inputdata);
+                        var input1 = createInput(elt, contentDiv, mode, inputDiv);                         
+                        inputDiv.appendChild(input1);
+                        inputDiv.appendChild(select);
 
-                        inputdata.split( '||' ).forEach(function( item ) {
-                            option = document.createElement( 'option' );
-                            option.value = option.textContent =   item;
-                            select.appendChild( option );
-                        });
-                            inputDiv.appendChild(select);
+                        var input2 = createInput(elt, contentDiv, mode, inputDiv);                         
+                        var select2 = createSelectBox(inputdata);
+
+                        inputDiv.appendChild(input);
+                        inputDiv.appendChild(select2);
+                        contentDiv.appendChild(inputDiv);
                     }
-                    
-                } else {
+                }/*else if(elt.type == 'objectProperty' && elt.frame == "" ){
+                    if(elt.property == "http://dacura.scss.tcd.ie/ontology/seshat#precedingQuasipolity" || elt.property == "http://dacura.scss.tcd.ie/ontology/seshat#succeedingQuasipolity"){
+                    //add code here. use the api to get the list of polities for succeding and preceding polities
+
+
+                    }
+                }*/
+            } else {
                     alert("Impossible: must be either an object or datatype property.");
-                }
+              }
 
                 obj.appendChild(contentDiv);
-            } else if (elt.type == 'failure') {
+            /*} else*/ if (elt.type == 'failure') {
                 //don't think we should hit this, but check again
                 //alert(elt.message + ' class :' + elt.domain);
                 alert(JSON.stringify(elt, null, 4));
                 var failnode = document.createTextNode(elt.message);
                 obj.appendChild(failnode);
-            } else {
+            } //else {
                 //console.log("Element - restriction");
                 //console.log(elt);
                 //alert(JSON.stringify(elt,null,4));
-            }
+            //}
         }
     } else if (frame.constructor == Object && frame.type == 'entity' || frame.type == 'thing') {
         // we are an entity
@@ -380,6 +445,7 @@ dacura.frame.getId = function (obj, gs) {
 };
 
 dacura.frame.entityExtractor = function (target) {
+    alert("entity extractor");
     var gs = dacura.frame.Gensym("_:oid");
     var frame = $(target);
     var id = dacura.frame.getId(frame, gs);
@@ -532,6 +598,3 @@ dacura.frame.init = function (entity, pconf) {
 
     dacura.system.invoke(ajs, msgs, pconf);
 }
-
-
-
