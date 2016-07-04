@@ -122,14 +122,16 @@ dacura.frame.insertWidgets = function (mode, cls) {
     //for each property, check if it's one that has a complex widget and add it in
     //will need to recurse
     var widgets = dacura.frame.widgets.getWidgetList(cls);
-    $("#ldo-frame-contents").children().each(function(){
-        //dacura.frame.widgets.insertMap(mode, cls);
-        for(var i = 0;i<widgets.length;i++){
-            if($(this).children().data("property") == widgets[i].label){
-                dacura.frame.widgets.insertMap(mode, cls);
-            }
-        }
-    });
+    if(typeof widgets == "object"){
+	    $("#ldo-frame-contents").children().each(function(){
+	        //dacura.frame.widgets.insertMap(mode, cls);
+	        for(var i = 0;i<widgets.length;i++){
+	            if($(this).children().data("property") == widgets[i].label){
+	                dacura.frame.widgets.insertMap(mode, cls);
+	            }
+	        }
+	    });
+    }
     //dacura.frame.widgets.insertMap(mode, cls)
     return;
 }

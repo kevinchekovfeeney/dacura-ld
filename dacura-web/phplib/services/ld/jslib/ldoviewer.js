@@ -130,6 +130,7 @@ LDOViewer.prototype.show = function(target, mode, callback){
 	}
 	else {
 		if(this.ldo.format == "html" && this.ldo.ldtype() == "candidate"){
+			$(this.target).append(body + "</div>");
 			this.showFrame(this.ldo, this.prefix + "-ldo-viewer-contents", "view");
 		}
 		else {

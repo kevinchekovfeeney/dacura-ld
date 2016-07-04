@@ -26,7 +26,6 @@ if(typeof dacura.params.jslibs == "object" && dacura.params.jslibs.length > 0){
 
 jQuery(document).ready(function(){
 	function launchConsole(){
-		dacura.params = <?=json_encode($params)?>;
 		dconsole.init();
 	}
 	

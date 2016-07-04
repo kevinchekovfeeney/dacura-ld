@@ -253,11 +253,13 @@ dconsole.clearSubContext = function(){
 	dconsole.loadExtra(this.getCreateCandidateHTML(enttype));
 	jQuery('#dacura-console button.create-new-entity').button().click(function(){
 		var newentid = jQuery('#dacura-console .console-extra .new-entity-id').val();
-		dconsole.createCandidate(enttype, newentid);
+		var entprops = dconsole.getFilledCreatedProperties();
+		dconsole.createCandidate(enttype, newentid, entprops, false, dconsole.menu_pconfig);
 	});
 	jQuery('#dacura-console button.test-create-new-entity').button().click(function(){
 		var newentid = jQuery('#dacura-console .console-extra .new-entity-id').val();
-		dconsole.createCandidate(enttype, newentid, true);
+		var entprops = dconsole.getFilledCreatedProperties();
+		dconsole.createCandidate(enttype, newentid, entprops, false, dconsole.menu_pconfig, true);
 	});
 	jQuery('#dacura-console button.cancel-new-entity').button().click(function(){
 		dconsole.closeCreateCandidate();
@@ -450,6 +452,11 @@ dconsole.showCandidate = function(entid, propid){
 	dconsole.loadExtra(dconsole.getViewCandidateHTML(entid, propid));
 	this.mode = "view";
 	
+}
+
+dconsole.getFilledCreatedProperties = function(){
+	//this is where we get all of the data from the frames and suck it back into the console
+	return {};
 }
 
 dconsole.addPropertyToCreate = function(prop, frame){
@@ -719,6 +726,9 @@ dconsole.getEntityTypeSelectorHTML = function(){
 		}
 		else {
 			if(typeof dacura.params.collection_contents.entity_classes[i] == "object"){
+				if(urlFragment(dacura.params.collection_contents.entity_classes[i]['class']) != "Nothing")){
+					continue;
+				}
 				if(typeof dacura.params.collection_contents.entity_classes[i].label == "object"){
 					var label = dacura.params.collection_contents.entity_classes[i].label.data;
 				}
