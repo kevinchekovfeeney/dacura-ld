@@ -7,6 +7,12 @@ if(typeof dacura.system == "undefined"){
 	dacura.system = {};
 }
 
+dacura.system.ajax_url = "<?=$service->durl(true)?>";
+dacura.system.install_url = "<?=$service->durl()?>";
+dacura.system.apiURL = function(s, c){
+	return dacura.system.ajax_url + s;
+};
+
 dacura.system.iconbase = "<?=$service->get_system_file_url('images', 'icons')?>";
 
 dacura.system.getIcon = function(icon, config){

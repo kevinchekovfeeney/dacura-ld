@@ -465,21 +465,30 @@ dconsole.createProperty = function(){
 }
 
 dconsole.showCandidate = function(entid, propid){
-	alert("showing " + entid + " property " + propid);
 	jQuery( "#dacura-console .console-context select.console-entity-type" ).selectmenu( "disable" );
 	dconsole.loadExtra(dconsole.getViewCandidateHTML(entid, propid));
 	this.mode = "view";
+	
 }
 
 dconsole.addPropertyToCreate = function(prop, frame){
 	dconsole.loaded_properties[prop] = frame; 
-	jpr(frame);
-	jQuery('#dacura-console .console-create-payload').append(this.getPropertyFieldHTML(prop, frame));
+	jQuery('#dacura-console .console-extra-payload').append(this.getPropertyFieldHTML(prop, frame));
+	var cls = jQuery( "#dacura-console .console-context select.console-entity-type" ).val();
+	//data-id='" + prop + "' 
+	var target = 'create-dacura-property-' + prop;
+	var fv = new FrameViewer(cls, target, this.menu_pconfig);
+	fv.draw([frame], "view");
 }
 
 dconsole.addPropertyToView = function(prop, frame){
 	dconsole.loaded_properties[prop] = frame; 
-	jQuery('#dacura-console .console-create-payload').append(this.getPropertyFieldHTML(prop, frame));
+	jQuery('#dacura-console .console-extra-payload').append(this.getPropertyFieldHTML(prop, frame));
+	var cls = jQuery( "#dacura-console .console-context select.console-entity-type" ).val();
+	var target = 'dacura-property-' + prop;
+	var elid = document.getElementById(target);
+	var fv = new FrameViewer(cls, target, this.menu_pconfig);
+	fv.draw([frame], "view");
 }
 
 dconsole.loadCandidate = function(entid, frame){
@@ -776,7 +785,7 @@ dconsole.getCreateFormButtons = function(etype){
 }
 
 dconsole.getPropertyFieldHTML = function (prop, frame){
-	var html = "<div data-id='" + prop + "' class='console-create-field'>";
+	var html = "<div id='dacura-property-" + prop + "' class='console-create-field'>";
 	html += "<span class='label'>" + urlFragment(prop) + "</span>";
 	html += "<span class='entry'><input type='text' value=''></span>";
 	html += "<span class='extra'>" + this.getRemovePropertyHTML(prop) + "</span>";
@@ -788,6 +797,18 @@ dconsole.getConsoleMessageField = function(){
 	var html = "<div id='dacura-console-extra-message' class='console-user-message console-create-message'></div>";
 	return html;
 }
+
+
+dconsole.getViewCandidateHTML = function(entid, type, property){
+	var html = "<div class='console-extra-payload view-entity'>";
+	html += "<span class='etype'>"+ urlFragment(type) + "</span> ";
+	html += "<span class='eid'>"+ entid + "</span> ";
+	html += "<span class='eproperty'>"+ urlFragment(property) + "</span>";
+	html += "<button class='close-view-entity'>Close</button>";
+	html += "</div>";
+	return html;
+};
+
 
 dconsole.getCreateCandidateHTML = function(enttype){
 	var etype = urlFragment(enttype);
@@ -828,16 +849,6 @@ dconsole.getViewClassHTML = function(cls){
 dconsole.getViewModelPropertyHTML = function(prop){
 	var html = "<div class='console-extra-screen console-view-model-property'>";
 	html += this.current_ontology.getViewPropertyHTML(prop);	
-	html += "</div>";
-	return html;
-};
-
-dconsole.getViewCandidateHTML = function(entid, type, property){
-	var html = "<div class='console-extra-screen view-entity'>";
-	html += "<span class='etype'>"+ urlFragment(type) + "</span> ";
-	html += "<span class='eid'>"+ entid + "</span> ";
-	html += "<span class='eproperty'>"+ urlFragment(property) + "</span>";
-	html += "<button class='close-view-entity'>Close</button>";
 	html += "</div>";
 	return html;
 };
