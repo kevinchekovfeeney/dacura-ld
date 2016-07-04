@@ -157,7 +157,7 @@ dconsole.setContext = function(context, callback){
  * Highest level switch - between collections 
  */
 dconsole.switchCollectionContext = function(target){
-	dacura.params = dacura.params.baseapiurl;
+	dacura.params.apiurl = dacura.params.baseapiurl;
 	if(target != "all"){
 		dacura.params.apiurl += target + "/";
 	}
@@ -1321,6 +1321,8 @@ dconsole.updateGraph = function(gurl, rdf, meta, options, pconfig, test, callbac
 dconsole.scanPage = function(context){
 	console.log("this should be over-written by a dacura scan script");	
 }
+
+
 
 /* contacts the server and resets various values in response to context switches or state changes */
 dconsole.reload = function(context){
