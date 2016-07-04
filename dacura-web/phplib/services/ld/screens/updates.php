@@ -70,7 +70,9 @@ function emptyUpdateTableHTML(key, tconfig){
 //refresh table with new data from api
 var refreshLDOUpdatesTable = function(data, pconf){
 	if(typeof data.updates == "undefined") data.updates = [];
-	dacura.tool.table.reincarnate("updates_table", data.updates);
+	if($('#updates_table').length){
+		dacura.tool.table.reincarnate("updates_table", data.updates);	
+	}
 }
 
 //update the status of an update in the list 

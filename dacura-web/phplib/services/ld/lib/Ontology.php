@@ -202,6 +202,58 @@ Class Ontology extends LDO {
 		return $this->cwurl.($this->fragment_id ? "/".$this->fragment_id : "") ."?version=".$this->version;
 	}
 	
+	function getClasses() {
+		$classes = array();
+		$this->compressNS();
+		foreach($this->ldprops as $id => $props){
+			if(isset($props['rdf:type'])){
+				if($props['rdf:type'] == "owl:Class" || $props['rdf:type'] == "rdfs:Class"){
+					$classes[$id] = $props;
+				}
+				else if(isset($props['rdfs:subClassOf'])){
+					$classes[$id] = $props;						
+				}				
+			}
+		}
+		return $classes;
+	}
+	
+	function getProperties() {
+		$properties = array();
+		$this->compressNS();
+		foreach($this->ldprops as $id => $props){
+			if(isset($props['rdf:type'])){
+				if($props['rdf:type'] == "owl:DatatypeProperty" || $props['rdf:type'] == "owl:ObjectProperty" || $props['rdf:type']== "rdf:Property"){
+					$properties[$id] = $props;
+				}
+				else if(isset($props['rdfs:subPropertyOf']) || isset($props['rdfs:range']) || isset($props['rdfs:range'])){
+					$properties[$id] = $props;
+				}
+			}
+		}
+		return $properties;	
+	}
+	
+	function getBoxedClasses() {
+		$clses = $this->getClasses();
+		$boxes = array();
+		foreach($clses as $cid => $props){
+			if(isset($props['rdfs:subClassOf'])){
+				if(is_array($props['rdfs:subClassOf'])){
+					if(in_array("dacura:Box", $props['rdfs:subClassOf'])){
+						$boxes[$cid] = $props;
+					}
+				}
+				else {
+					if($props['rdfs:subClassOf'] == "dacura:Box"){
+						$boxes[$cid] = $props;						
+					}
+				}
+			}
+		}
+		return $boxes;
+	}
+	
 	/**
 	 * Analyses the Ontology for namespaces and with the DQS
 	 * @see LDO::analyse()
@@ -313,6 +365,7 @@ Class Ontology extends LDO {
 		if($ores->is_accept() || $test_unpublished){
 			//4 ontology hijacking -> warning.
 			$violations = array();
+			//opr($this->dependencies['rdfs']);
 			foreach($this->dependencies as $sh => $ontdata){
 				if(!in_array($sh, array("_", "unknown", $this->id)) && isset($ontdata['subject']) && count($ontdata['subject']) > 0){
 					foreach($ontdata['subject'] as $hijack => $hcount){

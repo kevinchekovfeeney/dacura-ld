@@ -1361,8 +1361,9 @@ class ScraperDacuraServer extends DacuraServer {
 	function login(){
 		$this->ch = curl_init();
 		//initial curl setting
+		$cj = $this->getSystemSetting("path_to_collections").$this->cid()."/".$this->getServiceSetting('cookiejar');
 		curl_setopt($this->ch, CURLOPT_URL, $this->getServiceSetting('loginUrl'));
-		curl_setopt($this->ch, CURLOPT_COOKIEJAR, $this->getServiceSetting('cookiejar'));
+		curl_setopt($this->ch, CURLOPT_COOKIEJAR, $cj);
 		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, 1);
 		if($prox = $this->getSystemSetting('http_proxy', "")){
 			curl_setopt($this->ch, CURLOPT_PROXY, $prox);
@@ -1590,6 +1591,19 @@ class ScraperDacuraServer extends DacuraServer {
 	
 	function unformatSectionName($tit){
 		return str_replace(" ", "_", $tit);
+	}
+	
+	function getConsoleParams(){
+		$params = array();
+		$u = $this->getUser();
+		if($u){
+			$params['logged_in'] = true;
+		}
+		else {
+			$params['logged_in'] = false;				
+		}
+		$params['homeurl'] = $this->service->my_url("rest")."/console";
+		return $params;
 	}
 
 }

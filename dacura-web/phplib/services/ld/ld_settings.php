@@ -30,6 +30,13 @@ $settings = array(
 	/* the maximum length of the id of a linked data object */
 	"ldo_maximum_id_length" => 80,
 
+	"internal_allow_demand_id" => 1,
+	/* the minimum length of the id of a linked data object */
+	"internal_mimimum_id_length" => 2,
+	/* the maximum length of the id of a linked data object */
+	"internal_maximum_id_length" => 80,
+		
+		
 	/* should auto generated ids have more entropy (longer, uglier)  to avoid clashes */
 	"ldo_extra_entropy" => 1,
 	/* a {old: new} mapping of urls, which are to apply universally whenever those urls are encountered */

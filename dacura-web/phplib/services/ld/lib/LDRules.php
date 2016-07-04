@@ -9,11 +9,11 @@
  * "import" -> importLD() :  [demand_id_token, replace_blank_ids,	allow_demand_id]
  * 					-> addAnonSubject() -> getNewBNIDForLDObj() -> "generate"
  * 			
- * "validate" LDPropertyValue->legal() : [allow_invalid_ld, require_object_literals, forbid_empty, expand_embedded_objects]
+ * "validate" LDPropertyValue->legal() : [allow_invalid_ld, demand_id_token, require_object_literals, forbid_empty, expand_embedded_objects]
  * 			  LDO->validate(): [unique_subject_ids, allow_invalid_ld, forbid_blank_nodes, require_blank_nodes, forbid_unknown_prefixes, require_subject_urls, 
  * 						  allow_blanknode_predicates, forbid_unknown_prefixes, require_predicate_urls]
  *
- * "update" updateLDProps() : [fail_on_bad_delete, replace_blank_ids]
+ * "update" updateLDProps() : [fail_on_bad_delete, demand_id_token, replace_blank_ids]
  * 
  * "generate" LDO->updateLDProps() -> addAnonSubject() -> getNewBNIDForLDObj() [demand_id_token] 
  * 				-> genid() [mimimum_id_length, maximum_id_length, allow_demand_id, id_generator, extra_entropy]
@@ -47,9 +47,9 @@ class LDRules extends DacuraObject {
 		$this->cwurl = $ldo->cwurl;
 		//id generation
 		$this->rules['generate'] = array(
-			'id_generator' => array($ldo, $srvr->getServiceSetting("internal_generate_id", "generateInternalID")),
+			//'id_generator' => array($ldo, $srvr->getServiceSetting("internal_generate_id", "generateInternalID")),
 			"mimimum_id_length" => $srvr->getServiceSetting("internal_mimimum_id_length", 1),
-			"maximum_id_length" => $srvr->getServiceSetting("internal_mimimum_id_length", 80),
+			"maximum_id_length" => $srvr->getServiceSetting("internal_maximum_id_length", 80),
 			"extra_entropy" => $srvr->getServiceSetting("internal_extra_entropy", false),
 			"allow_demand_id" => $srvr->getServiceSetting("internal_allow_demand_id", true),
 			"demand_id_token" => $srvr->getServiceSetting("demand_id_token", "@id")
@@ -62,7 +62,7 @@ class LDRules extends DacuraObject {
 			"expand_embedded_objects" => $srvr->getServiceSetting("expand_embedded_objects", true)
 		);
 		//Validation rules for LDO->validate
-		$this->rules['validate'] = array(
+		$this->rules['validate'] = array_merge($this->rules['generate'], array(
 			//should embedded anonymous objects be expanded into embedded object lists with bn ids
 			"expand_embedded_objects" => $srvr->getServiceSetting("expand_embedded_objects", true),
 			//the set of meta properties that may be set in the ldo 
@@ -93,7 +93,7 @@ class LDRules extends DacuraObject {
 			"forbid_blank_nodes" => $srvr->getServiceSetting("forbid_blank_nodes", false),
 			//check to ensure that each subject id exists exactly once (can't appear as a subject in multiple places in embedded object)
 			"unique_subject_ids" => $srvr->getServiceSetting("unique_subject_ids", true)
-		);
+		));
 		//rules that apply on ldo import from api
 		$this->rules['import'] = array_merge($this->rules['generate'], array(
 			//should the input structure be transform to make it all compliant 
@@ -108,14 +108,14 @@ class LDRules extends DacuraObject {
 			"replace_blank_ids" => $srvr->getServiceSetting("import_replace_blank_ids", true)
 		));
 		//rules that apply when an update is applied to a ldo
-		$this->rules['update'] = array(
+		$this->rules['update'] = array_merge($this->rules['generate'], array(
 			"expand_embedded_objects" => $srvr->getServiceSetting("update_expand_embedded_objects", true),
 			"regularise_object_literals" => $srvr->getServiceSetting("update_regularise_object_literals", false),
 			'regularise_literals' => $srvr->getServiceSetting("update_regularise_literals", false),
 			//if we encounter a delete of a non-existant fragment
 			"fail_on_bad_delete" => $srvr->getServiceSetting("fail_on_bad_delete", true),
-			"replace_blank_ids" => $srvr->getServiceSetting("update_replace_blank_ids", false)
-		);
+			"replace_blank_ids" => $srvr->getServiceSetting("update_replace_blank_ids", true)
+		));
 	}
 	
 	/**

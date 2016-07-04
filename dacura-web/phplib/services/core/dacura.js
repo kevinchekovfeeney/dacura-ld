@@ -1263,6 +1263,16 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
+
+function urlFragment(url){
+	url = (typeof url == "undefined") ? window.location.href : url;
+	url = url.split('#')[1];
+	if(url){
+		url = url.split("?")[0];		
+	}
+	return url;
+}
+
 /**
  * @function nvArrayToOptions
  * @summary Produces a list of html options to populate a select from a passed name-value array

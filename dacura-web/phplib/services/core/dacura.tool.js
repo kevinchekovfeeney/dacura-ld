@@ -1188,6 +1188,7 @@ dacura.tool.table = {
 		if(typeof tconfig == "undefined"){
 			tconfig = dacura.tool.tables[key];
 		}
+		if(typeof tconfig == "undefined") return;
 		var cont = tconfig.container;
 		dacura.tool.table.nuke(key, tconfig);
 		if(typeof dacura.tool.tables[key] == "undefined"){
@@ -1197,6 +1198,7 @@ dacura.tool.table = {
 			dacura.tool.tables[key].properties = dacura.tool.table.readprops(key);
 		}
 		var tab = dacura.tool.tables[key];
+		if(typeof tab == "undefined") return;
 		var html = "<table id='" + key + "' class='dch dacura-api-listing'><thead><tr>";
 		for(var i = 0; i< tab.properties.length; i++){
 			var tcls = tab.properties[i].id;

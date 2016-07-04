@@ -24,7 +24,7 @@ class Candidate extends MultiGraphLDO {
 		$this->rules->setRule("update", 'expand_embedded_objects', false);		
 		$this->rules->setRule("validate", "require_candidate_type", $req);
 		if($req){ 	
-			$this->rules->setRule("validate", "valid_candidate_types", $srvr->valid_candidate_types); 
+			$this->rules->setRule("validate", "valid_candidate_types", array_keys($srvr->valid_candidate_types)); 
 		}
 	}
 	
@@ -43,7 +43,7 @@ class Candidate extends MultiGraphLDO {
 			$this->valid_types =& $srvr->valid_candidate_types;
 		}	
 		if(parent::importLD($mode, $srvr)){
-			if($this->meta){
+			if($this->meta || $mode == "create"){
 				$this->getRDFType();
 			}
 			return true;
@@ -216,7 +216,7 @@ class Candidate extends MultiGraphLDO {
 		if($format == 'html' && $this->meta['type'] && !$srvr->isBaseLDServer()){
 			$ar = $srvr->getFrame($this->meta['type']);
 			if($ar->is_accept()){
-				$this->display = json_decode($ar->result, true);
+				$this->display = $ar->result;
 				return $this->display;
 			}
 		}

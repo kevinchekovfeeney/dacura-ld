@@ -184,7 +184,7 @@ class LdService extends DacuraService {
 		if(!$dr->is_accept()){
 			return $dacura_server->writeDecision($dr);
 		}
-		$options = $this->readLDViewArgs();
+		$options = $this->getLDArgs("ldoview");
 		$available_types = $dacura_server->getAvailableMimeTypes();
 		$mime = getBestSupportedMimeType($available_types);
 		if($mime && $mime != $dacura_server->getMimeTypeForFormat("html")){

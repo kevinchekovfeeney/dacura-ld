@@ -119,8 +119,8 @@ if (!function_exists('default_settings')) {
 		if(!isset($dacura_settings['dqs_service']['stub'])){
 			$dacura_settings['dqs_service']["stub"] = $dacura_settings['dqs_url']."stub";
 		}
-		if(!isset($dacura_settings['dqs_service']['entity_frame'])){
-			$dacura_settings['dqs_service']["entity_frame"] = $dacura_settings['dqs_url']."entity_frame";
+		if(!isset($dacura_settings['dqs_service']['property_frame'])){
+			$dacura_settings['dqs_service']["property_frame"] = $dacura_settings['dqs_url']."class_property_frame";
 		}
 		if(!isset($dacura_settings['dqs_service']['class_frame'])){
 			$dacura_settings['dqs_service']["class_frame"] = $dacura_settings['dqs_url']."class_frame";

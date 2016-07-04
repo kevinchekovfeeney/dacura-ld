@@ -31,6 +31,9 @@ function LDResult(jsondr, pconfig){
 	else if(typeof jsondr.result == 'object' &&  jsondr.result.type == "LDOUpdate"){
 		this.result = new LDOUpdate(jsondr.result);
 	}
+	else if(typeof jsondr.result == "string"){
+		this.result = jsondr.result;
+	}
 	this.dqsgraph = typeof jsondr.graph_dqs == "object" ? new LDGraphResult(jsondr.graph_dqs, "triples", pconfig) : false;
 	this.ldgraph = typeof jsondr.graph_ld == "object" ? new LDGraphResult(jsondr.graph_ld, "triples", pconfig) : false;
 	this.metagraph = typeof jsondr.graph_meta == "object" ? new LDGraphResult(jsondr.graph_meta, "json", pconfig) : false;
@@ -59,7 +62,7 @@ LDResult.prototype.getExtraFields = function(){
 	if(this.hasWarnings()){
 		subs["warnings"] = {title: "Warnings", content: this.getWarningsHTML()};
 	}
-	if(!isEmpty(this.result)){
+	if(typeof this.result == "object" && !isEmpty(this.result)){
 		subs["result"] = {title: this.result.ldtype().ucfirst() + ' Contents', content: this.getResultHTML()};
 	}
 	if(this.metagraph ){
@@ -169,7 +172,7 @@ LDResult.prototype.show = function(){
 	this.pconfig.mopts = mopts;
 	var extrahtml = this.hasExtraFields() ? this.getExtraHTML() : false;
 	dacura.system.writeResultMessage(this.status, this.getResultTitle(), this.pconfig.resultbox, mainmsg, extrahtml, this.pconfig.mopts);
-	dacura.system.styleJSONLD(this.pconfig.resultbox + " .rawjson")
+	dacura.system.styleJSONLD(this.pconfig.resultbox + " .rawjson");
 	if(this.hasExtraFields()){
 		$(this.pconfig.resultbox + " .rb-options").buttonset();
 		var self = this;

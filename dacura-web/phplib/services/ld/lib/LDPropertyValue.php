@@ -49,6 +49,7 @@ class LDPropertyValue extends DacuraObject {
 	function __construct($val, $cwurl = false){
 		$this->cwurl = $cwurl;
 		$this->load($val);
+		$this->val = $val;
 	}
 
 	/**

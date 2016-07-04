@@ -178,8 +178,7 @@ class LDOUpdate extends DacuraObject{
 			}
 			if($update->meta){
 				$this->forward['meta'] = $update->meta;
-			}
-			
+			}			
 			if(!$this->calculateChanged($mode)){
 				return false;
 			}

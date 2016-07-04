@@ -681,7 +681,9 @@ function getAutomaticImports(data){
 	if(typeof data.analysis == "object" && typeof data.analysis.dependencies == "object" && typeof data.analysis.dependencies.include_tree == "object"){
 		var ents = dacura.ld.getTreeEntries(data.analysis.dependencies.include_tree);
 		for(var i = 0; i<ents.length; i++){
-			imps[ents[i]] = {collection: available_imports[ents[i]].collection, version: 0, id: available_imports[ents[i]].id};
+			if(typeof available_imports[ents[i]] == "object"){
+				imps[ents[i]] = {collection: available_imports[ents[i]].collection, version: 0, id: available_imports[ents[i]].id};
+			}
 		}
 	}
 	else {
