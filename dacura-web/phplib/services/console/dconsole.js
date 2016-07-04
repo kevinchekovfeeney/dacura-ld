@@ -1,6 +1,7 @@
 if(typeof dconsole == "object" && typeof dconsole.menu_pconfig == "object"){
 	throw new Error("loading console twice");
 }
+dacura.params = <?=json_encode($params)?>;
 
 var dconsole = {
 	mode: "menu",
@@ -1325,6 +1326,7 @@ dconsole.scanPage = function(context){
 
 /* contacts the server and resets various values in response to context switches or state changes */
 dconsole.reload = function(context){
+	context = (typeof context == "object" ? context : {});
 	xhr = {};
 	xhr.url = dacura.params.apiurl + "console/reload";
 	xhr.xhrFields = {
