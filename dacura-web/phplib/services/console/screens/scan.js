@@ -236,7 +236,7 @@ seshatscraper.displayFacts = function (){
 };
 
 seshatscrapr.loadFact = function(fid){
-	alert(fid);
+	jpr(this.pageFacts(fid));
 } 
 
 if(page){
