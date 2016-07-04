@@ -196,7 +196,7 @@ seshatscraper.displayFacts = function (){
 		parsed = json[i].parsed;
 		var cstr = "seshatFact";
 		var imgstr = "";
-		if(parsed.result_code == "error"){
+		if(typeof parsed != "object" || parsed.result_code == "error"){
 			cstr += " seshatError";
 			imgstr = "<img class='seshat_fact_img seshat_error' src='<?=$service->get_service_file_url('error.png')?>' alt='error' title='error parsing variable'> ";
 		}
