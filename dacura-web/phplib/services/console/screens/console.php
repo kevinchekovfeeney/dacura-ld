@@ -36,7 +36,7 @@ jQuery(document).ready(function(){
     	else
         	setTimeout(function() { deferUntilLibsLoaded(method) }, 50);
 	}
-	deferUntilLibsLoaded(launcConsole);
+	deferUntilLibsLoaded(launchConsole);
 });
 
 </script>
