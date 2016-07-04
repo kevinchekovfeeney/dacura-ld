@@ -235,8 +235,13 @@ seshatscraper.displayFacts = function (){
 	seshatscraper.error_ids = error_sequence;
 };
 
+seshatscrapr.loadFact = function(fid){
+	alert(fid);
+} 
+
 if(page){
 	seshatscraper.pageFacts = seshatscraper.grabFacts();
 	seshatscraper.uniqifyFacts();
-	seshatscraper.sendFactsToParser();	
+	seshatscraper.displayFacts();
+	//seshatscraper.sendFactsToParser();	
 }
