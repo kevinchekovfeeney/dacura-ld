@@ -723,6 +723,7 @@ dconsole.getEntityTypeSelectorHTML = function(){
 		}
 		else {
 			if(typeof dacura.params.collection_contents.entity_classes[i] == "object"){
+				if(typeof dacura.params.collection_contents.entity_classes[i]['class'] == "string" && (urlFragment(dacura.params.collection_contents.entity_classes[i]['class']) == "Nothing")){ continue; }
 				if(typeof dacura.params.collection_contents.entity_classes[i].label == "object"){
 					var label = dacura.params.collection_contents.entity_classes[i].label.data;
 				}
