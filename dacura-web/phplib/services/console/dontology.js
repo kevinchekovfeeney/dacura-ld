@@ -1307,12 +1307,14 @@ dOntology.prototype.getRangeSelect = function(prop){
 dOntology.prototype.getRangeBoxedLiteralHTML = function(range, prop){
 	var units = this.getPropertyUnits(prop);
 	var boxtypes = this.getBoxTypes();
+	//jpr(boxtypes);
 	var xsd = (typeof range == "string" && range.substring(0, 4) == "xsd:") ? range.substring(4) : "string";
 	var html = "<span class='range-input range-input-boxedliteral dch'>";
 	html += "<select class='range-box-types'>";
 	for(var i in boxtypes){
 		var sel = (range && range.length && range == i ? " selected" : "");
-		html += "<option class='range-box-type' value='" + i + "'" + sel + ">" + boxtypes[i].label + "</option>";;
+		var label = (typeof(boxtypes[i]["rdfs:label"]) != "undefined" ? boxtypes[i]["rdfs:label"].data : i);
+		html += "<option class='range-box-type' value='" + i + "'" + sel + ">" + label + "</option>";;
 	}
 	html += "</select>";
 	html += "<span class='boxed-units'>Units: " + "<input type='text' value='" + units + "' class='xsdunits'></span>";
