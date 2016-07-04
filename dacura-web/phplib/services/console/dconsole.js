@@ -1324,7 +1324,6 @@ dconsole.scanPage = function(context){
 
 /* contacts the server and resets various values in response to context switches or state changes */
 dconsole.reload = function(context){
-	context = (typeof context == "object" ? context : {});
 	xhr = {};
 	xhr.url = dacura.params.apiurl + "console/reload";
 	xhr.xhrFields = {
@@ -1335,7 +1334,8 @@ dconsole.reload = function(context){
 		jQuery('body').append(response);
 		//dconsole.mode = "menu";
 		dconsole.clear();
-		dconsole.showUserOptions(context.mode);
+		var mode = (typeof context == "object" && typeof context.mode == "string" ? context.mode : "data");
+		dconsole.showUserOptions(mode);
 		if(typeof context == "object"){
 			if(typeof context.ontology == "string"){
 				delete(dconsole.loaded_ontologies[dconsole.current_ontology.id]);

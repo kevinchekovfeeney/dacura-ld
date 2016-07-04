@@ -25,13 +25,18 @@ if(typeof dacura.params.jslibs == "object" && dacura.params.jslibs.length > 0){
 }
 
 jQuery(document).ready(function(){
+	function launchConsole(){
+		dacura.params = <?=json_encode($params)?>;
+		dconsole.init();
+	}
+	
 	function deferUntilLibsLoaded(method) {
     	if (dconsole && dconsole.init)
         	method();
     	else
         	setTimeout(function() { deferUntilLibsLoaded(method) }, 50);
 	}
-	deferUntilLibsLoaded(dconsole.init);
+	deferUntilLibsLoaded(launcConsole);
 });
 
 </script>
