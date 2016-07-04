@@ -103,11 +103,7 @@ FrameViewer.prototype.draw = function(frames, mode){
     this.mode = mode;
     this.frames = frames;
     $('#ldo-frame-contents').remove();
-    if(mode=="create"){
-        var parent = document.getElementById("ldo-create");
-    }else{
-        var parent = document.getElementById("ldo-contents");
-    }
+    var parent = document.getElementById(this.target);
     var container = document.createElement("div");
     container.setAttribute('id', "ldo-frame-contents");
     gensym = dacura.frame.Gensym("query");

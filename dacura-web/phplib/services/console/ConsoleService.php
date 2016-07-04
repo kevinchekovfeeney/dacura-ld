@@ -104,7 +104,7 @@ class ConsoleService extends LdService {
 	
 	function loadDataContext(&$context, LdDacuraServer &$dacura_server, DacuraUser $u){
 		if($context['collection'] == "seshat"){
-			$context['type'] = $dacura_server->nsres->expand("seshat:Polity");
+			//$context['type'] = $dacura_server->expandNS("seshat:Polity");
 		}		
 	}
 	
@@ -160,6 +160,7 @@ class ConsoleService extends LdService {
 		$params['jslibs'][] = $this->get_service_script_url("dontology.js");
 		$params['jslibs'][] = $this->get_service_script_url("jslib/rvo.js", "ld");
 		$params['jslibs'][] = $this->get_service_script_url("jslib/ldgraphresult.js", "ld");
+		$params['jslibs'][] = $this->get_service_script_url("dacura.frame.js", "candidate");
 		$params['jslibs'][] = $this->get_service_script_url("jslib/ldo.js", "ld");
 		$params['logouturl'] = $this->get_service_url("login", array("logout"));
 		$params['dacuraurl'] = $this->durl();
