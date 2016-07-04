@@ -726,7 +726,7 @@ dconsole.getEntityTypeSelectorHTML = function(){
 		}
 		else {
 			if(typeof dacura.params.collection_contents.entity_classes[i] == "object"){
-				if(urlFragment(dacura.params.collection_contents.entity_classes[i]['class']) != "Nothing")){
+				if(urlFragment(dacura.params.collection_contents.entity_classes[i]['class']) == "Nothing"){
 					continue;
 				}
 				if(typeof dacura.params.collection_contents.entity_classes[i].label == "object"){
