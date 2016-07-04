@@ -1,3 +1,6 @@
+var script = document.createElement("script");
+script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
+document.body.appendChild(script);
 
 dacura.frame = {};
 dacura.frame.api = {};
@@ -34,12 +37,12 @@ function FrameViewer(cls, target, pconfig) {
 
   console.log('script loaded');
 }*/
-$('document').ready(function(){
-
-  var script = document.createElement("script");
-  script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
-  document.body.appendChild(script);
-});
+//$('document').ready(function(){
+//
+//var script = document.createElement("script");
+//script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";//&callback=createMap";
+//document.body.appendChild(script);
+//});
 
 
 //global variables for maps use
@@ -47,16 +50,22 @@ var marker = null;
 var position;
 var longitudeId, latitudeId; 
 
-function initMap(mode) {     
-     var myLatlng = {lat: -25.363, lng: 131.044};
-     var mapProp = {
+function initMap(mode, latitude, longitude) {
+    map = new google.maps.Map(document.getElementById('googleMap'), {
+          center: {lat: latitude, lng: longitude},
+          zoom: 8
+        });
+    google.maps.event.trigger(map, 'resize');
+    //return;
+    /*var myLatlng = {lat: -25.363, lng: 131.044};
+    var mapProp = {
       center:myLatlng,
       zoom: 8,
       mapTypeId: google.maps.MapTypeId.ROADMAP
     };
     
     var map=new google.maps.Map(document.getElementById("googleMap"), mapProp);
-
+    */
     if(mode == "create"){   
         google.maps.event.addListener(map, 'click', function(event) {
                 position = event.latLng;
@@ -64,11 +73,13 @@ function initMap(mode) {
                     placeMarker(position);
                 else{
                     marker.setPosition(position);   
-                }        
-               /* var long = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#longitude");
+                }
+                console.log(marker.getPosition().lat());
+                console.log(marker.getPosition().lng());
+                var long = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#longitude']").next().children("input")[0];
                 long.value = marker.getPosition().lng();
-                var lat = document.getElementById("http://dacura.cs.tcd.ie/data/seshattiny#latitude");
-                lat.value = marker.getPosition().lat();*/
+                var lat = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#latitude']").next().children("input")[0];
+                lat.value = marker.getPosition().lat();
             });
     }
     function placeMarker(location) {
@@ -79,10 +90,9 @@ function initMap(mode) {
     }
 }
 
-function createMap(jQueryObject, mode){
-    jQueryObject.next().append('<div id="googleMap" style="width:80%;height:380px;margin-top:5%;margin-bottom:5%"></div>');
-    initMap(mode);  
-
+function createMap(jQueryObject, mode, latitude, longitude){
+    jQueryObject.next().append('<div id="googleMap" style="width:100%;height:380px;margin-top:5%;margin-bottom:5%;display:block;"></div>');
+    initMap(mode, latitude, longitude);
 }
 function deleteMap(){
     marker = null;
@@ -93,7 +103,6 @@ FrameViewer.prototype.draw = function(frames, mode){
     this.mode = mode;
     this.frames = frames;
     $('#ldo-frame-contents').remove();
-
     if(mode=="create"){
         var parent = document.getElementById("ldo-create");
     }else{
@@ -104,25 +113,45 @@ FrameViewer.prototype.draw = function(frames, mode){
     gensym = dacura.frame.Gensym("query");
     res = dacura.frame.frameGenerator(frames, container, gensym, mode);
     parent.appendChild(res);
-    if(this.cls == "http://dacura.cs.tcd.ie/data/seshattiny#Polity")
-       dacura.frame.insertWidgets(mode);
-    else
-        marker = null; 
+    if(this.cls == "http://dacura.cs.tcd.ie/data/seshattiny#Polity"){
+        //this is super-hacky for demo purposes
+        latitude = 52;
+        longitude = -1;
+        for(var i=0;i<this.frames.length;i++){
+            if(this.frames[i].property == "http://dacura.cs.tcd.ie/data/seshattiny#capitalCityLocation"){
+                for(var j=0;j<this.frames[i].frame.length;j++){
+                    if(this.frames[i].frame[j].property == "http://dacura.cs.tcd.ie/data/seshattiny#longitude"){
+                        if(typeof this.frames[i].frame[j].value != "undefined"){
+                            longitude = parseInt(this.frames[i].frame[j].value.data);
+                        }
+                    }else if(this.frames[i].frame[j].property == "http://dacura.cs.tcd.ie/data/seshattiny#latitude"){
+                        if(typeof this.frames[i].frame[j].value != "undefined"){
+                            latitude = parseInt(this.frames[i].frame[j].value.data);
+                        }
+                    }
+                }
+                console.log(this.frames[i].frame);
+            }
+        }
+        console.log(typeof latitude);
+        console.log(typeof longitude);
+        dacura.frame.insertWidgets(mode, latitude, longitude);
+    }else{
+        marker = null;
+    }
     return;
 };
 
 FrameViewer.prototype.extract = function () {
     var y = dacura.frame.extractionConverter(this.frames, this.cls);
-    console.log(y);
     return y;
 }
 
-dacura.frame.insertWidgets = function (mode) {
+dacura.frame.insertWidgets = function (mode, latitude, longitude) {
     //this will go through the generated frame and insert complex widgets where necessary
     //shim for now, just adds in the map
     var x = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#capitalCityLocation']");
-
-    createMap(x, mode);
+    createMap(x, mode, latitude, longitude);
     return;
 }
 
@@ -233,10 +262,11 @@ dacura.frame.bind = function(obj, prop, elt){
 }
 
 dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
-    //console.log(JSON.stringify(frame));
+    console.log(JSON.stringify(frame));
     if (frame.constructor == Array) {
         for (var i = 0; i < frame.length; i++) {
             var elt = frame[i];
+
             if (elt.type == "objectProperty" || elt.type == "datatypeProperty") {
                 //create container
                 var contentDiv = document.createElement("div");
@@ -253,27 +283,34 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                 labelDiv.setAttribute('class', 'property-label');
                 if (elt.label) {
                     var label = elt.label.data; // {'data' : someDataHere, 'type' : SomeTyping}
-                    var textnode = document.createTextNode(label + ':');
+                    var textnode = document.createTextNode(label + ': ');
                 } else {
                     var textnode = document.createTextNode(elt.property + ':');
                 }
                 labelDiv.appendChild(textnode);
                 labelDiv.setAttribute('data-property', elt.property);
                 contentDiv.appendChild(labelDiv);
-
                 //create right hand side
-                if (elt.type == 'objectProperty') {
+                if (elt.type == 'objectProperty' && elt.frame != "") {
                     var subframe = elt.frame;
-                    var subframeDiv = document.createElement("div");
-                    subframeDiv.setAttribute('class', 'embedded-object');
-                    dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
-                    contentDiv.appendChild(subframeDiv);
-                } else if (elt.type == 'datatypeProperty') {
+                    //if(elt.frame == ""){
+                     //   alert("empty frame");
+
+                   // }else{
+                        var subframeDiv = document.createElement("div");
+                        subframeDiv.setAttribute('class', 'embedded-object');
+                        dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
+                        contentDiv.appendChild(subframeDiv);
+                   // }
+                    
+                } else if (elt.type == 'datatypeProperty' || (elt.type == 'objectProperty' && elt.frame == "") ) {
                     var inputDiv = document.createElement("div");
                     inputDiv.setAttribute('class', 'property-value');
                     var input = dacura.frame.inputSelector(mode);
                     var ty = dacura.frame.typeConvert(elt.range);
-                    input.setAttribute('type', ty);
+                    inputDiv.setAttribute('id', elt.range);
+
+                    
                     if(mode =="create"){
                         dacura.frame.bind(elt, "contents", input);
                         elt.contents = elt.label.data;
@@ -287,9 +324,25 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                     }
                     inputDiv.appendChild(input);
                     contentDiv.appendChild(inputDiv);
+                    if(ty == "text" || ty == "checkbox")
+                        input.setAttribute('type', ty);
+                    else if(ty == "select"){
+                         var select = document.createElement( 'select' );
+                         var option;
+                         var inputdata = "A.C.||B.C.";
+
+                        inputdata.split( '||' ).forEach(function( item ) {
+                            option = document.createElement( 'option' );
+                            option.value = option.textContent =   item;
+                            select.appendChild( option );
+                        });
+                            inputDiv.appendChild(select);
+                    }
+                    
                 } else {
                     alert("Impossible: must be either an object or datatype property.");
                 }
+
                 obj.appendChild(contentDiv);
             } else if (elt.type == 'failure') {
                 //don't think we should hit this, but check again
@@ -423,6 +476,10 @@ dacura.frame.typeConvert = function (ty) {
             return 'checkbox';
         case "http://www.w3.org/2000/01/rdf-schema#Literal" :
             return 'text';
+        case "http://www.w3.org/2001/XMLSchema#gYear" :
+            return 'select';
+        case "http://dacura.scss.tcd.ie/ontology/seshat#Duration":
+            return 'duration';
         default:
             return 'text';
     }
