@@ -100,6 +100,7 @@ function deleteMap(){
 }
 
 FrameViewer.prototype.draw = function(frames, mode){
+
     this.mode = mode;
     this.frames = frames;
     $('#ldo-frame-contents').remove();
@@ -133,8 +134,8 @@ FrameViewer.prototype.draw = function(frames, mode){
                 console.log(this.frames[i].frame);
             }
         }
-        console.log(typeof latitude);
-        console.log(typeof longitude);
+        //console.log(typeof latitude);
+        //console.log(typeof longitude);
         dacura.frame.insertWidgets(mode, latitude, longitude);
     }else{
         marker = null;
@@ -216,6 +217,7 @@ dacura.frame.subframeExtraction = function(frameArray, cls){
 }
 
 dacura.frame.draw = function (cls, resultobj, pconf, target) {
+        
     //var framestr = resultobj.result;
     var frame = resultobj;//JSON.parse(framestr);
     var obj = document.createElement("div");
@@ -261,8 +263,43 @@ dacura.frame.bind = function(obj, prop, elt){
     });
 }
 
+
+createSelectBox = function(inputdata){
+    var select = document.createElement( 'select' );
+                         var option;
+                         var inp = "A.C.||B.C.";
+                        inp.split( '||' ).forEach(function( item ) {
+                            option = document.createElement( 'option' );
+                            option.value = option.textContent =   item;
+                            select.appendChild( option );
+                        });
+    return select;
+}
+
+
+createInput = function(elt, contentDiv, mode, inputDiv){
+        inputDiv.setAttribute('class', 'property-value');
+        var input = dacura.frame.inputSelector(mode);
+        var ty = dacura.frame.typeConvert(elt.range);
+        inputDiv.setAttribute('id', elt.range);
+        if(mode =="create"){
+            dacura.frame.bind(elt, "contents", input);
+            elt.contents = elt.label.data;
+        }else{
+            test = elt.label.data;
+            if(typeof elt.value != "undefined"){
+                test = elt.value.data;
+            }
+            var value = document.createTextNode(test);
+            input.appendChild(value);
+        }
+        return input;
+
+}
+
 dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
-    console.log(JSON.stringify(frame));
+    //console.log(JSON.stringify(frame));
+
     if (frame.constructor == Array) {
         for (var i = 0; i < frame.length; i++) {
             var elt = frame[i];
@@ -270,6 +307,8 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
             if (elt.type == "objectProperty" || elt.type == "datatypeProperty") {
                 //create container
                 var contentDiv = document.createElement("div");
+                contentDiv.setAttribute('id', "content-div");
+
                 if (elt.domain) {
                     contentDiv.setAttribute('data-class', elt.domain);
                 } else {
@@ -290,27 +329,27 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                 labelDiv.appendChild(textnode);
                 labelDiv.setAttribute('data-property', elt.property);
                 contentDiv.appendChild(labelDiv);
-                //create right hand side
-                if (elt.type == 'objectProperty' && elt.frame != "") {
-                    var subframe = elt.frame;
-                    //if(elt.frame == ""){
-                     //   alert("empty frame");
 
-                   // }else{
-                        var subframeDiv = document.createElement("div");
-                        subframeDiv.setAttribute('class', 'embedded-object');
-                        dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
-                        contentDiv.appendChild(subframeDiv);
-                   // }
+
+
+
+
+                //create right hand side- BEGIN OF INPUTS
+                if (elt.type == 'objectProperty' && elt.frame != "") {
+                  
+                    var subframe = elt.frame;
+                    var subframeDiv = document.createElement("div");
+                    subframeDiv.setAttribute('class', 'embedded-object');
+                    dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
+                    contentDiv.appendChild(subframeDiv);
                     
-                } else if (elt.type == 'datatypeProperty' || (elt.type == 'objectProperty' && elt.frame == "") ) {
+                } else if (elt.type == 'datatypeProperty' || (elt.type == 'objectProperty' && elt.frame == "")) {
+                  
                     var inputDiv = document.createElement("div");
                     inputDiv.setAttribute('class', 'property-value');
                     var input = dacura.frame.inputSelector(mode);
                     var ty = dacura.frame.typeConvert(elt.range);
                     inputDiv.setAttribute('id', elt.range);
-
-                    
                     if(mode =="create"){
                         dacura.frame.bind(elt, "contents", input);
                         elt.contents = elt.label.data;
@@ -321,40 +360,52 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                         }
                         var value = document.createTextNode(test);
                         input.appendChild(value);
-                    }
+                    } 
                     inputDiv.appendChild(input);
                     contentDiv.appendChild(inputDiv);
+                    var ty = dacura.frame.typeConvert(elt.range);
+                    var inputdata = "A.C.||B.C.";
                     if(ty == "text" || ty == "checkbox")
-                        input.setAttribute('type', ty);
+                       input.setAttribute('type', ty);
                     else if(ty == "select"){
-                         var select = document.createElement( 'select' );
-                         var option;
-                         var inputdata = "A.C.||B.C.";
+                        var select = createSelectBox(inputdata);
+                        inputDiv.appendChild(select);
+                    }else if(ty == "duration"){
+                        var select = createSelectBox(inputdata);
+                        var input1 = createInput(elt, contentDiv, mode, inputDiv);                         
+                        inputDiv.appendChild(input1);
+                        inputDiv.appendChild(select);
 
-                        inputdata.split( '||' ).forEach(function( item ) {
-                            option = document.createElement( 'option' );
-                            option.value = option.textContent =   item;
-                            select.appendChild( option );
-                        });
-                            inputDiv.appendChild(select);
+                        var input2 = createInput(elt, contentDiv, mode, inputDiv);                         
+                        var select2 = createSelectBox(inputdata);
+
+                        inputDiv.appendChild(input);
+                        inputDiv.appendChild(select2);
+                        contentDiv.appendChild(inputDiv);
                     }
-                    
-                } else {
+                }/*else if(elt.type == 'objectProperty' && elt.frame == "" ){
+                    if(elt.property == "http://dacura.scss.tcd.ie/ontology/seshat#precedingQuasipolity" || elt.property == "http://dacura.scss.tcd.ie/ontology/seshat#succeedingQuasipolity"){
+                    //add code here. use the api to get the list of polities for succeding and preceding polities
+
+
+                    }
+                }*/
+            } else {
                     alert("Impossible: must be either an object or datatype property.");
-                }
+              }
 
                 obj.appendChild(contentDiv);
-            } else if (elt.type == 'failure') {
+            /*} else*/ if (elt.type == 'failure') {
                 //don't think we should hit this, but check again
                 //alert(elt.message + ' class :' + elt.domain);
                 alert(JSON.stringify(elt, null, 4));
                 var failnode = document.createTextNode(elt.message);
                 obj.appendChild(failnode);
-            } else {
+            } //else {
                 //console.log("Element - restriction");
                 //console.log(elt);
                 //alert(JSON.stringify(elt,null,4));
-            }
+            //}
         }
     } else if (frame.constructor == Object && frame.type == 'entity' || frame.type == 'thing') {
         // we are an entity
@@ -384,6 +435,7 @@ dacura.frame.getId = function (obj, gs) {
 };
 
 dacura.frame.entityExtractor = function (target) {
+    alert("entity extractor");
     var gs = dacura.frame.Gensym("_:oid");
     var frame = $(target);
     var id = dacura.frame.getId(frame, gs);
