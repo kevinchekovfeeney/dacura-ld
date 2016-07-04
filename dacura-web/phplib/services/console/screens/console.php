@@ -25,13 +25,7 @@ if(typeof dacura.params.jslibs == "object" && dacura.params.jslibs.length > 0){
 }
 
 jQuery(document).ready(function(){
-	function deferUntilLibsLoaded(method) {
-    	if (dconsole)
-        	method();
-    	else
-        	setTimeout(function() { deferUntilLibsLoaded(method) }, 50);
-	}
-	deferUntilLibsLoaded(dconsole.init);
+	dconsole.init();
 });
 
 </script>
