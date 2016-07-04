@@ -231,11 +231,11 @@ seshatscraper.displayFacts = function (){
 		$( this ).removeClass( "seshatFactSelected" );
 	});
 	//write into the results pane..
-	seshatscraper.displayPageStats(stats);
 	seshatscraper.error_ids = error_sequence;
 };
 
-seshatscrapr.loadFact = function(fid){
+seshatscraper.loadFact = function(fid){
+	seshatscraper.displayPageStats(stats);
 	jpr(this.pageFacts(fid));
 } 
 
