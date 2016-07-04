@@ -192,7 +192,7 @@ dconsole.setDataMode = function(){
  	dconsole.ontologyMode = false;	
 	jQuery('#dacura-console .console-context .entitytype').html(this.getEntityTypeSelectorHTML());
 	jQuery('#dacura-console select.console-entity-type').selectmenu({
-		  change: dconsole.changeEntityType
+		  change: dconsole.changeEntityType, width: 180
 	});
 }
 
@@ -201,7 +201,7 @@ dconsole.setOntologyMode = function(){
 	dconsole.clearContext();
 	jQuery('#dacura-console .console-context .entitytype').html(this.getOntologySelectorHTML());
 	jQuery('#dacura-console select.console-ontology').selectmenu({
-		  change: dconsole.changeOntology
+		  change: dconsole.changeOntology, width: 180
 	});
 }
 
@@ -356,14 +356,14 @@ dconsole.loadEntityType = function(cls) {
 	}
 	jQuery('#dacura-console .console-context .entities').html(this.getEntitySelectorHTML(cls, clsname));
 	jQuery('#dacura-console .console-context select.console-entity-list').selectmenu({
-	  change: dconsole.changeEntityList
+	  change: dconsole.changeEntityList, width: 180
 	});
 	jQuery('#dacura-console .createentity').show();
 	var lf = function(frame){
 		dconsole.addCreateFrame(cls, frame);
 		jQuery('#dacura-console .console-context .properties').html(dconsole.getChooseCandidatePropertiesHTML(frame, "", true));
 		jQuery('#dacura-console .console-context .properties select.console-properties').selectmenu({
-			  change: dconsole.changeProperty
+			  change: dconsole.changeProperty, width: 180
 		});
 	}			  
 	dconsole.getEmptyFrame(cls, this.menu_pconfig, lf);
@@ -496,7 +496,7 @@ dconsole.loadCandidate = function(entid, frame){
 	var val = jQuery('#dacura-console .console-context .properties select.console-properties').val();
 	jQuery('#dacura-console .console-context .properties').html(dconsole.getChooseCandidatePropertiesHTML(frame, val));
 	jQuery('#dacura-console .console-context .properties select.console-properties').selectmenu({
-		  change: dconsole.changeProperty
+		  change: dconsole.changeProperty, width: 180
 	});	
 }
 
@@ -538,12 +538,12 @@ dconsole.loadOntologyDetails = function(ont, context){
 	var cval = (context && typeof context['class'] == "string") ? context['class'] : "";
 	jQuery('#dacura-console .console-context .entities').html(dconsole.getClassSelectorHTML(ont, cval));
 	jQuery('#dacura-console .console-context select.console-class-list').selectmenu({
-		  change: dconsole.changeClass
+		  change: dconsole.changeClass, width: 180
 	});
 	var pval = (context && typeof context['property'] == "string") ? context['property'] : "";
 	jQuery('#dacura-console .console-context .properties').html(dconsole.getPropertiesSelectorHTML(ont, pval));
 	jQuery('#dacura-console .console-context select.console-property-list').selectmenu({
-		  change: dconsole.changeModelProperty
+		  change: dconsole.changeModelProperty, width: 180
 	});
 	if(cval.length){
 		dconsole.changeClass();

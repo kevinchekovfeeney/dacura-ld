@@ -109,7 +109,6 @@ class ConsoleService extends LdService {
 	}
 	
 	function getCollectionIDForURL($url, $available_contexts, $u){
-		return "seshat";
 		foreach(array_keys($available_contexts) as $k){
 			if($k == "all" && !$u) continue;
 			if(strpos($url, $k) !== false){
