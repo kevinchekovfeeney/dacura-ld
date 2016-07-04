@@ -1,8 +1,6 @@
 if(typeof dconsole == "object" && typeof dconsole.menu_pconfig == "object"){
 	throw new Error("loading console twice");
 }
-dacura.params = <?=json_encode($params)?>;
-
 var dconsole = {
 	mode: "menu",
 	loaded_properties: {},
