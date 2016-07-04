@@ -1,6 +1,3 @@
-if(typeof dconsole == "object" && typeof dconsole.menu_pconfig == "object"){
-	throw new Error("loading console twice");
-}
 var dconsole = {
 	mode: "menu",
 	loaded_properties: {},
@@ -726,9 +723,6 @@ dconsole.getEntityTypeSelectorHTML = function(){
 		}
 		else {
 			if(typeof dacura.params.collection_contents.entity_classes[i] == "object"){
-				if(urlFragment(dacura.params.collection_contents.entity_classes[i]['class']) == "Nothing"){
-					continue;
-				}
 				if(typeof dacura.params.collection_contents.entity_classes[i].label == "object"){
 					var label = dacura.params.collection_contents.entity_classes[i].label.data;
 				}

@@ -39,7 +39,7 @@ if(typeof dacura_console_loaded == "undefined"){ //don't load script twice
     	        	setTimeout(function() { deferUntilLibsLoaded(method) }, 50);
     		}
     		var func = function(){
-				jQuery('body').append(xhr.responseText);    	
+    			jQuery('body').append(xhr.responseText);    	
         	}
     		deferUntilLibsLoaded(func);
     	};

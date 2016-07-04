@@ -28,14 +28,16 @@ jQuery(document).ready(function(){
 	function launchConsole(){
 		dconsole.init();
 	}
-	
-	function deferUntilLibsLoaded(method) {
-    	if (dconsole && dconsole.init)
+
+	function deferUntilConsoleLoaded(method) {
+    	if (typeof dconsole != "undefined"){
         	method();
-    	else
-        	setTimeout(function() { deferUntilLibsLoaded(method) }, 50);
+    	}
+    	else {
+        	setTimeout(function() { deferUntilConsoleLoaded(method) }, 50);
+    	}
 	}
-	deferUntilLibsLoaded(launchConsole);
+	deferUntilConsoleLoaded(launchConsole);
 });
 
 </script>

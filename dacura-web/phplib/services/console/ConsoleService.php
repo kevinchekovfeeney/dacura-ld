@@ -157,10 +157,10 @@ class ConsoleService extends LdService {
 	function getConsoleParams($dacura_server, DacuraUser $u){
 		$params = array();
 		$params['jslibs'] = array();
+		$params['jslibs'][] = $this->get_service_script_url("dconsole.js");
 		$params['jslibs'][] = $this->get_service_script_url("dacura.utils.js", "core");
 		$params['jslibs'][] = $this->get_service_script_url("jslib/ldlibs.js", "ld");
 		$params['jslibs'][] = $this->get_service_script_url("dontology.js");
-		$params['jslibs'][] = $this->get_service_script_url("dconsole.js");
 		$params['jslibs'][] = $this->get_service_script_url("dacura.frame.js", "candidate");
 		$params['logouturl'] = $this->get_service_url("login", array("logout"));
 		$params['dacuraurl'] = $this->durl();
