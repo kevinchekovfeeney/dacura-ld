@@ -762,6 +762,25 @@ dOntology.prototype.getCreateClassHTML = function(){
 	return html;
 }
 
+dOntology.prototype.getViewClassHTML = function(cls){
+	var html = "<div class='console-view-mode console-view-class'>";
+	html += this.getReadOnlyClassHTML(cls);
+	html += "</div>";
+	html += "<div class='console-edit-mode dch console-edit-class'>";
+	html += this.getUpdateClassTitle(cls);
+	html += this.getClassHeadline(cls);
+	html += "<div class='console-class-extra'>"
+	html += this.getEnumeratedTypePicker(cls); 
+	html += this.getParentClassSelect(cls); 
+	html += this.getParentClassAddHTML(cls);
+	html += this.getOtherAssertionsViewer(cls, "edit");
+	html += "</div>";
+	html += this.getUpdateClassButtons(); 
+	html += "</div>";
+	return html;
+}
+
+
 dOntology.prototype.getCreateClassTitle = function(){
 	return "<div class='console-extra-title'>Add new class to " + this.id + " " + this.getHelpFieldHTML("new_class") + "</div>";
 }
@@ -844,23 +863,6 @@ dOntology.prototype.getReadOnlyClassHTML = function(cls){
 	return html;
 }
 
-dOntology.prototype.getViewClassHTML = function(cls){
-	var html = "<div class='console-view-mode console-view-class'>";
-	html += this.getReadOnlyClassHTML(cls);
-	html += "</div>";
-	html += "<div class='console-edit-mode dch console-edit-class'>";
-	html += this.getUpdateClassTitle(cls);
-	html += this.getClassHeadline(cls);
-	html += "<div class='console-class-extra'>"
-	html += this.getEnumeratedTypePicker(cls); 
-	html += this.getParentClassSelect(cls); 
-	html += this.getParentClassAddHTML(cls);
-	html += this.getOtherAssertionsViewer(cls, "edit");
-	html += "</div>";
-	html += this.getUpdateClassButtons(); 
-	html += "</div>";
-	return html;
-}
 
 dOntology.prototype.getClassHeadline = function(cls){
 	var html = "<div class='class-headline'>";
@@ -1591,13 +1593,13 @@ dOntology.prototype.initClassScreen = function(){
 dOntology.prototype.initUpdateClass = function(update_callback, delete_callback){
 	var self = this;
 	self.initClassScreen();
-	jQuery("#dacura-console .console-extra button.update-class").button({icons: {primary: "ui-icon-disk"}}).click(function(){
+	jQuery("#dacura-console .console-extra-buttons button.update-class").button({icons: {primary: "ui-icon-disk"}}).click(function(){
 		self.updateClass(update_callback);
 	});
-	jQuery("#dacura-console .console-extra button.test-update-class").button({icons: {primary: "dacura-help-button-icon"}}).click(function(){
+	jQuery("#dacura-console .console-extra-buttons button.test-update-class").button({icons: {primary: "dacura-help-button-icon"}}).click(function(){
 		self.updateClass(update_callback, true);
 	});
-	jQuery("#dacura-console .console-extra button.delete-class").button({icons: {primary: "ui-icon-trash"}}).click(function(){
+	jQuery("#dacura-console .console-extra-buttons button.delete-class").button({icons: {primary: "ui-icon-trash"}}).click(function(){
 		self.deleteClass(delete_callback);
 	});
 }

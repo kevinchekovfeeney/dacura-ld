@@ -832,6 +832,14 @@ dconsole.getCreateClassHTML = function(){
 	return html;
 };
 
+dconsole.getViewClassHTML = function(cls){
+	var html = "<div class='console-extra-screen console-view-class'>";
+	html += this.current_ontology.getViewClassHTML(cls);	
+	html += "</div>";
+	return html;
+};
+
+
 dconsole.getCreatePropertyHTML = function(){
 	var html = "<div class='console-extra-screen console-create-property'>";
 	html += this.current_ontology.getCreatePropertyHTML();
@@ -839,12 +847,6 @@ dconsole.getCreatePropertyHTML = function(){
 	return html;
 };
 
-dconsole.getViewClassHTML = function(cls){
-	var html = "<div class='console-extra-screen console-create-class'>";
-	html += this.current_ontology.getViewClassHTML(cls);	
-	html += "</div>";
-	return html;
-};
 
 dconsole.getViewModelPropertyHTML = function(prop){
 	var html = "<div class='console-extra-screen console-view-model-property'>";
@@ -1324,9 +1326,11 @@ dconsole.updateOntology = function(onturl, rdf, meta, options, pconfig, test, ca
 				dconsole.reload(pconfig.context);
 			}
 			var gtore = dconsole.getGraphsToRedeploy(ontid);
+			var i = size(gtore);
 			for(var gurl in gtore){
 				var cfunc = function(){
-					alert(gurl);
+					//alert(gurl);
+					i--;
 				};
 				dconsole.updateGraph(gurl, gtore[gurl], false, params.deploy_options, pconfig, false, cfunc, failcallback);
 			}		
