@@ -270,12 +270,8 @@ dacura.frame.bind = function(obj, prop, elt){
 }
 
 dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
-<<<<<<< HEAD
     //this should probably insert the data into the DOM for redundancy and ease of access
     //console.log(JSON.stringify(frame));
-=======
-    console.log(JSON.stringify(frame));
->>>>>>> 3b1becae52cddbd5141bea264faff46d4e00f1a6
     if (frame.constructor == Array) {
         for (var i = 0; i < frame.length; i++) {
             var elt = frame[i];
