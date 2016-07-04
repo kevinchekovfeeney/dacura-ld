@@ -727,11 +727,12 @@ class LdDacuraServer extends DacuraServer {
 		}	
 		if(!($nldo->validate($editmode, $this))){
 			return $ar->failure($nldo->errcode, "Format Error", "$ldo_type $editmode sent to API had formatting errors. ".$nldo->errmsg);				
-		}						
+		}
 		$ldoupdate = new LDOUpdate(false, $oldo);
 		if(!$ldoupdate->loadFromAPI($nldo, $update_meta, $editmode, $this)){
 			return $ar->failure($ldoupdate->errcode, "Protocol Error", "Failed to load the update command from the API. ". $ldoupdate->errmsg);
 		}
+		//opr($ldoupdate->changed->ldprops);
 		if($ldoupdate->nodelta()){
 			return $ar->failure(409, "No Changes", "The submitted version is identical to the current version.");
 		}

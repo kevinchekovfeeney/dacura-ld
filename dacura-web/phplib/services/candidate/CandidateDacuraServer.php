@@ -42,6 +42,18 @@ class CandidateDacuraServer extends LdDacuraServer {
 		return ($graph = $this->getGraph('main')) ? $graph : $this->failure_result("No default graph found in collection configuration.", 500);
 	}
 	
+	function getGraphAPIEndpoint($gid){
+		return $this->service->get_service_url("graph", array($gid), "api");
+	}
+	
+	function getOntologyAPIEndpoint($ontid, $ontc, $ontv = false){
+		$url = $this->service->get_service_url("ontology", array($ontid), "api", $ontc);
+		if($ontv){ 
+			$url .= "?version=$ontv";
+		}
+		return $url;		
+	}
+	
 	/**
 	 * Creates a frame for the given class by calling the DCS frame function
 	 * @param string $cls the name of the class in question
@@ -54,14 +66,39 @@ class CandidateDacuraServer extends LdDacuraServer {
 		}
 		return $this->graphman->invokeDCS($mg->schemaGname(), $cls);
 	}
+	
+	function getPropertyFrame($cls, $prop){
+		$cls = ($expanded = $this->nsres->expand($cls)) ? $expanded : $cls;
+		if(!($mg = $this->getMainGraph())){
+			return false;
+		}
+		return $this->graphman->invokeDCS($mg->schemaGname(), $cls, $prop);		
+	}
 
+	function getFilledPropertyFrame($candid, $prop){
+		if(!($mg = $this->getMainGraph())){
+			return false;
+		}
+		if(!$cand = $this->loadLDO($candid, "candidate", $this->cid())){
+			return false;
+		}
+		$cls = $cand->getRDFType();
+		$ar = $this->graphman->invokeDCS($mg->schemaGname(), $cls, $prop);
+		if($ar->result){
+			if($this->fillPropertyFrame($ar->result, $cand)){
+				return $ar->success("accept");
+			}
+			return $ar->failure($this->errcode, "failed to generate filled frame for candidate $candid", $this->errmsg);
+		}
+		return $ar;
+	}
+	
 	/**
 	 * Creates a frame for the given class by calling the DCS frame function
 	 * @param string $cls the name of the class in question
 	 * @return DacuraResult the Dacura Result object incorporating the frame
 	 */
 	function getFilledFrame($candid){
-		$mg = $this->getMainGraph();
 		if(!($mg = $this->getMainGraph())){
 			return false;
 		}
@@ -72,9 +109,6 @@ class CandidateDacuraServer extends LdDacuraServer {
 		//$candurl = $this->service->my_url()."/$candid";
 		$ar = $this->graphman->invokeDCS($mg->schemaGname(), $cls);
 		if($ar->result){
-			if(!is_array($ar->result)){
-				$ar->result = json_decode($ar->result, true);
-			}
 			if($this->fillFrame($ar->result, $cand)){
 				return $ar->success("accept");				
 			}
@@ -112,6 +146,26 @@ class CandidateDacuraServer extends LdDacuraServer {
 		return true;
 	}
 	
+	function fillPropertyFrame(&$frame, Candidate $cand, $frag_id = false){
+		if($frag_id == false){
+			$frag_id = $cand->cwurl;
+		}
+		if($frame['type'] == "datatypeProperty"){
+			if(($vals = $cand->getPredicateValues($frag_id, $frame['property'])) !== false){
+				$frame['value'] = $vals;
+			}
+		}
+		elseif($frame['type'] == "objectProperty"){
+			if(($objs = $cand->getPredicateValues($frag_id, $frame['property'])) !== false){
+				foreach(array_keys($objs) as $oid){
+					$this->fillFrame($frame['frame'], $cand, $oid);
+				}
+				$frame['value'] = json_encode(array_keys($objs));
+			}
+		}
+		return true;
+	}
+	
 	/**
 	 * Asks the DCS service for the set of valid types as specified in the context schema for candidates
 	 * @see LdDacuraServer::getValidCandidateTypes()
@@ -122,9 +176,8 @@ class CandidateDacuraServer extends LdDacuraServer {
 			return false;
 		}
 		$ar = $this->graphman->invokeDCS($mg->schemaGname());
-		//opr($ar->result);
 		if($ar->is_accept()){
-			return json_decode($ar->result, true);
+			return $ar->result;
 		}
 		else {
 			return $this->failure_result($ar->msg_title." ".$ar->msg_body, $ar->errcode);

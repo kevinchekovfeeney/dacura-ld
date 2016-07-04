@@ -629,7 +629,7 @@ function urlToImport(url){
 		imp.collection = "all";
 	}
 	else {
-		imp.collection = meat.substring(0, meat.indexOf("/") + 1);
+		imp.collection = meat.substring(0, meat.indexOf("/"));
 	}
 	meat = meat.substring(meat.lastIndexOf("/")+1);
 	var bits = meat.split("?version=");

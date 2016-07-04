@@ -366,3 +366,28 @@ function getBestSupportedMimeType($mimeTypes = null, $acceptedTypes = FALSE) {
 	// no mime-type found
 	return null;
 }
+
+function isRemoteApiCall(){
+	global $dacura_server;
+	if(!isset($_SERVER['HTTP_ORIGIN'])){
+		return true;
+	}
+	$x = $_SERVER['HTTP_ORIGIN'];
+	if(substr($dacura_server->durl(true), 0, strlen($x)) == $x){
+		return false;
+	}
+	return true;
+}
+
+function writeRemoteAccessHeaders(){
+	header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
+	header("Access-Control-Max-Age: 1728000");
+	header('Access-Control-Allow-Headers: Accept, Accept-Encoding, Accept-Language, Host, Origin, Referer, Content-Type, Content-Length, Content-Range, Content-Disposition, Content-Description');
+	header("Access-Control-Allow-Credentials: true");
+	if(isset($_SERVER['HTTP_ORIGIN'])){
+		header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
+	}
+	else {
+		header("Access-Control-Allow-Origin: null");
+	}
+}

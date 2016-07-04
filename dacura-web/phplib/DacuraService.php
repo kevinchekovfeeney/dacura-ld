@@ -888,11 +888,11 @@ class DacuraService extends DacuraObject {
 	function get_service_url($servicen = false, $args = array(), $interface="html", $col_id = false){
 		$args_ext = (count($args) > 0) ? "/".implode("/", $args) : "";
 		$servicen = ($servicen ? $servicen : $this->servicename);
+		$api_bit = (($interface == $this->getSystemSetting('apistr') || $interface == "api") ? $this->getSystemSetting('apistr') ."/" : "");
 		if($servicen == 'login'){
-			return $this->durl()."login".$args_ext;
+			return $this->durl().$api_bit."login".$args_ext;
 		}
 		else {
-			$api_bit = ($interface == $this->getSystemSetting('apistr') ? $this->getSystemSetting('apistr') ."/" : "");
 			$col_id = $col_id ? $col_id : $this->cid();
 			if($col_id == "all"){
 				$col_bit = "";

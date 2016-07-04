@@ -85,6 +85,38 @@ function importLD(&$ldprops, $rules, $multigraph = false){
 	return $idmap;
 }
 
+//in update imports we only do expansion, not blank node substitution
+function importLDUpdate(&$ldprops, $rules, $multigraph = false){
+	$idmap = array();
+	if(!$multigraph){
+		foreach(array_keys($ldprops) as $s){
+			generateBNIDS($ldprops[$s], $idmap, $rules, true);
+		}
+		if(count($idmap) > 0){
+			$subs = array_keys($ldprops);
+			foreach($subs as $s){
+				$ldprops[$s] = updateLDOReferences($ldprops[$s], $idmap, $rules['cwurl']);
+			}
+		}
+		return $idmap;
+	}
+	else {
+		foreach($ldprops as $gid => $props){
+			foreach(array_keys($props) as $s){
+				generateBNIDS($ldprops[$gid][$s], $idmap, $rules, true);
+			}
+		}
+		if(count($idmap) > 0){
+			foreach($ldprops as $gid => $props){
+				foreach(array_keys($props) as $s){
+					$ldprops[$gid][$s] = updateLDOReferences($ldprops[$gid][$s], $idmap, $rules['cwurl']);
+				}
+			}
+		}		
+		return $idmap;
+	}
+}
+
 /** 
  * Generates ids for blank nodes and alters the structure
  * We do not expand the meta field and do not generate BNIDs for the top level (graphname) indices.
@@ -95,7 +127,7 @@ function importLD(&$ldprops, $rules, $multigraph = false){
  * @param array $rules rules for how the ids are generated 
  * @return boolean true if successful
  */
-function generateBNIDs(&$ldobj, &$idmap, $rules){
+function generateBNIDs(&$ldobj, &$idmap, $rules, $noreplace = false){
 	$nprops = array();
 	if(!is_array($ldobj)){
 		return false;
@@ -115,18 +147,23 @@ function generateBNIDs(&$ldobj, &$idmap, $rules){
 		elseif($pv->embeddedlist()){
 			$nprops[$p] = array();
 			foreach($v as $id => $obj){
-				if(isset($rules['replace_blank_ids']) && $rules['replace_blank_ids'] || isset($obj[$rules['demand_id_token']])){
+				if(!$noreplace && (isset($rules['replace_blank_ids']) && $rules['replace_blank_ids'] || (isset($rules['demand_id_token']) && isset($obj[$rules['demand_id_token']])))){
 					$nid = addAnonObj($obj, $nprops, $p, $idmap, $rules, $id);
-					generateBNIDs($nprops[$p][$nid], $idmap, $rules);
+					generateBNIDs($nprops[$p][$nid], $idmap, $rules, $noreplace);
 				}
 				else {
 					$nprops[$p][$id] = $obj;
-					generateBNIDs($nprops[$p][$id], $idmap, $rules);						
+					generateBNIDs($nprops[$p][$id], $idmap, $rules, $noreplace);						
 				}
 			}
 		}
 		elseif($pv->literal() && isset($rules['regularise_literals']) && $rules['regularise_literals']){
-			$nprops[$p] = literalToObjectLiteral($v);	
+			if($p != $rules['demand_id_token']){
+				$nprops[$p] = literalToObjectLiteral($v);	
+			}
+			else {
+				$nprops[$p] = $v;
+			}
 		}	
 		elseif($pv->objectliteral() && isset($rules['regularise_object_literals']) && $rules['regularise_object_literals']){
 			$nprops[$p] = $pv->regulariseObjectLiteral($v); 
@@ -328,6 +365,7 @@ function addAnonObj($obj, &$prop, $p, &$idmap, $rules, $oldid = false){
 		$prop[$p] = array();
 	}
 	$new_id = getNewBNIDForLDObj($obj, $idmap, $rules, $oldid);
+	
 	$prop[$p][$new_id] = $obj;
 	if($oldid && $oldid != $new_id){
 		unset($prop[$p][$oldid]);
@@ -346,6 +384,7 @@ function addAnonObj($obj, &$prop, $p, &$idmap, $rules, $oldid = false){
  */
 function addAnonSubject($obj, &$prop, &$idmap, $rules, $oldid = false){
 	$new_id = getNewBNIDForLDObj($obj, $idmap, $rules, $oldid);
+	
 	$prop[$new_id] = $obj;
 	if($oldid && $oldid != $new_id){
 		unset($prop[$oldid]);
@@ -393,11 +432,16 @@ function getNewBNIDForLDObj(&$obj, &$idmap, $rules, $oldid){
  * @return string the id of the new node.
  */
 function genid($bn = false, $rules = false, $oldid = false){
+	//echo "<P>bn is $bn, old is $oldid";
+	//opr($rules);
 	if($bn && substr($bn, 0, 2) == "_:"){
 		$bn = substr($bn, 2);
 	}
-	if($bn && !demandIDInvalid($bn, $rules)){
-		return $bn;
+	if($bn){
+		$inv = demandIDInvalid($bn, $rules);
+		if($bn && !$inv){
+			return $bn;
+		}
 	}
 	$idgenalgorithm = $rules && isset($rules['id_generator']) ? $rules['id_generator'] : "uniqid_base36";
 	return call_user_func($idgenalgorithm , isset($rules['extra_entropy']) && $rules['extra_entropy'], $oldid);
@@ -415,7 +459,7 @@ function demandIDInvalid($bn, $rules){
 	}
 	$min_id_length = isset($rules['mimimum_id_length']) ? $rules['mimimum_id_length'] : 1;
 	$max_id_length = isset($rules['maximum_id_length']) ? $rules['maximum_id_length'] : 40;
-	if(!ctype_alnum($bn) && strlen($bn) < $max_id_length ){
+	if(!ctype_alnum($bn)){
 		return "ID $bn contains invalid characters - only alphanumerics are allowed";
 	}
 	if(strlen($bn) < $min_id_length){

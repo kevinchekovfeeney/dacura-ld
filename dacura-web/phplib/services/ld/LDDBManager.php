@@ -123,8 +123,20 @@ class LDDBManager extends DBManager {
 			$i = 0;
 			foreach($wheres as $p => $v){
 				if($i++ > 0) $wsql .= " AND ";
-				$wsql .= "$p=?";
-				$params[] = $v;
+				if(is_array($v)){
+					$wsql .= "(";
+					$k = 0;
+					foreach($v as $entry){
+						if($k++ > 0) $wsql .= " OR ";
+						$wsql .= "$p=?";
+						$params[] = $entry;
+					}
+					$wsql .= ")";	
+				}
+				else {
+					$wsql .= "$p=?";
+					$params[] = $v;
+				}
 			}
 		}
 		if($wsql != ""){

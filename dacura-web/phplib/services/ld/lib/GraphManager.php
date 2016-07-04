@@ -102,13 +102,14 @@ class GraphManager extends DacuraController {
 	 * we call the entity function to retrieve the list of entity classes. 
 	 * @return DQSResult
 	 */
-	function invokeDCS($graphid, $clsname = false, $entid = false, $instance_graphid = false){
+	function invokeDCS($graphid, $clsname = false, $propid = false, $instance_graphid = false){
 		$args = array("schema" => $graphid);
 		$dqs_config = $this->getSystemSetting("dqs_service");
 		$dqsr = new DQSResult("invoking DQS class analysis");
-		if($entid){
-			$srvc = $dqs_config['entity_frame'];
-			$args['entity'] = $entid;			
+		if($propid){
+			$srvc = $dqs_config['property_frame'];
+			$args['class'] = $clsname;
+			$args['property'] = $propid;			
 		}elseif($clsname){
 			$srvc = $dqs_config['class_frame'];
 			$args['class'] = $clsname;
@@ -122,13 +123,12 @@ class GraphManager extends DacuraController {
 			$qstr .= $k."=".urlencode($v);
 		}
 		if($dqs_config['dumplast']){
-			$this->dumpDCSRequest($dqs_config['dumplast'], $srvc, $graphid, $clsname, $entid, $instance_graphid, $qstr);
+			$this->dumpDCSRequest($dqs_config['dumplast'], $srvc, $graphid, $clsname, $propid, $instance_graphid, $qstr);
 		}
 		$ch = curl_init();
 		if($proxy = ($this->getSystemSetting('dqs_http_proxy', ""))){
 			curl_setopt($ch, CURLOPT_PROXY, $proxy);
 		}
-
 		curl_setopt($ch, CURLOPT_URL, $srvc);
 		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $qstr);
@@ -138,7 +138,18 @@ class GraphManager extends DacuraController {
 			$errcode = (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200) ? 500 : curl_getinfo($ch, CURLINFO_HTTP_CODE);
 			return $dqsr->failure($errcode, "DCS call to $srvc failed", "Service returned ".strlen($content)." bytes ".$content);
 		}
-		$dqsr->result = $content;
+		if(!is_array($content)){
+			$result = json_decode($content, true);
+		}
+		if(!$result){
+			return $dqsr->failure(400, "Failed to parse json of DCS response", $content);
+		}
+		if(isset($result['type']) && $result['type'] == "error"){
+			return $dqsr->failure(400, "Class ".$result['class']." failure", $result['message']);				
+		}
+		else {
+			$dqsr->result = $result;
+		}
 		return $dqsr;
 	}
 	

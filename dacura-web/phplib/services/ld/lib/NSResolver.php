@@ -360,10 +360,10 @@ class NSResolver extends DacuraController {
 			$pv = new LDPropertyValue($v, $cwurl);
 			if($pv->embeddedlist()){
 				foreach($v as $i => $obj){
+					$this->addSubjectToNSUtilisation($ns, $i);						
 					$this->addPredicateToNSUtilisation($ns, $p);
-					$this->addObjectToNSUtilisation($ns, $i, $lid, $p);
+					$this->getLDONamespaceUtilisation($i, $v, $cwurl, $ns);
 				}
-				$this->getNamespaceUtilisation($obj, $cwurl, $ns);
 			}
 			elseif($pv->embedded()){
 				$this->addPredicateToNSUtilisation($ns, $p);

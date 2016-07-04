@@ -203,7 +203,8 @@ var importer;
 var dqsconfig;
 var idqsconfig;
 var ldov;
-
+var updates_loaded = false;
+var history_loaded = false;
 var pconf = { resultbox: ".tool-info", busybox: ".tool-holder"};
 
 /* initialises the graph page, constructs the objects, etc */
@@ -216,15 +217,16 @@ function initGraphPage(data, pconf){
 		var hconf = {resultbox: "#ldo-history .subscreen-intro-message", busybox: "#ldo-history .subscreen-body"};
 		dacura.tool.subscreens["ldo-history"] = hconf;
 		initfuncs['ldo-history'](data, "ldo-history");
+		history_loaded = !(typeof data.history == "undefined" || data.history.length == 0);
 	<?php } ?>
 	<?php if(in_array("ldo-updates", $params['subscreens'])){ ?>
 		var uconf = {resultbox: "#ldo-updates .subscreen-intro-message", busybox: "#ldo-updates .subscreen-body"};
 		dacura.tool.subscreens["ldo-updates"] = uconf;
 		initfuncs['ldo-updates'](data, "ldo-updates");
+		updates_loaded = !(typeof data.updates == "undefined" || data.updates.length == 0);
 	<?php } ?>
 	dqsconfig = new DQSConfigurator(data.meta.schema_dqs_tests, <?=$params['default_dqs_tests']?>, <?=$params['dqs_schema_tests']?>, "graph", handleSchemaDQSUpdate);
 	idqsconfig = new DQSConfigurator(data.meta.instance_dqs_tests, <?=$params['default_instance_dqs_tests']?>, <?=$params['dqs_instance_tests']?>, "graph", handleInstanceDQSUpdate);
-
 	importer = new OntologyImporter(getExplicitImports(data), <?=$params['available_ontologies']?>, getImplicitImports(data), "graph", handleImportUpdate);
 	if(!can_update){
 		importer.show_buttons = false;
@@ -290,12 +292,15 @@ function refreshLDOPage(data, pconf){
 		var x = new LDResult(data, pconf);
 		return x.show();
 	}
-	if(typeof data.history == "object"){
+	<?php if(in_array("ldo-history", $params['subscreens'])){ ?>
+	if(typeof data.history == "object" && history_loaded){
 		refreshfuncs['ldo-history'](data, "ldo-history");
 	}
-	if(typeof data.updates == "object"){
+	<?php } if(in_array("ldo-updates", $params['subscreens'])){ ?>
+	if(typeof data.updates == "object" && updates_loaded){
 		refreshfuncs['ldo-updates'](data, "ldo-updates");
 	}
+	<?php } ?>
 	$('#graphcontroltable tbody').empty();
 	$('#graph-summary').empty();
 	$('span.graph-actions').remove();
@@ -449,7 +454,7 @@ function showSchemaPane(data, pconf){
 			icon: dacura.system.getIcon("entity"),
 			count: data.analysis.entity_classes.length,
 			variable: "entit" + (data.analysis.entity_classes.length == 1 ? "y": "ies"),
-			value: data.analysis.entity_classes.join(", "),
+			value: getEntityClassLabels(data.analysis.entity_classes),
 			help: "Entity classes are the things that you want to collect data about"		
 		}
 		rows.push(rowdata);
@@ -461,6 +466,17 @@ function showSchemaPane(data, pconf){
 		}					
 	}	
 	$('#schema-control').show();
+}
+
+function getEntityClassLabels(cls){
+	var html = "<span class='entity-label-list'>";
+	for(var i=0; i<cls.length; i++){
+		var clsid = (typeof cls[i]['class'] == "string" ? cls[i]['class'] : "class#" + i);
+		var label = (typeof cls[i].label == "undefined" ? urlFragment(clsid) : cls[i]['label']['data'] );
+		html += "<span class='entity-label' title='" + clsid + "'>" + label + "</span> ";
+	}
+	html += "</span>";
+	return html;
 }
 
 /* visibility management functions */

@@ -14,6 +14,17 @@ getRoute()->post('/lost', 'lost');
 getRoute()->post('/reset', 'resetpassword');
 getRoute()->delete('/', 'logout');
 
+header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Max-Age: 1728000");
+header('Access-Control-Allow-Headers: Accept, Accept-Encoding, Accept-Language, Host, Origin, Referer, Content-Type, Content-Length, Content-Range, Content-Disposition, Content-Description');
+if(isset($_SERVER['HTTP_ORIGIN'])){
+	header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
+}
+else {
+	header("Access-Control-Allow-Origin: *");
+}
+
 
 /**
  * Login API

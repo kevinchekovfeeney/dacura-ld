@@ -84,10 +84,11 @@ class DacuraServer extends DacuraController {
 	 * @param string $sname the id of the secondary server to load
 	 * @return DacuraServer|boolean
 	 */
-	function createDependantServer($sname){
+	function createDependantServer($sname, $service = false){
+		$service = ($service ? $service : $this->service);
 		$sclass = ucfirst($sname)."DacuraServer";
 		try {
-			$ds = new $sclass($this->service);
+			$ds = new $sclass($service);
 			return $ds;
 		}
 		catch (Exception $e){
@@ -557,15 +558,20 @@ class DacuraServer extends DacuraController {
 		echo json_encode($struct);
 		ob_end_flush();
 	}
+	
+	function isDacuraURL($url){
+		return (substr($url, 0, strlen($this->durl())) == $this->durl());
+	}
 
 	/**
 	 * Parses a local url into its constituent parts.... service, collection, args, query
 	 * @param string $url the url to be parsed
 	 */
 	function parseDacuraURL($url){
-		if(substr($url, 0, strlen($this->durl())) != $this->durl()){ 
+		if($this->isDacuraURL($url)){
 			return $this->failure_result("$url is not a Dacura URL", 404);
 		}
+		
 		$parsed = array("raw" => $url);
 		$rbit = substr($url, strlen($this->durl()));
 		$rbits = explode("?", $url);

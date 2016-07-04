@@ -4,8 +4,8 @@ include "phplib/services/ld/ld_settings.php";
 $settings["service-title"] = "Ontology Management Service";
 $settings["service-button-title"] = "Ontologies";
 
-$settings['import_replace_blank_ids'] = false;
-$settings['update_replace_blank_ids'] = false;
+$settings['import_replace_blank_ids'] = true;
+$settings['update_replace_blank_ids'] = true;
 $settings['fail_on_missing_dependency'] = true;
 $settings['fail_on_bad_predicate'] = true;
 $settings['fail_on_ontology_hijack'] = false;
