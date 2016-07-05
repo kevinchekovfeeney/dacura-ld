@@ -55,6 +55,10 @@ dOntology.prototype.getBoxTypes = function(){
 	return this.boxtypes;
 }
 
+dOntology.prototype.isDacuraBoxType = function(bt){
+	return (this.hasBoxedTypes() && typeof this.boxtypes[bt] != "undefined");
+}
+
 dOntology.prototype.hasBoxedTypes = function(){
 	return (size(this.boxtypes) > 0);
 }
@@ -146,10 +150,8 @@ dOntology.prototype.getPropertyRangeType = function(prop) {
 	if(typeof json == "object"){
 		if(typeof json['rdf:type'] != "undefined"){
 			if(json['rdf:type'] == "owl:ObjectProperty"){
-				if(typeof json['rdfs:range'] != "undefined"){
-					if(json['rdfs:range'] == "dacura:Box"){
-						return "literal";
-					}
+				if(this.isDacuraBoxType(json['rdfs:range'])){
+					return "boxed";
 				}
 				return "object";
 			}
@@ -175,7 +177,7 @@ dOntology.prototype.getPropertyUnits = function(prop){
 	var json = this.properties[prop];
 	if(typeof json == "object"){
 		if(typeof json['dacura:units']  != "undefined"){
-			return json['dacura:units'];
+			return json['dacura:units']['data'];
 		}
 	}
 	return "";
@@ -368,6 +370,11 @@ dOntology.prototype.getUpdateAsRDF = function(input){
 	return rdf;
 } 
 
+dOntology.prototype.getUpdatePropertyAsRDF = function(input){
+	return this.getInputPropertyAsRDF(input);
+}
+
+
 dOntology.prototype.getInputPropertyAsRDF = function(input){
 	var rdf = {};
 	var cid = this.id + ":" + input.id;
@@ -376,21 +383,16 @@ dOntology.prototype.getInputPropertyAsRDF = function(input){
 	if(input.comment.length){
 		rdf[cid]["rdfs:comment"] = input.comment;
 	}
+	if(input.units){
+		rdf[cid]["dacura:units"] = input.units;
+	}
 	rdf[cid]["rdfs:domain"] = input.domain;
-	if(input.rtype == "object"){
-		rdf[cid]["rdfs:range"] = input.range;
+	rdf[cid]["rdfs:range"] = input.range;
+	if(input.rtype == "object" || input.rtype == "boxed"){
 		rdf[cid]["rdf:type"] = "owl:ObjectProperty"; 
 	}
 	else {
-		if(input.boxed){
-			rdf[cid]["rdfs:range"] = "dacurabox:" + input.xsd;				
-		}
-		else {
-			rdf[cid]["rdfs:range"] = "xsd:" + input.xsd;
-		}
-		if(input.units){
-			rdf[cid]["dacura:units"] = input.units;
-		}
+		rdf[cid]["rdf:type"] = "owl:DatatypeProperty"; 
 	}
 	return rdf;
 }
@@ -486,6 +488,10 @@ dOntology.prototype.validateCreatePropertyInput = function(input) {
 	}
 	if(!input.domain.length){
 		this.errors.push({field: "domain", message: "Missing domain class"});
+		return false;	
+	}
+	if(typeof input.range == "undefined" || !input.range.length){
+		this.errors.push({field: "range", message: "Missing range"});
 		return false;	
 	}
 	return true;
@@ -592,11 +598,11 @@ dOntology.prototype.readPropertyForm = function(){
 	}
 	input.rtype = jQuery("#dacura-console .console-field-input .property-rangetype-select").val();
 	if(input.rtype == "literal"){
-		input.xsd = jQuery("#dacura-console .console-field-input .range-input-literal .xsdtype").val();
+		input.range = "xsd:" + jQuery("#dacura-console .console-field-input .range-input-literal .xsdtype").val();
 		input.units = jQuery("#dacura-console .console-field-input .range-input-literal .xsdunits").val();
 	}
 	else if(input.rtype == "boxed"){
-		input.xsd = jQuery("#dacura-console .console-field-input .range-input-boxedliteral .xsdtype").val();
+		input.range = jQuery("#dacura-console .console-field-input .range-input-boxedliteral .range-box-types").val();
 		input.units = jQuery("#dacura-console .console-field-input .range-input-boxedliteral .xsdunits").val();
 	}
 	else {
@@ -1339,29 +1345,38 @@ dOntology.prototype.getRangeLiteralHTML = function(range, prop){
 dOntology.prototype.getRangeObjectHTML = function(range){
 	var html = "<span class='range-input range-input-object'>";
 	html += "<span class='console-field-domains'>";
+	var rotype = this.getRangeObjectType(range);
 	html += "<span class='range-type'>";
 	html += "<select class='range-objecttype-select'>";
-	html += "<option value='local'>Local Class</option>";
-	html += "<option value='remote'>Imported Class</option>";
+	var sel = ((rotype == "local") ? " selected" : "");
+	html += "<option value='local'" + sel + ">Local Class</option>";
+	sel = ((rotype == "remote") ? " selected" : "");
+	html += "<option value='remote'" + sel + ">Imported Class</option>";
 	html += "</select>";
 	html += "</span>";
 	html += "<span class='local-range'>";
 	html += "<select class='local-range-list'>";
 	html += "<option value=''>Choose Class</option>";
 	for(var i in this.classes){
-		var sel = (range && range.length && this.classes[i] == range ? " selected" : "");
+		var sel = ((rotype == "local" && range && range.length && i == range) ? " selected" : "");
 		html += "<option value='" + i + "'" + sel + ">" + this.getClassLabel(i) + "</option>";
 	}
 	html += "</select>";
 	html += "</span>";
 	html += "<span class='remote-range dch'>";
-	html += "<input class='remote-range-input' type='text' value=''>";
+	var val = ((rotype == 'remote' && range && range.length) ? range : "");
+	html += "<input class='remote-range-input' type='text' value='" + val + "'>";
 	html += "</span>";
 	html += "</span>";
 	html += this.getHelpFieldHTML("property_range");
 	html += "</span>";
 	html += "</span>";
 	return html;
+}
+
+dOntology.prototype.getRangeObjectType = function(range){
+	if(!range || !range.length) return "";
+	return (range.split(":")[0] == this.id ? "local" : "remote");
 }
 
 /* buttons */
@@ -1651,18 +1666,18 @@ dOntology.prototype.initPropertyScreen = function(){
 	var self = this;
 	this.focus = "property";
 	self.initSubscreen();
-	jQuery("#dacura-console .console-extra select.range-box-types").selectmenu();
-	jQuery("#dacura-console .console-extra select.local-domain-list").selectmenu();
-	jQuery("#dacura-console .console-extra select.property-rangetype-select").selectmenu({width: 120, 
-		 change: self.changeRangeType	
+	jQuery("#dacura-console .console-extra select.range-box-types").selectmenu( {width: 150});
+	jQuery("#dacura-console .console-extra select.local-domain-list").selectmenu({width: 170});
+	jQuery("#dacura-console .console-extra select.property-rangetype-select").selectmenu({ 
+		 change: self.changeRangeType, width: 150
 	});
-	jQuery("#dacura-console .console-extra select.range-objecttype-select").selectmenu({width: 120, 
-		 change: self.changeRangeClassType	
+	jQuery("#dacura-console .console-extra select.range-objecttype-select").selectmenu({
+		 change: self.changeRangeClassType, width: 150
 	});
 	jQuery("#dacura-console .console-extra select.domain-type-select").selectmenu({
-		 change: self.changeDomainClassType
+		 change: self.changeDomainClassType, width: 140
 	});
-	jQuery("#dacura-console .console-extra select.local-range-list").selectmenu();	  
+	jQuery("#dacura-console .console-extra select.local-range-list").selectmenu({width: 200});	  
 }
 
 dOntology.prototype.initCreateProperty = function(callback){
@@ -1688,6 +1703,9 @@ dOntology.prototype.initUpdateProperty = function(update_callback, delete_callba
 	jQuery("#dacura-console .console-extra button.delete-property").button({icons: {primary: "ui-icon-trash"}}).click(function(){
 		self.deleteProperty(delete_callback);
 	});
+	self.changeRangeType();
+	self.changeDomainClassType();
+	self.changeRangeClassType();
 }
 
 function initRemoveParents(){
@@ -1792,7 +1810,7 @@ dOntology.prototype.updateProperty = function(callback, test){
 	var input = this.readPropertyForm();
 	if(this.validateUpdatePropertyInput(input)){
 		//need to do more here .... figure out what has changed..
-		var rdf = this.getInputPropertyAsRDF(input);
+		var rdf = this.getUpdatePropertyAsRDF(input);
 		if(rdf){
 			callback(rdf, test);
 		}

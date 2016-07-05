@@ -629,7 +629,7 @@ dconsole.getPropertiesSelectorHTML = function(ont, val){
 		var html = "<select class='console-property-list'><option value=''>Select Property (" + size(ont.properties) + ")</option>";
 		for(var i in ont.properties){
 			var sel = (val && val.length && val == i) ? " selected" : "";
-			html += "<option value='" + i + "'>" + ont.getPropertyLabel(i) + "</option>";
+			html += "<option value='" + i + "'" + sel + ">" + ont.getPropertyLabel(i) + "</option>";
 		}
 		html += "</select>";
 	}

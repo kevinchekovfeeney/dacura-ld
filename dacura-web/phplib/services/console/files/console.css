@@ -379,11 +379,14 @@ img.result-icon {
 #dacura-console .console-property-domain .domain-type {
 	margin-right: 3px;
 }
+#dacura-console .remote-range-input,
 #dacura-console .range-input-boxedliteral .boxed-units {
 	margin-left: 6px;
 }
 
 
+
+#dacura-console .remote-range-input,
 #dacura-console .range-input-boxedliteral .boxed-units,
 #dacura-console .console-class-parent .remote-parent,
 #dacura-console .console-property-range .range-input-literal,
