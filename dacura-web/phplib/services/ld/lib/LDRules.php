@@ -54,13 +54,6 @@ class LDRules extends DacuraObject {
 			"allow_demand_id" => $srvr->getServiceSetting("internal_allow_demand_id", true),
 			"demand_id_token" => $srvr->getServiceSetting("demand_id_token", "@id")
 		);
-		//validation - basic linked data property value (LDPropertyValue->legal($rules)
-		$this->rules['ldvalidate'] = array(
-			"allow_invalid_ld" => $srvr->getServiceSetting("allow_invalid_ld", false),
-			'require_object_literals' => $srvr->getServiceSetting("require_object_literals", true),
-			'forbid_empty' => $srvr->getServiceSetting("forbid_empty", true),
-			"expand_embedded_objects" => $srvr->getServiceSetting("expand_embedded_objects", true)
-		);
 		//Validation rules for LDO->validate
 		$this->rules['validate'] = array_merge($this->rules['generate'], array(
 			//should embedded anonymous objects be expanded into embedded object lists with bn ids
@@ -178,7 +171,9 @@ class LDRules extends DacuraObject {
 	 */
 	function rulesFor($mode, $action, $obj = false){
 		$fors = array("cwurl" => $this->cwurl);
-		$fors = array_merge($fors, $this->rules[$action]);
+		foreach($this->rules[$action] as $rname => $v){
+			$fors[$rname] = $this->getRule($mode, $action, $rname, $obj);
+		}
 		return $fors;
 	}	
 }

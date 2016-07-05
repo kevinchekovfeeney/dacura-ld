@@ -173,9 +173,6 @@ class LDO extends DacuraObject {
 		if($this->fragment_id){
 			$obj = "fragment";
 		}
-		//elseif($mode == "update" && $action == "import"){
-		//	$obj = "update";				
-		//}
 		return $this->rules->rulesFor($mode, $action);
 	}
 	
@@ -847,8 +844,8 @@ class LDO extends DacuraObject {
 	 */
 	function validateLDValue($obj, $mode, LdDacuraServer &$srvr){
 		$pv = new LDPropertyValue($obj, $this->cwurl);
-		if($pv->illegal($this->rules($mode, "ldvalidate"))) {
-			return $this->failure_result("Illegal JSON LD object structure ".$pv->errmsg, $pv->errcode);
+		if($pv->illegal($this->rules($mode, "validate"))) {
+			return $this->failure_result($pv->errmsg, $pv->errcode);
 		}
 		if($pv->embeddedlist()){
 			return $this->validateLDProps($obj, $mode, $srvr);

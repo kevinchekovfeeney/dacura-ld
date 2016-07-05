@@ -732,7 +732,6 @@ class LdDacuraServer extends DacuraServer {
 		if(!$ldoupdate->loadFromAPI($nldo, $update_meta, $editmode, $this)){
 			return $ar->failure($ldoupdate->errcode, "Protocol Error", "Failed to load the update command from the API. ". $ldoupdate->errmsg);
 		}
-		//opr($ldoupdate->changed->ldprops);
 		if($ldoupdate->nodelta()){
 			return $ar->failure(409, "No Changes", "The submitted version is identical to the current version.");
 		}
