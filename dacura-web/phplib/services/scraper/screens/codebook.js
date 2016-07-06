@@ -14,8 +14,8 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
-var onturl = "http://localhost/dacura/rest/ontology/seshattiny";
-var candurl = "http://localhost/dacura/rest/tuff/candidate/";
+var onturl = "http://localhost/dacura/rest/seshat/ontology/seshat";
+var candurl = "http://localhost/dacura/rest/seshat/candidate/";
 var enturl = "";
 var graphurl = "http://tcd:3020/data/seshattiny.ttl";
 var defurl = "http://tcd:3020/dacura/def";
@@ -188,8 +188,6 @@ dacura.grabber.grabFacts = function(){
 	}
 	return facts;
 }
-
-
 
 dacura.grabber.getCodepageToOntologyHTML = function(fid, fact, prop){
 	var html = "<div id='" + fid + "-ontinput' class='property-editor'>";
@@ -817,10 +815,9 @@ dacura.grabber.sendFactsToParser = function(){
 	}
 	xhr = {};
 	//xhr.xhrFields = {
-	 //   withCredentials: true
+	 //  withCredentials: true
 	//};
 		
-    //xhr.crossDomain = true,
 	xhr.data = { "data" : JSON.stringify(pfacts)};
     //xhr.dataType = "json";
     //xhr.data = JSON.stringify(pfacts);
@@ -966,9 +963,7 @@ dacura.grabber.loadEntityTypeFrame = function(type, fid, prop){
 		dacura.grabber.clearBusyMessage();
 		alert("Failed to retrieve class " + type + " class frame from " + xhr.url);
 	});
-
 };
-
 
 dacura.grabber.getOntology = function(url){
 	xhr = {};
@@ -1016,7 +1011,6 @@ dacura.grabber.getOntology = function(url){
 	}).fail( function(){
 		dacura.grabber.clearBusyMessage();
 	});
-
 }
 
 dacura.grabber.updateBusyMessage = function(msg){
@@ -1067,7 +1061,7 @@ dacura.grabber.isCodebook = function(){
 dacura.grabber.parsePage = function(page, refresh, xhr){
 	if(typeof xhr == "undefined"){
 		xhr = {};
-		xhr.data ={};
+		xhr.data = {};
 	}
 	if(typeof refresh != "undefined" && refresh == true){
 		xhr.data["refresh"] = true;
@@ -1127,8 +1121,7 @@ $(document).ready(function() {
 		dacura.grabber.pageFacts = dacura.grabber.grabFacts();
 		dacura.grabber.uniqifyFacts();
 		$("<li id='ca-grab'><span><a>Validate</a></span></li>").insertBefore("#ca-view");
-		dacura.grabber.sendFactsToParser();
-		
+		dacura.grabber.sendFactsToParser();	
 	}
 	else {
 		//do nothing - can only be invoked on a media wiki page with the view tab
@@ -1149,10 +1142,10 @@ function toTitleCase(str) {
 }
 
 function escapeRegExp(str) {
-	  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
-	}
+	return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
 /*
- * Loads via following in console: 
+ * Loads via following in con: 
  * 
 	var script = document.createElement("script");
 	script.src = "http://localhost/dacura/rest/scraper/grabscript";

@@ -60,6 +60,7 @@ class Graph extends LDO {
 	function getDefaultGraphURL(){
 		return $this->instanceGname();
 	}
+	
 
 	/**
 	 * The url/id of the named graph where this graph's instance data is stored
@@ -91,6 +92,42 @@ class Graph extends LDO {
 	 */
 	function hasTwoTierSchema(){
 		return isset($this->meta['two_tier_schemas']) && $this->meta['two_tier_schemas'];
+	}
+	
+	/**
+	 * Returns the data about the graph that is necessary for the console to do graph reading and updating
+	 */
+	function getConsoleData($dacura_server){
+		$cdata = array("url" => $dacura_server->getGraphAPIEndpoint($this->id), "instance" => $this->instanceGname(), "schema" => $this->schemaGname());
+		$imports = $this->getSchemaImports($dacura_server->durl());
+		if(count($imports) > 0){
+			$cdata['imports'] = array();
+			foreach($imports as $oid => $ostruct){
+				$ostruct['url'] =  Ontology::getOntologyURL($ostruct, $dacura_server->durl());
+				$cdata['imports'][$oid] = $ostruct;
+			}
+			$exps = $this->meta['explicit_schema_imports'];
+			if(count($exps) > 0){
+				$deploys = array();
+				foreach($exps as $exp){
+					if(is_array($exp)){
+						if(isset($exp['version']) && $exp['version'] == 0){
+							if(!isset($exp['collection']) || !$exp['collection']){
+								$exp['collection'] = $dacura_server->getOntologyCollection($exp['id']);
+							}
+							$deploys[] = Ontology::getOntologyURL($exp, $dacura_server->durl());
+						}
+					}
+					else {
+						$deploys[] = Ontology::getOntologyURL(array("id" => $exp, "collection" => $dacura_server->getOntologyCollection($exp)), $dacura_server->durl());						
+					}
+				}
+				if(count($deploys) > 0){
+					$cdata['deploy'] = array("_:schema" => array("owl:imports" => $deploys));
+				}
+			}
+		}
+		return $cdata;
 	}
 	
 	/**
@@ -230,14 +267,22 @@ class Graph extends LDO {
 		$astruct['instance_validation'] = $srvr->graphman->validateGraph($this);
 		$ar = $srvr->graphman->invokeDCS($this->schemaGname());
 		if($ar->is_accept()){
-			$clss = json_decode($ar->result, true);
+			$clss = $ar->result;
 			$ncls = array();
-			foreach($clss as $c){
-				if($comp = $this->nsres->compress($c)){
-					$ncls[] = $comp;
+			foreach($clss as $i => $c){
+				if(is_array($c)){
+					$ncls[$i] = $c;
+					if($comp = $this->nsres->compress($c['class'])){
+						$ncls[$i]['shorthand'] = $comp;
+					}					
 				}
 				else {
-					$ncls[] = $c;
+					if($comp = $this->nsres->compress($c)){
+						$ncls[] = $comp;
+					}
+					else {
+						$ncls[] = $c;
+					}
 				}
 			}
 			$astruct['entity_classes'] = $ncls;

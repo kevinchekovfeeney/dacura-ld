@@ -39,135 +39,137 @@ class LDOUpdateDisplay extends LDODisplay {
 		$allprops = array();
 		foreach($props as $subj => $ldobj){
 			$cprops = array();
-			foreach($ldobj as $prop => $v){
-				$pv = new LDPropertyValue($v, $this->cwurl());
-				if($pv->illegal()){
-					return $this->failure_result($pv->errmsg, $pv->errcode);
-				}
-				if(!isset($dprops[$subj][$prop])){
-					//$xprop = $this->applyLinkHTML($prop, "unchanged", true);
-					//$cprops[$xprop] = $this->getUnchangedJSONHTML($v, $pv);
-					//ignore.
-				}
-				else {
-					$nv = $dprops[$subj][$prop];
-					$dpv = new LDPropertyValue($nv, $this->cwurl());
-					if($dpv->isempty()){
-						$xprop = $this->applyLinkHTML($prop, "added", true);
-						$cprops[$xprop] = $this->getAddedJSONHTML($v, $pv);
+			if(is_array($ldobj)){
+				foreach($ldobj as $prop => $v){
+					$pv = new LDPropertyValue($v, $this->cwurl());
+					if($pv->illegal()){
+						return $this->failure_result($pv->errmsg, $pv->errcode);
 					}
-					if(!$pv->sameLDType($dpv)){
-						$xprop = $this->applyLinkHTML($prop, "structural", true);
-						$cprops[$xprop] = $this->getAddedTypeJSONHTML($v, $pv);
-						$cprops[$xprop] = array_merge($cprops[$xprop], $this->getDeletedTypeJSONHTML($nv, $dpv));
+					if(!isset($dprops[$subj][$prop])){
+						//$xprop = $this->applyLinkHTML($prop, "unchanged", true);
+						//$cprops[$xprop] = $this->getUnchangedJSONHTML($v, $pv);
+						//ignore.
 					}
 					else {
-						$x = $pv->ldtype(true);
-						if($x == 'scalar' || $x == "objectliteral"){
-							if($v != $nv){
-								$xprop = $this->applyLinkHTML($prop, "updated", true);
-								$cprops[$xprop] = $this->getValueChangeHTML($v, $nv);
-							}
-							else {
-								//$xprop = $this->applyLinkHTML($prop, "unchanged", true);
-								//$cprops[$xprop] = $this->applyLiteralHTML($v, "unchanged");
-							}
+						$nv = $dprops[$subj][$prop];
+						$dpv = new LDPropertyValue($nv, $this->cwurl());
+						if($dpv->isempty()){
+							$xprop = $this->applyLinkHTML($prop, "added", true);
+							$cprops[$xprop] = $this->getAddedJSONHTML($v, $pv);
 						}
-						elseif($x == 'valuelist'){
-							$changed = false;
-							$entries = array();
-							foreach($v as $i => $val){
-								if(in_array($val, $nv)){
-									//$entries[] = $this->applyLiteralHTML($val, "unchanged");
+						if(!$pv->sameLDType($dpv)){
+							$xprop = $this->applyLinkHTML($prop, "structural", true);
+							$cprops[$xprop] = $this->getAddedTypeJSONHTML($v, $pv);
+							$cprops[$xprop] = array_merge($cprops[$xprop], $this->getDeletedTypeJSONHTML($nv, $dpv));
+						}
+						else {
+							$x = $pv->ldtype(true);
+							if($x == 'scalar' || $x == "objectliteral"){
+								if($v != $nv){
+									$xprop = $this->applyLinkHTML($prop, "updated", true);
+									$cprops[$xprop] = $this->getValueChangeHTML($v, $nv);
 								}
 								else {
-									$changed = true;
-									$entries[] = $this->applyLiteralHTML($val, "added");
+									//$xprop = $this->applyLinkHTML($prop, "unchanged", true);
+									//$cprops[$xprop] = $this->applyLiteralHTML($v, "unchanged");
 								}
 							}
-							foreach($nv as $j => $val2){
-								if(!in_array($val2, $v)){
-									$changed = true;
-									$entries[] = $this->applyLiteralHTML($val2, "deleted");
-								}
-							}
-							if($changed){
-								$xprop = $this->applyLinkHTML($prop, "changed", true);
-							}
-							else {
-								//$xprop = $this->applyLinkHTML($prop, "unchanged", true);
-							}
-							$cprops[$xprop] = $entries;
-						}
-						elseif($x == "objectliterallist"){
-							$changed = false;
-							$entries = array();
-							foreach($v as $i => $val){
-								$found = false;
-								foreach($nv as $k => $v2){
-									if(compareObjLiterals($v2, $val)){
-										$found = true;
+							elseif($x == 'valuelist'){
+								$changed = false;
+								$entries = array();
+								foreach($v as $i => $val){
+									if(in_array($val, $nv)){
 										//$entries[] = $this->applyLiteralHTML($val, "unchanged");
-										break;	
+									}
+									else {
+										$changed = true;
+										$entries[] = $this->applyLiteralHTML($val, "added");
 									}
 								}
-								if(!$found){
-									$entries[] = $this->applyLiteralHTML($val, "added");
-									$changed = true;								
-								}
-							}
-							foreach($nv as $i => $val){
-								$found = false;
-								foreach($v as $k => $v2){
-									if(compareObjLiterals($v2, $val)){
-										$found = true;
-										//$entries[] = $this->applyLiteralHTML($val, "unchanged");
-										break;
+								foreach($nv as $j => $val2){
+									if(!in_array($val2, $v)){
+										$changed = true;
+										$entries[] = $this->applyLiteralHTML($val2, "deleted");
 									}
 								}
-								if(!$found){
-									$entries[] = $this->applyLiteralHTML($val, "deleted");
-									$changed = true;
-								}
-							}
-							if($changed){
-								$xprop = $this->applyLinkHTML($prop, "changed", true);
-							}
-							else {
-								//$xprop = $this->applyLinkHTML($prop, "unchanged", true);
-							}
-							$cprops[$xprop] = $entries;
-							
-						}
-						elseif($x == 'embeddedobjectlist') {
-							$xprop = $this->applyLinkHTML($prop, "unchanged", true);
-							$cprops[$xprop] = array();
-							foreach($v as $id => $obj){
-								if(!isset($nv[$id])){
-									//$tprop = $this->applyLinkHTML($id, "unchanged");
-									//$cprops[$xprop][$tprop] = $this->getUnchangedJSONHTML($v, $pv);
+								if($changed){
+									$xprop = $this->applyLinkHTML($prop, "changed", true);
 								}
 								else {
-									$subchanges = $this->showChanges($obj, $nv[$id]);
-									if($subchanges){
-										$tprop = $this->applyLinkHTML($id, "changed");
-										$cprops[$xprop][$tprop]= $subchanges;
+									//$xprop = $this->applyLinkHTML($prop, "unchanged", true);
+								}
+								$cprops[$xprop] = $entries;
+							}
+							elseif($x == "objectliterallist"){
+								$changed = false;
+								$entries = array();
+								foreach($v as $i => $val){
+									$found = false;
+									foreach($nv as $k => $v2){
+										if(compareObjLiterals($v2, $val)){
+											$found = true;
+											//$entries[] = $this->applyLiteralHTML($val, "unchanged");
+											break;	
+										}
+									}
+									if(!$found){
+										$entries[] = $this->applyLiteralHTML($val, "added");
+										$changed = true;								
 									}
 								}
-							}
-							foreach($nv as $nid => $nobj){
-								if(!isset($v[$nid])){
-									$tprop = $this->applyLinkHTML($nid, "deleted");
-									$cprops[$xprop][$tprop] = $this->getDeletedJSONHTML($v, $pv);
+								foreach($nv as $i => $val){
+									$found = false;
+									foreach($v as $k => $v2){
+										if(compareObjLiterals($v2, $val)){
+											$found = true;
+											//$entries[] = $this->applyLiteralHTML($val, "unchanged");
+											break;
+										}
+									}
+									if(!$found){
+										$entries[] = $this->applyLiteralHTML($val, "deleted");
+										$changed = true;
+									}
 								}
+								if($changed){
+									$xprop = $this->applyLinkHTML($prop, "changed", true);
+								}
+								else {
+									//$xprop = $this->applyLinkHTML($prop, "unchanged", true);
+								}
+								$cprops[$xprop] = $entries;
+								
 							}
-							break;
+							elseif($x == 'embeddedobjectlist') {
+								$xprop = $this->applyLinkHTML($prop, "unchanged", true);
+								$cprops[$xprop] = array();
+								foreach($v as $id => $obj){
+									if(!isset($nv[$id])){
+										//$tprop = $this->applyLinkHTML($id, "unchanged");
+										//$cprops[$xprop][$tprop] = $this->getUnchangedJSONHTML($v, $pv);
+									}
+									else {
+										$subchanges = $this->showChanges($obj, $nv[$id]);
+										if($subchanges){
+											$tprop = $this->applyLinkHTML($id, "changed");
+											$cprops[$xprop][$tprop]= $subchanges;
+										}
+									}
+								}
+								foreach($nv as $nid => $nobj){
+									if(!isset($v[$nid])){
+										$tprop = $this->applyLinkHTML($nid, "deleted");
+										$cprops[$xprop][$tprop] = $this->getDeletedJSONHTML($v, $pv);
+									}
+								}
+								break;
+							}
 						}
 					}
 				}
-			}
-			if(count($cprops) > 0){
-				$allprops[$subj] = deepArrCopy($cprops);
+				if(count($cprops) > 0){
+					$allprops[$subj] = deepArrCopy($cprops);
+				}
 			}
 		}
 		foreach($dprops as $s2 => $ldobj){

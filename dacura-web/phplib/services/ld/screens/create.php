@@ -142,7 +142,7 @@ var initcreate = function(pconfig){
 /* draws a frame into the form in <div id='candframeinform'>*/
 function drawCandidateFrame(){
 	etype = $('#ldo-details-candtype').val();
-	cphp.ldov.showFrame(etype, '#candframeinform', "create");			
+	cphp.ldov.showFrame(etype, 'candframeinform', "create");			
 }
 
 /* called to update the form when the import type is changed */

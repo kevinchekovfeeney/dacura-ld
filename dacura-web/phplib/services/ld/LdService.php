@@ -25,13 +25,9 @@ class LdService extends DacuraService {
 		}
 		$this->included_scripts[] = $this->get_service_script_url("dacura.upload.js", "upload");
 		$this->included_css[] = $this->get_service_file_url("style.css", "ld");
+		$this->included_scripts[] = $this->get_service_script_url("jslib/ldlibs.js", "ld");
 		$this->included_scripts[] = $this->get_service_script_url("jslib/ldoviewer.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("jslib/ldo.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("jslib/ldoupdate.js", "ld");
 		$this->included_scripts[] = $this->get_service_script_url("jslib/ldoupdateviewer.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("jslib/ldresult.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("jslib/ldgraphresult.js", "ld");
-		$this->included_scripts[] = $this->get_service_script_url("jslib/rvo.js", "ld");
 		$this->included_scripts[] = $this->get_service_script_url("jslib/ontologyimporter.js", "ld");
 		$this->included_scripts[] = $this->get_service_script_url("jslib/dqsconfigurator.js", "ld");
 	}
@@ -184,7 +180,7 @@ class LdService extends DacuraService {
 		if(!$dr->is_accept()){
 			return $dacura_server->writeDecision($dr);
 		}
-		$options = $this->readLDViewArgs();
+		$options = $this->getLDArgs("ldoview");
 		$available_types = $dacura_server->getAvailableMimeTypes();
 		$mime = getBestSupportedMimeType($available_types);
 		if($mime && $mime != $dacura_server->getMimeTypeForFormat("html")){

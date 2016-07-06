@@ -9,10 +9,10 @@
  */
 
 $x = @$ldo_type;
-//if(!$x && !$dacura_server->userHasRole("admin", "all")){//meaning that this API is being accessed directly 
-//	$dacura_server->write_http_error(403, "No permission to directly access linked data API");	
-//}
-//else {
+if(!$x && !$dacura_server->userHasRole("admin", "all")){//meaning that this API is being accessed directly 
+	$dacura_server->write_http_error(403, "No permission to directly access linked data API");	
+}
+else {
 	if(!$x){
 		$ldo_type = isset($_GET['ldtype']) ? $_GET['ldtype'] : "";
 	}
@@ -50,7 +50,7 @@ $x = @$ldo_type;
 	else {
 		header("Access-Control-Allow-Origin: *");	
 	}
-//}
+}
 	
 /**
  * Create a new Linked Data Object and return the result to the user

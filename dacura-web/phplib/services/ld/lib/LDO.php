@@ -173,9 +173,6 @@ class LDO extends DacuraObject {
 		if($this->fragment_id){
 			$obj = "fragment";
 		}
-		//elseif($mode == "update" && $action == "import"){
-		//	$obj = "update";				
-		//}
 		return $this->rules->rulesFor($mode, $action);
 	}
 	
@@ -650,7 +647,12 @@ class LDO extends DacuraObject {
 	 * @return boolean
 	 */
 	function importLD($mode, LdDacuraServer &$srvr){
-		$this->idmap = importLD($this->ldprops, $this->rules($mode, "import"), $this->is_multigraph());//expands structure by generating blank node ids, etc		
+		if($mode == "update"){
+			$this->idmap = importLDUpdate($this->ldprops, $this->rules($mode, "import"), $this->is_multigraph());//expands structure by generating blank node ids, etc
+		}
+		else {
+			$this->idmap = importLD($this->ldprops, $this->rules($mode, "import"), $this->is_multigraph());//expands structure by generating blank node ids, etc	
+		}
 		return true;
 	}
 	
@@ -768,6 +770,7 @@ class LDO extends DacuraObject {
 		}
 		else {
 			foreach($obj as $p => $v){
+				if($mode == "update" && $p == $this->rule($mode, "import", "demand_id_token")) continue;
 				if(!$this->validateLDPredicate($p, $mode, $srvr)){
 					return false;
 				}
@@ -824,7 +827,8 @@ class LDO extends DacuraObject {
 			if(isNamespacedURL($p) && $this->rule($mode, "validate", 'forbid_unknown_prefixes')){
 				return $this->failure_result("Linked data input structure contains predicate url $p that includes unknown prefixes", 400);
 			}
-			if(!isURL($p) && ($p != $this->rule($mode, "validate", 'demand_id_token')) && $this->rule($mode, "validate", 'require_predicate_urls')){
+			$x = $this->rule($mode, "import", 'demand_id_token');
+			if(!isURL($p) && ($p != $x && $this->rule($mode, "validate", 'require_predicate_urls'))){
 				return $this->failure_result("Linked data input structure contains predicate $p that is not a url", 400);
 			}				
 		}
@@ -840,8 +844,8 @@ class LDO extends DacuraObject {
 	 */
 	function validateLDValue($obj, $mode, LdDacuraServer &$srvr){
 		$pv = new LDPropertyValue($obj, $this->cwurl);
-		if($pv->illegal($this->rules($mode, "ldvalidate"))) {
-			return $this->failure_result("Illegal JSON LD object structure ".$pv->errmsg, $pv->errcode);
+		if($pv->illegal($this->rules($mode, "validate"))) {
+			return $this->failure_result($pv->errmsg, $pv->errcode);
 		}
 		if($pv->embeddedlist()){
 			return $this->validateLDProps($obj, $mode, $srvr);
@@ -1493,12 +1497,13 @@ class LDO extends DacuraObject {
 					else {
 						$ldprops[$subj] = $ldo;
 					}
+					
 				}
 				elseif(!$this->updateLDO($ldo, $ldprops[$subj], $idmap, $mode)){
 					return false;
 				}			
 			}
-		}
+		}	
 		return true;	
 	}
 
@@ -1534,7 +1539,7 @@ class LDO extends DacuraObject {
 			}
 			elseif($pv->objectlist()){ //list of new objects (may have @ids inside)
 				foreach($v as $obj){
-					addAnonObj($obj, $dprops, $prop, $idmap, $this->rules($mode, "generate"));
+					$x = addAnonObj($obj, $dprops, $prop, $idmap, $this->rules($mode, "generate"));
 				}
 			}
 			elseif($pv->embedded()){ //new object to add to the list - give her an id and insert her
@@ -1543,7 +1548,7 @@ class LDO extends DacuraObject {
 					return $this->failure_result("Failed to import linked data structure", 400);
 				}
 				$idmap = array_merge($idmap, $rep);
-				addAnonObj($v, $dprops, $prop, $idmap, $this->rules($mode, "generate"));				
+				$x = addAnonObj($v, $dprops, $prop, $idmap, $this->rules($mode, "generate"));	
 			}
 			elseif($pv->embeddedlist()){
 				$delids = $pv->getdelids();//delete nodes
@@ -1558,9 +1563,14 @@ class LDO extends DacuraObject {
 				$bnids = $pv->getbnids();//internal nodes
 				foreach($bnids as $bnid){
 					if(!isset($dprops[$prop][$bnid])) {
-						addAnonObj($v[$bnid], $dprops, $prop, $idmap, $this->rules($mode, "generate"), $bnid);
+						if(is_array($v[$bnid]) && count($v[$bnid]) > 1){
+							addAnonSubject($v[$bnid], $dprops[$prop], $idmap, $this->rules($mode, "update"), $bnid);
+						}
 					}
-					elseif(!$this->updateLDO($uprops[$prop][$bnid], $dprops[$prop][$bnid], $idmap, $mode)){
+					elseif(is_array($v[$bnid]) && count($v[$bnid]) == 0) {
+						unset($dprops[$prop][$bnid]);
+					}
+					else if(!$this->updateLDO($uprops[$prop][$bnid], $dprops[$prop][$bnid], $idmap, $mode)){
 						return false;
 					}
 				}
