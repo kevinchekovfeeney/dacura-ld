@@ -17,6 +17,10 @@
 var onturl = "http://localhost/dacura/rest/ontology/seshattiny";
 var candurl = "http://localhost/dacura/rest/tuff/candidate/";
 var enturl = "";
+var graphurl = "http://tcd:3020/data/seshattiny.ttl";
+var defurl = "http://tcd:3020/dacura/def";
+var seshat_ns = "http://dacura.scss.tcd.ie/ontology/seshat#";
+
 //for now, a bookmarklet which throws in a button
 var dacura = {
 		grabber: {}
@@ -252,6 +256,51 @@ dacura.grabber.getCodebookToOntologyHTML = function(fid, fact){
 	return html;
 }
 
+dacura.grabber.getInstances = function(fid, fact){
+    var pname = toTitleCase(fact.uniqid);
+    pname = pname.charAt(0).toLowerCase() + pname.slice(1);;
+	pname = pname.replace(/\W/g, '');
+	pname = seshat_ns + pname;
+    var xhttp = new XMLHttpRequest();
+    var html = "<table style='width:100%'><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr>";
+    xhttp.onreadystatechange = function(response) {
+        if(xhttp.readyState === 4) {
+            if(xhttp.status === 200) {
+                var jsonResponse = JSON.parse(xhttp.responseText);
+                for(var entry in jsonResponse){
+                   html += "<tr><td>"+jsonResponse[entry][0]+"</td><td>"+pname+"</td><td>"+jsonResponse[entry][1].data+"</td></tr>"
+                }
+            }
+        }
+    }
+    xhttp.open("POST",defurl,false);
+    xhttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+    xhttp.send("query=show inst of "+pname+" in "+graphurl);
+    return html+"</table>";
+}
+
+dacura.grabber.newInstance = function(fact){
+    var pname = toTitleCase(fact.uniqid);
+    pname = pname.charAt(0).toLowerCase() + pname.slice(1);;
+	pname = pname.replace(/\W/g, '');
+	pname = seshat_ns + pname;
+    return "<table border='0'><tr><td>Subject: <input type='text' id='subject' size='35'></td><td>Predicate: <input type='text' id='predicate' value='"+pname+"' size='35'></td><td>Object: <input type='text' id='object' size='35'></td><td><input type='button' value='Create' onclick='javascript:dacura.grabber.createNewInstance(document.getElementById(\"subject\").value,document.getElementById(\"predicate\").value,document.getElementById(\"object\").value)'></td></tr></table>";
+}
+
+dacura.grabber.createNewInstance = function(s,p,o){
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function(response){
+        if(xhttp.readyState == 4) {
+            if(xhttp.status == 200) {
+                alert(xhttp.responseText);
+            }
+        }
+    }
+    xhttp.open("POST",defurl,false);
+    xhttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+    xhttp.send("query=add "+s+" "+p+" "+o+" to "+graphurl);
+}
+
 dacura.grabber.getPropertyHeadline = function(fid, fact, ontprop){
 	var html = "<div class='property-headline'>";
 	html += "<span class='variable-property variable-property-varname'>♠ " + fact.varname + " ♣</span> ";
@@ -420,8 +469,6 @@ dacura.grabber.displayFacts = function (){
 	$('#validator-results').slideDown("slow");
 };
 
-
-
 dacura.grabber.displayPageControls = function(){
 	$("button.validation-errors").remove();
 	if(dacura.grabber.error_ids.length == 0){
@@ -512,10 +559,13 @@ dacura.grabber.loadFact = function(id){
 		if(prop){
 			html += "<dt>Ontology</dt><dd><a href='javascript:dacura.grabber.toggleOntology(\"" + id + "\")'>Import</a></dd>";			
 		}
+        html += "<dt>Instances:</dt><dd><a id='insttoggle' href='javascript:dacura.grabber.toggleInstances(\"" + id + "\")'>(show)</a> <a id='newinsttoggle' href='javascript:dacura.grabber.toggleNewInstance(\"" + id + "\")'>New Instance</a></dd>";
 		html += "</dl>";
 		if(dpcount > 0){	
 			html += "<div class='vardatapoints'>" + this.getParsedTableHTML(fact.uniqid, fact.parsed.datapoints) + "</div>";
 		}
+        html += "<div class='varinstances'>"+this.getInstances(id, fact)+"</div>";
+        html += "<div class='varnewinstance'>"+this.newInstance(fact)+"</div>";
 		if(prop){
 			html += "<div class='vartoontology'> " + this.getCodepageToOntologyHTML(id, fact, prop) + " " + "</div>";
 		}
@@ -705,6 +755,28 @@ dacura.grabber.toggleDatapoints = function(id){
 		$('#dptoggle').html("(show)"); 
 	}
 	$('.vardatapoints').toggle();
+	var faketop = $('#validator-results').height();
+	$('html, body').animate({
+		scrollTop: $("#fact_" + id).offset().top - (faketop + 20)
+	}, 2000);
+}
+
+dacura.grabber.toggleInstances = function(id) {
+    if($('#insttoggle').html() == "(show)"){
+        $('#insttoggle').html("(hide)");
+    }
+    else {
+        $('#insttoggle').html("(show)");
+    }
+    $('.varinstances').toggle();
+	var faketop = $('#validator-results').height();
+	$('html, body').animate({
+		scrollTop: $("#fact_" + id).offset().top - (faketop + 20)
+	}, 2000);
+}
+
+dacura.grabber.toggleNewInstance = function(id) {
+    $('.varnewinstance').toggle();
 	var faketop = $('#validator-results').height();
 	$('html, body').animate({
 		scrollTop: $("#fact_" + id).offset().top - (faketop + 20)
@@ -1029,7 +1101,6 @@ dacura.grabber.parsePage = function(page, refresh, xhr){
 		}
 	});
 }
-
 
 dacura.grabber.grabison = false;
 dacura.grabber.error_ids = [];
