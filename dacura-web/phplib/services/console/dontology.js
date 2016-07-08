@@ -60,7 +60,7 @@ dOntology.prototype.hasBoxedTypes = function(){
 	return (size(this.boxtypes) > 0);
 }
 
-dOntology.prototype.addClass(id, label, comment, type, parent, choices){
+dOntology.prototype.addClass = function(id, label, comment, type, parent, choices){
 	var cid = this.id + ":" + id;
 	this.classes[cid] = {"rdfs:label": label, "rdfs:comment": comment, "rdf:type": "owl:Class"};
 	if(type == "enumerated"){
@@ -72,7 +72,7 @@ dOntology.prototype.addClass(id, label, comment, type, parent, choices){
 	}
 }
 
-dOntology.prototype.addProperty(id, label, comment, domain, range){
+dOntology.prototype.addProperty=function(id, label, comment, domain, range){
 	var pid = this.id + ":" + id;
 	this.properties[pid] = {"rdfs:label": label, "rdfs:comment": comment};
 	if(domain.substring(0,3) == "xsd"){
@@ -85,7 +85,7 @@ dOntology.prototype.addProperty(id, label, comment, domain, range){
 	this.properties[pid]['rdfs:domain'] = domain;
 }
 
-dOntology.prototype.getRDF(){
+dOntology.prototype.getRDF = function(){
 	var rdf = {};
 	for(var i in this.classes){
 		rdf[i] = this.classes[i];
