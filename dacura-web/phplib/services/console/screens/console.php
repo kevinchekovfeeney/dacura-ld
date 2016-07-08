@@ -24,11 +24,11 @@ if(typeof dacura.params.jslibs == "object" && dacura.params.jslibs.length > 0){
 	}
 }
 
+
 jQuery(document).ready(function(){
 	function launchConsole(){
-		dconsole.init();
+		dconsole.init(pre_dacura_body_html);
 	}
-
 	function deferUntilConsoleLoaded(method) {
     	if (typeof dconsole != "undefined"){
         	method();

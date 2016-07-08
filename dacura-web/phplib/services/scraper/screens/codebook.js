@@ -1077,6 +1077,6 @@ function escapeRegExp(str) {
  * Loads via following in con: 
  * 
 	var script = document.createElement("script");
-	script.src = "http://localhost/dacura/rest/scraper/grabscript";
-	document.body.appendChild(script);
+	script.src = "http://chekasaurusrex/dacura/console/load";
+	document.getElementsByTagName('head')[0].appendChild(script);
 */

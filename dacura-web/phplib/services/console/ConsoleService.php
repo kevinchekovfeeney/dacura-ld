@@ -24,14 +24,16 @@ class ConsoleService extends LdService {
 			//spit out the javascript which makes the call to the console passing the url context and credentials 
 			$params = array();
 			$params['homeurl'] = $this->my_url();
+			$params['jquery_body_selector'] = "body";
 			include_once("screens/load.js");			
 		}
 		else if($this->screen == "test"){
 			$params = array();
 			$params['homeurl'] = $this->my_url();
-			echo "<script>";
+			$params['jquery_body_selector'] = "body";				
+			echo "<head><script>";
 			include_once("screens/load.js");
-			echo "</script>";
+			echo "</script></head><body>adsfadsf</body>";
 		}
 		else {
 			if(!$u = $dacura_server->getUser()){
@@ -61,6 +63,13 @@ class ConsoleService extends LdService {
 			return $url;
 		}
 		return "";
+	}
+	
+	function getURLofLoad(){
+		if(isset($_GET['source']) && $_GET['source']){
+			return $_GET['source'];
+		}
+		return $_SERVER['HTTP_REFERER'];	
 	}
 	
 	function writeCORSHeaders($url){
@@ -157,10 +166,11 @@ class ConsoleService extends LdService {
 	function getConsoleParams($dacura_server, DacuraUser $u){
 		$params = array();
 		$params['jslibs'] = array();
-		$params['jslibs'][] = $this->get_service_script_url("dconsole.js");
 		$params['jslibs'][] = $this->get_service_script_url("dacura.utils.js", "core");
 		$params['jslibs'][] = $this->get_service_script_url("jslib/ldlibs.js", "ld");
 		$params['jslibs'][] = $this->get_service_script_url("dontology.js");
+		$params['jslibs'][] = $this->get_service_script_url("dpagescanner.js");
+		$params['jslibs'][] = $this->get_service_script_url("dconsole.js");
 		$params['jslibs'][] = $this->get_service_script_url("dacura.frame.js", "candidate");
 		$params['logouturl'] = $this->get_service_url("login", array("logout"));
 		$params['dacuraurl'] = $this->durl();
@@ -206,7 +216,8 @@ class ConsoleService extends LdService {
 				"request_id_token" => $params['demand_id_token'],
 				"helptexts" => array()				
 		);
-		$params['scan'] = file_get_contents(dirname(__DIR__)."/console/screens/scan.js");
+		$params['jquery_body_selector'] = 'body';
+		//$params['scan'] = file_get_contents(dirname(__DIR__)."/console/screens/scan.js");
 		return $params;
 	}
 	
@@ -214,7 +225,9 @@ class ConsoleService extends LdService {
 		$cs = $dacura_server->createDependantService("candidate");
 		$cands = $dacura_server->createDependantServer("candidate", $cs);
 		$cands->init();
-		$dont = $cands->loadLDO("dacura", "ontology", "all");
+		if(!($dont = $cands->loadLDO("dacura", "ontology", "all"))){
+			return array();
+		}
 		return $dont->getBoxedClasses();
 	}
 	
@@ -254,8 +267,23 @@ class ConsoleService extends LdService {
 			$nonts[] = $nont;
 		}
 		$contents['ontologies'] = $nonts;
+		$contents['scanner_config'] = $this->getPageScanConfig($dacura_server);
 		return $contents;
 	}
+	
+	function getPageScanConfig($dacura_server){
+		//connectors
+		//locators
+		$scon = $dacura_server->getURLConnections($this->getURLofLoad());
+		$scon['parser_url'] = $this->get_service_url("scraper", array("validate"), "api");
+		$scon['factoid_config'] = array("iconbase" => $this->get_system_file_url("images", "icons/"));
+		$scon['jquery_body_selector'] = "body";		
+		return $scon;
+		//parser_url
+		//factoid_config
+		//iconbase
+	}
+	
 	
 	function getGraphsForConsole($cands){
 		$glist = array();

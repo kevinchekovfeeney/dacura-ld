@@ -1,8 +1,5 @@
 //variable that changes with each class - global variable as hangover from something...
 var parentClasses = [];
-if(typeof dconsole == "undefined"){
-	dconsole = {};//temporary thing while we're waiting for it to load??
-}
 
 function dOntology(json, config){
 	this.id = json.id;

@@ -18,8 +18,8 @@ class Graph extends LDO {
 	function setLDRules(&$srvr){
 		parent::setLDRules($srvr);
 		$this->rules->setRule("import", "load_dependencies", true);
-		$this->rules->setRule("import", "replace_blank_ids", false);	
-		$this->rules->setRule("update", "replace_blank_ids", false);	
+		$this->rules->setRule("import", "replace_blank_ids", 0);	
+		$this->rules->setRule("update", "replace_blank_ids", 0);	
 	}
 	
 	/**

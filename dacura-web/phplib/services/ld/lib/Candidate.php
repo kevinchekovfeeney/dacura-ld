@@ -23,8 +23,10 @@ class Candidate extends MultiGraphLDO {
 		//$this->rules->setRule("import", "transform_import", false);
 		$this->rules->setRule("update", 'expand_embedded_objects', false);		
 		$this->rules->setRule("validate", "require_candidate_type", $req);
-		if($req){ 	
-			$this->rules->setRule("validate", "valid_candidate_types", array_keys($srvr->valid_candidate_types)); 
+		if($req){ 
+			if($srvr->valid_candidate_types){		
+				$this->rules->setRule("validate", "valid_candidate_types", array_keys($srvr->valid_candidate_types)); 
+			}
 		}
 	}
 	
@@ -43,6 +45,7 @@ class Candidate extends MultiGraphLDO {
 			$this->valid_types =& $srvr->valid_candidate_types;
 		}	
 		if(parent::importLD($mode, $srvr)){
+			//we want to fetch the rdf type when it is present in updates and when it is 
 			if($this->meta || $mode == "create"){
 				$this->getRDFType();
 			}

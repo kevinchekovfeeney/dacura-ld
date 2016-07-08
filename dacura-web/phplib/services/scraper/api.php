@@ -188,7 +188,6 @@ function parseVariable(){
  */
 function parseVariables(){
 	global $dacura_server;
-	header("Access-Control-Allow-Origin: *");
 	$dacura_server->init("parseVariables");
 	if(isset($_POST["data"]) && $_POST["data"] && ($vars = json_decode($_POST['data'], true))){
 		$results = array();

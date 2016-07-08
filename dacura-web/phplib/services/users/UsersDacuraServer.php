@@ -469,7 +469,7 @@ class UsersDacuraServer extends DacuraServer {
 			include("screens/invite_email.php");
 			$output = ob_get_contents();
 			ob_clean();
-			$content = $message . $output;
+			$content = $message . "\n\n". $output;
 			sendemail($user, $this->getServiceSetting('invite_email_subject', "Invitation to join Data Curation Project"), $content, $this->getSystemSetting('mail_headers',""));
 			$this->recordUserAction("invite user", array("email" => $user, "role" => $role));
 			return true;

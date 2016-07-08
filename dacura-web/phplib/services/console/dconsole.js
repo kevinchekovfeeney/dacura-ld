@@ -15,9 +15,11 @@ var dconsole = {
 	}
 };
 
-dconsole.init = function(){
+dconsole.init = function(html){
+	dconsole.scanPage(html, dacura.params.context);
 	dconsole.showUserOptions(dacura.params.context.mode);
-	dconsole.setContext(dacura.params.context, dconsole.scanPage);
+	dconsole.setContext(dacura.params.context);
+	//dconsole.setContext(dacura.params.context, dconsole.scanPage);
 }
 
 dconsole.getURLForOntologyID = function(id){
@@ -127,7 +129,10 @@ dconsole.setContext = function(context, callback){
 			jQuery('#dacura-console .console-context select.console-property-list').val(context['property']);
 			jQuery('#dacura-console .console-context select.console-property-list').selectmenu("refresh");
 			dconsole.changeModelProperty(context, callback);
-		}		
+		}
+		else {
+			if(typeof callback == "function") callback(context);			
+		}
 	}
 	else if(context){
 		if(typeof context.type == "string"){
@@ -135,16 +140,22 @@ dconsole.setContext = function(context, callback){
 			jQuery('#dacura-console .console-context select.console-entity-type').selectmenu("refresh");
 			dconsole.changeEntityType(context, callback);
 		}
-		if(typeof context.entity == "string"){
+		else if(typeof context.entity == "string"){
 			jQuery('#dacura-console .console-context select.console-entity-list').val(context.entity);
 			jQuery('#dacura-console .console-context select.console-entity-list').selectmenu("refresh");	
 			dconsole.changeEntityList(context, callback);
 		}	
-		if(typeof context.property == "string"){
+		else if(typeof context.property == "string"){
 			jQuery('#dacura-console .console-context select.console-properties').val(context.property);
 			jQuery('#dacura-console .console-context select.console-properties').selectmenu("refresh");	
 			dconsole.changeProperty(context, callback);
 		}
+		else {
+			if(typeof callback == "function") callback(context);
+		}
+	}
+	else {
+		if(typeof callback == "function") callback(false);
 	}
 }
 
@@ -270,7 +281,6 @@ dconsole.closeCreateCandidate = function(callback){
 	dconsole.loaded_properties = {};
 	dconsole.clearExtra();
 };
-
 
 dconsole.closeViewCandidate = dconsole.closeCreateCandidate; 
 
@@ -537,7 +547,9 @@ dconsole.loadOntologyDetails = function(ont, context, callback){
 	else if(pval.length){
 		dconsole.changeModelProperty(context, callback);
 	}
-	else if(typeof callback == "function") { callback(context) };
+	else if(typeof callback == "function") { 
+		callback(context); 
+	};
 }
 
 dconsole.changeClass = function(context, callback){
@@ -1255,13 +1267,13 @@ dconsole.updateOntology = function(onturl, rdf, meta, options, pconfig, test, ca
 			if(typeof pconfig.context == 'object'){
 				dconsole.reload(pconfig.context);
 			}
+			var cfunc = function(){
+				//alert(gurl);
+				i--;
+			};
 			var gtore = dconsole.getGraphsToRedeploy(ontid);
 			var i = size(gtore);
 			for(var gurl in gtore){
-				var cfunc = function(){
-					//alert(gurl);
-					i--;
-				};
 				dconsole.updateGraph(gurl, gtore[gurl], false, dacura.params.deploy_options, pconfig, false, cfunc, failcallback);
 			}		
 			if(typeof(callback) == "function") {
@@ -1323,11 +1335,26 @@ dconsole.updateGraph = function(gurl, rdf, meta, options, pconfig, test, callbac
 	return this.dispatchXHR(xhr);	
 }
 
-dconsole.scanPage = function(context){
-	console.log("this should be over-written by a dacura scan script");	
+dconsole.scanPage = function(html, context){
+	var complete= function(results){
+		//jpr(results);
+		//dconsole.loadExtra(dacura.pageScanner.getScanSummaryHTML());
+	}
+	var upd = function(upd, callback){
+		if(upd.cid){
+			dconsole.updateCandidate(upd.cid, upd.contents, false, this.menu_pconfig, true, callback);			
+		}
+		else {
+			dconsole.createCandidate(upd.ctype, false, upd.contents, false, this.menu_pconfig, true, callback);
+		}		
+	}
+	var sconfig = dacura.params.collection_contents.scanner_config;
+	sconfig.load_callback = function(x){
+		jpr(x);
+	}
+	dacura.pageScanner.init(html, context, sconfig, this.ontologyMode);
+	dacura.pageScanner.scan(sconfig.connectors, sconfig.locators, upd, complete);
 }
-
-
 
 /* contacts the server and resets various values in response to context switches or state changes */
 dconsole.reload = function(context){
