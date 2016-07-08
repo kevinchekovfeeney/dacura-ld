@@ -1336,6 +1336,9 @@ dconsole.updateGraph = function(gurl, rdf, meta, options, pconfig, test, callbac
 }
 
 dconsole.scanPage = function(html, context){
+	if(!html || !html.length){
+		return;
+	}
 	var complete= function(results){
 		//jpr(results);
 		//dconsole.loadExtra(dacura.pageScanner.getScanSummaryHTML());
