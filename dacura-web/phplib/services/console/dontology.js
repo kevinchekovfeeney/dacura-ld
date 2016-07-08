@@ -60,6 +60,41 @@ dOntology.prototype.hasBoxedTypes = function(){
 	return (size(this.boxtypes) > 0);
 }
 
+dOntology.prototype.addClass(id, label, comment, type, parent, choices){
+	var cid = this.id + ":" + id;
+	this.classes[cid] = {"rdfs:label": label, "rdfs:comment": comment, "rdf:type": "owl:Class"};
+	if(type == "enumerated"){
+		this.classes[cid]["rdfs:subClassOf"] = "dacura:Enumerated";
+		this.classes[cid]["owl:OneOf"] = choices;
+	}
+	else if(parent && parent.length){
+		this.classes[cid]["rdfs:subClassOf"] = parent;
+	}
+}
+
+dOntology.prototype.addProperty(id, label, comment, domain, range){
+	var pid = this.id + ":" + id;
+	this.properties[pid] = {"rdfs:label": label, "rdfs:comment": comment};
+	if(domain.substring(0,3) == "xsd"){
+		this.properties[pid]["rdf:type"] = "owl:DatatypeProperty";
+	}
+	else {
+		this.properties[pid]["rdf:type"] = "owl:ObjectProperty";
+	}
+	this.properties[pid]['rdfs:range'] = range;
+	this.properties[pid]['rdfs:domain'] = domain;
+}
+
+dOntology.prototype.getRDF(){
+	var rdf = {};
+	for(var i in this.classes){
+		rdf[i] = this.classes[i];
+	}
+	for(var i in this.properties){
+		rdf[i] = this.properties[i];
+	}
+	return rdf;
+}
 
 dOntology.prototype.calculateEntityClasses = function(){
 	var cls = [];
