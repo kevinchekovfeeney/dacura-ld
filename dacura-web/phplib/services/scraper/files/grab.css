@@ -155,7 +155,15 @@ div.vardatapoints  {
 	display: none;
 } 
 
+div.varinstances  {
+    padding: 6px;
+	display: none;
+} 
 
+div.varnewinstance  {
+    padding: 6px;
+	display: none;
+}
 
 #validator-variable {
 	width: 96%;
