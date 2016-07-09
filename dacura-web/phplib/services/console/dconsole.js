@@ -945,7 +945,7 @@ dconsole.getXHRTemplate = function(pconfig, success_callback){
 	
 		}
 		else {
-			dconsole.writeResultMessage("error", "Server response indicates failure", textStatus, pcofig);
+			dconsole.writeResultMessage("error", "Server response indicates failure", textStatus, pconfig);
 		}
 	};
 	xhr.beforeSend = function(){

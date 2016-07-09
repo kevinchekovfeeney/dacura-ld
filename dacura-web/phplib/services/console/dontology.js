@@ -72,7 +72,7 @@ dOntology.prototype.addClass = function(id, label, comment, type, parent, choice
 	}
 }
 
-dOntology.prototype.addProperty=function(id, label, comment, domain, range){
+dOntology.prototype.addProperty = function(id, label, comment, domain, range){
 	var pid = this.id + ":" + id;
 	this.properties[pid] = {"rdfs:label": label, "rdfs:comment": comment};
 	if(domain.substring(0,3) == "xsd"){

@@ -19,10 +19,14 @@ dacura.pageScanner.init = function(bodyContents, dataset_context, config, modelm
 }
 
 dacura.pageScanner.loadFactoid = function(fid){
-	jpr(this.factoids[fid]);
 	if(typeof this.loadFactoidHandler == "function"){
-		this.loadFactoidHandler(fid);
+		//this.loadFactoidHandler(fid);
+		this.showFactoid(fid);
 	}
+}
+
+dacura.pageScanner.showFactoid = function(fid){
+	dconsole.loadExtra(JSON.stringify(this.factoids[fid]))
 }
 
 dacura.pageScanner.getScanSummaryHTML = function(){

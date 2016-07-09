@@ -30,10 +30,11 @@ class ConsoleService extends LdService {
 		else if($this->screen == "test"){
 			$params = array();
 			$params['homeurl'] = $this->my_url();
-			$params['jquery_body_selector'] = "body";				
-			echo "<head><script>";
-			include_once("screens/load.js");
-			echo "</script></head><body>adsfadsf</body>";
+			include_once("screens/test.php");
+		}
+		else if($this->screen == "init"){
+			$params = array();
+			include_once("screens/dacura.init.js");
 		}
 		else {
 			if(!$u = $dacura_server->getUser()){

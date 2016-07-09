@@ -7,7 +7,7 @@ if(typeof dacura.system == "undefined"){
 	dacura.system = {};
 }
 dacura.system.cid = function(){
-	return (typeof dacura.params.context.collection == "string" ? dacura.params.context.collection : "") ;
+	return ((typeof dacura.params.context == "object" && typeof dacura.params.context.collection == "string") ? dacura.params.context.collection : "") ;
 }
 
 dacura.system.ajax_url = "<?=$service->durl(true)?>";
