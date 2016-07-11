@@ -204,21 +204,49 @@ dacura.frame.extractionConverter = function (frameArray, cls){
 
 dacura.frame.subframeExtraction = function(frameArray, cls){
     var tmpArray = []
+
     for(var i = 0;i<frameArray.length;i++){
         var uniqueID = "_:" + dacura.frame.generateUUID();
         var tmp = frameArray[i];
         var prop = tmp.property;
         var type = tmp.range;
+
         if(typeof tmp.frame !== 'undefined' && tmp.frame){
-            var data = dacura.frame.subframeExtraction(tmp.frame, type);
+            var data = "{ ";
+             if(polygon != null){ 
+              var vertices = polygon.getPath();
+           
+              for (var j =0; j < vertices.getLength(); j++) {
+                var xy = vertices.getAt(j);
+                if(prop == "http://dacura.scss.tcd.ie/ontology/seshat#latitude"){
+                    if(data == "{ ")
+                        data = "[ " + xy.lat();
+                    else
+                        data = data + " , " + xy.lat();
+                }                 
+                else if(prop == "http://dacura.scss.tcd.ie/ontology/seshat#longitude")
+                    if(data == "{ ")
+                        data = "[ " + xy.lng();
+                    else
+                        data = data + " , " + xy.lng();
+                
+              }
+              data = data + " ]";
+
+            }else{
+                data = dacura.frame.subframeExtraction(tmp.frame, type);
+            }
             var y = '"' + prop + '": ' + data;
+           
+
         }else if(typeof tmp.contents !== 'undefined' && tmp.contents){
             var data = tmp.contents;
             var lang = tmp.label.lang;
             var y = '"' + uniqueID + '": {"rdf:type": "' + cls + '", ';
             y = y + '"' + prop + '": {' + '"type": "' + type + '", "data": "' + data + '"}}'
         }else{
-            alert("something's gone wrong");
+              alert("something's gone wrong");
+            
         }
         tmpArray.push(y);
     }
@@ -307,6 +335,120 @@ createInput = function(elt, contentDiv, mode, inputDiv){
 
 }
 
+/********************************************************************************************************
+***********************************CODE FOR THE MAP IN TERRITORY ****************************************
+*********************************************************************************************************/
+var polylineArray = [];
+var map;
+var lastPoly;
+
+
+function removePolygon(polygon){
+    polygon.setMap(null);
+    //remove from array as well
+}
+
+function initMap2(mapId, mapLat, mapLong, listenerFunction) {
+  //In case the latitude and logitude not setted, put some value in it
+  if(mapLat == 0)
+    mapLat = '41.9010004'; 
+  if(mapLong == 0)
+    mapLong = '12.500061500000015';
+
+  map = new google.maps.Map(mapId, {
+    zoom: 2,
+    center: {lat: parseFloat(mapLat), lng: parseFloat(mapLong)}  
+  });
+
+  var poly;
+  createPolyline(poly);
+  if(listenerFunction == "addLatLng"){ //In case there is some function being passed
+      map.addListener('click', addLatLng);
+
+  }
+
+}
+
+function createPolyline(poly){
+  poly = new google.maps.Polyline({
+      strokeColor: '#000000',
+      strokeOpacity: 1.0,
+      strokeWeight: 3
+    });
+  poly.setMap(map);
+  lastPoly = poly;
+  polylineArray.push(poly);
+
+}
+
+var firstMarker = null;
+var markersArray = [];
+var polygon= null;
+
+var coords = [];
+var polygonsArray = [];
+
+
+function clearMarkers(markersArray) {
+  for (var i = 0; i < markersArray.length; i++ ) {
+    markersArray[i].setMap(null);
+  }
+  markersArray.length = 0;
+}
+// Handles click events on a map, and adds a new point to the Polyline.
+function addLatLng(event) {
+  if(polygon == null){
+        var path = lastPoly.getPath();
+
+          path.push(event.latLng);
+
+          // Add a new marker at the new plotted point on the polyline.
+          var marker = new google.maps.Marker({
+            position: event.latLng,
+            title: '#' + path.getLength(),
+            map: map
+          });
+
+          markersArray.push(marker);
+          coords.push(marker.position);
+          //alert(coords.lat().toSource());
+
+          if(firstMarker == null){
+              firstMarker = marker;
+          }
+
+           firstMarker.addListener('click', function() {
+              lastPoly.setMap(null);
+
+              polygon = new google.maps.Polygon({
+                paths: coords,
+                strokeColor: '#FF0000',
+                strokeOpacity: 0.2,
+                strokeWeight: 3,
+                fillColor: '#FF0000',
+                fillOpacity: 0.35
+              });
+              polygon.setMap(map);
+              //polygonsArray.push(polygon);
+              //coords = [];
+              clearMarkers(markersArray);
+              //var poly;
+              //createPolyline(poly);
+             
+
+          });
+    
+  }
+  
+
+}
+
+
+/********************************************************************************************
+********************************************************************************************/
+
+
+
 dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
 
     //this should probably insert the data into the DOM for redundancy and ease of access
@@ -347,12 +489,39 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
 
                 //create right hand side- BEGIN OF INPUTS
                 if (elt.type == 'objectProperty' && elt.frame != "") {
-                  
-                    var subframe = elt.frame;
-                    var subframeDiv = document.createElement("div");
-                    subframeDiv.setAttribute('class', 'embedded-object');
-                    dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
-                    contentDiv.appendChild(subframeDiv);
+                    if(elt.range == "http://dacura.scss.tcd.ie/ontology/seshat#Territory"){
+                        var mapDiv = document.createElement("div");
+                       
+
+
+                        mapDiv.setAttribute('id', 'mapTerritory');
+                        mapDiv.style.width = "100%";
+                        mapDiv.style.height = "400px";
+
+                       
+                        contentDiv.appendChild(mapDiv);
+                       
+                       //REMOVE BUTTON
+                        /*var btnDiv = document.createElement("div");
+                        var btn = document.createElement("button");        
+                        var t = document.createTextNode("remove last polygon");       
+                        btn.appendChild(t);
+                        btnDiv.appendChild(btn);   
+                        btnDiv.style.width = "10%";
+                        btnDiv.style.height = "20px";                           
+                        contentDiv.appendChild(btnDiv);*/
+                       
+                       // dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
+                        initMap2(mapDiv, 0, 0, 'addLatLng');
+                    }
+                    else{
+                        var subframe = elt.frame;
+                        var subframeDiv = document.createElement("div");
+                        subframeDiv.setAttribute('class', 'embedded-object');
+                        dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
+                        contentDiv.appendChild(subframeDiv);
+                    }
+                    
                     
                 } else if (elt.type == 'datatypeProperty' || (elt.type == 'objectProperty' && elt.frame == "")) {
                   
@@ -376,7 +545,7 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                     inputDiv.appendChild(input);
                     contentDiv.appendChild(inputDiv);
                     var ty = dacura.frame.typeConvert(elt.range);
-                    var inputdata = "A.C.||B.C.";
+                    var inputdata = "CE||BCE";
                     if(ty == "text" || ty == "checkbox")
                        input.setAttribute('type', ty);
                     else if(ty == "select"){
@@ -399,7 +568,7 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                     if(elt.property == "http://dacura.scss.tcd.ie/ontology/seshat#precedingQuasipolity" || elt.property == "http://dacura.scss.tcd.ie/ontology/seshat#succeedingQuasipolity"){
                     //add code here. use the api to get the list of polities for succeding and preceding polities
 
-
+                    
                     }
                 }*/
             } else {
@@ -544,6 +713,8 @@ dacura.frame.typeConvert = function (ty) {
             return 'select';
         case "http://dacura.scss.tcd.ie/ontology/seshat#Duration":
             return 'duration';
+        case "http://dacura.scss.tcd.ie/ontology/seshat#Territory":
+            return territory;
         default:
             return 'text';
     }
