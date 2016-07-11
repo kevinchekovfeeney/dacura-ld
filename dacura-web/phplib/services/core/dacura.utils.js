@@ -187,6 +187,10 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
+function escapeRegExp(str) {
+	return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
+
 function urlFragment(url){
 	url = (typeof url == "undefined") ? window.location.href : url;
 	url = url.split('#')[1];
@@ -235,6 +239,10 @@ function nvArrayToOptions(nv, selected){
  */
 function jpr(obj){
 	alert(JSON.stringify(obj));
+}
+
+function toTitleCase(str) {
+    return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 }
 
 /**

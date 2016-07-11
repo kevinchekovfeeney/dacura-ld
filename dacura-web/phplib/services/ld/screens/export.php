@@ -14,7 +14,7 @@
             <input type="text" id="tempquery" list="time-dl" size=50>
             <p>From:<br><input type="date" id="from"></p>            
             <p>To:<br><input type="date" id="to"></p>            
-            <input type="button" value="Query" onclick="timeQuery(document.getElementById('tempquery').value, document.getElementById('from').value, document.getElementById('to').value);">
+            <input type="button" value="Export" onclick="timeQuery(document.getElementById('tempquery').value, document.getElementById('from').value, document.getElementById('to').value);">
         </div>
         <div id="Uncertainty" class="tabcontent">
             <p>Uncertain Class</p>

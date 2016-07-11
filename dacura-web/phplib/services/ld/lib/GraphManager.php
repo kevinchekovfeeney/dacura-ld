@@ -141,7 +141,7 @@ class GraphManager extends DacuraController {
 		if(!is_array($content)){
 			$result = json_decode($content, true);
 		}
-		if(!$result){
+		if($result === false){
 			return $dqsr->failure(400, "Failed to parse json of DCS response", $content);
 		}
 		if(isset($result['type']) && $result['type'] == "error"){

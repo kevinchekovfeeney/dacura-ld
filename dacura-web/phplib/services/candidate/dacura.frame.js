@@ -8,7 +8,7 @@
 //and then call insertWidgets
 var script = document.createElement("script");
 script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDD_KgqQgwVDiXFFVFDiwypsBN_k9TLJD8";
-document.body.appendChild(script);
+document.getElementsByTagName('head')[0].appendChild(script);
 
 dacura.frame = {};
 dacura.frame.api = {};

@@ -35,7 +35,7 @@ class RVO {
 		"PropertyCycle","SchemaBlankNode", "InstanceProperty", "NoPropertyDomain", "NoPropertyRange","InvalidEdge", 
 		"NotFunctionalProperty", "NotInverseFunctionalProperty", "LocalOrphanProperty", "NotAnElement", "ObjectInvalidAtClass",
 		"NotRestrictionElement","EdgeOrphanInstance", "DataInvalidAtDatatype", "NotBaseTypeElement", "InstanceBlankNode",
-		"Dependency", "MissingDependency", "IllegalPredicate", "IncorrectURL", "OntologyHijack", "annotationOverload"		
+		"Dependency", "MissingDependency", "IllegalPredicate", "IncorrectURL", "OntologyHijack", "annotationOverload", "DeleteFailure" 		
 	);
 	
 	/**
@@ -232,6 +232,16 @@ class RVO {
 		}
 		return $viols;
 	}	
+}
+
+class DeleteFailureViolation extends RVO {
+	var $deletes;
+	function __construct($props = false){
+		parent::__construct($props);
+		if(isset($props['deletes'])){
+			$this->deletes = $props['deletes'];
+		}		
+	}
 }
 /* The schema part of the class hierarchy */
 

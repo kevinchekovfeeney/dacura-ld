@@ -2,7 +2,7 @@
 include "phplib/services/ld/ld_settings.php";
 
 $settings["service-title"] = "Ontology Management Service";
-$settings["service-button-title"] = "Ontologies";
+$settings["service-button-title"] = "Models";
 
 $settings['import_replace_blank_ids'] = true;
 $settings['update_replace_blank_ids'] = true;

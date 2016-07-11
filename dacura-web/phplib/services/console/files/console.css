@@ -528,6 +528,32 @@ img.result-icon {
 	min-width: 400px;
 }
 
+#dacura-console .dacura-scanned-fact {
+	display: inline;
+	padding: 2px 6px;
+	cursor: pointer;
+	border: 1px solid white;
+	
+}
+#dacura-console .dacura-selected-fact {
+	border: 1px #888 dashed;
+	background-color:#FFFFE0;
+}
+
+#dacura-console .page-scan-summary dl, 
+#dacura-console .page-scan-summary dt, 
+#dacura-console .page-scan-summary dd {
+	display: inline-block;
+}
+
+#dacura-console .page-scan-summary dt {
+	margin-right: 2px;
+} 
+
+#dacura-console .page-scan-summary dd {
+	margin-right: 6px;
+	margin-left: 2px;
+}
 
 .uhover {
 	background: rgba(210, 230, 255, 0.9) !important;
@@ -553,7 +579,11 @@ img.result-icon {
 	text-align: right;
 }
 
-
+img.factoid-icon {
+	max-height: 24px;
+	margin-right: 6px;
+	margin-left: 6px;
+}
 
 .dch {
 	display: none;
