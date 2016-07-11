@@ -43,47 +43,6 @@ var marker = null;
 var position;
 var longitudeId, latitudeId; 
 
-dacura.frame.widgets.initMap = function(mode, latitude, longitude) {
-    //this needs to be refactored to deal with multiple maps
-    //also to not need the lat/long to be worked out higher up
-    map = new google.maps.Map(document.getElementById('googleMap'), {
-          center: {lat: latitude, lng: longitude},
-          zoom: 8
-        });
-    google.maps.event.trigger(map, 'resize');
-    //return;
-    /*var myLatlng = {lat: -25.363, lng: 131.044};
-    var mapProp = {
-      center:myLatlng,
-      zoom: 8,
-      mapTypeId: google.maps.MapTypeId.ROADMAP
-    };
-    
-    var map=new google.maps.Map(document.getElementById("googleMap"), mapProp);
-    */
-    if(mode == "create"){   
-        google.maps.event.addListener(map, 'click', function(event) {
-                position = event.latLng;
-                if(marker == null)
-                    placeMarker(position);
-                else{
-                    marker.setPosition(position);   
-                }
-                console.log(marker.getPosition().lat());
-                console.log(marker.getPosition().lng());
-                var long = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#longitude']").next().children("input")[0];
-                long.value = marker.getPosition().lng();
-                var lat = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#latitude']").next().children("input")[0];
-                lat.value = marker.getPosition().lat();
-            });
-    }
-    function placeMarker(location) {
-         marker = new google.maps.Marker({
-            position: location, 
-            map: map
-        });
-    }
-}
 
 dacura.frame.widgets.createMap = function(jQueryObject, mode, latitude, longitude){
     //refactor to deal with multiple maps
@@ -336,19 +295,14 @@ createInput = function(elt, contentDiv, mode, inputDiv){
 }
 
 /********************************************************************************************************
-***********************************CODE FOR THE MAP IN TERRITORY ****************************************
+***********************************CODE FOR THE MAP IN TERRITORY AND MAP CREATION FOR ANY PURPOSE ********
 *********************************************************************************************************/
 var polylineArray = [];
 var map;
 var lastPoly;
 
-
-function removePolygon(polygon){
-    polygon.setMap(null);
-    //remove from array as well
-}
-
-function initMap2(mapId, mapLat, mapLong, listenerFunction) {
+ 
+function initMap(mapId, mapLat, mapLong, listenerFunction, mode) {
   //In case the latitude and logitude not setted, put some value in it
   if(mapLat == 0)
     mapLat = '41.9010004'; 
@@ -360,17 +314,40 @@ function initMap2(mapId, mapLat, mapLong, listenerFunction) {
     center: {lat: parseFloat(mapLat), lng: parseFloat(mapLong)}  
   });
 
-  var poly;
-  createPolyline(poly);
+ 
+  createPolyline();
+
   if(listenerFunction == "addLatLng"){ //In case there is some function being passed
       map.addListener('click', addLatLng);
 
   }
+  if(mode == "create"){   
+        google.maps.event.addListener(map, 'click', function(event) {
+                position = event.latLng;
+                if(marker == null)
+                    placeMarker(position);
+                else{
+                    marker.setPosition(position);   
+                }
+                console.log(marker.getPosition().lat());
+                console.log(marker.getPosition().lng());
+                var long = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#longitude']").next().children("input")[0];
+                long.value = marker.getPosition().lng();
+                var lat = $("div[data-property='http://dacura.cs.tcd.ie/data/seshattiny#latitude']").next().children("input")[0];
+                lat.value = marker.getPosition().lat();
+            });
+   }
+   function placeMarker(location) {
+         marker = new google.maps.Marker({
+            position: location, 
+            map: map
+        });
+   }
 
 }
 
-function createPolyline(poly){
-  poly = new google.maps.Polyline({
+function createPolyline(){
+ var poly = new google.maps.Polyline({
       strokeColor: '#000000',
       strokeOpacity: 1.0,
       strokeWeight: 3
@@ -395,10 +372,11 @@ function clearMarkers(markersArray) {
   }
   markersArray.length = 0;
 }
+
 // Handles click events on a map, and adds a new point to the Polyline.
 function addLatLng(event) {
   if(polygon == null){
-        var path = lastPoly.getPath();
+         var path = lastPoly.getPath();
 
           path.push(event.latLng);
 
@@ -411,12 +389,11 @@ function addLatLng(event) {
 
           markersArray.push(marker);
           coords.push(marker.position);
-          //alert(coords.lat().toSource());
 
           if(firstMarker == null){
               firstMarker = marker;
           }
-
+          
            firstMarker.addListener('click', function() {
               lastPoly.setMap(null);
 
@@ -429,19 +406,33 @@ function addLatLng(event) {
                 fillOpacity: 0.35
               });
               polygon.setMap(map);
-              //polygonsArray.push(polygon);
-              //coords = [];
               clearMarkers(markersArray);
-              //var poly;
-              //createPolyline(poly);
-             
+              polygonsArray.push(polygon);
 
           });
-    
   }
-  
 
 }
+
+ //To fix: polygon is still appearing even when clearMap. But if the polygon is not complete, when it is just polylines, it works.
+ function clearMap(){
+    
+    clearMarkers(markersArray);
+    lastPoly.setMap(null);
+   
+      for (var i = polygonsArray.length - 1; i >= 0; i--) {
+         polygonsArray[i].setMap(null);
+      };
+      polygon = null;
+    
+     polylineArray = [];
+   // lastPoly = null;
+   // poly = null;
+    coords = [];
+    createPolyline();
+    firstMarker = null;
+
+ }
 
 
 /********************************************************************************************
@@ -490,9 +481,23 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                 //create right hand side- BEGIN OF INPUTS
                 if (elt.type == 'objectProperty' && elt.frame != "") {
                     if(elt.range == "http://dacura.scss.tcd.ie/ontology/seshat#Territory"){
-                        var mapDiv = document.createElement("div");
-                       
 
+
+                        //REMOVE BUTTON
+                        var btnDiv = document.createElement("div");
+                        var btn = document.createElement("button");        
+                        var t = document.createTextNode("clear map");       
+                        btn.appendChild(t);
+                        btnDiv.appendChild(btn);   
+                        btnDiv.style.width = "10%";
+                        btnDiv.style.height = "20px";                           
+                        contentDiv.appendChild(btnDiv);
+
+                        btn.addEventListener('click', function() {
+                                clearMap();
+                        }, false)
+
+                        var mapDiv = document.createElement("div");
 
                         mapDiv.setAttribute('id', 'mapTerritory');
                         mapDiv.style.width = "100%";
@@ -501,18 +506,7 @@ dacura.frame.frameGenerator = function (frame, obj, gensym, mode) {
                        
                         contentDiv.appendChild(mapDiv);
                        
-                       //REMOVE BUTTON
-                        /*var btnDiv = document.createElement("div");
-                        var btn = document.createElement("button");        
-                        var t = document.createTextNode("remove last polygon");       
-                        btn.appendChild(t);
-                        btnDiv.appendChild(btn);   
-                        btnDiv.style.width = "10%";
-                        btnDiv.style.height = "20px";                           
-                        contentDiv.appendChild(btnDiv);*/
-                       
-                       // dacura.frame.frameGenerator(subframe, subframeDiv, gensym, mode);
-                        initMap2(mapDiv, 0, 0, 'addLatLng');
+                        initMap(mapDiv, 0, 0, 'addLatLng', "");
                     }
                     else{
                         var subframe = elt.frame;
