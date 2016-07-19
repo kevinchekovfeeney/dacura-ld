@@ -17,6 +17,11 @@ if(typeof dacura_console_loaded == "undefined"){ //don't load script twice
 		style.setAttribute("href", "<?=$service->furl("css", "jquery-ui.css")?>");
 		document.getElementsByTagName('head')[0].appendChild(style);
 	}
+    
+    annotation_script = document.createElement('script');
+    annotation_script.type = "text/javascript";
+	annotation_script.src = "<?=$service->get_service_screen_url('annotation.js')?>";
+	document.getElementsByTagName('head')[0].appendChild(annotation_script);
 
 	style=document.createElement("link");	
 	style.setAttribute("rel", "stylesheet");	
