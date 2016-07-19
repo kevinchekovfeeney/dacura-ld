@@ -734,6 +734,7 @@ dOntology.prototype.getAssertionHTML = function(key, val, mode){
 dOntology.prototype.setViewMode = function(){
 	this.mode = "view";
 	jQuery("#dacura-console .console-edit-mode").fadeOut("fast");
+	jQuery("#dacura-console .console-instance-mode").fadeOut("fast");
 	jQuery("#dacura-console .console-view-mode").fadeIn("slow");
 	jQuery( "#dacura-console .console-context select.console-property-list" ).selectmenu( "enable" );
 	jQuery( "#dacura-console .console-context select.console-class-list" ).selectmenu( "enable" );
@@ -745,7 +746,18 @@ dOntology.prototype.setEditMode = function(){
 	jQuery( "#dacura-console .console-context select.console-class-list" ).selectmenu( "disable" );
 	jQuery("#dacura-console .console-edit-mode").fadeIn("slow");
 	jQuery("#dacura-console .console-view-mode").fadeOut("fast");
+	jQuery("#dacura-console .console-instance-mode").fadeOut("fast");
 	this.refreshPropertyPage();
+}
+
+dOntology.prototype.setInstancesMode = function(){
+    this.mode = "instances";
+	jQuery( "#dacura-console .console-context select.console-property-list" ).selectmenu( "disable" );
+	jQuery( "#dacura-console .console-context select.console-class-list" ).selectmenu( "disable" );
+    jQuery("#dacura-console .console-instance-mode").fadeIn("slow");
+	jQuery("#dacura-console .console-view-mode").fadeOut("fast");
+	jQuery("#dacura-console .console-edit-mode").fadeOut("fast");
+    this.refreshPropertyPage();
 }
 
 
@@ -820,6 +832,10 @@ dOntology.prototype.getUpdateClassTitle = function(cls){
 	return "<div class='console-extra-title'>Editing Class " + dets.icon + " " + cls + " " + this.getHelpFieldHTML("edit_" + dets.ctype + "_class") + "</div>";	
 }
 
+dOntology.prototype.getInstancesTitle = function(cls){
+    return "<div class='console-extra-title'>Viewing Instances of "+cls+"</div>";
+}
+
 dOntology.prototype.wrapEmpty = function(text){
 	return "<span class='console-element-empty'>" + text + "</span>";
 }
@@ -881,6 +897,19 @@ dOntology.prototype.getClassHeadline = function(cls){
 	html += "</div>";
 	html += "</div>";
 	return html;
+}
+
+dOntology.prototype.getInstancesTable = function(cls){
+    var html = "<div class='class-headline'>";
+    html += "<div class='headline-box-narrow'>";
+    html += "<table><th>Instances</th>"
+    getInstancesOfClass(cls).forEach(function(entry){
+        html += "<tr><td><a onclick=\"getAnnotationFrame('"+entry+"')\" href=#>"+entry+"</a></td></tr>";
+    });
+    html += "</table>";
+    html += "</div>";
+    html += "</div>";
+    return html;
 }
 
 dOntology.prototype.getClassLabelHTML = function(cls){
@@ -1155,6 +1184,15 @@ dOntology.prototype.getViewPropertyHTML = function(prop){
 	return html;
 };
 
+dOntology.prototype.getInstancesHTML = function(cls){
+	var html = "<div class='console-instance-mode dch console-instance-class'>";
+	html += this.getInstancesTitle(cls);
+	html += this.getInstancesTable(cls);
+	html += this.getInstanceButtons();
+	html += "</div>";
+	return html;
+}
+
 dOntology.prototype.getCreatePropertyHTML = function(){
 	var html = this.getCreatePropertyTitle();
 	html += this.getPropertyHTML(false);
@@ -1384,6 +1422,7 @@ dOntology.prototype.getRangeObjectType = function(range){
 dOntology.prototype.getViewModeButtons = function(){
 	var html ="";
 	html += "<div class='console-extra-buttons view-update-buttons'>";
+	html += "<button class='get-instances'>Instances</button>";	
 	if(this.capabilities.indexOf("test_update") != -1 || this.capabilities.indexOf("update") != -1){
 		html += "<button class='set-edit-mode'>Edit</button>";	
 	}
@@ -1446,6 +1485,14 @@ dOntology.prototype.getUpdateClassButtons = function(){
 		html += "<button class='update-class'>Update Class</button>";	
 		html += "<button class='delete-class'>Delete Class</button>";
 	}
+	html += "</div>";
+	return html;
+}
+
+dOntology.prototype.getInstanceButtons = function(){
+	var html = this.getMessageFieldHTML();
+	html += "<div class='console-extra-buttons instance-buttons'>";
+	html += "<button class='cancel-edit cancel-class-update'>Cancel</button>";	
 	html += "</div>";
 	return html;
 }
@@ -1583,6 +1630,9 @@ dOntology.prototype.initSubscreen = function(){
 	jQuery("#dacura-console .console-extra button.set-edit-mode").button({icons: {primary: "ui-icon-pencil"}}).click(function(){
 		self.setEditMode();
 	});
+    jQuery("#dacura-console .console-extra button.get-instances").button().click(function(){
+		self.setInstancesMode();
+	});
 }
 
 dOntology.prototype.initClassScreen = function(){
@@ -1619,6 +1669,11 @@ dOntology.prototype.initUpdateClass = function(update_callback, delete_callback)
 	jQuery("#dacura-console .console-extra-buttons button.delete-class").button({icons: {primary: "ui-icon-trash"}}).click(function(){
 		self.deleteClass(delete_callback);
 	});
+}
+
+dOntology.prototype.initInstance = function(){
+    var self = this;
+    self.initClassScreen();
 }
 
 dOntology.prototype.initCreateClass = function(create_callback){
