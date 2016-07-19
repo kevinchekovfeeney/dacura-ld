@@ -376,9 +376,11 @@ Class Ontology extends LDO {
 					}
 				}							
 			}
+			$fail_setting = $srvr->getServiceSetting("fail_on_ontology_hijack", false);
+            $fail_on_ontology_hijack = $srvr->getServiceSetting("fail_on_ontology_hijack", false) == "false" ? false : $fail_setting;
 			if(count($violations) > 0 && $srvr->getServiceSetting("fail_on_ontology_hijack", false)){
 				$ores->errors = array_merge($ores->errors, $violations);
-				return $ores->failure(400, "Ontology Hijacking identified in ontology", count($ores->warnings) . " instances detected");				
+				return $ores->failure(400, "Ontology Hijacking identified in ontology", count($violations) . " instances detected");
 			}
 			else {
 				$ores->warnings = array_merge($ores->warnings, $violations);

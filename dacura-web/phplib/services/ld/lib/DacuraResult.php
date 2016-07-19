@@ -420,7 +420,7 @@ class DacuraResult extends DacuraObject {
 		if(count($this->warnings) > 0){
 			$apiobj['warnings'] = $this->warnings;
 		}
-		if($this->result){
+		if(isset($this->result) &&  $this->result !== false && $this->result !== null){
 			if(is_object($this->result) && method_exists($this->result, "display")){
 				if($this->result->getContentInFormat($format, $options, $srvr, "display")){
 					$apiobj['result'] = $this->result->forAPI($format, $options);
