@@ -824,11 +824,11 @@ dconsole.getCreateClassHTML = function(){
 
 dconsole.getViewClassHTML = function(cls){
 	var html = "<div class='console-extra-screen console-view-class'>";
-	html += this.current_ontology.getViewClassHTML(cls);	
+	html += this.current_ontology.getViewClassHTML(cls);
+    html += this.current_ontology.getInstancesHTML(cls);
 	html += "</div>";
 	return html;
 };
-
 
 dconsole.getCreatePropertyHTML = function(){
 	var html = "<div class='console-extra-screen console-create-property'>";
