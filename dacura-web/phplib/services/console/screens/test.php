@@ -43,7 +43,7 @@ var fail = function(x, y, z){
 jQuery(document).ready(function(){
 	//dac = new DacuraClient("http://chekasaurusrex/dacura/");
 	//dac.init(loadOntAndAddStupidClass, fail);
-	var console_config = {id: "dacura-console", autoload: true, durl: "http://chekasaurusrex/dacura/"};
+	var console_config = {id: "dacura-console", autoload: true, durl: "<?=$service->durl()?>"};
 	dacuraConsole = new DacuraConsole(console_config);
 	function success(caps){
 		//alert("success");
