@@ -946,6 +946,18 @@ class DacuraService extends DacuraObject {
 		$durl = $this->getSystemSetting("services_url");
 		return $durl.$servicen."/files/".$fname;
 	}
+    
+    /**
+	 * URL of a file that is associated with a particular service
+	 * @param string $fname filename
+	 * @param string $servicen service name
+	 * @return string url
+	 */
+	function get_service_screen_url($fname, $servicen = false){
+		$servicen = ($servicen ? $servicen : $this->name());
+		$durl = $this->getSystemSetting("services_url");
+		return $durl.$servicen."/screens/".$fname;
+	}
 	
 	/**
 	 * Get the URL of a script associated with a particular service
