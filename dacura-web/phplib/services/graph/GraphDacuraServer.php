@@ -158,7 +158,7 @@ class GraphDacuraServer extends LdDacuraServer {
 		foreach($imports as $id => $rec){
 			if(!$ont = $this->loadLDO($id, "ontology", $rec['collection'], false, $rec['version'])){
 				return false;
-			}	
+			}
 			$quads = array_merge($quads, $ont->typedQuads($graph->schemaGname()));				
 		}
 		return $quads;

@@ -368,14 +368,16 @@ class DacuraServer extends DacuraController {
 		if(!$u = $this->getUser()){
 			return $this->failure_result("User is not logged in - no roles", 400);
 		}
+		
 		$cols = $this->getCollectionList();
 		$choices = array();
-		if($u->hasCollectionRole("all", $role)){
-			$choices["all"] = array("title" => "All collections");
-		}	
+		//if($u->hasCollectionRole("all", $role)){
+		//	$choices["all"] = array("title" => "All collections");
+		//}	
 		foreach($cols as $colid => $col){
 			if($u->hasCollectionRole($colid, $role) or $u->hasCollectionRole("all", $role)){
-				$choices[$colid] = array("title" => $col->name);
+				$icon = $col->getIcon() ? $col->getIcon() : $this->service->furl("images", "system/collection_icon.png");
+				$choices[$colid] = array("title" => $col->name, "icon" => $icon);
 			}
 		}
 		return $choices;

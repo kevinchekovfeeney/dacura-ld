@@ -7,28 +7,188 @@
 	left: 0px;
 	min-height: 36px;
 	width: 100%;
+	font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
+	display: none;
 	border-bottom: 2px solid  #F0E68C;
+}
+
+#dacura-console.uninitialised {
 	background: rgba(28, 16, 19, 0.9);
-	color: #eeeeee;
-	font-size: 15px;
-	font-family: 'Open Sans', Helvetica;
+}
+
+#dacura-console.browser {
+	background: rgb(107, 8, 89);	
+}
+
+#dacura-console.model {
+	background: rgb(9, 16, 109);
+}
+
+#dacura-console.data {
+	background: rgb(14, 116, 19);
+}
+
+#dacura-console.harvester {
+	background: rgb(56, 16, 19);
 }
 
 
+#dacura-console img.console-icon {
+	height: 24px;
+}
+
+#dacura-console span.context-picked {
+	display: none;
+}
+
+#dacura-console .console-context {
+}
+
+#dacura-console .console-context .context-select-holder {
+	font-size: 0.8em;
+	vertical-align: 8;
+}
+
+#dacura-console .console-collection .context-select-holder {
+	font-size: 0.8em;
+	vertical-align: 8;
+}
+
+#dacura-console .console-collection .context-element, 
+#dacura-console .console-context .context-element {
+	display: inline-block;
+}
+
+#dacura-console .console-collection .context-select-holder select{
+	width: 220px;
+}
+
+#dacura-console .console-context .context-select-holder select{
+	width: 180px;
+}
+
+#dacura-console .console-collection,
+#dacura-console .console-context {
+	margin-left: 6px;
+}
+
+#dacura-console .console-collection .collection-title-text {
+ min-width: 200px;
+ margin-left: 4px;
+}
+
+#dacura-console .console-collection .context-collection-picked .collection-title-text,
+#dacura-console .console-context .context-collection-picked .collection-title-text {
+	max-width: 200px;
+	padding: 4px 0px 4px 4px;
+	vertical-align: 4;
+	overflow: hidden;
+}
+
+#dacura-console .console-collection .context-collection-picked .collection-title-changer:hover {
+	cursor: pointer;
+	background: rgba(28, 56, 185, 0.9);
+} 
+
+#dacura-console .console-collection .context-collection-picked .collection-title-changer {
+    padding: 0 4px;
+    
+}
+
+#dacura-console .dacura-console-topbar {
+	color: #eeeeee;
+	font-size: 15px;
+	height: 36px;
+	vertical-align: middle;
+}
+
+
+
+#dacura-console .dacura-console-topbar div {
+	display: inline-block;
+}
+
+#dacura-console .dacura-console-topbar div.menu-area {
+	margin: 0;	
+}
+
+#dacura-console div.console-user-close:hover, 
+#dacura-console .dacura-console-topbar div.console-branding:hover {
+	background: rgba(185, 56, 24, 0.9);
+	cursor: pointer;	
+}
+
+#dacura-console .console-mode {
+	padding-right: 6px;
+}
+
+#dacura-console .console-user {
+	background: rgba(248, 236, 229, 0.8);
+	border-left: 1px solid #eee;
+	border-right: 1px solid #eee;
+}
+
+#dacura-console .console-user-roles {
+	padding-left: 6px;
+	padding-right: 6px;
+}
+
+#dacura-console img.console-user-icon {
+	height: 34px;
+	margin-bottom: -2px;
+}
+
+#dacura-console div.console-user-close {
+	padding: 10px 6px 8px 6px;
+	vertical-align: 8;
+}
+
+
+#dacura-console .dacura-console-topbar div.console-branding {
+	margin: 0;
+	padding: 5px 2px 5px 0;
+}
+
+#dacura-console div.console-browser-buttons{
+	vertical-align: 4;
+	padding-left: 4px;
+}
+
+#dacura-console div.console-busybox {
+	vertical-align: 5;
+}
+
+#dacura-console div.console-resultbox {
+	vertical-align: 4;
+}
+	
+#dacura-console span.console-toolname {
+	vertical-align: 4;
+	margin-right: 6px;
+}
+
+#dacura-console span.mode-icons {
+	display: none;
+}
+
+#dacura-console .console-menubar-rhs {
+	float: right;
+}
+/*
 #dacura-console #dacura-console-menu-message {
 	display: inline-block;	
 	max-height: 20px;
 	padding: 0px 3px 6px 3px;
 }
 
-#dacura-console .console-icon {
+#dacura-console img.console-icon {
 	vertical-align: middle;
 	margin-bottom: 3px;
 }
 
 #dacura-console textarea,
 #dacura-console input {
-	font-family: 'Open Sans', Helvetica;	
+	font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
 }
 
 #dacura-console .console-extra {
@@ -54,9 +214,6 @@
 	min-height: 32px;
 }
 
-/*
-Message box itself
-*/
 
 #dacura-console .dacura-user-message-box {
 	margin-right: 20px;
@@ -185,7 +342,7 @@ img.result-icon {
   padding: 6px;
   border: solid 1px #dcdcdc;
   transition: box-shadow 0.3s, border 0.3s;
-  font-family: 'Open Sans', Helvetica;
+  font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
   font-size: 0.9em;
   font-weight: 400;
   border-radius: 2px;
@@ -201,7 +358,7 @@ img.result-icon {
   padding: 8px;
   border: solid 1px #dcdcdc;
   transition: box-shadow 0.3s, border 0.3s;
-  font-family: 'Open Sans', Helvetica;
+  font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
   font-size: 0.9em;
   font-weight: 400;
   border-radius: 2px;
@@ -602,3 +759,4 @@ button {
 	font-size: .8em !important;
 }
 
+*/

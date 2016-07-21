@@ -215,7 +215,8 @@ function get_ldo($ldo_id, $fragment_id = false){
  */
 function update_ldo($target_id, $fragment_id = false){
 	global $dacura_server, $ldo_type;
-	$dacura_server->init("update ldo ".$target_id);
+	$action = "update ldo ".$target_id;
+	$dacura_server->init($action);
 	$json = file_get_contents('php://input');
 	
 	$obj = json_decode($json, true);

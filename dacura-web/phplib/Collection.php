@@ -28,6 +28,10 @@ class Collection extends DacuraObject {
 		$this->status = $s;
 	}
 	
+	function getIcon(){
+		return isset($this->config['settings']['icon']) ? $this->config['settings']['icon'] : "";
+	}
+	
 	function getDefaultSettings(DacuraServer &$srvr){
 		$cid = $srvr->cid();
 		$settings = array(

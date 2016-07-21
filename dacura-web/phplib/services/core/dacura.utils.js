@@ -245,6 +245,16 @@ function toTitleCase(str) {
     return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 }
 
+function firstKey(obj) {
+    for (var a in obj) return a;
+    return false;
+} 
+
+function first(obj) {
+    for (var a in obj) return obj[a];
+    return false;
+} 
+
 /**
  * @function ucfirst
  * @summary Upper cases the first character of a string - added to prototype of string object

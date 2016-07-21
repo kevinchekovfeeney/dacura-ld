@@ -67,6 +67,35 @@ class CandidateDacuraServer extends LdDacuraServer {
 		return $this->graphman->invokeDCS($mg->schemaGname(), $cls);
 	}
 	
+	/**
+	 * Creates a frame for the given class by calling the DCS frame function
+	 * @param string $cls the name of the class in question
+	 * @return DacuraResult the Dacura Result object incorporating the frame
+	 */
+	function getFilledFrame($candid){
+		if(!($mg = $this->getMainGraph())){
+			return false;
+		}
+		if(!$cand = $this->loadLDO($candid, "candidate", $this->cid())){
+			return false;
+		}
+		$cls = $cand->getRDFType();
+		if($cand->is_accept()){
+			$ar = $this->graphman->invokeDCS($mg->schemaGname(), $cls, false, $candid, $mg->instanceGname());
+		}
+		else {
+			//$candurl = $this->service->my_url()."/$candid";
+			$ar = $this->graphman->invokeDCS($mg->schemaGname(), $cls);
+			if($ar->result){
+				if($this->fillFrame($ar->result, $cand)){
+					return $ar->success("accept");
+				}
+				return $ar->failure($this->errcode, "failed to generate filled frame for candidate $candid", $this->errmsg);
+			}
+		}
+		return $ar;
+	}
+	
 	function getPropertyFrame($cls, $prop){
 		$cls = ($expanded = $this->nsres->expand($cls)) ? $expanded : $cls;
 		if(!($mg = $this->getMainGraph())){
@@ -83,38 +112,19 @@ class CandidateDacuraServer extends LdDacuraServer {
 			return false;
 		}
 		$cls = $cand->getRDFType();
-		$ar = $this->graphman->invokeDCS($mg->schemaGname(), $cls, $prop);
-		if($ar->result){
-			if($this->fillPropertyFrame($ar->result, $cand)){
-				return $ar->success("accept");
+		if($cand->is_accept()){
+			$ar = $this->graphman->invokeDCS($mg->schemaGname(), $cls, $prop, $candid, $mg->instanceGname());				
+		}
+		else {
+			$ar = $this->graphman->invokeDCS($mg->schemaGname(), $cls, $prop);
+			if($ar->result){
+				if($this->fillPropertyFrame($ar->result, $cand)){
+					return $ar->success("accept");
+				}
+				return $ar->failure($this->errcode, "failed to generate filled frame for candidate $candid", $this->errmsg);
 			}
-			return $ar->failure($this->errcode, "failed to generate filled frame for candidate $candid", $this->errmsg);
 		}
 		return $ar;
-	}
-	
-	/**
-	 * Creates a frame for the given class by calling the DCS frame function
-	 * @param string $cls the name of the class in question
-	 * @return DacuraResult the Dacura Result object incorporating the frame
-	 */
-	function getFilledFrame($candid){
-		if(!($mg = $this->getMainGraph())){
-			return false;
-		}
-		if(!$cand = $this->loadLDO($candid, "candidate", $this->cid())){
-			return false;	
-		}
-		$cls = $cand->getRDFType();
-		//$candurl = $this->service->my_url()."/$candid";
-		$ar = $this->graphman->invokeDCS($mg->schemaGname(), $cls);
-		if($ar->result){
-			if($this->fillFrame($ar->result, $cand)){
-				return $ar->success("accept");				
-			}
-			return $ar->failure($this->errcode, "failed to generate filled frame for candidate $candid", $this->errmsg);
-		}
-		return $ar;		
 	}
 	
 	/**
@@ -177,7 +187,11 @@ class CandidateDacuraServer extends LdDacuraServer {
 		}
 		$ar = $this->graphman->invokeDCS($mg->schemaGname());
 		if($ar->is_accept()){
-			return $ar->result;
+			$av = $ar->result;
+			foreach($av as $i => $a){
+				$av[$i]['id'] = ($this->nsres->compress($a['class']) ? $this->nsres->compress($a['class']) : $a['class']);
+			}
+			return $av;
 		}
 		else {
 			return $this->failure_result($ar->msg_title." ".$ar->msg_body, $ar->errcode);

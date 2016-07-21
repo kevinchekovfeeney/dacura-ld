@@ -179,7 +179,9 @@ function LDResult(jsondr, pconfig){
 		alert("LD result created without any result json initialisation data - not permitted!");
 		return;
 	}
-	this.idprefix = pconfig.resultbox.substring(1);
+	if(typeof pconfig == "object"){ 
+		this.idprefix = pconfig.resultbox.substring(1);
+	}
 	this.action = jsondr.action;
 	this.status = jsondr.status;
 	this.message = jsondr.message;
@@ -189,9 +191,11 @@ function LDResult(jsondr, pconfig){
 	this.result = false;
 	if(typeof jsondr.result == 'object' &&  jsondr.result.type == "LDO"){
 		this.result = new LDO(jsondr.result);
+		this.result_type = "LDO";
 	}
 	else if(typeof jsondr.result == 'object' &&  jsondr.result.type == "LDOUpdate"){
 		this.result = new LDOUpdate(jsondr.result);
+		this.result_type = "LDOUpdate";
 	}
 	else if(typeof jsondr.result == "string"){
 		this.result = jsondr.result;

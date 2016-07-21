@@ -10,18 +10,17 @@ else {
 	header("Access-Control-Allow-Origin: null");
 }
 
-getRoute()->get('/reload', 'reloadConsole');
+getRoute()->get('/(\w*)(/?)(\w*)', 'loadClientCapabilities');
 
 
-function reloadConsole(){
-	global $dacura_server, $service;
-	$html = $service->getReloadScript($dacura_server);
-	if($html){
-		$dacura_server->write_http_result(200, $html);		
+function loadClientCapabilities($key = false, $nowt = false, $value = false){
+	global $dacura_server;
+	//return $dacura_server->write_http_error(402, "Failed to do something");
+	
+	if($caps = $dacura_server->getClientCapabilities($key, $value)){
+		return $dacura_server->write_json_result($caps, "Fetched capabilities for client.");
 	}
-	else {
-		$dacura_server->write_http_error(500, "failed to reload console script");		
-	}
+	return $dacura_server->write_http_error();
 }
 
 

@@ -102,7 +102,7 @@ class GraphManager extends DacuraController {
 	 * we call the entity function to retrieve the list of entity classes. 
 	 * @return DQSResult
 	 */
-	function invokeDCS($graphid, $clsname = false, $propid = false, $instance_graphid = false){
+	function invokeDCS($graphid, $clsname = false, $propid = false, $entid = false, $instance_graphid = false){
 		$args = array("schema" => $graphid);
 		$dqs_config = $this->getSystemSetting("dqs_service");
 		$dqsr = new DQSResult("invoking DQS class analysis");
@@ -117,13 +117,19 @@ class GraphManager extends DacuraController {
 		else {
 			$srvc = $dqs_config['entity'];
 		}
+		if($entid){
+			$args['entity'] = $entid;
+		}
+		if($instance_graphid){
+			$args['instance'] = $instance_graphid;
+		}
 		$qstr = "";
 		foreach($args as $k => $v){
 			if(strlen($qstr) > 0) $qstr.= "&";
 			$qstr .= $k."=".urlencode($v);
 		}
 		if($dqs_config['dumplast']){
-			$this->dumpDCSRequest($dqs_config['dumplast'], $srvc, $graphid, $clsname, $propid, $instance_graphid, $qstr);
+			$this->dumpDCSRequest($dqs_config['dumplast'], $srvc, $graphid, $clsname, $propid, $entid, $instance_graphid, $qstr);
 		}
 		$ch = curl_init();
 		if($proxy = ($this->getSystemSetting('dqs_http_proxy', ""))){
