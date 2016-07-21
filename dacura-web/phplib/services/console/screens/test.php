@@ -1,17 +1,17 @@
 <html>
 <head>
-	<link rel='stylesheet' href='http://chekasaurusrex/dacura/media/css/jquery-ui.css' />
-	<link rel='stylesheet' href='http://chekasaurusrex/dacura/phplib/services/console/files/font-awesome-4.6.3/css/font-awesome.min.css' />
-	<link rel='stylesheet' href='http://chekasaurusrex/dacura/phplib/services/console/files/console.css' />
+	<link rel='stylesheet' href='<?=$service->durl()?>media/css/jquery-ui.css' />
+	<link rel='stylesheet' href='<?=$service->durl()?>phplib/services/console/files/font-awesome-4.6.3/css/font-awesome.min.css' />
+	<link rel='stylesheet' href='<?=$service->durl()?>phplib/services/console/files/console.css' />
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css" rel="stylesheet" />
-	<script src = "http://chekasaurusrex/dacura/media/js/jquery-2.1.4.min.js"></script>
-	<script src = "http://chekasaurusrex/dacura/media/js/jquery-ui.js"></script>
+	<script src = "<?=$service->durl()?>media/js/jquery-2.1.4.min.js"></script>
+	<script src = "<?=$service->durl()?>media/js/jquery-ui.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
-	<script src = "http://chekasaurusrex/dacura/console/init"></script>
-	<script src = "http://chekasaurusrex/dacura/phplib/services/core/dacura.utils.js"></script>
-	<script src = "http://chekasaurusrex/dacura/phplib/services/ld/jslib/ldlibs.js"></script>
-	<script src = "http://chekasaurusrex/dacura/phplib/services/console/dclient.js"></script>
-	<script src = "http://chekasaurusrex/dacura/phplib/services/console/dconsole.js"></script>
+	<script src = "<?=$service->durl()?>console/init"></script>
+	<script src = "<?=$service->durl()?>phplib/services/core/dacura.utils.js"></script>
+	<script src = "<?=$service->durl()?>phplib/services/ld/jslib/ldlibs.js"></script>
+	<script src = "<?=$service->durl()?>phplib/services/console/dclient.js"></script>
+	<script src = "<?=$service->durl()?>phplib/services/console/dconsole.js"></script>
 	
 	
 <!--
