@@ -1112,7 +1112,7 @@ DacuraConsole.prototype.getNewEntityDetailsFromForm = function(){
 	var struct = {
 		id: id,
 		contents: {
-			//"rdf:type": this.context.entityclass,
+			"rdf:type": this.context.entityclass,
 			"rdfs:label": label, 
 			"rdfs:comment": comm
 		}
@@ -1129,12 +1129,14 @@ DacuraConsole.prototype.getNewEntityDetailsFromForm = function(){
 
 DacuraConsole.prototype.getFrameInputs = function(){
 	var resp = {};
-	this.fv.cls = this.context.entityclass;
-	resp = this.fv.extract();
+	if(typeof this.fv != "undefined"){
+		this.fv.cls = this.context.entityclass;
+		resp = this.fv.extract();
 	//for(var i = 0; i<this.displayed_properties.length; i++){
 	//	resp[this.displayed_properties[i]] = "get from frame";
 	//}
-	jpr(resp);
+	//jpr(resp);
+	}
 	return resp;
 }
 
