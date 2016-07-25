@@ -72,6 +72,7 @@ FrameViewer.prototype.draw = function(frames, mode){
 
 FrameViewer.prototype.extract = function () {
     var y = dacura.frame.extractionConverter(this.frames, this.cls);
+    console.log(y);
     return y;
 }
 

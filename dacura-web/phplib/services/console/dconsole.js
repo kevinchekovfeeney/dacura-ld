@@ -1121,9 +1121,10 @@ DacuraConsole.prototype.getNewEntityDetailsFromForm = function(){
 		struct.id = id;
 	}
 	var ips = this.getFrameInputs();
-	for(var i in ips){
-		struct.contents[i] = ips[i];
-	}
+//	for(var i in ips){
+//		struct.contents[i] = ips[i];
+//	}
+        struct.contents = ips;
 	return struct;
 }
 
@@ -1135,8 +1136,8 @@ DacuraConsole.prototype.getFrameInputs = function(){
 	//for(var i = 0; i<this.displayed_properties.length; i++){
 	//	resp[this.displayed_properties[i]] = "get from frame";
 	//}
-	//jpr(resp);
 	}
+	console.log(resp);
 	return resp;
 }
 
