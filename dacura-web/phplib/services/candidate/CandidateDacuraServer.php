@@ -84,7 +84,6 @@ class CandidateDacuraServer extends LdDacuraServer {
 			$ar = $this->graphman->invokeDCS($mg->schemaGname(), $cls, false, $candid, $mg->instanceGname());
 		}
 		else {
-			//$candurl = $this->service->my_url()."/$candid";
 			$ar = $this->graphman->invokeDCS($mg->schemaGname(), $cls);
 			if($ar->result){
 				if($this->fillFrame($ar->result, $cand)){
@@ -149,7 +148,12 @@ class CandidateDacuraServer extends LdDacuraServer {
 					foreach(array_keys($objs) as $oid){
 						$this->fillFrame($frames[$i]['frame'], $cand, $oid);	
 					}
-					$frames[$i]['value'] = json_encode(array_keys($objs));
+					if(count($objs) > 1){
+						$frames[$i]['value'] = array_keys($objs);
+					}
+					else {
+						$frames[$i]['value'] = array_keys($objs)[0];
+					}
 				}
 			}
 		}
@@ -162,7 +166,12 @@ class CandidateDacuraServer extends LdDacuraServer {
 		}
 		if($frame['type'] == "datatypeProperty"){
 			if(($vals = $cand->getPredicateValues($frag_id, $frame['property'])) !== false){
-				$frame['value'] = $vals;
+				if(is_array($vals) && count($vals) == 1){
+					$frame['value'] = $val[0];						
+				}
+				else {
+					$frame['value'] = $vals;
+				}
 			}
 		}
 		elseif($frame['type'] == "objectProperty"){
@@ -170,7 +179,12 @@ class CandidateDacuraServer extends LdDacuraServer {
 				foreach(array_keys($objs) as $oid){
 					$this->fillFrame($frame['frame'], $cand, $oid);
 				}
-				$frame['value'] = json_encode(array_keys($objs));
+				if(count($objs) > 1){
+					$frame['value'] = array_keys($objs);
+				}
+				else {
+					$frame['value'] = array_keys($objs)[0];
+				}
 			}
 		}
 		return true;

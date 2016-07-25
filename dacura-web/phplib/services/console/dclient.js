@@ -23,7 +23,7 @@ DacuraClient.prototype.init = function(success, fail){
 DacuraClient.prototype.get = function(type, id, success, fail){
 	cid = this.current_collection;
 	var col = this.collections[cid];
-	if(!this.checkAgainstCapabilities(col, type, id, "view")){
+	if(!this.checkAgainstCapabilities(cid, col, type, id, "view")){
 		fail = (fail ? fail : this.fail);
 		if(fail) fail(this.getErrorTitle(), this.getErrorMessage(), this.getErrorExtra());
 		return;
@@ -57,7 +57,7 @@ DacuraClient.prototype.get = function(type, id, success, fail){
 DacuraClient.prototype.update = function(type, obj, success, fail){
 	var cid = (obj.meta.cid ? obj.meta.cid : this.current_collection);
 	var col = this.collections[cid];
-	if(!this.checkAgainstCapabilities(col, type, obj.id, "update")){
+	if(!this.checkAgainstCapabilities(cid, col, type, obj.id, "update")){
 		fail = (fail ? fail : this.fail);
 		if(fail) fail(this.getErrorTitle(), this.getErrorMessage(), this.getErrorExtra());
 		return;
@@ -74,9 +74,9 @@ DacuraClient.prototype.update = function(type, obj, success, fail){
 }
 
 DacuraClient.prototype.create = function(type, obj, success, fail, test){
-	var cid = (obj.meta.cid ? obj.meta.cid : this.current_collection);
+	var cid = (obj.meta && obj.meta.cid ? obj.meta.cid : this.current_collection);
 	var col = this.collections[cid];
-	if(!this.checkAgainstCapabilities(col, type, false, "create")){
+	if(!this.checkAgainstCapabilities(cid, col, type, false, "create")){
 		fail = (fail ? fail : this.fail);
 		if(fail) fail(this.getErrorTitle(), this.getErrorMessage(), this.getErrorExtra());
 		return;
@@ -88,14 +88,14 @@ DacuraClient.prototype.create = function(type, obj, success, fail, test){
 		this.createGraph(obj.id, obj.getRDF(), obj.meta, success, fail, test);
 	}
 	else if(type == "candidate"){
-		this.createCandidate(obj.id, obj.getRDF(), obj.meta, success, fail, test);
+		this.createCandidate(obj.id, obj.contents, obj.meta, success, fail, test);
 	}
 }
 
 DacuraClient.prototype.remove = function(type, id, success, fail, test){
 	var cid = this.current_collection;
 	var col = this.collections[cid];
-	if(!this.checkAgainstCapabilities(col, type, id, "view")){
+	if(!this.checkAgainstCapabilities(cid, col, type, id, "view")){
 		fail = (fail ? fail : this.fail);
 		if(fail) fail(this.getErrorTitle(), this.getErrorMessage(), this.getErrorExtra());
 		return;
@@ -116,26 +116,35 @@ DacuraClient.prototype.isLoggedIn = function(){
 	return false;
 }
 
-DacuraClient.prototype.checkAgainstCapabilities = function(col, type, id, action){
+DacuraClient.prototype.checkAgainstCapabilities = function(cid, col, type, id, action){
 	this.errors = [];
 	if(!col){
 		this.errors.push({title: "Unknown Collection", "message": "You do not have access to a collection with id " + cid})
 	}
-	else if(action != "create"){
-		if(type == "candidate"){
-			if(typeof col.candidates[id] == "undefined"){
-				this.errors.push({title: "Unknown Candidate", "message": "You do not have access to a candidate with id " + id + " in collection " + cid})
-			}		
-		}
-		else if(type == "graph"){
-			if(typeof col.graphs[id] == "undefined"){
-				this.errors.push({title: "Unknown Graph", "message": "You do not have access to a graph with id " + id + " in collection " + cid})
-			}		
-			
-		}
-		else if(type == "ontology"){
-			if(typeof col.ontologies[id] == "undefined"){
-				this.errors.push({title: "Unknown Ontology", "message": "You do not have access to an ontology with id " + id + " in collection " + cid})
+	else {
+		if(action != "create"){
+			if(type == "candidate"){
+				var gotcha = false;
+				for(var etype in col.candidates){
+					if(typeof col.candidates[etype][id] != "undefined"){
+						gotcha = true;
+						break;
+					}
+				}
+				if(!gotcha){
+					this.errors.push({title: "Unknown Candidate", "message": "You do not have access to a candidate with id " + id + " in collection " + cid})
+				}		
+			}
+			else if(type == "graph"){
+				if(typeof col.graphs[id] == "undefined"){
+					this.errors.push({title: "Unknown Graph", "message": "You do not have access to a graph with id " + id + " in collection " + cid})
+				}		
+				
+			}
+			else if(type == "ontology"){
+				if(typeof col.ontologies[id] == "undefined"){
+					this.errors.push({title: "Unknown Ontology", "message": "You do not have access to an ontology with id " + id + " in collection " + cid})
+				}
 			}
 		}
 	}
@@ -171,7 +180,7 @@ DacuraClient.prototype.APIArgs = function(action, thing, id, test, format){
 	options: this.getAPIOptions(action, thing, test)
   };
   if(test){
-	ldcreate.test = 1;
+	args.test = 1;
   }
   return args;
 }
@@ -179,7 +188,8 @@ DacuraClient.prototype.APIArgs = function(action, thing, id, test, format){
 
 //flags that govern what is returned by the api
 DacuraClient.prototype.getAPIOptions = function(action, thing, test){
-	return [];
+	var basic = {plain: 1, history: 0, updates: 0};
+	return basic;
 }
 
 
@@ -305,26 +315,22 @@ DacuraClient.prototype.loadGraph = function(action, ldr_or_ldo, gid){
 
 DacuraClient.prototype.loadCandidateFrame = function(id, frame){
 	var cid = this.current_collection;	
-	this.collections[cid].updateCandidateFrame(id, frame);
-	return frame;
+	return this.collections[cid].updateCandidateFrame(id, frame);
 }
 
 DacuraClient.prototype.loadEntityClassFrame = function(entity_class, frame){
 	var cid = this.current_collection;	
-	this.collections[cid].update("entity_class", entity_class, frame);
-	return frame;
+	return this.collections[cid].update("entity_class", entity_class, frame.result);
 }
 
 DacuraClient.prototype.loadEntityClassPropertyFrame = function(entity_class, property, frame){
 	var cid = this.current_collection;	
-	this.collections[cid].updatePropertyFrame(entity_class, property, frame);
-	return frame;
+	return this.collections[cid].updatePropertyFrame(entity_class, property, frame);
 }
 
 DacuraClient.prototype.loadCandidatePropertyFrame = function(candid, prop, frame){
 	var cid = this.current_collection;	
-	this.collections[cid].updateCandidatePropertyFrame(candid, prop, frame);
-	return frame;
+	return this.collections[cid].updateCandidatePropertyFrame(candid, prop, frame);
 }
 
 DacuraClient.prototype.loadEntityClasses = function(classes){
@@ -347,10 +353,10 @@ DacuraClient.prototype.getGraphsToRedeployForOntologyUpdate = function(ontid){
 
 /* Candidate API */
 
-DacuraClient.prototype.createCandidate = function(cid, ctype, props, meta, success, fail, test){
+DacuraClient.prototype.createCandidate = function(cid, props, meta, success, fail, test){
 	var ldcreate = this.APIArgs("create", "candidate", cid, test);
 	ldcreate.contents = (props ? props : {});
-	ldcreate.contents['rdf:type'] = ctype; 
+	//ldcreate.contents['rdf:type'] = ctype; 
 	if(meta){
 		ldcreate.meta = meta;
 	}
@@ -376,8 +382,11 @@ DacuraClient.prototype.fetchCandidate = function(cid, success, fail, format){
 	var self = this;
 	var nsuccess = function(json){		
 		var ldo = new LDO(json);
-		var candidate = self.loadCandidate("view", ldo);//load candidate frame too
-		this.getFilledFrame(cid, success, fail);
+		var candidate = self.loadCandidate("view", ldo);
+		var ffsuccess = function(ff){
+			success(candidate);
+		}
+		self.getFilledFrame(cid, ffsuccess, fail);//load candidate frame too
 	}
 	return this.dispatch(this.APIURL("candidate", cid), this.getXHRTemplate(nsuccess, fail, this.APIArgs("view", "candidate", cid)));
 }
@@ -406,6 +415,11 @@ DacuraClient.prototype.deleteCandidate = function(cid, success, fail, test){
 
 DacuraClient.prototype.getEmptyFrame = function(entity_class, success, fail){
 	var self = this;
+	cid = this.current_collection;
+	var col = this.collections[cid];
+	if(typeof col.cache.class_frames[entity_class] == "object"){
+		return success(col.cache.class_frames[entity_class]);
+	}
 	var nsuccess = function(frame){
 		var cframe = self.loadEntityClassFrame(entity_class, frame);
 		if(success){
@@ -420,7 +434,7 @@ DacuraClient.prototype.getEmptyFrame = function(entity_class, success, fail){
 DacuraClient.prototype.getEmptyPropertyFrame = function(cls, propid, success, fail){
 	var self = this;
 	var nsuccess = function(frame){
-		var pframe = self.loadEntityClassPropertyFrame(entity_class, propid, frame);
+		var pframe = self.loadEntityClassPropertyFrame(cls	, propid, frame);
 		if(success){
 			success(pframe);
 		}
@@ -431,6 +445,11 @@ DacuraClient.prototype.getEmptyPropertyFrame = function(cls, propid, success, fa
 };
 
 DacuraClient.prototype.getFilledFrame = function(id, success, fail){
+	cid = this.current_collection;
+	var col = this.collections[cid];
+	if(typeof col.cache.candidates[id] == "object" && typeof col.cache.candidates[id].filledframe == "object" ){
+		return success(col.cache.candidates[id].filledframe);
+	}
 	var self = this;
 	var nsuccess = function(frame){
 		var cframe = self.loadCandidateFrame(id, frame);
@@ -442,6 +461,11 @@ DacuraClient.prototype.getFilledFrame = function(id, success, fail){
 };
 
 DacuraClient.prototype.getFilledPropertyFrame = function(candid, propid, success, fail){
+	cid = this.current_collection;
+	var col = this.collections[cid];
+	if(typeof col.cache.candidates[candid] == "object" && typeof col.cache.candidates[candid].pframes == "object" && typeof col.cache.candidates[candid].pframes[propid] == "object" ){
+		return success(col.cache.candidates[id].pframes[propid]);
+	}
 	var self = this;
 	var nsuccess = function(frame){
 		var pframe = self.loadCandidatePropertyFrame(candid, propid, frame);
@@ -451,7 +475,7 @@ DacuraClient.prototype.getFilledPropertyFrame = function(candid, propid, success
 	}
 	var xhr = this.getFrameXHRTemplate(nsuccess, fail, { "property": propid} );
 	xhr.type = "POST";
-	return this.dispatch(this.APIURL("candidate/propertyframe", entid), xhr);
+	return this.dispatch(this.APIURL("candidate/propertyframe", candid), xhr);
 };
 
 DacuraClient.prototype.getEntityClasses = function(success, fail){
@@ -628,11 +652,7 @@ DacuraClient.prototype.getXHRTemplate = function(success, fail, data){
 
 DacuraClient.prototype.getFrameXHRTemplate = function(success, fail, data){
 	if(success){
-		var nsuccess = function(json){
-			var nFrame = new DacuraFrame(json);
-			success(nFrame);
-		}
-		return this.getXHRTemplate(nsuccess, fail, data);
+		return this.getXHRTemplate(success, fail, data);
 	}
 	return this.getXHRTemplate(false, fail);
 }
@@ -716,6 +736,7 @@ function DacuraCollectionCapability(collection_id){
 	this.collectionid = collection_id;
 	this.demand_id_token = false;
 	this.title = "Anonymous Collection";
+	this.url = false;
 	this.ontologies = false;
 	this.graphs = false;
 	this.candidates = false;
@@ -731,6 +752,7 @@ function DacuraCollectionCapability(collection_id){
 
 DacuraCollectionCapability.prototype.init = function(json){
 	this.title = json.title;
+	this.url = json.url;
 	this.icon = json.icon;
 	this.demand_id_token = (json.demand_id_token ? json.demand_id_token : false) ;
 	this.ontologies = (typeof json.ontologies == "object" ? json.ontologies : false);
@@ -774,14 +796,16 @@ DacuraCollectionCapability.prototype.update = function(type, action, thing){
 		//do nowt for the moment, going to have to load the object	
 		}	
 	}
+	return thing;
 }
 
 DacuraCollectionCapability.prototype.updatePropertyFrame = function(entity_class, property, frame){
+	return frame.result;
 	return this.cache.class_frames[entity_class].setPropertyFrame(property, frame);	
 }
 
 DacuraCollectionCapability.prototype.updateCandidatePropertyFrame = function(candid, prop, frame){
-	return this.cache.candidates[candid].setPropertyFrame(property, frame);	
+	return this.cache.candidates[candid].setPropertyFrame(prop, frame);	
 }
 
 DacuraCollectionCapability.prototype.updateCandidateFrame = function(candid, frame){
@@ -800,66 +824,176 @@ DacuraCollectionCapability.prototype.updateEntityClasses = function(classes){
 	}
 };
 
+/*
+ * Abstract class to put generic functions into - inherited by concrete classes (ontology, graph, candidate) 
+ * via prototype mechanism
+ */
+function DacuraLDO(){}
 
-function DacuraCandidate(config){
-	this.cframe = false;
-	this.pframes = false;
-}
-
-DacuraCandidate.prototype.loadFromLDO = function(ldo){
+DacuraLDO.prototype.loadFromLDO = function(ldo){
 	this.id = ldo.id;
 	this.meta = ldo.meta;
 	this.contents = ldo.contents;
 	this.fragment_id = ldo.fragment_id;
 	this.format = ldo.format;
 	this.options = ldo.options;
-	this.cframe = false;
-	this.pframes = false;
 }
 
+DacuraLDO.prototype.getComment = function(){
+	var json = this.contents[this.meta.cwurl];
+	if(json){
+		if(typeof json['rdfs:comment'] != "undefined"){
+			return json['rdfs:comment']['data'];
+		}
+		if(typeof json['dc:description'] != "undefined"){
+			return json['dc:description']['data'];
+		}
+	}
+	return false;
+}
+
+DacuraLDO.prototype.getLabel = function(){
+	var json = this.contents[this.meta.cwurl];
+	if(json){
+		if(typeof json['rdfs:label'] != "undefined"){
+			return json['rdfs:label']['data'];
+		}
+		if(typeof json['dc:title'] != "undefined"){
+			return json['dc:title']['data'];
+		}
+	}
+	return false;
+}
+
+DacuraLDO.prototype.cid = function(){
+	return this.meta.cid;
+}
+
+/*
+ * 3 concrete types of LDO - candidate, graph, ontology
+ */
+
+/**
+ * First the candidate class - units of instance data, members of an entity class
+ */
+function DacuraCandidate(config){
+	this.filledframe = false;
+	this.pframes = false;
+	this.pcounts = {};
+}
+
+/* inherited functions */
+DacuraCandidate.prototype.loadFromLDO = DacuraLDO.prototype.loadFromLDO;
+DacuraCandidate.prototype.cid = DacuraLDO.prototype.cid;
+DacuraCandidate.prototype.getLabel = DacuraLDO.prototype.getLabel;
+DacuraCandidate.prototype.getComment = DacuraLDO.prototype.getComment;
+
+/* Candidate Specific functions */
 DacuraCandidate.prototype.setPropertyFrame = function(pid, frame){
-	this.pframes[pid] = frame;
+	this.pframes[pid] = frame.result;
+	return frame.result;
 }
 
 DacuraCandidate.prototype.setFrame = function(frame){
-	this.cframe = frame;
+	this.filledframe = frame.result;
+	return frame.result;
 }
 
-DacuraCandidate.prototype.cid = function(){
-	return this.meta.cid;
+DacuraCandidate.prototype.entityClass = function(ecs){
+	var mytype = this.meta.type;
+	for(var i in ecs){
+		if(ecs[i]["class"] == mytype){
+			return ecs[i];
+		}
+	}
+	return false;
 }
 
-function DacuraFrame(json){
-	this.contenxt = json;
+DacuraCandidate.prototype.propertyCount = function(filled_only){
+	if(typeof this.pcounts.total == "undefined"){
+		this.getProperties(filled_only);
+	}
+	if(filled_only) return this.pcounts.filled;
+	else return this.pcounts.total;
 }
 
-function DacuraGraph(config){
-
+DacuraCandidate.prototype.getProperties = function(filled_only){
+	var empties = [];
+	var filled = [];
+	var frame = this.filledframe;
+	for(var i = 0; i < frame.length; i++){
+		var val = frame[i].value;
+		var pid = frame[i].property;
+		var lab = (typeof frame[i].label != "undefined" ? frame[i].label.data : pid.substring(pid.lastIndexOf('#') + 1));
+		if(typeof val != "undefined"){
+			if(typeof val == "string"){
+				if(val.length == 0){
+					empties.push({id: pid, label: lab});
+				}
+				else {
+					filled.push({id: pid, label: lab + " (1)", count: 1});
+				}
+			}
+			else if(isJSONObjectLiteral(val)){
+				filled.push({id: pid, label: lab + " (1)", count: 1});
+			}
+			else if(typeof val == "object"){
+				filled.push({id: pid, label: lab + "(" + val + ")", count: val.length });				
+			} 
+			else {
+				jpr(frame[i]);
+			}
+		}
+		else {
+			empties.push({id: pid, label: lab});	
+		}
+	}
+	this.pcounts.total = frame.length;
+	this.pcounts.filled = filled.length;
+	this.pcounts.empty = empties.length;
+	//sort properties by count, then alphabetical
+	filled.sort(comparePropertiesByCount);
+	if(filled_only) return filled; 
+	else return filled.concat(empties);
 }
 
-DacuraGraph.prototype.cid = function(){
-	return this.meta.cid;
+var comparePropertiesByCount = function(a,b) {
+	if(a.count < b.count){
+		return -1;
+	}
+	if(b.count < a.count){
+		return 1;
+	}
+	if(a.label < b.label){
+		return -1;
+	}				
+	if(a.label > b.label){
+		return 1;
+	}			
+	return 0;	
 }
 
-DacuraGraph.prototype.loadFromLDO = function(ldo){
-	this.id = ldo.id;
-	this.meta = ldo.meta;
-	this.contents = ldo.contents;
-	this.fragment_id = ldo.fragment_id;
-	this.format = ldo.format;
-	this.options = ldo.options;
-}
 
+/**
+ * Graph class
+ */
+function DacuraGraph(config){}
+
+/* inherited functions */
+DacuraGraph.prototype.loadFromLDO = DacuraLDO.prototype.loadFromLDO;
+DacuraGraph.prototype.cid = DacuraLDO.prototype.cid;
+DacuraGraph.prototype.getLabel = DacuraLDO.prototype.getLabel;
+DacuraGraph.prototype.getComment = DacuraLDO.prototype.getComment;
+
+/**
+ * Ontology class
+ */
 function DacuraOntology(config){
 	this.boxtypes = config.boxtypes;
 	this.entity_tag = config.entity_tag;
 	this.normals = ["rdfs:subClassOf", "rdf:type", "rdfs:label", "rdfs:comment", "owl:oneOf"];
 	this.properties = {};
 	this.classes = {};
-}
-
-DacuraOntology.prototype.cid = function(){
-	return this.meta.cid;
 }
 
 DacuraOntology.prototype.loadFromLDO = function(ldo){
@@ -881,13 +1015,18 @@ DacuraOntology.prototype.loadFromLDO = function(ldo){
 	this.entity_classes = this.calculateEntityClasses();	
 }
 
-//building internal structure
+/* inherited functions */
+DacuraOntology.prototype.getLabel = DacuraLDO.prototype.getLabel;
+DacuraOntology.prototype.getComment = DacuraLDO.prototype.getComment;
+DacuraOntology.prototype.cid = DacuraLDO.prototype.cid;
 
+/* Ontology specific functions */
 DacuraOntology.prototype.isEntityClass = function(cls){
 	var ecls = this.getEntityClasses();
 	return ecls.indexOf(cls) != -1;
 }
 
+//building internal structure
 DacuraOntology.prototype.buildNodeTree = function() {
 	nodes = {};
 	for(var i in this.classes){
@@ -1094,6 +1233,33 @@ DacuraOntology.prototype.getClassLabel = function(cls){
 	return "";
 }
 
+DacuraOntology.prototype.getClassComment = function(cls){
+	var json = this.classes[cls];
+	if(typeof json == "object"){
+		if(typeof json['rdfs:comment'] != "undefined"){
+			return json['rdfs:comment']['data'];
+		}
+		if(typeof json['dc:description'] != "undefined"){
+			return json['dc:description']['data'];
+		}
+	}
+	return "";
+}
+
+DacuraOntology.prototype.getPropertyComment = function(cls){
+	var json = this.properties[cls];
+	if(typeof json == "object"){
+		if(typeof json['rdfs:comment'] != "undefined"){
+			return json['rdfs:comment']['data'];
+		}
+		if(typeof json['dc:description'] != "undefined"){
+			return json['dc:description']['data'];
+		}
+	}
+	return "";
+}
+
+
 DacuraOntology.prototype.getParentClasses = function(cls){
 	var json = this.classes[cls];
 	if(typeof json == "object"){
@@ -1196,31 +1362,6 @@ DacuraOntology.prototype.getEnumeratedChoices = function(cls){
 	return choices;
 }
 
-DacuraOntology.prototype.getClassComment = function(cls){
-	var json = this.classes[cls];
-	if(typeof json == "object"){
-		if(typeof json['rdfs:comment'] != "undefined"){
-			return json['rdfs:comment']['data'];
-		}
-		if(typeof json['dc:description'] != "undefined"){
-			return json['dc:description']['data'];
-		}
-	}
-	return "";
-}
-
-DacuraOntology.prototype.getPropertyComment = function(cls){
-	var json = this.properties[cls];
-	if(typeof json == "object"){
-		if(typeof json['rdfs:comment'] != "undefined"){
-			return json['rdfs:comment']['data'];
-		}
-		if(typeof json['dc:description'] != "undefined"){
-			return json['dc:description']['data'];
-		}
-	}
-	return "";
-}
 
 DacuraOntology.prototype.getRangeObjectType = function(range){
 	if(!range || !range.length) return "";

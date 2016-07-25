@@ -1,5 +1,8 @@
+var internal_reference_to_console = false;
+
 function DacuraConsole(config){
 	//dacura url
+	$.fn.select2.defaults.set('dropdownCssClass', 's2option');
 	this.durl = config.durl;
 	this.autoload = (config.autoload ? true : false);
 	this.HTMLID = config.id;
@@ -9,8 +12,8 @@ function DacuraConsole(config){
 	};
 	this.ModelBuilder = new DacuraModelBuilder();
 	this.client = new DacuraClient(this.durl);
-	this.mode = "menu";
 	this.context = {
+		mode: "view",//view|update|create
 		collection: false,
 		tool: false,
 		graph: false,
@@ -21,11 +24,18 @@ function DacuraConsole(config){
 		entityclass: false, 
 		candidateproperty: false
 	};
+	this.displayed_properties = [];
+	this.entity_property_count = 0;
+	this.current_ontology = false;
+	this.current_candidate = false;
 	this.current_action = false;
+	this.showing_roles = false;
+	this.showing_tools = false;
 	this.network_errors = [];
 	this.history = [];
 	this.active_roles = [];
 	this.future = [];
+	internal_reference_to_console = this;//just so we can refer to it from <a href='javascript: stuff
 }
 
 //we try to draw all the necessary html in the init functions
@@ -37,6 +47,9 @@ DacuraConsole.prototype.init = function(success, fail){
 		self.hideAll();
 		jQuery('#' + self.HTMLID).show("drop", {direction: "up"});
 		self.showResult("error", title, msg, extra);
+		if(typeof fail == "function"){
+			fail(title, msg, extra);
+		}
 	}
 	var nsuccess = function(caps){	
 		if(typeof caps.context == "object"){
@@ -47,7 +60,6 @@ DacuraConsole.prototype.init = function(success, fail){
 			self.current_action = "Pre-loading resources from server";
 			self.client.loadAll(fail);
 		}
-		//self.context.collection = self.client.current_collection;
 		self.initMenu();
 		self.showMenu();
 		jQuery('#' + self.HTMLID).show("drop", {direction: "up"});
@@ -63,6 +75,10 @@ DacuraConsole.prototype.init = function(success, fail){
 	this.client.init(nsuccess, nfail);	
 }
 
+/**
+ * Initialises the menu by setting up all the events that are associated with user actions 
+ * All event handling is done here...
+ */
 DacuraConsole.prototype.initMenu = function(){
 	var self = this;
 	jQuery('#' + this.HTMLID + " img").each(function(){
@@ -79,7 +95,50 @@ DacuraConsole.prototype.initMenu = function(){
 		jQuery('#' + this.HTMLID + " .browser-button-forward").click(function(){
 			self.goForward();
 		});
-		jQuery('#' + this.HTMLID + " .console-mode .mode-inactive").click(function(){
+		jQuery('#' + this.HTMLID + " .console-user-icon").click(function(){
+			if(!self.context.collection) return;
+			if(typeof already_clicked == "undefined" || !already_clicked){
+				already_clicked = true;
+				var comp = function(){already_clicked = false;}
+				if(jQuery('#' + self.HTMLID + " .console-user-roles").is(":visible")){
+					self.showing_roles = false;
+					jQuery('#' + self.HTMLID + " .console-user-roles").hide("slide", {direction: 'right', duration: "slow", complete: comp});
+				}
+				else {
+					self.showing_roles = true;
+					jQuery('#' + self.HTMLID + " .console-user-roles").show("slide", {direction: 'right', duration: "slow", complete: comp});					
+				}
+			}
+		});
+		jQuery('#' + this.HTMLID + " .context-add-element").click(function(){
+			self.userChangesContext({mode: "create"});				
+		});
+		jQuery('#' + this.HTMLID + " .context-add-property").click(function(){
+			if(self.context.candidate){
+				var prop = jQuery('#' + self.HTMLID + " select.context-candidateproperty-picker").val();
+				jQuery('#' + self.HTMLID + " .console-context .candidateproperty .context-add-property").hide("fade");				
+			}
+			else {
+				var prop = jQuery('#' + self.HTMLID + " select.context-entityproperty-picker").val();	
+				//jQuery('#' + self.HTMLID + " .console-context .entityproperty .context-add-property").hide("fade");				
+			}
+			self.addPropertyToDisplay(prop);
+		});
+		jQuery('#' + this.HTMLID + " .console-mode .mode-active").click(function(){
+			if(typeof talready_clicked == "undefined" || !talready_clicked){
+				talready_clicked = true;
+				var comp = function(){talready_clicked = false;}
+				if(self.showing_tools){
+					self.showing_tools = false;
+					jQuery('#' + self.HTMLID + " .console-mode span.amode-icon.mode-inactive:not(.mode-" + self.context.tool + ")").hide("slide", {direction: 'left', duration: "fast", complete: comp});
+				}
+				else {
+					self.showing_tools = true;
+					jQuery('#' + self.HTMLID + " .console-mode span.amode-icon.mode-inactive:not(.mode-" + self.context.tool + ")").show("slide", {direction: 'left', duration: "fast", complete: comp});					
+				}
+			}
+		});
+		jQuery('#' + this.HTMLID + " .console-mode span.amode-icon.mode-inactive").click(function(){
 			var ntool = this.id.substring(this.id.lastIndexOf("-") + 1);
 			self.userChangesContext({tool: ntool});
 		});
@@ -97,9 +156,101 @@ DacuraConsole.prototype.initMenu = function(){
 				self.showMenu();
 			}
 		});
+		jQuery('#' + this.HTMLID + " .console-extra .summary-close").click(function(){
+			var ncontext = {};
+			if(self.context.mode != "view"){
+				ncontext.mode = 'view';
+			}
+			if(self.context.candidate){
+				ncontext.candidate = false;
+			}
+			else if(self.context.modelclass){
+				ncontext.modelclass = false;
+			}
+			else if(self.context.modelproperty){
+				ncontext.modelproperty = false;
+			}
+			self.userChangesContext(ncontext);
+		});	
+		jQuery('#' + this.HTMLID + " .console-extra .summary-dacura").click(function(){
+			var url = false;
+			if(self.context.tool == "data"){
+				if(self.context.mode == 'create'){
+					url = self.client.collections[self.context.collection].url + "/candidate#ldo-create";
+				}
+				else if(self.context.candidate){
+					url = self.current_candidate.meta.cwurl
+				}
+			}
+			else if(self.context.tool == 'model'){
+				if(self.context.mode == 'create'){
+					url = self.client.collections[self.context.collection].url + "/ontology#ldo-create";
+				}
+				else if(self.current_ontology) {
+					url = self.current_ontology.meta.cwurl	
+				}				
+			}
+			if(url){
+				var win = window.open(url, '_blank');
+				win.focus();
+				//window.location.href = self.current_ontology.meta.cwurl;
+			}
+			else {
+				alert("Error - no url could be determined for this entity");
+			}
+		});
+		jQuery('#' + this.HTMLID + " .console-extra .summary-edit").click(function(){
+			self.userChangesContext({mode: "edit"});				
+
+			/*if(self.context.candidate){
+				alert("set edit mode for candidate " + self.context.candidate);
+			}
+			else if(self.context.modelclass){
+				alert("set edit mode for class" + self.context.modelclass);
+			}
+			else if(self.context.modelproperty){
+				alert("set edit mode for property" + self.context.modelproperty);
+			}*/
+		});	
+		jQuery('#' + this.HTMLID + " .console-extra .summary-delete").click(function(){
+			if(self.context.candidate){
+				alert("delete candidate " + self.context.candidate);
+			}
+			else if(self.context.modelclass){
+				alert("delete class" + self.context.modelclass);
+			}
+			else if(self.context.modelproperty){
+				alert("delete property" + self.context.modelproperty);
+			}
+		});	
+		jQuery('#' + this.HTMLID + " .console-extra .summary-create .docreate").click(function(){
+			if(self.context.tool == "data"){
+				self.createCandidate();
+			}
+		});
+		jQuery('#' + this.HTMLID + " .console-extra .summary-create .testcreate").click(function(){
+			if(self.context.tool == "data"){
+				self.createCandidate(true);
+			}
+		});
 	}
 }
 
+DacuraConsole.prototype.createCandidate = function(test){
+	var self = this;
+	var basics = self.getNewEntityDetailsFromForm();
+	var fa = function(title, msg, extra){
+		self.showResult("error", title, msg, extra);
+	};
+	var su = function(x){
+		jpr(x);
+	}
+	self.client.create("candidate", basics, su, fa, test);
+}
+
+/**
+ * Called when the collection context is changed - sets up the various selectors for the collection
+ */
 DacuraConsole.prototype.initCollectionContext = function(){
 	var cols = this.client.collections;
 	var self = this;
@@ -119,9 +270,10 @@ DacuraConsole.prototype.initCollectionContext = function(){
 		  }
 	});
 	if(this.context.collection){
-		var html = "<img class='console-icon' src='" + cols[this.context.collection].icon + "'>";
+		var html = "<a class='collection-dacura-home' href='" + cols[this.context.collection].url + "' title='Visit the collection home page on Dacura'>";
+		html += "<img class='collection-icon' src='" + cols[this.context.collection].icon + "'></a>";
 		jQuery('#' + this.HTMLID + " .context-collection-picked .collection-title-icon").html(html);
-		jQuery('#' + this.HTMLID + " .context-collection-picked .collection-title-text").html(cols[this.context.collection].title);
+		jQuery('#' + this.HTMLID + " .context-collection-picked .collection-title-text").attr("title", cols[this.context.collection].title).html(cols[this.context.collection].title);
 		jQuery('#' + this.HTMLID + " .console-collection .context-select-holder").hide();
 		jQuery('#' + this.HTMLID + " .console-collection").show();
 		jQuery('#' + self.HTMLID + " .context-collection-picked").show();
@@ -132,24 +284,61 @@ DacuraConsole.prototype.initCollectionContext = function(){
 			var f  = function(){jQuery('#' + self.HTMLID + " .console-collection .context-select-holder").show("fade")};
 			jQuery('#' + self.HTMLID + " .console-collection .context-collection-picked").hide("fade", f);
 		});
-		this.initMenuForCollection();
+		this.initCollectionEntityClasses();
+		this.initCollectionCandidates();
+		this.initCollectionOntologies();
 	}
 	else {
 		jQuery('#' + this.HTMLID + " .console-collection").show();
-		jQuery('#' + self.HTMLID + " .console-collection .context-select-holder").show("fade");
+		jQuery('#' + self.HTMLID + " .console-collection .context-select-holder").show();
 	}
 	jQuery('#' + this.HTMLID + " select.context-collection-picker").on('change', function(){
 		self.userChangesContext({"collection": this.value });
 	});
 }
 
-
-DacuraConsole.prototype.initMenuForCollection = function(){
-	this.initCollectionCandidates();
-	this.initCollectionOntologies();
+/**
+ * Sets up the list of candidates for the collection
+ */
+DacuraConsole.prototype.initCollectionCandidates = function(){
+	var self = this;
+	jQuery('#' + this.HTMLID + " select.context-candidate-picker").html("");
+	var col = this.client.collections[this.context.collection];
+	if(col.entity_classes.length > 1){
+		if(size(col.candidates) > 0){
+			html = "<option value=''>Select a Candidate</option>";
+			if(this.context.entityclass){
+				for(var candid in col.candidates[this.context.entityclass]){
+					var sel = (candid == this.context.candidate ? " selected" : "");
+					html += "<option" + sel + " value='" + candid + "'>" + candid + "</option>"; 
+				}
+			}
+			else {
+				for(var etype in col.candidates){
+					html += "<optgroup label='" + etype + "'>";
+					for(var candid in col.candidates[etype]){
+						var sel = (candid == this.context.candidate ? " selected" : "");
+						html += "<option" + sel + " value='" + candid + "'>" + candid + "</option>"; 	
+					}
+					html += "</optgroup>";
+				}				
+			}
+			jQuery('#' + this.HTMLID + " select.context-candidate-picker").html(html);
+			jQuery('#' + this.HTMLID + " select.context-candidate-picker").select2({
+				  placeholder: "Select a Candidate",
+				  minimumResultsForSearch: 10,
+				  allowClear: true
+			}).on('change.select2', function(){
+				self.userChangesContext({"candidate": this.value });
+			});;
+		}
+	}	
 }
 
-DacuraConsole.prototype.initCollectionCandidates = function(){
+/**
+ * Sets up the list of entity classes for the collection
+ */
+DacuraConsole.prototype.initCollectionEntityClasses = function(){
 	jQuery('#' + this.HTMLID + " select.context-entityclass-picker").html("");
 	var col = this.client.collections[this.context.collection];
 	var self = this;
@@ -170,22 +359,104 @@ DacuraConsole.prototype.initCollectionCandidates = function(){
 		}).on('change', function(){
 			self.userChangesContext({"entityclass": this.value });
 		});
-		if(size(col.candidates) > 0){
-			html = "<option value=''>Select a Candidate</option>";
-			for(var candid in col.candidates){
-				var sel = (candid == this.context.candidate ? " selected" : "");
-				html += "<option" + sel + " value='" + candid + "'>" + candid + "</option>"; 
-			}
-			jQuery('#' + this.HTMLID + " select.context-candidate-picker").html(html);
-			jQuery('#' + this.HTMLID + " select.context-candidate-picker").select2({
-				  placeholder: "Select a Candidate",
-				  minimumResultsForSearch: 10,
-				  allowClear: true
-			});
-		}
 	}
 }
 
+/**
+ * Called when an entity class is selected (for generating the entity property list)
+ * @param cb callback success function
+ */
+DacuraConsole.prototype.initEntityContext = function(cb){
+	var self = this;
+	var initcon = function(frame){
+		self.initEntityPropertySelector(frame);
+		cb();
+	};
+	var failcand = function(title, msg, extra){
+		self.showResult("error", title, msg, extra);
+	};
+	this.current_action = "Loading class frame from server";
+	this.client.getEmptyFrame(this.context.entityclass, initcon, failcand);
+}
+
+/**
+ * Initialises the list of available properties for a candidate
+ * @param props array of properties to be included
+ */
+DacuraConsole.prototype.initEntityPropertySelector = function(frame){
+	jQuery('#' + this.HTMLID + " select.context-entityproperty-picker").html("");
+	if(!this.context.collection) return;
+	this.entity_property_count = frame.length;
+	var col = this.client.collections[this.context.collection];
+	var self = this;
+	var html = "<option value=''>Select a Property</option>";
+	for(var i = 0; i<frame.length; i++){
+		var sel = (self.context.candidateproperty == frame[i].property) ? " selected" : "";
+		var lab = (typeof frame[i].label == "object" ? frame[i].label.data :  frame[i].property.after("#"));
+		html += "<option" + sel + " value='" + frame[i].property + "'>" + lab + "</option>"; 	
+		jQuery('#' + self.HTMLID + " select.context-entityproperty-picker").html(html);
+		jQuery('#' + self.HTMLID + " select.context-entityproperty-picker").select2({
+			  placeholder: "Select a Property",
+			  allowClear: true,
+			  minimumResultsForSearch: 10		  
+		}).on('change', function(){
+			//alert(this.value + " is the property");
+			//self.userChangesContext({"candidateproperty": this.value });//overload this for ease of context switching.
+		});
+	}
+}
+
+
+/**
+ * Called when a candidate is selected (for generating the candidate property list
+ * @param cb callback success function
+ */
+DacuraConsole.prototype.initCandidateContext = function(cb){
+	var self = this;
+	var initcon = function(cand){
+		self.current_candidate = cand;
+		self.initCandidatePropertySelector(cand.getProperties(self.context.mode == "view"));
+		cb();
+	};
+	var failcand = function(title, msg, extra){
+		self.showResult("error", title, msg, extra);
+	};
+	this.current_action = "Loading class Candidate from server";
+	this.client.get("candidate", this.context.candidate, initcon, failcand);
+}
+
+/**
+ * Initialises the list of available properties for a candidate
+ * @param props array of properties to be included
+ */
+DacuraConsole.prototype.initCandidatePropertySelector = function(props){
+	jQuery('#' + this.HTMLID + " select.context-candidateproperty-picker").html("");
+	if(!this.context.collection) return;
+	var col = this.client.collections[this.context.collection];
+	var self = this;
+	var html = "<option value=''>Select a Property</option>";
+	for(var i = 0; i<props.length; i++){
+		var sel = (self.context.candidateproperty == props[i].id) ? " selected" : "";
+		html += "<option" + sel + " value='" + props[i].id + "'>" + props[i].label + "</option>"; 	
+		jQuery('#' + self.HTMLID + " select.context-candidateproperty-picker").html(html);
+		jQuery('#' + self.HTMLID + " select.context-candidateproperty-picker").select2({
+			  placeholder: "Select a Property",
+			  minimumResultsForSearch: 10		  
+		}).on('change', function(){
+			self.context.candidateproperty = this.value;
+			if(this.value && this.value.length && (self.displayed_properties.indexOf(this.value) === -1)){
+				jQuery('#' + self.HTMLID + " .console-context .candidateproperty .context-add-property").show("fade");
+			}
+			else {
+				jQuery('#' + self.HTMLID + " .console-context .candidateproperty .context-add-property").hide("fade");				
+			}
+		});
+	}
+}
+
+/**
+ * Initialises the list of ontologies associated with a collection
+ */
 DacuraConsole.prototype.initCollectionOntologies = function(){
 	if(!this.context.collection) return;
 	var col = this.client.collections[this.context.collection];
@@ -201,34 +472,81 @@ DacuraConsole.prototype.initCollectionOntologies = function(){
 			  placeholder: "Select an ontology",
 			  allowClear: true,
 			  minimumResultsForSearch: 10		  
+		}).on('change', function(){
+			self.userChangesContext({"ontology": this.value });
 		});
 	}	
 }
 
-
-DacuraConsole.prototype.getAvailableRoles = function(){
-	var colcap = this.context.collection ? this.client.collections[this.context.collection] : false;
-	if(!colcap){
-		return [];
+/**
+ * Initialises the contents of the ontology (classes & properties)
+ */
+DacuraConsole.prototype.initOntologyContents = function(cb){
+	var self = this;
+	jQuery('#' + self.HTMLID + " select.context-modelclass-picker").html("");
+	jQuery('#' + self.HTMLID + " select.context-modelproperty-picker").html("");
+	if(!this.context.collection || !this.context.ontology) {
+		return cb();
 	}
-	return colcap.roles;
-} 
+	var populateOntologySelects = function(ont){
+		self.current_ontology = ont;
+		if(typeof ont.classes != "undefined" && size(ont.classes) > 0){
+			var ph = "Select Class (" + size(ont.classes) + ")";
+			var html = "<option value=''>" + ph + "</option>";
+			for(var i in ont.classes){
+				var sel = (self.context.modelclass && (i == self.context.modelclass)) ? " selected" : "";
+				html += "<option value='" + i + "'" + sel + ">" + ont.getClassLabel(i) + "</option>";
+			}
+			jQuery('#' + self.HTMLID + " select.context-modelclass-picker").html(html);
+			jQuery('#' + self.HTMLID + " select.context-modelclass-picker").select2({
+				  placeholder: ph,
+				  allowClear: true,
+				  minimumResultsForSearch: 10		  
+			}).on('change', function(){
+				self.userChangesContext({ "modelclass": this.value });
+			});
+		}
+		if(typeof ont.properties != "undefined" && size(ont.properties) > 0){
+			var ph = "Select Property (" + size(ont.properties) + ")";
+			var html = "<option value=''>" + ph + "</option>";
+			for(var i in ont.properties){
+				var sel = (self.context.modelproperty && (i == self.context.modelproperty)) ? " selected" : "";
+				html += "<option value='" + i + "'" + sel + ">" + ont.getPropertyLabel(i) + "</option>";
+			}
+			jQuery('#' + self.HTMLID + " select.context-modelproperty-picker").html(html);
+			jQuery('#' + self.HTMLID + " select.context-modelproperty-picker").select2({
+				  placeholder: ph,
+				  allowClear: true,
+				  minimumResultsForSearch: 10		  
+			}).on('change', function(){
+				self.userChangesContext({"modelproperty": this.value });
+			});
+		}
+		cb();
+	}
+	var ontologyFail = function(tit, msg, extra){
+		self.showResult("error", tit, msg, extra);
+	}
+	this.current_action = "Loading ontology from server";
+	this.client.get("ontology", this.context.ontology, populateOntologySelects, ontologyFail);	
+}
 
+/* After initialisations, the system works by manipulating the visibility of elements */
 
-
-DacuraConsole.prototype.resetContext = function(){
-	this.context.collection = false;
-	this.context.ontology = false;
-	this.context.modelclass = false;
-	this.context.modelproperty = false;
-	this.context.candidate = false,
-	this.context.entityclass = false, 
-	this.context.candidateproperty = false;
-};
-
+/**
+ * Core function - called whenever a user changes their context
+ * When a user does something, the context change is passed to this function and this then calculates what needs to happen
+ * @param ncontext - array with the updated context elements in it 
+ * @param special (back|forward|other) -> browser actions need special treatment
+ */
 DacuraConsole.prototype.userChangesContext = function(ncontext, special){
+	menu_shown = false;
+	this.displayed_properties = [];//always reset on context change
 	if(!special || special != "back"){
 		this.history.push(jQuery.extend({}, true, this.context));
+		if(!special){
+			this.future = []; //reset future if the user has done something else....			
+		}
 	}
 	else if(special == "back"){
 		this.future.push(jQuery.extend({}, true, this.context));	
@@ -237,6 +555,7 @@ DacuraConsole.prototype.userChangesContext = function(ncontext, special){
 		this.resetContext();
 		this.context.collection = ncontext.collection;
 		if(this.context.collection){
+			this.client.current_collection = this.context.collection;
 			if(!this.context.tool){
 				this.context.tool = "data";
 			}
@@ -246,134 +565,270 @@ DacuraConsole.prototype.userChangesContext = function(ncontext, special){
 	if(typeof ncontext.tool == "string" && ncontext.tool != this.context.tool){
 		this.context.tool = ncontext.tool;
 	} 
-	if(typeof ncontext.mode == "string") this.mode = ncontext.mode;
+	if(typeof ncontext.mode == "string") this.context.mode = ncontext.mode;
+	if(typeof ncontext.candidate != "undefined" && this.context.candidate != ncontext.candidate){
+		this.context.candidate = ncontext.candidate;
+		if(this.context.candidate){
+			var col = this.client.collections[this.context.collection];
+			var cands = col.candidates;
+			for(var etype in cands){
+				if(typeof cands[etype][ncontext.candidate] != "undefined"){
+					ncontext.entityclass = etype;
+					break;
+				}
+			}
+			var self = this;
+			var cb = function(){
+				self.showMenu();
+			}
+			menu_shown = true;
+			this.initCandidateContext(cb);
+		}
+	}
 	if(typeof ncontext.entityclass != "undefined" && this.context.entityclass != ncontext.entityclass){
 		this.context.entityclass = ncontext.entityclass;
-		this.context.ontology = this.context.entityclass.split(":")[0];
-		this.context.modelclass = this.context.entityclass.split(":")[1];
+		if(this.context.entityclass){
+			var ontid = this.context.entityclass.split(":")[0];
+			var col = this.client.collections[this.context.collection];
+			if(typeof col.ontologies[ontid] != "undefined"){
+				this.context.ontology = ontid;
+				this.context.modelclass = this.context.entityclass;
+			}
+			var self = this;
+			var cb = function(){
+				self.showMenu();
+			}
+			menu_shown = true;
+			this.initCollectionCandidates();
+			this.initEntityContext(cb);
+		}
+		else {
+			this.initCollectionCandidates();
+		}
 	}
-	this.showMenu();
-	/*mode: "menu",
-	tool: "browser",
-	collection: false,
-	graph: false,
-	ontology: false,
-	modelclass: false,
-	modelproperty: false,
-	candidate: false,
-	entityclass: false, 
-	candidateproperty: false*/
+	if(typeof ncontext.candidateproperty != "undefined"){
+		this.context.candidateproperty = ncontext.candidateproperty;
+	}
+	if(typeof ncontext.modelclass != "undefined"){
+		this.context.modelclass = ncontext.modelclass;
+		if(this.context.modelclass){
+			this.context.modelproperty = false;
+		}
+	}
+	else if(typeof ncontext.modelproperty != "undefined"){
+		this.context.modelproperty = ncontext.modelproperty;
+		if(this.context.modelproperty){
+			this.context.modelclass = false;
+		}
+	}
+	if(typeof ncontext.ontology != "undefined"){
+		this.context.ontology = ncontext.ontology;
+		if(this.context.ontology == "") this.context.ontology = false;
+		var self = this;
+		var cb = function(){
+			self.showMenu();
+		}
+		menu_shown = true;
+		this.initOntologyContents(cb);
+	}
+	if(!menu_shown) {
+		this.showMenu();
+	}
+	this.client.context = this.context;
 }
 
+/**
+ * Resets the context to default
+ */
+DacuraConsole.prototype.resetContext = function(){
+	this.context.mode = "view";
+	this.context.collection = false;
+	this.context.ontology = false;
+	this.context.modelclass = false;
+	this.context.modelproperty = false;
+	this.context.candidate = false,
+	this.context.entityclass = false, 
+	this.context.candidateproperty = false;
+};
+
+/**
+ * Hides all elements on the topbar bar the branding and close buttons (which we always want)
+ */
 DacuraConsole.prototype.hideAll = function(){
 	jQuery('#dacura-console .menu-area').hide();
 	jQuery('#dacura-console .menu-area.console-branding').show();	
 	jQuery('#dacura-console .menu-area.console-user-close').show();	
+	console-collection
 };
 
+/**
+ * Disables navigation elements on the top bar 
+ */
+DacuraConsole.prototype.freezeNavigation = function(){
+	freezeElement('#' + this.HTMLID + " .console-branding", 0.2, "console-overlay");
+	freezeElement('#' + this.HTMLID + " .console-collection", 0.2, "console-overlay");
+	freezeElement('#' + this.HTMLID + " .console-mode", 0.2, "console-overlay");
+	freezeElement('#' + this.HTMLID + " .console-user-logged-in", 0.2, "console-overlay");	
+	freezeElement('#' + this.HTMLID + " .entityclass", 0.2, "console-overlay");	
+}
+
+DacuraConsole.prototype.thawNavigation = function(){
+	$('#' + this.HTMLID + " .console-overlay").remove();	
+}
+
+
+/**
+ * Called when the user hits the forward browser button
+ */
 DacuraConsole.prototype.goForward = function(){
-	//jpr(this.history);
 	hcontext = this.future.pop();
-	//jpr(hcontext);
 	this.userChangesContext(hcontext, "forward");
 }
 
+/**
+ * Called when the user hits the back button on the browser
+ */
 DacuraConsole.prototype.goBack = function(){
-	//jpr(this.history);
 	hcontext = this.history.pop();
-	//jpr(hcontext);
-	this.userChangesContext(hcontext, "back");
+	this.userChangesContext(hcontext, "back");	
 }
 
-
+/**
+ * Called when a call to the API returns a result - written to the top bar
+ * @param type error | warning | accept | reject | pending
+ * @param title the message title
+ * @param msg the message body
+ * @param extra extra material for optional display
+ */
 DacuraConsole.prototype.showResult = function(type, title, msg, extra){
-	var html = "<span class='console-" + type + "-result'>" + title + "</span>";
-	jQuery("#dacura-console-menu-message").html(html).show();
+	jQuery('#' + this.HTMLID + " div.console-resultbox .dacura-result").hide();
+	jQuery('#' + this.HTMLID + " div.console-resultbox ." + type).show().attr("title", title + " - " + msg);
+	jQuery('#' + this.HTMLID + " div.console-resultbox").show();		
 }; 
 
+/**
+ * Called to show the busy animation 
+ */
 DacuraConsole.prototype.showBusy = function(){
 	var msg = (this.current_action ? this.current_action : "Fetching information from server");
 	jQuery('#dacura-console-menu-busybox').attr("title", msg)
 	jQuery('#dacura-console-menu-busybox').show();
 } 
 
+/**
+ * Called to clear the busy animation
+ */
 DacuraConsole.prototype.clearBusy = function(){
 	jQuery('#dacura-console-menu-busybox').attr("title", "").hide();
 } 
 
+/** 
+ * Shows the login box in the top bar
+ */
 DacuraConsole.prototype.showLogin = function(){
 	jQuery('#' + this.HTMLID +  ' .console-login').show();		
 	jQuery('#' + this.HTMLID + ' .console-user-logged-in').hide();			
 }
 
+/** 
+ * Shows the user icon 
+ */
 DacuraConsole.prototype.showUserIcon = function(){
 	jQuery('#' + this.HTMLID + ' .console-user-logged-in').show();		
 	jQuery('#' + this.HTMLID + ' .console-login').hide();
 }
 
+/**
+ * Main visibility defining function - draws the console according to the current context
+ */
 DacuraConsole.prototype.showMenu = function(){
+	this.setFrozenElements();
 	this.setToolCSSClass();
 	this.setBrowserButtonVisibility();
-	this.setCollectionContextVisibility();
-	this.setToolVisibility();
 	this.setModeIconVisibility();
 	this.setRoleIconVisibility();
+	this.setResultVisiblity();
+	this.setCollectionContextVisibility();
 	if(!this.client.isLoggedIn()){
 		this.showLogin();
 	}
 	else {
 		this.showUserIcon();
 	}
-}
-
-DacuraConsole.prototype.setToolCSSClass = function(){
-	if(this.context.tool){
-		$('#' + this.HTMLID).removeClass();
-		$('#' + this.HTMLID).addClass(this.context.tool);		
+	if(this.context.tool == "data" && this.context.candidate){
+		this.displayCandidate();
 	}
-}
-
-DacuraConsole.prototype.setCollectionContextVisibility = function(){
-	if(!this.context.collection){
-		jQuery('#' + this.HTMLID + " .context-collection-picked").hide();
-		jQuery('#' + this.HTMLID + " .console-context").hide();
-		jQuery('#' + this.HTMLID + " .console-collection .context-select-holder").show();		
+	else if(this.context.tool == "model" && this.context.modelclass){
+		this.displayModelClass();
+	}
+	else if(this.context.tool == "model" && this.context.modelproperty){
+		this.displayModelProperty();
+	}
+	else if(this.context.mode == 'create' && this.context.tool == "data"){
+		this.displayNewCandidateForm();
 	}
 	else {
-		jQuery('#' + this.HTMLID + " .context-collection-picked").show();		
-		jQuery('#' + this.HTMLID + " .console-collection .context-select-holder").hide();
-		jQuery('#' + this.HTMLID + " .console-context .context-element").hide();
-		var col = this.client.collections[this.context.collection];
-		//depending on the tool, show the appropriate select boxes....
-		if(this.context.tool == "model"){
-			jQuery('#' + this.HTMLID + " .console-context .ontology").show("fade");
-			jQuery('#' + this.HTMLID + " .console-context .ontology .context-select-holder").show("fade");
-		}
-		else {
-			jQuery('#' + this.HTMLID + " .console-context .entityclass .context-element-item").hide();
-			if(col.entity_classes.length > 1){
-				jQuery('#' + this.HTMLID + " .console-context .entityclass .context-select-holder").show();
-				if(	size(col.candidates) > 0){
-					jQuery('#' + this.HTMLID + " .console-context .entityclass").show();
-					jQuery('#' + this.HTMLID + " .console-context .candidate .context-select-holder").show();
-				}
-				if(this.context.entityclass && this.active_roles['harvester']){
-					jQuery('#' + this.HTMLID + " .console-context .entityclass .context-add-element").show();
-				}
-			}
-			else {
-				jQuery('#' + this.HTMLID + " .console-context .entityclass .context-empty").show();
-			}
-			jQuery('#' + this.HTMLID + " .console-context .entityclass").show();
-		}
-		jQuery('#' + this.HTMLID + " .console-context").show();
-
+		jQuery('#' + this.HTMLID + " .console-extra .console-context-summary").hide();
+		jQuery('#' + this.HTMLID + " .console-extra .console-context-full").hide();
 	}
 }
 
+DacuraConsole.prototype.setFrozenElements = function(){
+	if(this.context.mode == "view"){
+		this.thawNavigation();
+	}
+	else {
+		this.freezeNavigation();
+	}
+}
+
+/** 
+ * Sets the css class of the console to the name of the tool (data|model)
+ */
+DacuraConsole.prototype.setToolCSSClass = function(){
+	if(this.context.tool){
+		jQuery('#' + this.HTMLID).removeClass();
+		jQuery('#' + this.HTMLID).addClass(this.context.tool);		
+	}
+}
+
+/**
+ * Determines which browser buttons to show to the user
+ */
+DacuraConsole.prototype.setBrowserButtonVisibility = function(){
+	if(this.history.length && this.client.isLoggedIn()){
+		jQuery('#' + this.HTMLID + " .browser-button-back").show();
+	}
+	else {
+		jQuery('#' + this.HTMLID + " .browser-button-back").hide();	
+	}
+	if(this.future.length && this.client.isLoggedIn()){
+		jQuery('#' + this.HTMLID + " .browser-button-forward").show();
+	}
+	else {
+		jQuery('#' + this.HTMLID + " .browser-button-forward").hide();
+	}	
+}
+
+/**
+ * Determines which mode icons to display for the user
+ */
+DacuraConsole.prototype.setModeIconVisibility = function(){
+	this.showing_tools = false;//always hidden on draw
+	jQuery('#' + this.HTMLID + " .console-mode .mode-icons").hide();		
+	jQuery('#' + this.HTMLID + " .console-mode .mode-icons .amode-icon").hide();		
+	if(this.context.collection == false){
+		return;
+	}
+	jQuery('#' + this.HTMLID + " .console-mode span.amode-icon.mode-" + this.context.tool + ".mode-active").show();		
+	jQuery('#' + this.HTMLID + " .console-mode  .mode-icons").show();	
+}
+
+/**
+ * Determines which role icaons to display for the user
+ */
 DacuraConsole.prototype.setRoleIconVisibility = function(){
 	var hasroles = false;
-	jQuery('#' + this.HTMLID + " .console-user-roles").hide();
 	jQuery('#' + this.HTMLID + " .console-user-roles .role-icons .console-role").hide();		
 	jQuery('#' + this.HTMLID + " .console-user-roles .role-icons").hide();		
 	var roles = this.getAvailableRoles();
@@ -416,1115 +871,426 @@ DacuraConsole.prototype.setRoleIconVisibility = function(){
 		}
 		jQuery('#' + this.HTMLID + " .console-user-roles .architect-role").show();		
 	}
-	if(hasroles){
-		jQuery('#' + this.HTMLID + " .console-user-roles").show	();
+	if(hasroles && this.showing_roles){
+		jQuery('#' + this.HTMLID + " .console-user-roles").show();
+	}
+	else {
+		jQuery('#' + this.HTMLID + " .console-user-roles").hide();
 	}
 };
 
-DacuraConsole.prototype.setModeIconVisibility = function(){
-	jQuery('#' + this.HTMLID + " .console-mode .mode-icons").hide();		
-	if(this.context.collection == false){
-		return;
-	}
-	jQuery('#' + this.HTMLID + " .console-mode .mode-active").hide();		
-	jQuery('#' + this.HTMLID + " .console-mode ." + this.context.tool + "-mode .mode-active").show();		
-	jQuery('#' + this.HTMLID + " .console-mode .mode-icons .mode-inactive").show();		
-	jQuery('#' + this.HTMLID + " .console-mode  ." + this.context.tool + "-mode .mode-inactive").hide();	
-	jQuery('#' + this.HTMLID + " .console-mode  .mode-icons").show();	
-}
-
-DacuraConsole.prototype.setToolVisibility = function(){
-	jQuery('#' + this.HTMLID + " .console-tool").hide();
-	if(this.context.collection && this.client.isLoggedIn()){
-		if(this.context.tool == 'data'){
-			jQuery('#' + this.HTMLID + " .browser-tool").show();
-		}
-		else if(this.context.tool == 'model'){
-			jQuery('#' + this.HTMLID + " .architect-tool").show();	
-		}
-	}
-}
-
-DacuraConsole.prototype.setBrowserButtonVisibility = function(){
-	if(this.history.length && this.client.isLoggedIn()){
-		jQuery('#' + this.HTMLID + " .browser-button-back").show();
+/**
+ * Determines the visibility of the result icons
+ */
+DacuraConsole.prototype.setResultVisiblity = function(){
+	if(this.action_result){
+		jQuery('#' + this.HTMLID + " div.console-resultbox").show();		
 	}
 	else {
-		jQuery('#' + this.HTMLID + " .browser-button-back").hide();	
+		jQuery('#' + this.HTMLID + " div.console-resultbox").hide();
 	}
-	if(this.future.length && this.client.isLoggedIn()){
-		jQuery('#' + this.HTMLID + " .browser-button-forward").show();
+}
+
+/**
+ * Determines which parts of the context to show 
+ */
+DacuraConsole.prototype.setCollectionContextVisibility = function(){
+	if(!this.client.isLoggedIn()){
+		return jQuery('#' + this.HTMLID + " .console-context").hide();
+	}
+	var ocol = jQuery('#' + this.HTMLID + " .console-collection .context-select-holder select").val();
+	if(!this.context.collection){
+		if(ocol){
+			jQuery('#' + this.HTMLID + " .console-collection .context-select-holder select").val("").trigger("change.select2");
+		}
+		jQuery('#' + this.HTMLID + " .context-collection-picked").hide();
+		jQuery('#' + this.HTMLID + " .console-context").hide();
+		jQuery('#' + this.HTMLID + " .console-collection .context-select-holder").show();		
 	}
 	else {
-		jQuery('#' + this.HTMLID + " .browser-button-forward").hide();
-	}	
-}
-
-
-
-DacuraConsole.prototype.getURLForOntologyID = function(id){
-	var col = this.client.collections[this.context.collection];
-	if(col && typeof col.ontologies == "object"){
-		for(var i in col.ontologies){
-			if(col.ontologies[i].id == id){
-				return col.ontologies[i].url;
-			}
-		}			
-	}
-	return "";
-}
-
-DacuraConsole.prototype.getIDForOntologyURL = function(url){
-	var col = this.client.collections[this.context.collection];
-	if(col && typeof col.ontologies == "object"){
-		for(var i in col.ontologies){
-			if(col.ontologies[i].url == url){
-				return col.ontologies[i].id;
-			}
-		}			
-	}
-	return "";
-}
-
-
-function DacuraModelBuilder(config){
-}
-
-var dconsole = {
-	mode: "menu",
-	loaded_properties: {},
-	loaded_ontologies: {},
-	loaded_graphs: {},
-	loaded_candidates: {},
-	create_frames: {},
-	current_ontology: false,
-	current_frame: false,
-	current_graph: false,
-	lasttoggleid: 0,
-};
-
-dconsole.init = function(html){
-	dconsole.scanPage(html, dacura.params.context);
-	dconsole.showUserOptions(dacura.params.context.mode);
-	dconsole.setContext(dacura.params.context);
-	//dconsole.setContext(dacura.params.context, dconsole.scanPage);
-}
-
-
-dconsole.display = function(type, id){
-	if(type == "class"){
-		idbits = id.split(":");
-		if(this.current_ontology && this.current_ontology.id == idbits[0]){
-			if(typeof this.current_ontology.classes[id] == "undefined"){
-				return alert("No such class as " + idbits[1] + " in " + idbits[0]);
-			}
-			else {
-				this.ontologyMode = true;
-				this.setContext({"class": id});
-			}
+		if(ocol != this.context.collection){
+			jQuery('#' + this.HTMLID + " .console-collection .context-select-holder select").val(this.context.collection).trigger("change");			
+		}
+		jQuery('#' + this.HTMLID + " .context-collection-picked").show();		
+		jQuery('#' + this.HTMLID + " .console-collection .context-select-holder").hide();
+		jQuery('#' + this.HTMLID + " .console-context .context-element").hide();
+		if(this.context.tool == "model"){
+			this.setModelContextVisiblity();
 		}
 		else {
-			if(typeof this.loaded_ontologies[idbits[0]] == "undefined"){
-				var onturl = this.getURLForOntologyID(idbits[0]);
-				if(onturl){
-					this.ontologyMode = true;
-					this.setContext({"ontology": onturl, "class": id});				
+			this.setDataContextVisiblity();
+		}
+		jQuery('#' + this.HTMLID + " .console-context").show();
+	}
+}
+
+/**
+ * Determines the visibility of context elements when in data mode
+ */
+DacuraConsole.prototype.setDataContextVisiblity = function(){
+	var col = this.client.collections[this.context.collection];
+	jQuery('#' + this.HTMLID + " .console-context .entityclass .context-element-item").hide();
+	jQuery('#' + this.HTMLID + " .console-context .candidate .context-element-item").hide();
+	jQuery('#' + this.HTMLID + " .console-context .entityproperty .context-element-item").hide();
+	jQuery('#' + this.HTMLID + " .console-context .candidateproperty .context-element-item").hide();
+	if(col.entity_classes.length > 1){
+		jQuery('#' + this.HTMLID + " .console-context .entityclass .context-select-holder").show();
+		if(this.context.entityclass){
+			if((this.active_roles['harvester'] || this.active_roles['expert']) && (this.context.mode == 'view')){
+				jQuery('#' + this.HTMLID + " .console-context .entityclass .context-add-element").show();
+			}
+			jQuery('#' + this.HTMLID + " .console-context .entityclass .context-select-holder select").val(this.context.entityclass).trigger("change.select2");
+		}
+		else {
+			jQuery('#' + this.HTMLID + " .console-context .entityclass .context-select-holder select").show().trigger("change.select2");					
+		}
+		if((this.context.entityclass && col.candidates[this.context.entityclass] && size(col.candidates[this.context.entityclass]) > 0)){
+			jQuery('#' + this.HTMLID + " .console-context .candidate .context-select-holder").show();
+		}
+		else if((!this.context.entityclass) && (size(col.candidates) > 0)){
+			jQuery('#' + this.HTMLID + " .console-context .candidate .context-select-holder").show();					
+		}
+		else {
+			jQuery('#' + this.HTMLID + " .console-context .candidate .context-empty").show();			
+		}
+		var csel = jQuery('#' + this.HTMLID + " .console-context .candidate .context-select-holder select").val();
+		if(this.context.candidate && this.context.candidate != csel){
+			jQuery('#' + this.HTMLID + " .console-context .candidate .context-select-holder select").val(this.context.candidate).trigger("change");//provokes chained update
+		}
+		else if(!this.context.candidate && csel){
+			jQuery('#' + this.HTMLID + " .console-context .candidate .context-select-holder select").val("").trigger("change.select2");//don't provoke chained update			
+		}
+		else if(this.context.candidate){
+			if(this.current_candidate){
+				if(this.current_candidate.propertyCount(true) > 0) {
+					jQuery('#' + this.HTMLID + " .console-context .candidateproperty .context-select-holder").show();
+					if(this.context.candidateproperty){
+						jQuery('#' + this.HTMLID + " .console-context .candidateproperty .context-add-property").show();
+					}
 				}
 				else {
-					return alert("No known ontologies with url " + onturl);
-				}				
+					jQuery('#' + this.HTMLID + " .console-context .candidateproperty .context-empty").show();
+				}
 			}
-			else {
-				this.ontologyMode = true;
-				this.setContext({"ontid": idbits[0], "class": id});							
-			}
+			jQuery('#' + this.HTMLID + " .console-context .candidateproperty").show();
 		}
-	}
-}
-
-dconsole.showUserOptions = function(mode){
-	this.mode = 'menu';
-	jQuery('#dacura-console .console-context .collection').html(dacura.params.context.title);
-	jQuery('#dacura-console .console-user').html(this.getUserMenuHTML());
-	jQuery('#console-user-actions').menu({
-		  icons: { submenu: "ui-icon-circle-triangle-w" }
-	});
-	jQuery('#dacura-console .console-controls').html(this.getControlsHTML());
-	if(typeof mode == "string" && mode == "model"){
-		dconsole.setOntologyMode();
-	}
-	else {
-		dconsole.setDataMode();
-	}
-	//var consoleZindex = jQuery('#dacura-console').css('z-index');
-	//var gzindex = parseInt(consoleZindex) + 1;
-	//this.grabWikiFacts();
-	jQuery('.console-user-context').hover(
-	  	function(){ 
-	      	jQuery(this).addClass('ui-state-focus');
-	      	jQuery('.console-user-menu').show("blind");
-	      	jQuery('#console-user-actions').menu("refresh"); 
-	    },
-	  	function(){ 
-	      	jQuery(this).removeClass('ui-state-focus'); 
-	      	jQuery('.console-user-menu').hide("fade", "slow");
-	    }
-	);
-};
-
-dconsole.setContext = function(context, callback){
-	if(context && this.ontologyMode){
-		if(typeof context["ontology"] == "string"){
-			jQuery('#dacura-console .console-context select.console-ontology').val(context["ontology"]);
-			jQuery('#dacura-console .console-context select.console-ontology').selectmenu("refresh");
-			dconsole.changeOntology(context, callback);
-		}
-		else if(typeof context["ontid"] == "string"){
-			var nont = this.loaded_ontologies[context["ontid"]];
-			if(nont){
-				this.current_ontology = nont;
-				this.loadOntologyDetails(nont, context, callback);
-			}		
-			else {
-				alert("attempted to load an unknown ontology " + context["ontid"]);
-			}
-		}	
-		else if(typeof context["class"] == "string"){
-			jQuery('#dacura-console .console-context select.console-class-list').val(context['class']);
-			jQuery('#dacura-console .console-context select.console-class-list').selectmenu("refresh");
-			dconsole.changeClass(context, callback);
-		}
-		else if(typeof context["property"] == "string"){
-			jQuery('#dacura-console .console-context select.console-property-list').val(context['property']);
-			jQuery('#dacura-console .console-context select.console-property-list').selectmenu("refresh");
-			dconsole.changeModelProperty(context, callback);
+		if(this.context.mode == 'view'){
+			jQuery('#' + this.HTMLID + " .console-context .candidate").show();
 		}
 		else {
-			if(typeof callback == "function") callback(context);			
-		}
-	}
-	else if(context){
-		if(typeof context.type == "string"){
-			jQuery('#dacura-console .console-context select.console-entity-type').val(context.type);
-			jQuery('#dacura-console .console-context select.console-entity-type').selectmenu("refresh");
-			dconsole.changeEntityType(context, callback);
-		}
-		else if(typeof context.entity == "string"){
-			jQuery('#dacura-console .console-context select.console-entity-list').val(context.entity);
-			jQuery('#dacura-console .console-context select.console-entity-list').selectmenu("refresh");	
-			dconsole.changeEntityList(context, callback);
-		}	
-		else if(typeof context.property == "string"){
-			jQuery('#dacura-console .console-context select.console-properties').val(context.property);
-			jQuery('#dacura-console .console-context select.console-properties').selectmenu("refresh");	
-			dconsole.changeProperty(context, callback);
-		}
-		else {
-			if(typeof callback == "function") callback(context);
+			jQuery('#' + this.HTMLID + " .console-context .candidate").hide();
+			if(this.entity_property_count > 0){
+				jQuery('#' + this.HTMLID + " .console-context .entityproperty .context-select-holder").show();
+				jQuery('#' + this.HTMLID + " .console-context .entityproperty .context-add-property").show();
+			}
+			else {
+				jQuery('#' + this.HTMLID + " .console-context .entityproperty .context-empty").show();
+			}
+			jQuery('#' + this.HTMLID + " .console-context .entityproperty").show();
 		}
 	}
 	else {
-		if(typeof callback == "function") callback(false);
+		jQuery('#' + this.HTMLID + " .console-context .entityclass .context-empty").show();
 	}
-}
-
-/* functions for managing visibility, layout, context changes */
-
-/**
- * Highest level switch - between collections 
- */
-dconsole.switchCollectionContext = function(target){
-	dacura.params.apiurl = dacura.params.baseapiurl;
-	if(target != "all"){
-		dacura.params.apiurl += target + "/";
+	if(this.context.candidate){
+		jQuery('#' + this.HTMLID + " .console-context .entityclass").hide();
 	}
-	dconsole.reload(dacura.params.context);
+	else {
+		jQuery('#' + this.HTMLID + " .console-context .entityclass").show();
+	}
 }
 
 /**
- * Second highest level switch - between model and data modes 
+ * Changes the visibility of model context elements 
  */
-dconsole.setDataMode = function(){
- 	dconsole.clearContext();
- 	dconsole.ontologyMode = false;	
-	jQuery('#dacura-console .console-context .entitytype').html(this.getEntityTypeSelectorHTML());
-	jQuery('#dacura-console select.console-entity-type').selectmenu({
-		  change: dconsole.changeEntityType, width: 180
-	});
-}
-
-dconsole.setOntologyMode = function(){
-	dconsole.ontologyMode = true;	
-	dconsole.clearContext();
-	jQuery('#dacura-console .console-context .entitytype').html(this.getOntologySelectorHTML());
-	jQuery('#dacura-console select.console-ontology').selectmenu({
-		  change: dconsole.changeOntology, width: 180
-	});
-}
-
-dconsole.clearOntology = function(){
-	dconsole.clearSubContext();
-	dconsole.clearExtra();
-}
-
-dconsole.clearOntologyMode = function(){
-	dconsole.setDataMode();
-}
-
-dconsole.toggleOntologyMode = function(){
-	if(this.ontologyMode){
-		dconsole.clearOntologyMode();
+DacuraConsole.prototype.setModelContextVisiblity = function(){
+	var col = this.client.collections[this.context.collection];
+	jQuery('#' + this.HTMLID + " .console-context .ontology .context-element-item").hide();
+	jQuery('#' + this.HTMLID + " .console-context .modelclass .context-element-item").hide();
+	jQuery('#' + this.HTMLID + " .console-context .modelclass").hide();
+	jQuery('#' + this.HTMLID + " .console-context .modelproperty").hide();
+	jQuery('#' + this.HTMLID + " .console-context .modelproperty .context-element-item").hide();
+	jQuery('#' + this.HTMLID + " .console-context .modelproperty .context-select-holder select").attr("disabled", false);
+	jQuery('#' + this.HTMLID + " .console-context .ontology .context-select-holder select").attr("disabled", false);
+	if(size(col.ontologies) > 0){
+		jQuery('#' + this.HTMLID + " .console-context .ontology .context-select-holder").show();
+		var csel = jQuery('#' + this.HTMLID + " .console-context .ontology .context-select-holder select").val();
+		if(this.context.ontology && this.context.ontology != csel){
+			jQuery('#' + this.HTMLID + " .console-context .ontology .context-select-holder select").val(this.context.ontology).trigger("change");
+		}
+		else if(!this.context.ontology && csel) {
+			jQuery('#' + this.HTMLID + " .console-context .ontology .context-select-holder select").val("").trigger("change");					
+		}
+		if(this.context.ontology){
+			if(this.current_ontology.properties && size(this.current_ontology.properties) > 0){
+				jQuery('#' + this.HTMLID + " .console-context .modelproperty .context-select-holder").show();
+				var psel = jQuery('#' + this.HTMLID + " .console-context .modelproperty .context-select-holder select").val();
+				if(this.context.modelproperty && this.context.modelproperty != psel){
+					jQuery('#' + this.HTMLID + " .console-context .modelproperty .context-select-holder select").val(this.context.modelproperty).trigger("change");
+				}
+				else if(!this.context.modelproperty && psel) {
+					jQuery('#' + this.HTMLID + " .console-context .modelproperty .context-select-holder select").val("").trigger("change");					
+				}
+				if(this.context.modelproperty){
+					jQuery('#' + this.HTMLID + " .console-context .modelclass .context-select-holder select").attr("disabled", true);
+					jQuery('#' + this.HTMLID + " .console-context .ontology .context-select-holder select").attr("disabled", true);
+				}
+			}
+			else {
+				jQuery('#' + this.HTMLID + " .console-context .modelproperty .context-empty").show();
+			}
+			if(this.current_ontology.classes && size(this.current_ontology.classes) > 0){
+				jQuery('#' + this.HTMLID + " .console-context .modelclass .context-select-holder").show();
+				var csel = jQuery('#' + this.HTMLID + " .console-context .modelclass .context-select-holder select").val();
+				if(this.context.modelclass && this.context.modelclass != csel){
+					jQuery('#' + this.HTMLID + " .console-context .modelclass .context-select-holder select").val(this.context.modelclass).trigger("change");
+				}
+				else if(!this.context.modelclass && csel) {
+					jQuery('#' + this.HTMLID + " .console-context .modelclass .context-select-holder select").val("").trigger("change");					
+				}
+				if(this.context.modelclass){
+					jQuery('#' + this.HTMLID + " .console-context .modelproperty .context-select-holder select").attr("disabled", true);
+					jQuery('#' + this.HTMLID + " .console-context .ontology .context-select-holder select").attr("disabled", true);
+				}
+			}
+			else {
+				jQuery('#' + this.HTMLID + " .console-context .modelclass .context-empty").show();
+			}
+			jQuery('#' + this.HTMLID + " .console-context .modelclass").show();	
+			jQuery('#' + this.HTMLID + " .console-context .modelproperty").show();	
+		}
 	}
 	else {
-		dconsole.setOntologyMode();
+		jQuery('#' + this.HTMLID + " .console-context .ontology .context-empty").show();
 	}
-}
-
-/* clear the state of the console or various parts of it */
-dconsole.clear = function(){
-	jQuery('#dacura-console .console-extra').slideUp("fast");
-	jQuery('#dacura-console .console-context .context-element').empty();
-	jQuery('#dacura-console .console-stats').empty();
-	jQuery('#dacura-console .console-controls').empty();
-	jQuery('#dacura-console .console-user').empty();
-	jQuery('#dacura-console .console-extra').empty();
-	jQuery('#dacura-console #dacura-console-menu-message').empty();
-}
-
-dconsole.clearContext = function(){
-	jQuery('#dacura-console .console-context .entitytype').html("");
-	jQuery('#dacura-console .console-context .entities').html("");
-	jQuery('#dacura-console .console-context .properties').html("");
-}
-
-dconsole.clearSubContext = function(){
-	jQuery('#dacura-console .console-context .entities').html("");
-	jQuery('#dacura-console .console-context .properties').html("");
-}
-
-/* 
- * the console uses 6 subscreens which are loaded via the loadExtra function
- * ontology mode: create class, create property, view/update class, view/update property
- * data mode: create candidate, view/update candidate
- *
- * These functions manage the loading and unloading of the various different subscreens 
- * 
- */
- dconsole.loadExtra = function(html, callback){
-	jQuery('#dacura-console .console-extra').html(html).hide();
-	jQuery('#dacura-console .console-extra').slideDown("medium", callback);
- }
-
- dconsole.clearExtra = function(callback){
-	dconsole.mode = 'menu';
-	jQuery('#dacura-console .console-extra').slideUp("fast", callback).html("");
- }
-
- /* data mode - creating and viewing candidates via frames */ 
- dconsole.showCreateCandidate = function(){
-	dconsole.mode = "create";
-	jQuery('#dacura-console .createentity').hide();	
-	var enttype = jQuery('#dacura-console .console-context select.console-entity-type').val();
-	jQuery( "#dacura-console .console-context select.console-entity-type" ).selectmenu( "disable" );
-	jQuery( "#dacura-console .console-context select.console-entity-list" ).selectmenu( "disable" );
-	dconsole.loadExtra(this.getCreateCandidateHTML(enttype));
-	jQuery('#dacura-console button.create-new-entity').button().click(function(){
-		var newentid = jQuery('#dacura-console .console-extra .new-entity-id').val();
-		var entprops = dconsole.getFilledCreatedProperties();
-		dconsole.createCandidate(enttype, newentid, entprops, false, dconsole.menu_pconfig);
-	});
-	jQuery('#dacura-console button.test-create-new-entity').button().click(function(){
-		var newentid = jQuery('#dacura-console .console-extra .new-entity-id').val();
-		var entprops = dconsole.getFilledCreatedProperties();
-		dconsole.createCandidate(enttype, newentid, entprops, false, dconsole.menu_pconfig, true);
-	});
-	jQuery('#dacura-console button.cancel-new-entity').button().click(function(){
-		dconsole.closeCreateCandidate();
-	});
-};
-
-dconsole.closeCreateCandidate = function(callback){
-	jQuery( "#dacura-console .console-context select.console-entity-type" ).selectmenu( "enable" );
-	jQuery( "#dacura-console .console-context select.console-entity-list" ).selectmenu( "enable" );
-	jQuery('#dacura-console .createentity').show();	
-	dconsole.loaded_properties = {};
-	dconsole.clearExtra();
-};
-
-dconsole.closeViewCandidate = dconsole.closeCreateCandidate; 
-
-/* model mode - creating and updating classes and properties of ontologies */
-
-dconsole.showCreateClass = function(){
-	dconsole.mode = "create";
-	jQuery('#dacura-console .createclass').hide();	
-	jQuery('#dacura-console .createmodelproperty').hide();
-	jQuery( "#dacura-console .console-context select.console-ontology" ).selectmenu( "disable" );
-	jQuery( "#dacura-console .console-context select.console-property-list" ).selectmenu( "disable" );
-	jQuery( "#dacura-console .console-context select.console-class-list" ).selectmenu( "disable" );
-	dconsole.loadExtra(dconsole.getCreateClassHTML());
-	dconsole.current_ontology.initCreateClass(dconsole.submitNewClass);
-}
-
-dconsole.showClass = function(cls){
-	//jQuery( "#dacura-console .console-context select.console-ontology" ).selectmenu( "disable" );
-	jQuery( "#dacura-console .console-context select.console-property-list" ).val("").selectmenu( "refresh" );
-	dconsole.mode = "view";
-	dconsole.loadExtra(dconsole.getViewClassHTML(cls));
-	dconsole.current_ontology.initUpdateClass(dconsole.submitUpdatedClass, dconsole.deleteClass);
-}
-
-dconsole.showCreateModelProperty = function(){
-	dconsole.mode = "create";
-	jQuery('#dacura-console .createmodelproperty').hide();	
-	jQuery('#dacura-console .createclass').hide();	
-	jQuery( "#dacura-console .console-context select.console-ontology" ).selectmenu( "disable" );
-	jQuery( "#dacura-console .console-context select.console-property-list" ).selectmenu( "disable" );
-	jQuery( "#dacura-console .console-context select.console-class-list" ).selectmenu( "disable" );
-	dconsole.loadExtra(dconsole.getCreatePropertyHTML());
-	dconsole.current_ontology.initCreateProperty(dconsole.submitNewProperty);
-}
-
-dconsole.showModelProperty = function(prop){
-	jQuery( "#dacura-console .console-context select.console-class-list" ).val("").selectmenu( "refresh" );	
-	//jQuery( "#dacura-console .console-context select.console-ontology" ).selectmenu( "disable" );
-	dconsole.mode = "view";
-	dconsole.loadExtra(dconsole.getViewModelPropertyHTML(prop));
-	dconsole.current_ontology.initUpdateProperty(dconsole.submitUpdatedProperty, dconsole.deleteModelProperty);
-}
-
-dconsole.clearModelSubcreen = function(){
-	dconsole.mode = "menu";
-	jQuery('#dacura-console .createclass').show();	
-	jQuery('#dacura-console .createmodelproperty').show();
-	jQuery( "#dacura-console .console-context select.console-ontology" ).selectmenu( "enable" );
-	jQuery( "#dacura-console .console-context select.console-property-list" ).selectmenu( "enable" );
-	jQuery( "#dacura-console .console-context select.console-class-list" ).selectmenu( "enable" );
-	dconsole.clearExtra();
-}
-
-/* handling state updates on main menu - data mode */
-
-dconsole.loadEntityType = function(cls) {
-	if(typeof dacura.params.collection_contents.entity_classes[cls] == "object" && typeof dacura.params.collection_contents.entity_classes[cls].label == "object"){
-		var clsname = dacura.params.collection_contents.entity_classes[cls].label.data;
-	}
-	else {		
-		var clsname = cls.substring(cls.lastIndexOf('#')+1);
-	}
-	jQuery('#dacura-console .console-context .entities').html(this.getEntitySelectorHTML(cls, clsname));
-	jQuery('#dacura-console .console-context select.console-entity-list').selectmenu({
-	  change: dconsole.changeEntityList, width: 180
-	});
-	jQuery('#dacura-console .createentity').show();
-	var lf = function(frame){
-		dconsole.addCreateFrame(cls, frame);
-		jQuery('#dacura-console .console-context .properties').html(dconsole.getChooseCandidatePropertiesHTML(frame, "", true));
-		jQuery('#dacura-console .console-context .properties select.console-properties').selectmenu({
-			  change: dconsole.changeProperty, width: 180
-		});
-	}			  
-	dconsole.getEmptyFrame(cls, this.menu_pconfig, lf);
-};
-
-dconsole.changeEntityType = function(context, callback){
-	var type = jQuery('#dacura-console .console-context select.console-entity-type').val();
-	if(type.length){
-		dconsole.loadEntityType(type);
-	}
-	else {
-	   dconsole.clearEntityType();
-	}
-	if(typeof callback == "function") { callback(context) };		
-}
-
-dconsole.clearEntityType = function(){
-	jQuery('#dacura-console .console-context .properties').html("");
-	jQuery('#dacura-console .console-context .entities').html("");
-	jQuery('#createentity').hide();			  
-};
-
-dconsole.changeEntityList = function(){
-	var entid = jQuery('#dacura-console .console-context select.console-entity-list').val();
-	var propval = jQuery('#dacura-console .console-context .properties select.console-properties').val();
-	if(entid.length){
-		var lc = function(frame){
-			dconsole.loadCandidate(entid, frame);
-		    if(propval.length){
-		    	dconsole.showCandidate(entid, propval);
-		    }
+	if(this.active_roles['architect']){
+		if(this.context.ontology && !(this.context.modelclass || this.context.modelproperty)){
+			jQuery('#' + this.HTMLID + " .console-context .modelclass .context-add-element").show();
+			jQuery('#' + this.HTMLID + " .console-context .modelproperty .context-add-element").show();
 		}
-	  	dconsole.getFilledFrame(entid, {}, lc);
-	  	jQuery('#dacura-console .createentity').hide();
-  	}
-  	else {
-		jQuery('#dacura-console .createentity').show();		  
-  	}
+	}
+	jQuery('#' + this.HTMLID + " .console-context .ontology").show();	
 }
 
-dconsole.changeProperty = function (){
-	  var entid = jQuery('#dacura-console .console-context select.console-entity-list').val();
-	  var propval = jQuery('#dacura-console .console-context .properties select.console-properties').val();
-	  if(propval.length){
-		jQuery('#dacura-console .createproperty').show();			  
-	  }
-	  else {
-		 jQuery('#dacura-console .createproperty').hide();			  				  
-	  }
-	  if(entid && propval.length){
-		  if(this.mode == "menu"){
-		      dconsole.showCandidate(entid, propval);
-		  }
-		  else {
-			  //let them add it with the plus button....	
-		  }
-	  }
-};
+/* functions to display stuff on the expanded versions of the console */
 
+DacuraConsole.prototype.displayCandidate = function(){
+	var self = this;
+	jQuery('#' + self.HTMLID + " .console-extra .console-context-summary .summary-details").show();
+	jQuery('#' + self.HTMLID + " .console-extra .console-context-summary .summary-create").hide();
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-full .frame-viewer").html("");			
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-full").hide();				
+	var showcand = function(cand){
+		self.current_candidate = cand;
+		self.setSummaryIconVisibility("candidate", false, cand);
+		self.setSummaryLabel("candidate", cand);
+		jQuery('#' + self.HTMLID + " .console-extra .console-context-summary").show();
+	};
+	var failcand = function(title, msg, extra){
+		self.showResult("error", title, msg, extra);
+	};
+	//in case it's not loaded - but it should be loaded by init
+	this.client.get("candidate", this.context.candidate, showcand, failcand);
+} 
 
-dconsole.removePropertyField = function(prop){
-	delete (this.loaded_properties[prop]);
-	jQuery("div[data-id='" + prop + "']").remove();
-}
+DacuraConsole.prototype.displayNewCandidateForm = function(){
+	jQuery('#' + self.HTMLID + " .console-extra .console-context-summary .summary-create").show();
+	jQuery('#' + self.HTMLID + " .console-extra .console-context-summary .summary-details").hide();
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-full .frame-viewer").html("");			
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-full").hide();		
+	this.setSummaryIconVisibility("candidate", this.context.entityclass);
+	var ec = this.getEntityClassFromID(this.context.entityclass);
+	var lab = "New " + (ec.label ? ec.label.data : ec.id);
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-identifier").html(lab);
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-summary").show();
+} 
 
-dconsole.createProperty = function(){
-	var enttype = jQuery('#dacura-console .console-context select.console-entity-type').val();
-	var entid = jQuery('#dacura-console .console-context select.console-entity-list').val();
-	var prop = jQuery('#dacura-console .console-context select.console-properties').val();
-	if(!entid || !entid.length){
-		if(this.mode != "create"){
-			this.showCreateCandidate();
+DacuraConsole.prototype.getNewEntityDetailsFromForm = function(){
+	var id = jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-create .entity-id").val();
+	var label = jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-create .entity-label").val();
+	var comm = jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-create .entity-comment").val();
+	var struct = {
+		id: id,
+		contents: {
+			//"rdf:type": this.context.entityclass,
+			"rdfs:label": label, 
+			"rdfs:comment": comm
 		}
-		if(typeof this.loaded_properties[prop] != "undefined"){
-			alert(prop + " property has already been added");
+	};
+	if(id && id.length){
+		struct.id = id;
+	}
+	var ips = this.getFrameInputs();
+	for(var i in ips){
+		struct.contents[i] = ips[i];
+	}
+	return struct;
+}
+
+DacuraConsole.prototype.getFrameInputs = function(){
+	var resp = {};
+	this.fv.cls = this.context.entityclass;
+	resp = this.fv.extract();
+	//for(var i = 0; i<this.displayed_properties.length; i++){
+	//	resp[this.displayed_properties[i]] = "get from frame";
+	//}
+	jpr(resp);
+	return resp;
+}
+
+DacuraConsole.prototype.displayModelProperty = function(){
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-content").html("here comes the property");
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-summary").show();
+} 
+
+DacuraConsole.prototype.displayModelClass = function(){
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-content").html("here comes the class");
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-summary").show();
+} 
+
+/**
+ * Draws the label field in the summary line
+ * @param type the type (candidate, class, property)
+ * @param ldo the linked data object in question DacuraLDO
+ */ 
+DacuraConsole.prototype.setSummaryLabel = function(type, ldo){
+	var lab = ldo.getLabel(true);
+	if(!lab){
+		lab = ldo.id + " (no label)";
+	}
+	var cmt = ldo.getComment(true);
+	if(!cmt) cmt = "";
+	if(type == "candidate"){
+		var ec = ldo.entityClass(this.client.collections[this.context.collection].entity_classes);
+		if(ec.label){
+			clab = ec.label.data;
+		}
+		else if(ec.id){
+			clab = ec.id.split(':')[1];
 		}
 		else {
-			//load a property frame and add it to the create form
-			var callback = function(frame){
-				dconsole.addPropertyToCreate(prop, frame);
-			};
-			dconsole.getEmptyPropertyFrame(enttype, prop, dconsole.menu_pconfig, callback);
-		}			
+			clab = ec['class'].substring(ec['class'].lastIndexOf('#') + 1);
+		}
+		lab = clab + " " + lab;
+		cmt = ldo.id + " a " + ec['class'] + " at " + ldo.meta.cwurl + ". " + cmt;
+	}
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-identifier").attr("title", escapeHtml(cmt)).html(lab);
+}
+
+/**
+ * Determines the visibility of the icons in the summary line
+ * @param type candidate|class|property
+ * @param subtype (subtype of type - class: entity, simple, complex, enumerated)
+ * @param ldo linked data object
+ */
+DacuraConsole.prototype.setSummaryIconVisibility = function(type, subtype, ldo){
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-icons .summary-icon").hide();
+	jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-actions .summary-action").hide();
+	if(ldo){
+		var statt = "Status: " + ldo.meta.status + ". " + "Version: " + ldo.meta.version; 
+		jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-icons .summary-element-status ." + ldo.meta.status).attr("title", statt).show();
+		jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-icons .summary-element-type ." + type).show();
+		if(subtype){
+			jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-icons .summary-element-subtype ." + type + " ." + subtype).show(); 
+		}
+		if(this.active_roles['architect']){
+			jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-actions .summary-delete").show();
+			if(type != "candidate"){
+				jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-actions .summary-edit").show();		
+			}
+		}
+		if(type == "candidate" && this.active_roles['harvester']){
+			jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-actions .summary-edit").show();				
+		}
 	}
 	else {
-		if(this.mode != "view"){
-			dconsole.showCandidate(entid, prop);
-		}	
-		if(typeof this.loaded_properties[prop] != "undefined"){
-			alert(prop + " property has already been added");
-		}
-		else {
-			//load a property frame and add it to the create form
-			var callback = function(frame){
-				dconsole.addPropertyToView(prop, frame);
-			};
-			dconsole.getFilledPropertyFrame(entid, prop, dconsole.menu_pconfig, callback);
-		}			
+		jQuery('#' + this.HTMLID + " .console-extra .console-context-summary .summary-icons .summary-element-type ." + type).show();
 	}
 }
 
-dconsole.showCandidate = function(entid, propid){
-	jQuery( "#dacura-console .console-context select.console-entity-type" ).selectmenu( "disable" );
-	dconsole.loadExtra(dconsole.getViewCandidateHTML(entid, propid));
-	this.mode = "view";
+/* updates the display to add properties to them */
+DacuraConsole.prototype.addPropertyToDisplay = function(prop){
+	if(typeof prop == "string" && prop.length){
+		if(this.displayed_properties.indexOf(prop) !== -1){
+			alert(prop + " is already displayed");
+		}
+		else {
+			if(this.displayed_properties.length == 0){			
+				//need to open the display
+				jQuery('#' + this.HTMLID + " .console-extra .console-context-full .frame-viewer").show();			
+				jQuery('#' + this.HTMLID + " .console-extra .console-context-full").show();	
+			}
+			var self = this;
+			this.displayed_properties.push(prop);
 	
-}
-
-dconsole.getFilledCreatedProperties = function(){
-	//this is where we get all of the data from the frames and suck it back into the console
-	return {};
-}
-
-dconsole.addPropertyToCreate = function(prop, frame){
-	dconsole.loaded_properties[prop] = frame; 
-	jQuery('#dacura-console .console-extra-payload').append(this.getPropertyFieldHTML(prop, frame));
-	var cls = jQuery( "#dacura-console .console-context select.console-entity-type" ).val();
-	//data-id='" + prop + "' 
-	var target = 'create-dacura-property-' + prop;
-	var fv = new FrameViewer(cls, target, this.menu_pconfig);
-	fv.draw([frame], "view");
-}
-
-dconsole.addPropertyToView = function(prop, frame){
-	dconsole.loaded_properties[prop] = frame; 
-	jQuery('#dacura-console .console-extra-payload').append(this.getPropertyFieldHTML(prop, frame));
-	var cls = jQuery( "#dacura-console .console-context select.console-entity-type" ).val();
-	var target = 'dacura-property-' + prop;
-	var elid = document.getElementById(target);
-	var fv = new FrameViewer(cls, target, this.menu_pconfig);
-	fv.draw([frame], "view");
-}
-
-dconsole.loadCandidate = function(entid, frame){
-	this.addCandidateFrame(entid, frame);
-	var val = jQuery('#dacura-console .console-context .properties select.console-properties').val();
-	jQuery('#dacura-console .console-context .properties').html(dconsole.getChooseCandidatePropertiesHTML(frame, val));
-	jQuery('#dacura-console .console-context .properties select.console-properties').selectmenu({
-		  change: dconsole.changeProperty, width: 180
-	});	
-}
-
-
-dconsole.addCreateFrame = function(cls, frame){
-	this.current_frame = frame;
-	this.create_frames[cls] = frame;
-}
-
-dconsole.addCandidateFrame = function(id, frame){
-	this.current_frame = frame;
-	this.loaded_candidates[id] = frame;
-}
-
-/* state updates on main menu, model mode */
-
-dconsole.changeOntology = function(context, callback){
-	var onturl = jQuery('#dacura-console .console-context select.console-ontology').val();
-	if(onturl && onturl.length){
-		var ontid = dconsole.getIDForOntologyURL(onturl);
-		if(ontid && typeof dconsole.loaded_ontologies[ontid] != "undefined"){
-			dconsole.current_ontology = dconsole.loaded_ontologies[ontid];
-			dconsole.clearSubContext();
-			dconsole.loadOntologyDetails(dconsole.current_ontology, context, callback); 
-		}
-		else {
-			var wlod = function(ont){
-				dconsole.loadOntologyDetails(ont, context, callback);
+			var pend = prop.after("/");
+			var bits = pend.split('#');
+			var htmlid = bits[0] + "_" + bits[1];
+			jQuery('#' + this.HTMLID + " .console-extra .console-context-full .frame-viewer").append("<div class='pframe-holder' id='" + htmlid + "'></div>");
+			var showcprop = function(pframe){
+				self.fv = new FrameViewer("x", htmlid, {});
+				self.fv.draw([pframe], self.context.mode);
+				var nh = self.getRemoveFrameIcon(htmlid, prop);
+				jQuery('#' + htmlid).append(nh);
 			}
-			dconsole.loadOntology(onturl, dconsole.menu_pconfig, dacura.params.view_args, wlod);
-		}
-	}
-	else {
-		dconsole.clearOntology();
-		if(typeof callback == "function") { callback(context) };
-	}
-}
-
-dconsole.loadOntologyDetails = function(ont, context, callback){
-	var cval = (context && typeof context['class'] == "string") ? context['class'] : "";
-	jQuery('#dacura-console .console-context .entities').html(dconsole.getClassSelectorHTML(ont, cval));
-	jQuery('#dacura-console .console-context select.console-class-list').selectmenu({
-		  change: dconsole.changeClass, width: 180
-	});
-	var pval = (context && typeof context['property'] == "string") ? context['property'] : "";
-	jQuery('#dacura-console .console-context .properties').html(dconsole.getPropertiesSelectorHTML(ont, pval));
-	jQuery('#dacura-console .console-context select.console-property-list').selectmenu({
-		  change: dconsole.changeModelProperty, width: 180
-	});
-	if(cval.length){
-		dconsole.changeClass(context, callback);
-	}
-	else if(pval.length){
-		dconsole.changeModelProperty(context, callback);
-	}
-	else if(typeof callback == "function") { 
-		callback(context); 
-	};
-}
-
-dconsole.changeClass = function(context, callback){
-	var cls = jQuery('#dacura-console .console-context select.console-class-list').val();
-	if(cls.length){
-		dconsole.showClass(cls);
-	}
-	else {
-	   dconsole.clearModelSubcreen();
-	}
-	if(typeof callback == "function") { callback(context) };	
-}
-
-dconsole.changeModelProperty = function(context, callback){
-	var prop = jQuery('#dacura-console select.console-property-list').val();
-	if(prop.length){
-		dconsole.showModelProperty(prop);
-	}
-	else {
-	   dconsole.clearModelSubcreen();
-	}
-	if(typeof callback == "function") { callback(context) };	
-}
-
-/* html generation of main console menu */
-
-dconsole.getUserMenuHTML = function(){
-	var html = '<div class="console-user-context">';
-	html += '<a href="' + dacura.params.profileurl + '">';
-	html += '<span class="username" title="' + dacura.params.username + '"><img height="24" class="uicon" src="' + dacura.params.usericon + '" />';
-	html += "</span></a>";
-	html += "<div class='console-user-menu dch'>";
-	html += '<ul id="console-user-actions">';
-	if(typeof dacura.params.context.collection != "undefined"){
-		for(var i in dacura.params.collection_choices){
-			if(i == dacura.params.context.collection){
-			 	html += "<li class='ui-state-disabled'>" + dacura.params.collection_choices[i].title + "</li>";				
+			var failcprop = function(title, msg, extra){
+				self.showResult("error", title, msg, extra);
+			};
+			if(this.context.mode == "view"){
+				this.client.getFilledPropertyFrame(this.context.candidate, prop, showcprop, failcprop);
 			}
-			else {
-			 	html += '<li><a href="javascript:dconsole.switchCollectionContext(\'' + i + '\')">' + dacura.params.collection_choices[i].title + '</a></li>';				
+			else if(this.context.mode == "create"){	
+				this.client.getEmptyPropertyFrame(this.context.entityclass, prop, showcprop, failcprop);
 			}
 		}
 	}
-	html += "<li>--</li><li>";
-	html += '<span class="ui-icon ui-icon-disk"></span>';
-	html += "<a href='" + dacura.params.dacuraurl + "'>Dacura Home</a></li><li>"; 
-	html += '<span class="ui-icon ui-icon-disk"></span>';
-	html += "<a href='" + dacura.params.logouturl + "'>Logout</a></li>"; 
-	html += "</ul></div></div>";
-	return html;
-};
+}
 
-dconsole.getOntologySelectorHTML = function(){
-	if(dacura.params.collection_contents.ontologies.length == 0){
-		var html = "<span class='no-ontologies'>No ontologies</span>";
+DacuraConsole.prototype.getRemoveFrameIcon = function(htmlid, prop){
+	var html = "<div class='remove-property'><a href='javascript:internal_reference_to_console.removePropertyFromDisplay(\"" + htmlid + "\", \"" + prop + "\")'>";
+	html += '<i class="fa fa-minus-square-o fa-lg"></i></a></div>';
+	return html;
+}
+
+DacuraConsole.prototype.removePropertyFromDisplay = function(htmlid, prop){
+	var pos = this.displayed_properties.indexOf(prop);
+	if(pos === -1){
+		return alert(prop + " is not displayed - cant be removed!");
 	}
 	else {
-		var html = "<select class='console-ontology'><option value=''>Select Ontology</option>";
-		for(var i = 0; i < dacura.params.collection_contents.ontologies.length; i++){
-			html += "<option value='" + dacura.params.collection_contents.ontologies[i]['url'] + "'>" + dacura.params.collection_contents.ontologies[i]['title'] + "</option>";
+		jQuery('#' + htmlid).remove();
+		this.displayed_properties.splice(pos, 1);
+		if(this.displayed_properties.length == 0){
+			jQuery('#' + this.HTMLID + " .console-extra .console-context-full").hide();	
 		}
-		html += "</select>";
-	}
-	return html;	
-};
-
-dconsole.getClassSelectorHTML = function(ont, val){
-	if(typeof ont.classes == "undefined" || size(ont.classes) == 0){
-		var html = " <span class='empty-ontology'>no classes defined</span>";
-	}
-	else {		
-		var html = "<select class='console-class-list'>";
-		html += "<option value=''>Select Class (" + size(ont.classes) + ")</option>";
-		for(var i in ont.classes){
-			var sel = (val && val.length && val == i) ? " selected" : "";
-			html += "<option value='" + i + "'" + sel + ">" + ont.getClassLabel(i) + "</option>";
-		}
-		html += "</select>";
-	}
-	html += "<span class='createclass'><a href='javascript:dconsole.showCreateClass()'>" + dacura.params.new_thing_icon + "</a></span>";
-	return html;
-}
-
-dconsole.getPropertiesSelectorHTML = function(ont, val){
-	if(typeof ont.properties == "undefined" || size(ont.properties) == 0){
-		var html = " <span class='empty-ontology'>no properties defined</span>";
-	}
-	else {
-		var html = "<select class='console-property-list'><option value=''>Select Property (" + size(ont.properties) + ")</option>";
-		for(var i in ont.properties){
-			var sel = (val && val.length && val == i) ? " selected" : "";
-			html += "<option value='" + i + "'" + sel + ">" + ont.getPropertyLabel(i) + "</option>";
-		}
-		html += "</select>";
-	}
-	html += "<span class='createmodelproperty'><a href='javascript:dconsole.showCreateModelProperty()'>" + dacura.params.new_thing_icon + "</a></span>";
-	return html;
-}
-
-dconsole.isJSONObjectLiteral = function(json){
-	if(typeof json.data == "undefined") return false;
-	if((typeof json.type == "undefined" || json.type.length == 0) && typeof json.lang == "undefined" || json.lang.length) return false;
-    for(var i in json){
-		if(i != "lang" && i != "data" && i != "type") return false;
-    }
-    return true;
-}
-
-dconsole.getChooseCandidatePropertiesHTML = function(frame, val, unfilled){
-	unfilled = (typeof unfilled == "undefined" || unfilled);
-	var html = "<select class='console-properties'><option value=''>Choose a property</option>";
-	var empties = [];
-	var filled = [];
-	if(unfilled){
-		for(var i = 0; i < frame.length; i++){
-			html += "<option value='" + frame[i]['property'] + "'" + sel + ">" + frame[i]['label']['data'] + "</option>";
+		if(this.context.candidateproperty == prop){
+			jQuery('#' + this.HTMLID + " .console-context .candidateproperty .context-add-property").show("fade");				
 		}
 	}
-	else {
-		for(var i = 0; i < frame.length; i++){
-			if(typeof frame[i].value != "undefined"){
-				if(typeof frame[i].value == "string"){
-					if(frame[i].value.length == 0){
-						empties.push({id: frame[i]['property'], label: frame[i].label.data});
-					}
-					else {
-						filled.push({id: frame[i]['property'], label: frame[i].label.data + " (1)", count: 1});
-					}
-				}
-				else if(this.isJSONObjectLiteral(frame[i].value)){
-					filled.push({id: frame[i]['property'], label: frame[i].label.data + " (1)", count: 1});
-				}
-				else if(typeof frame[i].value == "object"){
-					filled.push({id: frame[i]['property'], label: frame[i].label.data + "(" + frame[i].value.length + ")", count: frame[i].value.length });				
-				} 
-				else {
-					jpr(frame[i]);
-				}
-			}
-			else {
-				empties.push({id: frame[i]['property'], label: frame[i].label.data});	
-			}
-		}
-		//sort properties filled properties by count, then alphabetical
-		var comparePropertiesByCount = function(a,b) {
-			if(a.count < b.count){
-				return -1;
-			}
-			if(b.count < a.count){
-				return 1;
-			}
-			if(a.label < b.label){
-				return -1;
-			}				
-			if(a.label > b.label){
-				return 1;
-			}			
-			return 0;	
-		}
-		filled.sort(comparePropertiesByCount);
-		for(var i = 0; i < filled.length; i++){
-			var sel = (val && val.length && val == filled[i].id) ? " selected" : "";
-			html += "<option class='filled-property' value='" + filled[i].id + "'" + sel + ">" + filled[i].label + "</option>";		
-		}	
-		for(var i = 0; i < empties.length; i++){
-			var sel = (val && val.length && val == empties[i].id) ? " selected" : "";
-			html += "<option class='empty-property' value=''" + sel + ">" + empties[i].label + "</option>";		
-		}	
-	}
-	html += "</select><span class='createproperty'><a href='javascript:dconsole.createProperty()'>" + dacura.params.new_thing_icon + "</a></span>";
-	html += "<span class='viewproperty'>" + dacura.params.view_property_icon + "</span>";
-	return html;
-}
-
-dconsole.getEntityTypeSelectorHTML = function(){
-	var html = "<select class='console-entity-type'><option value=''>Select Entity Type</option>";
-	for(var i = 0; i < dacura.params.collection_contents.entity_classes.length; i++){
-		if(typeof dacura.params.collection_contents.entity_classes[i] == "string"){
-			var clsname = dacura.params.collection_contents.entity_classes[i].substring(dacura.params.collection_contents.entity_classes[i].lastIndexOf('#')+1);
-			if(clsname != "Nothing"){
-				html += "<option value='" + dacura.params.collection_contents.entity_classes[i] + "'>" + clsname + "</option>";
-			}
-		}
-		else {
-			if(typeof dacura.params.collection_contents.entity_classes[i] == "object"){
-				if(typeof dacura.params.collection_contents.entity_classes[i]['class'] == "string" && (urlFragment(dacura.params.collection_contents.entity_classes[i]['class']) == "Nothing")){ continue; }
-				if(typeof dacura.params.collection_contents.entity_classes[i].label == "object"){
-					var label = dacura.params.collection_contents.entity_classes[i].label.data;
-				}
-				else {
-					var label = (typeof dacura.params.collection_contents.entity_classes[i].id != "undefined" ? dacura.params.collection_contents.entity_classes[i].id : "no label");
-				}
-			}
-			else {
-				var label = "no label";
-			}
-			html += "<option value='" + dacura.params.collection_contents.entity_classes[i]['class'] + "'>" + label + "</option>";
-		}
-	}
-	html += "</select><span class='createentity'><a href='javascript:dconsole.showCreateCandidate()'>" + dacura.params.new_thing_icon + "</a></span>";
-	return html;
-};
-
-dconsole.getEntitySelectorHTML = function(cls, clsname){
-	if(typeof dacura.params.collection_contents.entities[cls] == "undefined" || dacura.params.collection_contents.entities[cls].length == 0){
-		return "";
-	}
-	var html = "<select class='console-entity-list'><option value=''>Select " + clsname + "</option>";
-	for(var i = 0; i < dacura.params.collection_contents.entities[cls].length; i++){
-		html += "<option value='" + dacura.params.collection_contents.entities[cls][i] + "'>" + dacura.params.collection_contents.entities[cls][i] + "</option>";
-	}
-	html += "</select>";
-	return html;
-};
-
-/* html to populate the extended rolled-down version of the console */
-
-dconsole.getCreateFieldHTML = function(label, entry, extra){
-	var html = "<div class='console-create-field'>";
-	html += "<span class='label'>" + label + "</span>";
-	html += "<span class='entry'>" + entry + "</span>";
-	html += "<span class='extra'>" + extra + "</span>";
-	html += "</div>";
-	return html;
-}
-
-dconsole.getCreateFormButtons = function(etype){
-	var html = "<div class='console-extra-buttons'>";
-	html += this.getConsoleMessageField();
-	html += "<button class='cancel-new-entity'>Cancel</button>";
-	html += "<button class='test test-create-new-entity'>Test adding new " + etype + "</button>";
-	html += "<button class='create-new-entity'>Add " + etype + "</button>";
-	html += "</div>";
-	return html;
-}
-
-dconsole.getPropertyFieldHTML = function (prop, frame){
-	var html = "<div id='dacura-property-" + prop + "' class='console-create-field'>";
-	html += "<span class='label'>" + urlFragment(prop) + "</span>";
-	html += "<span class='entry'><input type='text' value=''></span>";
-	html += "<span class='extra'>" + this.getRemovePropertyHTML(prop) + "</span>";
-	html += "</div>";
-	return html;
-}
-
-dconsole.getConsoleMessageField = function(){
-	var html = "<div id='dacura-console-extra-message' class='console-user-message console-create-message'></div>";
-	return html;
 }
 
 
-dconsole.getViewCandidateHTML = function(entid, type, property){
-	var html = "<div class='console-extra-payload view-entity'>";
-	html += "<span class='etype'>"+ urlFragment(type) + "</span> ";
-	html += "<span class='eid'>"+ entid + "</span> ";
-	html += "<span class='eproperty'>"+ urlFragment(property) + "</span>";
-	html += "<button class='close-view-entity'>Close</button>";
-	html += "</div>";
-	return html;
-};
+/* miscellaneous */
 
-
-dconsole.getCreateCandidateHTML = function(enttype){
-	var etype = urlFragment(enttype);
-	var html = "<div class='console-create-payload'>";
-	html += this.getCreateFieldHTML(etype + " id", "<input type='text' class='new-entity-id' value='" + lastURLBit() + "'> ", "");
-	html += "</div>";
-	//html += this.getEntityProvenanceField();
-	html += this.getCreateFormButtons(etype);
-	return html;
-};
-
-dconsole.getRemovePropertyHTML = function(prop){
-	var html = "<a href='javascript:dconsole.removePropertyField(\"" + prop + "\")'>" + dacura.params.remove_property_icon + "</a>";
-	return html;
-}
-
-dconsole.getCreateClassHTML = function(){
-	var html = "<div class='console-extra-screen console-create-class'>";
-	html += this.current_ontology.getCreateClassHTML();
-	html += "</div>";
-	return html;
-};
-
-dconsole.getViewClassHTML = function(cls){
-	var html = "<div class='console-extra-screen console-view-class'>";
-	html += this.current_ontology.getViewClassHTML(cls);
-    html += this.current_ontology.getInstancesHTML(cls);
-	html += "</div>";
-	return html;
-};
-
-dconsole.getCreatePropertyHTML = function(){
-	var html = "<div class='console-extra-screen console-create-property'>";
-	html += this.current_ontology.getCreatePropertyHTML();
-	html += "</div>";
-	return html;
-};
-
-
-dconsole.getViewModelPropertyHTML = function(prop){
-	var html = "<div class='console-extra-screen console-view-model-property'>";
-	html += this.current_ontology.getViewPropertyHTML(prop);	
-	html += "</div>";
-	return html;
-};
-
-dconsole.getControlsHTML = function(){
-	var html = "<span class='ontology-mode'><a href='javascript:dconsole.toggleOntologyMode()'>" + dacura.params.change_mode_icon + "</a>";
-	return html;
-};
-
-dconsole.writeResultMessage = function(type, title, msg, extra, opts){
-	var jqueryid = (dconsole.mode == "menu") ? "#dacura-console-menu-message" : "#dacura-console-extra-message";
-	dacura.system.writeResultMessage(type, title, jqueryid, msg, extra, opts);
-}
-
-dconsole.clearResultMessages = function(){
-	var jqueryid = (dconsole.mode == "menu") ? "#dacura-console-menu-message" : "#dacura-console-extra-message";
-	$(jqueryid).html("");
-}
-
-dconsole.getMenuBusyHTML = function(bconf){
-	return "busy doing stuff";
-}
-
-dconsole.setBusy = function(bconf){
-	if(dconsole.mode == "menu"){
-		jQuery('#dacura-console-menu-message').html(dconsole.getMenuBusyHTML(bconf));
+/**
+ * Returns a list of the user's available roles for the context
+ * @returns array of roles
+ */
+DacuraConsole.prototype.getAvailableRoles = function(){
+	var colcap = this.context.collection ? this.client.collections[this.context.collection] : false;
+	if(!colcap){
+		return [];
 	}
-	else {
-		jQuery('#dacura-console-extra-message').html(dconsole.getMenuBusyHTML(bconf));	
-	}
-}
+	return colcap.roles;
+} 
 
-dconsole.notBusy = function(){
-	if(dconsole.mode == "menu"){
-		jQuery('#dacura-console-menu-message').html("");
-	}
-	else {
-		//jQuery('#dacura-console-extra-message').html("");	
-	}
-}
-
-/* wrappers around API for particular functions */
-
-
-dconsole.submitUpdatedProperty = function(rdf, test){
-	var pid = first(rdf);
-	var pconfig = { "resultbox": "#dacura-console-extra-message", "busybox": "#dacura-console"};
-	var onturl = jQuery('#dacura-console .console-context select.console-ontology').val();
-	if(!onturl.length){
-		this.writeResultMessage("error", "No ontology loaded", "Attempt to add property to unknown ontology");
-	}
-	else {
-		if(test){
-			var options = dacura.params.test_update_ontology_options;
-		}
-		else {
-			var options = dacura.params.update_ontology_options;			
-			pconfig.context = {mode: "model", ontology: onturl, property: pid};
-		}
-		dconsole.updateOntology(onturl, rdf, false, options, pconfig, test);
-	}
-}
-
-dconsole.submitNewProperty = function(rdf, test){
-	var pid = first(rdf);
-	var pconfig = { "resultbox": "#dacura-console-extra-message", "busybox": "#dacura-console"};
-	var onturl = jQuery('#dacura-console .console-context select.console-ontology').val();
-	if(!onturl.length){
-		this.writeResultMessage("error", "No ontology loaded", "Attempt to add property to unknown ontology");
-	}
-	else {
-		if(test){
-			var options = dacura.params.test_update_ontology_options;
-		}
-		else {
-			var options = dacura.params.update_ontology_options;			
-			pconfig.context = {mode: "model", ontology: onturl, property: pid};
-		}
-		dconsole.updateOntology(onturl, rdf, false, options, pconfig, test);
-	}
-}
-
-dconsole.deleteModelProperty = function(prop){
-	var rdf = {};
-	rdf[prop] = {};
-	var pconfig = { "resultbox": "#dacura-console-extra-message", "busybox": "#dacura-console"};
-	var onturl = jQuery('#dacura-console .console-context select.console-ontology').val();
-	if(!onturl.length){
-		this.writeResultMessage("error", "No ontology loaded", "Attempt to add property to unknown ontology");
-	}
-	else {
-		var options = dacura.params.update_ontology_options;			
-		pconfig.context = {mode: "model", ontology: onturl};
-		dconsole.updateOntology(onturl, rdf, false, options, pconfig);
+DacuraConsole.prototype.getEntityClassFromID = function(id){
+	var ecap = this.context.collection ? this.client.collections[this.context.collection].entity_classes : false;
+	for(var i = 0; i< ecap.length; i++){
+		if(ecap[i].id == id) return ecap[i];
 	}
 }
 
 
-dconsole.submitNewClass = function(rdf, test){
-	var cid = first(rdf);
-	var pconfig = { "resultbox": "#dacura-console-extra-message", "busybox": "#dacura-console"};
-	var onturl = jQuery('#dacura-console .console-context select.console-ontology').val();
-	if(!onturl.length){
-		this.writeResultMessage("error", "No ontology loaded", "Attempt to add property to unknown ontology");
-	}
-	else {
-		if(test){
-			var options = dacura.params.test_update_ontology_options;
-		}
-		else {
-			var options = dacura.params.update_ontology_options;			
-			pconfig.context = {mode: "model", ontology: onturl, "class": cid};
-		}
-		dconsole.updateOntology(onturl, rdf, false, options, pconfig, test);
-	}
-}
 
-dconsole.deleteClass = function(cls){
-	var rdf = {};
-	rdf[cls] = {};
-	var pconfig = { "resultbox": "#dacura-console-extra-message", "busybox": "#dacura-console"};
-	var onturl = jQuery('#dacura-console .console-context select.console-ontology').val();
-	if(!onturl.length){
-		this.writeResultMessage("error", "No ontology loaded", "Attempt to add property to unknown ontology");
-	}
-	else {
-		var options = dacura.params.update_ontology_options;			
-		pconfig.context = {mode: "model", ontology: onturl};
-		dconsole.updateOntology(onturl, rdf, false, options, pconfig);
-	}
-}
-
-dconsole.submitUpdatedClass = function (rdf, test){
-	var cid = first(rdf);
-	var pconfig = { "resultbox": "#dacura-console-extra-message", "busybox": "#dacura-console"};
-	var onturl = jQuery('#dacura-console .console-context select.console-ontology').val();
-	if(!onturl.length){
-		this.writeResultMessage("error", "No ontology loaded", "Attempt to add property to unknown ontology");
-	}
-	else {
-		if(test){
-			var options = dacura.params.test_update_ontology_options;
-		}
-		else {
-			var options = dacura.params.update_ontology_options;			
-			pconfig.context = {mode: "model", ontology: onturl, "class": cid};
-		}
-		dconsole.updateOntology(onturl, rdf, false, options, pconfig, test);
-	}
-}
- 
-
-
-dconsole.scanPage = function(html, context){
-	if(!html || !html.length){
-		return;
-	}
-	var complete= function(results){
-		//jpr(results);
-		//dconsole.loadExtra(dacura.pageScanner.getScanSummaryHTML());
-	}
-	var upd = function(upd, callback){
-		if(upd.cid){
-			dconsole.updateCandidate(upd.cid, upd.contents, false, this.menu_pconfig, true, callback);			
-		}
-		else {
-			dconsole.createCandidate(upd.ctype, false, upd.contents, false, this.menu_pconfig, true, callback);
-		}		
-	}
-	var sconfig = dacura.params.collection_contents.scanner_config;
-	sconfig.load_callback = function(x){
-		jpr(x);
-	}
-	dacura.pageScanner.init(html, context, sconfig, this.ontologyMode);
-	dacura.pageScanner.scan(sconfig.connectors, sconfig.locators, upd, complete);
-}
-
-/* contacts the server and resets various values in response to context switches or state changes */
-dconsole.reload = function(context){
-	xhr = {};
-	xhr.url = dacura.params.apiurl + "console/reload";
-	xhr.xhrFields = {
-	    withCredentials: true
-	};
-	$.ajax(xhr)
-	.done(function(response, textStatus, jqXHR) {
-		jQuery('body').append(response);
-		//dconsole.mode = "menu";
-		dconsole.clear();
-		var mode = (typeof context == "object" && typeof context.mode == "string" ? context.mode : "data");
-		dconsole.showUserOptions(mode);
-		if(typeof context == "object"){
-			if(typeof context.ontology == "string"){
-				delete(dconsole.loaded_ontologies[dconsole.current_ontology.id]);
-				delete(dconsole.current_ontology);
-			}
-			if(context.mode == "model"){
-				dconsole.ontologyMode = true;
-			}
-			dconsole.setContext(context);
-		}
-	})
-	.fail(function(response){
-		alert("Failed to reload console from " + xhr.url);
-	});	
-}
+function DacuraModelBuilder(config){}

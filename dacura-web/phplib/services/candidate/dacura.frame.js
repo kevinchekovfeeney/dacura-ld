@@ -59,10 +59,10 @@ FrameViewer.prototype.draw = function(frames, mode){
 
     this.mode = mode;
     this.frames = frames;
-    $('#ldo-frame-contents').remove();
+    //$('#ldo-frame-contents').remove();
     var parent = document.getElementById(this.target);
     var container = document.createElement("div");
-    container.setAttribute('id', "ldo-frame-contents");
+    container.setAttribute('id', "ldo-frame-contents" + "." + this.target);
     gensym = dacura.frame.Gensym("query");
     res = dacura.frame.frameGenerator(frames, container, gensym, mode);
     parent.appendChild(res);
@@ -82,7 +82,7 @@ dacura.frame.insertWidgets = function (mode, cls) {
     //will need to recurse
     var widgets = dacura.frame.widgets.getWidgetList(cls);
     if(typeof widgets == "object"){
-	    $("#ldo-frame-contents").children().each(function(){
+	    $("#ldo-frame-contents" + "." + this.target).children().each(function(){
 	        //dacura.frame.widgets.insertMap(mode, cls);
 	        for(var i = 0;i<widgets.length;i++){
 	            if($(this).children().data("property") == widgets[i].label){

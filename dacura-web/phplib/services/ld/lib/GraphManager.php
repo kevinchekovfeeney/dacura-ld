@@ -129,7 +129,7 @@ class GraphManager extends DacuraController {
 			$qstr .= $k."=".urlencode($v);
 		}
 		if($dqs_config['dumplast']){
-			$this->dumpDCSRequest($dqs_config['dumplast'], $srvc, $graphid, $clsname, $propid, $entid, $instance_graphid, $qstr);
+			$this->dumpDCSRequest($dqs_config['dumplast'], $srvc, $graphid, $clsname, $entid, $propid, $instance_graphid, $qstr);
 		}
 		$ch = curl_init();
 		if($proxy = ($this->getSystemSetting('dqs_http_proxy', ""))){
@@ -397,12 +397,13 @@ class GraphManager extends DacuraController {
 	 * @param string $insgraphid the id of the instance graph
 	 * @param string $qstr the query string
 	 */
-	function dumpDCSRequest($fname, $service, $graphid, $clsname, $entid, $insgraphid, $qstr){
+	function dumpDCSRequest($fname, $service, $graphid, $clsname, $entid, $propid, $insgraphid, $qstr){
 		$dumpstr = "Service: $service\n";		
 		$dumpstr .= "Graph: ".$graphid."\n";
 		$dumpstr .= "Instance Graph: ".$insgraphid."\n";
 		$dumpstr .= "Classname: ".$clsname."\n";
 		$dumpstr .= "Entity ID: ".$entid."\n";
+		$dumpstr .= "Property ID: ".$propid."\n";
 		$dumpstr .= "Query: $qstr";
 		file_put_contents($fname, $dumpstr);
 	}

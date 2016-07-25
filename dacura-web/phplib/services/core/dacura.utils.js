@@ -191,6 +191,21 @@ function escapeRegExp(str) {
 	return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
 }
 
+/**
+ * @function isJSONObjectLiteral
+ * @summary determines whether a json structure is a dacura object literal. 
+ * @param json
+ * @returns {Boolean}
+ */
+function isJSONObjectLiteral(json){
+	if(typeof json.data == "undefined") return false;
+	if((typeof json.type == "undefined" || json.type.length == 0) && typeof json.lang == "undefined" || json.lang.length) return false;
+    for(var i in json){
+		if(i != "lang" && i != "data" && i != "type") return false;
+    }
+    return true;
+}
+
 function urlFragment(url){
 	url = (typeof url == "undefined") ? window.location.href : url;
 	url = url.split('#')[1];
@@ -261,4 +276,27 @@ function first(obj) {
 */
 String.prototype.ucfirst = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);
+}
+
+String.prototype.after = function(char) {
+	return this.substring(this.lastIndexOf(char) + 1);
+}
+
+/**
+ * @function freezeElement
+ * @param jq - jquery selector of element to freeze
+ * @param hidden_degree - transparency percentage of overlay
+ */
+function freezeElement(jq, hidden_degree, cls){
+	var hidden_degree = (typeof hidden_degree == "undefined" ? 0.5 : hidden_degree);
+	var cls = (typeof cls == "string" ? cls : "busy-overlay");
+	jQuery("<div class='" + cls + "'/>").css({
+	    position: "absolute",
+	    width: "100%",
+	    height: "100%",
+	    left: 0,
+	    top: 0,
+	    zIndex: 99999,  // to be on the safe side
+		background: "rgba(255, 255, 255, " +  hidden_degree + ")"
+	}).appendTo(jQuery(jq).css("position", "relative"));
 }

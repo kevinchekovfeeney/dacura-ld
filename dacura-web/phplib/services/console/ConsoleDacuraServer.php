@@ -65,10 +65,7 @@ class ConsoleDacuraServer extends LdDacuraServer {
 			return array();
 		}
 		return $dont->getBoxedClasses();
-	}
-	
-	
-	
+	}	
 	
 	function getCollectionCapabilities($cid, $col, $key, $value){
 		$this->service->collection_id = $cid;
@@ -76,6 +73,7 @@ class ConsoleDacuraServer extends LdDacuraServer {
 		$cands = $this->createDependantServer("candidate", $sc);
 		$cands->init();
 		$contents = $col;
+		$contents['url'] = $this->durl() . $cid;
 		$contents['roles'] = $this->userman->getAvailableRoles($cid);
 		$ents = $cands->getValidCandidateTypes();
 		$filter = array("type" => "candidate", 'collectionid' => $cid, "status" => array("accept", "pending"));
