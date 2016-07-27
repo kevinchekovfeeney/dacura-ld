@@ -1,0 +1,6 @@
+The PHP directory contains the core logic driving Dacura's linked data object processing. 
+
+They are part of a larger system and are not executable in isolation. 
+They are made publicly available with a GPL license to enable others to verify and inspect our algorithms for scientific verification and to help those who might be working on similar problems. 
+
+The JS directory contains the various javascript libraries used by Dacura. Some of these may be useful with minor tweaks when used in other contexts. 
