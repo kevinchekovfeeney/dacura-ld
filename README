@@ -1,4 +1,4 @@
 The PHP directory contains the core logic driving Dacura's linked data object processing. 
 
-The JS directory contains the various javascript libraries used by Dacura. 
+The JS directory contains the client ycode, in javascript, used by Dacura. 
 
