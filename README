@@ -6,5 +6,7 @@ Dacura also uses several third party open source libraries which are not include
 
 easyrdf 0.9 http://www.easyrdf.org/
 epiphany https://github.com/jmathai/epiphany
-kcfinder https://kcfinder.sunhater.com/ 
+kcfinder https://kcfinder.sunhater.com/
+
+All code is released under the GPLv2 license 
 
