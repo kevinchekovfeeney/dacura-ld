@@ -127,22 +127,23 @@ dacura.tool.initScreens = function(holder, forms){
 		}
 	}
 
-	//if(typeof $.fn.dataTable != "undefined"){
-		$('#'+holder).tabs( {
-	        "activate": function(event, ui) {
-	            $( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
-	            $("select.dacura-select").selectmenu("refresh");
-                    //refreshing hidden google maps
-                    if(typeof google != "undefined"){
-                        var map = document.getElementById('googleMap');
-                        google.maps.event.trigger(map, 'resize');
-                    }
-	        }
-	    });
-	//}
-	//else {
-	//	$('#'+holder).tabs();
-	//}
+	$('#'+holder).tabs( {
+        "activate": function(event, ui) {
+        	if(typeof $.fn.dataTable != "undefined"){
+        		$( $.fn.dataTable.tables( true ) ).DataTable().columns.adjust();
+        		$("select.dacura-select").selectmenu("refresh");
+        	}
+                //refreshing hidden google maps
+            if(typeof google != "undefined"){
+            	
+            	$(".googleMap").each(function(){
+            		google.maps.event.trigger($(this)[0], 'resize');
+            	});
+             //   var map = document.getElementById('googleMap');
+              //  google.maps.event.trigger(map, 'resize');
+            }
+        }
+    });
 };
 
 dacura.tool.enableTab = function(holder, tab){

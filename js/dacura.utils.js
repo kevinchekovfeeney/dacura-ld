@@ -7,11 +7,12 @@
  * and shows an abbreviated version in the regular html
  * @param {string} [jqid=.rawjson] - the jquery id of the element to be styled 
  */
+
 dacura.system.styleJSONLD = function(jqid) {
 	if(typeof jqid == "undefined"){
 		jqid = ".rawjson";
 	}
-	$(jqid).each(function(){
+	jQuery(jqid).each(function(){
 	    var text = $(this).html();
 	    if(text){
 	    	if(text.length == 53 && text.substring(50) == "..."){ //collision detection quick and dirty
@@ -23,21 +24,62 @@ dacura.system.styleJSONLD = function(jqid) {
 	    	else {
 	    		presentation = text;
 	    	}
-		    $(this).html(presentation);
+	    	jQuery(this).html(presentation);
 	    	try {
 	    		var t = JSON.parse(text);
 	    		if(t){
 	    			t = JSON.stringify(t, 0, 4);
-	    		    $(this).attr("title", t);
+	    			jQuery(this).attr("title", t);
 	    		}
 	    	}
 	    	catch (e){
-    		    $(this).attr("title", "Failure: " + e.message + " " + text);	    		
+	    		jQuery(this).attr("title", "Failure: " + e.message + " " + text);	    		
 	    	}
 	    }
 	});
 }
 
+dacura.utils = {};
+dacura.utils.tidyDOMFromHTML = function(untidy, isStopper){
+	isStopper = (typeof isStopper == "function" ? isStopper : function(){return false;});
+	var appendNodeToTidy = function(domnode){
+		if(jQuery(domnode).text().trim() == ""){
+			return false;
+		}
+		else {
+			return true;
+		}	
+	};
+	
+	var tdom = document.createElement("p");
+	var udom = document.createElement("p");
+	udom.innerHTML = untidy;
+	var gotOne = false;
+	var stopped = false;
+	while(udom.childNodes.length && !stopped){
+		if(isStopper(udom.childNodes[0])){
+			stopped = true;
+		}
+		else if(appendNodeToTidy(udom.childNodes[0])){
+			gotOne = true;
+			tdom.appendChild(udom.childNodes[0]);
+		}
+		else {
+			udom.removeChild(udom.childNodes[0]);
+		}
+	}
+	if(gotOne){
+		return tdom;
+	}
+	return false;
+}
+
+dacura.utils.tidyHTML = function(untidy, isStopper){
+	if(fcdom = this.tidyDOMFromHTML(untidy, isStopper)){
+		return jQuery(fcdom).html().trim();
+	}
+	return false;
+}
 
 /* some simple utility functions */
 /**
@@ -117,7 +159,10 @@ function timeConverter(UNIX_timestamp, type){
  * @return {Number} - the number of elements in the object
  */
 function size(obj){
-	return Object.keys(obj).length
+	if(obj){
+		return Object.keys(obj).length
+	}
+	return false;
 }
 
 /**
@@ -141,6 +186,74 @@ function isEmpty(obj) {
     }
     return true;
 }
+
+dacura.utils.sloppyMatch = function(a, b){
+	if(a.length > b.length){
+		if(a.substring(0, b.length) == b) return true;
+	}
+	else if(b.length > a.length){
+		if(b.substring(0, a.length) == a) return true;		
+	}
+	return this.isTypo(a, b);
+}
+
+dacura.utils.isStringType = function(type){
+	return (!type || (urlFragment(type) == "string"));
+}
+
+dacura.utils.isTypo = function(a, b){
+	var dis = this.getEditDistance(a, b);
+	if(dis < 4 && a.length > 12) return true;
+	if(dis < 3 && a.length > 8) return true;
+	if(dis < 2 && a.length > 4) return true;
+	return false;
+}
+
+dacura.utils.getEditDistance = function(a, b){
+	  if(a.length == 0) return b.length; 
+	  if(b.length == 0) return a.length; 
+
+	  var matrix = [];
+
+	  // increment along the first column of each row
+	  var i;
+	  for(i = 0; i <= b.length; i++){
+	    matrix[i] = [i];
+	  }
+
+	  // increment each column in the first row
+	  var j;
+	  for(j = 0; j <= a.length; j++){
+	    matrix[0][j] = j;
+	  }
+
+	  // Fill in the rest of the matrix
+	  for(i = 1; i <= b.length; i++){
+	    for(j = 1; j <= a.length; j++){
+	      if(b.charAt(i-1) == a.charAt(j-1)){
+	        matrix[i][j] = matrix[i-1][j-1];
+	      } else {
+	        matrix[i][j] = Math.min(matrix[i-1][j-1] + 1, // substitution
+	                                Math.min(matrix[i][j-1] + 1, // insertion
+	                                         matrix[i-1][j] + 1)); // deletion
+	      }
+	    }
+	  }
+
+	  return matrix[b.length][a.length];
+};
+
+dacura.utils.getXSDDateString = function(date){
+	var date = (date ? date : new Date());
+	var fmt = date.toISOString();
+	var ofz = (date.getTimezoneOffset() / 60);
+	if(ofz > 0){
+		fmt += "+";
+	}
+	fmt += ":00";
+	return fmt;
+}
+
 
 /**
  * @function toggleCheckbox
@@ -215,6 +328,22 @@ function urlFragment(url){
 	return url;
 }
 
+
+
+function isBNID(url){
+	if(url.substring(0, 2) == "_:"){
+		return true;
+	}
+	return false;
+}
+
+function bareURL(url){
+	url = (typeof url == "undefined") ? window.location.href : url;
+	url = url.split("?")[0];		
+	url = url.split('#')[0];
+	return url;
+}
+
 function lastURLBit(url){
 	url = (typeof url == "undefined") ? window.location.href : url;
 	url = url.split('#')[0];
@@ -223,6 +352,9 @@ function lastURLBit(url){
 	return url;
 }
 
+function insertAfter(newNode, referenceNode) {
+    referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+}
 
 /**
  * @function nvArrayToOptions
@@ -287,16 +419,54 @@ String.prototype.after = function(char) {
  * @param jq - jquery selector of element to freeze
  * @param hidden_degree - transparency percentage of overlay
  */
-function freezeElement(jq, hidden_degree, cls){
-	var hidden_degree = (typeof hidden_degree == "undefined" ? 0.5 : hidden_degree);
+function freezeElement(jq, cls, hidden_degree){
 	var cls = (typeof cls == "string" ? cls : "busy-overlay");
-	jQuery("<div class='" + cls + "'/>").css({
+	var css = {
 	    position: "absolute",
 	    width: "100%",
 	    height: "100%",
 	    left: 0,
 	    top: 0,
-	    zIndex: 99999,  // to be on the safe side
-		background: "rgba(255, 255, 255, " +  hidden_degree + ")"
-	}).appendTo(jQuery(jq).css("position", "relative"));
+	    zIndex: 99999  // to be on the safe side
+	}
+	if(hidden_degree){
+		css.background = "rgba(255, 255, 255, " +  hidden_degree + ")"
+	}
+	jQuery("<div class='" + cls + "'/>").css(css).appendTo(jQuery(jq).css("position", "relative"));
+}
+
+
+
+
+function isElement(obj) {
+  try {
+    //Using W3 DOM2 (works for FF, Opera and Chrom)
+    return obj instanceof HTMLElement;
+  }
+  catch(e){
+    //Browsers not supporting W3 DOM2 don't have HTMLElement and
+    //an exception is thrown and we end up here. Testing some
+    //properties that all elements have. (works on IE7)
+    return (typeof obj==="object") &&
+      (obj.nodeType===1) && (typeof obj.style === "object") &&
+      (typeof obj.ownerDocument ==="object");
+  }
+}
+
+function isNumber(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
+}
+
+function numberWithCommas(x) {
+    var parts = x.toString().split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+}
+
+function isNumericType(type){
+	var nums = ["decimal", "integer", "float", "double", "integerRange", "decimalRange"];
+	var x = urlFragment(type);
+	if(x && nums.indexOf(x) != -1) return true;
+	return false;
+	
 }

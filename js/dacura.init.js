@@ -1,4 +1,6 @@
 dacura = {};
+dacura.sparams = <?=json_encode($params)?>;
+
 dacura.system = {
 		mode: "void",
 		xhraborted: false,
@@ -25,27 +27,38 @@ dacura.system = {
 		},
 };	
 	
-dacura.system.ajax_url = "<?=$service->durl(true)?>";
-dacura.system.install_url = "<?=$service->durl()?>";
+dacura.system.rest_path = dacura.sparams.rest;
+dacura.system.install_url = dacura.sparams.url
 dacura.system.pagecontext = {
-		"collection_id": "<?=$service->cid()?>", 
-		"service" : "<?=$service->name()?>"
+		"collection_id": dacura.sparams.cid,
+		"service" : dacura.sparams.sname
 };
 
-dacura.system.iconbase = "<?=$service->get_system_file_url('images', 'icons')?>";
+dacura.cid = function(){
+	return dacura.system.pagecontext.collection_id;
+}
 
-dacura.system.resulticons = {
-	"error" : "<img class='result-icon result-error' src='<?=$service->furl("images", "icons/error.png");?>'>",		
-	"success" : "<img class='result-icon result-success' src='<?=$service->furl("images", "icons/success.png");?>'>",
-	"warning" : "<img class='result-icon result-warning' src='<?=$service->furl("images", "icons/warning.png");?>'>",
-	"info" : "<img class='result-icon result-info' src='<?=$service->furl("images", "icons/info.png");?>'>",
-	"help" : "<img class='result-icon result-info' src='<?=$service->furl("images", "icons/help_icon.png");?>'>",
-	"accept" : "<img class='result-icon result-accept' src='<?=$service->furl("images", "icons/accept.png");?>'>",		
-	"pending" : "<img class='result-icon result-pending' src='<?=$service->furl("images", "icons/pending.png");?>'>",		
-	"reject" : "<img class='result-icon result-reject' src='<?=$service->furl("images", "icons/reject.png");?>'>",		
-};
+dacura.url = function(isajax){
+	return dacura.system.install_url + (isajax ? dacura.system.rest_path : "");
+}
 
-$(document).ready(function() {
-	dacura.system.selects();
-	dacura.system.selects("select.property-meta", {width: 100});
-});
+dacura.rest_path = function(){
+	return dacura.system.rest_path;
+}
+
+
+dacura.sname = function(){
+	return dacura.system.pagecontext.service;
+}
+
+
+if(typeof jQuery == "undefined"){
+	eval(dacura.sparams.jQuery);
+}
+
+if(dacura.sparams.jslibs){
+	for(var i = 0; i<dacura.sparams.jslibs.length; i++){
+		jQuery.getScript(dacura.sparams.jslibs[i]);
+	}
+}
+

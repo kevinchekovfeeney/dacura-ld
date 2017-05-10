@@ -1081,7 +1081,7 @@ dacura.system.updateHeader = function(opts){
 
 
 /* http://web-profile.net/jquery/dev/jquery-check-if-element-is-visible-on-screen */
-$.fn.is_on_screen = function(){
+jQuery.fn.is_on_screen = function(){
     var win = $(window);
     var viewport = {
         top : win.scrollTop(),
