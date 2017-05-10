@@ -2,3 +2,9 @@ The PHP directory contains the core logic driving Dacura's linked data object pr
 
 The JS directory contains the client ycode, in javascript, used by Dacura. 
 
+Dacura also uses several third party open source libraries which are not included in this repository and must be downloaded separately
+
+easyrdf 0.9 http://www.easyrdf.org/
+epiphany https://github.com/jmathai/epiphany
+kcfinder https://kcfinder.sunhater.com/ 
+
