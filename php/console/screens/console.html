@@ -1,0 +1,491 @@
+<div id='dacura-console' class='uninitialised' style='display:none'> 
+	<div class='dacura-console-topbar'>
+		<div class='menu-area console-browser-buttons'>
+			<span title="Go back to the last place you visited" class='browser-button browser-button-back'><i class="fa fa-arrow-circle-left fa-lg"></i></span><span title="Return to the next place you visited" class='browser-button browser-button-forward'><i class="fa fa-arrow-circle-right fa-lg"></i></span>
+ 			</div><div class='menu-area console-branding'>
+			<a class='console-icon phone-home' title="Visit Dacura's home page" href=''>
+			<img class='console-icon' src='images/dlogo-yellow.png'></a>
+		</div><div class='menu-area console-collection'>
+			<span class='context-select-holder context-collection-picker-holder'>
+			</span>
+			<span class='context-picked context-collection-picked'>
+				<span class='collection-title-icon'></span><span class='collection-title-text'></span><span class='collection-title-changer' title='Select a new collection to connect to'><i class="fa fa-angle-down fa"></i></span>						
+			</span>	
+		</div><div class='menu-area console-mode'>
+				<span class='mode-icons'>
+					<span class='mode-icons-active'><span id='dacura-mode-data' class='amode-icon mode-data mode-active'>
+						<img src='images/data-mode-active.png' class='console-icon console-mode mode-data mode-active' title='Data browser mode is currently active'> 
+					</span><span id='dacura-mode-model' class='amode-icon mode-model mode-active'>
+						<img src='images/model-mode-active.png' class='console-icon console-mode mode-model mode-active' title='Schema browser mode is currently active'> 
+					</span></span><span class='mode-icons-inactive'><span id='set-dacura-mode-data' class='amode-icon mode-data mode-inactive'>
+						<img src='images/data-mode-inactive.png' class='console-icon console-mode mode-data mode-inactive' title='Switch to Data Browser Mode'> 
+					</span><span id='set-dacura-mode-model' class='amode-icon mode-model mode-inactive'>
+						<img src='images/model-mode-inactive.png' class='console-icon console-mode mode-model mode-inactive' title='Switch to Schema Browser Mode'> 
+					</span></span>
+				</span>
+		</div>
+		<div class='menu-area console-context'>
+			<div class='context-element context-data entityclass'>
+				<span class='context-element-item context-select-holder context-entityclass-picker-holder'>
+				</span>
+				<span class='context-element-item context-empty context-entityclass-empty' title="There are no entity classes associated with this collection">
+					<span class="fa-stack fa-1x">
+					  <i class="fa fa-cubes fa-stack-1x"></i>
+					  <i class="fa fa-ban fa-stack-2x text-danger"></i>
+					</span>
+				</span>	
+				<span class='context-element-item context-add-element'>
+					<i class="fa fa-plus-square fa-lg"></i>					
+				</span>
+			</div>
+			<div class='context-element context-data candidate'>
+				<span class='context-element-item context-select-holder context-candidate-picker-holder'>
+				</span>
+				<span class='context-element-item context-empty context-candidate-empty' title="No candidates of this type available">
+					<span class="fa-stack fa-1x">
+					  <i class="fa fa-database fa-stack-1x"></i>
+					  <i class="fa fa-ban fa-stack-2x text-danger"></i>
+					</span>
+				</span>
+			</div>
+			
+			<div class='context-element context-model console-ontology context-ontology ontology'>
+				<span class='context-picked context-element-item context-ontology-picked'>
+					<span class='ontology-title-text'></span><span class='ontology-title-changer' title='Select a new ontology to connect to'><i class="fa fa-angle-down fa"></i></span>						
+				</span><span class='context-element-item context-select-holder context-ontology-picker-holder'>
+				</span><span class='context-element-item context-empty context-ontology-empty' title="There are no ontologies associated with this collection">
+					<span class="fa-stack fa-1x">
+					  <i class="fa fa-cubes fa-stack-1x"></i>
+					  <i class="fa fa-ban fa-stack-2x text-danger"></i>
+					</span>
+				</span>
+			</div>
+			<div class='context-element context-model modelclass'>
+				<span class='context-element-item context-select-holder context-modelclass-picker-holder'>
+				</span><span class='context-element-item context-empty context-modelclass-empty' title="There are no classes in this ontology">
+					<span class="fa-stack fa-1x">
+					  <i class="fa fa-cube fa-stack-1x"></i>
+					  <i class="fa fa-ban fa-stack-2x text-danger"></i>
+					</span>
+				</span><span class='context-element-item context-add-modelclass'>
+					<i class="fa fa-plus-square fa-lg"></i>					
+				</span>
+			</div>
+			<div class='context-element context-model modelproperty'>
+				<span class='context-element-item context-select-holder context-modelproperty-picker-holder'>
+				</span><span class='context-element-item context-empty context-modelproperty-empty' title="There are no properties in this ontology">
+					<span class="fa-stack fa-1x">
+					  <i class="fa fa-puzzle-piece fa-stack-1x"></i>
+					  <i class="fa fa-ban fa-stack-2x text-danger"></i>
+					</span>
+				</span><span class='context-element-item context-add-modelproperty'>
+					<i class="fa fa-plus-square fa-lg"></i>					
+				</span>
+			</div>
+		</div>
+		<div class='menu-area editor-action'>
+			<span class='editor-action-head label-group'>
+				<span class='label-group-addon summary-icon modelclass-icon' title='A class in the schema'><i class="fa fa-cube fa-fw"></i></span>
+				<span class='label-group-addon summary-icon modelproperty-icon' title='A property in the schema'><i class="fa fa-puzzle-piece fa-fw"></i></span>
+				<span class='label-group-addon summary-icon entity-icon' title='A new candidate'><i class="fa fa-star fa-fw"></i></span>
+				<span class='editor-action-text'></span>
+			</span>
+			<span class='editor-action-status'></span>
+		</div>
+		<div class='menu-area console-import'>
+			<span class='console-import-tool'>
+				<img src='images/harvest-mode-active.png' class='console-icon console-import' title='Import this page'>
+			</span>
+			<span class='harvest-element pagescan-stats'>
+				<span class='page-stat label-group variables' title='Total number of valid properties on page'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-puzzle-piece"></i></span>
+					<span class='page-stat-value'></span>
+				</span>
+				<span class='page-stat label-group unknown' title='Total number of unknown properties available for import'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-question"></i></span>
+					<span class='page-stat-value'></span>
+				</span>
+				<span class='page-stat label-group property_definition' title='Property Definitions'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-inbox"></i></span>
+					<span class='page-stat-value'></span>
+				</span>
+				<span class='page-stat label-group harvests' title='Imports'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-cloud-upload"></i></span>
+					<span class='page-stat-value'></span>
+				</span>
+				<span class='page-stat label-group harvested' title='Definitions'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-inbox"></i></span>
+					<span class='page-stat-value'></span>
+				</span>
+				<span class='page-stat label-group simple' title='Simple Variable Values'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-cube"></i></span>
+					<span class='page-stat-value'></span>
+				</span>
+				<span class='page-stat label-group complex' title='Variables with complex values'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-cubes"></i></span>
+					<span class='page-stat-value'></span>
+				</span>
+				<span class='page-stat label-group error' title='Errors in variable coding syntax'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-exclamation-circle "></i></span>
+					<span class='page-stat-value'></span>
+				</span>
+				<span class='page-stat label-group warning' title='Warnings in variable coding syntax'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-warning"></i></span>
+					<span class='page-stat-value'></span>
+				</span>
+				<span class='page-stat label-group empty' title='Variables with no values'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-battery-empty"></i></span>
+					<span class='page-stat-value'></span>
+				</span>
+				<span class='page-stat label-group datapoints' title='Total Datapoints'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-line-chart"></i></span>
+					<span class='page-stat-value'></span>
+				</span>
+				<span class='import-properties'></span>
+			</span>
+			<span class='harvest-element pagescan-navigator'>
+				<span class='motion-controls'>
+					<span class='summary-icon motion-first'><i class="fa fa-fast-backward fa-fw"></i></span>
+					<span class='summary-icon motion-prev'><i class="fa fa-step-backward fa-fw"></i></span>
+					<span class='current-factoid'></span>
+					<span class='summary-icon motion-next'><i class="fa fa-step-forward fa-fw"></i></span>
+					<span class='summary-icon motion-last'><i class="fa fa-fast-forward fa-fw"></i></span>
+				</span>
+			</span>	
+		</div>	
+		<div id='dacura-console-menu-busybox' class='menu-area console-busybox'>
+		    <i class="fa fa-spinner fa-spin fa-lg fa-fw"></i>
+		</div><div id='dacura-console-menu-message' class='menu-area console-resultbox'>
+			<span class='dacura-result success'>
+		    	<i class="fa fa-check-circle fa-lg"></i>
+			</span>
+			<span class='dacura-result info'>
+		    	<i class="fa fa-info-circle fa-lg"></i>
+			</span>
+			<span class='dacura-result warning'>
+		    	<i class="fa fa-warning fa-lg"></i>
+			</span>
+			<span class='dacura-result error'>
+		    	<i class="fa fa-exclamation-circle fa-lg"></i>
+			</span>
+		</div>
+		
+		<div class='console-menubar-rhs'>
+			<div class='console-user menu-area'>
+				<div class='console-login'>
+					<div class="input-group margin-bottom-sm">
+					  <span class="input-group-addon"><i class="fa fa-envelope-o fa-fw"></i></span>
+					  <input class="form-control" type="text" placeholder="Email address">
+					</div>
+					<div class="input-group">
+					  <span class="input-group-addon"><i class="fa fa-key fa-fw"></i></span>
+					  <input class="form-control" type="password" placeholder="Password">
+					</div>	
+					<span class='dologin'>
+						Sign in to Dacura
+						<i class="fa fa-sign-in fa-lg" aria-hidden="true"></i>
+					</span>
+				</div>
+				<div class='console-user-logged-in'>
+					<div class='console-user-roles'>
+						<span class='role-icons harvester-role'>
+							<img id='dacura-unset-role-harvester' src='images/harvester-active.png' class='console-icon console-role role-harvester role-active' title='Data Harvester role is active - click to deactivate'> 
+							<img id='dacura-set-role-harvester' src='images/harvester-inactive.png' class='console-icon console-role role-harvester role-inactive' title='Data Harvester role is inactive - click to activate'> 
+						</span>
+						<span class='role-icons expert-role'>
+							<img id='dacura-unset-role-expert' src='images/expert-active.png' class='console-icon console-role role-architect role-active' title='Expert Annotator role is active - click to deactivate'> 
+							<img id='dacura-set-role-expert' src='images/expert-inactive.png' class='console-icon console-role role-architect role-inactive' title='Expert Annotator role is inactive - click to activate'> 
+						</span>
+						<span class='role-icons architect-role'>
+							<img id='dacura-unset-role-architect' src='images/architect-active.png' class='console-icon console-role role-architect role-active' title='Architect role is active - click to deactivate'> 
+							<img id='dacura-set-role-architect' src='images/architect-inactive.png' class='console-icon console-role role-architect role-inactive' title='Architect role is inactive - click to activate'> 
+						</span>
+					</div>
+					<div class='console-user-icon'><img src='images/me.jpg' class='console-user-icon' title='Click on the image to set your active roles'></div>
+				</div>
+			</div><div class='console-user-close menu-area'>
+				<i class="fa fa-angle-double-up fa-lg"></i>					
+			</div>
+		</div>
+	</div>
+	<div class='console-extra'>
+		<div class='console-page-summary'>
+			<span class='pagescan-factoid'>
+				<span class='factoid-detail label-group factoid-section' title='Page section in which the variable occurs'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-th fa-fw"></i></span>
+					<span class='factoid-value'></span>
+				</span>
+				<span class='factoid-detail label-group factoid-label' title='Label of the variable'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-tag fa-fw"></i></span>
+					<span class='factoid-value'></span>
+				</span>
+				<span class='factoid-detail label-group factoid-sequence' title='Sequence number of the variable'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-hashtag fa-fw"></i></span>
+					<span class='factoid-value'></span>
+				</span>		
+				<span class='factoid-detail label-group factoid-data' title='Data in the factoid'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-area-chart fa-fw"></i></span>
+					<span class='factoid-value'></span>
+				</span>		
+			</span>
+			<span class='pagescan-factoid-stats'>
+				<span class='factoid-stat label-group simple' title='Simple Value'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-cube fa-fw"></i></span>
+				</span>
+				<span class='factoid-stat label-group complex' title='Complex value'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-cubes fa-fw"></i></span>
+				</span>
+				<span class='factoid-stat label-group empty' title='Variables has no value'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-battery-empty fa-fw"></i></span>
+				</span>
+				<span class='factoid-stat label-group warning' title='Warning in coding syntax'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-warning fa-fw"></i></span>
+				</span>
+				<span class='factoid-stat label-group error' title='Variable has an error in its coding syntax'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-exclamation-circle fa-fw"></i></span>
+				</span>
+				<span class='factoid-stat label-group datapoints' title='Datapoints'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-line-chart fa-fw"></i></span>
+					<span class='factoid-stat-value'></span>
+				</span>
+				<span class='factoid-stat label-group unknown' title='Property is unknown'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-question fa-fw"></i></span>
+				</span>
+				<span class='factoid-stat label-group harvests' title='Property matches an import rule'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-inbox fa-fw"></i></span>
+				</span>
+				<span class='factoid-stat label-group harvested' title='Definitions'>
+					<span class='label-group-addon summary-icon'><i class="fa fa-id-badge fa-fw"></i></span>
+					<span class='factoid-stat-value'></span>
+				</span>	
+			</span>
+			<span class='pagescan-factoid-data-import'>
+				<span class='factoid-data-import entity-select-holder'>
+				</span>
+				<span class='factoid-data-import candidate-select-holder'>
+				</span>
+				<span class='factoid-data-import property-select-holder'>
+				</span>
+				<span class='factoid-import-buttons'>
+					<button id='console-button-data-import'>Import</button>
+				</span>
+			</span>
+			<span class='pagescan-factoid-import'>
+				<span class='factoid-import factoid-import-select-holder'>
+				</span>
+				<span class='factoid-import-buttons'>
+					<button id='console-button-import'>Update</button>
+				</span>
+			</span>
+			<span class='context-action factoid-close summary-close'>
+				<i class="fa fa-close fa-lg"></i>					
+			</span>
+		</div>						
+		<div class='console-context-full'>
+			<div class='console-candidate-header console-full-section'>
+				<span class='state-icons nocreate'>
+					<span class='state-icon accept'>
+						<i class="fa fa-thumbs-up fa-lg"></i>											
+					</span>
+					<span class='state-icon pending'>
+						<i class="fa fa-balance-scale fa-lg"></i>												
+					</span>
+					<span class='state-icon reject'>
+						<i class="fa fa-thumbs-down fa-lg"></i>											
+					</span>
+					<span class='state-icon error'>
+						<i class="fa fa-exclamation-circle fa-lg"></i>						
+					</span>
+					<span class='state-icon warning'>
+						<i class="fa fa-warning fa-lg"></i>						
+					</span>									
+				</span>
+				<span class='console-label candidate-label summary-dacura console-view-candidate'></span>
+				<span class='candidate-edit-id input-group console-edit-candidate'>
+					<span class="input-group-addon"><i class="fa fa-key fa-fw"></i></span>
+					<span class='console-field-input'><input type='text' value='' placeholder='ID'></span>
+				</span>
+				<span class='candidate-edit-label input-group console-edit-candidate'>	
+						<span class="input-group-addon"><i class="fa fa-tag fa-fw"></i></span>
+						<span class='console-field-input'><input type='text' value='' placeholder='Label'></span>
+				</span>	
+				<span class='candidate-properties console-edit-candidate console-view-candidate candidate-nocreate nocreate'>
+					<span class='candidateproperty-empty' title="This candidate has no properties">
+						<span class="fa-stack fa-1x">
+					  		<i class="fa fa-puzzle-piece fa-stack-1x"></i>
+					  		<i class="fa fa-ban fa-stack-2x text-danger"></i>
+						</span>
+					</span>
+				    <span class='candidateproperty-picker input-group'>
+				    	<span class="input-group-addon"><i class="fa fa-puzzle-piece fa-fw"></i></span>
+				    	<span class='context-element-item context-candidateproperty context-select-holder'>
+						</span>
+				    </span>
+				</span>
+				<span class='entity-properties console-edit-candidate'>
+					<span class='context-element-item context-empty entityproperty-empty' title="This entity has no properties">
+						<span class="fa-stack fa-1x">
+						  <i class="fa fa-puzzle-piece fa-stack-1x"></i>
+						  <i class="fa fa-ban fa-stack-2x text-danger"></i>
+						</span>
+					</span>
+					<span class="entityproperty-picker input-group">
+						<span class="input-group-addon"><i class="fa fa-plus fa-fw"></i></span>
+						<span class='context-element-item context-select-holder'>
+						</span><span class='context-element-item context-new-property'>
+							<i class="fa fa-plus-square-o fa-lg"></i>					
+						</span>
+					</span>
+				</span>
+				<span class='candidate-actions'>
+					<span class='context-action console-view-candidate summary-edit'>
+						<i class="fa fa-edit fa-lg"></i>					
+					</span>
+					<span class='context-action summary-close console-view-candidate console-edit-candidate'>
+						<i class="fa fa-close fa-lg"></i>					
+					</span>
+				</span>
+			</div>
+			<div class='console-model-header console-full-section'>
+				<span class='modelclass label-group console-model-class summary-dacura console-view-model'>
+					<span class='label-group-addon summary-icon modelclass-icon simple' title='A simple standalone class with no parent'><i class="fa fa-circle fa-fw"></i></span>
+					<span class='label-group-addon summary-icon modelclass-icon complex' title='A complex class with multiple parents and/or non-standard assertions'><i class="fa fa-first-order fa-fw"></i></span>
+					<span class='label-group-addon summary-icon modelclass-icon enumerated' title="An enumerated type"><i class="fa fa-list fa-fw"></i></span>
+					<span class='label-group-addon summary-icon modelclass-icon entity' title="An entity class - a primary unit of data collection"><i class="fa fa-star fa-fw"></i></span>
+					<span class='label-group-addon summary-icon modelclass-icon unknown' title="Unknown class type!"><i class="fa fa-question fa-fw"></i></span>
+					<span class='console-model-class-label summary-dacura'></span>
+				</span>
+				<span class='propertylabel label-group console-model-property console-view-model'>
+					<span class='label-group-addon' title='Property'><i class="fa fa-puzzle-piece fa-fw"></i></span>
+					<span class='console-model-property-label summary-dacura'></span>
+				</span>
+				<span class='model-actions'>
+					<span class='context-action console-view-model summary-edit'>
+						<i class="fa fa-edit fa-lg"></i>					
+					</span>
+					<span class='context-action console-view-model console-edit-model summary-close'>
+						<i class="fa fa-close fa-lg"></i>					
+					</span>
+				</span>
+				<span class='model-edit-id input-group console-edit-model'>
+					<span class="input-group-addon"><i class="fa fa-key fa-fw"></i></span>
+					<span class='console-field-input'><input type='text' value='' placeholder='ID'></span>
+				</span>
+				<span class='model-edit-label input-group console-edit-model'>	
+					<span class="input-group-addon"><i class="fa fa-tag fa-fw"></i></span>
+					<span class='console-field-input'><input type='text' value='' placeholder='Label'></span>
+				</span>
+				<span class="input-group console-model-class console-edit-model">	
+					<span class="input-group-addon"><i class="fa fa-cube fa-fw"></i></span>
+					<span class="classtype-picker">
+							<select class='model-classtype-picker'></select>
+					</span>						
+				</span>
+				<span class='console-view-model-parents'>	
+					<span class='label-group console-model-class console-view-model model-class-parent'>
+						<span class="label-group-addon"><i title='parents of this class' class="fa fa-sitemap fa-fw"></i></span>
+						Parents: <span class="class-parents"></span>
+					</span>
+				</span>
+				<span class='console-view-enumerated-type'>	
+					<span class='label-group class-enumerated-type console-view-model console-model-class'>
+						<span class="label-group-addon"><i title='Options' class="fa fa-list fa-fw"></i></span>
+						Options: <span class="enumerated-choices"></span>
+					</span>
+				</span>
+				<span class='console-view-property-domain console-view-model console-model-property'>	
+					<span class='label-group model-property-domain'>
+						<span class="label-group-addon"><i title='Domain of this property' class="fa fa-cube fa-fw"></i></span>
+						Domain: <span class="property-domain"></span>
+					</span>
+				</span>
+				<span class='console-view-property-range console-view-model console-model-property'>	
+					<span class='label-group model-property-range'>
+						<span class="label-group-addon"><i title='Range of this property' class="fa fa-arrow-right fa-fw"></i></span>
+						Range: 
+						<span class='label-group-addon summary-icon modelproperty-icon literal' title='A datatype property'><i class="fa fa-file-text fa-fw"></i></span>
+						<span class='label-group-addon summary-icon modelproperty-icon boxed' title='A boxed datatype property'><i class="fa fa-dropbox fa-fw"></i></span>
+						<span class='label-group-addon summary-icon modelproperty-icon object' title="An object type"><i class="fa fa-cube fa-fw"></i></span>
+						<span class='label-group-addon summary-icon modelproperty-icon unknown' title="Unknown property type!"><i class="fa fa-question fa-fw"></i></span>
+						<span class="property-range"></span>
+					</span>
+				</span>
+				<span class='console-view-model-comment'>	
+					<span class='label-group console-view-model model-comment'>
+						<span class='label-group-addon summary-icon' title='Comment'><i class="fa fa-comment fa-fw"></i></span>
+						<span class='model-comment-label'></span>
+					</span>	
+				</span>
+				<span class='console-model-class console-edit-model'>
+					<span class="input-group entity-parent model-class-extra">	
+						<span class="input-group-addon"><i title='parent class of this entity class' class="fa fa-sitemap fa-fw"></i></span>
+						<span class="entity-parent-picker"></span>
+					</span>							
+					<span class="input-group complex-parent model-class-extra">	
+						<span class="input-group-addon"><i title='parent classes of the class' class="fa fa-sitemap fa-fw"></i></span>
+						<span class="class-parent-picker"></span>
+					</span>	
+				</span>
+								
+				<span class='input-group console-model-property console-edit-model property-domain'>
+					<span class="input-group-addon" title='Domain of Property'><i class="fa fa-cube fa-fw"></i></span>
+					<span class='property-domain-select-holder'></span>
+				</span>
+				<span class='input-group console-edit-model console-model-property property-range'>
+					<span class="input-group-addon" title="Range of Property"><i class="fa fa-arrow-right fa-fw"></i></span>
+					<span class='property-range-select-holder'>
+					</span>
+				</span>
+			</div>
+			<div class='console-model-comment console-full-section'>
+				<span class='console-edit-model class-comment'>
+					<span class='input-group-addon summary-icon comment-view-icon' title='Comment'><i class="fa fa-comment fa-fw"></i></span>
+					<span class='comment-input-holder'><textarea></textarea></span>
+				</span>	
+			</div>
+			<div class='enumerated-type console-edit-model console-full-section model-class-extra'>
+				<span class='enumerated-input-icon'><span class='input-group-addon enumerated-view-icon' title='Comment'><i class="fa fa-list fa-fw"></i></span></span>
+				<table class='console-enumerated-type'>
+					<thead><tr>
+						<th></th>
+						<th title='The ID of the choice (must be alphanumeric with no spaces'>ID</th>
+						<th title='The text label that will represent the choice'>label</th>
+						<th title='Text describing the choice'>description</th>
+						<th class='add-enum'><i class="fa fa-plus-square fa-lg"></i></th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
+			</div>
+			<div class='console-other-assertions console-model-nocreate console-full-section'></div>
+			<div id='dacura-console-frame-viewer' class='frame-viewer console-full-section'></div>
+			<div class='console-full-section metadata-viewer'>
+				<div class='console-metadata metadata-item metadata-harvested'>
+					<span class='input-group'>
+						<span class='input-group-addon'><i class='fa fa-diamond fa-fw'></i></span> 
+						<span class='console-field-input'>Harvested</span>
+					</span>
+					<span class='console-metadata-input'></span>
+				</div>
+				<div class='console-metadata metadata-item metadata-harvests'>
+					<span class='input-group'>
+						<span class='input-group-addon'><i class='fa fa-upload fa-fw'></i></span>
+						<span class='console-field-input'>Harvests</span>
+					</span>
+					<span class='console-metadata-input'></span>
+				</div>
+			</div>
+			<div class='dacura-console-full-result console-full-section' id='console-update-result'></div>
+			<div class='console-full-section buttons-viewer console-extra-buttons'>
+				<button id='console-button-cancel'>Cancel</button>
+				<button id='console-button-delete' class='console-model-nocreate console-candidate-nocreate nocreate'>Delete</button>
+				<button id='console-button-test' class='console-edit-model console-edit-candidate'>Test</button>				
+				<button id='console-button-commit' class='console-edit-model console-edit-candidate'>Create</button>
+				<span class='console-edit-model'>				
+					<input type='checkbox' class='deploy-model-changes deploy-changes-to-graph' id='deploy-model-to-graph' checked='checked'><label for='deploy-model-to-graph'>Deploy</label>
+				</span>
+			</div>
+		</div>
+	</div>
+</div>

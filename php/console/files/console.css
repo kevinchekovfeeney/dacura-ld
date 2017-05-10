@@ -1,0 +1,1384 @@
+@CHARSET "ISO-8859-1";
+#dacura-console html, #dacura-console body, #dacura-console div, #dacura-console applet, #dacura-console object, 
+#dacura-console iframe, #dacura-console h1, #dacura-console h2, #dacura-console h3, #dacura-console h4, #dacura-console h5, 
+#dacura-console h6, #dacura-console p, #dacura-console blockquote, #dacura-console pre, #dacura-console a, #dacura-console abbr, 
+#dacura-console acronym, #dacura-console address, #dacura-console big, #dacura-console cite, #dacura-console code, #dacura-console del, 
+#dacura-console dfn, #dacura-console em, #dacura-console img, #dacura-console ins, #dacura-console kbd, #dacura-console q, 
+#dacura-console s, #dacura-console samp, #dacura-console small, #dacura-console strike, #dacura-console strong, #dacura-console sub, 
+#dacura-console sup, #dacura-console tt, #dacura-console var, #dacura-console u, 
+#dacura-console center, #dacura-console dl, #dacura-console dt, #dacura-console dd, #dacura-console ol, #dacura-console ul, 
+#dacura-console li, #dacura-console fieldset, #dacura-console form, #dacura-console label, #dacura-console legend,
+#dacura-console table, #dacura-console caption, #dacura-console tbody, #dacura-console tfoot, #dacura-console thead, #dacura-console tr, 
+#dacura-console th, #dacura-console td, #dacura-console article, #dacura-console aside, #dacura-console canvas, #dacura-console details, 
+#dacura-console embed, #dacura-console figure, #dacura-console figcaption, #dacura-console footer, #dacura-console header, 
+#dacura-console hgroup, #dacura-console menu, #dacura-console nav, #dacura-console output, #dacura-console ruby, #dacura-console section, 
+#dacura-console summary, #dacura-console time, #dacura-console mark, #dacura-console audio, #dacura-console video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+	float: none;
+	background-color : transparent;
+}
+
+#dacura-console img {
+	vertical-align: middle;
+	float: none;
+	background-color : transparent;
+}
+
+/* HTML5 display-role reset for older browsers */
+#dacura-console article, #dacura-console aside, #dacura-console details, #dacura-console figcaption, #dacura-console figure, 
+#dacura-console footer, #dacura-console header, #dacura-console hgroup, #dacura-console menu, #dacura-console nav, #dacura-console section {
+	display: block;
+}
+
+#dacura-console body {
+	line-height: 1;
+}
+
+#dacura-console ol, #dacura-console ul {
+	list-style: none;
+}
+
+#dacura-console blockquote, #dacura-console q {
+	quotes: none;
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+*, *::before, *::after {
+    box-sizing: content-box;
+}
+
+#dacura-console input.form-control {
+	font-size: 100%;
+	max-height: 24px;	
+}
+
+#dacura-console {
+	position:  fixed;
+	z-index: 1000;
+	top: 0px;
+	left: 0px;
+	min-height: 36px;
+	width: 100%;
+	font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
+	border-bottom: 2px solid  #F0E68C;
+}
+
+.ui-selectmenu-open {
+	z-index: 99999;
+}
+
+#dacura-console .ui-selectmenu-button {
+	font-size: 0.85em;
+}
+
+#dacura-console.uninitialised {
+	background: rgba(28, 16, 19, 0.9);
+}
+
+#dacura-console .console-blotto,
+#dacura-console.model {
+	background: rgb(9, 16, 109);
+}
+
+#dacura-console .console-clotto,
+#dacura-console.data {
+	background: rgb(28, 16, 19);
+}
+
+
+/*
+#dacura-console.browser {
+	background: rgb(107, 8, 89);	
+}
+
+#dacura-console.harvester {
+	background: rgb(56, 16, 19);
+}
+*/
+
+#dacura-console img.console-icon {
+	height: 24px;
+}
+
+#dacura-console .select2-search input {
+   font-size: 11px !important;
+}
+
+.s2option {
+   font-size: 12px !important;	
+   font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
+}
+
+#dacura-console .dacura-console-topbar {
+	color: #eeeeee;
+	font-size: 15px;
+	height: 36px;
+	vertical-align: middle;
+	width: 1024px;
+	margin: 0 auto;
+}
+
+#dacura-console .dacura-console-topbar div {
+	display: inline-block;
+}
+
+#dacura-console .dacura-console-topbar div.menu-area {
+	margin: 0;
+}
+
+#dacura-console div.console-browser-buttons{
+	max-width: 44px;
+	color: rgba(245, 234, 210, 0.9);		
+}
+
+#dacura-console div.console-browser-buttons span.browser-button {
+	padding: 9px 2px 7px 2px;
+}
+
+#dacura-console .dacura-console-topbar div.console-branding {
+	padding: 5px 1px 3px 1px;
+	width: 32px;
+	vertical-align: 2;
+}
+
+#dacura-console .console-collection {
+	height: 33px;
+	vertical-align: top;
+	padding-top: 3px;
+}
+
+#dacura-console .console-collection .context-select-holder select{
+	width: 198px;
+}
+
+#dacura-console select.model-class-selector,
+#dacura-console .context-candidateproperty select, 
+#dacura-console .entityproperty-picker select, 
+#dacura-console .entityproperty-picker select, 
+#dacura-console .entityproperty-picker select, 
+#dacura-console .entity-parent-picker select, 
+#dacura-console .class-parent-picker select {
+	width: 200px;
+}
+#dacura-console .classtype-picker select {
+	width: 150px;
+}
+
+.input-group {
+	display: inline-block;
+	background-color:#eee;
+	padding-top: 4px;
+	padding-right: 1px;
+	margin-right: 4px;
+	margin-left: 4px;
+	margin-bottom: 8px;
+}
+
+span.web-locator-input {
+	display: inline-block;
+}
+
+span.web-locator-input.view {
+	padding: 2px 1px 0 1px;
+	border-radius: 3px;
+	margin-right: 6px;
+	margin-bottom: 2px;
+	background-color: #ccc;
+}
+
+.console-metadata-input {
+	display: inline-block;
+}
+
+.label-group.page-stat {
+	display: inline-block;
+	background: inherit !important;
+} 
+
+.label-group {
+	display: inline-block;
+	background-color:#f1f1f1;
+	font-size: 1.0em;
+	padding: 4px;
+	margin: 4px 6px;
+}
+
+.input-group-addon {
+	margin-right: -3px;
+	margin-top: 4px;
+	padding:6px 8px;
+	font-size:14px;
+	font-weight:normal;
+	line-height:1;
+	color:#555;
+	text-align:center;
+	background-color:#eee;
+	border:1px solid #ccc;
+	border-radius:4px;
+	vertical-align: middle;
+}
+
+span.class-comment {
+	display: inline-block;
+	padding: 8px 8px 10px 4px;
+}
+
+span.class-comment .comment-view-icon.input-group-addon {
+	vertical-align: top !important;
+	margin-top: 4px !important;
+}
+
+
+#dacura-console .console-collection .context-select-holder {
+	font-size: 0.8em;
+	vertical-align: -1;
+}
+
+#dacura-console .console-collection .context-collection-picked {
+	display: inline-block;
+	height: 29px;
+	padding-top: 4px;
+}
+
+#dacura-console img.collection-icon {
+	width: 19px;
+	height: 19px;
+	vertical-align: middle;
+}
+
+#dacura-console .console-collection .context-collection-picked .collection-title-icon {
+	padding: 8px 2px 7px 2px;
+}
+
+#dacura-console .console-collection .context-collection-picked .collection-title-text {
+	max-width: 200px;
+	padding: 0 2px;
+	overflow: hidden;
+	vertical-align: -2;
+}
+
+#dacura-console .console-user div.console-user-icon:hover,
+#dacura-console .console-mode span.mode-icons .amode-icon:hover,
+#dacura-console div.console-browser-buttons span.browser-button:hover,
+#dacura-console .console-collection .context-collection-picked .collection-title-icon:hover, 
+#dacura-console div.console-user-close:hover, 
+#dacura-console .dacura-console-topbar div.console-branding:hover,
+#dacura-console .console-ontology .ontology-title-changer:hover, 
+#dacura-console .console-collection .context-collection-picked .collection-title-changer:hover {
+	background: rgba(185, 56, 24, 0.9);
+	cursor: pointer;	
+} 
+
+#dacura-console .editor-action {
+	color: black;
+}
+
+#dacura-console .console-ontology .ontology-title-changer, 
+#dacura-console .console-collection .context-collection-picked .collection-title-changer {
+    padding: 2px 4px;
+    display: inline-block;
+    vertical-align: -7;   
+}
+
+#dacura-console .console-mode span.mode-icons {
+}
+
+#dacura-console .console-mode span.mode-icons span.amode-icon {
+	display: inline-block;
+	padding: 7px 2px 1px 2px;	
+}
+
+#dacura-console .console-context .context-select-holder {
+	font-size: 0.8em;
+	vertical-align: 3;
+}
+
+#dacura-console .fa-ban {
+  color: rgba(185, 56, 24, 0.9);
+}
+
+.fa-thumbs-down {
+  color: rgba(185, 56, 24, 0.9);
+}
+
+.fa-thumbs-up {
+  color: rgba(45, 156, 34, 0.9);
+}
+
+
+#dacura-console .console-context .context-add-property,
+#dacura-console .console-context .context-add-modelclass,
+#dacura-console .console-context .context-add-modelproperty,
+#dacura-console .console-context .context-add-element {
+	display: inline-block;
+	color: rgba(46, 215, 24, 0.9);
+	margin-left: 0px;
+	margin-right: 4px;
+	padding: 6px 2px 6px 0px;	
+}
+
+
+
+#dacura-console .console-context .context-add-modelclass:hover,
+#dacura-console .console-context .context-add-modelproperty:hover,
+#dacura-console .console-context .context-add-property:hover,
+#dacura-console .console-context .context-add-element:hover {
+	cursor: pointer;
+}
+
+#dacura-console .console-context .context-empty {
+	display: inline-block;
+}
+
+#dacura-console .console-context .context-add-element {
+	padding: 2px 1px;
+}
+
+#dacura-console .console-context .context-element {
+	display: inline-block;
+}
+
+#dacura-console .console-context .entityclass .context-select-holder select, 
+#dacura-console .console-context .entityproperty .context-select-holder select, 
+#dacura-console .console-context .candidate .context-select-holder select, 
+#dacura-console .console-context .candidateproperty .context-select-holder select, 
+#dacura-console .console-context .ontology .context-select-holder select{
+	width: 180px;
+}
+
+#dacura-console .console-context .modelproperty .context-select-holder select, 
+#dacura-console .console-context .modelclass .context-select-holder select {
+	width: 140px;
+}
+
+#dacura-console .console-context {
+	margin-left: 6px;
+}
+
+#dacura-console div.console-busybox {
+	vertical-align: 3;
+}
+
+#dacura-console div.console-resultbox {
+	vertical-align: 3;
+	padding: 8px 1px 6px 1px;
+}
+
+#dacura-console div.console-resultbox .fa-info-circle {
+  	color: rgba(156, 185, 234, 0.9);	
+}
+
+#dacura-console div.console-resultbox .fa-warning {
+  	color: rgba(245, 234, 106, 0.9);	
+}
+
+#dacura-console div.console-resultbox .fa-check-circle {
+  	color: rgba(56, 185, 24, 0.9);	
+}
+#dacura-console div.console-resultbox .fa-exclamation-circle {
+	color: rgba(225, 26, 24, 0.9);	
+}
+	
+#dacura-console .console-menubar-rhs {
+	float: right;
+}
+
+#dacura-console .console-user {
+	background: rgba(248, 236, 229, 0.7);
+	border-top: 1px solid #eee;
+	border-left: 1px solid #eee;
+	border-right: 1px solid #eee;
+	display: inline-block;
+
+}
+
+#dacura-console .console-user-roles {
+	padding-left: 4px;
+	padding-right: 2px;
+	vertical-align: 5;
+}
+
+#dacura-console .console-user div.console-user-icon {
+	display: inline-block;
+	border-bottom: 1px solid #eee;
+	padding: 0;
+	vertical-align: 9;
+}
+
+#dacura-console img.console-user-icon {
+	height: 34px;
+}
+
+#dacura-console div.console-user-close {
+	color: rgba(245, 234, 210, 0.9);		
+	padding: 9px 6px 10px 6px;
+	vertical-align: top;
+}
+
+#dacura-console .console-extra {
+	clear:both;
+}
+
+#dacura-console .console-extra .console-context-summary {
+	background-color: #eee;
+	border-top: 2px solid  #F0E68C;
+	font-size: 14px;
+	display: none;
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar {
+	/*width: 1024px;*/
+	padding: 0 4px;
+	margin: 0 auto;
+	height: 24px;
+	vertical-align: middle;
+	color: #226;
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar .summary-icons .accept {
+  	color: rgba(26, 135, 24, 0.9);	
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar .summary-icons .reject {
+	color: rgba(125, 56, 24, 0.9);	
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar .summary-icons .pending { 
+	color: rgba(156, 185, 234, 0.9);	
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar .summary-icons .warning {
+	color: rgba(245, 234, 106, 0.9);	
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar .summary-icons .error {
+	color: rgba(225, 26, 24, 0.9);	
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar .summary-icons .candidate {
+	color: rgb(28, 16, 19);
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar .summary-icons .modelclass {
+	color: rgb(28, 16, 109);
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar .summary-icons .modelproperty {
+	color: rgb(28, 109, 34);
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar .summary-icons .modelproperty {
+	color: rgb(28, 109, 34);
+}
+
+#dacura-console .console-extra .console-context-summary .summary-icons {
+	display: inline-block;
+	margin-right: 4px;
+	vertical-align: -2;
+}
+
+#dacura-console .console-extra .console-context-summary .summary-icons .summary-icon {
+	padding: 3px 1px 3px 1px;
+}
+
+#dacura-console .console-extra .console-context-summary .summary-icons .summary-action {
+	padding: 2px 2px 3px 4px;
+}
+
+#dacura-console .console-extra .console-context-summary .summary-dacura-link {
+	vertical-align: -4;
+}
+
+#dacura-console .console-extra .console-context-summary .summary-dacura-link .summary-action {
+	padding: 4px 2px 1px 2px;
+}
+
+#dacura-console .console-extra .console-context-summary .summary-actions {
+	float: right;
+	margin-left: 6px;
+}
+
+#dacura-console .console-extra .console-context-summary .summary-actions .summary-action {
+	padding: 6px 3px 4px 3px;
+	vertical-align: -2;
+	display: inline-block;
+}
+
+#dacura-console .console-extra .console-context-summary .summary-action:hover {
+	background: rgba(150, 190, 254, 0.9);
+	cursor: pointer;	
+}
+	
+#dacura-console .console-extra .console-context-summary .summary-identifier {
+	display: inline-block;
+	vertical-align: -2;
+}
+
+#dacura-console .console-extra .console-context-summary .summary-dacura-link {
+	display: inline-block;
+}
+
+#dacura-console .console-extra .console-context-summary .summary-create {
+	display: inline-block;
+}
+
+#dacura-console .console-extra .console-context-summary .summary-create input.entity-id {
+	width: 120px;
+}
+
+#dacura-console .console-extra .console-context-summary .summary-create input.entity-label {
+	width: 180px;
+}
+
+#dacura-console .console-extra .console-context-summary .summary-create input.entity-comment {
+	width: 300px;
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar .summary-create div.input-group {
+	display: inline-block;
+	margin-left: 6px;
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar .summary-create div.create-buttons {
+	display: inline-block;
+	margin-left: 10px;
+}
+
+#dacura-console .console-extra .console-context-summary .console-extra-topbar .summary-create div.create-buttons .create-button:hover {
+	background: rgba(150, 190, 254, 0.9);
+	cursor: pointer;	
+}
+#dacura-console .console-extra {
+	background-color: #eef8ee;
+}
+
+#dacura-console .console-extra .console-context-full {
+	border-top: 2px solid  #F0E68C;
+	font-size: 14px;
+	display: none;
+	max-height: 340px;
+	overflow-y: auto;
+	overflow-x: auto;
+	width: 1024px;
+	margin: 0 auto;
+}
+
+#dacura-console-frame-viewer {
+	margin: 6px;
+	border-radius: 4px;
+	padding: 4px;
+	border: 1px solid white;
+}
+
+/*frame display CSS*/
+
+div.candidate-property-frame {
+	padding: 6px !important;
+	border-top: 1px solid white;
+}
+
+div.property-frame {
+	vertical-align: top;
+	border-right: 2px solid #bbb;
+	padding-right: 5px;
+	margin-right: 5px;
+}
+
+div.property-value {
+}
+
+span.property-value-controls {
+}
+
+
+div.property-values {
+	display: inline-block;
+}
+
+div.property-values div {
+	display: inline-block;
+}
+
+div.candidate-property-frame span.remove-property {
+	color: #622;
+	padding: 2px;
+}
+
+div.candidate-property-frame span.delete-property {
+	color: #922;
+	padding: 2px;
+	font-weight: 1000;
+}
+
+div.candidate-property-frame span.add-property {
+	color: #292;
+	padding: 2px;
+}
+
+div.candidate-property-frame span.edit-property,
+div.candidate-property-frame span.annotate-property {
+	color: #66a;
+	padding: 2px;
+}
+
+div.candidate-property-frame span.property-type {
+	color: #99c;	
+	padding-left: 2px;	
+}
+
+div.candidate-property-frame span.property-help {
+	color: #99c;	
+	padding-right: 4px;
+}
+
+
+div.candidate-property-frame span.edit-property:hover, 
+div.candidate-property-frame span.delete-property:hover, 
+div.candidate-property-frame span.annotate-property:hover, 
+div.candidate-property-frame span.add-property:hover, 
+div.candidate-property-frame span.remove-property:hover {
+	cursor: pointer;
+	background: rgba(210, 230, 255, 0.9);
+}
+
+div.candidate-property-frame span.property-label {
+	font-weight: 600;
+	color: #645;
+	padding-right: 4px;
+}
+
+div.candidate-property-frame div.candidate-property-info {
+	display: inline-block;
+	width: 160px;
+	text-align: right;
+	vertical-align: top;
+}
+
+div.candidate-property-frame div.property-info {
+	vertical-align: top;
+}
+
+div.candidate-property-frame div.property-values-controls {
+	display: inline-block;
+	vertical-align: top;
+} 
+
+div.candidate-property-info span.property-controls {
+	float: left;
+}
+
+div.candidate-property-info span.property-icons {
+	float: right;
+}
+
+
+/* frameviewer styling */
+div.candidate-property-frame:nth-child(odd) {
+	background-color: #eaedf9 !important;
+}
+
+div.candidate-property-frame:nth-child(even) {
+	background-color: #faf8f9;
+}
+
+div.property-value span.value-frame-controls {
+	vertical-align: top;
+}
+
+div.property-value + div.property-value {
+	display: block !important;
+	margin-top: 4px;
+}
+/* end of frame display css */
+
+#dacura-console img.console-icon {
+	vertical-align: middle;
+	margin-bottom: 3px;
+}
+
+#dacura-console .console-spacer {
+	width: 2px;
+	display: inline-block;
+	min-height: 32px;
+}
+
+#dacura-console .empty-ontology {
+	font-size: 0.7em;
+	vertical-align: -5;
+	color: #ccc;
+	text-align: center;
+	display: inline-block;
+	width: 70px;
+	margin-bottom: -6px;
+	margin-right: 4px;
+	margin-left: 4px;
+}
+
+#dacura-console .dacura-console-full-result {
+ 	margin-left: 12px;
+ 	margin-bottom: 4px; 
+ 	margin-right: 6px;
+ 	font-size: 0.9em;
+}
+
+#dacura-console .dacura-console-full-result .dacura-user-message-box {
+	margin-right: 6px;
+	display: inline-block;
+}
+
+
+#dacura-console .dacura-console-full-result .dacura-user-message-box .mtitle {
+	padding: 6px;
+	font-size: 1.1em;
+}
+
+#dacura-console .dacura-console-full-result .dacura-user-message-box .mbody {
+	background: rgba(255, 255, 255, .3);
+	margin-left: 6px;
+	padding: 1px;
+}
+
+#dacura-console .dacura-console-full-result .user-message-close {
+	float: right;
+	cursor: pointer;
+	margin: 2px 4px 2px 4px;
+	color: #ccc;
+	font-family: Arial;
+	font-size: 16px;
+}
+
+.dacura-user-message-box.dacura-error .mbody, 
+.dacura-user-message-box.dacura-error .mtitle,
+.dacura-user-message-box.dacura-error,
+.dacura-user-message-box.dacura-reject .mbody, 
+.dacura-user-message-box.dacura-reject .mtitle,
+.dacura-user-message-box.dacura-reject {
+	background-color: #ffdfdf;	
+	color: #600 !important;
+}
+
+.dacura-user-message-box.dacura-accept .mbody,
+.dacura-user-message-box.dacura-accept .title,
+.dacura-user-message-box.dacura-accept {
+	background-color: #e8ffe9;	
+	color: #060 !important;
+}
+
+.dacura-user-message-box.dacura-pending .mbody,
+.dacura-user-message-box.dacura-pending .mtitle,
+.dacura-user-message-box.dacura-pending {
+	background-color: #e9f2ff;	
+	color: #440 !important;
+}
+
+.dacura-accept .mtitle,
+.dacura-reject .mtitle,
+.dacura-error .mtitle,
+.dacura-pending .mtitle {
+	font-weight: 550;
+	display: inline-block;	
+} 
+
+.dacura-accept .mbody,
+.dacura-reject .mbody,
+.dacura-error .mbody,
+.dacura-pending .mbody {
+	display: inline-block;
+}
+
+#dacura-console img.result-icon {
+	height: 16px;
+	vertical-align: -3;
+	padding-right: 4px;
+}
+
+#dacura-console .console-button-message {
+	display: inline-block;
+}
+
+.embedded-frameviewer input[type="text"] {
+  padding: 2px 3px;
+  border: solid 1px #dcdcdc;
+  transition: box-shadow 0.3s, border 0.3s;
+  font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
+  font-size: 1em;
+  font-weight: 500;
+  border-radius: 2px;
+}
+
+#dacura-console .console-context-full input[type="text"] {
+  padding: 6px;
+  border: solid 1px #dcdcdc;
+  transition: box-shadow 0.3s, border 0.3s;
+  font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
+  font-size: 0.9em;
+  font-weight: 400;
+  border-radius: 2px;
+}
+
+.dacura-body-wrapper {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+#dacura-console .dacura-console-full-result .test-result {
+	float: left;
+	padding: 4px;
+	margin-top: 4px;
+	width: 48px;
+	background: black;
+	color: #ff0;
+	font-weight: 600;
+	border-right: 1px solid #ff0;;
+}
+
+
+#dacura-console .pdip {
+	vertical-align: -3;
+}
+
+#dacura-console .dacura-console-full-result .dacura-test-message {
+	display: inline-block;
+}
+
+.embedded-frameviewer input[type="text"]:focus,
+.embedded-frameviewer input[type="text"].focus,
+#dacura-console .console-context-full input[type="text"]:focus,
+#dacura-console .console-context-full input[type="text"].focus {
+  border: solid 1px #707070;
+  box-shadow: 0 0 5px 1px #969696;
+}
+
+#dacura-console .console-context-full textarea {
+  padding: 8px;
+  border: solid 1px #dcdcdc;
+  transition: box-shadow 0.3s, border 0.3s;
+  font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
+  font-size: 0.9em;
+  font-weight: 400;
+  border-radius: 2px;
+}
+
+#dacura-console .console-context-full .console-edit-mode {
+	width: 99%;
+}
+
+#dacura-console .console-context-full .console-view-mode {
+	padding: 6px;
+}
+
+#dacura-console .console-context-full textarea:focus, 
+#dacura-console .console-context-full textarea.focus {
+  border: solid 1px #707070;
+  box-shadow: 0 0 5px 1px #969696;
+}
+
+#dacura-console .console-extra-buttons {
+	float: right;
+	margin-bottom: 8px;
+	margin-right: 10px;
+}
+
+#dacura-console .console-extra-buttons button {
+	margin-left: 8px;
+}
+
+#dacura-console .ui-button .ui-icon.dacura-help-button-icon {
+   background-image: url("test-tube.png");  
+   width: 20px;
+   height: 20px;
+   margin-right: 3px;
+   background-repeat: no-repeat; 
+   border: none;
+}
+
+#dacura-console .console-create-field {
+	display: inline-block;
+}
+
+#dacura-console .console-create-field .label {
+	min-width: 200px;
+	text-align: right;
+	padding-left: 6px;
+}
+
+#dacura-console .console-create-field .entry {
+	padding-right: 10px;
+	padding-left: 10px;
+}
+
+
+#dacura-console div.property-headline, 
+#dacura-console div.class-headline {
+	border-bottom: 1px solid #eee;
+	width: 100%;
+	padding: 8px 4px;
+	margin-bottom: 10px;
+	float: left;
+}
+
+#dacura-console div.headline-box-full {
+	clear: both;
+	width: 100%;
+}
+#dacura-console div.headline-box-narrow {
+	width: 450px;
+	float: left;
+}
+
+#dacura-console div.headline-box {
+	width: 600px;
+	float: left;
+}
+
+
+#dacura-console .console-extra-title {
+	position: absolute;
+	top: 0;
+	right: 0;
+	background-color: #eef3fd;
+	padding: 6px 6px 6px 12px;
+	border-left: 2px solid white;
+	border-bottom: 2px solid white;
+	border-radius: 0px 0px 3px 3px;
+	font-size: 1.1em;
+	font-weight: 250;
+	color: #448;
+}
+
+#dacura-console input.xsdunits {
+	width: 60px;
+}
+
+#dacura-console .console-extra-view-title {
+	float: left;
+	margin-top: -6px;
+	margin-left: -10px;
+	margin-right: 10px;
+	background-color: #eef3fd;
+	padding: 6px 12px 6px 0px;
+	border-right: 2px solid white;
+	border-bottom: 2px solid white;
+	border-radius: 6px 0px 6px 0px;
+	font-size: 0.9em;
+	font-weight: 250;
+	color: #448;
+}
+
+#dacura-console div.console-class-enumerated {
+	clear: both;
+	padding: 10px;
+	float: left;
+	max-width: 500px;	
+}
+
+#dacura-console .console-class-ancestry {
+	float: left;
+	padding: 10px;
+	max-width: 500px;	
+}
+
+#dacura-console .console-class-intro .console-class-label {
+	font-size: 1.2em;
+	font-weight: 700;
+	margin-right: 10px;
+}
+
+#dacura-console .console-field-input {
+	vertical-align: middle;
+}
+
+#dacura-console .console-field {
+	display: block;
+	padding: 6px;
+}
+
+#dacura-console .console-view {
+	padding: 6px;
+}
+
+
+#dacura-console .console-field-input .console-parent-select {
+	padding-right: 6px;
+}
+
+#dacura-console .console-property-range .range-input {
+	margin-right: 5px;
+}
+#dacura-console .console-property-domain .domain-type {
+	margin-right: 3px;
+}
+#dacura-console .remote-range-input,
+#dacura-console .range-input-boxedliteral .boxed-units {
+	margin-left: 6px;
+}
+
+
+
+#dacura-console .remote-range-input,
+#dacura-console .range-input-boxedliteral .boxed-units,
+#dacura-console .console-class-parent .remote-parent,
+#dacura-console .console-property-range .range-input-literal,
+#dacura-console .console-property-domain .remote-domain {
+	vertical-align: 5;
+}
+
+#dacura-console .console-field-input .add-parent-class {
+	padding-left: 8px;
+	margin-bottom: 4px;
+	cursor: pointer;
+}
+
+
+#dacura-console .console-view-label {
+	font-weight: 600;
+	padding-right: 8px;
+}
+
+#dacura-console .console-field-label {
+	color: #333;
+	font-weight: 300;
+	text-align: right;
+	padding-right: 8px;
+	display: inline-block;
+	width: 80px;
+}
+
+#dacura-console .console-top-label {
+	color: #333;
+	font-weight: 300;
+	text-align: left;
+	display: block;
+}
+
+
+#dacura-console .console-field-add {
+	padding-right: 4px;
+	padding-left: 40px;
+}
+
+#dacura-console .remove-parent-class {
+	margin: -8px -8px -8px 0px;
+	padding: 8px;
+}
+
+#dacura-console .parent-class-tile {
+	border: 1px solid #eee;
+	background-color: #fefefe;
+	padding: 6px;
+	margin-right: 8px;
+	margin-bottom: 10px;
+	margin-top: 10px;
+}
+
+#dacura-console .console-other-assertions {
+	padding-top: 5px;
+	padding-bottom: 8px;
+	border-top: 1px solid white;
+}
+
+#dacura-console .console-other-assertion {
+	display: inline-block;
+}
+
+#dacura-console .console-other-assertion textarea {
+	width: 100%;
+}
+
+#dacura-console .console-assertion-input textarea {
+	width: 100%;
+}
+
+#dacura-console div.enumerated-type {
+	padding: 6px 4px 6px 4px;
+	margin-bottom: 8px;
+}
+
+#dacura-console div.enumerated-type .enumerated-input-icon {
+	padding-top: 14px;
+	float: left;
+}
+
+#dacura-console table.console-enumerated-type {
+	width: 90%;
+	margin: 6px auto;
+	font-size: 0.9em;
+}
+
+#dacura-console table.console-enumerated-type th {
+	font-weight: 300;
+	font-color: #333;
+	background-color: #eee;
+}
+
+#dacura-console table.console-enumerated-type td.enumerated-type-remove {
+	text-align: center;
+}
+
+#dacura-console table.console-enumerated-type td.enumerated-type-number {
+	width: 30px;
+	text-align: center;
+}
+
+#dacura-console table.console-enumerated-type td.enumerated-type-id {
+	width: 90px;
+}
+#dacura-console table.console-enumerated-type td.enumerated-type-id input {
+	width: 100px;
+}
+
+#dacura-console table.console-enumerated-type td.enumerated-type-label input {
+	min-width: 250px;
+	width: 100%;
+}
+
+#dacura-console table.console-enumerated-type td.enumerated-type-comment input {
+	width: 100%;
+	min-width: 400px;
+}
+
+#dacura-console .console-page-summary {
+	display: none;
+	background-color: #eee;
+	padding: 2px;
+	margin: 2px;
+}
+
+
+#dacura-console .dacura-scanned-fact {
+	display: inline;
+	padding: 2px 6px;
+	cursor: pointer;
+	border: 1px solid white;
+	
+}
+#dacura-console .dacura-selected-fact {
+	border: 1px #888 dashed;
+	background-color:#FFFFE0;
+}
+
+#dacura-console .page-scan-summary dl, 
+#dacura-console .page-scan-summary dt, 
+#dacura-console .page-scan-summary dd {
+	display: inline-block;
+}
+
+
+#dacura-console .page-scan-summary dt {
+	margin-right: 2px;
+} 
+
+#dacura-console .page-scan-summary dd {
+	margin-right: 6px;
+	margin-left: 2px;
+}
+
+.uhover {
+	background: rgba(210, 230, 255, 0.9) !important;
+	cursor: pointer;
+	color: #210;	
+} 
+
+#dacura-console img.factoid-icon {
+	max-height: 24px;
+	margin-right: 6px;
+	margin-left: 6px;
+}
+
+.dch {
+	display: none;
+}
+
+#dacura-console .web-locator-input input.sequence {
+	width: 3em;
+}
+
+#dacura-console button {
+	font-size: .8em !important;
+}
+
+img.factoid-icon {
+	height: 19px;
+}
+
+.dacura-annotation-dialog {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+}
+
+.dacura-annotation-content {
+    position: relative;
+    background-color: #fefefe;
+    margin: 10% auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 80%;
+    box-shadow: 0 4px 8px 0 rgb(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
+    -webkit-animation-name: animatetop;
+    -webkit-animation-duration: 0.4s;
+    animation-name: animatetop;
+    animation-duration: 0.4s;
+}
+
+.dacura-annotation-close {
+    color: white;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.dacura-annotation-close:hover,
+.dacura-annotation-close:focus {
+    color: #aaa;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.dacura-annotation-header {
+    padding: 2px 16px;
+    background-color: #000000;
+    color: white;
+}
+
+.dacura-annotation-body {
+    padding: 2px 16px;
+}
+
+.dacura-annotation-footer {
+    padding: 10px 16px;
+    background-color: #000000;
+    color: white;
+}
+
+@-webkit-keyframes animatetop {
+    from {top: -300px; opacity: 0}
+    to {top: 0; opacity: 1}
+}
+
+@keyframes animatetop {
+    from {top: -300px; opacity: 0}
+    to {top: 0; opacity: 1}
+}
+
+.dacura-annotation-button {
+    background-color: #e7e7e7;
+    border: none;
+    color: black;
+    padding: 8px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    -webkit-transition-duration: 0.4s;
+    transition-duration: 0.4s;
+}
+
+.dacura-annotation-button:hover {
+    background-color: #ffffff;
+    color: grey;
+}
+
+#dacura-console div.console-candidate-header {
+	padding: 4px 8px;
+}
+
+#dacura-console div.console-candidate-header span.candidate-properties {
+	padding-left: 12px;
+	padding-right: 12px;
+}
+
+#dacura-console div.console-model-header span.model-actions,
+#dacura-console div.console-candidate-header span.candidate-actions {
+	padding-left: 12px;
+	padding-right: 12px;
+	float: right;
+}
+
+#dacura-console div.console-extra span.comment-label {
+	margin-top: 1em;
+	vertical-align: top;
+	padding: 1em;
+	min-width: 20%;
+	text-align: right;
+}
+
+#dacura-console div.console-extra .comment-input-holder {
+	display: inline-block;
+	margin-top: -10px !important;
+}
+#dacura-console div.console-extra .comment-input-holder textarea {
+	width: 800px;
+	height: 90px;	
+	margin-left: 2px;
+}
+
+
+#dacura-console div.login-console {
+    width: 100%;
+    float: right;
+    background-color: #333;
+	text-align: right;
+	padding: 4px 2px;
+	margin: 0;	
+}
+
+#dacura-console div.login-console div.console-user {
+	display: inline-block;
+	padding-left: 4px;
+	padding-right: 4px;
+}
+
+#dacura-console div.login-console div.console-branding {
+	float: left;
+}
+
+span.page-stat {
+	margin: 0;
+	font-size: 0.9em;
+	background-color: #888;
+	vertical-align: middle;
+}
+
+input[data-class='http://www.w3.org/2001/XMLSchema#gYear'], 
+input[data-class='http://dacura.scss.tcd.ie/ontology/xdd#gYearRange'] {
+	width: 50px;
+}
+
+input[data-class='http://dacura.scss.tcd.ie/ontology/xdd#integerRange'] {
+	width: 80px;
+}	
+
+input[data-class='http://dacura.scss.tcd.ie/ontology/xdd#decimalRange'] {
+	width: 80px;
+}	
+
+input[data-class='http://www.w3.org/2001/XMLSchema#anyURI'] {
+	width: 400px;
+} 
+
+div.candidate-property-frame[data-property='http://dacura.scss.tcd.ie/ontology/dacura#annotates'], 
+div.property-frame[data-property='http://dacura.scss.tcd.ie/ontology/dacura#annotates'] {
+	display: none;
+}
+
+
+textarea.dacura-big-input {
+	min-width: 600px;
+	height: 100px;
+}
+
